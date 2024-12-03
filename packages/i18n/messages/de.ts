@@ -121,11 +121,12 @@ export default {
       repetition: 'Repetition',
       evaluation: 'Auswertung',
       liveQuiz: 'Live Quiz',
+      liveQuizzes: 'Live Quizzes',
       practiceQuiz: 'Übungs-Quiz',
       practiceQuizzes: 'Übungs-Quizzes',
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
-      activeSessions: 'Aktive Sessions',
+      activeLiveQuizzes: 'Aktive Live Quizzes',
       groupActivity: 'Gruppenaktivität',
       groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',
@@ -234,7 +235,7 @@ export default {
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel zentriert auf einer separaten Zeile einzubinden.',
     },
     leaderboard: {
-      sessionTitle: 'Session Leaderboard',
+      lqLeaderboard: 'Quiz Leaderboard',
       ranks: 'Ränge',
       points: 'Punkte',
       computed: 'Berechnet',
@@ -244,7 +245,7 @@ export default {
       groupCount: 'Anzahl Gruppen: {number}',
       averagePoints: 'Durchschnittliche Punkte: {number}',
       noPointsCollected:
-        'Bisher wurden im Rahmen dieser Session noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt.',
+        'Bisher wurden im Rahmen dieses Live Quizzes noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt.',
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
@@ -316,6 +317,8 @@ Du nimmst derzeit **nicht** an der Kursrangliste teil. Das bedeutet, dass Du an 
 
 Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einschließlich Deines Pseudonyms und der Gesamtpunktzahl/Erfolge in den Ranglisten. Du kannst Dein Profil vor anderen Teilnehmern verbergen, aber trotzdem an der Rangliste teilnehmen, wenn Du dies wünschst (siehe [hier](/editProfile)).
 `,
+      activityPreview:
+        'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },
     createAccount: {
       dataProcessingTitle: 'Datenverarbeitung und Datenschutz',
@@ -594,7 +597,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityExpired:
         'Dieses Microlearning ist abgelaufen und es können keine Antworten mehr eingereicht werden.',
     },
-    session: {
+    liveQuiz: {
       noActiveQuestion: 'Keine Frage aktiv.',
       allQuestionsAnswered:
         'Sie haben bereits alle aktiven Fragen beantwortet.',
@@ -753,10 +756,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       qrCode: 'QR Code',
       presentQrCode: 'QR-Code präsentieren',
       questionPool: 'Fragepool',
-      sessions: 'Live-Quizzes',
       library: 'Bibliothek',
       quizzes: 'Quizzes',
       analytics: 'Analytics',
+      liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
       generateToken: 'Login-Token generieren',
       '404Message':
@@ -829,7 +832,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmDelegatedAccesTooltip:
         'Bitte überprüfen Sie die Zugangsdaten für den delegierten Login. Kopieren Sie das Passwort, bevor Sie dieses Pop-Up schliessen, da es nicht erneut angezeigt werden kann.',
       FULL_ACCESS: 'Voller Zugriff',
-      SESSION_EXEC: 'Durchführung von Sessionen',
+      SESSION_EXEC: 'Durchführung von Live Quizzes',
       READ_ONLY: 'Nur Lesen',
       ACCOUNT_OWNER: 'Konto-Besitzer',
       OTP: 'Einmalpasswort',
@@ -913,7 +916,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmDeletion:
         'Sind Sie sich sicher, dass Sie die folgende(n) Frage(n) löschen möchten?',
       noQuestionRecovery:
-        'Gelöschte Fragen können nicht wiederhergestellt werden. Aus bestehenden Sessionen werden gelöschte Fragen nicht entfernt.',
+        'Gelöschte Fragen können nicht wiederhergestellt werden. Aus bestehenden Live Quizzes werden gelöschte Fragen nicht entfernt.',
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Aus dem Archiv wiederherstellen',
@@ -986,13 +989,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       updateInstancesExplanation:
         'Nutzen sie diese Einstellung, um die Frage in allen geplanten Quizzes, Übungs-Quizzes und Microlearnings anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplier werden auch auf die erstellten Instanzen angewendet.',
     },
-    sessionForms: {
-      sessionName: 'Bitte geben Sie einen Namen für Ihre Session ein.',
-      sessionDisplayName:
-        'Bitte geben Sie einen Anzeigenamen für Ihre Session ein.',
+    activityWizard: {
+      activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',
+      activityDisplayName:
+        'Bitte geben Sie einen Anzeigenamen für Ihre Aktivität ein.',
       considerFormErrors: 'Bitte beachten Sie die Fehlermeldungen im Formular',
-      startDate: 'Bitte geben Sie ein Startdatum für Ihre Session ein.',
-      endDate: 'Bitte geben Sie ein Enddatum für Ihre Session ein.',
+      startDate: 'Bitte geben Sie ein Startdatum für Ihre Activität ein.',
+      endDate: 'Bitte geben Sie ein Enddatum für Ihre Activität ein.',
       endAfterStart: 'Das Enddatum muss nach dem Startdatum liegen.',
       endInFuture: 'Das Enddatum muss in der Zukunft liegen.',
       validMultiplicator: 'Bitte geben Sie einen gültigen Multiplikator ein.',
@@ -1008,6 +1011,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       multiplier4: 'Vierfach (4x)',
       changesSaved: 'Änderungen gespeichert',
       elementCreated: 'Element erfolgreich erstellt',
+      openPreview: 'Vorschau öffnen',
       openOverview: 'Übersicht öffnen',
       createNewElement: 'Weiteres Element erstellen',
       enterContentHere: 'Inhalt hier eingeben…',
@@ -1023,7 +1027,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newStackSelected: '1 Stack mit {count} Elementen hinzufügen',
       pasteSelection: '{count} Fragen hinzufügen',
       pasteSelectionElements: '{count} Elemente hinzufügen',
-      pasteSingleQuestions: '{count} Blocks mit 1 Frage anfügen',
+      pasteSingleElementsBlock: '{count} Blocks mit 1 Frage anfügen',
       pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
@@ -1103,17 +1107,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizDescription:
         'Geben Sie in diesem Schritt den Namen und die Beschreibung des Live Quizzes ein.',
       liveQuizSettings:
-        'In diesem Schritt können Sie Einstellungen zur Session vornehmen.',
+        'In diesem Schritt können Sie Einstellungen für das Live Quiz erfassen.',
       liveQuizBlocks: 'Fragen & Blöcke',
       liveQuizDragDrop:
         'Fügen Sie mittels Drag&Drop auf das Plus-Icon Fragen zu Ihren Blöcken hinzu. Neue Blöcke können entweder ebenfalls durch Drag&Drop auf das entsprechende Feld oder durch Klicken auf den Button erstellt werden.',
       liveQuizCreationFailed: 'Anpassen des Live Quizzes fehlgeschlagen...',
       liveQuizEditingFailed: 'Erstellen des Live Quizzes fehlgeschlagen...',
       liveQuizName:
-        'Der Name soll Ihnen ermöglichen, diese Session von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
+        'Der Name soll Ihnen ermöglichen, dieses Live Quiz von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
       liveQuizDescField:
-        'Hier können Sie eine optionale Beschreibung des Live Quizzes eingeben. Diese wird in den Studierenden zu Beginn der Session angezeigt.',
-      liveQuizDescCourse: 'Sie können Ihre Session einem Kurs zuordnen.',
+        'Hier können Sie eine optionale Beschreibung des Live Quizzes eingeben. Diese wird in den Studierenden zu Beginn des Live Quizzes angezeigt.',
+      liveQuizDescCourse: 'Sie können Ihr Live Quiz einem Kurs zuordnen.',
       liveQuizSelectCourse: 'Kurs auswählen',
       liveQuizNoCourse: 'Kein Kurs',
       liveQuizEnableGamification:
@@ -1123,11 +1127,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizGamification:
         'Das Quiz übernimmt automatisch die Gamifizierungseinstellung des Kurses. Wird das Quiz keinem Kurs zugeordnet, kann die Gamifizierung nicht aktiviert werden.',
       liveQuizLiveQA:
-        'Diese Einstellung spezifiziert, ob der Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
+        'Diese Einstellung spezifiziert, ob der Live-Q&A Kanal zu Beginn des Live Quizzes aktiviert sein soll. Sie kann während des laufenden Live Quizzes jederzeit geändert werden.',
       liveQuizModeration:
-        'Diese Einstellung spezifiziert, ob die Moderation im Live-Q&A Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
+        'Diese Einstellung spezifiziert, ob die Moderation im Live-Q&A Kanal zu Beginn des Live Quizzes aktiviert sein soll. Sie kann während der laufenden Live Quizzes jederzeit geändert werden.',
       liveQuizFeedbackChannel:
-        'Diese Einstellung spezifiziert, ob der Feedback-Kanal zu Beginn der Session aktiviert sein soll. Sie kann während der laufenden Session jederzeit geändert werden.',
+        'Diese Einstellung spezifiziert, ob der Feedback-Kanal zu Beginn des Live Quizzes aktiviert sein soll. Sie kann während der laufenden Live Quizzes jederzeit geändert werden.',
       liveQuizIntroductionName:
         'Bitte geben Sie einen Namen für Ihr Live-Quiz ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
       liveQuizUseCase:
@@ -1168,10 +1172,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       practiceQuizResetDays:
         'Bitte geben Sie eine Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
-      practiceQuizAvailableFrom:
-        'Wählen Sie ein optionales Startdatum, ab welchem das Übungs-Quiz nach der Publikation verfügbar ist (Default: unmittelbar nach der Publikation).',
       practiceQuizStartAfterCourseStart:
         'Das Startdatum des Übungs-Quiz muss nach dem Startdatum des Kurses liegen.',
+      practiceQuizStartRequired:
+        'Bitte geben Sie ein Startdatum für Ihr Übungs-Quiz ein.',
       practiceQuizValidResetDays:
         'Bitte geben Sie eine gültige Anzahl Tage ein nach welcher das Übungs-Quiz wiederholt werden kann.',
       practiceQuizElementTypes:
@@ -1188,7 +1192,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Übungs-Quizzes müssen einem Kurs zugewiesen werden.',
       practiceQuizCourseNotGamified:
         'Mit der aktuellen Kursauswahl wird das Übugns-Quiz nicht gamifiziert sein.',
-      practiceQuizAvailabilityOptional: 'Verfügbarkeit (optional)',
       practiceQuizContent:
         'Fügen Sie in diesem Schritt Fragen und Text-Elemente zu Ihrem Übungs-Quiz hinzu.',
       practiceQuizCreationFailed:
@@ -1319,18 +1322,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       NROverflow:
         'Numerische Angaben dürfen aus technischen Gründen nicht größer als 1e30 sein.',
     },
-    sessions: {
-      runningSessions: 'Laufende Sessionen',
-      plannedSessions: 'Geplante Sessionen',
-      preparedSessions: 'Vorbereitete Sessionen',
-      completedSessions: 'Abgeschlossene Sessionen',
+    liveQuizzes: {
+      runningLiveQuizzes: 'Laufende Live Quizzes',
+      plannedLiveQuizzes: 'Geplante Live Quizzes',
+      preparedLiveQuizzes: 'Vorbereitete Live Quizzes',
+      completedLiveQuizzes: 'Abgeschlossene Live Quizzes',
       embeddingEvaluation: 'Einbettung Evaluation',
       lecturerCockpit: 'Dozierenden Cockpit',
-      sessionEvaluation: 'Session Evaluation',
-      startSession: 'Start Session',
-      editSession: 'Session bearbeiten',
-      duplicateSession: 'Session duplizieren',
-      deleteSession: 'Session löschen',
+      liveQuizEvaluation: 'Live Quiz Evaluation',
+      startLiveQuiz: 'Start Quiz',
+      editLiveQuiz: 'Quiz bearbeiten',
+      duplicateLiveQuiz: 'Live Quiz duplizieren',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
       deleteLiveQuiz: 'Live Quiz löschen',
@@ -1341,9 +1343,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pastLiveQuizDeletionHint:
         'Das Löschen eines abgeschlossenen Live Quizzes entfernt dieses aus der Dozierendenansicht. Gesammelte Punkte und Antworten der Teilnehmenden bleiben jedoch erhalten und allfällige öffentliche Evaluationslinks bleiben weiterhin gültig. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
-      noSessions: 'Keine Sessionen gefunden',
+      noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:
-        'Um Ihre erste Session zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
+        'Um Ihr erstes Live Quiz zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
       changeLiveQuizName: 'Änderung Live Quiz Namen',
       liveQuizNameChangeSuccess:
         'Der Name des Live Quizzes wurde erfolgreich geändert.',
@@ -1360,11 +1362,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',
-      endSession: 'Session beenden',
+      endQuiz: 'Quiz beenden',
       audienceView: 'Publikumsansicht',
       evaluationResults: 'Auswertung (Resultate)',
-      abortSession: 'Quiz abbrechen',
-      confirmAbortSession: 'Live Quiz {title} abbrechen?',
+      abortLiveQuiz: 'Quiz abbrechen',
+      confirmAbortLiveQuiz: 'Live Quiz {title} abbrechen?',
       cancelLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Quiz verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
       noResponsesToDelete:
@@ -1383,7 +1385,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für dieses Live-Quiz wurden noch keine Quiz-Leaderboard-Einträge erstellt.',
       deleteLeaderboardEntries:
         'Alle Quiz-Leaderboard-Einträge werden gelöscht und alle Teilnehmenden verlieren ihre gesammelten Punkte.',
-      printTitle: 'Session "{name}" - Feedback-Kanal',
+      printTitle: 'Live Quiz "{name}" - Feedback-Kanal',
       lecturerView: 'Dozierendenansicht',
       liveQA: 'Live Q&A',
       activateQA: 'Live Q&A aktivieren',
@@ -1425,10 +1427,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       evaluationNotYetAvailable:
         'Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt.',
       noSignedInStudents:
-        'Bisher waren keine Teilnehmenden während dieser Session angemeldet und haben Punkte gesammelt.',
-      noFeedbacksYet: 'Diese Session enthält bisher keine Feedbacks.',
+        'Bisher waren keine Teilnehmenden während dieses Live Quizzes angemeldet und haben Punkte gesammelt.',
+      noFeedbacksYet: 'Dieses Live Quiz enthält bisher keine Feedbacks.',
       noConfusionFeedbacksYet:
-        'Diese Session enthält bisher keine Confusion Feedbacks.',
+        'Dieses Live Quiz enthält bisher keine Confusion Feedbacks.',
       totalParticipants: 'Total Teilnehmende: {number}',
       totalParticipantsInclAnon:
         'Total Teilnehmende: {number} ({anonymous} anonym)',
@@ -1447,14 +1449,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetSorting: 'Sortierung zurücksetzen',
       noFeedbacksMatchFilter:
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',
-      resolvedDuringSession: 'Während der Session gelöst',
+      resolvedDuringLiveQuiz: 'Während des Live Quizzes gelöst',
       confusion: 'Verständnis',
       minStep60s: 'Die Schrittweite muss mindestens 60 Sekunden betragen.',
       validMinSteps: 'Bitte geben Sie eine gültige Mindestschrittweite ein.',
       minWindowLength: 'Die Fensterlänge muss mindestens 1 betragen.',
       validWindowLength: 'Bitte geben Sie eine gültige Fensterlänge ein.',
       confusionDiagramsTooltip:
-        'Die Diagramme unten zeigen alle Confusion-Feedbacks der Teilnehmenden von Beginn bis Ende der Klicker-Session. Die Werte werden normalisiert auf dem Intervall [-1,1] dargestellt und auf 0 gesetzt, sollten in einem Zeitabschnitt keine Werte vorhanden sein. Die exakte Anzahl Feedbacks kann durch Hovering der Maus über einem Datenpunkt ausgelesen werden.',
+        'Die Diagramme unten zeigen alle Confusion-Feedbacks der Teilnehmenden von Beginn bis Ende des Live Quizzes. Die Werte werden normalisiert auf dem Intervall [-1,1] dargestellt und auf 0 gesetzt, sollten in einem Zeitabschnitt keine Werte vorhanden sein. Die exakte Anzahl Feedbacks kann durch Hovering der Maus über einem Datenpunkt ausgelesen werden.',
       avgDifficulty: 'Durchschnittl. Schwierigkeit',
       avgSpeed: 'Durchschnittl. Geschwindigkeit',
       graphSettings: 'Graph Einstellungen',
@@ -1621,7 +1623,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       changedDate: 'Datum wurde erfolgreich angepasst.',
       dateChangeFailed:
         'Beim Anpassen des Datums ist ein Fehler aufgetreten. Bitte überprüfen Sie die Eingabe.',
-      noSessions: 'Keine Sessionen vorhanden',
+      noLiveQuizzes: 'Keine Live Quizzes vorhanden',
       noPracticeQuizzes: 'Keine Übungs-Quizzes vorhanden',
       noMicrolearnings: 'Keine Microlearnings vorhanden',
       noGroupActivities: 'Keine Gruppenaktivitäten vorhanden',
@@ -1631,7 +1633,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       assignRandomGroups: 'Zufällige Gruppen zuweisen',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
-      runningSession: 'Laufende Session',
+      runningLiveQuiz: 'Laufendes Live Quiz',
       publicAccess: 'Öffentlicher Zugriff',
       restrictedAccess: 'Restriktierter Zugriff',
       startAt: 'Start: {time}',
@@ -1753,6 +1755,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Zuweisen der Gruppen ist ein Fehler aufgetreten. Bitte überprüfen Sie, ob genügend Studierende im Zuweisungspool sind und versuchen Sie es erneut.',
       groupAssignmentSuccessful:
         'Die Gruppenzuweisung war erfolgreich. Alle Studierenden aus dem Pool wurden in zufällige Gruppen eingeteilt.',
+      practiceQuizPublishImmediately: 'Sofort Veröffentlichen',
+      practiceQuizPublishingHint:
+        'Wenn Sie diese Option wählen, wird das Übungs-Quiz "{title}" sofort für alle Studierenden in Ihrem Kurs sichtbar. Da Studierende Antworten auf alle veröffentlichten Übungs-Quizzes abgeben können, können diese nur gelöscht, aber nicht mehr unveröffentlicht werden.',
+      confirmPublication: 'Veröffentlichung bestätigen',
+      schedulePublication: 'Veröffentlichung planen',
+      practiceQuizSchedulingHint:
+        'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
+      confirmScheduling: 'Geplante Veröffentlichung bestätigen',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
@@ -1807,7 +1817,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     login: {
       header: 'KlickerUZH Controller-App (Token)',
       installAndroid:
-        'Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Sessionen während der Vorlesungen direkt vom Handy aus zu steuern.',
+        'Installieren Sie die KlickerUZH Controller-App auf Ihrem Handy, um Ihre Live Quizzes während der Vorlesungen direkt vom Handy aus zu steuern.',
       installIOS:
         "Öffnen Sie den Share-Dialog und klicken Sie auf 'Zum Startbildschirm hinzufügen', um die KlickerUZH Controller-App auf Ihrem Handy zu installieren und Live Quizzes direkt zu bedienen.",
       shortnameRequired: 'Bitte geben Sie Ihren Kurznamen ein.',
@@ -1822,44 +1832,46 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchenSie es später erneut.',
       selectCourse: 'Bitte wählen Sie einen Kurs aus:',
       archivedCourse: '{courseName} (Archiviert)',
-      sessionsNoCourse: 'Sessionen ohne Kurs',
-      listSessionsNoCourse: 'Liste aller Sessionen ohne Kurs',
+      liveQuizzesNoCourse: 'Live Quizzes ohne Kurs',
+      listLiveQuizzesNoCourse: 'Liste aller Live Quizzes ohne Kurs',
+      loadingLiveQuizzesFailed:
+        'Beim Laden Ihrer Live Quizzes ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.',
     },
     course: {
       courseOverview: 'Kursübersicht',
       loadingFailed:
         'Es ist ein Fehler aufgetreten beim Laden Ihrer Kurse. Bitte versuchen Sie es später erneut.',
-      completedSessionsHint:
-        'Abgeschlossene Sessionen können auf der entsprechenden Seite in der KlickerUZH Management-App mit Resultaten betrachtet werden.',
-      runningSessions: 'Laufende Sessionen',
-      noRunningSessions: 'Keine laufenden Sessionen',
-      plannedSessions: 'Geplante Sessionen',
-      noPlannedSessions: 'Keine geplanten Sessionen',
-      sessionStartFailed:
-        'Leider konnte Ihre Session aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.',
+      completedLiveQuizzesHint:
+        'Abgeschlossene Live Quizzes können auf der entsprechenden Seite in der KlickerUZH Management-App mit Resultaten betrachtet werden.',
+      runningLiveQuizzes: 'Laufende Live Quizzes',
+      noRunningLiveQuizzes: 'Keine laufenden Live Quizzes',
+      plannedLiveQuizzes: 'Geplante Live Quizzes',
+      noPlannedLiveQuizzes: 'Keine geplanten Live Quizzes',
+      liveQuizStartFailed:
+        'Leider konnte Ihr Live Quiz aufgrund eines Fehlers nicht gestartet werden. Bitte versuchen Sie es später erneut.',
       pptEmbedding: 'PPT-Einbettung Evaluation',
-      startSession: 'Session starten',
-      confirmStartSession:
-        'Sind Sie sich sicher, dass sie die folgende Session starten möchten?',
-      explanationStartSession:
-        'Bitte beachten Sie, dass ein gestartetes Live Quiz grundsätzlich öffentlich zugänglich ist. Laufende Sessionen können über die KlickerUZH Management-App abgebrochen oder gestoppt werden.',
+      startLiveQuiz: 'Quiz starten',
+      confirmStartLiveQuiz:
+        'Sind Sie sich sicher, dass sie das folgende Live Quiz starten möchten?',
+      explanationStartLiveQuiz:
+        'Bitte beachten Sie, dass ein gestartetes Live Quiz grundsätzlich öffentlich zugänglich ist. Laufende Live Quizzes können über die KlickerUZH Management-App abgebrochen oder gestoppt werden.',
     },
-    session: {
-      sessionControl: 'Session-Steuerung',
-      errorLoadingSession:
-        'Leider ist beim Laden der Session ein Fehler aufgetreten. Bitte vergewissern Sie sich, dass die Session noch läuft oder versuchen Sie es später nochmals',
+    liveQuiz: {
+      liveQuizControl: 'Live Quiz-Steuerung',
+      errorLoadingLiveQuiz:
+        'Leider ist beim Laden des Live Quizzes ein Fehler aufgetreten. Bitte vergewissern Sie sich, dass das Live Quiz noch läuft oder versuchen Sie es später nochmals',
       containsNoQuestions:
-        'Diese Session enthält keine Fragen und kann daher zum aktuellen Zeitpunkt nicht über die Controller-App gesteuert werden. Bitte benutzen sie die Manage-App mit allen Funktionalitäten.',
-      sessionWithName: 'Session: {name}',
+        'Dieses Live quiz enthält keine Fragen und kann daher zum aktuellen Zeitpunkt nicht über die Controller-App gesteuert werden. Bitte benutzen sie die Manage-App mit allen Funktionalitäten.',
+      liveQuizWithName: 'Live Quiz: {name}',
       activeBlock: 'Aktiver Block:',
       closeBlock: 'Block schliessen',
       nextBlock: 'Nächster Block:',
       activateBlockN: 'Block {number} aktivieren',
       hintAllBlocksClosed:
-        'Es wurden bereits alle Blöcke dieser Session ausgeführt und geschlossen. Mit dem Beenden der Session wird auch der Feedback-Kanal geschlossen.',
-      endSession: 'Session beenden',
+        'Es wurden bereits alle Blöcke dieses Live Quizzes ausgeführt und geschlossen. Mit dem Beenden des Live Quizzes wird auch der Feedback-Kanal geschlossen.',
+      endQuiz: 'Quiz beenden',
       hintLastBlock:
-        'Der aktuell laufende Block is der letzte dieser Session. Nach Schliessen dieses Blockes kann die Session beendet werden.',
+        'Der aktuell laufende Block is der letzte dieses Live Quizzes. Nach Schliessen dieses Blockes kann das Live Quiz beendet werden.',
     },
   },
 }

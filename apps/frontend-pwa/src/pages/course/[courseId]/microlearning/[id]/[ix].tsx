@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import PreviewMessage from '~/components/common/PreviewMessage'
 import Layout from '../../../../../components/Layout'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 import ElementStack from '../../../../../components/practiceQuiz/ElementStack'
@@ -29,16 +30,15 @@ function MicrolearningInstance() {
       skip: !id,
     }
   )
-  const { data: selfData } = useQuery(SelfDocument)
+  const { data: selfData } = useQuery(SelfDocument, {
+    skip: data?.microLearning?.isOwner ?? false,
+  })
 
   if (loading || !data?.microLearning) {
     return <Loader />
   }
 
   const microLearning = data.microLearning
-  const microLearningPast = dayjs(microLearning.scheduledEndAt).isBefore(
-    dayjs()
-  )
 
   // throw error if length of stacks is smaller than number
   if (!microLearning.stacks || !(ix <= (microLearning.stacks.length || -1))) {
@@ -46,6 +46,8 @@ function MicrolearningInstance() {
   }
 
   const currentStack = microLearning.stacks[ix]
+  const previewMode = microLearning.isOwner ?? undefined
+  const courseId = microLearning.course?.id
 
   if (!currentStack) {
     throw new Error('Stack not found')
@@ -55,6 +57,7 @@ function MicrolearningInstance() {
     <Layout
       displayName={microLearning.displayName}
       course={microLearning.course ?? undefined}
+      previewMode={previewMode}
     >
       <MicroLearningSubscriber
         activityId={microLearning.id}
@@ -73,27 +76,35 @@ function MicrolearningInstance() {
             value={ix + 1}
             max={(microLearning?.stacks?.length ?? -1) + 1}
           />
+          {previewMode ? (
+            <PreviewMessage
+              activityType={t('shared.generic.microlearning')}
+              name={microLearning.name}
+              displayName={microLearning.displayName}
+            />
+          ) : null}
           <ElementStack
+            hideBookmark
+            singleSubmission
             key={currentStack.id}
             parentId={microLearning.id}
             courseId={microLearning.course!.id}
             stack={currentStack}
             currentStep={ix + 1}
             totalSteps={microLearning.stacks?.length ?? 0}
-            handleNextElement={() =>
-              router.push(`/microlearning/${id}/${ix + 1}`)
-            }
-            onAllStacksCompletion={() =>
+            handleNextElement={() => {
+              router.push(`/course/${courseId}/microlearning/${id}/${ix + 1}`)
+            }}
+            onAllStacksCompletion={() => {
               // TODO: also mark the microlearning as completed with this action already?
-              router.push(`/microlearning/${id}/evaluation`)
-            }
+              router.push(`/course/${courseId}/microlearning/${id}/evaluation`)
+            }}
             withParticipant={!!selfData?.self}
-            hideBookmark
-            singleSubmission
             activityExpired={dayjs(microLearning.scheduledEndAt).isBefore(
               dayjs()
             )}
             activityExpiredMessage={t('pwa.microLearning.activityExpired')}
+            previewOnly={previewMode}
           />
         </div>
       </div>

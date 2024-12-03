@@ -1,0 +1,51 @@
+mutation CreateLiveQuiz(
+  $name: String!
+  $displayName: String!
+  $description: String
+  $blocks: [ElementBlockInput!]!
+  $courseId: String
+  $multiplier: Int!
+  $maxBonusPoints: Int!
+  $timeToZeroBonus: Int!
+  $isGamificationEnabled: Boolean!
+  $isConfusionFeedbackEnabled: Boolean!
+  $isLiveQAEnabled: Boolean!
+  $isModerationEnabled: Boolean!
+) {
+  createLiveQuiz(
+    name: $name
+    displayName: $displayName
+    description: $description
+    blocks: $blocks
+    courseId: $courseId
+    multiplier: $multiplier
+    maxBonusPoints: $maxBonusPoints
+    timeToZeroBonus: $timeToZeroBonus
+    isGamificationEnabled: $isGamificationEnabled
+    isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
+    isLiveQAEnabled: $isLiveQAEnabled
+    isModerationEnabled: $isModerationEnabled
+  ) {
+    id
+    name
+    displayName
+    description
+    blocks {
+      id
+      status
+      timeLimit
+      elements {
+        id
+        ...ElementDataInfo
+      }
+    }
+    course {
+      id
+    }
+    pointsMultiplier
+    isGamificationEnabled
+    isConfusionFeedbackEnabled
+    isLiveQAEnabled
+    isModerationEnabled
+  }
+}

@@ -1,7 +1,7 @@
 import { Participant } from '@klicker-uzh/graphql/dist/ops'
 import Image from 'next/image'
 
-export const POSITIONS = [
+const POSITIONS = [
   [46, 67],
   [46, 52],
   [46, 37],

@@ -599,13 +599,13 @@ describe('Test course creation and editing functionalities', () => {
     )
 
     // check that the live quiz has been removed from the course
-    cy.get('[data-cy="quizzes"]').click()
-    cy.contains('[data-cy="session-block"]', liveQuizName)
-    cy.get(`[data-cy="edit-session-${liveQuizName}"]`).click()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.contains('[data-cy="live-quiz-block"]', liveQuizName)
+    cy.get(`[data-cy="edit-live-quiz-${liveQuizName}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="select-course"]').contains(
-      messages.manage.sessionForms.liveQuizNoCourse
+      messages.manage.activityWizard.liveQuizNoCourse
     )
   })
 

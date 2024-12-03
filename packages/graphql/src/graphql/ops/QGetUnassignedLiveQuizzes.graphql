@@ -1,0 +1,7 @@
+query GetUnassignedLiveQuizzes {
+  unassignedLiveQuizzes {
+    id
+    name
+    status
+  }
+}

@@ -8,12 +8,12 @@ import { Button } from '@uzh-bf/design-system'
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
 import { useTranslations } from 'next-intl'
-import FeedbacksPrintView from '../../sessions/evaluation/FeedbacksPrintView'
+import FeedbacksPrintView from '../../evaluation/feedbacks/FeedbacksPrintView'
 import Feedback from './Feedback'
 import FeedbackSearchAndFilters from './FeedbackSearchAndFilters'
 
 interface Props {
-  sessionName: string
+  liveQuizName: string
   feedbacks?: FeedbackType[]
   handleDeleteFeedback: (feedbackId: number) => void
   handlePinFeedback: (feedbackId: number, isPinned: boolean) => void
@@ -26,7 +26,7 @@ interface Props {
 }
 
 function FeedbackChannel({
-  sessionName,
+  liveQuizName,
   feedbacks = [],
   isActive = false,
   isPublic = false,
@@ -64,7 +64,7 @@ function FeedbackChannel({
     <>
       <FeedbacksPrintView
         feedbacks={sortedFeedbacks}
-        sessionName={sessionName}
+        liveQuizName={liveQuizName}
       />
       <FeedbackSearchAndFilters
         disabled={{
@@ -103,24 +103,22 @@ function FeedbackChannel({
             }: FeedbackType,
             index
           ) => (
-            <div className="flex flex-row print:mt-2" key={id}>
+            <div className="flex flex-row gap-2 print:mt-2" key={id}>
               {!isPublic && (
                 <div className="flex-initial print:hidden">
                   <Button
-                    className={{ root: 'mr-2 h-9 w-9 justify-center' }}
+                    className={{
+                      root: 'flex h-9 w-9 items-center justify-center',
+                    }}
                     onClick={() => {
                       handlePublishFeedback(id, !isPublished)
                     }}
                     data={{ cy: `publish-feedback-${content}` }}
                   >
                     {isPublished ? (
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={faEye} />
-                      </Button.Icon>
+                      <FontAwesomeIcon icon={faEye} />
                     ) : (
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={faEyeSlash} />
-                      </Button.Icon>
+                      <FontAwesomeIcon icon={faEyeSlash} />
                     )}
                   </Button>
                 </div>
@@ -160,7 +158,7 @@ function FeedbackChannel({
               content={
                 <FormattedMessage
                   defaultMessage="If you have used our feedback-channel (Q&A) functionality, please consider participating in our 2-minute survey under this {link}."
-                  id="runningSession.audienceInteraction.survey"
+                  id="runningLiveQuiz.audienceInteraction.survey"
                   values={{
                     link: (
                       <a href="https://hi.switchy.io/6IeK" rel="noreferrer" target="_blank">

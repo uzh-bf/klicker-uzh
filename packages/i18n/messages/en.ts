@@ -121,11 +121,12 @@ export default {
       repetition: 'Repetition',
       evaluation: 'Evaluation',
       liveQuiz: 'Live Quiz',
+      liveQuizzes: 'Live Quizzes',
       practiceQuiz: 'Practice Quiz',
       practiceQuizzes: 'Practice Quizzes',
       microlearnings: 'Microlearning',
       microlearning: 'Microlearning',
-      activeSessions: 'Active Quizzes',
+      activeLiveQuizzes: 'Active Live Quizzes',
       groupActivity: 'Group Activity',
       groupActivities: 'Group Activities',
       characters: 'characters',
@@ -234,7 +235,7 @@ export default {
         'Select this setting to include a LaTeX formula centered on a separate line.',
     },
     leaderboard: {
-      sessionTitle: 'Quiz Leaderboard',
+      lqLeaderboard: 'Quiz Leaderboard',
       ranks: 'Ranks',
       points: 'Points',
       computed: 'Computed',
@@ -316,6 +317,8 @@ You are currently **not** participating in the course leaderboard, meaning that 
 
 Other participants will only see your public **participant profile**, including pseudonym and total points/achievements on leaderboards. You can choose to hide your profile from other participants while still participating in the leaderboard, if you wish to do so (see [here](/editProfile)).
 `,
+      activityPreview:
+        'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },
     createAccount: {
       dataProcessingTitle: 'Data Processing and Privacy',
@@ -594,7 +597,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityExpired:
         'This microlearning has expired and no new answers can be submitted anymore.',
     },
-    session: {
+    liveQuiz: {
       noActiveQuestion: 'No question active.',
       allQuestionsAnswered: 'You have already answered all active questions.',
     },
@@ -755,10 +758,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
       questionPool: 'Question Pool',
-      sessions: 'Live Quizzes',
       library: 'Library',
       quizzes: 'Quizzes',
       analytics: 'Analytics',
+      liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
       generateToken: 'Generate login token',
       '404Message':
@@ -832,7 +835,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmDelegatedAccesTooltip:
         'Please check your delegated access login credentials. Make sure to copy the password before closing this dialogue, as it cannot be shown again.',
       FULL_ACCESS: 'Full Access',
-      SESSION_EXEC: 'Session Execution',
+      SESSION_EXEC: 'Live Quiz Execution',
       READ_ONLY: 'Read Only',
       ACCOUNT_OWNER: 'Account Owner',
       OTP: 'One-Time Password',
@@ -987,12 +990,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       updateInstancesExplanation:
         'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
     },
-    sessionForms: {
-      sessionName: 'Please enter a name for your quiz.',
-      sessionDisplayName: 'Please enter a valid display name for your quiz.',
+    activityWizard: {
+      activityName: 'Please enter a name for your activity.',
+      activityDisplayName:
+        'Please enter a valid display name for your activity.',
       considerFormErrors: 'Please check the form for error messages.',
-      startDate: 'Please enter a start date for your quiz.',
-      endDate: 'Please enter an end date for your quiz.',
+      startDate: 'Please enter a start date for your activity.',
+      endDate: 'Please enter an end date for your activity.',
       endAfterStart: 'The end date has to be later than the start date.',
       endInFuture: 'The end date has to be in the future.',
       validMultiplicator: 'Please enter a valid multiplicator.',
@@ -1008,6 +1012,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       multiplier4: 'Quadruple (4x)',
       changesSaved: 'Changes saved',
       elementCreated: 'Element has been created successfully',
+      openPreview: 'Open preview',
       openOverview: 'Open overview',
       createNewElement: 'Create another element',
       enterContentHere: 'Enter your content here...',
@@ -1023,7 +1028,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newStackSelected: 'Add 1 stack with {count} elements',
       pasteSelection: 'Add {count} questions',
       pasteSelectionElements: 'Add {count} elements',
-      pasteSingleQuestions: 'Add {count} blocks with 1 question',
+      pasteSingleElementsBlock: 'Add {count} blocks with 1 question',
       pasteSingleElementsStack: 'Add {count} stacks with 1 element',
       displayNameTooltip: 'The display name is shown to participants.',
       stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
@@ -1118,11 +1123,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizGamification:
         'The quiz automatically adopts the gamification setting of the course. If the quiz is not assigned to a course, gamification cannot be activated.',
       liveQuizLiveQA:
-        'This setting specifies whether the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+        'This setting specifies whether the live Q&A channel should be activated at the beginning of the live quiz. It can be changed at any time during the live quiz.',
       liveQuizModeration:
-        'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+        'This setting specifies whether moderation in the live Q&A channel should be activated at the beginning of the live quiz. It can be changed at any time during the live quiz.',
       liveQuizFeedbackChannel:
-        'This setting specifies whether the feedback channel should be activated at the beginning of the session. It can be changed at any time during the session.',
+        'This setting specifies whether the feedback channel should be activated at the beginning of the live quiz. It can be changed at any time during the live quiz.',
       liveQuizIntroductionName:
         'Please enter a name for your live quiz. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
       liveQuizUseCase:
@@ -1162,10 +1167,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       practiceQuizResetDays:
         'Please enter a number of days after which the practice quiz can be repeated.',
-      practiceQuizAvailableFrom:
-        'Specify an optional start date from which the practice quiz is available after publication (default: immediately after publication).',
       practiceQuizStartAfterCourseStart:
         'The start date of the practice quiz must be after the start date of the course.',
+      practiceQuizStartRequired:
+        'Please choose the start date of the practice quiz.',
       practiceQuizValidResetDays:
         'Please enter a valid number of days after which the practice quiz can be repeated.',
       practiceQuizElementTypes:
@@ -1184,7 +1189,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'With the current course selection the practice quiz will not be gamified.',
       practiceQuizContent:
         'In this step, add questions and text elements to your practice quiz.',
-      practiceQuizAvailabilityOptional: 'Availability (optional)',
       selectCourse: 'Select course...',
       practiceQuizCreationFailed: 'Creating the practice quiz failed...',
       practiceQuizEditingFailed: 'Editing the practice quiz failed...',
@@ -1307,18 +1311,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       NROverflow:
         'Numerical quantities cannot be larger than 1e30 for technical reasons.',
     },
-    sessions: {
-      runningSessions: 'Running Live Quizzes',
-      plannedSessions: 'Planned Live Quizzes',
-      preparedSessions: 'Prepared Live Quizzes',
-      completedSessions: 'Completed Live Quizzes',
+    liveQuizzes: {
+      runningLiveQuizzes: 'Running Live Quizzes',
+      plannedLiveQuizzes: 'Planned Live Quizzes',
+      preparedLiveQuizzes: 'Prepared Live Quizzes',
+      completedLiveQuizzes: 'Completed Live Quizzes',
       embeddingEvaluation: 'Embed Evaluation',
       lecturerCockpit: 'Lecturer Cockpit',
-      sessionEvaluation: 'Quiz Evaluation',
-      startSession: 'Start Quiz',
-      editSession: 'Edit Quiz',
-      duplicateSession: 'Duplicate Quiz',
-      deleteSession: 'Delete Quiz',
+      liveQuizEvaluation: 'Quiz Evaluation',
+      startLiveQuiz: 'Start Quiz',
+      editLiveQuiz: 'Edit Quiz',
+      duplicateLiveQuiz: 'Duplicate Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
       deleteLiveQuiz: 'Delete Quiz',
@@ -1329,7 +1332,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pastLiveQuizDeletionHint:
         'Deleting a completed live quiz removes it from your lecturer view. Collected points and answers of the participants remain, and any public evaluation links stay valid. Deleted live quizzes cannot be restored at a later date.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
-      noSessions: 'No live quizzes available',
+      noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
       changeLiveQuizName: 'Change live quiz name',
@@ -1347,11 +1350,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
-      endSession: 'End quiz',
+      endQuiz: 'End quiz',
       audienceView: 'Audience view',
       evaluationResults: 'Evaluation (results)',
-      abortSession: 'Abort quiz',
-      confirmAbortSession: 'Abort live quiz {title}?',
+      abortLiveQuiz: 'Abort quiz',
+      confirmAbortLiveQuiz: 'Abort live quiz {title}?',
       cancelLiveQuizMessage:
         'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
       noResponsesToDelete:
@@ -1434,7 +1437,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetSorting: 'Reset sorting',
       noFeedbacksMatchFilter:
         'No feedbacks match the current filter settings...',
-      resolvedDuringSession: 'Resolved during session',
+      resolvedDuringLiveQuiz: 'Resolved during live quiz',
       confusion: 'Confusion',
       minStep60s: 'The step size must be at least 60 seconds.',
       validMinSteps: 'Please enter a valid minimum step size.',
@@ -1601,7 +1604,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       changedDate: 'Date has been successfully adjusted.',
       dateChangeFailed:
         'An error occurred while adjusting the date. Please check the input.',
-      noSessions: 'No live quizzes available',
+      noLiveQuizzes: 'No live quizzes available',
       noPracticeQuizzes: 'No practice quizzes available',
       noMicrolearnings: 'No microlearning available',
       noGroupActivities: 'No group activities available',
@@ -1611,7 +1614,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       assignRandomGroups: 'Assign random groups',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
-      runningSession: 'Running live quiz',
+      runningLiveQuiz: 'Running live quiz',
       publicAccess: 'Public access',
       restrictedAccess: 'Restricted access',
       startAt: 'Start: {time}',
@@ -1741,6 +1744,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred during the group assignment. Please check that sufficiently many students are in the assignment pool and try again.',
       groupAssignmentSuccessful:
         'The group assignment was successful. All students from the pool were assigned to random groups.',
+      practiceQuizPublishImmediately: 'Publish Immediately',
+      practiceQuizPublishingHint:
+        'When choosing this option, the practice quiz "{title}" will become immediately visible to all students in your course. Since students can submit answers to all published practice quizzes, they can only be deleted, but no longer be unpublished.',
+      confirmPublication: 'Confirm Publication',
+      schedulePublication: 'Schedule Publication',
+      practiceQuizSchedulingHint:
+        'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
+      confirmScheduling: 'Confirm Scheduling',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
@@ -1762,7 +1773,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       passedMissingError:
         'Please specify, if the group passed or failed the group challenge.',
       scoreMissingError:
-        'Plase make sure that all quesitons are graded with a valid value.',
+        'Plase make sure that all questions are graded with a valid value.',
       didGroupPass: 'Is the group activity passed?',
       optionalFeedback:
         'Enter an optional general feedback for the group challenge here',
@@ -1794,7 +1805,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     login: {
       header: 'KlickerUZH Controller-App (Token)',
       installAndroid:
-        'Install the KlickerUZH Controller app on your phone to control your sessions directly from your smartphone during lectures.',
+        'Install the KlickerUZH Controller app on your phone to control your live quiz directly from your smartphone during lectures.',
       installIOS:
         "Open the share dialog and click 'Add to Home Screen' to install the KlickerUZH Controller app on your phone and control live quizzes directly.",
       shortnameRequired: 'Please enter your shortname.',
@@ -1809,42 +1820,44 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while loading your courses. Please try again later.',
       selectCourse: 'Please select a course:',
       archivedCourse: '{courseName} (archived)',
-      sessionsNoCourse: 'Sessions without course',
-      listSessionsNoCourse: 'List of all sessions without course',
+      liveQuizzesNoCourse: 'Live quizzes without course',
+      listLiveQuizzesNoCourse: 'List of all live quizzes without course',
+      loadingLiveQuizzesFailed:
+        'An error occurred while loading your live quizzes. Please try again later.',
     },
     course: {
       courseOverview: 'Course overview',
       loadingFailed:
         'An error occurred while loading your courses. Please try again later.',
-      completedSessionsHint:
-        'Completed sessions can be viewed with results on the corresponding page in the KlickerUZH management app.',
-      runningSessions: 'Running Sessions',
-      noRunningSessions: 'No running sessions',
-      plannedSessions: 'Planned Sessions',
-      noPlannedSessions: 'No planned sessions',
-      sessionStartFailed:
+      completedLiveQuizzesHint:
+        'Completed live quizzes can be viewed with results on the corresponding page in the KlickerUZH management app.',
+      runningLiveQuizzes: 'Running Live Quizzes',
+      noRunningLiveQuizzes: 'No running live quizzes',
+      plannedLiveQuizzes: 'Planned Live Quizzes',
+      noPlannedLiveQuizzes: 'No planned live quizzes',
+      liveQuizStartFailed:
         'Unfortunately, your live quiz could not be started due to an error. Please try again later.',
       pptEmbedding: 'PPT-Embedding Evaluation',
-      startSession: 'Start live quiz',
-      confirmStartSession:
+      startLiveQuiz: 'Start quiz',
+      confirmStartLiveQuiz:
         'Are you sure you want to start the following live quiz?',
-      explanationStartSession:
-        'Please note that a started live quiz is generally publicly accessible. Running sessions can be canceled or stopped using the KlickerUZH management app.',
+      explanationStartLiveQuiz:
+        'Please note that a started live quiz is generally publicly accessible. Running live quizzes can be canceled or stopped using the KlickerUZH management app.',
     },
-    session: {
-      sessionControl: 'Live Quiz Control',
-      errorLoadingSession:
+    liveQuiz: {
+      liveQuizControl: 'Live Quiz Control',
+      errorLoadingLiveQuiz:
         'Unfortunately, an error occurred while loading the live quiz. Please make sure that the quiz is still running or try again later.',
       containsNoQuestions:
         'This live quiz does not contain any questions and therefore cannot be controlled via the controller app at the moment. Please use the management app with all functionalities.',
-      sessionWithName: 'Live Quiz: {name}',
+      liveQuizWithName: 'Live Quiz: {name}',
       activeBlock: 'Active Block:',
       closeBlock: 'Close Block',
       nextBlock: 'Next Block:',
       activateBlockN: 'Activate Block {number}',
       hintAllBlocksClosed:
         'All blocks of this live quiz have already been executed and closed. The feedback channel will be closed when the quiz is ended.',
-      endSession: 'End Quiz',
+      endQuiz: 'End Quiz',
       hintLastBlock:
         'The currently running block is the last of this live quiz. After closing it, the quiz can be ended.',
     },

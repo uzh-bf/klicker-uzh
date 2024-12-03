@@ -22,10 +22,18 @@ jobs:
         uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.10.0
+          version: 9.14.3
           run_install: true
       - name: Test functions
         shell: bash
         run: |
-          cd packages/graphql
+          cd packages/prisma
+          pnpm run build
+          cd ../types
+          pnpm run build
+          cd ../util
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../graphql
           pnpm run test

@@ -2,18 +2,18 @@ import { SubscribeToMoreOptions, useMutation } from '@apollo/client'
 import { faUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChangeSessionSettingsDocument,
+  ChangeLiveQuizSettingsDocument,
   ConfusionSummary,
   DeleteFeedbackDocument,
   DeleteFeedbackResponseDocument,
   Feedback,
   FeedbackCreatedDocument,
-  GetCockpitSessionDocument,
+  GetCockpitQuizDocument,
+  LiveQuiz,
   PinFeedbackDocument,
   PublishFeedbackDocument,
   ResolveFeedbackDocument,
   RespondToFeedbackDocument,
-  Session,
 } from '@klicker-uzh/graphql/dist/ops'
 import { push } from '@socialgouv/matomo-next'
 import { H2, Switch } from '@uzh-bf/design-system'
@@ -25,8 +25,8 @@ import { useTranslations } from 'next-intl'
 import ConfusionCharts from './confusion/ConfusionCharts'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 interface Props {
-  sessionId: string
-  sessionName: string
+  quizId: string
+  liveQuizName: string
   confusionValues?: ConfusionSummary
   feedbacks?: Feedback[]
   isLiveQAEnabled: boolean
@@ -37,8 +37,8 @@ interface Props {
 }
 
 function AudienceInteraction({
-  sessionId,
-  sessionName,
+  quizId,
+  liveQuizName,
   confusionValues,
   feedbacks,
   isLiveQAEnabled,
@@ -50,26 +50,26 @@ function AudienceInteraction({
   const t = useTranslations()
 
   useEffect(() => {
-    if (!sessionId) return
+    if (!quizId) return
 
     const feedbackAdded = subscribeToMore({
       document: FeedbackCreatedDocument,
-      variables: { sessionId },
+      variables: { quizId },
       updateQuery: (
-        prev: { cockpitSession: Session },
+        prev: { cockpitQuiz: LiveQuiz },
         {
           subscriptionData,
         }: { subscriptionData: { data: { feedbackCreated: Feedback } } }
       ) => {
         if (!subscriptionData.data) return prev
         const newItem = subscriptionData.data.feedbackCreated
-        const updatedSession = {
-          ...prev.cockpitSession,
-          feedbacks: [newItem, ...(prev.cockpitSession.feedbacks ?? [])],
+        const updatedQuiz = {
+          ...prev.cockpitQuiz,
+          feedbacks: [newItem, ...(prev.cockpitQuiz.feedbacks ?? [])],
         }
 
         return {
-          cockpitSession: updatedSession,
+          cockpitQuiz: updatedQuiz,
         }
       },
     })
@@ -77,9 +77,9 @@ function AudienceInteraction({
     return () => {
       feedbackAdded && feedbackAdded()
     }
-  }, [subscribeToMore, sessionId])
+  }, [subscribeToMore, quizId])
 
-  const [changeSessionSettings] = useMutation(ChangeSessionSettingsDocument)
+  const [changeQuizSettings] = useMutation(ChangeLiveQuizSettingsDocument)
   const [publishFeedback] = useMutation(PublishFeedbackDocument)
   const [pinFeedback] = useMutation(PinFeedbackDocument)
   const [resolveFeedback] = useMutation(ResolveFeedbackDocument)
@@ -99,14 +99,14 @@ function AudienceInteraction({
             <H2>{t('manage.cockpit.liveQA')}</H2>
             <div className="flex flex-row flex-wrap items-end gap-4">
               <Link
-                href={`/quizzes/${sessionId}/lecturer`}
+                href={`/quizzes/${quizId}/lecturer`}
                 target="_blank"
                 passHref
                 legacyBehavior
               >
                 <a
                   className="inline-flex items-center gap-1"
-                  data-cy={`open-lecturer-overview-session-${sessionName}`}
+                  data-cy={`open-lecturer-overview-live-quiz-${liveQuizName}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -118,15 +118,15 @@ function AudienceInteraction({
                 data={{ cy: 'toggle-qa' }}
                 checked={isLiveQAEnabled}
                 onCheckedChange={(): void => {
-                  changeSessionSettings({
+                  changeQuizSettings({
                     variables: {
-                      id: sessionId,
+                      id: quizId,
                       isLiveQAEnabled: !isLiveQAEnabled,
                     },
                   })
                   push([
                     'trackEvent',
-                    'Running Session',
+                    'Running Live Quiz',
                     !isLiveQAEnabled
                       ? 'Feedback Channel Activated'
                       : 'Feedback Channel Deactivated',
@@ -139,15 +139,15 @@ function AudienceInteraction({
                 checked={isModerationEnabled}
                 disabled={!isLiveQAEnabled}
                 onCheckedChange={(): void => {
-                  changeSessionSettings({
+                  changeQuizSettings({
                     variables: {
-                      id: sessionId,
+                      id: quizId,
                       isModerationEnabled: !isModerationEnabled,
                     },
                   })
                   push([
                     'trackEvent',
-                    'Running Session',
+                    'Running Live Quiz',
                     'Feedback Moderation Toggled',
                     String(!isModerationEnabled),
                   ])
@@ -171,7 +171,7 @@ function AudienceInteraction({
             <div className="flex flex-1 flex-col rounded border p-4 md:flex-row md:flex-wrap print:border-0">
               <div className="flex-1">
                 <FeedbackChannel
-                  sessionName={sessionName}
+                  liveQuizName={liveQuizName}
                   feedbacks={feedbacks}
                   handleDeleteFeedback={(feedbackId: number): void => {
                     deleteFeedback({
@@ -185,19 +185,19 @@ function AudienceInteraction({
                       update(cache, res) {
                         const removedFeedback = res.data?.deleteFeedback
                         const data = cache.readQuery({
-                          query: GetCockpitSessionDocument,
-                          variables: { id: sessionId },
+                          query: GetCockpitQuizDocument,
+                          variables: { id: quizId },
                         })
 
-                        if (data?.cockpitSession && removedFeedback) {
+                        if (data?.cockpitQuiz && removedFeedback) {
                           cache.writeQuery({
-                            query: GetCockpitSessionDocument,
-                            variables: { id: sessionId },
+                            query: GetCockpitQuizDocument,
+                            variables: { id: quizId },
                             data: {
-                              cockpitSession: {
-                                ...data.cockpitSession,
+                              cockpitQuiz: {
+                                ...data.cockpitQuiz,
                                 feedbacks:
-                                  data.cockpitSession.feedbacks?.filter(
+                                  data.cockpitQuiz.feedbacks?.filter(
                                     (feedback) =>
                                       feedback.id !== removedFeedback.id
                                   ) ?? [],
@@ -207,7 +207,11 @@ function AudienceInteraction({
                         }
                       },
                     })
-                    push(['trackEvent', 'Running Session', 'Feedback Deleted'])
+                    push([
+                      'trackEvent',
+                      'Running Live Quiz',
+                      'Feedback Deleted',
+                    ])
                   }}
                   handleDeleteFeedbackResponse={(responseId: number) => {
                     deleteFeedbackResponse({
@@ -215,18 +219,18 @@ function AudienceInteraction({
                       update(cache, res) {
                         const updatedFeedback = res.data?.deleteFeedbackResponse
                         const data = cache.readQuery({
-                          query: GetCockpitSessionDocument,
-                          variables: { id: sessionId },
+                          query: GetCockpitQuizDocument,
+                          variables: { id: quizId },
                         })
 
-                        if (data?.cockpitSession && updatedFeedback) {
+                        if (data?.cockpitQuiz && updatedFeedback) {
                           cache.writeQuery({
-                            query: GetCockpitSessionDocument,
-                            variables: { id: sessionId },
+                            query: GetCockpitQuizDocument,
+                            variables: { id: quizId },
                             data: {
-                              cockpitSession: {
-                                ...data.cockpitSession,
-                                feedbacks: data.cockpitSession.feedbacks?.map(
+                              cockpitQuiz: {
+                                ...data.cockpitQuiz,
+                                feedbacks: data.cockpitQuiz.feedbacks?.map(
                                   (feedback) => {
                                     if (feedback.id === updatedFeedback.id) {
                                       return updatedFeedback
@@ -243,7 +247,7 @@ function AudienceInteraction({
 
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Response Deleted',
                     ])
                   }}
@@ -252,11 +256,11 @@ function AudienceInteraction({
                     isPinned: boolean
                   ) => {
                     pinFeedback({
-                      variables: { id: feedbackId, isPinned: isPinned },
+                      variables: { id: feedbackId, isPinned },
                     })
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Pinned',
                       String(isPinned),
                     ])
@@ -266,11 +270,11 @@ function AudienceInteraction({
                     isPublished: boolean
                   ) => {
                     publishFeedback({
-                      variables: { id: feedbackId, isPublished: isPublished },
+                      variables: { id: feedbackId, isPublished },
                     })
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Published',
                       String(isPublished),
                     ])
@@ -280,11 +284,11 @@ function AudienceInteraction({
                     isResolved: boolean
                   ) => {
                     resolveFeedback({
-                      variables: { id: feedbackId, isResolved: isResolved },
+                      variables: { id: feedbackId, isResolved },
                     })
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Resolved',
                       String(isResolved),
                     ])
@@ -301,7 +305,7 @@ function AudienceInteraction({
                     })
                     push([
                       'trackEvent',
-                      'Running Session',
+                      'Running Live Quiz',
                       'Feedback Response Added',
                       response.length,
                     ])
@@ -320,15 +324,15 @@ function AudienceInteraction({
               data={{ cy: 'toggle-gamification' }}
               checked={isConfusionFeedbackEnabled}
               onCheckedChange={(): void => {
-                changeSessionSettings({
+                changeQuizSettings({
                   variables: {
-                    id: sessionId,
+                    id: quizId,
                     isConfusionFeedbackEnabled: !isConfusionFeedbackEnabled,
                   },
                 })
                 push([
                   'trackEvent',
-                  'Running Session',
+                  'Running Live Quiz',
                   'Feedback Moderation Toggled',
                   String(!isConfusionFeedbackEnabled),
                 ])

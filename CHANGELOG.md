@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.9...v3.3.0-alpha.10) (2024-11-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure edit modal does not load in empty state while network request is ongoing ([3662247](https://github.com/uzh-bf/klicker-uzh/commit/366224710ff888eba56e878cbf3b2a336af16543))
+
+## [3.3.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.8...v3.3.0-alpha.9) (2024-11-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** sample solution for free text questions should only be required conditionally ([#4371](https://github.com/uzh-bf/klicker-uzh/issues/4371)) ([9eef146](https://github.com/uzh-bf/klicker-uzh/commit/9eef146c15a2337e4d25ba04f0fdaf7be53b9a66))
+
 ## [3.3.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.7...v3.3.0-alpha.8) (2024-11-08)
 
 
@@ -363,7 +377,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* ensure that validation in quesiton edit modal works properly ([#4251](https://github.com/uzh-bf/klicker-uzh/issues/4251)) ([5e26453](https://github.com/uzh-bf/klicker-uzh/commit/5e2645381465ccfbf26dac17d2f36b380ef9e4bf))
+* ensure that validation in question edit modal works properly ([#4251](https://github.com/uzh-bf/klicker-uzh/issues/4251)) ([5e26453](https://github.com/uzh-bf/klicker-uzh/commit/5e2645381465ccfbf26dac17d2f36b380ef9e4bf))
 * require that the user specifies sample solutions for open questions when activated ([#4252](https://github.com/uzh-bf/klicker-uzh/issues/4252)) ([0c5aa6b](https://github.com/uzh-bf/klicker-uzh/commit/0c5aa6b1c15e00813f4485e9380d53728ca527c7))
 
 ## [3.2.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.2.0-alpha.19...v3.2.0-alpha.20) (2024-09-06)

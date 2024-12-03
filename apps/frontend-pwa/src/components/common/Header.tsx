@@ -22,12 +22,14 @@ interface HeaderProps {
   course?:
     | Partial<Course>
     | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
+  previewMode?: boolean
 }
 
 function Header({
   participant,
   title,
   course,
+  previewMode = false,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const { pathname, asPath, query } = router
@@ -65,38 +67,40 @@ function Header({
       )}
 
       <div className="flex flex-row items-center gap-2 sm:gap-4">
-        <div className="flex flex-row rounded bg-transparent text-black">
-          <Select
-            disabled={changingLocale}
-            value={router.locale}
-            items={[
-              {
-                value: LocaleType.De,
-                label: 'DE',
-                data: { cy: 'language-de' },
-              },
-              {
-                value: LocaleType.En,
-                label: 'EN',
-                data: { cy: 'language-en' },
-              },
-            ]}
-            onChange={(newValue: string) => {
-              changeParticipantLocale({
-                variables: { locale: newValue as LocaleType },
-              })
-              router.push({ pathname, query }, asPath, {
-                locale: newValue,
-              })
-            }}
-            className={{
-              trigger: 'p-0 px-1 text-white focus:ring-0',
-            }}
-            data={{ cy: 'language-select' }}
-            basic
-            contentPosition="popper"
-          />
-        </div>
+        {!previewMode ? (
+          <div className="flex flex-row rounded bg-transparent text-black">
+            <Select
+              disabled={changingLocale}
+              value={router.locale}
+              items={[
+                {
+                  value: LocaleType.De,
+                  label: 'DE',
+                  data: { cy: 'language-de' },
+                },
+                {
+                  value: LocaleType.En,
+                  label: 'EN',
+                  data: { cy: 'language-en' },
+                },
+              ]}
+              onChange={(newValue: string) => {
+                changeParticipantLocale({
+                  variables: { locale: newValue as LocaleType },
+                })
+                router.push({ pathname, query }, asPath, {
+                  locale: newValue,
+                })
+              }}
+              className={{
+                trigger: 'p-0 px-1 text-white focus:ring-0',
+              }}
+              data={{ cy: 'language-select' }}
+              basic
+              contentPosition="popper"
+            />
+          </div>
+        ) : null}
         {/* {hasSeenSurvey === 'false' && (
           <Link
             href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"
@@ -149,7 +153,7 @@ function Header({
               </Button>
             </Link>
           ))
-        ) : (
+        ) : !previewMode ? (
           <Link href="/login">
             <Button
               className={{ root: 'bg-slate-800 text-white' }}
@@ -158,7 +162,7 @@ function Header({
               {t('shared.generic.login')}
             </Button>
           </Link>
-        )}
+        ) : null}
         {participant && (!participant?.avatar || !participant?.email) && (
           <Link href="/editProfile">
             <Button

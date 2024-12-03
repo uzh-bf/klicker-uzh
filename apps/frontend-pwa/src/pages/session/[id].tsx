@@ -2,77 +2,76 @@ import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion, faRankingStar } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementBlock,
   ElementType,
   GetFeedbacksDocument,
-  GetRunningSessionDocument,
-  RunningSessionUpdatedDocument,
+  GetRunningLiveQuizDocument,
+  LiveQuiz,
+  RunningLiveQuizUpdatedDocument,
   SelfDocument,
-  Session,
-  SessionBlock,
 } from '@klicker-uzh/graphql/dist/ops'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { GetServerSidePropsContext } from 'next'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { useQuery } from '@apollo/client'
+import { SubscribeToMoreOptions, useQuery } from '@apollo/client'
+import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
-import SessionLeaderboard from '../../components/common/SessionLeaderboard'
-import FeedbackArea from '../../components/liveSession/FeedbackArea'
-import QuestionArea from '../../components/liveSession/QuestionArea'
+import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
+import FeedbackArea from '../../components/liveQuiz/FeedbackArea'
+import QuestionArea from '../../components/liveQuiz/QuestionArea'
 
-interface SubscriberProps {
+function Subscriber({
+  id,
+  subscribeToMore,
+}: {
   id: string
-  subscribeToMore: any
-}
-
-function Subscriber({ id, subscribeToMore }: SubscriberProps) {
+  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+}) {
   useEffect(() => {
     subscribeToMore({
-      document: RunningSessionUpdatedDocument,
+      document: RunningLiveQuizUpdatedDocument,
       variables: {
-        sessionId: id,
+        quizId: id,
       },
       updateQuery: (
-        prev: { session: Session },
+        prev: { studentLiveQuiz: LiveQuiz },
         {
           subscriptionData,
         }: {
-          subscriptionData: { data: { runningSessionUpdated: SessionBlock } }
+          subscriptionData: { data: { runningLiveQuizUpdated: ElementBlock } }
         }
       ) => {
         if (!subscriptionData.data) return prev
         return Object.assign({}, prev, {
-          session: {
-            ...prev.session,
-            activeBlock: subscriptionData.data.runningSessionUpdated,
+          studentLiveQuiz: {
+            ...prev.studentLiveQuiz,
+            activeBlock: subscriptionData.data.runningLiveQuizUpdated,
           },
         })
       },
     })
   }, [id, subscribeToMore])
 
-  return <div></div>
+  return <div />
 }
 
-interface Props {
-  id: string
-}
-
-function Index({ id }: Props) {
+function Index({ id }: { id: string }) {
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
   const t = useTranslations()
 
-  const { data, subscribeToMore } = useQuery(GetRunningSessionDocument, {
+  const { data, subscribeToMore } = useQuery(GetRunningLiveQuizDocument, {
     variables: { id },
   })
 
   const { data: selfData } = useQuery(SelfDocument)
 
-  if (!data?.session) {
+  if (!data?.studentLiveQuiz) {
     return (
       <Layout>
         <Loader />
@@ -83,6 +82,8 @@ function Index({ id }: Props) {
   const {
     activeBlock,
     displayName,
+    description,
+    beforeFirstBlock,
     isLiveQAEnabled,
     isConfusionFeedbackEnabled,
     isModerationEnabled,
@@ -90,7 +91,7 @@ function Index({ id }: Props) {
     namespace,
     status,
     course,
-  } = data.session
+  } = data.studentLiveQuiz
 
   const handleNewResponse = async (
     type: ElementType,
@@ -126,7 +127,7 @@ function Index({ id }: Props) {
       return null
     }
     try {
-      const response = await fetch(
+      await fetch(
         process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
         requestOptions
       )
@@ -147,7 +148,7 @@ function Index({ id }: Props) {
       value: 'questions',
       label: t('shared.generic.questions'),
       icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
-      unseenItems: activeBlock?.instances?.length,
+      unseenItems: activeBlock?.elements?.length,
       data: { cy: 'mobile-menu-questions' },
     },
   ]
@@ -190,57 +191,26 @@ function Index({ id }: Props) {
           )}
         >
           {!activeBlock ? (
-            isGamificationEnabled ? (
+            beforeFirstBlock &&
+            description !== null &&
+            typeof description !== 'undefined' ? (
+              <div data-cy="live-quiz-description">
+                <H3>{displayName}</H3>
+                <Markdown content={description} />
+              </div>
+            ) : isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
-                <SessionLeaderboard sessionId={id} />
+                <LiveQuizLeaderboard quizId={id} />
               </div>
             ) : (
-              <div>{t('pwa.session.noActiveQuestion')}</div>
+              <div>{t('pwa.liveQuiz.noActiveQuestion')}</div>
             )
           ) : (
             <QuestionArea
               expiresAt={activeBlock.expiresAt}
-              questions={
-                activeBlock.instances
-                  ?.map((question) => {
-                    const questionData = question.questionData
-
-                    // filter out question data types that are not supported by live session
-                    if (
-                      !questionData ||
-                      questionData?.__typename === 'FlashcardQuestionData' ||
-                      questionData?.__typename === 'ContentQuestionData'
-                    ) {
-                      return null
-                    }
-
-                    if (questionData.__typename === 'FreeTextQuestionData') {
-                      return {
-                        ...questionData,
-                        instanceId: question.id,
-                      }
-                    } else if (
-                      questionData.__typename === 'NumericalQuestionData'
-                    ) {
-                      return {
-                        ...questionData,
-                        instanceId: question.id,
-                      }
-                    } else if (
-                      questionData.__typename === 'ChoicesQuestionData'
-                    ) {
-                      return {
-                        ...questionData,
-                        instanceId: question.id,
-                      }
-                    } else {
-                      return null
-                    }
-                  })
-                  .filter((q) => q !== null) ?? []
-              }
+              instances={activeBlock.elements ?? []}
               handleNewResponse={handleNewResponse}
-              sessionId={id}
+              quizId={id}
               timeLimit={activeBlock?.timeLimit ?? undefined}
               execution={activeBlock?.execution ?? 0}
             />
@@ -254,7 +224,7 @@ function Index({ id }: Props) {
               activeMobilePage === 'leaderboard' && 'block md:hidden'
             )}
           >
-            <SessionLeaderboard sessionId={id} />
+            <LiveQuizLeaderboard quizId={id} />
           </div>
         )}
 
@@ -291,7 +261,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   await Promise.all([
     apolloClient.query({
-      query: GetRunningSessionDocument,
+      query: GetRunningLiveQuizDocument,
       variables: {
         id: ctx.query?.id as string,
       },
@@ -299,7 +269,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     apolloClient.query({
       query: GetFeedbacksDocument,
       variables: {
-        sessionId: ctx.query?.id as string,
+        quizId: ctx.query?.id as string,
+        skip: !ctx.query?.id,
       },
     }),
   ])

@@ -16,7 +16,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
-import EditorField from '../../sessions/creation/EditorField'
+import EditorField from '../../activities/creation/EditorField'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
 import CourseDateChangeMonitor from './CourseDateChangeMonitor'
 import GamificationSettingMonitor from './GamificationSettingMonitor'
@@ -239,7 +239,7 @@ function CourseManipulationModal({
                 />
                 <FormikTextField
                   name="displayName"
-                  label={t('manage.sessionForms.displayName')}
+                  label={t('manage.activityWizard.displayName')}
                   placeholder={t('manage.courseList.courseDisplayName')}
                   tooltip={t('manage.courseList.courseDisplayNameTooltip')}
                   className={{ root: 'w-full md:w-1/2' }}

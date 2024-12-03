@@ -1,7 +1,0 @@
-query GetUnassignedSessions {
-  unassignedSessions {
-    id
-    name
-    status
-  }
-}

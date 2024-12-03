@@ -15,27 +15,25 @@ function SCEvaluation({ evaluation }: Props) {
   return (
     <div className="space-y-2">
       <div className="font-bold">{t('pwa.practiceQuiz.othersAnswered')}</div>
-      {Object.entries(evaluation.choices as Record<string, number>).map(
-        ([ix, value]) => (
-          <Progress
-            isMaxVisible={false}
-            className={{
-              root: twMerge(
-                'h-8',
-                parseInt(ix) == correctIx && 'font-bold text-green-600'
-              ),
-              indicator: twMerge(
-                'h-8',
-                parseInt(ix) == correctIx ? 'bg-green-600' : 'bg-gray-400'
-              ),
-            }}
-            key={`choice-statistic-${ix}-${value}`}
-            value={(value / (evaluation.numAnswers ?? 1)) * 100}
-            max={100}
-            formatter={(v) => v.toFixed() + '%'}
-          />
-        )
-      )}
+      {evaluation.choices?.map((choice) => (
+        <Progress
+          isMaxVisible={false}
+          className={{
+            root: twMerge(
+              'h-8',
+              choice.ix == correctIx && 'font-bold text-green-600'
+            ),
+            indicator: twMerge(
+              'h-8',
+              choice.ix == correctIx ? 'bg-green-600' : 'bg-gray-400'
+            ),
+          }}
+          key={`choice-statistic-${choice.ix}-${choice.count}`}
+          value={(choice.count / (evaluation.numAnswers ?? 1)) * 100}
+          max={100}
+          formatter={(v) => v.toFixed() + '%'}
+        />
+      ))}
     </div>
   )
 }

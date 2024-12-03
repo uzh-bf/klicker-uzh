@@ -9,7 +9,7 @@ import IndividualLeaderboard, {
 } from './IndividualLeaderboard'
 
 interface CourseGamificationInfosProps {
-  course: Omit<Course, 'leaderboard' | 'sessions'> & {
+  course: Omit<Course, 'leaderboard' | 'liveQuizzes'> & {
     leaderboard?: InvididualLeaderboardEntry[] | null
   }
   tabValue: string

@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client'
 import {
   GetSingleCourseDocument,
-  GroupActivityStatus,
   OpenGroupActivityDocument,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -40,7 +40,7 @@ function GroupActivityStartingModal({
         __typename: 'Mutation',
         openGroupActivity: {
           id: activityId,
-          status: GroupActivityStatus.Published,
+          status: PublicationStatus.Published,
           scheduledStartAt: new Date(),
           __typename: 'GroupActivity',
         },

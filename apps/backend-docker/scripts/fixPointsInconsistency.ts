@@ -12,17 +12,17 @@ const redisExec = new Redis({
   tls: process.env.REDIS_TLS ? {} : undefined,
 })
 
-// deduct points from course leaderboard entries: 1x points in sessionLB
+// deduct points from course leaderboard entries: 1x points in quizLB
 const FAILURES = 1
 
 const COURSE_ID = ''
-const SESSION_ID = ''
+const QUIZ_ID = ''
 
-const sessionLB = await redisExec.hgetall(`s:${SESSION_ID}:lb`)
-const sessionXP = await redisExec.hgetall(`s:${SESSION_ID}:xp`)
+const quizLB = await redisExec.hgetall(`lq:${QUIZ_ID}:lb`)
+const quizXP = await redisExec.hgetall(`lq:${QUIZ_ID}:xp`)
 
 const results = await Promise.allSettled(
-  Object.entries(sessionLB).map(async ([participantId, score]) => {
+  Object.entries(quizLB).map(async ([participantId, score]) => {
     const lbEntry = await prisma.leaderboardEntry.findFirst({
       where: {
         participantId,

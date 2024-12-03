@@ -1,53 +1,60 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  ActivateSessionBlockDocument,
-  DeactivateSessionBlockDocument,
-  EndSessionDocument,
-  GetCockpitSessionDocument,
-  GetUserRunningSessionsDocument,
-  GetUserSessionsDocument,
+  ActivateLiveQuizBlockDocument,
+  DeactivateLiveQuizBlockDocument,
+  EndLiveQuizDocument,
+  GetCockpitQuizDocument,
+  GetUserLiveQuizzesDocument,
+  GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import Layout from '../../../components/Layout'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
-import SessionTimeline from '../../../components/sessions/cockpit/SessionTimeline'
+import Layout from '../../../components/Layout'
+import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
 
 function Cockpit() {
   const router = useRouter()
   const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
-  const [activateSessionBlock, { loading: activatingBlock }] = useMutation(
-    ActivateSessionBlockDocument
+  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
+    ActivateLiveQuizBlockDocument
   )
-  const [deactivateSessionBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateSessionBlockDocument
+  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
+    DeactivateLiveQuizBlockDocument
   )
-  const [endSession, { loading: endingLiveQuiz }] = useMutation(
-    EndSessionDocument,
+  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
+    EndLiveQuizDocument,
     {
+      update(cache, res) {
+        const data = cache.readQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserRunningLiveQuizzesDocument,
+          data: {
+            userRunningLiveQuizzes:
+              data?.userRunningLiveQuizzes?.filter(
+                (q) => q.id !== res.data?.endLiveQuiz?.id
+              ) ?? [],
+          },
+        })
+      },
       refetchQueries: [
         {
-          query: GetUserRunningSessionsDocument,
-        },
-        {
-          query: GetUserSessionsDocument,
+          query: GetUserLiveQuizzesDocument,
         },
       ],
     }
   )
 
-  // TODO: when refactoring this code to be compatible with the new live quiz setup,
-  // think about modifying this logic to only refetch the required live quiz elements
-  // regularly (feedbacks should be handled entirely through subscriptions, etc.)
   const {
     loading: cockpitLoading,
-    error: cockpitError,
     data: cockpitData,
     subscribeToMore,
-  } = useQuery(GetCockpitSessionDocument, {
+  } = useQuery(GetCockpitQuizDocument, {
     variables: {
       id: router.query.id as string,
     },
@@ -56,19 +63,12 @@ function Cockpit() {
   })
 
   // data has not been received yet
-  if (cockpitLoading)
+  if (cockpitLoading || !cockpitData?.cockpitQuiz)
     return (
       <Layout>
         <Loader />
       </Layout>
     )
-
-  // loading is finished, but was not successful
-  if (!cockpitData?.cockpitSession || cockpitError) {
-    // TODO fix router instance not available error
-    // router.push('/404')
-    return null
-  }
 
   const {
     id,
@@ -86,33 +86,33 @@ function Cockpit() {
     blocks,
     confusionSummary,
     feedbacks,
-  } = cockpitData.cockpitSession
+  } = cockpitData.cockpitQuiz
 
   return (
     <Layout>
       <div className="mb-8 print:hidden">
-        <SessionTimeline
+        <LiveQuizTimeline
           blocks={blocks ?? []}
-          sessionName={name}
-          handleEndSession={() => {
-            endSession({ variables: { id: id } })
+          quizName={name}
+          handleEndLiveQuiz={() => {
+            endLiveQuiz({ variables: { id: id } })
             router.push('/quizzes')
           }}
           handleOpenBlock={(blockId: number) => {
-            activateSessionBlock({
-              variables: { sessionId: id, sessionBlockId: blockId },
+            activateLiveQuizBlock({
+              variables: { quizId: id, blockId },
             })
           }}
           handleCloseBlock={(blockId: number) => {
-            deactivateSessionBlock({
-              variables: { sessionId: id, sessionBlockId: blockId },
+            deactivateLiveQuizBlock({
+              variables: { quizId: id, blockId },
             })
           }}
           handleTogglePublicEvaluation={() =>
             setEvaluationPublic(!isEvaluationPublic)
           }
           isEvaluationPublic={isEvaluationPublic}
-          sessionId={id}
+          quizId={id}
           startedAt={startedAt}
           loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
         />
@@ -126,8 +126,8 @@ function Cockpit() {
         isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isModerationEnabled={isModerationEnabled}
         isGamificationEnabled={isGamificationEnabled}
-        sessionId={id}
-        sessionName={name}
+        quizId={id}
+        liveQuizName={name}
       />
     </Layout>
   )

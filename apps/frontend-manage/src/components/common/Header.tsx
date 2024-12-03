@@ -6,7 +6,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetUserRunningSessionsDocument,
+  GetUserRunningLiveQuizzesDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Navigation } from '@uzh-bf/design-system'
@@ -25,7 +25,8 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
-  const { data } = useQuery(GetUserRunningSessionsDocument)
+  const { data } = useQuery(GetUserRunningLiveQuizzesDocument)
+  const quizzes = data?.userRunningLiveQuizzes
 
   const navigationItems = [
     {
@@ -36,9 +37,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
     },
     {
       href: '/quizzes',
-      label: t('manage.general.quizzes'),
+      label: t('manage.general.liveQuizzes'),
       active: router.pathname == '/quizzes',
-      cy: 'quizzes',
+      cy: 'live-quizzes',
     },
     {
       href: '/courses',
@@ -100,22 +101,20 @@ function Header({ user }: HeaderProps): React.ReactElement {
             className={{
               root: 'group hidden h-9 w-9 md:block',
               icon: twMerge(
-                data?.userRunningSessions?.length !== 0 && 'text-green-600'
+                'text-uzh-grey-80',
+                quizzes?.length !== 0 && 'text-green-600'
               ),
               disabled: '!text-gray-400',
             }}
-            disabled={data?.userRunningSessions?.length === 0}
+            disabled={quizzes?.length === 0}
           >
-            {data?.userRunningSessions &&
-            data?.userRunningSessions.length > 0 ? (
-              data?.userRunningSessions.map((session) => {
+            {quizzes && quizzes.length > 0 ? (
+              quizzes.map((quiz) => {
                 return (
                   <Navigation.DropdownItem
-                    key={session.id}
-                    title={session.name}
-                    onClick={() =>
-                      router.push(`/quizzes/${session.id}/cockpit`)
-                    }
+                    key={quiz.id}
+                    title={quiz.name}
+                    onClick={() => router.push(`/quizzes/${quiz.id}/cockpit`)}
                     className={{ title: 'text-base font-bold', root: 'p-2' }}
                   />
                 )

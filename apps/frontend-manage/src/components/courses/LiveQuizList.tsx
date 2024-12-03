@@ -1,47 +1,40 @@
-import { Session, SessionStatus } from '@klicker-uzh/graphql/dist/ops'
+import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { sort } from 'remeda'
-import LiveQuizElement from './LiveQuizElement'
+import LiveQuizElement, { LiveQuizListElementType } from './LiveQuizElement'
 
-const sortingOrderSessions: Record<string, number> = {
-  [SessionStatus.Running]: 0,
-  [SessionStatus.Scheduled]: 1,
-  [SessionStatus.Prepared]: 2,
-  [SessionStatus.Completed]: 3,
+const sortingOrderLiveQuizzes: Record<PublicationStatus, number> = {
+  [PublicationStatus.Published]: 0,
+  [PublicationStatus.Scheduled]: 1,
+  [PublicationStatus.Draft]: 2,
+  [PublicationStatus.Ended]: 3,
+  [PublicationStatus.Graded]: 4,
 }
 
-interface LiveQuizListProps {
-  sessions: Pick<
-    Session,
-    | 'id'
-    | 'status'
-    | 'name'
-    | 'numOfBlocks'
-    | 'numOfQuestions'
-    | 'isGamificationEnabled'
-    | 'accessMode'
-  >[]
-}
-
-function LiveQuizList({ sessions }: LiveQuizListProps) {
+function LiveQuizList({
+  liveQuizzes,
+}: {
+  liveQuizzes: LiveQuizListElementType[]
+}) {
   const t = useTranslations()
 
   return (
     <div className="">
-      {sessions && sessions.length > 0 ? (
+      {liveQuizzes && liveQuizzes.length > 0 ? (
         <div className="flex flex-col gap-2">
-          {sort(sessions, (a, b) => {
+          {sort(liveQuizzes, (a, b) => {
             if (!a.status || !b.status) return 0
 
             return (
-              sortingOrderSessions[a.status] - sortingOrderSessions[b.status]
+              sortingOrderLiveQuizzes[a.status] -
+              sortingOrderLiveQuizzes[b.status]
             )
-          }).map((session) => (
-            <LiveQuizElement session={session} key={session.id} />
+          }).map((quiz) => (
+            <LiveQuizElement quiz={quiz} key={quiz.id} />
           ))}
         </div>
       ) : (
-        <div>{t('manage.course.noSessions')}</div>
+        <div>{t('manage.course.noLiveQuizzes')}</div>
       )}
     </div>
   )

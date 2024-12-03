@@ -122,7 +122,7 @@ describe('Create and solve a group activity', () => {
       title: SCQuestionTitle,
       content: SCQuestion,
       choices: [{ content: '50%', correct: true }, { content: '100%' }],
-      multiplier: messages.manage.sessionForms.multiplier2,
+      multiplier: messages.manage.activityWizard.multiplier2,
     })
 
     // MC question
@@ -162,7 +162,7 @@ describe('Create and solve a group activity', () => {
         { min: '0', max: '25' },
         { min: '75', max: '100' },
       ],
-      multiplier: messages.manage.sessionForms.multiplier3,
+      multiplier: messages.manage.activityWizard.multiplier3,
     })
 
     // FT question
@@ -189,7 +189,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
@@ -198,7 +198,7 @@ describe('Create and solve a group activity', () => {
       .realClick()
       .type(activityTask)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
@@ -207,18 +207,18 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier1)
+      .contains(messages.manage.activityWizard.multiplier1)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier2}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier2
+      messages.manage.activityWizard.multiplier2
     )
     cy.get('[data-cy="select-start-date"]').click().type(activityStart)
     cy.get('[data-cy="select-end-date"]').click().type(activityEnd)
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Clues
@@ -226,7 +226,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="add-group-activity-clue"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.textClue)
+      .contains(messages.manage.activityWizard.textClue)
     cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName1)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
@@ -242,12 +242,12 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="add-group-activity-clue"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.textClue)
+      .contains(messages.manage.activityWizard.textClue)
     cy.get('[data-cy="group-activity-clue-type"]').click()
     cy.get('[data-cy="group-activity-clue-type-number"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.numericalClue)
+      .contains(messages.manage.activityWizard.numericalClue)
     cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName2)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
@@ -266,12 +266,12 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="add-group-activity-clue"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.textClue)
+      .contains(messages.manage.activityWizard.textClue)
     cy.get('[data-cy="group-activity-clue-type"]').click()
     cy.get('[data-cy="group-activity-clue-type-number"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.numericalClue)
+      .contains(messages.manage.activityWizard.numericalClue)
     cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName3)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
@@ -306,12 +306,12 @@ describe('Create and solve a group activity', () => {
         .should('contain', title.substring(0, 20))
     })
 
-    cy.get('[data-cy="back-session-creation"]').click()
+    cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(activityName).should('exist')
   })
@@ -386,13 +386,13 @@ describe('Create and solve a group activity', () => {
     // fill out the settings of the group activity
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.multiplier2)
+      .contains(messages.manage.activityWizard.multiplier2)
     cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
-      `[data-cy="select-multiplier-${messages.manage.sessionForms.multiplier4}"]`
+      `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
     ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
-      messages.manage.sessionForms.multiplier4
+      messages.manage.activityWizard.multiplier4
     )
     cy.get('[data-cy="select-start-date"]').click().type(runningActivityStart)
     cy.get('[data-cy="select-end-date"]').click().type(runningActivityEnd)
@@ -433,12 +433,12 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="add-group-activity-clue"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.textClue)
+      .contains(messages.manage.activityWizard.textClue)
     cy.get('[data-cy="group-activity-clue-type"]').click()
     cy.get('[data-cy="group-activity-clue-type-number"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
-      .contains(messages.manage.sessionForms.numericalClue)
+      .contains(messages.manage.activityWizard.numericalClue)
     cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName5)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
@@ -499,7 +499,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
-    cy.get('[data-cy="load-session-list"]').click()
+    cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(runningActivityName).should('exist')
   })

@@ -1,3 +1,0 @@
-query GetSessionHMAC($id: String!) {
-  sessionHMAC(id: $id)
-}

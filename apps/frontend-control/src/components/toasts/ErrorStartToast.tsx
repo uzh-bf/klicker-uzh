@@ -17,7 +17,7 @@ function ErrorStartToast({ open, setOpen }: ErrorStartToastProps) {
       type="error"
       duration={5000}
     >
-      {t('control.course.sessionStartFailed')}
+      {t('control.course.liveQuizStartFailed')}
     </Toast>
   )
 }
