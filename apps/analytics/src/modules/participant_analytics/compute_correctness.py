@@ -83,6 +83,11 @@ def compute_correctness_columns(df_element_instances, row):
         return "INCORRECT"
 
     elif element_instance["type"] == "FREE_TEXT":
+        # if no sample solution is specified, automatically grade as correct
+        if "solutions" not in options:
+            return "CORRECT"
+
+        # otherwise, check if the response (ignoring capitalization) is included in the list of solutions
         response_value = response["value"]
         solutions = list(
             map(lambda solution: solution.strip().lower(), options["solutions"])
