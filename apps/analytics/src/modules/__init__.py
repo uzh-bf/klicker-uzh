@@ -1,1 +1,2 @@
 from .participant_analytics import compute_correctness, get_participant_responses
+from .aggregated_analytics import compute_aggregated_analytics
