@@ -18,9 +18,9 @@ import {
 import {
   ElementInstanceResults,
   ElementResultsChoices,
+  ElementResultsFlashcard,
   ElementResultsOpen,
   FlashcardCorrectness,
-  FlashcardResults,
   SingleQuestionResponse,
   SingleQuestionResponseChoices,
   SingleQuestionResponseFlashcard,
@@ -31,9 +31,11 @@ import dayjs from 'dayjs'
 import { createHash } from 'node:crypto'
 import { isDeepEqual, prop, sortBy, toLowerCase } from 'remeda'
 import {
-  evaluateAnswerCorrectness,
+  evaluateChoicesAnswerCorrectness,
+  evaluateFreeTextAnswerCorrectness,
+  evaluateNumericalAnswerCorrectness,
   updateSpacedRepetition,
-} from '../services/practiceQuizzes'
+} from '../services/stacks'
 
 // TODO: once available, update this script with the helper functions from the stacks service
 const POINTS_PER_INSTANCE = 10
@@ -288,7 +290,7 @@ async function checkAndUpdateInstance({
             streak: acc.streak,
             grade: 1,
           })
-          acc.eFactor = newValues.eFactor
+          acc.eFactor = newValues.efactor
           acc.interval = newValues.interval
           acc.nextDueAt = dayjs(detail.createdAt)
             .add(acc.interval, 'day')
@@ -351,7 +353,7 @@ async function checkAndUpdateInstance({
         eFactor: number
         interval: number
         nextDueAt: Date | undefined
-        aggResponses: FlashcardResults
+        aggResponses: ElementResultsFlashcard
       }>(
         (acc, detail) => {
           const correctness = (
@@ -383,7 +385,7 @@ async function checkAndUpdateInstance({
                   ? 0.5
                   : 0,
           })
-          acc.eFactor = updatedRepetition.eFactor
+          acc.eFactor = updatedRepetition.efactor
           acc.interval = updatedRepetition.interval
           acc.nextDueAt = dayjs(detail.createdAt)
             .add(acc.interval, 'day')
@@ -413,7 +415,7 @@ async function checkAndUpdateInstance({
           nextDueAt: undefined,
           aggResponses: {
             ...emptyInstanceResults,
-          } as FlashcardResults,
+          } as ElementResultsFlashcard,
         }
       )
 
@@ -452,11 +454,11 @@ async function checkAndUpdateInstance({
       lastAnsweredAt = lastDetail.createdAt
 
       // evaluate first and last answer correctness
-      const firstCorrect = evaluateAnswerCorrectness({
+      const firstCorrect = evaluateChoicesAnswerCorrectness({
         elementData: instance.elementData,
         response: firstResponse,
       })
-      const lastCorrect = evaluateAnswerCorrectness({
+      const lastCorrect = evaluateChoicesAnswerCorrectness({
         elementData: instance.elementData,
         response: lastResponse,
       })
@@ -497,7 +499,7 @@ async function checkAndUpdateInstance({
             !instance.elementData.hasSampleSolution &&
             instance.elementType === ElementType.FREE_TEXT
               ? 1
-              : (evaluateAnswerCorrectness({
+              : (evaluateChoicesAnswerCorrectness({
                   elementData: instance.elementData,
                   response: detail.response,
                 }) ?? 0)
@@ -573,7 +575,7 @@ async function checkAndUpdateInstance({
             streak: acc.correctCountStreak,
             grade: correctness,
           })
-          acc.eFactor = newValues.eFactor
+          acc.eFactor = newValues.efactor
           acc.interval = newValues.interval
           acc.nextDueAt = dayjs(detail.createdAt)
             .add(acc.interval, 'day')
@@ -670,11 +672,11 @@ async function checkAndUpdateInstance({
       lastAnsweredAt = lastDetail.createdAt
 
       // evaluate first and last answer correctness
-      const firstCorrect = evaluateAnswerCorrectness({
+      const firstCorrect = evaluateNumericalAnswerCorrectness({
         elementData: instance.elementData,
         response: firstResponse,
       })
-      const lastCorrect = evaluateAnswerCorrectness({
+      const lastCorrect = evaluateNumericalAnswerCorrectness({
         elementData: instance.elementData,
         response: lastResponse,
       })
@@ -712,7 +714,7 @@ async function checkAndUpdateInstance({
         (acc, detail) => {
           // compute correctness
           const correctness =
-            evaluateAnswerCorrectness({
+            evaluateNumericalAnswerCorrectness({
               elementData: instance.elementData,
               response: detail.response,
             }) ?? 0
@@ -778,7 +780,7 @@ async function checkAndUpdateInstance({
             streak: acc.correctCountStreak,
             grade: correctness,
           })
-          acc.eFactor = newValues.eFactor
+          acc.eFactor = newValues.efactor
           acc.interval = newValues.interval
           acc.nextDueAt = dayjs(detail.createdAt)
             .add(acc.interval, 'day')
@@ -902,12 +904,12 @@ async function checkAndUpdateInstance({
       lastAnsweredAt = lastDetail.createdAt
 
       // evaluate first and last answer correctness
-      const firstCorrect = evaluateAnswerCorrectness({
+      const firstCorrect = evaluateFreeTextAnswerCorrectness({
         elementData: instance.elementData,
         response: firstResponse,
         treatFTDefaultCorrect: true,
       })
-      const lastCorrect = evaluateAnswerCorrectness({
+      const lastCorrect = evaluateFreeTextAnswerCorrectness({
         elementData: instance.elementData,
         response: lastResponse,
         treatFTDefaultCorrect: true,
@@ -946,7 +948,7 @@ async function checkAndUpdateInstance({
         (acc, detail) => {
           // compute correctness
           const correctness =
-            evaluateAnswerCorrectness({
+            evaluateFreeTextAnswerCorrectness({
               elementData: instance.elementData,
               response: detail.response,
               treatFTDefaultCorrect: true,
@@ -1013,7 +1015,7 @@ async function checkAndUpdateInstance({
             streak: acc.correctCountStreak,
             grade: correctness,
           })
-          acc.eFactor = newValues.eFactor
+          acc.eFactor = newValues.efactor
           acc.interval = newValues.interval
           acc.nextDueAt = dayjs(detail.createdAt)
             .add(acc.interval, 'day')
@@ -1356,7 +1358,8 @@ function computeDetailUpdate({
       },
       data: {
         score: newValues.score,
-        pointsAwarded: newValues.pointsAwarded,
+        pointsAwarded:
+          detail.pointsAwarded === null ? undefined : newValues.pointsAwarded,
         xpAwarded: newValues.xpAwarded,
         timeSpent: newValues.timeSpent,
       },
