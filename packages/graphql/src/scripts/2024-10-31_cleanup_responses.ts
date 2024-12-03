@@ -159,7 +159,6 @@ async function checkAndUpdateInstance({
       {
         response: QuestionResponse
         details: QuestionResponseDetail[]
-        participationActive: boolean
       }
     >
   >((acc, response) => {
@@ -177,7 +176,6 @@ async function checkAndUpdateInstance({
     acc[response.participantId] = {
       response,
       details: sortBy(responseDetails, [prop('createdAt'), 'asc']),
-      participationActive: response.participation?.isActive ?? false,
     }
     return acc
   }, {})
@@ -196,14 +194,13 @@ async function checkAndUpdateInstance({
   let instanceUniqueParticipantCount = 0
   let instanceAverageTimeSpent: number | undefined = undefined
 
-  for (const [
-    participantId,
-    { response, details, participationActive },
-  ] of Object.entries(participantResponses)) {
+  for (const [participantId, { response, details }] of Object.entries(
+    participantResponses
+  )) {
     // initialize fields for question response
     let trialsCount = 0
     let totalScore = 0
-    let totalPointsAwarded = 0
+    let totalPointsAwarded: number | undefined = undefined
     let totalXpAwarded = 0
     let averageTimeSpent = 0
     let lastAwardedAt: Date | undefined = undefined
@@ -477,7 +474,7 @@ async function checkAndUpdateInstance({
 
       const newValues = details.reduce<{
         totalScore: number
-        totalPointsAwarded: number
+        totalPointsAwarded: number | undefined
         totalXpAwarded: number
         lastAwardedAt: Date | undefined
         lastXpAwardedAt: Date | undefined
@@ -549,8 +546,8 @@ async function checkAndUpdateInstance({
                 )
               : true
 
-          if (newPoints && participationActive) {
-            acc.totalPointsAwarded += score
+          if (newPoints && detail.pointsAwarded !== null) {
+            acc.totalPointsAwarded = (acc.totalPointsAwarded ?? 0) + score
             acc.lastAwardedAt = detail.createdAt
           }
           if (newXP) {
@@ -606,7 +603,7 @@ async function checkAndUpdateInstance({
             detail,
             newValues: {
               score,
-              pointsAwarded: participationActive ? score : undefined,
+              pointsAwarded: score,
               xpAwarded: xp,
               timeSpent: detail.timeSpent,
             },
@@ -619,7 +616,7 @@ async function checkAndUpdateInstance({
         },
         {
           totalScore: 0,
-          totalPointsAwarded: 0,
+          totalPointsAwarded: undefined,
           totalXpAwarded: 0,
           lastAwardedAt: undefined,
           lastXpAwardedAt: undefined,
@@ -695,7 +692,7 @@ async function checkAndUpdateInstance({
 
       const newValues = details.reduce<{
         totalScore: number
-        totalPointsAwarded: number
+        totalPointsAwarded: number | undefined
         totalXpAwarded: number
         lastAwardedAt: Date | undefined
         lastXpAwardedAt: Date | undefined
@@ -764,8 +761,8 @@ async function checkAndUpdateInstance({
                 )
               : true
 
-          if (newPoints && participationActive) {
-            acc.totalPointsAwarded += score
+          if (newPoints && detail.pointsAwarded !== null) {
+            acc.totalPointsAwarded = (acc.totalPointsAwarded ?? 0) + score
             acc.lastAwardedAt = detail.createdAt
           }
           if (newXP) {
@@ -851,7 +848,7 @@ async function checkAndUpdateInstance({
         },
         {
           totalScore: 0,
-          totalPointsAwarded: 0,
+          totalPointsAwarded: undefined,
           totalXpAwarded: 0,
           lastAwardedAt: undefined,
           lastXpAwardedAt: undefined,
@@ -929,7 +926,7 @@ async function checkAndUpdateInstance({
 
       const newValues = details.reduce<{
         totalScore: number
-        totalPointsAwarded: number
+        totalPointsAwarded: number | undefined
         totalXpAwarded: number
         lastAwardedAt: Date | undefined
         lastXpAwardedAt: Date | undefined
@@ -999,8 +996,8 @@ async function checkAndUpdateInstance({
                 )
               : true
 
-          if (newPoints && participationActive) {
-            acc.totalPointsAwarded += score
+          if (newPoints && detail.pointsAwarded !== null) {
+            acc.totalPointsAwarded = (acc.totalPointsAwarded ?? 0) + score
             acc.lastAwardedAt = detail.createdAt
           }
           if (newXP) {
@@ -1086,7 +1083,7 @@ async function checkAndUpdateInstance({
         },
         {
           totalScore: 0,
-          totalPointsAwarded: 0,
+          totalPointsAwarded: undefined,
           totalXpAwarded: 0,
           lastAwardedAt: undefined,
           lastXpAwardedAt: undefined,
@@ -1137,12 +1134,10 @@ async function checkAndUpdateInstance({
       newValues: {
         trialsCount,
         totalScore,
-        totalPointsAwarded: participationActive
-          ? totalPointsAwarded
-          : undefined,
+        totalPointsAwarded,
         totalXpAwarded,
         averageTimeSpent,
-        lastAwardedAt: participationActive ? lastAwardedAt : undefined,
+        lastAwardedAt,
         lastXpAwardedAt,
         lastAnsweredAt,
         correctCount,
@@ -1648,29 +1643,7 @@ function computeResponseUpdate({
         id: response.id,
       },
       data: {
-        trialsCount: newValues.trialsCount,
-        totalScore: newValues.totalScore,
-        totalPointsAwarded: newValues.totalPointsAwarded,
-        totalXpAwarded: newValues.totalXpAwarded,
-        averageTimeSpent: newValues.averageTimeSpent,
-        lastAwardedAt: newValues.lastAwardedAt,
-        lastXpAwardedAt: newValues.lastXpAwardedAt,
-        lastAnsweredAt: newValues.lastAnsweredAt,
-        correctCount: newValues.correctCount,
-        correctCountStreak: newValues.correctCountStreak,
-        lastCorrectAt: newValues.lastCorrectAt,
-        partialCorrectCount: newValues.partialCorrectCount,
-        lastPartialCorrectAt: newValues.lastPartialCorrectAt,
-        wrongCount: newValues.wrongCount,
-        lastWrongAt: newValues.lastWrongAt,
-        eFactor: newValues.eFactor,
-        interval: newValues.interval,
-        nextDueAt: newValues.nextDueAt,
-        firstResponse: newValues.firstResponse,
-        firstResponseCorrectness: newValues.firstResponseCorrectness,
-        lastResponse: newValues.lastResponse,
-        lastResponseCorrectness: newValues.lastResponseCorrectness,
-        aggregatedResponses: newValues.aggregatedResponses,
+        ...newValues,
       },
     }
   } else {
