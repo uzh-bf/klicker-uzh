@@ -8,6 +8,7 @@ import {
   ElementInstanceType,
   ElementType,
   InstanceStatistics,
+  LeaderboardType,
   Participant,
   Participation,
   PrismaClient,
@@ -37,7 +38,6 @@ import {
   updateSpacedRepetition,
 } from '../services/stacks'
 
-// TODO: once available, update this script with the helper functions from the stacks service
 const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
@@ -70,6 +70,7 @@ async function run() {
 
   let totalInstanceUpdates = 0
   let totalResponseUpdates = 0
+  let totalLeaderboardUpdates = 0
   let totalDetailUpdates = 0
 
   while (true) {
@@ -88,6 +89,12 @@ async function run() {
         detailResponses: { include: { participant: true } },
         element: true,
         instanceStatistics: true,
+        elementStack: {
+          include: {
+            practiceQuiz: true,
+            microLearning: true,
+          },
+        },
       },
       orderBy: {
         id: 'asc',
@@ -107,11 +114,16 @@ async function run() {
       console.log('PROCESSING INSTANCE', instanceCounter, 'OF', numOfInstances)
 
       // update the instance
-      const { instanceUpdates, responseUpdates, detailUpdates } =
-        await checkAndUpdateInstance({ prisma, instance })
+      const {
+        instanceUpdates,
+        responseUpdates,
+        leaderboardUpdates,
+        detailUpdates,
+      } = await checkAndUpdateInstance({ prisma, instance })
 
       totalInstanceUpdates += instanceUpdates
       totalResponseUpdates += responseUpdates
+      totalLeaderboardUpdates += leaderboardUpdates
       totalDetailUpdates += detailUpdates
     }
 
@@ -122,6 +134,7 @@ async function run() {
 
   console.log('TOTAL INSTANCES UPDATED:', totalInstanceUpdates)
   console.log('TOTAL RESPONSES UPDATED:', totalResponseUpdates)
+  console.log('TOTAL LEADERBOARD ENTRIES UPDATED:', totalLeaderboardUpdates)
   console.log('TOTAL DETAILS UPDATED:', totalDetailUpdates)
 }
 
@@ -135,15 +148,32 @@ async function checkAndUpdateInstance({
     responses: (QuestionResponse & { participation: Participation })[]
     detailResponses: (QuestionResponseDetail & { participant: Participant })[]
     instanceStatistics?: InstanceStatistics | null
+    elementStack?: {
+      practiceQuiz?: {
+        courseId: string
+      } | null
+      microLearning?: {
+        courseId: string
+      } | null
+    } | null
   }
 }) {
   // ! Initialization
   const emptyInstanceResults = getInitialElementResults(instance.element)
   let instanceResults = { ...emptyInstanceResults }
+  const courseId =
+    instance.elementStack?.practiceQuiz?.courseId ??
+    instance.elementStack?.microLearning?.courseId
+
+  // if practice quiz or microlearning are not linked to a course, throw an error
+  if (courseId === null || typeof courseId === 'undefined') {
+    throw new Error('Practice Quiz or Microlearning not linked to a course')
+  }
 
   // ! Response and Result Updates
   const detailUpdates: any[] = []
   const responseUpdates: any[] = []
+  const leaderboardUpdates: any[] = []
   const instanceUpdates: any[] = []
   const participantUpdates: Record<
     string,
@@ -159,6 +189,8 @@ async function checkAndUpdateInstance({
       {
         response: QuestionResponse
         details: QuestionResponseDetail[]
+        participationId: number
+        participationActive: boolean
       }
     >
   >((acc, response) => {
@@ -176,6 +208,8 @@ async function checkAndUpdateInstance({
     acc[response.participantId] = {
       response,
       details: sortBy(responseDetails, [prop('createdAt'), 'asc']),
+      participationId: response.participationId,
+      participationActive: response.participation?.isActive ?? false,
     }
     return acc
   }, {})
@@ -194,9 +228,10 @@ async function checkAndUpdateInstance({
   let instanceUniqueParticipantCount = 0
   let instanceAverageTimeSpent: number | undefined = undefined
 
-  for (const [participantId, { response, details }] of Object.entries(
-    participantResponses
-  )) {
+  for (const [
+    participantId,
+    { response, details, participationId, participationActive },
+  ] of Object.entries(participantResponses)) {
     // initialize fields for question response
     let trialsCount = 0
     let totalScore = 0
@@ -1161,6 +1196,68 @@ async function checkAndUpdateInstance({
       responseUpdates.push(responseUpdate)
     }
 
+    // if total points have been changed, update the course learderboard entry
+    if (
+      response.totalPointsAwarded !== null &&
+      totalPointsAwarded !== null &&
+      typeof totalPointsAwarded !== 'undefined' &&
+      Math.abs(response.totalPointsAwarded - totalPointsAwarded) > 0
+    ) {
+      if (verbose) {
+        console.log(
+          'Previous response total points awarded',
+          response.totalPointsAwarded,
+          'and new total points awarded',
+          totalPointsAwarded
+        )
+        console.log(
+          'Updating course leaderboard entry for participant with id',
+          participantId,
+          'and course with id',
+          courseId,
+          'with increment',
+          totalPointsAwarded - response.totalPointsAwarded
+        )
+      }
+
+      // if participation is active, a course leaderboard entry should exist and can be updated
+      if (participationActive) {
+        leaderboardUpdates.push({
+          where: {
+            type_participantId_courseId: {
+              type: LeaderboardType.COURSE,
+              participantId,
+              courseId,
+            },
+          },
+          create: {
+            type: LeaderboardType.COURSE,
+            score: totalPointsAwarded,
+            participant: {
+              connect: {
+                id: participantId,
+              },
+            },
+            participation: {
+              connect: {
+                id: participationId,
+              },
+            },
+            course: {
+              connect: {
+                id: courseId,
+              },
+            },
+          },
+          update: {
+            score: {
+              increment: totalPointsAwarded - response.totalPointsAwarded,
+            },
+          },
+        })
+      }
+    }
+
     // update instance counts
     instanceCorrectCount += correctCount
     instancePartialCorrectCount += partialCorrectCount
@@ -1213,6 +1310,7 @@ async function checkAndUpdateInstance({
 
   // console.log(detailUpdates)
   // console.log(responseUpdates)
+  // console.log(leaderboardUpdates)
   // console.log(instanceUpdates)
   // console.log(participantUpdates)
 
@@ -1221,6 +1319,7 @@ async function checkAndUpdateInstance({
   // if (
   //   detailUpdates.length > 0 ||
   //   responseUpdates.length > 0 ||
+  //   leaderboardUpdates.length > 0 ||
   //   instanceUpdates.length > 0 ||
   //   Object.keys(participantUpdates).length > 0
   // ) {
@@ -1230,6 +1329,9 @@ async function checkAndUpdateInstance({
   //     ),
   //     ...responseUpdates.map((update) =>
   //       prisma.questionResponse.update(update)
+  //     ),
+  //     ...leaderboardUpdates.map((update) =>
+  //       prisma.leaderboardEntry.upsert(update)
   //     ),
   //     ...instanceUpdates.map((update) => prisma.elementInstance.update(update)),
   //     ...Object.entries(participantUpdates).map(
@@ -1251,6 +1353,7 @@ async function checkAndUpdateInstance({
   return {
     instanceUpdates: instanceUpdates.length,
     responseUpdates: responseUpdates.length,
+    leaderboardUpdates: leaderboardUpdates.length,
     detailUpdates: detailUpdates.length,
   }
 }

@@ -193,6 +193,9 @@ export function updateSpacedRepetition({
     }
   }
 
+  // ensure that maximum interval is bounded
+  newInterval = Math.min(newInterval, 36500)
+
   // compute next due date to sort by (=> spaced repetition)
   const nextDueAt = dayjs().add(newInterval, 'day').toDate()
 
