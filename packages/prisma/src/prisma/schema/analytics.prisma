@@ -17,7 +17,7 @@ model ParticipantAnalytics {
   type AnalyticsType
 
   timestamp  DateTime @db.Date
-  computedAt DateTime @db.Date @default(now())
+  computedAt DateTime @default(now()) @db.Date
 
   // unsolvedQuestionsCount = AggregatedAnalytics.totalElementsAvailable - responseCount
   trialsCount   Int // total number of questions attempted
@@ -61,7 +61,7 @@ model AggregatedAnalytics {
 
   // all quantities are defined as the values at the end of the selected timeframe
   timestamp              DateTime @db.Date
-  computedAt             DateTime @db.Date @default(now())
+  computedAt             DateTime @default(now()) @db.Date
   responseCount          Int
   participantCount       Int
   totalScore             Int
@@ -146,14 +146,14 @@ model ParticipantCourseAnalytics {
 model AggregatedCourseAnalytics {
   id Int @id @default(autoincrement())
 
-  participantCount  Int
-  activityMonday    Int
-  activityTuesday   Int
-  activityWednesday Int
-  activityThursday  Int
-  activityFriday    Int
-  activitySaturday  Int
-  activitySunday    Int
+  totalParticipantCount Int // total number of participants that have a participation in the course
+  activityMonday        Float @db.Real // average number of participants that have been active on Monday
+  activityTuesday       Float @db.Real // ... on Tuesday
+  activityWednesday     Float @db.Real // ... on Wednesday
+  activityThursday      Float @db.Real // ... on Thursday
+  activityFriday        Float @db.Real // ... on Friday
+  activitySaturday      Float @db.Real // ... on Saturday
+  activitySunday        Float @db.Real // ... on Sunday
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid

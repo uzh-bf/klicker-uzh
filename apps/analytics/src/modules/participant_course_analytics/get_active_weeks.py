@@ -28,4 +28,15 @@ def get_active_weeks(db, course):
             "activeWeeks": active_weeks,
         }
 
+    if not df_activity.empty:
+        # compute quantiles based on active weeks
+        quantiles = df_activity.activeWeeks.quantile([0.25, 0.75])
+        q1 = quantiles[0.25]
+        q3 = quantiles[0.75]
+
+        # set activity level based on active weeks
+        df_activity["activityLevel"] = "MEDIUM"
+        df_activity.loc[df_activity.activeWeeks >= q3, "activityLevel"] = "HIGH"
+        df_activity.loc[df_activity.activeWeeks <= q1, "activityLevel"] = "LOW"
+
     return df_activity
