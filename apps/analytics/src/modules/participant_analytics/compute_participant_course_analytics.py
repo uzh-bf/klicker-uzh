@@ -22,19 +22,15 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
         participations = db.participation.find_many(
             where={"courseId": course_id},
             include={
-                "participant": {
-                    "include": {
-                        "detailQuestionResponses": {
-                            "where": {
-                                "createdAt": {
-                                    "gte": course_start_date,
-                                    "lte": course_end_date,
-                                }
-                            },
-                        },
-                        "questionResponses": True,
-                    }
-                }
+                "detailResponses": {
+                    "where": {
+                        "createdAt": {
+                            "gte": course_start_date,
+                            "lte": course_end_date,
+                        }
+                    },
+                },
+                "responses": True,
             },
         )
 
@@ -42,13 +38,11 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
         participations_dict = list(map(lambda x: x.dict(), participations))
         details_dict = list(
             map(
-                lambda x: x["participant"]["detailQuestionResponses"],
+                lambda x: x["detailResponses"],
                 participations_dict,
             )
         )
-        responses_dict = list(
-            map(lambda x: x["participant"]["questionResponses"], participations_dict)
-        )
+        responses_dict = list(map(lambda x: x["responses"], participations_dict))
 
         details = [item for sublist in details_dict for item in sublist]
         responses = [item for sublist in responses_dict for item in sublist]

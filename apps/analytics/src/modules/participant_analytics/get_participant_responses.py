@@ -83,4 +83,10 @@ def get_participant_responses(db, start_date, end_date, verbose=False):
 
     df_details = df_details.apply(set_course_dates, axis=1)
 
+    if len(df_details) > 0:
+        df_details = df_details[
+            (df_details["createdAt"] >= df_details["course_start_date"])
+            & (df_details["createdAt"] <= df_details["course_end_date"])
+        ]
+
     return df_details
