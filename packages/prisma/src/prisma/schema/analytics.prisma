@@ -17,7 +17,7 @@ model ParticipantAnalytics {
   type AnalyticsType
 
   timestamp  DateTime @db.Date
-  computedAt DateTime @db.Date @default(now())
+  computedAt DateTime @default(now()) @db.Date
 
   // unsolvedQuestionsCount = AggregatedAnalytics.totalElementsAvailable - responseCount
   trialsCount   Int // total number of questions attempted
@@ -61,7 +61,7 @@ model AggregatedAnalytics {
 
   // all quantities are defined as the values at the end of the selected timeframe
   timestamp              DateTime @db.Date
-  computedAt             DateTime @db.Date @default(now())
+  computedAt             DateTime @default(now()) @db.Date
   responseCount          Int
   participantCount       Int
   totalScore             Int
