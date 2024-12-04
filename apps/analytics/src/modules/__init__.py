@@ -6,3 +6,4 @@ from .participant_course_analytics import (
     compute_participant_activity,
     save_participant_course_analytics,
 )
+from .aggregated_course_analytics import compute_weekday_activity
