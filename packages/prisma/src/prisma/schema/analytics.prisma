@@ -146,14 +146,14 @@ model ParticipantCourseAnalytics {
 model AggregatedCourseAnalytics {
   id Int @id @default(autoincrement())
 
-  totalParticipantCount Int // total number of participants that have a participation in the course
-  activityMonday        Float @db.Real // average number of participants that have been active on Monday
-  activityTuesday       Float @db.Real // ... on Tuesday
-  activityWednesday     Float @db.Real // ... on Wednesday
-  activityThursday      Float @db.Real // ... on Thursday
-  activityFriday        Float @db.Real // ... on Friday
-  activitySaturday      Float @db.Real // ... on Saturday
-  activitySunday        Float @db.Real // ... on Sunday
+  participantCount  Int
+  activityMonday    Int
+  activityTuesday   Int
+  activityWednesday Int
+  activityThursday  Int
+  activityFriday    Int
+  activitySaturday  Int
+  activitySunday    Int
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
