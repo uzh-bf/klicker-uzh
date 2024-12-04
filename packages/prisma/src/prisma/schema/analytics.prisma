@@ -156,7 +156,7 @@ model AggregatedCourseAnalytics {
   activitySunday         Float @db.Real // ... on Sunday
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
+  courseId String @unique @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
