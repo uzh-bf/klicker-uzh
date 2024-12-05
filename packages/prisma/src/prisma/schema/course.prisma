@@ -39,6 +39,10 @@ model Course {
   aggregatedAnalytics        AggregatedAnalytics[]
   aggregatedCourseAnalytics  AggregatedCourseAnalytics[]
   participantCourseAnalytics ParticipantCourseAnalytics[]
+  participantPerformances    ParticipantPerformance[]
+  instancePerformances       InstancePerformance[]
+  activityPerformances       ActivityPerformance[]
+  activityProgresses         ActivityProgress[]
   responses                  QuestionResponse[]
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
 
