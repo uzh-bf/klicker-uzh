@@ -48,6 +48,7 @@ model Participant {
   titles                     Title[]
   participantAnalytics       ParticipantAnalytics[]
   participantCourseAnalytics ParticipantCourseAnalytics[]
+  coursePerformances         ParticipantPerformance[]
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
   messages                   GroupMessage[]
 

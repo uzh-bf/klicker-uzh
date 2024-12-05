@@ -11,6 +11,12 @@ enum ActivityLevel {
   HIGH
 }
 
+enum PerformanceLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 // All metrics are based on logged in participant activity only
 model ParticipantAnalytics {
   id   Int           @id @default(autoincrement())
@@ -157,6 +163,102 @@ model AggregatedCourseAnalytics {
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @unique @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ParticipantPerformance {
+  id Int @id @default(autoincrement())
+
+  firstErrorRate   Float            @db.Real // fraction of first responses that were incorrect (in the corresponding course)
+  firstPerformance PerformanceLevel // performance level based on quantiles of first error rate distributions over all participants
+
+  lastErrorRate   Float            @db.Real // fraction of last responses that were incorrect
+  lastPerformance PerformanceLevel
+
+  totalErrorRate   Float            @db.Real // fraction of all responses that were incorrect
+  totalPerformance PerformanceLevel
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InstancePerformance {
+  id Int @id @default(autoincrement())
+
+  firstErrorRate   Float? @db.Real // fraction of wrong answers to this instance (first attempt, PQ only)
+  firstPartialRate Float? @db.Real // fraction of partially correct answers to this instance (first attempt, PQ only)
+  firstCorrectRate Float? @db.Real // fraction of correct answers to this instance (first attempt, PQ only)
+
+  lastErrorRate   Float? @db.Real // ... (last attempt, PQ only)
+  lastPartialRate Float? @db.Real // ... (last attempt, PQ only)
+  lastCorrectRate Float? @db.Real // ... (last attempt, PQ only)
+
+  totalErrorRate   Float @db.Real // ... (all attempts)
+  totalPartialRate Float @db.Real // ... (all attempts)
+  totalCorrectRate Float @db.Real // ... (all attempts)
+
+  instance   ElementInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  instanceId Int             @unique
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityPerformance {
+  id Int @id @default(autoincrement())
+
+  firstErrorRate   Float? @db.Real // fraction of wrong answers to instances in this activity (first attempt, PQ only)
+  firstPartialRate Float? @db.Real // fraction of partially correct answers to instances in this activity (first attempt, PQ only)
+  firstCorrectRate Float? @db.Real // fraction of correct answers to instances in this activity (first attempt, PQ only)
+
+  lastErrorRate   Float? @db.Real // ... (last attempt, PQ only)
+  lastPartialRate Float? @db.Real // ... (last attempt, PQ only)
+  lastCorrectRate Float? @db.Real // ... (last attempt, PQ only)
+
+  totalErrorRate   Float @db.Real // ... (all attempts)
+  totalPartialRate Float @db.Real // ... (all attempts)
+  totalCorrectRate Float @db.Real // ... (all attempts)
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @unique @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @unique @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityProgress {
+  id Int @id @default(autoincrement())
+
+  totalCourseParticipants Int
+  startedCount            Int
+  completedCount          Int
+  repeatedCount           Int?
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @unique @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @unique @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

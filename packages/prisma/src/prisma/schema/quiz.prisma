@@ -31,6 +31,8 @@ model PracticeQuiz {
 
   responses       QuestionResponse[]
   responseDetails QuestionResponseDetail[]
+  performance     ActivityPerformance?
+  progress        ActivityProgress?
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
   completedCount Int @default(0) // >= repeatedCount (every instance answered at least once)
@@ -213,6 +215,8 @@ model MicroLearning {
 
   responses       QuestionResponse[]
   responseDetails QuestionResponseDetail[]
+  performance     ActivityPerformance?
+  progress        ActivityProgress?
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
   completedCount Int @default(0) // (every instance answered at least once)

@@ -87,10 +87,11 @@ model ElementInstance {
   /// [PrismaElementResults]
   anonymousResults Json // contains the collection of gathered results by anonymous participants
 
-  responses          QuestionResponse[]
-  detailResponses    QuestionResponseDetail[]
-  feedbacks          ElementFeedback[]
-  instanceStatistics InstanceStatistics?
+  responses           QuestionResponse[]
+  detailResponses     QuestionResponseDetail[]
+  feedbacks           ElementFeedback[]
+  instanceStatistics  InstanceStatistics?
+  instancePerformance InstancePerformance?
 
   element        Element       @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementId      Int
