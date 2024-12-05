@@ -76,6 +76,9 @@ CREATE TABLE "ActivityProgress" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ParticipantPerformance_participantId_courseId_key" ON "ParticipantPerformance"("participantId", "courseId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "InstancePerformance_instanceId_key" ON "InstancePerformance"("instanceId");
 
 -- CreateIndex
