@@ -7,3 +7,8 @@ from .participant_course_analytics import (
     save_participant_course_analytics,
 )
 from .aggregated_course_analytics import compute_weekday_activity
+from .participant_performance import (
+    compute_response_error_rates,
+    compute_performance_levels,
+    save_participant_performance,
+)
