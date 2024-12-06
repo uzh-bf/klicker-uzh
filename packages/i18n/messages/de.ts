@@ -63,6 +63,7 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      date: 'Datum',
       groupMessages: 'Gruppennachrichten',
       preferred: 'bevorzugt',
       groupSize: 'Gruppengrösse',
@@ -1818,6 +1819,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityDashboard: 'Aktivitäts-Dashboard',
       performanceDashboard: 'Leistungs-Dashboard',
       quizDashboard: 'Quiz-Dashboard',
+      analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
+      analyticsLoadingFailed:
+        'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
+      weeklyStudentActivity: 'Wöchentliche Aktivität der Studierenden',
+      dailyStudentActivity: 'Tägliche Aktivität der Studierenden',
+      totalParticipants: 'Kurs-Teilnehmende: {number}',
+      activeParticipants: 'Aktive Studierende',
     },
   },
   control: {

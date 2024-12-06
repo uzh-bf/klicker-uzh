@@ -63,6 +63,7 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      date: 'Date',
       groupMessages: 'Group Messages',
       preferred: 'preferred',
       groupSize: 'Group Size',
@@ -1806,6 +1807,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityDashboard: 'Activity Dashboard',
       performanceDashboard: 'Performance Dashboard',
       quizDashboard: 'Quiz Dashboard',
+      analyticsLoadingWait: 'Loading analytics data. Please wait...',
+      analyticsLoadingFailed:
+        'An error occurred while loading the analytics data. Please try again later or contact the support.',
+      weeklyStudentActivity: 'Weekly Student Activity',
+      dailyStudentActivity: 'Daily Student Activity',
+      totalParticipants: 'Course participants: {number}',
+      activeParticipants: 'Active participants',
     },
   },
   control: {
