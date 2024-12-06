@@ -22,7 +22,7 @@ function DailyActivityPlot({
   return (
     <div className="border-uzh-grey-80 mb-3 rounded-xl border border-solid p-3">
       <H2>{t('manage.analytics.dailyActivity')}</H2>
-      <ResponsiveContainer width="100%" height={260}>
+      <ResponsiveContainer width="100%" height={300}>
         <BarChart
           layout="vertical"
           data={[

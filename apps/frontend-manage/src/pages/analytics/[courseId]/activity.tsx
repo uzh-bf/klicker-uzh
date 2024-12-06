@@ -54,8 +54,8 @@ function ActivityDashboard() {
   return (
     <Layout displayName={t('manage.analytics.activityDashboard')}>
       <ActivityAnalyticsNavigation courseId={courseId as string} />
-      <div className="mb-4 flex w-full flex-row items-end justify-between font-bold">
-        <H1>
+      <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
+        <H1 className={{ root: 'mb-0' }}>
           {t('manage.analytics.activityDashboard')}: {course.name}
         </H1>
         <div>
@@ -66,19 +66,25 @@ function ActivityDashboard() {
       </div>
       <div className="flex flex-col gap-2">
         <ActivityTimeSeriesPlot
-          activity={course.weeklyActivity}
-          title={t('manage.analytics.weeklyStudentActivity')}
-          courseParticipants={course.totalParticipants}
-        />
-        <ActivityTimeSeriesPlot
           activity={course.dailyActivity}
           title={t('manage.analytics.dailyStudentActivity')}
           courseParticipants={course.totalParticipants}
         />
-        <DailyActivityPlot
-          courseParticipants={course.totalParticipants}
-          activeDays={course.activeDays}
-        />
+        <div className="flex w-full flex-col gap-2 lg:flex-row">
+          <div className="w-full lg:w-2/3">
+            <ActivityTimeSeriesPlot
+              activity={course.weeklyActivity}
+              title={t('manage.analytics.weeklyStudentActivity')}
+              courseParticipants={course.totalParticipants}
+            />
+          </div>
+          <div className="w-full lg:w-1/3">
+            <DailyActivityPlot
+              courseParticipants={course.totalParticipants}
+              activeDays={course.activeDays}
+            />
+          </div>
+        </div>
       </div>
     </Layout>
   )
