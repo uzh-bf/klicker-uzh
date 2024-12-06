@@ -12,3 +12,10 @@ from .participant_performance import (
     compute_performance_levels,
     save_participant_performance,
 )
+from .instance_activity_performance import (
+    get_course_activities,
+    compute_instance_performance,
+    agg_activity_performance,
+    save_instance_performances,
+    save_activity_performance,
+)
