@@ -15,10 +15,13 @@ function ActivityDashboard() {
   const router = useRouter()
   const courseId = router.query.courseId
 
-  const { data, loading } = useQuery(GetCourseActivityAnalyticsDocument, {
-    variables: { courseId: courseId as string },
-    skip: !courseId,
-  })
+  const { data, loading, error } = useQuery(
+    GetCourseActivityAnalyticsDocument,
+    {
+      variables: { courseId: courseId as string },
+      skip: !courseId,
+    }
+  )
   const course = data?.getCourseActivityAnalytics
 
   // TODO: extract to separate component with variable names / navigation
@@ -37,7 +40,7 @@ function ActivityDashboard() {
 
   // TODO: extract to separate component for re-use
   // error state
-  if (course === null || typeof course === 'undefined') {
+  if (course === null || typeof course === 'undefined' || error) {
     return (
       <Layout displayName={t('manage.analytics.activityDashboard')}>
         <ActivityAnalyticsNavigation courseId={courseId as string} />
