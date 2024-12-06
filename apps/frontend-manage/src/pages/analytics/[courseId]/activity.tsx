@@ -66,15 +66,15 @@ function ActivityDashboard() {
       </div>
       <div className="flex flex-col gap-2">
         <ActivityTimeSeriesPlot
-          activity={course.dailyActivity}
-          title={t('manage.analytics.dailyStudentActivity')}
+          activity={course.weeklyActivity}
+          title={t('manage.analytics.weeklyStudentActivity')}
           courseParticipants={course.totalParticipants}
         />
         <div className="flex w-full flex-col gap-2 lg:flex-row">
           <div className="w-full lg:w-2/3">
             <ActivityTimeSeriesPlot
-              activity={course.weeklyActivity}
-              title={t('manage.analytics.weeklyStudentActivity')}
+              activity={course.dailyActivity}
+              title={t('manage.analytics.dailyStudentActivity')}
               courseParticipants={course.totalParticipants}
             />
           </div>
