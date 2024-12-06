@@ -21,6 +21,7 @@ CREATE TABLE "ParticipantPerformance" (
 -- CreateTable
 CREATE TABLE "InstancePerformance" (
     "id" SERIAL NOT NULL,
+    "responseCount" INTEGER NOT NULL,
     "firstErrorRate" REAL,
     "firstPartialRate" REAL,
     "firstCorrectRate" REAL,
