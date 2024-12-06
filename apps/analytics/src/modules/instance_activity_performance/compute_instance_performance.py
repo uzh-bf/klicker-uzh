@@ -83,18 +83,28 @@ def compute_instance_performance(db, activity, total_only=False):
             total_correct_rate = df_responses["responseCorrectRate"].mean()
 
             # append instance values to dataframe
-            df_instance_performance.loc[len(df_instance_performance)] = {
+            instance_performance = {
                 "instanceId": instance["id"],
                 "responseCount": num_responses,
-                "firstErrorRate": first_error_rate,
-                "firstPartialRate": first_partial_rate,
-                "firstCorrectRate": first_correct_rate,
-                "lastErrorRate": last_error_rate,
-                "lastPartialRate": last_partial_rate,
-                "lastCorrectRate": last_correct_rate,
                 "totalErrorRate": total_error_rate,
                 "totalPartialRate": total_partial_rate,
                 "totalCorrectRate": total_correct_rate,
             }
+
+            if not total_only:
+                instance_performance.update(
+                    {
+                        "firstErrorRate": first_error_rate,
+                        "firstPartialRate": first_partial_rate,
+                        "firstCorrectRate": first_correct_rate,
+                        "lastErrorRate": last_error_rate,
+                        "lastPartialRate": last_partial_rate,
+                        "lastCorrectRate": last_correct_rate,
+                    }
+                )
+
+            df_instance_performance.loc[len(df_instance_performance)] = (
+                instance_performance
+            )
 
     return df_instance_performance
