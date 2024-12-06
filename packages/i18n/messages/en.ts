@@ -1823,6 +1823,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       totalParticipants: 'Course participants: {number}',
       dailyActivity: 'Daily Activity',
       activeStudents: 'Active students',
+      percentageOfStudents: 'Percentage of students',
     },
   },
   control: {

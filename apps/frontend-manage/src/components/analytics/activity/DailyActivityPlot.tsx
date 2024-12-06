@@ -20,9 +20,9 @@ function DailyActivityPlot({
   const t = useTranslations()
 
   return (
-    <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
+    <div className="border-uzh-grey-80 mb-3 rounded-xl border border-solid p-3">
       <H2>{t('manage.analytics.dailyActivity')}</H2>
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={260}>
         <BarChart
           layout="vertical"
           data={[
@@ -60,9 +60,10 @@ function DailyActivityPlot({
             type="number"
             tickFormatter={(value) => `${value.toFixed(0)}%`}
             label={{
-              value: t('shared.generic.percentage'),
-              position: 'bottom',
+              value: t('manage.analytics.percentageOfStudents'),
+              dy: 12,
             }}
+            height={40}
           />
           <YAxis type="category" dataKey="weekday" width={80} />
           <Tooltip
