@@ -6,8 +6,8 @@ import {
   Label,
   Line,
   LineChart,
-  Tooltip as RechartsTooltip,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
@@ -50,12 +50,12 @@ function ActivityTimeSeriesPlot({
           />
           <YAxis>
             <Label
-              value={`${t('manage.analytics.activeParticipants')} (%)`}
+              value={`${t('manage.analytics.activeStudents')} (%)`}
               angle={-90}
               dx={-20}
             />
           </YAxis>
-          <RechartsTooltip
+          <Tooltip
             labelFormatter={(value) => {
               const date = new Date(value)
               return `${t('shared.generic.date')}: ${date
@@ -68,7 +68,7 @@ function ActivityTimeSeriesPlot({
             }}
             formatter={(value) => [
               `${(value as number).toFixed(2)} %`,
-              t('manage.analytics.activeParticipants'),
+              t('manage.analytics.activeStudents'),
             ]}
             contentStyle={{
               borderRadius: '8px',

@@ -64,6 +64,7 @@ export default {
     },
     generic: {
       date: 'Date',
+      percentage: 'Percentage',
       groupMessages: 'Group Messages',
       preferred: 'preferred',
       groupSize: 'Group Size',
@@ -216,6 +217,13 @@ export default {
       archived: 'Archived',
       ended: 'Ended',
       learningAnalytics: 'Learning Analytics',
+      monday: 'Monday',
+      tuesday: 'Tuesday',
+      wednesday: 'Wednesday',
+      thursday: 'Thursday',
+      friday: 'Friday',
+      saturday: 'Saturday',
+      sunday: 'Sunday',
     },
     contentInput: {
       boldStyle:
@@ -1813,7 +1821,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       weeklyStudentActivity: 'Weekly Student Activity',
       dailyStudentActivity: 'Daily Student Activity',
       totalParticipants: 'Course participants: {number}',
-      activeParticipants: 'Active participants',
+      dailyActivity: 'Daily Activity',
+      activeStudents: 'Active students',
     },
   },
   control: {

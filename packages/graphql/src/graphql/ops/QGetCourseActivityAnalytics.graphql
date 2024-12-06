@@ -11,13 +11,13 @@ query GetCourseActivityAnalytics($courseId: String!) {
       activeParticipants
     }
     activeDays {
-      activityMonday
-      activityTuesday
-      activityWednesday
-      activityThursday
-      activityFriday
-      activitySaturday
-      activitySunday
+      monday
+      tuesday
+      wednesday
+      thursday
+      friday
+      saturday
+      sunday
     }
   }
 }

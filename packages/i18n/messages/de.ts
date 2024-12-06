@@ -64,6 +64,7 @@ export default {
     },
     generic: {
       date: 'Datum',
+      percentage: 'Prozent',
       groupMessages: 'Gruppennachrichten',
       preferred: 'bevorzugt',
       groupSize: 'Gruppengrösse',
@@ -216,6 +217,13 @@ export default {
       archived: 'Archiviert',
       ended: 'Beendet',
       learningAnalytics: 'Learning Analytics',
+      monday: 'Montag',
+      tuesday: 'Dienstag',
+      wednesday: 'Mittwoch',
+      thursday: 'Donnerstag',
+      friday: 'Freitag',
+      saturday: 'Samstag',
+      sunday: 'Sonntag',
     },
     contentInput: {
       boldStyle:
@@ -1825,7 +1833,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       weeklyStudentActivity: 'Wöchentliche Aktivität der Studierenden',
       dailyStudentActivity: 'Tägliche Aktivität der Studierenden',
       totalParticipants: 'Kurs-Teilnehmende: {number}',
-      activeParticipants: 'Aktive Studierende',
+      dailyActivity: 'Tagesabhängige Aktivität',
+      activeStudents: 'Aktive Studierende',
     },
   },
   control: {

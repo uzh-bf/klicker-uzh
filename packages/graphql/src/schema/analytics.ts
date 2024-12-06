@@ -32,13 +32,13 @@ export const ParticipantActivityTimestamp = builder.objectType(
 )
 
 interface IWeekdayActivityAnalytics {
-  activityMonday: number
-  activityTuesday: number
-  activityWednesday: number
-  activityThursday: number
-  activityFriday: number
-  activitySaturday: number
-  activitySunday: number
+  monday: number
+  tuesday: number
+  wednesday: number
+  thursday: number
+  friday: number
+  saturday: number
+  sunday: number
 }
 export const WeekdayActivityAnalyticsRef =
   builder.objectRef<IWeekdayActivityAnalytics>('WeekdayActivityAnalytics')
@@ -46,13 +46,13 @@ export const WeekdayActivityAnalytics = builder.objectType(
   WeekdayActivityAnalyticsRef,
   {
     fields: (t) => ({
-      activityMonday: t.exposeInt('activityMonday'),
-      activityTuesday: t.exposeInt('activityTuesday'),
-      activityWednesday: t.exposeInt('activityWednesday'),
-      activityThursday: t.exposeInt('activityThursday'),
-      activityFriday: t.exposeInt('activityFriday'),
-      activitySaturday: t.exposeInt('activitySaturday'),
-      activitySunday: t.exposeInt('activitySunday'),
+      monday: t.exposeFloat('monday'),
+      tuesday: t.exposeFloat('tuesday'),
+      wednesday: t.exposeFloat('wednesday'),
+      thursday: t.exposeFloat('thursday'),
+      friday: t.exposeFloat('friday'),
+      saturday: t.exposeFloat('saturday'),
+      sunday: t.exposeFloat('sunday'),
     }),
   }
 )

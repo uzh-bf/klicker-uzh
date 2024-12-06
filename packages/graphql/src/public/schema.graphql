@@ -1466,11 +1466,11 @@ enum UserLoginScope {
 }
 
 type WeekdayActivityAnalytics {
-  activityFriday: Int!
-  activityMonday: Int!
-  activitySaturday: Int!
-  activitySunday: Int!
-  activityThursday: Int!
-  activityTuesday: Int!
-  activityWednesday: Int!
+  friday: Float!
+  monday: Float!
+  saturday: Float!
+  sunday: Float!
+  thursday: Float!
+  tuesday: Float!
+  wednesday: Float!
 }

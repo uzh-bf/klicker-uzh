@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import ActivityAnalyticsNavigation from '~/components/analytics/activity/ActivityAnalyticsNavigation'
 import ActivityTimeSeriesPlot from '~/components/analytics/activity/ActivityTimeSeriesPlot'
+import DailyActivityPlot from '~/components/analytics/activity/DailyActivityPlot'
 import Layout from '~/components/Layout'
 
 function ActivityDashboard() {
@@ -73,6 +74,10 @@ function ActivityDashboard() {
           activity={course.dailyActivity}
           title={t('manage.analytics.dailyStudentActivity')}
           courseParticipants={course.totalParticipants}
+        />
+        <DailyActivityPlot
+          courseParticipants={course.totalParticipants}
+          activeDays={course.activeDays}
         />
       </div>
     </Layout>

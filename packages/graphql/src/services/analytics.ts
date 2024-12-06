@@ -38,14 +38,13 @@ export async function getCourseActivityAnalytics(
     dailyActivity,
     weeklyActivity,
     activeDays: {
-      activityMonday: course.aggregatedCourseAnalytics?.activityMonday ?? 0,
-      activityTuesday: course.aggregatedCourseAnalytics?.activityTuesday ?? 0,
-      activityWednesday:
-        course.aggregatedCourseAnalytics?.activityWednesday ?? 0,
-      activityThursday: course.aggregatedCourseAnalytics?.activityThursday ?? 0,
-      activityFriday: course.aggregatedCourseAnalytics?.activityFriday ?? 0,
-      activitySaturday: course.aggregatedCourseAnalytics?.activitySaturday ?? 0,
-      activitySunday: course.aggregatedCourseAnalytics?.activitySunday ?? 0,
+      monday: course.aggregatedCourseAnalytics?.activityMonday ?? 0,
+      tuesday: course.aggregatedCourseAnalytics?.activityTuesday ?? 0,
+      wednesday: course.aggregatedCourseAnalytics?.activityWednesday ?? 0,
+      thursday: course.aggregatedCourseAnalytics?.activityThursday ?? 0,
+      friday: course.aggregatedCourseAnalytics?.activityFriday ?? 0,
+      saturday: course.aggregatedCourseAnalytics?.activitySaturday ?? 0,
+      sunday: course.aggregatedCourseAnalytics?.activitySunday ?? 0,
     },
   }
 }

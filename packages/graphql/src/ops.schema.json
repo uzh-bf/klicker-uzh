@@ -21849,7 +21849,7 @@
         "isOneOf": null,
         "fields": [
           {
-            "name": "activityFriday",
+            "name": "friday",
             "description": null,
             "args": [],
             "type": {
@@ -21857,7 +21857,7 @@
               "name": null,
               "ofType": {
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "Float",
                 "ofType": null
               }
             },
@@ -21865,7 +21865,7 @@
             "deprecationReason": null
           },
           {
-            "name": "activityMonday",
+            "name": "monday",
             "description": null,
             "args": [],
             "type": {
@@ -21873,7 +21873,7 @@
               "name": null,
               "ofType": {
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "Float",
                 "ofType": null
               }
             },
@@ -21881,7 +21881,7 @@
             "deprecationReason": null
           },
           {
-            "name": "activitySaturday",
+            "name": "saturday",
             "description": null,
             "args": [],
             "type": {
@@ -21889,7 +21889,7 @@
               "name": null,
               "ofType": {
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "Float",
                 "ofType": null
               }
             },
@@ -21897,7 +21897,7 @@
             "deprecationReason": null
           },
           {
-            "name": "activitySunday",
+            "name": "sunday",
             "description": null,
             "args": [],
             "type": {
@@ -21905,7 +21905,7 @@
               "name": null,
               "ofType": {
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "Float",
                 "ofType": null
               }
             },
@@ -21913,7 +21913,7 @@
             "deprecationReason": null
           },
           {
-            "name": "activityThursday",
+            "name": "thursday",
             "description": null,
             "args": [],
             "type": {
@@ -21921,7 +21921,7 @@
               "name": null,
               "ofType": {
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "Float",
                 "ofType": null
               }
             },
@@ -21929,7 +21929,7 @@
             "deprecationReason": null
           },
           {
-            "name": "activityTuesday",
+            "name": "tuesday",
             "description": null,
             "args": [],
             "type": {
@@ -21937,7 +21937,7 @@
               "name": null,
               "ofType": {
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "Float",
                 "ofType": null
               }
             },
@@ -21945,7 +21945,7 @@
             "deprecationReason": null
           },
           {
-            "name": "activityWednesday",
+            "name": "wednesday",
             "description": null,
             "args": [],
             "type": {
@@ -21953,7 +21953,7 @@
               "name": null,
               "ofType": {
                 "kind": "SCALAR",
-                "name": "Int",
+                "name": "Float",
                 "ofType": null
               }
             },
