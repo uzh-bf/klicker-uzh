@@ -63,6 +63,8 @@ export default {
       installButton: 'Jetzt installieren',
     },
     generic: {
+      date: 'Datum',
+      percentage: 'Prozent',
       groupMessages: 'Gruppennachrichten',
       preferred: 'bevorzugt',
       groupSize: 'Gruppengrösse',
@@ -214,6 +216,14 @@ export default {
       forgotPassword: 'Passwort vergessen?',
       archived: 'Archiviert',
       ended: 'Beendet',
+      learningAnalytics: 'Learning Analytics',
+      monday: 'Montag',
+      tuesday: 'Dienstag',
+      wednesday: 'Mittwoch',
+      thursday: 'Donnerstag',
+      friday: 'Freitag',
+      saturday: 'Samstag',
+      sunday: 'Sonntag',
     },
     contentInput: {
       boldStyle:
@@ -1811,6 +1821,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nOfTotalPoints: '{number}/{total} Punkte',
       gradingAlreadyFinalized:
         'Die Bewertung wurde bereits abgeschlossen und kann nicht mehr geändert werden. Wählen Sie eine Abgabe aus, um sich die eingegebene Bewertung anzusehen.',
+    },
+    analytics: {
+      selectAnalyticsDashboard: 'Bitte wählen Sie ein Analyse-Dashboard aus',
+      activityDashboard: 'Aktivitäts-Dashboard',
+      performanceDashboard: 'Leistungs-Dashboard',
+      quizDashboard: 'Quiz-Dashboard',
+      analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
+      analyticsLoadingFailed:
+        'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
+      weeklyStudentActivity: 'Wöchentliche Aktivität der Studierenden',
+      dailyStudentActivity: 'Tägliche Aktivität der Studierenden',
+      totalParticipants: 'Kurs-Teilnehmende: {number}',
+      dailyActivity: 'Tagesabhängige Aktivität',
+      activeStudents: 'Aktive Studierende',
+      percentageOfStudents: 'Prozentuale Verteilung der Studierenden',
     },
   },
   control: {

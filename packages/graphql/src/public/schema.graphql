@@ -273,6 +273,14 @@ type Course {
   updatedAt: Date
 }
 
+type CourseActivityAnalytics {
+  activeDays: WeekdayActivityAnalytics!
+  dailyActivity: [ParticipantActivityTimestamp!]!
+  name: String!
+  totalParticipants: Int!
+  weeklyActivity: [ParticipantActivityTimestamp!]!
+}
+
 type CourseSummary {
   numOfGroupActivities: Int!
   numOfLeaderboardEntries: Int!
@@ -1133,6 +1141,11 @@ type ParticipantAchievementInstance {
   id: Int!
 }
 
+type ParticipantActivityTimestamp {
+  activeParticipants: Int!
+  date: Date!
+}
+
 type ParticipantGroup {
   averageMemberScore: Int!
   code: Int!
@@ -1223,6 +1236,7 @@ type Query {
   getActiveUserCourses: [Course!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
+  getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
@@ -1449,4 +1463,14 @@ enum UserLoginScope {
   OTP
   READ_ONLY
   SESSION_EXEC
+}
+
+type WeekdayActivityAnalytics {
+  friday: Float!
+  monday: Float!
+  saturday: Float!
+  sunday: Float!
+  thursday: Float!
+  tuesday: Float!
+  wednesday: Float!
 }

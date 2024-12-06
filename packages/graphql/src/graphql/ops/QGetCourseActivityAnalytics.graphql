@@ -1,0 +1,23 @@
+query GetCourseActivityAnalytics($courseId: String!) {
+  getCourseActivityAnalytics(courseId: $courseId) {
+    name
+    totalParticipants
+    dailyActivity {
+      date
+      activeParticipants
+    }
+    weeklyActivity {
+      date
+      activeParticipants
+    }
+    activeDays {
+      monday
+      tuesday
+      wednesday
+      thursday
+      friday
+      saturday
+      sunday
+    }
+  }
+}

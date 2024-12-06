@@ -63,6 +63,8 @@ export default {
       installButton: 'Install Now',
     },
     generic: {
+      date: 'Date',
+      percentage: 'Percentage',
       groupMessages: 'Group Messages',
       preferred: 'preferred',
       groupSize: 'Group Size',
@@ -214,6 +216,14 @@ export default {
       forgotPassword: 'Forgot password?',
       archived: 'Archived',
       ended: 'Ended',
+      learningAnalytics: 'Learning Analytics',
+      monday: 'Monday',
+      tuesday: 'Tuesday',
+      wednesday: 'Wednesday',
+      thursday: 'Thursday',
+      friday: 'Friday',
+      saturday: 'Saturday',
+      sunday: 'Sunday',
     },
     contentInput: {
       boldStyle:
@@ -1799,6 +1809,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nOfTotalPoints: '{number}/{total} Points',
       gradingAlreadyFinalized:
         'Grading has already been finalized and cannot be changed anymore. Select a submission to view the entered grading.',
+    },
+    analytics: {
+      selectAnalyticsDashboard: 'Please select an analytics dashboard',
+      activityDashboard: 'Activity Dashboard',
+      performanceDashboard: 'Performance Dashboard',
+      quizDashboard: 'Quiz Dashboard',
+      analyticsLoadingWait: 'Loading analytics data. Please wait...',
+      analyticsLoadingFailed:
+        'An error occurred while loading the analytics data. Please try again later or contact the support.',
+      weeklyStudentActivity: 'Weekly Student Activity',
+      dailyStudentActivity: 'Daily Student Activity',
+      totalParticipants: 'Course participants: {number}',
+      dailyActivity: 'Daily Activity',
+      activeStudents: 'Active students',
+      percentageOfStudents: 'Percentage of students',
     },
   },
   control: {
