@@ -214,6 +214,7 @@ export default {
       forgotPassword: 'Passwort vergessen?',
       archived: 'Archiviert',
       ended: 'Beendet',
+      learningAnalytics: 'Learning Analytics',
     },
     contentInput: {
       boldStyle:
@@ -1811,6 +1812,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nOfTotalPoints: '{number}/{total} Punkte',
       gradingAlreadyFinalized:
         'Die Bewertung wurde bereits abgeschlossen und kann nicht mehr geändert werden. Wählen Sie eine Abgabe aus, um sich die eingegebene Bewertung anzusehen.',
+    },
+    analytics: {
+      selectAnalyticsDashboard: 'Bitte wählen Sie ein Analyse-Dashboard aus',
+      activityDashboard: 'Aktivitäts-Dashboard',
+      performanceDashboard: 'Leistungs-Dashboard',
+      quizDashboard: 'Quiz-Dashboard',
     },
   },
   control: {

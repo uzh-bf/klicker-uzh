@@ -214,6 +214,7 @@ export default {
       forgotPassword: 'Forgot password?',
       archived: 'Archived',
       ended: 'Ended',
+      learningAnalytics: 'Learning Analytics',
     },
     contentInput: {
       boldStyle:
@@ -1799,6 +1800,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nOfTotalPoints: '{number}/{total} Points',
       gradingAlreadyFinalized:
         'Grading has already been finalized and cannot be changed anymore. Select a submission to view the entered grading.',
+    },
+    analytics: {
+      selectAnalyticsDashboard: 'Please select an analytics dashboard',
+      activityDashboard: 'Activity Dashboard',
+      performanceDashboard: 'Performance Dashboard',
+      quizDashboard: 'Quiz Dashboard',
     },
   },
   control: {

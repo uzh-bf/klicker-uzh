@@ -554,24 +554,19 @@ export async function getUserCourses(ctx: ContextWithUser) {
     include: {
       courses: {
         orderBy: {
-          createdAt: 'desc',
+          endDate: 'desc',
         },
       },
     },
   })
 
   // sort courses by archived or not
-  const archivedSortedCourses =
+  const filteredCourses =
     userCourses?.courses.sort((a, b) => {
       return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
     }) ?? []
 
-  // sort courses by start date descending
-  const startDateSortedCourses = archivedSortedCourses.sort((a, b) => {
-    return a.startDate > b.startDate ? -1 : a.startDate < b.startDate ? 1 : 0
-  })
-
-  return startDateSortedCourses
+  return filteredCourses
 }
 
 export async function getActiveUserCourses(ctx: ContextWithUser) {
