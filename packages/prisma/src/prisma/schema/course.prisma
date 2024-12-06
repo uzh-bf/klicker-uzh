@@ -37,7 +37,7 @@ model Course {
   liveQuizzes                LiveQuiz[]
   participantAnalytics       ParticipantAnalytics[]
   aggregatedAnalytics        AggregatedAnalytics[]
-  aggregatedCourseAnalytics  AggregatedCourseAnalytics[]
+  aggregatedCourseAnalytics  AggregatedCourseAnalytics?
   participantCourseAnalytics ParticipantCourseAnalytics[]
   participantPerformances    ParticipantPerformance[]
   instancePerformances       InstancePerformance[]
