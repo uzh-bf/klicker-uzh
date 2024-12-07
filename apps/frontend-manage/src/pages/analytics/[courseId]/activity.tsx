@@ -6,8 +6,9 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import ActivityAnalyticsNavigation from '~/components/analytics/activity/ActivityAnalyticsNavigation'
-import ActivityTimeSeriesPlot from '~/components/analytics/activity/ActivityTimeSeriesPlot'
 import DailyActivityPlot from '~/components/analytics/activity/DailyActivityPlot'
+import DailyActivityTimeSeries from '~/components/analytics/activity/DailyActivityTimeSeries'
+import WeeklyActivityTimeSeries from '~/components/analytics/activity/WeeklyActivityTimeSeries'
 import Layout from '~/components/Layout'
 
 function ActivityDashboard() {
@@ -68,16 +69,15 @@ function ActivityDashboard() {
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <ActivityTimeSeriesPlot
+        <WeeklyActivityTimeSeries
           activity={course.weeklyActivity}
-          title={t('manage.analytics.weeklyStudentActivity')}
+          courseName={course.name}
           courseParticipants={course.totalParticipants}
         />
         <div className="flex w-full flex-col gap-2 lg:flex-row">
           <div className="w-full lg:w-2/3">
-            <ActivityTimeSeriesPlot
+            <DailyActivityTimeSeries
               activity={course.dailyActivity}
-              title={t('manage.analytics.dailyStudentActivity')}
               courseParticipants={course.totalParticipants}
             />
           </div>

@@ -1836,6 +1836,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       dailyActivity: 'Tagesabhängige Aktivität',
       activeStudents: 'Aktive Studierende',
       percentageOfStudents: 'Prozentuale Verteilung der Studierenden',
+      courseComparison: 'Kursvergleich',
+      courseComparisonDescription:
+        'Wählen Sie einen zweiten Kurs aus, um die entsprechenden Daten direkt zu vergleichen.',
+      selectCourse: 'Kurs auswählen...',
     },
   },
   control: {
@@ -1897,6 +1901,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       endQuiz: 'Quiz beenden',
       hintLastBlock:
         'Der aktuell laufende Block is der letzte dieses Live Quizzes. Nach Schliessen dieses Blockes kann das Live Quiz beendet werden.',
+      weekN: 'Woche {number}',
     },
   },
 }

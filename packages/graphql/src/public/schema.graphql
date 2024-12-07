@@ -1241,6 +1241,7 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
   getCourseSummary(courseId: String!): CourseSummary
+  getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
@@ -1473,4 +1474,9 @@ type WeekdayActivityAnalytics {
   thursday: Float!
   tuesday: Float!
   wednesday: Float!
+}
+
+type WeeklyCourseActivities {
+  totalParticipants: Int!
+  weeklyActivity: [ParticipantActivityTimestamp!]!
 }
