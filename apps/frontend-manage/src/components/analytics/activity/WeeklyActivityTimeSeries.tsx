@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useState } from 'react'
 import ActivityTimeSeriesPlot from './ActivityTimeSeriesPlot'
 import SuspendedCourseComparison from './SuspendedCourseComparison'
 
@@ -30,10 +30,6 @@ function WeeklyActivityTimeSeries({
   const secondParticipants =
     data?.getCourseWeeklyActivity?.totalParticipants ?? 0
   const secondActivity = data?.getCourseWeeklyActivity?.weeklyActivity ?? []
-
-  useEffect(() => {
-    refetch()
-  }, [courseComparison])
 
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
