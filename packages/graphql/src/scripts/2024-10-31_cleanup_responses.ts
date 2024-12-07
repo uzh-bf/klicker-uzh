@@ -45,7 +45,6 @@ const XP_AWARD_TIMEFRAME_DAYS = 1
 // ? Flag for extended logging
 const verbose = true
 
-// ! CAUTION: This script does not update the leaderboard entries of the participants
 // ? This script will iterate through all element instances and
 // ? update the question responses and question response details
 async function run() {
@@ -1316,39 +1315,39 @@ async function checkAndUpdateInstance({
 
   // TODO: uncomment this part to apply updates in a single transaction for each element instance
   // ! Execute all updates that are potentially required in a single transaction
-  // if (
-  //   detailUpdates.length > 0 ||
-  //   responseUpdates.length > 0 ||
-  //   leaderboardUpdates.length > 0 ||
-  //   instanceUpdates.length > 0 ||
-  //   Object.keys(participantUpdates).length > 0
-  // ) {
-  //   await prisma.$transaction([
-  //     ...detailUpdates.map((update) =>
-  //       prisma.questionResponseDetail.update(update)
-  //     ),
-  //     ...responseUpdates.map((update) =>
-  //       prisma.questionResponse.update(update)
-  //     ),
-  //     ...leaderboardUpdates.map((update) =>
-  //       prisma.leaderboardEntry.upsert(update)
-  //     ),
-  //     ...instanceUpdates.map((update) => prisma.elementInstance.update(update)),
-  //     ...Object.entries(participantUpdates).map(
-  //       ([participantId, updatedData]) =>
-  //         prisma.participant.update({
-  //           where: {
-  //             id: participantId,
-  //           },
-  //           data: {
-  //             xp: {
-  //               increment: updatedData.additionalXp ?? 0,
-  //             },
-  //           },
-  //         })
-  //     ),
-  //   ])
-  // }
+  if (
+    detailUpdates.length > 0 ||
+    responseUpdates.length > 0 ||
+    leaderboardUpdates.length > 0 ||
+    instanceUpdates.length > 0 ||
+    Object.keys(participantUpdates).length > 0
+  ) {
+    await prisma.$transaction([
+      ...detailUpdates.map((update) =>
+        prisma.questionResponseDetail.update(update)
+      ),
+      ...responseUpdates.map((update) =>
+        prisma.questionResponse.update(update)
+      ),
+      ...leaderboardUpdates.map((update) =>
+        prisma.leaderboardEntry.upsert(update)
+      ),
+      ...instanceUpdates.map((update) => prisma.elementInstance.update(update)),
+      ...Object.entries(participantUpdates).map(
+        ([participantId, updatedData]) =>
+          prisma.participant.update({
+            where: {
+              id: participantId,
+            },
+            data: {
+              xp: {
+                increment: updatedData.additionalXp ?? 0,
+              },
+            },
+          })
+      ),
+    ])
+  }
 
   return {
     instanceUpdates: instanceUpdates.length,
