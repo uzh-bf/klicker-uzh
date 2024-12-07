@@ -1824,6 +1824,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       dailyActivity: 'Daily Activity',
       activeStudents: 'Active students',
       percentageOfStudents: 'Percentage of students',
+      courseComparison: 'Course Comparison',
+      courseComparisonDescription:
+        'Select a second course to compare the corresponding data directly.',
+      selectCourse: 'Select course...',
+      weekN: 'Week {number}',
     },
   },
   control: {

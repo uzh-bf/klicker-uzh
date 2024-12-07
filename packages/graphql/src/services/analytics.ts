@@ -48,3 +48,34 @@ export async function getCourseActivityAnalytics(
     },
   }
 }
+
+export async function getCourseWeeklyActivity(
+  { courseId }: { courseId?: string | null },
+  ctx: ContextWithUser
+) {
+  if (!courseId) {
+    return null
+  }
+
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, ownerId: ctx.user.sub },
+    include: {
+      participations: true,
+      aggregatedAnalytics: {
+        where: { type: 'WEEKLY' },
+        orderBy: { timestamp: 'asc' },
+      },
+    },
+  })
+
+  if (!course) {
+    return null
+  }
+
+  const weeklyActivity = course.aggregatedAnalytics.map((analytics) => ({
+    date: analytics.timestamp,
+    activeParticipants: analytics.participantCount,
+  }))
+
+  return { totalParticipants: course.participations.length, weeklyActivity }
+}

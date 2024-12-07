@@ -82,3 +82,21 @@ export const CourseActivityAnalytics = builder.objectType(
     }),
   }
 )
+
+interface IWeeklyCourseActivities {
+  totalParticipants: number
+  weeklyActivity: IParticipantActivityTimestamp[]
+}
+export const WeeklyCourseActivitiesRef =
+  builder.objectRef<IWeeklyCourseActivities>('WeeklyCourseActivities')
+export const WeeklyCourseActivities = builder.objectType(
+  WeeklyCourseActivitiesRef,
+  {
+    fields: (t) => ({
+      totalParticipants: t.exposeInt('totalParticipants'),
+      weeklyActivity: t.expose('weeklyActivity', {
+        type: [ParticipantActivityTimestamp],
+      }),
+    }),
+  }
+)

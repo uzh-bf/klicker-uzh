@@ -11,7 +11,11 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as StacksService from '../services/stacks.js'
-import { CourseActivityAnalytics, ElementFeedback } from './analytics.js'
+import {
+  CourseActivityAnalytics,
+  ElementFeedback,
+  WeeklyCourseActivities,
+} from './analytics.js'
 import {
   Course,
   CourseSummary,
@@ -751,6 +755,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return AnalyticsService.getCourseActivityAnalytics(args, ctx)
+        },
+      }),
+
+      getCourseWeeklyActivity: asUser.field({
+        nullable: true,
+        type: WeeklyCourseActivities,
+        args: {
+          courseId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return AnalyticsService.getCourseWeeklyActivity(args, ctx)
         },
       }),
     }
