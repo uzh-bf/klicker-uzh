@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { ContextWithUser } from 'src/lib/context.js'
 
 export async function getCourseActivityAnalytics(
@@ -20,6 +21,7 @@ export async function getCourseActivityAnalytics(
     return null
   }
 
+  // map daily and weekly student activity into the format required by the frontend
   const dailyActivity = course.aggregatedAnalytics
     .filter((analytics) => analytics.type === 'DAILY')
     .map((analytics) => ({
@@ -33,8 +35,18 @@ export async function getCourseActivityAnalytics(
       activeParticipants: analytics.participantCount,
     }))
 
+  // compute the duration of the course in weeks (until current date, if course is still running)
+  const courseWeeks = Math.ceil(
+    dayjs(
+      course.endDate && dayjs(course.endDate).isBefore(dayjs())
+        ? course.endDate
+        : dayjs()
+    ).diff(dayjs(course.startDate), 'week', true)
+  )
+
   return {
     name: course.name,
+    courseWeeks,
     totalParticipants: course.participations.length,
     dailyActivity,
     weeklyActivity,

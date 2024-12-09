@@ -90,6 +90,7 @@ function ActivityDashboard() {
           </div>
         </div>
         <TotalStudentActivityPlot
+          courseWeeks={course.courseWeeks}
           participantActivity={course.participantCourseAnalytics}
         />
       </div>

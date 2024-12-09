@@ -1,6 +1,7 @@
 query GetCourseActivityAnalytics($courseId: String!) {
   getCourseActivityAnalytics(courseId: $courseId) {
     name
+    courseWeeks
     totalParticipants
     dailyActivity {
       date

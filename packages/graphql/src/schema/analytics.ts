@@ -84,6 +84,7 @@ export const ParticipantCourseActivity = builder.objectType(
 
 interface ICourseActivityAnalytics {
   name: string
+  courseWeeks: number
   totalParticipants: number
   dailyActivity: IParticipantActivityTimestamp[]
   weeklyActivity: IParticipantActivityTimestamp[]
@@ -97,6 +98,7 @@ export const CourseActivityAnalytics = builder.objectType(
   {
     fields: (t) => ({
       name: t.exposeString('name'),
+      courseWeeks: t.exposeInt('courseWeeks'),
       totalParticipants: t.exposeInt('totalParticipants'),
       dailyActivity: t.expose('dailyActivity', {
         type: [ParticipantActivityTimestamp],

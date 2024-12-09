@@ -224,6 +224,11 @@ export default {
       friday: 'Friday',
       saturday: 'Saturday',
       sunday: 'Sunday',
+      mean: 'Mean',
+      median: 'Median',
+      q1: 'Q1',
+      q3: 'Q3',
+      weeks: 'Weeks',
     },
     contentInput: {
       boldStyle:
@@ -1822,7 +1827,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       dailyStudentActivity: 'Daily Student Activity',
       totalParticipants: 'Course participants: {number}',
       dailyActivity: 'Daily Activity',
-      activeStudents: 'Active students',
+      activeStudents: 'Active Students',
       percentageOfStudents: 'Percentage of students',
       courseComparison: 'Course Comparison',
       courseComparisonDescription:
@@ -1830,6 +1835,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selectCourse: 'Select course...',
       weekN: 'Week {number}',
       overallStudentActivity: 'Overall Student Activity',
+      numberOfStudents: 'Number of Students',
+      activeWeeks: 'Active Weeks',
     },
   },
   control: {

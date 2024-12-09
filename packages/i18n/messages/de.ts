@@ -224,6 +224,11 @@ export default {
       friday: 'Freitag',
       saturday: 'Samstag',
       sunday: 'Sonntag',
+      mean: 'Mittelwert',
+      median: 'Median',
+      q1: 'Q1',
+      q3: 'Q3',
+      weeks: 'Wochen',
     },
     contentInput: {
       boldStyle:
@@ -1842,6 +1847,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selectCourse: 'Kurs auswählen...',
       weekN: 'Woche {number}',
       overallStudentActivity: 'Gesamte Studierendenaktivität',
+      numberOfStudents: 'Anzahl Studierende',
+      activeWeeks: 'Aktive Wochen',
     },
   },
   control: {
