@@ -23,7 +23,7 @@ function WeeklyActivityTimeSeries({
     { id: string; name: string } | undefined
   >(undefined)
 
-  const { data, refetch } = useQuery(GetCourseWeeklyActivityDocument, {
+  const { data, loading } = useQuery(GetCourseWeeklyActivityDocument, {
     variables: { courseId: courseComparison?.id },
     skip: typeof courseComparison === 'undefined',
   })
@@ -74,6 +74,7 @@ function WeeklyActivityTimeSeries({
           <SuspendedCourseComparison
             courseComparison={courseComparison}
             setCourseComparison={setCourseComparison}
+            comparisonCourseLoading={loading}
           />
         </Suspense>
       </div>
