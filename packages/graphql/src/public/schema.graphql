@@ -24,6 +24,12 @@ type ActivityEvaluation {
   results: [StackEvaluation!]!
 }
 
+enum ActivityLevel {
+  HIGH
+  LOW
+  MEDIUM
+}
+
 type ActivitySummary {
   numOfAnonymousResponses: Int!
   numOfResponses: Int!
@@ -277,6 +283,7 @@ type CourseActivityAnalytics {
   activeDays: WeekdayActivityAnalytics!
   dailyActivity: [ParticipantActivityTimestamp!]!
   name: String!
+  participantCourseAnalytics: [ParticipantCourseActivity!]!
   totalParticipants: Int!
   weeklyActivity: [ParticipantActivityTimestamp!]!
 }
@@ -1144,6 +1151,13 @@ type ParticipantAchievementInstance {
 type ParticipantActivityTimestamp {
   activeParticipants: Int!
   date: Date!
+}
+
+type ParticipantCourseActivity {
+  activeDaysPerWeek: Float!
+  activeWeeks: Int!
+  activityLevel: ActivityLevel!
+  meanElementsPerDay: Float!
 }
 
 type ParticipantGroup {

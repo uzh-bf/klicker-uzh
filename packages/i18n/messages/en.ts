@@ -1829,6 +1829,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Select a second course to compare the corresponding data directly.',
       selectCourse: 'Select course...',
       weekN: 'Week {number}',
+      overallStudentActivity: 'Overall Student Activity',
     },
   },
   control: {

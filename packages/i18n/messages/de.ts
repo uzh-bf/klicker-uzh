@@ -1841,6 +1841,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie einen zweiten Kurs aus, um die entsprechenden Daten direkt zu vergleichen.',
       selectCourse: 'Kurs auswählen...',
       weekN: 'Woche {number}',
+      overallStudentActivity: 'Gesamte Studierendenaktivität',
     },
   },
   control: {

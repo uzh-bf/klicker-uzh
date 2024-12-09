@@ -12,6 +12,7 @@ export async function getCourseActivityAnalytics(
         orderBy: { timestamp: 'asc' },
       },
       aggregatedCourseAnalytics: true,
+      participantCourseAnalytics: true,
     },
   })
 
@@ -46,6 +47,7 @@ export async function getCourseActivityAnalytics(
       saturday: course.aggregatedCourseAnalytics?.activitySaturday ?? 0,
       sunday: course.aggregatedCourseAnalytics?.activitySunday ?? 0,
     },
+    participantCourseAnalytics: course.participantCourseAnalytics,
   }
 }
 

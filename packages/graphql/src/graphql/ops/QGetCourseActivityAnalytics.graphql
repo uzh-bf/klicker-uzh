@@ -19,5 +19,11 @@ query GetCourseActivityAnalytics($courseId: String!) {
       saturday
       sunday
     }
+    participantCourseAnalytics {
+      activeWeeks
+      activeDaysPerWeek
+      meanElementsPerDay
+      activityLevel
+    }
   }
 }

@@ -1,6 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
 
+export const ActivityLevel = builder.enumType('ActivityLevel', {
+  values: Object.values(DB.ActivityLevel),
+})
+
 export const ElementFeedbackRef =
   builder.objectRef<DB.ElementFeedback>('ElementFeedback')
 export const ElementFeedback = builder.objectType(ElementFeedbackRef, {
@@ -57,12 +61,34 @@ export const WeekdayActivityAnalytics = builder.objectType(
   }
 )
 
+interface IParticipantCourseActivity {
+  activeWeeks: number
+  activeDaysPerWeek: number
+  meanElementsPerDay: number
+  activityLevel: DB.ActivityLevel
+}
+
+export const ParticipantCourseActivityRef =
+  builder.objectRef<IParticipantCourseActivity>('ParticipantCourseActivity')
+export const ParticipantCourseActivity = builder.objectType(
+  ParticipantCourseActivityRef,
+  {
+    fields: (t) => ({
+      activeWeeks: t.exposeInt('activeWeeks'),
+      activeDaysPerWeek: t.exposeFloat('activeDaysPerWeek'),
+      meanElementsPerDay: t.exposeFloat('meanElementsPerDay'),
+      activityLevel: t.expose('activityLevel', { type: ActivityLevel }),
+    }),
+  }
+)
+
 interface ICourseActivityAnalytics {
   name: string
   totalParticipants: number
   dailyActivity: IParticipantActivityTimestamp[]
   weeklyActivity: IParticipantActivityTimestamp[]
   activeDays: IWeekdayActivityAnalytics
+  participantCourseAnalytics: IParticipantCourseActivity[]
 }
 export const CourseActivityAnalyticsRef =
   builder.objectRef<ICourseActivityAnalytics>('CourseActivityAnalytics')
@@ -79,6 +105,9 @@ export const CourseActivityAnalytics = builder.objectType(
         type: [ParticipantActivityTimestamp],
       }),
       activeDays: t.expose('activeDays', { type: WeekdayActivityAnalytics }),
+      participantCourseAnalytics: t.expose('participantCourseAnalytics', {
+        type: [ParticipantCourseActivity],
+      }),
     }),
   }
 )
