@@ -229,6 +229,7 @@ export default {
       q1: 'Q1',
       q3: 'Q3',
       weeks: 'Weeks',
+      student: 'Student',
     },
     contentInput: {
       boldStyle:
@@ -1834,9 +1835,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Select a second course to compare the corresponding data directly.',
       selectCourse: 'Select course...',
       weekN: 'Week {number}',
+      studentN: 'Student {number}',
       overallStudentActivity: 'Overall Student Activity',
       numberOfStudents: 'Number of Students',
       activeWeeks: 'Active Weeks',
+      activeDaysPerWeek: 'Active Days per Week',
+      meanElementsPerDay: 'Mean Elements per Day',
+      activityLevel: 'Activity Level',
+      activityLevelHigh: 'HIGH',
+      activityLevelMedium: 'MEDIUM',
+      activityLevelLow: 'LOW',
     },
   },
   control: {

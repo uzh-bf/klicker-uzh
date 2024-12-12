@@ -229,6 +229,7 @@ export default {
       q1: 'Q1',
       q3: 'Q3',
       weeks: 'Wochen',
+      student: 'Studierende(r)',
     },
     contentInput: {
       boldStyle:
@@ -1846,9 +1847,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie einen zweiten Kurs aus, um die entsprechenden Daten direkt zu vergleichen.',
       selectCourse: 'Kurs auswählen...',
       weekN: 'Woche {number}',
+      studentN: 'Studierende(r) {number}',
       overallStudentActivity: 'Gesamte Studierendenaktivität',
       numberOfStudents: 'Anzahl Studierende',
       activeWeeks: 'Aktive Wochen',
+      activeDaysPerWeek: 'Aktive Tage pro Woche',
+      meanElementsPerDay: 'Durchschnittliche Elemente pro Tag',
+      activityLevel: 'Aktivitätslevel',
+      activityLevelHigh: 'HOCH',
+      activityLevelMedium: 'MITTEL',
+      activityLevelLow: 'NIEDRIG',
     },
   },
   control: {
