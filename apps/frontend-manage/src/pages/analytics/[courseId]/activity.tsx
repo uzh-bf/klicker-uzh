@@ -8,6 +8,7 @@ import { useRouter } from 'next/router'
 import ActivityAnalyticsNavigation from '~/components/analytics/activity/ActivityAnalyticsNavigation'
 import DailyActivityPlot from '~/components/analytics/activity/DailyActivityPlot'
 import DailyActivityTimeSeries from '~/components/analytics/activity/DailyActivityTimeSeries'
+import TotalStudentActivityPlot from '~/components/analytics/activity/TotalStudentActivityPlot'
 import WeeklyActivityTimeSeries from '~/components/analytics/activity/WeeklyActivityTimeSeries'
 import Layout from '~/components/Layout'
 
@@ -68,13 +69,13 @@ function ActivityDashboard() {
           })}
         </div>
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-4">
         <WeeklyActivityTimeSeries
           activity={course.weeklyActivity}
           courseName={course.name}
           courseParticipants={course.totalParticipants}
         />
-        <div className="flex w-full flex-col gap-2 lg:flex-row">
+        <div className="flex w-full flex-col gap-3 lg:flex-row">
           <div className="w-full lg:w-2/3">
             <DailyActivityTimeSeries
               activity={course.dailyActivity}
@@ -88,6 +89,11 @@ function ActivityDashboard() {
             />
           </div>
         </div>
+        <TotalStudentActivityPlot
+          courseName={course.name}
+          courseWeeks={course.courseWeeks}
+          participantActivity={course.participantCourseAnalytics}
+        />
       </div>
     </Layout>
   )

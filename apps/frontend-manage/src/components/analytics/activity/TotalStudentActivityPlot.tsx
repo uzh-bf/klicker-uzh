@@ -1,0 +1,190 @@
+import { ParticipantCourseActivity } from '@klicker-uzh/graphql/dist/ops'
+import DataTable from '@klicker-uzh/shared-components/src/DataTable'
+import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
+import { H2 } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import {
+  Bar,
+  BarChart,
+  Cell,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import ActivityLevelTag from './ActivityLevelTag'
+import useTotalStudentActivityHistogram from './useTotalStudentActivityHistogram'
+
+interface TotalStudentActivityPlotProps {
+  courseName: string
+  courseWeeks: number
+  participantActivity: ParticipantCourseActivity[]
+}
+
+function TotalStudentActivityPlot({
+  courseName,
+  courseWeeks,
+  participantActivity,
+}: TotalStudentActivityPlotProps) {
+  const t = useTranslations()
+  const activityData = useTotalStudentActivityHistogram({
+    courseWeeks,
+    participantActivity,
+  })
+
+  if (activityData.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
+      <H2>{t('manage.analytics.overallStudentActivity')}</H2>
+      <div className="flex flex-col gap-2">
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={activityData} margin={{ bottom: 10, top: 20 }}>
+            <XAxis
+              dataKey="week"
+              label={{ value: t('manage.analytics.activeWeeks'), dy: 18 }}
+            />
+            <YAxis
+              label={{
+                value: t('manage.analytics.numberOfStudents'),
+                angle: -90,
+                dx: -20,
+              }}
+            />
+            <Tooltip
+              formatter={(value) => [
+                `${value}`,
+                t('manage.analytics.activeStudents'),
+              ]}
+              labelFormatter={(label) =>
+                `${label} ${t('shared.generic.weeks')}`
+              }
+              contentStyle={{
+                borderRadius: '8px',
+                padding: '8px',
+              }}
+            />
+            <Bar dataKey="count">
+              {activityData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
+            {activityData.map(
+              (entry, index) =>
+                (entry.isQ1 ||
+                  entry.isQ3 ||
+                  entry.isMedian ||
+                  entry.isMean) && (
+                  <ReferenceLine
+                    key={`line-${index}`}
+                    x={entry.week}
+                    stroke={
+                      entry.isMean ? 'red' : entry.isMedian ? 'blue' : '#666'
+                    }
+                    label={{
+                      value: entry.isMean
+                        ? t('shared.generic.mean')
+                        : entry.isMedian
+                          ? t('shared.generic.median')
+                          : entry.isQ1
+                            ? 'Q1'
+                            : 'Q3',
+                      position: 'top',
+                      fill: entry.isMean
+                        ? 'red'
+                        : entry.isMedian
+                          ? 'blue'
+                          : '#666',
+                    }}
+                  />
+                )
+            )}
+          </BarChart>
+        </ResponsiveContainer>
+        <DataTable
+          isPaginated
+          isResetSortingEnabled
+          columns={[
+            {
+              accessorKey: 'student',
+              header: t('shared.generic.student'),
+            },
+            {
+              accessorKey: 'activeWeeks',
+              header: ({ column }: any) => {
+                return (
+                  <TableSortingButton
+                    column={column}
+                    title={t('manage.analytics.activeWeeks')}
+                  />
+                )
+              },
+            },
+            {
+              accessorKey: 'activeDaysPerWeek',
+              header: ({ column }: any) => {
+                return (
+                  <TableSortingButton
+                    column={column}
+                    title={t('manage.analytics.activeDaysPerWeek')}
+                  />
+                )
+              },
+              cell: ({ row }: any) =>
+                `${parseFloat(row.getValue('activeDaysPerWeek')).toFixed(2)}`,
+            },
+            {
+              accessorKey: 'meanElementsPerDay',
+              header: ({ column }: any) => {
+                return (
+                  <TableSortingButton
+                    column={column}
+                    title={t('manage.analytics.meanElementsPerDay')}
+                  />
+                )
+              },
+              cell: ({ row }: any) =>
+                `${parseFloat(row.getValue('meanElementsPerDay')).toFixed(2)}`,
+            },
+            {
+              accessorKey: 'activityLevelNumber',
+              header: ({ column }: any) => {
+                return (
+                  <TableSortingButton
+                    column={column}
+                    title={t('manage.analytics.activityLevel')}
+                  />
+                )
+              },
+              cell: ({ row }: any) => (
+                <ActivityLevelTag
+                  activityLevel={row.getValue('activityLevelNumber')}
+                />
+              ),
+            },
+          ]}
+          data={participantActivity.map((entry, ix) => ({
+            ...entry,
+            student: t('manage.analytics.studentN', { number: ix + 1 }),
+            activityLevelNumber:
+              entry.activityLevel === 'HIGH'
+                ? 3
+                : entry.activityLevel === 'MEDIUM'
+                  ? 2
+                  : 1,
+          }))}
+          csvFilename={`${courseName.replace(' ', '-')}_participant_activity`}
+          className={{
+            tableHeader: 'h-7 p-2',
+            tableCell: 'h-7 p-2',
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+export default TotalStudentActivityPlot
