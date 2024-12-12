@@ -1,10 +1,4 @@
-import {
-  faDownload,
-  faRepeat,
-  faSort,
-  faSortDown,
-  faSortUp,
-} from '@fortawesome/free-solid-svg-icons'
+import { faDownload, faRepeat } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   type ColumnDef,
@@ -17,7 +11,6 @@ import {
 } from '@tanstack/react-table'
 import { Button } from '@uzh-bf/design-system'
 import {
-  Button as FutureButton,
   Table,
   TableBody,
   TableCell,
@@ -203,36 +196,6 @@ function DataTable<TData, TValue>({
         </div>
       </div>
     </>
-  )
-}
-
-export function TableSortingButton({
-  column,
-  title,
-  buttonTextSize,
-}: {
-  column: any
-  title: string
-  buttonTextSize?: string
-}) {
-  return (
-    <FutureButton
-      variant="ghost"
-      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      className={twMerge('h-7 !pl-0 hover:bg-transparent', buttonTextSize)}
-    >
-      {title}
-      <FontAwesomeIcon
-        icon={
-          column.getIsSorted() === 'asc'
-            ? faSortUp
-            : column.getIsSorted() === 'desc'
-              ? faSortDown
-              : faSort
-        }
-        className="ml-2 h-3 w-3"
-      />
-    </FutureButton>
   )
 }
 

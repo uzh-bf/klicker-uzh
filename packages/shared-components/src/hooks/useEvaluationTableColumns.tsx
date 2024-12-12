@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
-import { TableSortingButton } from '../DataTable'
+import TableSortingButton from '../TableSortingButton'
 
 interface UseEvaluationTableColumnsProps {
   showSolution: boolean
