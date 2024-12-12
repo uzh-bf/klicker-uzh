@@ -1831,7 +1831,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     analytics: {
       selectAnalyticsDashboard: 'Bitte wählen Sie ein Analyse-Dashboard aus',
       activityDashboard: 'Aktivitäts-Dashboard',
-      performanceDashboard: 'Leistungs-Dashboard',
+      performanceDashboard: 'Leistungs- und Fortschritts-Dashboard',
       quizDashboard: 'Quiz-Dashboard',
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:

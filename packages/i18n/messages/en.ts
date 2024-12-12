@@ -1819,7 +1819,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     analytics: {
       selectAnalyticsDashboard: 'Please select an analytics dashboard',
       activityDashboard: 'Activity Dashboard',
-      performanceDashboard: 'Performance Dashboard',
+      performanceDashboard: 'Performance and Progress Dashboard',
       quizDashboard: 'Quiz Dashboard',
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
