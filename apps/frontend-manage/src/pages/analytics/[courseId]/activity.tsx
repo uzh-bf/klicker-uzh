@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetCourseActivityAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -10,6 +9,8 @@ import DailyActivityPlot from '~/components/analytics/activity/DailyActivityPlot
 import DailyActivityTimeSeries from '~/components/analytics/activity/DailyActivityTimeSeries'
 import TotalStudentActivityPlot from '~/components/analytics/activity/TotalStudentActivityPlot'
 import WeeklyActivityTimeSeries from '~/components/analytics/activity/WeeklyActivityTimeSeries'
+import AnalyticsErrorView from '~/components/analytics/AnalyticsErrorView'
+import AnalyticsLoadingView from '~/components/analytics/AnalyticsLoadingView'
 import Layout from '~/components/Layout'
 
 function ActivityDashboard() {
@@ -25,40 +26,33 @@ function ActivityDashboard() {
     }
   )
   const course = data?.getCourseActivityAnalytics
+  const navigation = (
+    <ActivityAnalyticsNavigation courseId={courseId as string} />
+  )
 
-  // TODO: extract to separate component with variable names / navigation
   // loading state
   if (loading || !courseId) {
     return (
-      <Layout displayName={t('manage.analytics.activityDashboard')}>
-        <ActivityAnalyticsNavigation courseId={courseId as string} />
-        <div className="flex h-full w-full flex-row items-center justify-center gap-4 text-lg">
-          {t('manage.analytics.analyticsLoadingWait')}
-          <Loader basic />
-        </div>
-      </Layout>
+      <AnalyticsLoadingView
+        title={t('manage.analytics.activityDashboard')}
+        navigation={navigation}
+      />
     )
   }
 
-  // TODO: extract to separate component for re-use
   // error state
   if (course === null || typeof course === 'undefined' || error) {
     return (
-      <Layout displayName={t('manage.analytics.activityDashboard')}>
-        <ActivityAnalyticsNavigation courseId={courseId as string} />
-        <H1>{t('manage.analytics.activityDashboard')}</H1>
-        <UserNotification
-          message={t('manage.analytics.analyticsLoadingFailed')}
-          type="error"
-          className={{ root: 'mx-auto my-auto w-max max-w-full text-base' }}
-        />
-      </Layout>
+      <AnalyticsErrorView
+        title={t('manage.analytics.activityDashboard')}
+        navigation={navigation}
+      />
     )
   }
 
   return (
     <Layout displayName={t('manage.analytics.activityDashboard')}>
-      <ActivityAnalyticsNavigation courseId={courseId as string} />
+      {navigation}
       <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
         <H1 className={{ root: 'mb-0' }}>
           {t('manage.analytics.activityDashboard')}: {course.name}

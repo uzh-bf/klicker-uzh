@@ -8,12 +8,11 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-enum QuestionType {
-  SC = 'SC',
-  MC = 'MC',
-  KPRIM = 'KPRIM',
-  NUMERICAL = 'NUMERICAL',
-  FREE_TEXT = 'FREE_TEXT',
+export enum ActivityType {
+  LIVE_QUIZ = 'LIVE_QUIZ',
+  PRACTICE_QUIZ = 'PRACTICE_QUIZ',
+  MICRO_LEARNING = 'MICRO_LEARNING',
+  GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
 export type StackInput = {

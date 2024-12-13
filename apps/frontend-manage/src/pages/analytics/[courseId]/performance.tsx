@@ -1,27 +1,68 @@
-import { H1, H3 } from '@uzh-bf/design-system'
+import { useQuery } from '@apollo/client'
+import { GetCoursePerformanceAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import ActivityDashboardLabel from '~/components/analytics/overview/ActivityDashboardLabel'
-import AnalyticsNavigation from '~/components/analytics/overview/AnalyticsNavigation'
-import QuizDashboardLabel from '~/components/analytics/overview/QuizDashboardLabel'
+import AnalyticsErrorView from '~/components/analytics/AnalyticsErrorView'
+import AnalyticsLoadingView from '~/components/analytics/AnalyticsLoadingView'
+import ActivityProgressPlot from '~/components/analytics/performance/ActivityProgressPlot'
+import PerformanceAnalyticsNavigation from '~/components/analytics/performance/PerformanceAnalyticsNavigation'
 import Layout from '~/components/Layout'
 
 function PerformanceDashboard() {
   const t = useTranslations()
   const router = useRouter()
+  const courseId = router.query.courseId as string
+
+  const { data, loading, error } = useQuery(
+    GetCoursePerformanceAnalyticsDocument,
+    { variables: { courseId }, skip: !courseId }
+  )
+
+  const navigation = <PerformanceAnalyticsNavigation courseId={courseId} />
+  const course = data?.getCoursePerformanceAnalytics
+
+  // loading state
+  if (loading || !courseId) {
+    return (
+      <AnalyticsLoadingView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  // error state
+  if (course === null || typeof course === 'undefined' || error) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
 
   return (
     <Layout displayName={t('manage.analytics.performanceDashboard')}>
-      <AnalyticsNavigation
-        hrefLeft={`/analytics/${router.query.courseId}/activity`}
-        labelLeft={<ActivityDashboardLabel />}
-        hrefRight={`/analytics/${router.query.courseId}/quizzes`}
-        labelRight={<QuizDashboardLabel />}
-      />
+      {navigation}
       <div>
-        <H1>{t('manage.analytics.performanceDashboard')}</H1>
-        <H3>Coursename Placeholder</H3>
+        <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
+          <H1 className={{ root: 'mb-0' }}>
+            {t('manage.analytics.performanceDashboard')}: {course.name}
+          </H1>
+          <div>
+            {t('manage.analytics.totalParticipants', {
+              number: course.totalParticipants,
+            })}
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">
+          <ActivityProgressPlot
+            activityProgresses={course.activityProgresses}
+            participants={course.totalParticipants}
+          />
+        </div>
       </div>
     </Layout>
   )

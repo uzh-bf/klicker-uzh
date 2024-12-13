@@ -1,0 +1,13 @@
+query GetCoursePerformanceAnalytics($courseId: String!) {
+  getCoursePerformanceAnalytics(courseId: $courseId) {
+    name
+    totalParticipants
+    activityProgresses {
+      activityName
+      activityType
+      startedCount
+      completedCount
+      repeatedCount
+    }
+  }
+}

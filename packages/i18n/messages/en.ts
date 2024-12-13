@@ -126,7 +126,7 @@ export default {
       liveQuizzes: 'Live Quizzes',
       practiceQuiz: 'Practice Quiz',
       practiceQuizzes: 'Practice Quizzes',
-      microlearnings: 'Microlearning',
+      microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Active Live Quizzes',
       groupActivity: 'Group Activity',
@@ -1819,7 +1819,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     analytics: {
       selectAnalyticsDashboard: 'Please select an analytics dashboard',
       activityDashboard: 'Activity Dashboard',
-      performanceDashboard: 'Performance Dashboard',
+      performanceDashboard: 'Performance and Progress Dashboard',
       quizDashboard: 'Quiz Dashboard',
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
@@ -1845,6 +1845,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityLevelHigh: 'HIGH',
       activityLevelMedium: 'MEDIUM',
       activityLevelLow: 'LOW',
+      asynchronousActivityProgress: 'Asynchronous Activity Progress',
+      started: 'Started',
+      completed: 'Completed',
+      repeated: 'Repeated',
     },
   },
   control: {

@@ -1,3 +1,4 @@
+import { ActivityType } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { ContextWithUser } from 'src/lib/context.js'
 
@@ -92,4 +93,53 @@ export async function getCourseWeeklyActivity(
   }))
 
   return { totalParticipants: course.participations.length, weeklyActivity }
+}
+
+export async function getCoursePerformanceAnalytics(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, ownerId: ctx.user.sub },
+    include: {
+      activityProgresses: {
+        include: {
+          practiceQuiz: true,
+          microLearning: true,
+        },
+      },
+    },
+  })
+
+  if (!course || course.activityProgresses.length === 0) {
+    return null
+  }
+
+  // order the activity progresses by creation date
+  const orderedProgresses = course.activityProgresses.sort((a, b) =>
+    dayjs(b.practiceQuiz?.createdAt ?? b.microLearning?.createdAt).diff(
+      dayjs(a.practiceQuiz?.createdAt ?? a.microLearning?.createdAt)
+    )
+  )
+
+  // map the activity progresses into the format required by the frontend
+  const activityProgresses = orderedProgresses.map((progress) => ({
+    activityName:
+      progress.practiceQuizId !== null
+        ? (progress.practiceQuiz?.name ?? 'Unknown')
+        : (progress.microLearning?.name ?? 'Unknown'),
+    activityType:
+      progress.practiceQuizId !== null
+        ? ActivityType.PRACTICE_QUIZ
+        : ActivityType.MICRO_LEARNING,
+    startedCount: progress.startedCount,
+    completedCount: progress.completedCount,
+    repeatedCount: progress.repeatedCount,
+  }))
+
+  return {
+    name: course.name,
+    totalParticipants: course.activityProgresses[0]!.totalCourseParticipants,
+    activityProgresses,
+  }
 }
