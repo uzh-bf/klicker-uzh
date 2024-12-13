@@ -17,7 +17,7 @@ function PerformanceDashboard() {
 
   const { data, loading, error } = useQuery(
     GetCoursePerformanceAnalyticsDocument,
-    { variables: { courseId } }
+    { variables: { courseId }, skip: !courseId }
   )
 
   const navigation = <PerformanceAnalyticsNavigation courseId={courseId} />
