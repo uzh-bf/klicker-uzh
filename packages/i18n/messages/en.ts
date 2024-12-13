@@ -1846,6 +1846,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityLevelMedium: 'MEDIUM',
       activityLevelLow: 'LOW',
       asynchronousActivityProgress: 'Asynchronous Activity Progress',
+      started: 'Started',
+      completed: 'Completed',
+      repeated: 'Repeated',
     },
   },
   control: {

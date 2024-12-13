@@ -60,6 +60,7 @@ function PerformanceDashboard() {
         <div className="flex flex-col gap-4">
           <ActivityProgressPlot
             activityProgresses={course.activityProgresses}
+            participants={course.totalParticipants}
           />
         </div>
       </div>

@@ -1858,6 +1858,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityLevelMedium: 'MITTEL',
       activityLevelLow: 'TIEF',
       asynchronousActivityProgress: 'Fortschritt in asynchronen Aktivitäten',
+      started: 'Gestartet',
+      completed: 'Abgeschlossen',
+      repeated: 'Wiederholt',
     },
   },
   control: {
