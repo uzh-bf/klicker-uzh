@@ -1,10 +1,17 @@
 import * as DB from '@klicker-uzh/prisma'
+import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 
 export const ActivityLevel = builder.enumType('ActivityLevel', {
   values: Object.values(DB.ActivityLevel),
 })
 
+export const ActivityType = builder.enumType('ActivityType', {
+  values: Object.values(ActivityTypeEnum),
+})
+
+// ------ Activity Analytics ------
+// #region
 export const ElementFeedbackRef =
   builder.objectRef<DB.ElementFeedback>('ElementFeedback')
 export const ElementFeedback = builder.objectType(ElementFeedbackRef, {
@@ -131,3 +138,46 @@ export const WeeklyCourseActivities = builder.objectType(
     }),
   }
 )
+// #endregion
+
+// ------ Performance & Progress Analytics ------
+// #region
+interface IActivityProgress {
+  activityName: string
+  activityType: ActivityTypeEnum
+  startedCount: number
+  completedCount: number
+  repeatedCount?: number | null
+}
+export const ActivityProgressRef =
+  builder.objectRef<IActivityProgress>('ActivityProgress')
+export const ActivityProgress = builder.objectType(ActivityProgressRef, {
+  fields: (t) => ({
+    activityName: t.exposeString('activityName'),
+    activityType: t.expose('activityType', { type: ActivityType }),
+    startedCount: t.exposeInt('startedCount'),
+    completedCount: t.exposeInt('completedCount'),
+    repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
+  }),
+})
+
+interface ICoursePerformanceAnalytics {
+  name: string
+  totalParticipants: number
+  activityProgresses: IActivityProgress[]
+}
+export const CoursePerformanceAnalyticsRef =
+  builder.objectRef<ICoursePerformanceAnalytics>('CoursePerformanceAnalytics')
+export const CoursePerformanceAnalytics = builder.objectType(
+  CoursePerformanceAnalyticsRef,
+  {
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      totalParticipants: t.exposeInt('totalParticipants'),
+      activityProgresses: t.expose('activityProgresses', {
+        type: [ActivityProgress],
+      }),
+    }),
+  }
+)
+// #endregion

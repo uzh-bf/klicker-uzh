@@ -1,25 +1,27 @@
+import { useQuery } from '@apollo/client'
+import { GetCoursePerformanceAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import AnalyticsErrorView from '~/components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '~/components/analytics/AnalyticsLoadingView'
+import ActivityProgressPlot from '~/components/analytics/performance/ActivityProgressPlot'
 import PerformanceAnalyticsNavigation from '~/components/analytics/performance/PerformanceAnalyticsNavigation'
 import Layout from '~/components/Layout'
 
 function PerformanceDashboard() {
   const t = useTranslations()
   const router = useRouter()
-  const courseId = router.query.courseId
+  const courseId = router.query.courseId as string
 
-  // TODO: data loading
-  const loading = false
-  const course = { name: 'PLACEHOLDER' }
-  const error = null
-
-  const navigation = (
-    <PerformanceAnalyticsNavigation courseId={courseId as string} />
+  const { data, loading, error } = useQuery(
+    GetCoursePerformanceAnalyticsDocument,
+    { variables: { courseId } }
   )
+
+  const navigation = <PerformanceAnalyticsNavigation courseId={courseId} />
+  const course = data?.getCoursePerformanceAnalytics
 
   // loading state
   if (loading || !courseId) {
@@ -49,6 +51,16 @@ function PerformanceDashboard() {
           <H1 className={{ root: 'mb-0' }}>
             {t('manage.analytics.performanceDashboard')}: {course.name}
           </H1>
+          <div>
+            {t('manage.analytics.totalParticipants', {
+              number: course.totalParticipants,
+            })}
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">
+          <ActivityProgressPlot
+            activityProgresses={course.activityProgresses}
+          />
         </div>
       </div>
     </Layout>

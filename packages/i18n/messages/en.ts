@@ -126,7 +126,7 @@ export default {
       liveQuizzes: 'Live Quizzes',
       practiceQuiz: 'Practice Quiz',
       practiceQuizzes: 'Practice Quizzes',
-      microlearnings: 'Microlearning',
+      microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Active Live Quizzes',
       groupActivity: 'Group Activity',
@@ -1845,6 +1845,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityLevelHigh: 'HIGH',
       activityLevelMedium: 'MEDIUM',
       activityLevelLow: 'LOW',
+      asynchronousActivityProgress: 'Asynchronous Activity Progress',
     },
   },
   control: {

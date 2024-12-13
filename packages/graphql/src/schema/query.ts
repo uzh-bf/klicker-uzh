@@ -13,6 +13,7 @@ import * as QuestionService from '../services/questions.js'
 import * as StacksService from '../services/stacks.js'
 import {
   CourseActivityAnalytics,
+  CoursePerformanceAnalytics,
   ElementFeedback,
   WeeklyCourseActivities,
 } from './analytics.js'
@@ -766,6 +767,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return AnalyticsService.getCourseWeeklyActivity(args, ctx)
+        },
+      }),
+
+      getCoursePerformanceAnalytics: asUser.field({
+        nullable: true,
+        type: CoursePerformanceAnalytics,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AnalyticsService.getCoursePerformanceAnalytics(args, ctx)
         },
       }),
     }

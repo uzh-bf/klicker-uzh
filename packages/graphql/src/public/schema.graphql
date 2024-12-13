@@ -30,9 +30,24 @@ enum ActivityLevel {
   MEDIUM
 }
 
+type ActivityProgress {
+  activityName: String!
+  activityType: ActivityType!
+  completedCount: Int!
+  repeatedCount: Int
+  startedCount: Int!
+}
+
 type ActivitySummary {
   numOfAnonymousResponses: Int!
   numOfResponses: Int!
+}
+
+enum ActivityType {
+  GROUP_ACTIVITY
+  LIVE_QUIZ
+  MICRO_LEARNING
+  PRACTICE_QUIZ
 }
 
 type ArchivedElement {
@@ -287,6 +302,12 @@ type CourseActivityAnalytics {
   participantCourseAnalytics: [ParticipantCourseActivity!]!
   totalParticipants: Int!
   weeklyActivity: [ParticipantActivityTimestamp!]!
+}
+
+type CoursePerformanceAnalytics {
+  activityProgresses: [ActivityProgress!]!
+  name: String!
+  totalParticipants: Int!
 }
 
 type CourseSummary {
@@ -1254,6 +1275,7 @@ type Query {
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
+  getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
   getCourseSummary(courseId: String!): CourseSummary
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
