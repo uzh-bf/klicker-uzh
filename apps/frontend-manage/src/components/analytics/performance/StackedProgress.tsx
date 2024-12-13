@@ -63,14 +63,14 @@ function StackedProgress({
                 return (
                   <div className="flex flex-col rounded border bg-white p-2 shadow-md">
                     <div
-                      className={`text-[${colors.started}]`}
+                      style={{ color: colors.started }}
                     >{`${t('manage.analytics.started')}: ${startedPercent.toFixed(1)} %`}</div>
                     <div
-                      className={`text-[${colors.completed}]`}
+                      style={{ color: colors.completed }}
                     >{`${t('manage.analytics.completed')}: ${completedPercent.toFixed(1)} %`}</div>
                     {repeatedSet ? (
                       <div
-                        className={`text-[${colors.repeated}]`}
+                        style={{ color: colors.repeated }}
                       >{`${t('manage.analytics.repeated')}: ${repeatedPercent.toFixed(1)} %`}</div>
                     ) : null}
                   </div>

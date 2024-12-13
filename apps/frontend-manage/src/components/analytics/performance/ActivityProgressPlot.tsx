@@ -19,7 +19,6 @@ function ActivityProgressPlot({
     (progress) => progress.activityType === ActivityType.MicroLearning
   )
 
-  // required for tailwind styles to be included: text-[#4ade80] text-[#15803d] text-[#064e3b]
   const chartColors = {
     started: '#4ade80',
     completed: '#15803d',
@@ -53,7 +52,7 @@ function ActivityProgressPlot({
       </div>
       <div className="flex flex-col gap-6">
         {pqProgresses.length > 0 && (
-          <div>
+          <div className="max-h-[14.5rem] overflow-y-scroll">
             <H4>{t('shared.generic.practiceQuizzes')}</H4>
             {pqProgresses.map((progress, idx) => (
               <StackedProgress
@@ -66,7 +65,7 @@ function ActivityProgressPlot({
           </div>
         )}
         {mlProgresses.length > 0 && (
-          <div>
+          <div className="max-h-[14.5rem] overflow-y-scroll">
             <H4>{t('shared.generic.microlearnings')}</H4>
             {mlProgresses.map((progress, idx) => (
               <StackedProgress
