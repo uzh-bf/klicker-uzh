@@ -52,29 +52,33 @@ function ActivityProgressPlot({
       </div>
       <div className="flex flex-col gap-6">
         {pqProgresses.length > 0 && (
-          <div className="max-h-[14.5rem] overflow-y-scroll">
+          <div>
             <H4>{t('shared.generic.practiceQuizzes')}</H4>
-            {pqProgresses.map((progress, idx) => (
-              <StackedProgress
-                key={`activity-progress-pq-${idx}`}
-                progress={progress}
-                participants={participants}
-                colors={chartColors}
-              />
-            ))}
+            <div className="max-h-[13rem] overflow-y-scroll">
+              {pqProgresses.map((progress, idx) => (
+                <StackedProgress
+                  key={`activity-progress-pq-${idx}`}
+                  progress={progress}
+                  participants={participants}
+                  colors={chartColors}
+                />
+              ))}
+            </div>
           </div>
         )}
         {mlProgresses.length > 0 && (
-          <div className="max-h-[14.5rem] overflow-y-scroll">
+          <div>
             <H4>{t('shared.generic.microlearnings')}</H4>
-            {mlProgresses.map((progress, idx) => (
-              <StackedProgress
-                key={`activity-progress-ml-${idx}`}
-                progress={progress}
-                participants={participants}
-                colors={chartColors}
-              />
-            ))}
+            <div className="max-h-[13rem] overflow-y-scroll">
+              {mlProgresses.map((progress, idx) => (
+                <StackedProgress
+                  key={`activity-progress-ml-${idx}`}
+                  progress={progress}
+                  participants={participants}
+                  colors={chartColors}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
