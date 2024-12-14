@@ -1,0 +1,8 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-ai-generation
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:

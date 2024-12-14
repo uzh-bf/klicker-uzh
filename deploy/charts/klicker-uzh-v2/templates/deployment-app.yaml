@@ -1,6 +1,83 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "chart.fullname" . }}-ai-generation
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ai-generation
+spec:
+  {{- with .Values.aiGeneration.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.aiGeneration.autoscaling.enabled }}
+  replicas: {{ .Values.aiGeneration.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ai-generation
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-ai-generation.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-ai-generation.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.aiGeneration.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ai-generation
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.aiGeneration.priorityClassName }}
+      {{- with .Values.aiGeneration.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.aiGeneration.podSecurityContext | nindent 8 }}
+      containers:
+        - name: ai-generation
+          securityContext:
+            {{- toYaml .Values.aiGeneration.securityContext | nindent 12 }}
+          image: "{{ .Values.aiGeneration.image.repository }}:{{ .Values.aiGeneration.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.aiGeneration.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-ai-generation
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-ai-generation
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.aiGeneration.resources | nindent 12 }}
+      {{- with .Values.aiGeneration.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.aiGeneration.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.aiGeneration.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: {{ include "chart.fullname" . }}-auth
   labels:
     {{- include "chart.labels" . | nindent 4 }}

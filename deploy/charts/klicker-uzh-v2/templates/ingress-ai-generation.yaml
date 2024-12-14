@@ -1,0 +1,46 @@
+{{- if .Values.aiGeneration.ingress.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
+{{- $svcPort := .Values.aiGeneration.service.port -}}
+{{- if and .Values.aiGeneration.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.aiGeneration.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.aiGeneration.ingress.annotations "kubernetes.io/ingress.class" .Values.aiGeneration.ingress.className}}
+  {{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-ai-generation
+  labels:
+    {{- include "chart.ingressLabels" . | nindent 4 }}
+  {{- with .Values.aiGeneration.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.aiGeneration.ingress.className }}
+  {{- if .Values.aiGeneration.ingress.tls }}
+  tls:
+    {{- range .Values.aiGeneration.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.aiGeneration.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullName }}-ai-generation
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

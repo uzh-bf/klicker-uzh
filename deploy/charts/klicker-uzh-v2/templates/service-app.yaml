@@ -1,6 +1,23 @@
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ include "chart.fullname" . }}-ai-generation
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.aiGeneration.service.type }}
+  ports:
+    - port: {{ .Values.aiGeneration.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: ai-generation
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: {{ include "chart.fullname" . }}-auth
   labels:
     {{- include "chart.labels" . | nindent 4 }}

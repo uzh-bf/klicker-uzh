@@ -1,0 +1,127 @@
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
+
+releases:
+  - name: klicker-v2-mp
+    namespace: klicker-v2-mp
+    createNamespace: true
+    chart: ../charts/klicker-uzh-v2
+    version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+    installed: true
+    kubeContext: klicker-k8scbfdbd7c
+    values:
+      - values.yaml
+      - dfDomain: '{{ requiredEnv "DF_DOMAIN" }}'
+
+        teamsWebhookUrl: '{{ requiredEnv "TEAMS_WEBHOOK_URL" }}'
+
+        appSecret: '{{ requiredEnv "APP_SECRET" }}'
+
+        email:
+          type: '{{ requiredEnv "EMAIL_TYPE" }}'
+          from: '{{ requiredEnv "EMAIL_FROM" }}'
+          host: '{{ requiredEnv "EMAIL_HOST" }}'
+          port: '{{ requiredEnv "EMAIL_PORT" }}'
+          username: '{{ requiredEnv "EMAIL_USER" }}'
+          password: '{{ requiredEnv "EMAIL_PASS" }}'
+          secure: '{{ requiredEnv "EMAIL_SECURE" }}'
+          requireTLS: '{{ requiredEnv "EMAIL_STARTTLS" }}'
+
+        eduId:
+          clientSecret: 'FAKE'
+
+        aiGeneration:
+          replicaCount: '{{ requiredEnv "APP_REPLICAS" }}'
+          image:
+            repository: ghcr.io/jerryisqx/klicker-uzh/ai
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+        auth:
+          replicaCount: '{{ requiredEnv "APP_REPLICAS" }}'
+          image:
+            repository: ghcr.io/jerryisqx/klicker-uzh/auth
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+        frontendPWA:
+          replicaCount: 0
+          image:
+            repository: ghcr.io/jerryisqx/klicker-uzh/frontend-pwa
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+        frontendManage:
+          replicaCount: '{{ requiredEnv "APP_REPLICAS" }}'
+          image:
+            repository: ghcr.io/jerryisqx/klicker-uzh/frontend-manage
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+        frontendControl:
+          replicaCount: 0
+          image:
+            repository: ghcr.io/jerryisqx/klicker-uzh/frontend-control
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+        backendGraphql:
+          replicaCount: '{{ requiredEnv "APP_REPLICAS" }}'
+
+          image:
+            repository: ghcr.io/jerryisqx/klicker-uzh/backend-docker
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+          apiDomain: '{{ requiredEnv "API_DOMAIN" }}'
+          cookieDomain: '{{ requiredEnv "COOKIE_DOMAIN" }}'
+          databaseUrl: '{{ requiredEnv "DATABASE_URL" }}'
+          debug: true
+
+          appManageSubdomain: '{{ requiredEnv "APP_MANAGE_SUBDOMAIN" }}'
+          appManageDomain: '{{ requiredEnv "APP_MANAGE_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
+          appStudentSubdomain: '{{ requiredEnv "APP_STUDENT_SUBDOMAIN" }}'
+          appStudentDomain: '{{ requiredEnv "APP_STUDENT_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
+          appControlSubdomain: '{{ requiredEnv "APP_CONTROL_SUBDOMAIN" }}'
+          appControlDomain: '{{ requiredEnv "APP_CONTROL_SUBDOMAIN" }}{{ requiredEnv "COOKIE_DOMAIN" }}'
+
+          notifications:
+            url: '{{ requiredEnv "NOTIFICATION_URL" }}'
+            secret: '{{ requiredEnv "NOTIFICATION_SECRET" }}'
+            supportEmail: '{{ requiredEnv "NOTIFICATION_SUPPORT_EMAIL" }}'
+
+          vapid:
+            publicKey: '{{ requiredEnv "VAPID_PUBLIC_KEY" }}'
+            privateKey: '{{ requiredEnv "VAPID_PRIVATE_KEY" }}'
+
+          redisCache:
+            host: klicker-v2-mp-redis-master
+            port: 6379
+            pass: ''
+
+          redisExec:
+            host: '{{ requiredEnv "REDIS_HOST" }}'
+            port: '{{ requiredEnv "REDIS_PORT" }}'
+            tls: '{{ requiredEnv "REDIS_TLS" }}'
+            pass: '{{ requiredEnv "REDIS_PASS" }}'
+
+        lti:
+          replicaCount: 0
+
+          image:
+            repository: ghcr.io/jerryisqx/klicker-uzh/lti
+            tag: '{{ requiredEnv "APP_VERSION" }}'
+
+          appSecret: '{{ requiredEnv "APP_SECRET" }}'
+          clientId: ''
+          redirectURL: ''
+          cookieDomain: ''
+          encryptionKey: ''
+          name: ''
+          url: ''
+          authEndpoint: ''
+          tokenEndpoint: ''
+          keysEndpoint: ''
+
+          db:
+            type: ''
+            host: ''
+            port: ''
+            name: ''
+            username: ''
+            password: ''
