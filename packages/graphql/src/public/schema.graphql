@@ -14,6 +14,14 @@ type Achievement {
   nameEN: String
 }
 
+type ActivityErrorRate {
+  activityName: String!
+  activityType: ActivityType!
+  correctRate: Float!
+  errorRate: Float!
+  partialRate: Float!
+}
+
 type ActivityEvaluation {
   confusionFeedbacks: [ConfusionTimestep!]
   description: String
@@ -305,7 +313,9 @@ type CourseActivityAnalytics {
 }
 
 type CoursePerformanceAnalytics {
+  activityErrorRates: [ActivityErrorRate!]!
   activityProgresses: [ActivityProgress!]!
+  instanceErrorRates: [InstanceErrorRate!]!
   name: String!
   totalParticipants: Int!
 }
@@ -779,6 +789,14 @@ type GroupMessage {
   id: Int!
   participant: Participant!
   updatedAt: Date!
+}
+
+type InstanceErrorRate {
+  correctRate: Float!
+  elementName: String!
+  elementType: ElementType!
+  errorRate: Float!
+  partialRate: Float!
 }
 
 union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation

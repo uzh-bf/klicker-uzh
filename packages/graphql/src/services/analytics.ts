@@ -1,3 +1,4 @@
+import { ElementType } from '@klicker-uzh/prisma'
 import { ActivityType } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { ContextWithUser } from 'src/lib/context.js'
@@ -102,44 +103,143 @@ export async function getCoursePerformanceAnalytics(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, ownerId: ctx.user.sub },
     include: {
-      activityProgresses: {
+      _count: {
+        select: { participations: true },
+      },
+      practiceQuizzes: {
         include: {
-          practiceQuiz: true,
-          microLearning: true,
+          progress: true,
+          performance: true,
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  instancePerformance: true,
+                },
+              },
+            },
+          },
         },
+        orderBy: { createdAt: 'desc' },
+      },
+      microLearnings: {
+        include: {
+          progress: true,
+          performance: true,
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  instancePerformance: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { scheduledStartAt: 'desc' },
       },
     },
   })
 
-  if (!course || course.activityProgresses.length === 0) {
+  if (
+    !course ||
+    (course.practiceQuizzes.length === 0 && course.microLearnings.length === 0)
+  ) {
     return null
   }
 
-  // order the activity progresses by creation date
-  const orderedProgresses = course.activityProgresses.sort((a, b) =>
-    dayjs(b.practiceQuiz?.createdAt ?? b.microLearning?.createdAt).diff(
-      dayjs(a.practiceQuiz?.createdAt ?? a.microLearning?.createdAt)
-    )
-  )
+  // map the metrics for all activities in the course to the desired performance and progress values
+  const { activityProgresses, activityErrorRates, instanceErrorRates } = [
+    ...course.practiceQuizzes,
+    ...course.microLearnings,
+  ].reduce<{
+    activityProgresses: {
+      activityName: string
+      activityType: ActivityType
+      startedCount: number
+      completedCount: number
+      repeatedCount: number | null
+    }[]
+    activityErrorRates: {
+      activityName: string
+      activityType: ActivityType
+      errorRate: number
+      partialRate: number
+      correctRate: number
+    }[]
+    instanceErrorRates: {
+      elementName: string
+      elementType: ElementType
+      errorRate: number
+      partialRate: number
+      correctRate: number
+    }[]
+  }>(
+    (acc, activity) => {
+      const progress = activity.progress
+      const performance = activity.performance
 
-  // map the activity progresses into the format required by the frontend
-  const activityProgresses = orderedProgresses.map((progress) => ({
-    activityName:
-      progress.practiceQuizId !== null
-        ? (progress.practiceQuiz?.name ?? 'Unknown')
-        : (progress.microLearning?.name ?? 'Unknown'),
-    activityType:
-      progress.practiceQuizId !== null
-        ? ActivityType.PRACTICE_QUIZ
-        : ActivityType.MICRO_LEARNING,
-    startedCount: progress.startedCount,
-    completedCount: progress.completedCount,
-    repeatedCount: progress.repeatedCount,
-  }))
+      if (!progress) {
+        return acc
+      }
+
+      const activityType =
+        progress.practiceQuizId !== null
+          ? ActivityType.PRACTICE_QUIZ
+          : ActivityType.MICRO_LEARNING
+
+      // update the activity progress entries
+      acc.activityProgresses.push({
+        activityName: activity.name,
+        activityType,
+        startedCount: progress.startedCount,
+        completedCount: progress.completedCount,
+        repeatedCount: progress.repeatedCount,
+      })
+
+      if (!performance) {
+        return acc
+      }
+
+      // add the activity performance metrics to the error rates
+      acc.activityErrorRates.push({
+        activityName: activity.name,
+        activityType,
+        errorRate: performance.totalErrorRate,
+        partialRate: performance.totalPartialRate,
+        correctRate: performance.totalCorrectRate,
+      })
+
+      // extract the desired values from the instance performance entries
+      const instancePerformances = activity.stacks.flatMap((stack) =>
+        stack.elements.flatMap((element) => {
+          const iPerformance = element.instancePerformance
+
+          if (!iPerformance) {
+            return []
+          }
+
+          return {
+            elementName: element.elementData.name,
+            elementType: element.elementData.type,
+            errorRate: iPerformance.totalErrorRate,
+            partialRate: iPerformance.totalPartialRate,
+            correctRate: iPerformance.totalCorrectRate,
+          }
+        })
+      )
+      acc.instanceErrorRates.push(...instancePerformances)
+
+      return acc
+    },
+    { activityProgresses: [], activityErrorRates: [], instanceErrorRates: [] }
+  )
 
   return {
     name: course.name,
-    totalParticipants: course.activityProgresses[0]!.totalCourseParticipants,
+    totalParticipants: course._count.participations,
     activityProgresses,
+    activityErrorRates,
+    instanceErrorRates,
   }
 }

@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { ElementType } from './elementData.js'
 
 export const ActivityLevel = builder.enumType('ActivityLevel', {
   values: Object.values(DB.ActivityLevel),
@@ -161,10 +162,50 @@ export const ActivityProgress = builder.objectType(ActivityProgressRef, {
   }),
 })
 
+interface IActivityErrorRate {
+  activityName: string
+  activityType: ActivityTypeEnum
+  errorRate: number
+  partialRate: number
+  correctRate: number
+}
+export const ActivityErrorRateRef =
+  builder.objectRef<IActivityErrorRate>('ActivityErrorRate')
+export const ActivityErrorRate = builder.objectType(ActivityErrorRateRef, {
+  fields: (t) => ({
+    activityName: t.exposeString('activityName'),
+    activityType: t.expose('activityType', { type: ActivityType }),
+    errorRate: t.exposeFloat('errorRate'),
+    partialRate: t.exposeFloat('partialRate'),
+    correctRate: t.exposeFloat('correctRate'),
+  }),
+})
+
+interface IInstanceErrorRate {
+  elementName: string
+  elementType: DB.ElementType
+  errorRate: number
+  partialRate: number
+  correctRate: number
+}
+export const InstanceErrorRateRef =
+  builder.objectRef<IInstanceErrorRate>('InstanceErrorRate')
+export const InstanceErrorRate = builder.objectType(InstanceErrorRateRef, {
+  fields: (t) => ({
+    elementName: t.exposeString('elementName'),
+    elementType: t.expose('elementType', { type: ElementType }),
+    errorRate: t.exposeFloat('errorRate'),
+    partialRate: t.exposeFloat('partialRate'),
+    correctRate: t.exposeFloat('correctRate'),
+  }),
+})
+
 interface ICoursePerformanceAnalytics {
   name: string
   totalParticipants: number
   activityProgresses: IActivityProgress[]
+  activityErrorRates: IActivityErrorRate[]
+  instanceErrorRates: IInstanceErrorRate[]
 }
 export const CoursePerformanceAnalyticsRef =
   builder.objectRef<ICoursePerformanceAnalytics>('CoursePerformanceAnalytics')
@@ -176,6 +217,12 @@ export const CoursePerformanceAnalytics = builder.objectType(
       totalParticipants: t.exposeInt('totalParticipants'),
       activityProgresses: t.expose('activityProgresses', {
         type: [ActivityProgress],
+      }),
+      activityErrorRates: t.expose('activityErrorRates', {
+        type: [ActivityErrorRate],
+      }),
+      instanceErrorRates: t.expose('instanceErrorRates', {
+        type: [InstanceErrorRate],
       }),
     }),
   }
