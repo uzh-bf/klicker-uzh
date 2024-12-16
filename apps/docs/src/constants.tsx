@@ -41,6 +41,36 @@ export const FEATURES = [
   // },
 ]
 
+export const USE_CASE_CATEGORIES = {
+  interaction: {
+    title: 'Interaction',
+    description:
+      'Foster meaningful dialogue and collaboration between students and teachers through synchronous and asynchronous learning activities.',
+    useCases: ['live_qa', 'live_quiz', 'group_activity', 'flipped_classroom'],
+  },
+  engagement: {
+    title: 'Engagement',
+    description:
+      'Promote active learning and sustained student motivation through structured activities and personalized learning paths.',
+    useCases: [
+      'microlearning',
+      'practice_quiz',
+      'gamification',
+      'learning_analytics',
+    ],
+  },
+  ai_enhanced_learning: {
+    title: 'AI-Enhanced Learning',
+    description:
+      'Support teaching and learning processes with artificial intelligence to provide personalized experiences and reduce administrative overhead.',
+    useCases: [
+      'ai_practice_content',
+      'ai_formative_feedback',
+      'chatbot_tutoring',
+    ],
+  },
+}
+
 export const USE_CASES = {
   live_quiz: {
     title: '(Gamified) Live Quizzes',
@@ -61,16 +91,8 @@ export const USE_CASES = {
       'Improve motivation by incorporating interactive gamification elements.',
       'Evaluate feedback from your students (e.g., opinions or level of knowledge).',
     ],
-    abstract: (
-      <>
-        <p>
-          KlickerUZH, a Classroom Response System (CRS), fosters student
-          participation and inclusion in large courses via simple, anonymous
-          polling mechanisms. Its gamification features promote active learning
-          while reducing fears of judgment.
-        </p>
-      </>
-    ),
+    abstract:
+      'Enhance student engagement and participation in large courses through interactive polling and gamified elements, providing a safe and inclusive learning environment.',
     introduction: (
       <>
         <p>
@@ -321,18 +343,8 @@ export const USE_CASES = {
       'Provide timely feedback and help students understand where they stand and address any concerns they may have.',
       'Foster stronger interaction between the lecturer and students during the lecture and encourage active participation.',
     ],
-    abstract: (
-      <>
-        <p>
-          The Flipped Classroom model inverts traditional teaching by shifting
-          knowledge acquisition to self-paced, independent study using
-          comprehensive eLearning resources before in-person classes. During
-          these classes, the focus is on practicing and consolidating this
-          knowledge with the lecturer, thereby ensuring a deeper understanding
-          and ample time to address specific queries.
-        </p>
-      </>
-    ),
+    abstract:
+      'Implement the flipped classroom model by providing students with pre-class materials and focusing on interactive discussions during class time.',
     introduction: (
       <>
         <p>
@@ -341,17 +353,17 @@ export const USE_CASES = {
           knowledge transfer phase (phase 1) to independent, self-paced learning
           before the actual course, and focusing on practice and consolidation
           (phase 2) during in-person sessions with the teacher utilizing cases,
-          experiments, discussions, or questions.
+          experiments, discussions or questions.
         </p>
         <p>
           By adopting this methodology, students can familiarize themselves with
           the course content at their own pace before the lecture, through
-          individual self-study. This can be facilitated using comprehensive
-          eLearning resources such as reading materials, multiple-choice
-          questions, and videos. During the lecture, the acquired knowledge is
-          then applied and practiced collaboratively with the lecturer, allowing
-          for a deeper understanding of the new learning materials, the
-          discussion of questions and more time to address specific queries.
+          comprehensive eLearning resources such as reading materials,
+          multiple-choice questions, and videos. During the lecture, the
+          acquired knowledge is then applied and practiced collaboratively with
+          the lecturer, allowing for a deeper understanding of the new learning
+          materials, the discussion of questions and more time to address
+          specific queries.
         </p>
       </>
     ),
@@ -513,19 +525,8 @@ export const USE_CASES = {
       'Promote long-term knowledge-retention.',
       'Provide timely feedback and help students understand where they stand and address any concerns they may have.',
     ],
-    abstract: (
-      <>
-        <p>
-          Microlearning, an education approach that delivers short, focused
-          learning units, aims to mitigate the challenges of information
-          retention and irregular study patterns often experienced by students.
-          With its brevity and flexibility, students can fit learning into their
-          daily schedules and combat the 'Forgetting Curve', enabling them to
-          review, refresh, and consolidate lecture content, irrespective of time
-          or location.
-        </p>
-      </>
-    ),
+    abstract:
+      'Break down complex topics into bite-sized learning units that students can easily digest and review at their own pace.',
     introduction: (
       <>
         <p>
@@ -714,17 +715,8 @@ export const USE_CASES = {
       'Assess and monitor learning progress and helping students assess the understanding of the course material and monitor the progress in learning over time. By completing the practice quizzes, students can identify areas of strength and areas that require further study.',
       'Provides a streamlined and familiar interface for students to access and complete the quizzes in the LMS.',
     ],
-    abstract: (
-      <>
-        <p>
-          Practice questions serve as an effective tool for students to bridge
-          the gap between theory and application, enhancing comprehension and
-          identifying knowledge gaps. KlickerUZH's practice quiz activity
-          facilitates asynchronous learning through question sets targeting
-          specific modules or topics.
-        </p>
-      </>
-    ),
+    abstract:
+      'Provide students with a comprehensive practice environment featuring quizzes, flashcards, and spaced repetition to reinforce learning.',
     introduction: (
       <>
         <p>
@@ -909,19 +901,8 @@ export const USE_CASES = {
       'Enable students to develop (transversal) teamwork skills and learn to collaborate efficiently as a group.',
       'Prepare students for future professional challenges requiring collaboration and teamwork.',
     ],
-    abstract: (
-      <>
-        <p>
-          Group activities foster creativity, critical thinking, communication
-          skills, and accountability among students, preparing them for
-          collaborative academic and professional endeavours. KlickerUZH
-          simplifies the incorporation of group tasks into large courses,
-          supporting processes from group formation to resolving questions,
-          thereby ensuring group work remains integral even in large-scale
-          learning environments.
-        </p>
-      </>
-    ),
+    abstract:
+      'Foster collaborative learning through structured group activities that encourage peer interaction and knowledge sharing.',
     introduction: (
       <>
         <p>
@@ -983,7 +964,7 @@ export const USE_CASES = {
           >
             group work
           </a>{' '}
-          as well as the
+          as well as the{' '}
           <a
             href="https://teachingtools.uzh.ch/en/tools/methoden-zur-gruppenbildung"
             target="_blank"
@@ -1112,17 +1093,8 @@ export const USE_CASES = {
       'Enable lecturers and their team to provide rapid feedback on incoming questions.',
       'Improve the efficiency of the Q&A workflow by batching questions (in sessions, with upvotes, etc.).',
     ],
-    abstract: (
-      <>
-        <p>
-          KlickerUZH offers an inclusive and secure avenue for students to ask
-          questions anonymously during lectures, overcoming hesitations tied to
-          insecurity or fear of judgement. This connection cultivates an open
-          learning environment, grants lecturers insight into students'
-          understanding, and can facilitate interactive discussions.
-        </p>
-      </>
-    ),
+    abstract:
+      'Enable real-time student questions and interactions during lectures while maintaining focus and organization.',
     introduction: (
       <>
         <p>
@@ -1322,18 +1294,8 @@ export const USE_CASES = {
       'Provide opportunities for healthy competition, encouraging students to strive for achievements, rewards, or higher scores, which can drive their learning progress.',
       "Offer immediate feedback, rewards, and recognition for accomplishments, supporting students' progress and growth.",
     ],
-    abstract: (
-      <>
-        <p>
-          Gamification integrates gaming elements into education to stimulate
-          active participation, competition, and exploration among students,
-          leveraging their intrinsic motivators for improved learning and skill
-          development. Incorporating 'fun' into the gamification process is
-          important for promoting continued engagement and improving overall
-          educational outcomes.
-        </p>
-      </>
-    ),
+    abstract:
+      'Boost student motivation and engagement through game-like elements including points, achievements, and competitive challenges in educational activities.',
     introduction: (
       <>
         <p>
@@ -1624,5 +1586,357 @@ export const USE_CASES = {
         </ul>
       </>
     ),
+  },
+  learning_analytics: {
+    title: 'Learning Analytics',
+    headerImgSrc: '/img_v3/dawid-zawila-OCMcTCu97EE-unsplash.jpg',
+    tags: [
+      'Data-driven insights',
+      'Student progress',
+      'Learning patterns',
+      'Performance tracking',
+    ],
+    abstract:
+      'Leverage data analytics to gain insights into student learning patterns, identify areas for improvement, and make informed decisions to enhance educational outcomes.',
+    introduction: (
+      <>
+        <p>
+          Learning Analytics in KlickerUZH transforms educational data into
+          actionable insights, helping instructors understand student
+          engagement, progress, and learning patterns. This feature enables
+          data-driven decision-making to improve teaching strategies and student
+          outcomes.
+        </p>
+      </>
+    ),
+    background: (
+      <>
+        <p>
+          Learning Analytics has emerged as a powerful tool in modern education,
+          combining data science with pedagogical insights to enhance the
+          teaching and learning process. Research shows that data-driven
+          approaches can significantly improve student outcomes by enabling
+          early intervention and personalized learning strategies.
+        </p>
+        <p>Key benefits include:</p>
+        <ul>
+          <li>Real-time tracking of student engagement and performance</li>
+          <li>
+            Early identification of students who may need additional support
+          </li>
+          <li>Data-driven insights for curriculum optimization</li>
+          <li>Evidence-based decision making for teaching strategies</li>
+        </ul>
+      </>
+    ),
+    scenario: (
+      <>
+        <p>
+          As an instructor, you want to understand how your students are
+          engaging with course materials and identify areas where they might be
+          struggling. KlickerUZH's Learning Analytics provides:
+        </p>
+        <ul>
+          <li>Detailed participation and performance metrics</li>
+          <li>Engagement patterns across different types of activities</li>
+          <li>Progress tracking over time</li>
+          <li>Comparative analysis of class performance</li>
+        </ul>
+      </>
+    ),
+    learnings: (
+      <>
+        <p>
+          Implementation of Learning Analytics has revealed several key
+          insights:
+        </p>
+        <ul>
+          <li>
+            Data insights: Instructors can make more informed decisions about
+            teaching strategies and content delivery.
+          </li>
+          <li>
+            Early intervention: The ability to identify struggling students
+            early allows for timely support.
+          </li>
+          <li>
+            Course optimization: Analytics help in refining course content and
+            delivery methods based on student interaction patterns.
+          </li>
+          <li>
+            Student engagement: Visual analytics help students understand their
+            own progress and areas for improvement.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  ai_formative_feedback: {
+    title: 'AI-assisted Formative Feedback',
+    headerImgSrc: '/img_v3/glenn-carstens-peters-RLw-UC03Gwc-unsplash.jpg',
+    tags: [
+      'Smart feedback',
+      'Learning support',
+      'Automated assessment',
+      'Personalized guidance',
+    ],
+    abstract:
+      'Provide personalized, AI-powered feedback on student work to support continuous improvement and understanding.',
+    introduction: (
+      <>
+        <p>
+          AI-assisted formative feedback in KlickerUZH combines advanced natural
+          language processing with pedagogical best practices to provide rapid,
+          consistent, and detailed feedback on student responses. This
+          technology helps students understand their mistakes and learn from
+          them while maintaining high-quality feedback standards.
+        </p>
+      </>
+    ),
+    background: (
+      <>
+        <p>
+          Traditional feedback processes can be time-intensive and sometimes
+          inconsistent, especially in large courses. AI-assisted feedback tools
+          address these challenges by providing rapid, objective guidance while
+          maintaining the human touch in education.
+        </p>
+        <p>The system offers several key advantages:</p>
+        <ul>
+          <li>Immediate, constructive feedback on responses</li>
+          <li>Detailed explanations and learning suggestions</li>
+          <li>Consistent feedback quality</li>
+          <li>Support for various response types</li>
+          <li>Integration with learning analytics</li>
+        </ul>
+      </>
+    ),
+    scenario: (
+      <>
+        <p>
+          You're teaching a large class and want to provide timely, constructive
+          feedback to help students learn and improve. Manual feedback would be
+          too time-consuming, but you want to ensure students receive quality
+          guidance that helps them understand and learn from their mistakes.
+        </p>
+        <p>KlickerUZH's AI feedback features allow you to:</p>
+        <ul>
+          <li>Provide immediate feedback on student responses</li>
+          <li>Generate detailed explanations and learning resources</li>
+          <li>Offer personalized improvement suggestions</li>
+          <li>Review and enhance AI-generated feedback</li>
+          <li>Track student progress and understanding</li>
+        </ul>
+      </>
+    ),
+    learnings: (
+      <>
+        <p>
+          Implementation of AI-assisted feedback has yielded valuable insights:
+        </p>
+        <ul>
+          <li>
+            Learning support: Students appreciate immediate, detailed feedback
+            that helps them understand their mistakes.
+          </li>
+          <li>
+            Engagement: Quick feedback cycles encourage students to actively
+            participate and learn from their responses.
+          </li>
+          <li>
+            Instructor focus: Teachers can focus on providing additional support
+            where needed most.
+          </li>
+          <li>
+            Learning impact: Timely formative feedback positively affects
+            student understanding and learning outcomes.
+          </li>
+        </ul>
+      </>
+    ),
+    references: [
+      'Shute, V. J. (2008). "Focus on Formative Feedback" in Review of Educational Research - Comprehensive review of formative feedback\'s role in learning.',
+      'Holstein, K., et al. (2018). "Student Learning Benefits of AI-Generated Feedback" in Learning Analytics and Knowledge Conference - Empirical study on AI feedback effectiveness.',
+    ],
+  },
+  ai_practice_content: {
+    title: 'AI-generated Practice Content',
+    headerImgSrc: '/img_v3/simon-kadula-8gr6bObQLOI-unsplash.jpg',
+    tags: [
+      'AI-powered learning',
+      'Automated content',
+      'Personalized practice',
+      'Adaptive learning',
+    ],
+    abstract:
+      'Leverage artificial intelligence to automatically generate diverse practice questions, exercises, and learning materials tailored to your course content and student needs.',
+    introduction: (
+      <>
+        <p>
+          AI-generated practice content in KlickerUZH revolutionizes how
+          educational materials are created and delivered. By utilizing advanced
+          AI models, instructors can quickly generate high-quality practice
+          questions, exercises, and learning materials that are perfectly
+          aligned with their course objectives and adapted to different learning
+          levels.
+        </p>
+      </>
+    ),
+    background: (
+      <>
+        <p>
+          The integration of AI in educational content creation represents a
+          significant advancement in teaching technology. AI can analyze course
+          materials, understand learning objectives, and generate relevant
+          practice content that helps reinforce key concepts and identify
+          knowledge gaps.
+        </p>
+        <p>Key benefits of AI-generated practice content include:</p>
+        <ul>
+          <li>Rapid generation of diverse question types and formats</li>
+          <li>Automatic adaptation to different difficulty levels</li>
+          <li>Consistent alignment with learning objectives</li>
+          <li>Reduced time investment in content creation</li>
+          <li>Scalable practice opportunities for large classes</li>
+        </ul>
+      </>
+    ),
+    scenario: (
+      <>
+        <p>
+          As an instructor, you want to provide your students with abundant
+          practice opportunities but creating varied, high-quality content
+          manually is time-consuming. You need a solution that can generate
+          relevant practice materials while maintaining pedagogical quality.
+        </p>
+        <p>KlickerUZH's AI content generation features enable you to:</p>
+        <ul>
+          <li>Generate practice questions from your course materials</li>
+          <li>Create variations of existing questions</li>
+          <li>Develop comprehensive practice sets</li>
+          <li>Automatically generate explanations and feedback</li>
+          <li>Scale your content creation efficiently</li>
+        </ul>
+      </>
+    ),
+    learnings: (
+      <>
+        <p>
+          The implementation of AI-generated practice content has shown
+          promising results:
+        </p>
+        <ul>
+          <li>
+            Time efficiency: Instructors report significant time savings in
+            content creation while maintaining high quality standards.
+          </li>
+          <li>
+            Content diversity: AI generates a wider variety of question types
+            and scenarios than typically created manually.
+          </li>
+          <li>
+            Student engagement: Students appreciate the abundance of practice
+            opportunities and immediate feedback.
+          </li>
+          <li>
+            Learning outcomes: Regular practice with AI-generated content has
+            shown positive effects on student performance.
+          </li>
+        </ul>
+      </>
+    ),
+    references: [
+      'Wang, Y. F., et al. (2020). "AI-Generated Content in Education" in Computers & Education - Analysis of AI\'s role in content generation.',
+      'Zhang, L., et al. (2019). "Adaptive Practice Generation" in International Conference on AI in Education - Framework for AI-based practice material creation.',
+    ],
+  },
+  chatbot_tutoring: {
+    title: 'Chatbots for Individual Tutoring',
+    headerImgSrc: '/img_v3/jeshoots-com--2vD8lIhdnw-unsplash.jpg',
+    tags: [
+      'AI tutoring',
+      'Personalized support',
+      '24/7 assistance',
+      'Interactive learning',
+    ],
+    abstract:
+      'Provide students with personalized, AI-powered tutoring support that is available 24/7, offering immediate assistance and guidance tailored to individual learning needs.',
+    introduction: (
+      <>
+        <p>
+          KlickerUZH's AI tutoring chatbots offer students round-the-clock
+          access to personalized learning support. These intelligent assistants
+          can explain concepts, answer questions, and guide students through
+          problem-solving processes, providing an additional layer of support
+          beyond traditional office hours.
+        </p>
+      </>
+    ),
+    background: (
+      <>
+        <p>
+          The need for personalized, on-demand learning support has grown
+          significantly in modern education. AI chatbots fill this gap by
+          providing immediate, scalable assistance that adapts to each student's
+          needs and learning pace.
+        </p>
+        <p>Key features of the AI tutoring system include:</p>
+        <ul>
+          <li>24/7 availability for student questions</li>
+          <li>Personalized learning conversations</li>
+          <li>Step-by-step problem-solving guidance</li>
+          <li>Multi-language support</li>
+          <li>Integration with course materials</li>
+        </ul>
+      </>
+    ),
+    scenario: (
+      <>
+        <p>
+          Your students need support outside of regular office hours, and you
+          want to provide them with reliable, immediate assistance for common
+          questions and problems. You also want to ensure that students can get
+          help in their preferred learning style and pace.
+        </p>
+        <p>KlickerUZH's AI tutoring chatbots provide:</p>
+        <ul>
+          <li>Immediate responses to student queries</li>
+          <li>Customized explanations based on learning level</li>
+          <li>Interactive problem-solving sessions</li>
+          <li>Supplementary learning resources</li>
+          <li>Progress tracking and reporting</li>
+        </ul>
+      </>
+    ),
+    learnings: (
+      <>
+        <p>
+          The implementation of AI tutoring chatbots has revealed several key
+          insights:
+        </p>
+        <ul>
+          <li>
+            Accessibility: Students appreciate the 24/7 availability and
+            immediate response times.
+          </li>
+          <li>
+            Learning support: Chatbots effectively handle common questions,
+            allowing instructors to focus on complex issues.
+          </li>
+          <li>
+            Student confidence: Regular interaction with AI tutors helps build
+            student confidence in tackling challenging topics.
+          </li>
+          <li>
+            Usage patterns: Peak usage occurs during exam preparation and
+            assignment periods.
+          </li>
+        </ul>
+      </>
+    ),
+    references: [
+      'Roll, I., & Wylie, R. (2016). "AI Tutors and Learning Sciences" in Journal of Learning Analytics - Overview of AI tutoring systems.',
+      'VanLehn, K. (2011). "The Relative Effectiveness of Human Tutoring, Intelligent Tutoring Systems, and Other Tutoring Systems" in Educational Psychologist - Comparative analysis of tutoring approaches.',
+    ],
   },
 }

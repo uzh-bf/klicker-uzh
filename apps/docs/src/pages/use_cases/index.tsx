@@ -1,45 +1,96 @@
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowRight,
+  faComments,
+  faFire,
+  faLightbulb,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import UseCaseLayout from '@site/src/components/usecases/UseCaseLayout'
-import { H1, H2 } from '@uzh-bf/design-system'
-import { USE_CASES } from '../../constants'
+import { H2 } from '@uzh-bf/design-system'
+import { USE_CASES, USE_CASE_CATEGORIES } from '../../constants'
 
 function Card({ slug, title, image, abstract }) {
   return (
-    <div className="flex flex-col rounded-xl bg-slate-100 md:flex-row">
-      <div className="order-2 flex-1 space-y-4 p-8 md:order-1 md:p-16">
-        <H2>{title}</H2>
-        <p className="font-sans text-lg">{abstract}</p>
-        <div>
-          <a
-            className="inline-flex items-center gap-2"
-            href={`/use_cases/${slug}`}
-          >
-            <FontAwesomeIcon icon={faArrowRight} />
-            <div>More Details</div>
-          </a>
+    <a
+      href={`/use_cases/${slug}`}
+      className="group flex h-full flex-col overflow-hidden rounded-xl border bg-white shadow transition-all hover:shadow-lg"
+    >
+      <div className="relative h-40 shrink-0 sm:h-48 md:h-56">
+        <img
+          className="h-full w-full object-cover object-center transition-transform group-hover:scale-105"
+          src={image}
+          alt={title}
+        />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-black/0 p-4">
+          <H2 className={{ root: 'text-lg text-white sm:text-xl md:text-2xl' }}>
+            {title}
+          </H2>
         </div>
       </div>
-      <div className="order-1 flex-1 md:order-2">
-        <img className="h-full w-full rounded-r-xl object-cover" src={image} />
+      <div className="flex flex-1 flex-col p-4 sm:p-6">
+        <p className="text-sm text-slate-600 sm:text-base">{abstract}</p>
+        <div className="mt-auto border-t pt-4">
+          <div className="group-hover:text-primary flex items-center gap-2 text-sm font-medium text-slate-600">
+            <FontAwesomeIcon
+              icon={faArrowRight}
+              className="transition-transform group-hover:translate-x-1"
+            />
+            <div>More Details</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  )
+}
+
+function CategoryHeader({ title, description, icon }) {
+  return (
+    <div className="mb-6 flex flex-col items-start gap-4 rounded-lg bg-slate-100 p-4 shadow-sm sm:flex-row sm:items-center">
+      <div className="bg-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white">
+        <FontAwesomeIcon icon={icon} size="lg" />
+      </div>
+      <div>
+        <H2 className={{ root: 'mb-1 text-xl sm:text-2xl' }}>{title}</H2>
+        <p className="mb-0 text-sm text-slate-600 sm:text-base">
+          {description}
+        </p>
       </div>
     </div>
   )
 }
 
+const CATEGORY_ICONS = {
+  interaction: faComments,
+  engagement: faFire,
+  ai_enhanced_learning: faLightbulb,
+}
+
 function Index() {
   return (
     <UseCaseLayout path="/use_cases">
-      <H1>Use Cases</H1>
-      <div className="w-full space-y-4">
-        {Object.entries(USE_CASES).map(([slug, useCase]) => (
-          <Card
-            key={useCase.title}
-            slug={slug}
-            title={useCase.title}
-            image={useCase.headerImgSrc}
-            abstract={useCase.abstract}
-          />
+      <div className="mt-4 flex flex-col gap-12 pb-8">
+        {Object.entries(USE_CASE_CATEGORIES).map(([categoryId, category]) => (
+          <div key={categoryId}>
+            <CategoryHeader
+              title={category.title}
+              description={category.description}
+              icon={CATEGORY_ICONS[categoryId]}
+            />
+            <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
+              {category.useCases.map((slug) => {
+                const useCase = USE_CASES[slug]
+                return (
+                  <Card
+                    key={slug}
+                    slug={slug}
+                    title={useCase.title}
+                    image={useCase.headerImgSrc}
+                    abstract={useCase.abstract}
+                  />
+                )
+              })}
+            </div>
+          </div>
         ))}
       </div>
     </UseCaseLayout>
