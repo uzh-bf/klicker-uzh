@@ -8,6 +8,7 @@ import AnalyticsErrorView from '~/components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '~/components/analytics/AnalyticsLoadingView'
 import ActivityProgressPlot from '~/components/analytics/performance/ActivityProgressPlot'
 import PerformanceAnalyticsNavigation from '~/components/analytics/performance/PerformanceAnalyticsNavigation'
+import PerformanceRates from '~/components/analytics/performance/PerformanceRates'
 import Layout from '~/components/Layout'
 
 function PerformanceDashboard() {
@@ -58,6 +59,10 @@ function PerformanceDashboard() {
           </div>
         </div>
         <div className="flex flex-col gap-4">
+          <PerformanceRates
+            activityPerformances={course.activityPerformances}
+            instancePerformances={course.instancePerformances}
+          />
           <ActivityProgressPlot
             activityProgresses={course.activityProgresses}
             participants={course.totalParticipants}

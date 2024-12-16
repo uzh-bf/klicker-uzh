@@ -1861,6 +1861,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       started: 'Gestartet',
       completed: 'Abgeschlossen',
       repeated: 'Wiederholt',
+      activityElementPerformanceRates:
+        'Performance-Raten der Aktivitäten und Elemente',
+      errorRate: 'Fehlerrate',
+      partialRate: 'Partielle Fehlerrate',
+      correctRate: 'Erfolgsrate',
     },
   },
   control: {

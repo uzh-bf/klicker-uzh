@@ -1,5 +1,8 @@
-import { ElementType } from '@klicker-uzh/prisma'
-import { ActivityType } from '@klicker-uzh/types'
+import {
+  ActivityPerformance,
+  ActivityType,
+  InstancePerformance,
+} from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { ContextWithUser } from 'src/lib/context.js'
 
@@ -149,7 +152,7 @@ export async function getCoursePerformanceAnalytics(
   }
 
   // map the metrics for all activities in the course to the desired performance and progress values
-  const { activityProgresses, activityErrorRates, instanceErrorRates } = [
+  const { activityProgresses, activityPerformances, instancePerformances } = [
     ...course.practiceQuizzes,
     ...course.microLearnings,
   ].reduce<{
@@ -160,20 +163,8 @@ export async function getCoursePerformanceAnalytics(
       completedCount: number
       repeatedCount: number | null
     }[]
-    activityErrorRates: {
-      activityName: string
-      activityType: ActivityType
-      errorRate: number
-      partialRate: number
-      correctRate: number
-    }[]
-    instanceErrorRates: {
-      elementName: string
-      elementType: ElementType
-      errorRate: number
-      partialRate: number
-      correctRate: number
-    }[]
+    activityPerformances: ActivityPerformance[]
+    instancePerformances: InstancePerformance[]
   }>(
     (acc, activity) => {
       const progress = activity.progress
@@ -202,12 +193,21 @@ export async function getCoursePerformanceAnalytics(
       }
 
       // add the activity performance metrics to the error rates
-      acc.activityErrorRates.push({
+      acc.activityPerformances.push({
+        id: performance.id,
         activityName: activity.name,
         activityType,
-        errorRate: performance.totalErrorRate,
-        partialRate: performance.totalPartialRate,
-        correctRate: performance.totalCorrectRate,
+        rates: {
+          firstErrorRate: performance.firstErrorRate ?? 0,
+          lastErrorRate: performance.lastErrorRate ?? 0,
+          errorRate: performance.totalErrorRate,
+          firstPartialRate: performance.firstPartialRate ?? 0,
+          lastPartialRate: performance.lastPartialRate ?? 0,
+          partialRate: performance.totalPartialRate,
+          firstCorrectRate: performance.firstCorrectRate ?? 0,
+          lastCorrectRate: performance.lastCorrectRate ?? 0,
+          correctRate: performance.totalCorrectRate,
+        },
       })
 
       // extract the desired values from the instance performance entries
@@ -220,26 +220,39 @@ export async function getCoursePerformanceAnalytics(
           }
 
           return {
+            id: iPerformance.id,
             elementName: element.elementData.name,
             elementType: element.elementData.type,
-            errorRate: iPerformance.totalErrorRate,
-            partialRate: iPerformance.totalPartialRate,
-            correctRate: iPerformance.totalCorrectRate,
+            rates: {
+              firstErrorRate: iPerformance.firstErrorRate ?? 0,
+              lastErrorRate: iPerformance.lastErrorRate ?? 0,
+              errorRate: iPerformance.totalErrorRate,
+              firstPartialRate: iPerformance.firstPartialRate ?? 0,
+              lastPartialRate: iPerformance.lastPartialRate ?? 0,
+              partialRate: iPerformance.totalPartialRate,
+              firstCorrectRate: iPerformance.firstCorrectRate ?? 0,
+              lastCorrectRate: iPerformance.lastCorrectRate ?? 0,
+              correctRate: iPerformance.totalCorrectRate,
+            },
           }
         })
       )
-      acc.instanceErrorRates.push(...instancePerformances)
+      acc.instancePerformances.push(...instancePerformances)
 
       return acc
     },
-    { activityProgresses: [], activityErrorRates: [], instanceErrorRates: [] }
+    {
+      activityProgresses: [],
+      activityPerformances: [],
+      instancePerformances: [],
+    }
   )
 
   return {
     name: course.name,
     totalParticipants: course._count.participations,
     activityProgresses,
-    activityErrorRates,
-    instanceErrorRates,
+    activityPerformances,
+    instancePerformances,
   }
 }

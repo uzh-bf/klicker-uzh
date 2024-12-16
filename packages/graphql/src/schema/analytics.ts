@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityPerformance as ActivityPerformanceType,
+  ActivityType as ActivityTypeEnum,
+  InstancePerformance as InstancePerformanceType,
+  PerformanceRates as PerformanceRatesType,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementType } from './elementData.js'
 
@@ -162,41 +167,41 @@ export const ActivityProgress = builder.objectType(ActivityProgressRef, {
   }),
 })
 
-interface IActivityErrorRate {
-  activityName: string
-  activityType: ActivityTypeEnum
-  errorRate: number
-  partialRate: number
-  correctRate: number
-}
-export const ActivityErrorRateRef =
-  builder.objectRef<IActivityErrorRate>('ActivityErrorRate')
-export const ActivityErrorRate = builder.objectType(ActivityErrorRateRef, {
+export const PerformanceRatesRef =
+  builder.objectRef<PerformanceRatesType>('PerformanceRates')
+export const PerformanceRates = builder.objectType(PerformanceRatesRef, {
   fields: (t) => ({
-    activityName: t.exposeString('activityName'),
-    activityType: t.expose('activityType', { type: ActivityType }),
+    firstErrorRate: t.exposeFloat('firstErrorRate'),
+    lastErrorRate: t.exposeFloat('lastErrorRate'),
     errorRate: t.exposeFloat('errorRate'),
+    firstPartialRate: t.exposeFloat('firstPartialRate'),
+    lastPartialRate: t.exposeFloat('lastPartialRate'),
     partialRate: t.exposeFloat('partialRate'),
+    firstCorrectRate: t.exposeFloat('firstCorrectRate'),
+    lastCorrectRate: t.exposeFloat('lastCorrectRate'),
     correctRate: t.exposeFloat('correctRate'),
   }),
 })
 
-interface IInstanceErrorRate {
-  elementName: string
-  elementType: DB.ElementType
-  errorRate: number
-  partialRate: number
-  correctRate: number
-}
-export const InstanceErrorRateRef =
-  builder.objectRef<IInstanceErrorRate>('InstanceErrorRate')
-export const InstanceErrorRate = builder.objectType(InstanceErrorRateRef, {
+export const ActivityPerformanceRef =
+  builder.objectRef<ActivityPerformanceType>('ActivityPerformance')
+export const ActivityPerformance = builder.objectType(ActivityPerformanceRef, {
   fields: (t) => ({
+    id: t.exposeInt('id'),
+    activityName: t.exposeString('activityName'),
+    activityType: t.expose('activityType', { type: ActivityType }),
+    rates: t.expose('rates', { type: PerformanceRates }),
+  }),
+})
+
+export const InstancePerformanceRef =
+  builder.objectRef<InstancePerformanceType>('InstancePerformance')
+export const InstancePerformance = builder.objectType(InstancePerformanceRef, {
+  fields: (t) => ({
+    id: t.exposeInt('id'),
     elementName: t.exposeString('elementName'),
     elementType: t.expose('elementType', { type: ElementType }),
-    errorRate: t.exposeFloat('errorRate'),
-    partialRate: t.exposeFloat('partialRate'),
-    correctRate: t.exposeFloat('correctRate'),
+    rates: t.expose('rates', { type: PerformanceRates }),
   }),
 })
 
@@ -204,8 +209,8 @@ interface ICoursePerformanceAnalytics {
   name: string
   totalParticipants: number
   activityProgresses: IActivityProgress[]
-  activityErrorRates: IActivityErrorRate[]
-  instanceErrorRates: IInstanceErrorRate[]
+  activityPerformances: ActivityPerformanceType[]
+  instancePerformances: InstancePerformanceType[]
 }
 export const CoursePerformanceAnalyticsRef =
   builder.objectRef<ICoursePerformanceAnalytics>('CoursePerformanceAnalytics')
@@ -218,11 +223,11 @@ export const CoursePerformanceAnalytics = builder.objectType(
       activityProgresses: t.expose('activityProgresses', {
         type: [ActivityProgress],
       }),
-      activityErrorRates: t.expose('activityErrorRates', {
-        type: [ActivityErrorRate],
+      activityPerformances: t.expose('activityPerformances', {
+        type: [ActivityPerformance],
       }),
-      instanceErrorRates: t.expose('instanceErrorRates', {
-        type: [InstanceErrorRate],
+      instancePerformances: t.expose('instancePerformances', {
+        type: [InstancePerformance],
       }),
     }),
   }

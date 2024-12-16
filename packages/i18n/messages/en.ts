@@ -1849,6 +1849,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       started: 'Started',
       completed: 'Completed',
       repeated: 'Repeated',
+      activityElementPerformanceRates: 'Activity and Element Performance Rates',
+      errorRate: 'Error Rate',
+      partialRate: 'Partial Error Rate',
+      correctRate: 'Success Rate',
     },
   },
   control: {
