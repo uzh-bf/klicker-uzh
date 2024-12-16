@@ -5,7 +5,7 @@ function KnowledgeBase() {
     <Layout>
       <div className="h-screen border-2 border-red-500">
         <iframe
-          src="https://www.gbl.uzh.ch/md/"
+          src="https://www.gbl.uzh.ch/quartz/index"
           title="Knowledge Base"
           height="100%"
           width="100%"
