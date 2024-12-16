@@ -47,15 +47,36 @@ function UseCase({ slug }: UseCaseProps) {
         <div className="prose sticky top-4 col-span-1 h-fit bg-slate-100 p-4 shadow-sm lg:rounded-lg">
           <H2 className={{ root: 'mb-2 text-slate-600' }}>Goals</H2>
           <div className="space-y-2 text-sm">
-            {useCase.goals?.map((goal, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <FontAwesomeIcon
-                  icon={faCircleCheck}
-                  className="mt-1 text-slate-400"
-                />
-                <div>{goal}</div>
-              </div>
-            ))}
+            {useCase.goals?.map((goal, index) => {
+              // Check if the goal is a nested structure
+              if (Array.isArray(goal)) {
+                const [category, subgoals] = goal
+                return (
+                  <div key={index} className="space-y-2">
+                    <div className="font-bold text-slate-600">{category}</div>
+                    {subgoals.map((subgoal, subIndex) => (
+                      <div key={subIndex} className="flex items-start gap-3">
+                        <FontAwesomeIcon
+                          icon={faCircleCheck}
+                          className="mt-1 text-slate-400"
+                        />
+                        <div>{subgoal}</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              }
+              // Handle flat goal structure
+              return (
+                <div key={index} className="flex items-start gap-3">
+                  <FontAwesomeIcon
+                    icon={faCircleCheck}
+                    className="mt-1 text-slate-400"
+                  />
+                  <div>{goal}</div>
+                </div>
+              )
+            })}
           </div>
 
           {useCase.references && (

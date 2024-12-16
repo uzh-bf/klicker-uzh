@@ -1,3 +1,5 @@
+import { H3 } from '@uzh-bf/design-system'
+
 export const FEATURES = [
   {
     title: 'Interactive Learning',
@@ -1591,42 +1593,158 @@ export const USE_CASES = {
     title: 'Learning Analytics',
     headerImgSrc: '/img_v3/dawid-zawila-OCMcTCu97EE-unsplash.jpg',
     tags: [
-      'Data-driven insights',
+      'Educational engagement',
+      'Data-driven pedagogy',
+      'Student performance insights',
       'Student progress',
+      'Self-regulated learning',
       'Learning patterns',
-      'Performance tracking',
     ],
     abstract:
       'Leverage data analytics to gain insights into student learning patterns, identify areas for improvement, and make informed decisions to enhance educational outcomes.',
+    goals: [
+      [
+        'For Lecturers',
+        [
+          'Use Learning Analytics to gain insights into and to understand students’ individual and collective en-gagement, knowledge levels, and performance to improve course design and delivery',
+          'Monitor student activities to recognize disengagement early and provide targeted interventions for improved outcomes',
+          'Analyze data on learning resource usage and success rates to align course content with student needs',
+          'Utilize LA insights for data-driven adjustments to teaching strategies and future course iterations',
+          'Engage in reflective practices to develop pedagogical skills based on LA-driven evaluations',
+        ],
+      ],
+      [
+        'For Students',
+        [
+          'Access personalized feedback and dashboards to monitor progress, set goals, and plan effective study strategies (self-regulated learning)',
+          'Utilize insights from LA to stay motivated and actively participate in learning activities',
+          'Identify areas for improvement through detailed feedback and additional resources provided by LA tools',
+        ],
+      ],
+    ],
     introduction: (
       <>
         <p>
-          Learning Analytics in KlickerUZH transforms educational data into
-          actionable insights, helping instructors understand student
-          engagement, progress, and learning patterns. This feature enables
-          data-driven decision-making to improve teaching strategies and student
-          outcomes.
+          As a lecturer, have you ever wondered about the hidden dimensions of
+          student learning? While you stand in front of the class week after
+          week, teaching and answering questions, the students' learning
+          activities outside the classroom remain largely invisible. How many
+          hours do students invest in learning? How frequently do they review
+          course materials? How often do they attempt self-assessment tasks? The
+          complexity of understanding students' diverse learning behaviors has
+          intensified with the increasing number of students in higher education
+          and the proliferation of eLearning formats. Traditional teaching
+          approaches struggle to provide comprehensive insights into individual
+          learning processes.
+        </p>
+        <p>
+          Students, too, are increasingly interested in understanding their
+          academic performance relative to their peers. They seek to know: Have
+          they completed self-learning modules? How do their formative
+          assessment results compare to classmates? Learning Analytics offers a
+          sophisticated solution to these challenges. Defined by Long et al.
+          (2011) as "the measurement, collection, analysis, and reporting of
+          data about learners and their contexts, for purposes of understanding
+          and optimizing learning and the environments in which it occurs", this
+          emerging field provides unprecedented visibility into educational
+          engagement.
+        </p>
+        <p>
+          The integration of online and blended learning has exponentially
+          expanded the volume of educational data available. As Stewart (2017)
+          highlighted, these data repositories serve as a foundational resource
+          for analyzing student behavior, identifying improvement opportunities,
+          and enhancing teaching and learning processes. Learning Analytics
+          enables lecturers to gain nuanced insights into actual student
+          learning patterns while simultaneously providing students with a
+          comparative perspective on their academic performance. By transforming
+          complex data into meaningful insights, this approach revolutionizes
+          our understanding of educational engagement.
         </p>
       </>
     ),
     background: (
       <>
         <p>
-          Learning Analytics has emerged as a powerful tool in modern education,
-          combining data science with pedagogical insights to enhance the
-          teaching and learning process. Research shows that data-driven
-          approaches can significantly improve student outcomes by enabling
-          early intervention and personalized learning strategies.
+          In higher education, understanding students' diverse learning
+          behaviors and engagement levels is crucial for lecturers aiming to
+          enhance their teaching practices (Volungevičienė et al., 2019).
+          How-ever, the growth in student numbers has reduced opportunities for
+          meaningful interactions, mak-ing it challenging for lecturers to fully
+          grasp students' learning processes (Lowes, 2020). The inte-gration of
+          online and blended learning further amplifies this issue by generating
+          vast amounts of educational data (Stewart, 2017). This data serves as
+          a foundation for analyzing student behavior, identifying areas for
+          improvement, and providing targeted support (Büching et al., 2019).
         </p>
-        <p>Key benefits include:</p>
-        <ul>
-          <li>Real-time tracking of student engagement and performance</li>
-          <li>
-            Early identification of students who may need additional support
-          </li>
-          <li>Data-driven insights for curriculum optimization</li>
-          <li>Evidence-based decision making for teaching strategies</li>
-        </ul>
+        <p>
+          Recognizing these challenges, Learning Analytics (LA) has emerged as a
+          powerful tool to transform educational data into actionable insights.
+          LA facilitates a shift towards evidence-based education-al strategies,
+          benefiting students, lecturers, and administrators by creating more
+          effective and per-sonalized learning experiences.
+        </p>
+        <p>
+          One of LA's significant contributions lies in its ability to
+          objectively assess student engagement, moving beyond traditional
+          self-reports and surveys (Caspari-Sadeghi, 2022). By automatically
+          tracking digital activities, LA provides lecturers with insights into
+          students' knowledge levels, error patterns, and engagement, enabling
+          them to adjust course designs and teaching methods effective-ly
+          (Tervakari et al., 2014; Hui & Farvolden, 2017). LA also uncovers
+          learning behavior patterns that may hinder effective learning
+          (Tervakari et al., 2014). For instance, it can detect activity spikes
+          near assignment deadlines and exam periods (Hui & Farvolden, 2017;
+          Poon et al., 2017; Tervakari et al., 2014). As Tervakari et al. (2014)
+          observe, such trends often leave insufficient time for peer
+          discussions and result in an inadequate understanding of course
+          materials. Recognizing these patterns enables lecturers to adjust
+          course designs, such as introducing more structured peer-learning
+          opportunities earlier in the semester.
+        </p>
+        <p>
+          Insights into student learning behavior provide a crucial foundation
+          for the critical reflection of lecturers, allowing them to evaluate
+          and reconsider course materials, future course implementa-tions, and
+          pedagogical practices (Chatti et al., 2012; Karademir et al., 2021;
+          Redmond et al., 2018). Based on this foundation, Learning Analytics
+          supports lecturers in decision-making regarding ad-justments in both
+          current and future course implementations (Volungevičienė et al.,
+          2019). Accord-ing to Ifenthaler (2020), such reflections contribute to
+          the professional development of educators in higher education.
+        </p>
+        <p>
+          LA also plays a crucial role in identifying at-risk students, allowing
+          for proactive interventions. As noted by Tervakari et al. (2014) and
+          Caspari-Sadeghi (2022), early signs of disengagement can be detected,
+          enabling personalized support strategies. Karademir et al. (2021)
+          highlight the use of success rate intervals to provide additional
+          resources for struggling students, while Herodotou et al. (2020)
+          confirm the positive impact of such interventions on course progress
+          and completion rates.
+        </p>
+        <p>
+          Predictive analytics is another vital application of LA, focusing on
+          early identification of students at risk of failing (Chatti et al.,
+          2012; Banihashem et al., 2022). Broos et al. (2020) developed models
+          to predict exam performance and identify at-risk students, while
+          Sharif & Atif (2024) emphasize the role of predictive analytics in
+          future pedagogical strategies.
+        </p>
+        <p>
+          Furthermore, LA supports personalized and adaptive learning
+          environments, catering to individual student needs to maximize
+          academic potential (Berland et al., 2014; Schumacher & Ifenthaler,
+          2018a). By offering immediate feedback through automated analysis of
+          digital activities, LA en-hances self-regulated learning processes,
+          fostering autonomy and deeper engagement (Durall & Gros, 2014; Virkus
+          et al., 2023).Despite its potential, integrating students' needs into
+          LA system designs remains a challenge (Galaige et al., 2022). However,
+          the insights provided by LA form a ro-bust foundation for lecturers to
+          critically evaluate and refine their pedagogical practices,
+          support-ing ongoing professional development and future course
+          improvements (Ifenthaler, 2020).
+        </p>
       </>
     ),
     scenario: (
@@ -1675,180 +1793,570 @@ export const USE_CASES = {
     title: 'AI-assisted Formative Feedback',
     headerImgSrc: '/img_v3/glenn-carstens-peters-RLw-UC03Gwc-unsplash.jpg',
     tags: [
-      'Smart feedback',
-      'Learning support',
-      'Automated assessment',
-      'Personalized guidance',
+      'Formative feedback',
+      'AI-assisted grading',
+      'Personalized feedback',
+    ],
+    goals: [
+      'Use AI to deliver detailed, personalized feedback on open-ended questions, tailored to individual student needs',
+      'Provide immediate AI-generated feedback around the clock to minimize learning process interruptions.',
+      'Encourage self-regulated learning by offering iterative feedback that helps students refine responses and understand complex concepts',
+      'Reducing educator workload while ensuring consistent, high-quality feedback for large groups',
+      'Guide students toward deeper inquiry and understanding by using AI feedback to promote critical thinking and problem-solving skills',
     ],
     abstract:
       'Provide personalized, AI-powered feedback on student work to support continuous improvement and understanding.',
     introduction: (
       <>
         <p>
-          AI-assisted formative feedback in KlickerUZH combines advanced natural
-          language processing with pedagogical best practices to provide rapid,
-          consistent, and detailed feedback on student responses. This
-          technology helps students understand their mistakes and learn from
-          them while maintaining high-quality feedback standards.
+          To assess students' comprehension of course content, lecturers
+          traditionally employ exercises and multiple-choice self-assessments in
+          a formative (self-) test. Compared to multiple-choice questions,
+          open-ended ques-tions represent a more sophisticated pedagogical
+          approach, significantly enhancing critical thinking and conceptual
+          understanding. These questions are particularly valuable as they
+          challenge students to articulate complex ideas and demonstrate deeper
+          learning beyond simple factual recall.
+        </p>
+
+        <p>
+          Historically, in large lectures, lecturers were limited to providing
+          sample solutions for open-ended questions in formative
+          self-assessments, offering minimal individualized learning support.
+          Individual feedback was only possible through human grading, which was
+          resource-intensive and costly. The emergence of Large Language Models
+          has fundamentally transformed this educational paradigm by enabling
+          immediate, personalized formative feedback.
+        </p>
+
+        <p>
+          This technological advancement supports self-regulated learning and
+          helps students refine responses and understand complex concepts. The
+          AI-generated feedback highlights strengths and suggests areas for
+          im-provement. This helps students identify areas for improvement and
+          deepen their understanding of course concepts. This feedback guides
+          students toward refining their answers without directly providing the
+          correct solution. Moreover, the system can dynamically assess response
+          quality, potentially awarding points based on predefined performance
+          thresholds.
         </p>
       </>
     ),
     background: (
       <>
         <p>
-          Traditional feedback processes can be time-intensive and sometimes
-          inconsistent, especially in large courses. AI-assisted feedback tools
-          address these challenges by providing rapid, objective guidance while
-          maintaining the human touch in education.
+          The integration of artificial intelligence (AI) in educational
+          settings, particularly in the provision of formative feedback, has
+          garnered significant attention in recent years.
         </p>
-        <p>The system offers several key advantages:</p>
-        <ul>
-          <li>Immediate, constructive feedback on responses</li>
-          <li>Detailed explanations and learning suggestions</li>
-          <li>Consistent feedback quality</li>
-          <li>Support for various response types</li>
-          <li>Integration with learning analytics</li>
-        </ul>
+        <p>
+          AI-generated feedback has been shown to be a viable alternative or
+          complement to traditional human feedback. Escalante's study on
+          AI-generated feedback for English as a New Language (ENL) students
+          revealed that there is a nearly equal preference for AI-generated and
+          human-generated feedback among learners, suggesting that AI can
+          effectively support educational practices without compromising
+          learning outcomes (Escalante, 2023). This aligns with Schultze's
+          findings, which emphasize that using large language models (LLMs) to
+          augment human feedback can improve perceived feedback quality,
+          addressing the common dissatisfaction students express regarding the
+          quality of feedback they receive (Schultze, 2024). The implication
+          here is that a blended approach, incorporating both AI and human
+          feedback, can leverage the strengths of each to enhance the
+          educational experience.
+        </p>
+        <p>
+          The challenges associated with AI-generated feedback are also
+          noteworthy. Bai and Stede's survey on machine learning approaches to
+          student free-text evaluation underscores the complexities involved in
+          developing effective AI systems for educational feedback (Bai & Stede,
+          2022). They argue that while AI can automate certain aspects of
+          feedback delivery, it must be carefully designed to align with
+          educational goals and learner needs. Similarly, Deeva et al. discuss
+          the limitations of automated feedback systems, noting that while they
+          can provide immediate responses, they may lack the nuanced
+          understanding that human feedback can offer (Deeva et al., 2021). This
+          highlights the importance of integrating human oversight in AI
+          feedback systems to ensure that the feedback is not only timely but
+          also contextually relevant and constructive.
+        </p>
+        <p>
+          The effectiveness of AI in essay evaluation is further supported by
+          Kostic's case study, which demonstrates the capabilities of LLMs in
+          assessing various text attributes through natural language processing
+          (NLP) algorithms (Kostic, 2024). These systems can evaluate writing
+          style and content quality, thus providing a comprehensive analysis
+          that can inform students about their writing strengths and weaknesses.
+          However, the reliance on pre-graded corpora for training these models
+          raises questions about the generalizability and fairness of AI
+          evaluations, necessitating ongoing research to refine these systems.
+        </p>
+        <p>
+          The integration of human feedback within AI systems is a critical area
+          of exploration. Wang et al. emphasize the need for a human-in-the-loop
+          (HITL) approach in natural language processing, which allows for
+          continuous improvement of AI systems through human feedback (Wang et
+          al., 2021). This approach not only enhances the accuracy of AI
+          evaluations but also ensures that the feedback provided is aligned
+          with educational objectives and learner expectations. The combination
+          of human insights and AI efficiency can lead to more personalized and
+          effective feedback mechanisms.
+        </p>
+        <p>
+          The impact of feedback timing on learning outcomes is another
+          important consideration. Research suggests that the timing of feedback
+          delivery can significantly influence its effectiveness, with immediate
+          feedback often being more beneficial for learning than delayed
+          responses (Deeva et al., 2021). This is particularly relevant in the
+          context of AI feedback systems, which can provide instantaneous
+          responses, thereby facilitating a more dynamic learning environment.
+          However, educators must remain cognizant of the potential pitfalls of
+          over-reliance on automated systems, ensuring that feedback remains
+          focused and constructive.
+        </p>
       </>
     ),
     scenario: (
       <>
         <p>
-          You're teaching a large class and want to provide timely, constructive
-          feedback to help students learn and improve. Manual feedback would be
-          too time-consuming, but you want to ensure students receive quality
-          guidance that helps them understand and learn from their mistakes.
+          By using AI-driven formative feedback in KlickerUZH, you create an
+          engaging and supportive learning envi-ronment that allows students to
+          practice open-ended tasks in a non-assessment setting. When compared
+          to the assessment setting, the application of AI in the practice
+          scenario reduces the impact of potential mistakes made by the AI.
         </p>
-        <p>KlickerUZH's AI feedback features allow you to:</p>
-        <ul>
-          <li>Provide immediate feedback on student responses</li>
-          <li>Generate detailed explanations and learning resources</li>
-          <li>Offer personalized improvement suggestions</li>
-          <li>Review and enhance AI-generated feedback</li>
-          <li>Track student progress and understanding</li>
-        </ul>
+
+        <H3>Preparing Questions for Formative Feedback</H3>
+
+        <p>
+          As a lecturer, you aim to provide your students with a flexible and
+          interactive way to engage with course materials and practice their
+          skills. To achieve this, you start by creating a course in KlickerUZH
+          and developing a set of open-ended questions that align with your
+          course objectives. These questions are added to quizzes within the
+          platform, and you provide model solutions that outline the key
+          elements of ideal responses. Additionally, AI-generated grading
+          rubrics are created to offer criteria for evaluating student
+          responses. You have the option to review and modify these rubrics to
+          ensure alignment with course goals and standards.
+        </p>
+
+        <p>
+          Once configured, KlickerUZH allows you to integrate these quizzes
+          directly into your learning management system (LMS) via LTI (e.g.,
+          OLAT). This integration ensures seamless access for students through
+          familiar plat-forms. A student log-in and course participation is
+          required to get formative feedback from the AI, allowing for both cost
+          control and moderation of access.
+        </p>
+
+        <H3>Practicing Questions with Formative Feedback</H3>
+
+        <p>
+          Students access the quizzes through OLAT or the KlickerUZH app,
+          selecting those that correspond to their current learning modules.
+          This setup encourages self-paced learning and allows students to focus
+          on areas where they need more practice. When students attempt
+          free-text questions, the AI analyzes their responses, providing
+          formative feedback that highlights strengths and suggests areas for
+          improvement. This feedback guides students toward refining their
+          answers without directly providing the correct solution.
+        </p>
+
+        <p>
+          Students can revise their responses based on the feedback received and
+          resubmit them for further evaluation. This iterative process continues
+          until the AI deems the response sufficient according to the
+          established criteria in the grading rubric. Once a student's response
+          meets the required standards, points are awarded as part of a
+          gamification strategy to enhance motivation and engagement. This
+          system encourages students to view the learning process as an
+          enjoyable challenge rather than a high-stakes assessment.
+        </p>
       </>
     ),
     learnings: (
       <>
         <p>
-          Implementation of AI-assisted feedback has yielded valuable insights:
+          At the University of Zurich's Department of Finance, we are currently
+          exploring the potential of Large Lan-guage Models (LLMs) to provide
+          immediate, personalized formative feedback to students during their
+          learning journey. This initiative builds upon our successful
+          experiments with AI-assisted grading in examinations and aims to
+          extend these capabilities to support continuous learning throughout
+          the semester.
         </p>
+        <p>
+          To systematically validate and further develop these findings, we will
+          conduct comprehensive pilot studies during the spring term of 2025.
+          Should you be interested in participating, please fill out the form at
+          X so that we may contact you. The results of the piloting will be
+          evaluated and summarized as part of this use case.
+        </p>
+        <p>Some of our most important preliminary findings include:</p>
         <ul>
           <li>
-            Learning support: Students appreciate immediate, detailed feedback
-            that helps them understand their mistakes.
+            <strong>Didactic challenges</strong>: A naive implementation where
+            AI provides direct answers as feedback may hinder learning by
+            discouraging critical thinking. Therefore, it is advised to use a
+            tutoring approach for content-specific feedback that guides students
+            toward solutions through hints or counter-questions without giving
+            di-rect answers. Furthermore, it is important to focus on giving
+            formative feedback that allows students to identify and improve
+            their weaknesses. This corresponds to the way a conversational
+            interface (e.g., chat-bot) would be designed and encourages students
+            to try again with another answer.
           </li>
           <li>
-            Engagement: Quick feedback cycles encourage students to actively
-            participate and learn from their responses.
+            <strong>Accuracy and contextual relevance</strong>: AI-generated
+            feedback systems often struggle with accuracy and contextual
+            relevance (e.g. the nuanced understanding that human feedback
+            provides), leading to generic or misaligned responses. Additionally,
+            language models tend to "hallucinate," inventing information or
+            providing overly complex answers that are not grounded in the
+            relevant knowledge base. To address these accuracy and reliability
+            challenges, integrating a human-in-the-loop (HITL) approach is
+            essential, meaning that a human should review AI-generated feedbacks
+            regularly and check for accuracy and context rele-vance, allowing
+            for continuous improvement of AI-generated feedbackthrough human
+            input, specificially adjusting the rubrics.
           </li>
           <li>
-            Instructor focus: Teachers can focus on providing additional support
-            where needed most.
+            <strong>Ethical considerations and data privacy</strong>: The
+            collection and use of student data for generating personal-ized
+            feedback raise concerns about consent, transparency, and potential
+            misuse. At institutions like the University of Zurich (UZH), there
+            arenot yet clear guidelines on data privacy concerning AI
+            applications, complicating compliance efforts. However, to address
+            theseconsiderations it is important to obtain in-formed consent from
+            students regarding how their data is collected, processed, stored,
+            and used (see the implemented privacy policy of the KlickerUZH). The
+            provider for AI services has to be carefully selected and it should
+            be ensured that the data provided by students is not used for
+            further training by the provider. Locally hosted models might
+            provide a suitable alternative for small-scale use cases that are
+            privacy-sensitive. Additionally, strict anonymization protocols can
+            help protect personally identifiable information (PII) that students
+            might embed in prompts. It is not allowed for lecturers to use the
+            AI-assisted feedback on free-text questions for the purpose of
+            assessment without double-checking the scoring.Furthermore, if you,
+            as a lecturer, wish to conduct your own research using the collected
+            data (e.g., free-text responses), this in-tention must be
+            communicated to the students in advance.
           </li>
           <li>
-            Learning impact: Timely formative feedback positively affects
-            student understanding and learning outcomes.
+            <strong>Operational cost</strong>: Implementing AI-driven formative
+            feedback systems involves operational costs related to AI use. To
+            manage operational costs effectively, institutions should implement
+            cost-control mechanisms like, e.g., limiting the number of student
+            queries per time period. Exploring open-source models hosted
+            lo-cally (e.g., using Ollama) or by trusted providers can also lower
+            expenses associated with proprietary solu-tions. Additionally,
+            optimizing resource use by deploying lightweight models for basic
+            queries while reserv-ing more resource-intensive models for complex
+            queries can help balance costs against educational bene-fits.
           </li>
         </ul>
+        <p>
+          Our initial assessment of this use case has also provided several
+          significant insights and preliminary learnings regarding the general
+          use of AI that are relevant for lecturers. Information about the
+          associated challenges, limitations, and remediation strategies for IT
+          can be found here.
+        </p>
       </>
     ),
-    references: [
-      'Shute, V. J. (2008). "Focus on Formative Feedback" in Review of Educational Research - Comprehensive review of formative feedback\'s role in learning.',
-      'Holstein, K., et al. (2018). "Student Learning Benefits of AI-Generated Feedback" in Learning Analytics and Knowledge Conference - Empirical study on AI feedback effectiveness.',
-    ],
+    references: ['...'],
   },
   ai_practice_content: {
     title: 'AI-generated Practice Content',
     headerImgSrc: '/img_v3/simon-kadula-8gr6bObQLOI-unsplash.jpg',
-    tags: [
-      'AI-powered learning',
-      'Automated content',
-      'Personalized practice',
-      'Adaptive learning',
-    ],
+    tags: ['Content generation', 'Bloom’s taxonomy', 'Constructive alignment'],
     abstract:
-      'Leverage artificial intelligence to automatically generate diverse practice questions, exercises, and learning materials tailored to your course content and student needs.',
+      'Leverage artificial intelligence to automatically generate diverse practice questions tailored to your course content and student needs.',
+    goals: [
+      'Generate comprehensive and pedagogically sound practice materials by leveraging existing teaching resources, thereby significantly reducing the workload for lecturers in developing practice content',
+      "Ensure complete coverage of lecture content through systematic question generation that aligns with different cognitive levels of Bloom's taxonomy",
+      'Support diverse learning needs through varied question types and adaptation of content difficulty',
+      'Maintain high educational quality through AI-assisted validation while preserving lecturer control over final materials',
+    ],
     introduction: (
       <>
         <p>
-          AI-generated practice content in KlickerUZH revolutionizes how
-          educational materials are created and delivered. By utilizing advanced
-          AI models, instructors can quickly generate high-quality practice
-          questions, exercises, and learning materials that are perfectly
-          aligned with their course objectives and adapted to different learning
-          levels.
+          The creation of high-quality educational content, particularly
+          practice questions and assessments, represents a significant time
+          investment for lecturers in higher education. Traditional approaches
+          require educators to manually craft questions that not only cover
+          course material comprehensively but also address different cognitive
+          levels of learning. This process becomes increasingly challenging as
+          class sizes grow and course content evolves.
+        </p>
+
+        <p>
+          Large Language Models (LLMs) have emerged as powerful tools for
+          automating educational content genera-tion, offering the potential to
+          significantly reduce the workload on educators while maintaining
+          pedagogical quality. These models can generate diverse question types
+          - including single choice, multiple choice, kprim, free text, and
+          numerical response questions - from basic recall to complex analytical
+          problems, aligned with established educational frameworks like Bloom's
+          taxonomy. Research shows that LLM-generated questions can achieve
+          quality comparable to manually crafted ones, with some metrics even
+          indicating potential im-provements in areas such as content coverage
+          and learning objective alignment.
+        </p>
+
+        <p>
+          The integration of AI-powered content generation into educational
+          platforms enables a more systematic and efficient approach to creating
+          learning materials directly embedding questions into platforms
+          familiar to stu-dents, thereby eliminating the need for export and
+          import processes.
+        </p>
+
+        <p>
+          Also, students benefit significantly from AI-powered content
+          generation. The system provides questions of increasing difficulty,
+          allowing learners to progressively develop their understanding from
+          basic concepts to complex applications. Through varied question
+          formats and comprehensive coverage of course materials, students
+          remain engaged while ensuring no critical topics are missed in their
+          learning journey. The self-paced nature of the generated practice
+          questions enables students to work through materials at their own
+          speed, identifying and addressing knowledge gaps through immediate
+          feedback.
+        </p>
+
+        <p>
+          Looking ahead, this technology could potentially be made available
+          directly to students, empowering them to generate their own practice
+          materials based on specific topics they want to review or areas where
+          they need additional reinforcement. This self-directed approach to
+          content generation would further enhance the per-sonalized learning
+          experience while maintaining pedagogical quality through structured
+          question generation aligned with educational frameworks.
         </p>
       </>
     ),
     background: (
       <>
         <p>
-          The integration of AI in educational content creation represents a
-          significant advancement in teaching technology. AI can analyze course
-          materials, understand learning objectives, and generate relevant
-          practice content that helps reinforce key concepts and identify
-          knowledge gaps.
+          The integration of artificial intelligence (AI) in higher education,
+          particularly in content generation for micro-learning and e-learning,
+          has garnered significant attention in recent years.
         </p>
-        <p>Key benefits of AI-generated practice content include:</p>
-        <ul>
-          <li>Rapid generation of diverse question types and formats</li>
-          <li>Automatic adaptation to different difficulty levels</li>
-          <li>Consistent alignment with learning objectives</li>
-          <li>Reduced time investment in content creation</li>
-          <li>Scalable practice opportunities for large classes</li>
-        </ul>
+
+        <p>
+          AI technologies, particularly generative AI, have the potential to
+          revolutionize content creation in higher edu-cation. Generative AI can
+          produce diverse and immersive educational content, facilitating the
+          development of interactive learning materials that cater to various
+          learning styles and preferences. By leveraging AI, edu-cators can
+          create personalized quizzes and practice questions that align with
+          individual student needs, thereby enhancing engagement and retention
+          (Kadaruddin, 2023; , Murtaza et al., 2022).
+        </p>
+
+        <p>
+          The use of AI in generating educational content is not without its
+          challenges. Concerns regarding the accuracy and reliability of
+          AI-generated materials are prevalent in the literature. For instance,
+          biases inherent in AI models can lead to the production of misleading
+          or inappropriate content, raising questions about the ethical
+          implications of using such technologies in educational settings
+          (Alrayes, 2024; , Alasadi & Baiz, 2023). Additionally, the ethical
+          implications of AI-generated content, including issues of plagiarism
+          and academic integrity, are critical concerns for educators and
+          institutions (Alasadi & Baiz, 2023; , Kanont, 2024).
+        </p>
+
+        <p>
+          As AI technologies become more sophisticated, the risk of students
+          relying on AI-generated materials without proper attribution or
+          understanding increases. Therefore, it is essential for educational
+          institutions to establish clear policies and guidelines regarding the
+          use of AI-generated content to mitigate these risks (Jose, 2024).
+          Furthermore, the lack of transparency in AI algorithms can hinder
+          educators' ability to assess the quality of the generated content,
+          potentially compromising the educational experience (Kanont, 2024). As
+          such, it is crucial for institutions to establish guidelines and best
+          practices for the ethical use of AI in content generation.
+        </p>
+
+        <p>
+          In addition to ethical concerns, the acceptance of AI technologies by
+          students and educators plays a significant role in their successful
+          implementation. Research indicates that factors such as perceived
+          usefulness, ease of use, and trust in AI systems influence students'
+          willingness to engage with AI-generated content (Ka-nont, 2024).
+          Understanding these factors can help educators design AI tools that
+          are more likely to be em-braced by learners, ultimately enhancing the
+          effectiveness of AI in educational contexts.
+        </p>
+
+        <p>
+          Moreover, the integration of AI in content generation can facilitate
+          personalized learning experiences, which are increasingly recognized
+          as essential for student success. AI systems can analyze student
+          performance data to tailor content delivery, ensuring that learners
+          receive materials that match their proficiency levels and learning
+          goals (Murtaza et al., 2022; , Roshanaei, 2023). This personalized
+          approach not only fosters greater engagement but also supports diverse
+          learning pathways, accommodating students with varying backgrounds and
+          abilities (Jian, 2023).
+        </p>
+
+        <p>
+          The literature also highlights the importance of collaboration between
+          educators and AI technologies. By working together, educators can
+          leverage AI's capabilities to enhance their teaching practices while
+          maintaining a human-centered approach to education. For instance, AI
+          can assist educators in creating practice quizzes that align with
+          course objectives, allowing instructors to focus on facilitating
+          deeper learning experiences (Simms, 2024). This collaborative model
+          emphasizes the role of educators as facilitators of learning, rather
+          than mere content deliverers, thereby promoting a more interactive and
+          engaging educational environment.
+        </p>
+
+        <p>
+          Moreover, the effectiveness of AI-generated content in promoting
+          learning outcomes remains an area of ongoing research. While
+          preliminary studies suggest that AI can enhance student engagement and
+          performance, more comprehensive evaluations are needed to assess the
+          long-term impact of AI-generated materials on learning (Rasheed,
+          2023).
+        </p>
       </>
     ),
     scenario: (
       <>
         <p>
-          As an instructor, you want to provide your students with abundant
-          practice opportunities but creating varied, high-quality content
-          manually is time-consuming. You need a solution that can generate
-          relevant practice materials while maintaining pedagogical quality.
+          By leveraging AI-driven content generation in KlickerUZH, lecturers
+          can develop diverse educational materi-als. This setup allows
+          lecturers to efficiently generate questions and learning materials
+          while retaining full control over the final content.
         </p>
-        <p>KlickerUZH's AI content generation features enable you to:</p>
-        <ul>
-          <li>Generate practice questions from your course materials</li>
-          <li>Create variations of existing questions</li>
-          <li>Develop comprehensive practice sets</li>
-          <li>Automatically generate explanations and feedback</li>
-          <li>Scale your content creation efficiently</li>
-        </ul>
+
+        <H3>Content Upload and Processing</H3>
+        <p>
+          As a lecturer, you begin by uploading your teaching materials (PDF
+          lecture scripts, slides, or other documents) to KlickerUZH. The system
+          processes these materials using advanced text segmentation algorithms,
+          maintaining the hierarchical structure of your content while ensuring
+          each segment is self-contained and coherent. This segmentation
+          preserves important context and relationships between topics, allowing
+          for more effective question generation.
+        </p>
+
+        <H3>AI-Powered Content Analysis</H3>
+        <p>
+          The system analyzes the materials to create a comprehensive topic
+          overview and extract key knowledge points. This analysis helps
+          identify learning objectives and suggests appropriate question types
+          for different content segments. You can review this analysis and
+          adjust the focus areas or learning objectives as needed, ensuring
+          alignment with your course goals. You can also further parametrize the
+          generation to, e.g., focus on questions of a specific type or format.
+        </p>
+
+        <H3>Question Generation and Selection</H3>
+        <p>
+          Based on the content analysis, KlickerUZH generates various question
+          types (Single Choice, Multiple Choice, Kprim, Free Text, Numerical
+          Response, Flashcards, and Content Elements) that align with different
+          levels of Bloom's taxonomy. The system ensures balanced coverage
+          across cognitive levels while maintaining pedagogical effectiveness.
+          You can review, edit, or reject suggested questions, and your feedback
+          helps improve future generations.
+        </p>
+
+        <H3>Quality Assurance and Integration</H3>
+        <p>
+          Generated questions undergo automated quality checks for relevance,
+          fluency, and answerability. You maintain full editorial control, with
+          the ability to modify questions or generate alternatives as needed.
+          The approved questions can be organized into quizzes and learning
+          activities, which integrate seamlessly with your course structure in
+          KlickerUZH or your learning management system.
+        </p>
       </>
     ),
     learnings: (
       <>
         <p>
-          The implementation of AI-generated practice content has shown
-          promising results:
+          In collaboration with the Department of Informatics (IFI) and a
+          student team doing their master project [1], we are currently
+          exploring the potential of generating learning materials with AI-based
+          approaches directly in KlickerUZH.
         </p>
+        <p>
+          To systematically validate and further develop these findings, we will
+          conduct comprehensive pilot studies during the spring term of 2025.
+          Should you be interested in participating, please fill out the form at
+          X so that we may contact you. The results of the piloting will be
+          evaluated and summarized as part of this use case.
+        </p>
+
+        <p>Some of our most important preliminary findings include:</p>
         <ul>
           <li>
-            Time efficiency: Instructors report significant time savings in
-            content creation while maintaining high quality standards.
+            <strong>
+              Automating question generation through course structure
+              understanding
+            </strong>
+            : Question generation works well when asking for a specific topic
+            and/or question type based on given material. However, to achieve
+            significant gains in terms of efficiency and to improve content
+            coverage, an approach that further auto-mates this step is required.
+            The AI system needs to be able to grasp the overall learning goals
+            and struc-ture of a course/domain (based on, e.g., a lecture script)
+            and should be able to derive practice material in a balanced way,
+            making sure that all the content is covered by appropriate questions
+            and question types. This essentially results in a two-stage process,
+            where the first stage is purely about understanding the domain and
+            planning the didactical approach, while the second stage is focused
+            on generating content as specified by the defined approach. This
+            process can be facilitated by using a dedicated prompt for the first
+            and second stage respectively, by providing good examples for both
+            stages, as well as by using rea-soning models.
           </li>
           <li>
-            Content diversity: AI generates a wider variety of question types
-            and scenarios than typically created manually.
+            <strong>
+              Addressing challenges in generating higher-order and
+              difficulty-specific questions
+            </strong>
+            : While question generation using prompting strategies works well
+            (especially for foundational material), parametrizing for, e.g., a
+            specific target difficulty can prove difficult, as the models are
+            unable to reason well about, e.g., the difficulty of a specific
+            question. Creating questions on a higher level of Bloom's taxonomy
+            that require net-worked thought can therefore become a challenge.
+            This could be improved by using reasoning models or by giving models
+            additional examples (i.e., few shot prompting) of what would be
+            classified in what level of Bloom's taxonomy/what difficulty.
           </li>
           <li>
-            Student engagement: Students appreciate the abundance of practice
-            opportunities and immediate feedback.
-          </li>
-          <li>
-            Learning outcomes: Regular practice with AI-generated content has
-            shown positive effects on student performance.
+            <strong>Critically analyzing AI-generated questions</strong>: While
+            AI excels in generating diverse questions efficiently, it remains
+            crucial for lecturers to manually review each question to ensure its
+            relevance and coherence. Human oversight is essential to verify that
+            the questions align with the course objectives and make sense within
+            the educational context. This critical analysis by educators ensures
+            that the AI-generated content meets the required quality standards
+            and effectively supports the learning process.
           </li>
         </ul>
+        <p>
+          Our initial assessment of this use case has also provided several
+          significant insights and preliminary learnings regarding the general
+          use of AI that are relevant for lecturers. Information about the
+          associated challenges, limitations, and remediation strategies for IT
+          can be found here.
+        </p>
       </>
     ),
-    references: [
-      'Wang, Y. F., et al. (2020). "AI-Generated Content in Education" in Computers & Education - Analysis of AI\'s role in content generation.',
-      'Zhang, L., et al. (2019). "Adaptive Practice Generation" in International Conference on AI in Education - Framework for AI-based practice material creation.',
-    ],
+    references: ['...'],
   },
   chatbot_tutoring: {
     title: 'Chatbots for Individual Tutoring',
@@ -1934,9 +2442,6 @@ export const USE_CASES = {
         </ul>
       </>
     ),
-    references: [
-      'Roll, I., & Wylie, R. (2016). "AI Tutors and Learning Sciences" in Journal of Learning Analytics - Overview of AI tutoring systems.',
-      'VanLehn, K. (2011). "The Relative Effectiveness of Human Tutoring, Intelligent Tutoring Systems, and Other Tutoring Systems" in Educational Psychologist - Comparative analysis of tutoring approaches.',
-    ],
+    references: ['...'],
   },
 }
