@@ -1805,7 +1805,7 @@ export const USE_CASES = {
         <p>
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at
+          Should you be interested in participating, please fill out the form at{' '}
           <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
