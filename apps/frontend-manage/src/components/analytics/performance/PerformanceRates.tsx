@@ -6,10 +6,11 @@ import {
   ElementType,
   InstancePerformance,
 } from '@klicker-uzh/graphql/dist/ops'
+import usePerformanceRates from '@lib/hooks/usePerformanceRates'
 import usePerformanceSearch from '@lib/hooks/usePerformanceSearch'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Legend } from 'recharts'
 import ActivitiesElementsSwitch from './ActivitiesElementsSwitch'
 import PerformanceActivityTypeFilter from './PerformanceActivityTypeFilter'
@@ -53,7 +54,7 @@ function PerformanceRates({
   )
   const [search, setSearch] = useState<string>('')
 
-  // Use the search hook
+  // apply the search hook
   const searchResults = usePerformanceSearch(
     activityPerformances,
     instancePerformances,
@@ -61,63 +62,13 @@ function PerformanceRates({
     search
   )
 
-  // Modify the entries useMemo to use searchResults instead of rates
-  const entries = useMemo(() => {
-    // optionally filter for activity or element type
-    const filteredByType = searchResults.filter((entry) => {
-      if (
-        activityType !== 'all' &&
-        entry.__typename === 'ActivityPerformance' &&
-        entry.activityType !== activityType
-      ) {
-        return false
-      }
-
-      if (
-        elementType !== 'all' &&
-        entry.__typename === 'InstancePerformance' &&
-        entry.elementType !== elementType
-      ) {
-        return false
-      }
-
-      return true
-    })
-
-    // add the name element / activity name to the structure and map it to the local type
-    return filteredByType.map((entry) => {
-      let incorrectRate = 0
-      let partialRate = 0
-      let correctRate = 0
-
-      if (attemptsType === 'total') {
-        incorrectRate = entry.rates.errorRate
-        partialRate = entry.rates.partialRate
-        correctRate = entry.rates.correctRate
-      } else if (attemptsType === 'first') {
-        incorrectRate = entry.rates.firstErrorRate
-        partialRate = entry.rates.firstPartialRate
-        correctRate = entry.rates.firstCorrectRate
-      } else if (attemptsType === 'last') {
-        incorrectRate = entry.rates.lastErrorRate
-        partialRate = entry.rates.lastPartialRate
-        correctRate = entry.rates.lastCorrectRate
-      }
-
-      return {
-        id: entry.id,
-        name:
-          entry.__typename === 'ActivityPerformance'
-            ? entry.activityName
-            : entry.__typename === 'InstancePerformance'
-              ? entry.elementName
-              : '',
-        incorrectRate,
-        partialRate,
-        correctRate,
-      }
-    })
-  }, [searchResults, activityType, elementType, attemptsType])
+  // if any filters are provided, narrow down the performance rate entries shown
+  const entries = usePerformanceRates(
+    searchResults,
+    activityType,
+    elementType,
+    attemptsType
+  )
 
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
