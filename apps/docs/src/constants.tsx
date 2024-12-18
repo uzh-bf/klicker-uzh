@@ -1802,6 +1802,16 @@ export const USE_CASES = {
           the methodological challenges encountered during the development of
           the LA.
         </p>
+        <p>
+          To systematically validate and further extend these findings, we will
+          conduct comprehensive pilot studies during the spring term of 2025.
+          Should you be interested in participating, please fill out the form at
+          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+            https://forms.office.com/e/K8CXM2pKhJ
+          </a>{' '}
+          so that we may contact you. The results of the piloting will be
+          evaluated and summarized as part of this use case.
+        </p>
         <ul>
           <li>
             <strong>
@@ -1865,16 +1875,6 @@ export const USE_CASES = {
             (Ifenthaler, 2015; Seufert et al., 2020).
           </li>
         </ul>
-        <p>
-          To systematically validate and further extend these findings, we will
-          conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
-            https://forms.office.com/e/K8CXM2pKhJ
-          </a>{' '}
-          so that we may contact you. The results of the piloting will be
-          evaluated and summarized as part of this use case.
-        </p>
       </>
     ),
   },
@@ -1888,7 +1888,7 @@ export const USE_CASES = {
     ],
     goals: [
       'Use AI to deliver detailed, personalized feedback on open-ended questions, tailored to individual student needs',
-      'Provide immediate AI-generated feedback around the clock to minimize learning process interruptions.',
+      'Provide immediate AI-generated feedback around the clock to minimize learning process interruptions. ',
       'Encourage self-regulated learning by offering iterative feedback that helps students refine responses and understand complex concepts',
       'Reducing educator workload while ensuring consistent, high-quality feedback for large groups',
       'Guide students toward deeper inquiry and understanding by using AI feedback to promote critical thinking and problem-solving skills',
@@ -1901,8 +1901,9 @@ export const USE_CASES = {
           To assess students' comprehension of course content, lecturers
           traditionally employ exercises and multiple-choice self-assessments in
           a formative (self-) test. Compared to multiple-choice questions,
-          open-ended ques-tions represent a more sophisticated pedagogical
-          approach, significantly enhancing critical thinking and conceptual
+          open-ended questions embody a more sophisticated pedagogical approach.
+          When coupled with thoughtfully designed questions and corresponding
+          feedback, they significantly enhance critical thinking and conceptual
           understanding. These questions are particularly valuable as they
           challenge students to articulate complex ideas and demonstrate deeper
           learning beyond simple factual recall.
@@ -1912,30 +1913,27 @@ export const USE_CASES = {
           Historically, in large lectures, lecturers were limited to providing
           sample solutions for open-ended questions in formative
           self-assessments, offering minimal individualized learning support.
-          Individual feedback was only possible through human grading, which was
+          Individual feedback was only possible through human grading, which is
           resource-intensive and costly. The emergence of Large Language Models
           has fundamentally transformed this educational paradigm by enabling
-          immediate, personalized formative feedback.
+          immediate, personalized formative feedback for open-ended questions as
+          well .
         </p>
 
         <p>
           This technological advancement supports self-regulated learning and
           helps students refine responses and understand complex concepts. The
           AI-generated feedback highlights strengths and suggests areas for
-          im-provement. This feedback guides students toward refining their
-          answers without directly providing the correct solution. Moreover, the
-          system can dynamically assess response quality, potentially awarding
-          points based on predefined performance thresholds.
+          improvement, helping students to deepen their understanding of course
+          concepts. This feedback guides students toward refining their answers
+          without directly providing the correct solution. Moreover, the system
+          can dynamically assess response quality, potentially awarding points
+          based on predefined performance thresholds.
         </p>
       </>
     ),
     background: (
       <>
-        <p>
-          The integration of artificial intelligence (AI) in educational
-          settings, particularly in the provision of formative feedback, has
-          garnered significant attention in recent years.
-        </p>
         <p>
           AI-generated feedback has been shown to be a viable alternative or
           complement to traditional human feedback. Escalante's study on
@@ -1953,9 +1951,9 @@ export const USE_CASES = {
           educational experience.
         </p>
         <p>
-          The challenges associated with AI-generated feedback are also
-          noteworthy. Bai and Stede's survey on machine learning approaches to
-          student free-text evaluation underscores the complexities involved in
+          However, AI-generated feedback has also been associated with a set of
+          challenges. Bai and Stede's survey on machine learning approaches to
+          free-text evaluation underscores the complexities involved in
           developing effective AI systems for educational feedback (Bai & Stede,
           2022). They argue that while AI can automate certain aspects of
           feedback delivery, it must be carefully designed to align with
@@ -1976,18 +1974,18 @@ export const USE_CASES = {
           that can inform students about their writing strengths and weaknesses.
           However, the reliance on pre-graded corpora for training these models
           raises questions about the generalizability and fairness of AI
-          evaluations, necessitating ongoing research to refine these systems.
+          evaluations, necessitating further research to refine these systems.
         </p>
         <p>
           The integration of human feedback within AI systems is a critical area
           of exploration. Wang et al. emphasize the need for a human-in-the-loop
-          (HITL) approach in natural language processing, which allows for
-          continuous improvement of AI systems through human feedback (Wang et
-          al., 2021). This approach not only enhances the accuracy of AI
-          evaluations but also ensures that the feedback provided is aligned
-          with educational objectives and learner expectations. The combination
-          of human insights and AI efficiency can lead to more personalized and
-          effective feedback mechanisms.
+          approach in natural language processing, which allows for continuous
+          improvement of AI systems through human feedback (Wang et al., 2021).
+          This approach not only enhances the accuracy of AI evaluations but
+          also ensures that the feedback provided is aligned with educational
+          objectives and learner expectations. The combination of human insights
+          and AI efficiency can lead to more personalized and effective feedback
+          mechanisms.
         </p>
         <p>
           The impact of feedback timing on learning outcomes is another
@@ -1997,7 +1995,7 @@ export const USE_CASES = {
           responses (Deeva et al., 2021). This is particularly relevant in the
           context of AI feedback systems, which can provide instantaneous
           responses, thereby facilitating a more dynamic learning environment.
-          However, educators must remain cognizant of the potential pitfalls of
+          However, educators must remain aware of the potential pitfalls of
           over-reliance on automated systems, ensuring that feedback remains
           focused and constructive.
         </p>
@@ -2007,7 +2005,7 @@ export const USE_CASES = {
       <>
         <p>
           By using AI-driven formative feedback in KlickerUZH, you create an
-          engaging and supportive learning envi-ronment that allows students to
+          engaging and supportive learning environment that allows students to
           practice open-ended tasks in a non-assessment setting. When compared
           to the assessment setting, the application of AI in the practice
           scenario reduces the impact of potential mistakes made by the AI.
@@ -2020,31 +2018,32 @@ export const USE_CASES = {
           interactive way to engage with course materials and practice their
           skills. To achieve this, you start by creating a course in KlickerUZH
           and developing a set of open-ended questions that align with your
-          course objectives. These questions are added to quizzes within the
-          platform, and you provide model solutions that outline the key
-          elements of ideal responses. Additionally, AI-generated grading
-          rubrics are created to offer criteria for evaluating student
-          responses. You have the option to review and modify these rubrics to
-          ensure alignment with course goals and standards.
+          course objectives. For each of the questions, you provide model
+          solutions that outline the key elements of ideal responses.
+          Additionally, AI-generated grading rubrics are created to offer
+          criteria for evaluating student responses. You have the option to
+          review and modify these rubrics to ensure alignment with course goals
+          and standards. After testing, you can embed the questions into any of
+          the learning activities supported in KlickerUZH.
         </p>
 
         <p>
-          Once configured, KlickerUZH allows you to integrate these quizzes
-          directly into your learning management system (LMS) via LTI (e.g.,
-          OLAT). This integration ensures seamless access for students through
-          familiar plat-forms. A student log-in and course participation is
-          required to get formative feedback from the AI, allowing for both cost
-          control and moderation of access.
+          Once configured, KlickerUZH allows you to integrate these learning
+          activities directly into your learning management system (LMS) via LTI
+          (e.g., OLAT). This integration ensures seamless access for students
+          through familiar platforms. A student log-in and course participation
+          is required to get formative feedback from the AI, allowing for both
+          cost control and moderation of access.
         </p>
 
         <H3>Practicing Questions with Formative Feedback</H3>
 
         <p>
-          Students access the quizzes through OLAT or the KlickerUZH app,
-          selecting those that correspond to their current learning modules.
-          This setup encourages self-paced learning and allows students to focus
-          on areas where they need more practice. When students attempt
-          free-text questions, the AI analyzes their responses, providing
+          Students access the learning activities through OLAT or the KlickerUZH
+          app, selecting those that correspond to their current learning
+          modules. This setup encourages self-paced learning and allows students
+          to focus on areas where they need more practice. When students attempt
+          free-text questions, the AI analyzes their responses, provides
           formative feedback that highlights strengths and suggests areas for
           improvement. This feedback guides students toward refining their
           answers without directly providing the correct solution.
@@ -2066,7 +2065,7 @@ export const USE_CASES = {
       <>
         <p>
           At the University of Zurich's Department of Finance, we are currently
-          exploring the potential of Large Lan-guage Models (LLMs) to provide
+          exploring the potential of Large Language Models (LLMs) to provide
           immediate, personalized formative feedback to students during their
           learning journey. This initiative builds upon our successful
           experiments with AI-assisted grading in examinations and aims to
@@ -2074,74 +2073,76 @@ export const USE_CASES = {
           the semester.
         </p>
         <p>
-          To systematically validate and further develop these findings, we will
+          To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at
           X so that we may contact you. The results of the piloting will be
           evaluated and summarized as part of this use case.
         </p>
-        <p>Some of our most important preliminary findings include:</p>
         <ul>
           <li>
-            <strong>Didactic challenges</strong>: A naive implementation where
+            <strong>Didactic challenges:</strong> A naive implementation where
             AI provides direct answers as feedback may hinder learning by
             discouraging critical thinking. Therefore, it is advised to use a
             tutoring approach for content-specific feedback that guides students
             toward solutions through hints or counter-questions without giving
-            di-rect answers. Furthermore, it is important to focus on giving
+            direct answers. Furthermore, it is important to focus on giving
             formative feedback that allows students to identify and improve
             their weaknesses. This corresponds to the way a conversational
-            interface (e.g., chat-bot) would be designed and encourages students
+            interface (e.g., chatbot) would be designed and encourages students
             to try again with another answer.
           </li>
           <li>
-            <strong>Accuracy and contextual relevance</strong>: AI-generated
+            <strong>Accuracy and contextual relevance:</strong> AI-generated
             feedback systems often struggle with accuracy and contextual
             relevance (e.g. the nuanced understanding that human feedback
             provides), leading to generic or misaligned responses. Additionally,
             language models tend to "hallucinate," inventing information or
             providing overly complex answers that are not grounded in the
             relevant knowledge base. To address these accuracy and reliability
-            challenges, integrating a human-in-the-loop (HITL) approach is
-            essential, meaning that a human should review AI-generated feedbacks
-            regularly and check for accuracy and context rele-vance, allowing
-            for continuous improvement of AI-generated feedbackthrough human
-            input, specificially adjusting the rubrics.
+            challenges, integrating a human-in-the-loop approach is essential,
+            meaning that a human should review AI-generated feedbacks regularly
+            and check for accuracy and context relevance, allowing for
+            continuous improvement of AI-generated feedback through human input
+            , for example adjusting the rubrics. When compared to the assessment
+            setting, the application of AI in the practice scenario reduces the
+            impact of potential mistakes made by the AI.
           </li>
           <li>
-            <strong>Ethical considerations and data privacy</strong>: The
-            collection and use of student data for generating personal-ized
-            feedback raise concerns about consent, transparency, and potential
+            <strong>Ethical considerations and data privacy:</strong> The
+            collection and use of student data for generating personalized
+            feedback raises concerns about consent, transparency, and potential
             misuse. At institutions like the University of Zurich (UZH), there
-            arenot yet clear guidelines on data privacy concerning AI
-            applications, complicating compliance efforts. However, to address
-            theseconsiderations it is important to obtain in-formed consent from
-            students regarding how their data is collected, processed, stored,
-            and used (see the implemented privacy policy of the KlickerUZH). The
-            provider for AI services has to be carefully selected and it should
-            be ensured that the data provided by students is not used for
-            further training by the provider. Locally hosted models might
-            provide a suitable alternative for small-scale use cases that are
-            privacy-sensitive. Additionally, strict anonymization protocols can
-            help protect personally identifiable information (PII) that students
-            might embed in prompts. It is not allowed for lecturers to use the
-            AI-assisted feedback on free-text questions for the purpose of
-            assessment without double-checking the scoring.Furthermore, if you,
-            as a lecturer, wish to conduct your own research using the collected
-            data (e.g., free-text responses), this in-tention must be
-            communicated to the students in advance.
+            are no clear guidelines on data privacy concerning AI applications
+            at the time of writing, complicating compliance efforts. However, to
+            address these considerations it is important to obtain informed
+            consent from students regarding how their data is collected,
+            processed, stored, and used (see the implemented privacy policy of
+            the KlickerUZH ). The provider for AI services has to be carefully
+            selected and it should be ensured that the data provided by students
+            is not used for further training by the provider. Locally hosted
+            models might provide a suitable alternative for small-scale use
+            cases that are privacy-sensitive. Additionally, strict anonymization
+            protocols can help protect personally identifiable information (PII
+            ) that students might embed in prompts. It is not allowed for
+            lecturers to use the AI-assisted feedback on free-text questions for
+            the purpose of assessment without double-checking the scoring.
+            Furthermore, if you, as a lecturer, wish to conduct your own
+            research using the collected data (e.g., free-text responses), this
+            intention must be communicated to the students in advance.
           </li>
           <li>
-            <strong>Operational cost</strong>: Implementing AI-driven formative
-            feedback systems involves operational costs related to AI use. To
+            <strong>Operational cost:</strong> Implementing AI-driven formative
+            feedback systems involves operational costs related to AI use . To
             manage operational costs effectively, institutions should implement
             cost-control mechanisms like, e.g., limiting the number of student
-            queries per time period. Exploring open-source models hosted
-            lo-cally (e.g., using Ollama) or by trusted providers can also lower
-            expenses associated with proprietary solu-tions. Additionally,
-            optimizing resource use by deploying lightweight models for basic
-            queries while reserv-ing more resource-intensive models for complex
-            queries can help balance costs against educational bene-fits.
+            queries per time period. Exploring open-source models hosted locally
+            (e.g., using Ollama) or by trusted providers can also lower expenses
+            associated with proprietary solutions. Additionally, optimizing
+            resource use by deploying lightweight models for basic queries while
+            reserving more resource-intensive models for complex queries can
+            help balance costs against educational benefits. The cost of all
+            requests will be billed directly by your chosen API providers.
           </li>
         </ul>
         <p>
@@ -2153,7 +2154,6 @@ export const USE_CASES = {
         </p>
       </>
     ),
-    references: ['...'],
   },
   ai_practice_content: {
     title: 'AI-generated Practice Content',
@@ -2378,10 +2378,13 @@ export const USE_CASES = {
           approaches directly in KlickerUZH.
         </p>
         <p>
-          To systematically validate and further develop these findings, we will
+          To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at
-          X so that we may contact you. The results of the piloting will be
+          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+            https://forms.office.com/e/K8CXM2pKhJ
+          </a>{' '}
+          so that we may contact you. The results of the piloting will be
           evaluated and summarized as part of this use case.
         </p>
 
@@ -2439,7 +2442,7 @@ export const USE_CASES = {
           significant insights and preliminary learnings regarding the general
           use of AI that are relevant for lecturers. Information about the
           associated challenges, limitations, and remediation strategies for IT
-          can be found here.
+          can be found here .
         </p>
       </>
     ),
