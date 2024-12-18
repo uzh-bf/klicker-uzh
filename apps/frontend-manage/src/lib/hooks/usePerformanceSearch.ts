@@ -11,32 +11,39 @@ function usePerformanceSearch(
   type: 'activity' | 'instance',
   searchTerm: string
 ) {
-  const search = useMemo(() => {
-    const searchInstance = new JsSearch.Search(
-      type === 'activity' ? 'activityName' : 'elementName'
-    )
+  const { activitySearch, instanceSearch } = useMemo(() => {
+    const activitySearch = new JsSearch.Search('activityName')
+    activitySearch.addIndex('activityName')
+    activitySearch.addDocuments(activityPerformances)
 
-    searchInstance.addIndex(
-      type === 'activity' ? 'activityName' : 'elementName'
-    )
+    const instanceSearch = new JsSearch.Search('elementName')
+    instanceSearch.addIndex('elementName')
+    instanceSearch.addDocuments(instancePerformances)
 
-    const items =
-      type === 'activity' ? activityPerformances : instancePerformances
-    searchInstance.addDocuments(items)
-
-    return searchInstance
-  }, [type, activityPerformances, instancePerformances])
+    return { activitySearch, instanceSearch }
+  }, [activityPerformances, instancePerformances])
 
   const results = useMemo(() => {
-    if (!searchTerm) {
+    // sanitize search term
+    const sanitizedSearchTerm = searchTerm.trim().toLowerCase()
+
+    if (!sanitizedSearchTerm) {
       return type === 'activity' ? activityPerformances : instancePerformances
     }
 
-    return search.search(searchTerm) as (
-      | ActivityPerformance
-      | InstancePerformance
-    )[]
-  }, [search, searchTerm, type, activityPerformances, instancePerformances])
+    if (type === 'activity') {
+      return activitySearch.search(sanitizedSearchTerm) as ActivityPerformance[]
+    } else {
+      return instanceSearch.search(sanitizedSearchTerm) as InstancePerformance[]
+    }
+  }, [
+    searchTerm,
+    type,
+    activityPerformances,
+    instancePerformances,
+    activitySearch,
+    instanceSearch,
+  ])
 
   return results
 }
