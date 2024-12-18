@@ -6,7 +6,7 @@ import { twMerge } from 'tailwind-merge'
 
 function Figure({ imgSrc, caption }) {
   return (
-    <figure className="m-0 mb-4 text-left">
+    <figure className="m-0 mb-4 mt-2 text-left">
       <Zoom zoomMargin={100}>
         <Image img={imgSrc} className={twMerge('max-w-[400px] p-1 shadow')} />
       </Zoom>
@@ -1811,6 +1811,10 @@ export const USE_CASES = {
             materials, enabling lecturers to tailor their teaching strategies
             accordingly. They display the activity of students across the
             semester and highlight the changes from week to week.
+            <Figure
+              imgSrc="/img_v3/la_lecturers_daily.png"
+              caption="Example of an activity diagram by D'Andrea (2024)"
+            />
           </li>
           <li>
             <strong>Progress and Performance Analytics</strong>: These
@@ -1819,6 +1823,10 @@ export const USE_CASES = {
             individual student performance. They supports lecturers in
             identifying areas where students excel or may need additional
             support, facilitating targeted interventions.
+            <Figure
+              imgSrc="/img_v3/la_lecturers_async.png"
+              caption="Example of a progress diagram by D'Andrea (2024)"
+            />
           </li>
           <li>
             <strong>Quiz Performance Analytics</strong>: Survey results indicate
@@ -1828,6 +1836,10 @@ export const USE_CASES = {
             results and individual quiz questions. This enables lecturers to
             gain a deeper understanding of student performance and refine their
             assessment strategies.
+            <Figure
+              imgSrc="/img_v3/la_lecturers_question.png"
+              caption="Example of a performance diagram by D'Andrea (2024)"
+            />
           </li>
         </ul>
       </>
