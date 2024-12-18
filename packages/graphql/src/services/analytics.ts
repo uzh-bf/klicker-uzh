@@ -198,14 +198,20 @@ export async function getCoursePerformanceAnalytics(
         activityName: activity.name,
         activityType,
         rates: {
-          firstErrorRate: performance.firstErrorRate ?? 0,
-          lastErrorRate: performance.lastErrorRate ?? 0,
+          firstErrorRate:
+            performance.firstErrorRate ?? performance.totalErrorRate,
+          lastErrorRate:
+            performance.lastErrorRate ?? performance.totalErrorRate,
           errorRate: performance.totalErrorRate,
-          firstPartialRate: performance.firstPartialRate ?? 0,
-          lastPartialRate: performance.lastPartialRate ?? 0,
+          firstPartialRate:
+            performance.firstPartialRate ?? performance.totalPartialRate,
+          lastPartialRate:
+            performance.lastPartialRate ?? performance.totalPartialRate,
           partialRate: performance.totalPartialRate,
-          firstCorrectRate: performance.firstCorrectRate ?? 0,
-          lastCorrectRate: performance.lastCorrectRate ?? 0,
+          firstCorrectRate:
+            performance.firstCorrectRate ?? performance.totalCorrectRate,
+          lastCorrectRate:
+            performance.lastCorrectRate ?? performance.totalCorrectRate,
           correctRate: performance.totalCorrectRate,
         },
       })
@@ -224,14 +230,20 @@ export async function getCoursePerformanceAnalytics(
             elementName: element.elementData.name,
             elementType: element.elementData.type,
             rates: {
-              firstErrorRate: iPerformance.firstErrorRate ?? 0,
-              lastErrorRate: iPerformance.lastErrorRate ?? 0,
+              firstErrorRate:
+                iPerformance.firstErrorRate ?? iPerformance.totalErrorRate,
+              lastErrorRate:
+                iPerformance.lastErrorRate ?? iPerformance.totalErrorRate,
               errorRate: iPerformance.totalErrorRate,
-              firstPartialRate: iPerformance.firstPartialRate ?? 0,
-              lastPartialRate: iPerformance.lastPartialRate ?? 0,
+              firstPartialRate:
+                iPerformance.firstPartialRate ?? iPerformance.totalPartialRate,
+              lastPartialRate:
+                iPerformance.lastPartialRate ?? iPerformance.totalPartialRate,
               partialRate: iPerformance.totalPartialRate,
-              firstCorrectRate: iPerformance.firstCorrectRate ?? 0,
-              lastCorrectRate: iPerformance.lastCorrectRate ?? 0,
+              firstCorrectRate:
+                iPerformance.firstCorrectRate ?? iPerformance.totalCorrectRate,
+              lastCorrectRate:
+                iPerformance.lastCorrectRate ?? iPerformance.totalCorrectRate,
               correctRate: iPerformance.totalCorrectRate,
             },
           }
