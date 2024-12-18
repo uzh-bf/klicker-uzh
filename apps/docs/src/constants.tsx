@@ -2520,7 +2520,7 @@ export const USE_CASES = {
           personalized guidance.
         </p>
         <p>
-          <p>Constructivist Learning</p> is enhanced as chatbots encourage
+          Constructivist Learning is enhanced as chatbots encourage
           inquiry-based learning. Cerny (2023) highlights the importance of
           educators' understanding of chatbots to design effective tutoring
           scenarios.
