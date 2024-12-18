@@ -1865,6 +1865,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       allElementTypes: 'All Element Types',
       noEntriesManageFilters:
         'No entries exist for the selected filters in this course. Please adjust the filters accordingly or reset all filters.',
+      resetSelectors: 'Reset selectors',
     },
   },
   control: {

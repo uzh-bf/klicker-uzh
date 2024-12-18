@@ -1,10 +1,12 @@
+import { faX } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityPerformance,
   ActivityType,
   ElementType,
   InstancePerformance,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H2, UserNotification } from '@uzh-bf/design-system'
+import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import { Legend } from 'recharts'
@@ -29,17 +31,25 @@ function PerformanceRates({
     partial: '#f59e0b',
     incorrect: '#cc0000',
   }
+  const defaultFilters = {
+    type: 'activity' as 'activity' | 'instance',
+    attemptsType: 'total' as 'first' | 'last' | 'total',
+    activityType: 'all' as ActivityType | 'all',
+    elementType: 'all' as ElementType | 'all',
+  }
 
   // define parameters for filtering and searching
-  const [type, setType] = useState<'activity' | 'instance'>('activity')
+  const [type, setType] = useState<'activity' | 'instance'>(defaultFilters.type)
   const [attemptsType, setAttemptsType] = useState<'first' | 'last' | 'total'>(
-    'total'
+    defaultFilters.attemptsType
   )
-  const [activityType, setActivityType] = useState<ActivityType | 'all'>('all')
-  const [elementType, setElementType] = useState<ElementType | 'all'>('all')
+  const [activityType, setActivityType] = useState<ActivityType | 'all'>(
+    defaultFilters.activityType
+  )
+  const [elementType, setElementType] = useState<ElementType | 'all'>(
+    defaultFilters.elementType
+  )
   const [search, setSearch] = useState<string>('')
-
-  // TODO: add button with functionality to reset all set filters to their initial values
 
   // TODO: extract to custom hook
   // filter and search entries
@@ -120,9 +130,29 @@ function PerformanceRates({
 
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
-      <div className="mb-2 flex flex-row gap-8">
-        <H2>{t('manage.analytics.activityElementPerformanceRates')}</H2>
-        <ActivitiesElementsSwitch type={type} setType={setType} />
+      <div className="flex flex-row items-center justify-between">
+        <div className="mb-2 flex flex-row gap-8">
+          <H2>{t('manage.analytics.activityElementPerformanceRates')}</H2>
+          <ActivitiesElementsSwitch type={type} setType={setType} />
+        </div>
+        <Button
+          className={{ root: 'flex h-8 flex-row items-center gap-2' }}
+          disabled={
+            type === defaultFilters.type &&
+            attemptsType === defaultFilters.attemptsType &&
+            activityType === defaultFilters.activityType &&
+            elementType === defaultFilters.elementType
+          }
+          onClick={() => {
+            setType(defaultFilters.type)
+            setAttemptsType(defaultFilters.attemptsType)
+            setActivityType(defaultFilters.activityType)
+            setElementType(defaultFilters.elementType)
+          }}
+        >
+          <FontAwesomeIcon icon={faX} />
+          <div>{t('manage.analytics.resetSelectors')}</div>
+        </Button>
       </div>
       {type === 'activity' ? (
         <div className="flex flex-row items-center gap-8">

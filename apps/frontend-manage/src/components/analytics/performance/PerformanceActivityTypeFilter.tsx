@@ -32,7 +32,7 @@ function PerformanceActivityTypeFilter({
         ]}
         value={activityType}
         onChange={(value) => setActivityType(value as ActivityType | 'all')}
-        className={{ root: 'w-52' }}
+        className={{ root: 'w-52', trigger: 'h-8' }}
       />
     </div>
   )

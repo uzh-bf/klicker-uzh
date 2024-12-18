@@ -28,7 +28,7 @@ function PerformanceElementTypeFilter({
         ]}
         value={elementType}
         onChange={(value) => setElementType(value as ElementType | 'all')}
-        className={{ root: 'w-52' }}
+        className={{ root: 'w-52', trigger: 'h-8' }}
       />
     </div>
   )

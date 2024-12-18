@@ -27,7 +27,7 @@ function PerformanceAttemptsFilter({
         onChange={(value) =>
           setAttemptsType(value as 'first' | 'last' | 'total')
         }
-        className={{ root: 'w-40' }}
+        className={{ root: 'w-40', trigger: 'h-8' }}
       />
     </div>
   )

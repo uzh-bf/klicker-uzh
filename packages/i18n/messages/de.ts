@@ -1878,6 +1878,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       allElementTypes: 'Alle Elementtypen',
       noEntriesManageFilters:
         'Für die gewählten Filter existieren keine Einträge in diesem Kurs. Bitte passen Sie die Filter gegebenenfalls an oder setzen Sie alle Filter zurück',
+      resetSelectors: 'Auswahl zurücksetzen',
     },
   },
   control: {
