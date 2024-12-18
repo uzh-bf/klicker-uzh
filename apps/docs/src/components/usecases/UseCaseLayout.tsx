@@ -83,7 +83,7 @@ function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
             'flex-1 overflow-hidden p-4 lg:p-8'
           )}
         >
-          <div className="container max-w-none">{children}</div>
+          <div className="container max-w-[1200px] px-0">{children}</div>
         </main>
       </div>
     </Layout>
