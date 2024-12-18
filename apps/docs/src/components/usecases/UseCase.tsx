@@ -2,6 +2,7 @@ import {
   faBook,
   faBookOpen,
   faCircleCheck,
+  faHandshake,
   faLightbulb,
   faToolbox,
 } from '@fortawesome/free-solid-svg-icons'
@@ -115,6 +116,13 @@ function UseCase({ slug }: UseCaseProps) {
             <SectionHeader icon={faLightbulb} header="Our Learnings" />
             {useCase.learnings}
           </section>
+
+          {useCase.acknowledgements && (
+            <section id="Acknowledgements" className="mb-8">
+              <SectionHeader icon={faHandshake} header="Acknowledgements" />
+              {useCase.acknowledgements}
+            </section>
+          )}
         </div>
       </div>
     </UseCaseLayout>
