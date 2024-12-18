@@ -2478,7 +2478,7 @@ export const USE_CASES = {
           from interactions, and offer personalized guidance, making them
           valuable tools for enhancing educational experience.
         </p>
-        <h4>Educational Applications and Effectiveness</h4>
+        <h3>Educational Applications and Effectiveness</h3>
         <p>
           AI chatbots are used across various educational domains - including
           teaching, learning support, assessment, and administration – serving
@@ -2510,7 +2510,7 @@ export const USE_CASES = {
           also noted.
         </p>
 
-        <h4>Theoretical Foundations</h4>
+        <h3>Theoretical Foundations</h3>
         <p>
           The use of AI chatbots is grounded in learning theories such as
           Self-Determination Theory (SDT) and constructivist principles. SDT
@@ -2526,7 +2526,7 @@ export const USE_CASES = {
           scenarios.
         </p>
 
-        <h4>Practical Benefits</h4>
+        <h3>Practical Benefits</h3>
         <p>
           AI chatbots offer scalability, handling large volumes of queries
           simultaneously, and personalization by tailoring responses to
@@ -2539,7 +2539,7 @@ export const USE_CASES = {
           efficiency.
         </p>
 
-        <h4>Challenges and Opportunities</h4>
+        <h3>Challenges and Opportunities</h3>
         <p>
           Despite their benefits, implementing chatbots presents challenges.
           Hwang and Chang (2021) point out technical limitations and the need
@@ -2573,7 +2573,7 @@ export const USE_CASES = {
           behaviors and course effectiveness.
         </p>
 
-        <h4>Preparing a Course Chatbot</h4>
+        <h3>Preparing a Course Chatbot</h3>
         <p>
           As a lecturer, you aim to provide your students with a flexible and
           interactive way to engage with course materials outside the classroom.
@@ -2606,7 +2606,7 @@ export const USE_CASES = {
           refer to the final section of our use case.
         </p>
 
-        <h4>Using the Chatbot</h4>
+        <h3>Using the Chatbot</h3>
         <p>
           Students access the chatbot through OLAT or the KlickerUZH app and use
           it to ask questions related to the course content. The chatbot
@@ -2632,7 +2632,7 @@ export const USE_CASES = {
           student within that time period.
         </p>
 
-        <h4>Learning Analytics on AI</h4>
+        <h3>Learning Analytics on AI</h3>
         <p>
           In the future, advanced learning analytics for AI could further
           enhance the chatbot's value as an educational tool. These analytics
@@ -2654,7 +2654,7 @@ export const USE_CASES = {
           into collective learning trends.
         </p>
 
-        <h4>Expanding your Knowledge Base</h4>
+        <h3>Expanding your Knowledge Base</h3>
         <p>
           Based on student interactions with the chatbot, KlickerUZH's learning
           analytics could help identify and summarize frequently asked questions
