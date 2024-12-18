@@ -2076,7 +2076,10 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at
-          X so that we may contact you. The results of the piloting will be
+          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+            https://forms.office.com/e/K8CXM2pKhJ
+          </a>{' '}
+          so that we may contact you. The results of the piloting will be
           evaluated and summarized as part of this use case.
         </p>
         <ul>
@@ -2171,7 +2174,7 @@ export const USE_CASES = {
       <>
         <p>
           The creation of high-quality educational content, particularly
-          practice questions and assessments, represents a significant time
+          practice questions and assessments, requires a significant time
           investment for lecturers in higher education. Traditional approaches
           require educators to manually craft questions that not only cover
           course material comprehensively but also address different cognitive
@@ -2197,64 +2200,55 @@ export const USE_CASES = {
           The integration of AI-powered content generation into educational
           platforms enables a more systematic and efficient approach to creating
           learning materials directly embedding questions into platforms
-          familiar to stu-dents, thereby eliminating the need for export and
+          familiar to students, thereby eliminating the need for export and
           import processes.
         </p>
 
         <p>
-          Also, students benefit significantly from AI-powered content
+          Furthermore, students benefit significantly from AI-powered content
           generation. The system provides questions of increasing difficulty,
           allowing learners to progressively develop their understanding from
           basic concepts to complex applications. Through varied question
           formats and comprehensive coverage of course materials, students
           remain engaged while ensuring no critical topics are missed in their
-          learning journey. The self-paced nature of the generated practice
-          questions enables students to work through materials at their own
-          speed, identifying and addressing knowledge gaps through immediate
-          feedback.
+          learning journey.
         </p>
 
         <p>
           Looking ahead, this technology could potentially be made available
           directly to students, empowering them to generate their own practice
           materials based on specific topics they want to review or areas where
-          they need additional reinforcement. This self-directed approach to
-          content generation would further enhance the per-sonalized learning
+          they need additional reinforcement. Such a self-directed approach to
+          content generation would further enhance the personalized learning
           experience while maintaining pedagogical quality through structured
-          question generation aligned with educational frameworks.
+          question genera-tion aligned with educational frameworks.
         </p>
       </>
     ),
     background: (
       <>
         <p>
-          The integration of artificial intelligence (AI) in higher education,
-          particularly in content generation for micro-learning and e-learning,
-          has garnered significant attention in recent years.
-        </p>
-
-        <p>
           AI technologies, particularly generative AI, have the potential to
-          revolutionize content creation in higher edu-cation. Generative AI can
+          improve content creation in higher educa-tion . Generative AI can
           produce diverse and immersive educational content, facilitating the
           development of interactive learning materials that cater to various
           learning styles and preferences. By leveraging AI, edu-cators can
           create personalized quizzes and practice questions that align with
-          individual student needs, thereby enhancing engagement and retention
-          (Kadaruddin, 2023; , Murtaza et al., 2022).
+          individual student needs, there-by enhancing engagement and retention
+          (Kadaruddin, 2023; Murtaza et al., 2022).
         </p>
 
         <p>
-          The use of AI in generating educational content is not without its
-          challenges. Concerns regarding the accuracy and reliability of
-          AI-generated materials are prevalent in the literature. For instance,
-          biases inherent in AI models can lead to the production of misleading
-          or inappropriate content, raising questions about the ethical
-          implications of using such technologies in educational settings
-          (Alrayes, 2024; , Alasadi & Baiz, 2023). Additionally, the ethical
-          implications of AI-generated content, including issues of plagiarism
-          and academic integrity, are critical concerns for educators and
-          institutions (Alasadi & Baiz, 2023; , Kanont, 2024).
+          However, the use of AI in generating educational content is not
+          without its challenges. Concerns regarding the accuracy and
+          reliability of AI-generated materials are prevalent in literature. For
+          instance, biases inher-ent in AI models can lead to the production of
+          misleading or inappropriate content, raising questions about the
+          ethical implications of using such technologies in educational
+          settings (Alrayes, 2024; Alasadi & Baiz, 2023). Additionally, the
+          ethical implications of AI-generated content, including issues of
+          plagiarism and academic integrity, are critical concerns for educators
+          and institutions (Alasadi & Baiz, 2023; Kanont, 2024).
         </p>
 
         <p>
@@ -2265,14 +2259,14 @@ export const USE_CASES = {
           use of AI-generated content to mitigate these risks (Jose, 2024).
           Furthermore, the lack of transparency in AI algorithms can hinder
           educators' ability to assess the quality of the generated content,
-          potentially compromising the educational experience (Kanont, 2024). As
-          such, it is crucial for institutions to establish guidelines and best
-          practices for the ethical use of AI in content generation.
+          potentially compromising the quality of the generated content (Kanont,
+          2024). As such, it is crucial for institutions to establish guidelines
+          and best practices for the ethical use of AI in content generation.
         </p>
 
         <p>
           In addition to ethical concerns, the acceptance of AI technologies by
-          students and educators plays a significant role in their successful
+          students and educators plays a signifi-cant role in their successful
           implementation. Research indicates that factors such as perceived
           usefulness, ease of use, and trust in AI systems influence students'
           willingness to engage with AI-generated content (Ka-nont, 2024).
@@ -2287,32 +2281,20 @@ export const USE_CASES = {
           as essential for student success. AI systems can analyze student
           performance data to tailor content delivery, ensuring that learners
           receive materials that match their proficiency levels and learning
-          goals (Murtaza et al., 2022; , Roshanaei, 2023). This personalized
-          approach not only fosters greater engagement but also supports diverse
-          learning pathways, accommodating students with varying backgrounds and
-          abilities (Jian, 2023).
+          goals (Murtaza et al., 2022; Roshanaei, 2023). This personalized
+          approach not only fosters great-er engagement but also supports
+          diverse learning pathways, accommodating students with varying
+          back-grounds and abilities (Jian, 2023).
         </p>
 
         <p>
-          The literature also highlights the importance of collaboration between
-          educators and AI technologies. By working together, educators can
-          leverage AI's capabilities to enhance their teaching practices while
-          maintaining a human-centered approach to education. For instance, AI
-          can assist educators in creating practice quizzes that align with
-          course objectives, allowing instructors to focus on facilitating
-          deeper learning experiences (Simms, 2024). This collaborative model
-          emphasizes the role of educators as facilitators of learning, rather
-          than mere content deliverers, thereby promoting a more interactive and
-          engaging educational environment.
-        </p>
-
-        <p>
-          Moreover, the effectiveness of AI-generated content in promoting
-          learning outcomes remains an area of ongoing research. While
-          preliminary studies suggest that AI can enhance student engagement and
-          performance, more comprehensive evaluations are needed to assess the
-          long-term impact of AI-generated materials on learning (Rasheed,
-          2023).
+          Collaborating with AI technologies allows educators to enhance their
+          teaching practices while keeping educa-tion human-centered. AI can
+          support tasks like creating practice quizzes aligned with course
+          objectives, free-ing instructors to focus on facilitating deeper
+          learning experiences. This partnership positions educators as learning
+          facilitators, promoting a more interactive and engaging educational
+          environment.
         </p>
       </>
     ),
@@ -2328,23 +2310,22 @@ export const USE_CASES = {
         <H3>Content Upload and Processing</H3>
         <p>
           As a lecturer, you begin by uploading your teaching materials (PDF
-          lecture scripts, slides, or other documents) to KlickerUZH. The system
-          processes these materials using advanced text segmentation algorithms,
-          maintaining the hierarchical structure of your content while ensuring
-          each segment is self-contained and coherent. This segmentation
-          preserves important context and relationships between topics, allowing
-          for more effective question generation.
+          lecture scripts, slides, or other documents) to KlickerUZH . The
+          system uses advanced text segmentation algorithms to maintain the
+          hierarchical struc-ture and coherence of your content, preserving
+          context and relationships between topics for more effective question
+          generation.
         </p>
 
         <H3>AI-Powered Content Analysis</H3>
         <p>
-          The system analyzes the materials to create a comprehensive topic
-          overview and extract key knowledge points. This analysis helps
+          The system analyzes the provided materials to create a comprehensive
+          topic overview and extract key knowledge points. This analysis helps
           identify learning objectives and suggests appropriate question types
           for different content segments. You can review this analysis and
           adjust the focus areas or learning objectives as needed, ensuring
           alignment with your course goals. You can also further parametrize the
-          generation to, e.g., focus on questions of a specific type or format.
+          genera-tion to, e.g., focus on questions of a specific type or format.
         </p>
 
         <H3>Question Generation and Selection</H3>
@@ -2353,7 +2334,7 @@ export const USE_CASES = {
           types (Single Choice, Multiple Choice, Kprim, Free Text, Numerical
           Response, Flashcards, and Content Elements) that align with different
           levels of Bloom's taxonomy. The system ensures balanced coverage
-          across cognitive levels while maintaining pedagogical effectiveness.
+          across cognitive levels while maintaining peda-gogical effectiveness.
           You can review, edit, or reject suggested questions, and your feedback
           helps improve future generations.
         </p>
@@ -2361,11 +2342,11 @@ export const USE_CASES = {
         <H3>Quality Assurance and Integration</H3>
         <p>
           Generated questions undergo automated quality checks for relevance,
-          fluency, and answerability. You maintain full editorial control, with
-          the ability to modify questions or generate alternatives as needed.
-          The approved questions can be organized into quizzes and learning
-          activities, which integrate seamlessly with your course structure in
-          KlickerUZH or your learning management system.
+          fluency, and answerability. You main-tain full editorial control, with
+          the ability to modify questions or generate alternatives as needed .
+          The ap-proved questions can be directly used in learning activities,
+          which integrate seamlessly with your course structure in KlickerUZH or
+          your learning management system.
         </p>
       </>
     ),
@@ -2373,8 +2354,8 @@ export const USE_CASES = {
       <>
         <p>
           In collaboration with the Department of Informatics (IFI) and a
-          student team doing their master project [1], we are currently
-          exploring the potential of generating learning materials with AI-based
+          student team doing their master project, we are currently exploring
+          the potential of generating learning materials with AI-based
           approaches directly in KlickerUZH.
         </p>
         <p>
@@ -2393,14 +2374,14 @@ export const USE_CASES = {
           <li>
             <strong>
               Automating question generation through course structure
-              understanding
+              understanding:
             </strong>
-            : Question generation works well when asking for a specific topic
+            Question generation works well when asking for a specific topic
             and/or question type based on given material. However, to achieve
             significant gains in terms of efficiency and to improve content
-            coverage, an approach that further auto-mates this step is required.
+            coverage, an approach that further automates this step is required.
             The AI system needs to be able to grasp the overall learning goals
-            and struc-ture of a course/domain (based on, e.g., a lecture script)
+            and structure of a course/domain (based on, e.g., a lecture script)
             and should be able to derive practice material in a balanced way,
             making sure that all the content is covered by appropriate questions
             and question types. This essentially results in a two-stage process,
@@ -2409,44 +2390,43 @@ export const USE_CASES = {
             on generating content as specified by the defined approach. This
             process can be facilitated by using a dedicated prompt for the first
             and second stage respectively, by providing good examples for both
-            stages, as well as by using rea-soning models.
+            stages, as well as by using reasoning models.
           </li>
           <li>
             <strong>
               Addressing challenges in generating higher-order and
-              difficulty-specific questions
+              difficulty-specific questions:
             </strong>
-            : While question generation using prompting strategies works well
+            While question generation using prompting strategies works well
             (especially for foundational material), parametrizing for, e.g., a
-            specific target difficulty can prove difficult, as the models are
-            unable to reason well about, e.g., the difficulty of a specific
-            question. Creating questions on a higher level of Bloom's taxonomy
-            that require net-worked thought can therefore become a challenge.
-            This could be improved by using reasoning models or by giving models
+            specific target difficulty can prove more challenging, due to
+            limited reasoning capabilities of the model on this parameter.
+            Creating questions on a higher level of Bloom's taxonomy that
+            require networked thinking can therefore become a challenge. This
+            could be improved by using reasoning models or by giving models
             additional examples (i.e., few shot prompting) of what would be
             classified in what level of Bloom's taxonomy/what difficulty.
           </li>
           <li>
-            <strong>Critically analyzing AI-generated questions</strong>: While
+            <strong>Critically analyzing AI-generated questions:</strong> While
             AI excels in generating diverse questions efficiently, it remains
-            crucial for lecturers to manually review each question to ensure its
-            relevance and coherence. Human oversight is essential to verify that
-            the questions align with the course objectives and make sense within
-            the educational context. This critical analysis by educators ensures
+            crucial for lecturers to manually review each question to that the
+            questions align with the course objectives and make sense within the
+            educational context. This critical analysis by educators ensures
             that the AI-generated content meets the required quality standards
             and effectively supports the learning process.
           </li>
         </ul>
+
         <p>
           Our initial assessment of this use case has also provided several
           significant insights and preliminary learnings regarding the general
           use of AI that are relevant for lecturers. Information about the
           associated challenges, limitations, and remediation strategies for IT
-          can be found here .
+          can be found here.
         </p>
       </>
     ),
-    references: ['...'],
   },
   chatbot_tutoring: {
     title: 'Chatbots for Individual Tutoring',
@@ -2512,6 +2492,16 @@ export const USE_CASES = {
           The implementation of AI tutoring chatbots has revealed several key
           insights:
         </p>
+        <p>
+          To systematically validate and further extend these findings, we will
+          conduct comprehensive pilot studies during the spring term of 2025.
+          Should you be interested in participating, please fill out the form at
+          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+            https://forms.office.com/e/K8CXM2pKhJ
+          </a>{' '}
+          so that we may contact you. The results of the piloting will be
+          evaluated and summarized as part of this use case.
+        </p>
         <ul>
           <li>
             Accessibility: Students appreciate the 24/7 availability and
@@ -2532,6 +2522,5 @@ export const USE_CASES = {
         </ul>
       </>
     ),
-    references: ['...'],
   },
 }
