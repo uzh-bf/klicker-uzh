@@ -2431,7 +2431,7 @@ export const USE_CASES = {
   },
   chatbot_tutoring: {
     title: 'Chatbots for Individual Tutoring',
-    headerImgSrc: '/img_v3/jeshoots-com--2vD8lIhdnw-unsplash.jpg',
+    headerImgSrc: '/img_v3/possessed-photography-JjGXjESMxOY-unsplash.jpg',
     tags: [
       'Individual tutoring',
       'Self-directed learning',
