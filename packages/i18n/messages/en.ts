@@ -1866,6 +1866,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noEntriesManageFilters:
         'No entries exist for the selected filters in this course. Please adjust the filters accordingly or reset all filters.',
       resetSelectors: 'Reset selectors',
+      searchPlaceholder: 'Search...',
+      activityNameLabel: 'Activity Name',
+      elementNameLabel: 'Element Name',
     },
   },
   control: {

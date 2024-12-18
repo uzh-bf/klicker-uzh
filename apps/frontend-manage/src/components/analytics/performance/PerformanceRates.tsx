@@ -6,6 +6,7 @@ import {
   ElementType,
   InstancePerformance,
 } from '@klicker-uzh/graphql/dist/ops'
+import usePerformanceSearch from '@lib/hooks/usePerformanceSearch'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
@@ -15,6 +16,7 @@ import PerformanceActivityTypeFilter from './PerformanceActivityTypeFilter'
 import PerformanceAttemptsFilter from './PerformanceAttemptsFilter'
 import PerformanceElementTypeFilter from './PerformanceElementTypeFilter'
 import PerformanceRatesBarChart from './PerformanceRatesBarChart'
+import PerformanceSearchField from './PerformanceSearchField'
 
 interface PerformanceRatesProps {
   activityPerformances: ActivityPerformance[]
@@ -51,15 +53,18 @@ function PerformanceRates({
   )
   const [search, setSearch] = useState<string>('')
 
-  // TODO: extract to custom hook
-  // filter and search entries
-  const entries = useMemo(() => {
-    // select the correct performance rates based on the type
-    const rates =
-      type === 'activity' ? activityPerformances : instancePerformances
+  // Use the search hook
+  const searchResults = usePerformanceSearch(
+    activityPerformances,
+    instancePerformances,
+    type,
+    search
+  )
 
+  // Modify the entries useMemo to use searchResults instead of rates
+  const entries = useMemo(() => {
     // optionally filter for activity or element type
-    const filteredByType = rates.filter((entry) => {
+    const filteredByType = searchResults.filter((entry) => {
       if (
         activityType !== 'all' &&
         entry.__typename === 'ActivityPerformance' &&
@@ -78,12 +83,6 @@ function PerformanceRates({
 
       return true
     })
-
-    // TODO: implement search with JSSearch
-    // const filteredBySearch = filteredByType.filter((entry) =>
-    //   entry.activityName.toLowerCase().includes(search.toLowerCase())
-    // )
-    // return filteredBySearch
 
     // add the name element / activity name to the structure and map it to the local type
     return filteredByType.map((entry) => {
@@ -118,15 +117,7 @@ function PerformanceRates({
         correctRate,
       }
     })
-  }, [
-    activityPerformances,
-    instancePerformances,
-    type,
-    attemptsType,
-    activityType,
-    elementType,
-    search,
-  ])
+  }, [searchResults, activityType, elementType, attemptsType])
 
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
@@ -164,6 +155,11 @@ function PerformanceRates({
             activityType={activityType}
             setActivityType={setActivityType}
           />
+          <PerformanceSearchField
+            type={type}
+            value={search}
+            onChange={(value) => setSearch(value)}
+          />
         </div>
       ) : (
         <div className="flex flex-row items-center gap-8">
@@ -174,6 +170,11 @@ function PerformanceRates({
           <PerformanceElementTypeFilter
             elementType={elementType}
             setElementType={setElementType}
+          />
+          <PerformanceSearchField
+            type={type}
+            value={search}
+            onChange={(value) => setSearch(value)}
           />
         </div>
       )}
