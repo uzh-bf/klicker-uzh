@@ -204,18 +204,18 @@ export const USE_CASES = {
             and interaction.
           </li>
           <li>
-            Estimation questions: To activate students’ engagement, questions
+            Estimation questions: To activate students' engagement, questions
             can be asked without a clear answer. This makes students think about
             the discussed topic and gets them directly involved. (Example: Where
             will the SMI be at the end of 2023?) Depending on your goals, you
             can add gamification elements to your quizzes. Gamified live quizzes
             increase student motivation and add a fun and competitive component
-            to lectures which can enhance students’ ambition and motivation.
+            to lectures which can enhance students' ambition and motivation.
             Several questions can be asked directly after each other (with a
             timer) to best create a quiz situation. Participants can gather
             points while responding to questions. Points are awarded based on
             the correctness of the answer, as well as the speed/delay between
-            the first correct answer and one’s own answer (if correct). A
+            the first correct answer and one's own answer (if correct). A
             leaderboard shows the current ranking of participants within the
             quiz and gathered points are transferred to the course leaderboard
             after the conclusion of the quiz (if enabled on a course level). For
@@ -228,7 +228,7 @@ export const USE_CASES = {
     learnings: (
       <>
         <p>
-          Since the KlickerUZH’s initial release and first implementation in
+          Since the KlickerUZH's initial release and first implementation in
           2011, the increasing number of user registrations confirms the need
           for such a tool in teaching.
         </p>
@@ -750,7 +750,7 @@ export const USE_CASES = {
           learning largely depends on two aspects: the meaning and sense of the
           information, as well as the time it is processed by our brain. To
           maximize sustainable learning, therefore, one can either increase the
-          relevance, ensure an individual’s understanding, or raise repetition
+          relevance, ensure an individual's understanding, or raise repetition
           and reinforcement and thus the processing time. (Sousa, 2022) Not only
           is the time relevant but also the number of confrontations with the
           information: ‘exposure effects’ positively influence the probability
@@ -1607,7 +1607,7 @@ export const USE_CASES = {
         'For Lecturers',
         [
           'Use Learning Analytics (LA) to gain insights into and to understand students’ individual and collective engagement, knowledge levels, and performance to improve course design and delivery',
-          'Monitor student activities to recognize disengagement early and provide targeted interventions for im-proved outcomes',
+          'Monitor student activities to recognize disengagement early and provide targeted interventions for improved outcomes',
           'Analyze data on learning resource usage and success rates to align course content with student needs',
           'Utilize LA insights for data-driven adjustments to teaching strategies and future course iterations',
           'Engage in reflective practices to develop pedagogical skills based on LA-driven evaluations',
@@ -2075,13 +2075,21 @@ export const USE_CASES = {
         <p>
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at
+          Should you be interested in participating, please fill out the form at{' '}
           <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be
           evaluated and summarized as part of this use case.
         </p>
+        <p>
+          Our initial assessment of this use case has also provided several
+          significant insights and preliminary learnings regarding the general
+          use of AI that are relevant for lecturers regarding the implementation
+          of AI use cases. Information about the associated challenges,
+          limitations, and remediation strategies for IT can be found here .
+        </p>
+        <p>Some of our most important preliminary findings include:</p>
         <ul>
           <li>
             <strong>Didactic challenges:</strong> A naive implementation where
@@ -2148,13 +2156,6 @@ export const USE_CASES = {
             requests will be billed directly by your chosen API providers.
           </li>
         </ul>
-        <p>
-          Our initial assessment of this use case has also provided several
-          significant insights and preliminary learnings regarding the general
-          use of AI that are relevant for lecturers. Information about the
-          associated challenges, limitations, and remediation strategies for IT
-          can be found here.
-        </p>
       </>
     ),
   },
@@ -2192,7 +2193,7 @@ export const USE_CASES = {
           problems, aligned with established educational frameworks like Bloom's
           taxonomy. Research shows that LLM-generated questions can achieve
           quality comparable to manually crafted ones, with some metrics even
-          indicating potential im-provements in areas such as content coverage
+          indicating potential improvements in areas such as content coverage
           and learning objective alignment.
         </p>
 
@@ -2221,7 +2222,7 @@ export const USE_CASES = {
           they need additional reinforcement. Such a self-directed approach to
           content generation would further enhance the personalized learning
           experience while maintaining pedagogical quality through structured
-          question genera-tion aligned with educational frameworks.
+          question generation aligned with educational frameworks.
         </p>
       </>
     ),
@@ -2229,12 +2230,12 @@ export const USE_CASES = {
       <>
         <p>
           AI technologies, particularly generative AI, have the potential to
-          improve content creation in higher educa-tion . Generative AI can
+          improve content creation in higher education . Generative AI can
           produce diverse and immersive educational content, facilitating the
           development of interactive learning materials that cater to various
-          learning styles and preferences. By leveraging AI, edu-cators can
+          learning styles and preferences. By leveraging AI, educators can
           create personalized quizzes and practice questions that align with
-          individual student needs, there-by enhancing engagement and retention
+          individual student needs, thereby enhancing engagement and retention
           (Kadaruddin, 2023; Murtaza et al., 2022).
         </p>
 
@@ -2242,7 +2243,7 @@ export const USE_CASES = {
           However, the use of AI in generating educational content is not
           without its challenges. Concerns regarding the accuracy and
           reliability of AI-generated materials are prevalent in literature. For
-          instance, biases inher-ent in AI models can lead to the production of
+          instance, biases inherent in AI models can lead to the production of
           misleading or inappropriate content, raising questions about the
           ethical implications of using such technologies in educational
           settings (Alrayes, 2024; Alasadi & Baiz, 2023). Additionally, the
@@ -2266,12 +2267,12 @@ export const USE_CASES = {
 
         <p>
           In addition to ethical concerns, the acceptance of AI technologies by
-          students and educators plays a signifi-cant role in their successful
+          students and educators plays a significant role in their successful
           implementation. Research indicates that factors such as perceived
           usefulness, ease of use, and trust in AI systems influence students'
-          willingness to engage with AI-generated content (Ka-nont, 2024).
+          willingness to engage with AI-generated content (Kanont, 2024).
           Understanding these factors can help educators design AI tools that
-          are more likely to be em-braced by learners, ultimately enhancing the
+          are more likely to be embraced by learners, ultimately enhancing the
           effectiveness of AI in educational contexts.
         </p>
 
@@ -2282,16 +2283,16 @@ export const USE_CASES = {
           performance data to tailor content delivery, ensuring that learners
           receive materials that match their proficiency levels and learning
           goals (Murtaza et al., 2022; Roshanaei, 2023). This personalized
-          approach not only fosters great-er engagement but also supports
-          diverse learning pathways, accommodating students with varying
-          back-grounds and abilities (Jian, 2023).
+          approach not only fosters greater engagement but also supports diverse
+          learning pathways, accommodating students with varying backgrounds and
+          abilities (Jian, 2023).
         </p>
 
         <p>
           Collaborating with AI technologies allows educators to enhance their
-          teaching practices while keeping educa-tion human-centered. AI can
+          teaching practices while keeping education human-centered. AI can
           support tasks like creating practice quizzes aligned with course
-          objectives, free-ing instructors to focus on facilitating deeper
+          objectives, freeing instructors to focus on facilitating deeper
           learning experiences. This partnership positions educators as learning
           facilitators, promoting a more interactive and engaging educational
           environment.
@@ -2302,9 +2303,9 @@ export const USE_CASES = {
       <>
         <p>
           By leveraging AI-driven content generation in KlickerUZH, lecturers
-          can develop diverse educational materi-als. This setup allows
-          lecturers to efficiently generate questions and learning materials
-          while retaining full control over the final content.
+          can develop diverse educational materials. This setup allows lecturers
+          to efficiently generate questions and learning materials while
+          retaining full control over the final content.
         </p>
 
         <H3>Content Upload and Processing</H3>
@@ -2312,7 +2313,7 @@ export const USE_CASES = {
           As a lecturer, you begin by uploading your teaching materials (PDF
           lecture scripts, slides, or other documents) to KlickerUZH . The
           system uses advanced text segmentation algorithms to maintain the
-          hierarchical struc-ture and coherence of your content, preserving
+          hierarchical structure and coherence of your content, preserving
           context and relationships between topics for more effective question
           generation.
         </p>
@@ -2325,7 +2326,7 @@ export const USE_CASES = {
           for different content segments. You can review this analysis and
           adjust the focus areas or learning objectives as needed, ensuring
           alignment with your course goals. You can also further parametrize the
-          genera-tion to, e.g., focus on questions of a specific type or format.
+          generation to, e.g., focus on questions of a specific type or format.
         </p>
 
         <H3>Question Generation and Selection</H3>
@@ -2334,7 +2335,7 @@ export const USE_CASES = {
           types (Single Choice, Multiple Choice, Kprim, Free Text, Numerical
           Response, Flashcards, and Content Elements) that align with different
           levels of Bloom's taxonomy. The system ensures balanced coverage
-          across cognitive levels while maintaining peda-gogical effectiveness.
+          across cognitive levels while maintaining pedagogical effectiveness.
           You can review, edit, or reject suggested questions, and your feedback
           helps improve future generations.
         </p>
@@ -2342,9 +2343,9 @@ export const USE_CASES = {
         <H3>Quality Assurance and Integration</H3>
         <p>
           Generated questions undergo automated quality checks for relevance,
-          fluency, and answerability. You main-tain full editorial control, with
+          fluency, and answerability. You maintain full editorial control, with
           the ability to modify questions or generate alternatives as needed .
-          The ap-proved questions can be directly used in learning activities,
+          The approved questions can be directly used in learning activities,
           which integrate seamlessly with your course structure in KlickerUZH or
           your learning management system.
         </p>
@@ -2361,7 +2362,7 @@ export const USE_CASES = {
         <p>
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at
+          Should you be interested in participating, please fill out the form at{' '}
           <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
@@ -2369,7 +2370,15 @@ export const USE_CASES = {
           evaluated and summarized as part of this use case.
         </p>
 
+        <p>
+          Our initial assessment of this use case has also provided several
+          significant insights and preliminary learnings regarding the general
+          use of AI that are relevant for lecturers regarding the implementation
+          of AI use cases. Information about the associated challenges,
+          limitations, and remediation strategies for IT can be found here .
+        </p>
         <p>Some of our most important preliminary findings include:</p>
+
         <ul>
           <li>
             <strong>
@@ -2417,14 +2426,6 @@ export const USE_CASES = {
             and effectively supports the learning process.
           </li>
         </ul>
-
-        <p>
-          Our initial assessment of this use case has also provided several
-          significant insights and preliminary learnings regarding the general
-          use of AI that are relevant for lecturers. Information about the
-          associated challenges, limitations, and remediation strategies for IT
-          can be found here.
-        </p>
       </>
     ),
   },
@@ -2432,92 +2433,505 @@ export const USE_CASES = {
     title: 'Chatbots for Individual Tutoring',
     headerImgSrc: '/img_v3/jeshoots-com--2vD8lIhdnw-unsplash.jpg',
     tags: [
-      'AI tutoring',
-      'Personalized support',
-      '24/7 assistance',
-      'Interactive learning',
+      'Individual tutoring',
+      'Self-directed learning',
+      'Interactive engagement',
+      'Personalized feedback',
     ],
     abstract:
       'Provide students with personalized, AI-powered tutoring support that is available 24/7, offering immediate assistance and guidance tailored to individual learning needs.',
+    goals: [
+      'Enhance the educational experience by supporting on-demand learning and practice',
+      'Support personalized learning by tailoring responses to course-specific materials and individual student needs',
+      'Enhance student engagement by promoting active problem-solving and critical thinking',
+      'Reduce lecturers’ workload by automating responses to frequently asked questions while providing actionable insights through analytics',
+      'Ensure seamless integration into existing teaching workflows through compatibility with platforms like OLAT',
+    ],
     introduction: (
       <>
         <p>
-          KlickerUZH's AI tutoring chatbots offer students round-the-clock
-          access to personalized learning support. These intelligent assistants
-          can explain concepts, answer questions, and guide students through
-          problem-solving processes, providing an additional layer of support
-          beyond traditional office hours.
+          Throughout the academic semester, including weekends and evening
+          hours, students continuously engage with course materials and may
+          develop substantive questions regarding the content. Traditionally,
+          students were constrained by limited feedback opportunities, typically
+          awaiting responses from tutors in online forums or lecturers during
+          intermittent teaching intervals. This is particularly challenging in
+          large lecture settings, where instructors face difficulties in
+          offering timely and individualized responses.
+        </p>
+        <p>
+          The emergence of Chatbot tutors, powered by Large Language Models like
+          ChatGPT and Claude, now enables a transformative approach to learning
+          support. These advanced technologies facilitate immediate, detailed,
+          and constructive answers to these questions outside regular teaching
+          hours.
         </p>
       </>
     ),
     background: (
       <>
         <p>
-          The need for personalized, on-demand learning support has grown
-          significantly in modern education. AI chatbots fill this gap by
-          providing immediate, scalable assistance that adapts to each student's
-          needs and learning pace.
+          Chatbots leverage advanced AI techniques, including natural language
+          processing (NLP), machine learning, and neural networks, to simulate
+          human-like interactions. Unlike traditional rule-based chatbots, which
+          rely on predefined responses, AI chatbots adapt to user inputs, learn
+          from interactions, and offer personalized guidance, making them
+          valuable tools for enhancing educational experience.
         </p>
-        <p>Key features of the AI tutoring system include:</p>
-        <ul>
-          <li>24/7 availability for student questions</li>
-          <li>Personalized learning conversations</li>
-          <li>Step-by-step problem-solving guidance</li>
-          <li>Multi-language support</li>
-          <li>Integration with course materials</li>
-        </ul>
+        <h4>Educational Applications and Effectiveness</h4>
+        <p>
+          AI chatbots are used across various educational domains - including
+          teaching, learning support, assessment, and administration – serving
+          as virtual assistants that answer questions, guide problem-solving
+          processes, and provide immediate feedback. For example, Harvard
+          University's CS50 course implemented the "CS50 Duck", a virtual tutor
+          that encourages reflective problem-solving rather than offering direct
+          answers. This approach aligns with pedagogical principles that
+          emphasize active learning and critical thinking.
+        </p>
+        <p>
+          The systematic review by Kuhail et al. (2022) underscores the growing
+          adoption of educational chatbots due to their cost-effectiveness and
+          ability to engage students in personalized learning experiences,
+          particularly in online settings where individual educator support is
+          limited. Similarly, Mendoza et al. (2022) highlight their utility in
+          facilitating access to academic procedures and services for both
+          students and teachers. However, they caution that many existing
+          chatbots lack the mechanisms necessary to adequately support the
+          learning process, signaling a need for further development. Empirical
+          evidence supports the effectiveness of AI chatbots in improving
+          educational outcomes.
+        </p>
+        <p>
+          Wu and Yu's (2023) meta-analysis of 24 studies found significant
+          positive impacts on students' learning, including enhanced
+          performance, motivation, interest, and self-efficacy, particularly in
+          higher education. The novelty effect of short-term interventions was
+          also noted.
+        </p>
+
+        <h4>Theoretical Foundations</h4>
+        <p>
+          The use of AI chatbots is grounded in learning theories such as
+          Self-Determination Theory (SDT) and constructivist principles. SDT
+          emphasizes the importance of fulfilling students' psychological needs
+          for autonomy (choice), competence (effective feedback), and
+          relatedness (connection), which chatbots can support by providing
+          personalized guidance.
+        </p>
+        <p>
+          <p>Constructivist Learning</p> is enhanced as chatbots encourage
+          inquiry-based learning. Cerny (2023) highlights the importance of
+          educators' understanding of chatbots to design effective tutoring
+          scenarios.
+        </p>
+
+        <h4>Practical Benefits</h4>
+        <p>
+          AI chatbots offer scalability, handling large volumes of queries
+          simultaneously, and personalization by tailoring responses to
+          individual needs. They ensure accessibility with 24/7 availability and
+          multilingual capabilities, and they improve cost efficiency by
+          automating routine tasks. Chatbots also enhance engagement through
+          natural language interactions, as noted by Huang et al. (2021). These
+          benefits make AI chatbots an attractive solution for institutions
+          seeking to enhance both academic support and administrative
+          efficiency.
+        </p>
+
+        <h4>Challenges and Opportunities</h4>
+        <p>
+          Despite their benefits, implementing chatbots presents challenges.
+          Hwang and Chang (2021) point out technical limitations and the need
+          for robust design frameworks. Gabriel et al. (2021) stress identifying
+          tasks suitable for automation while maintaining educators' focus on
+          complex activities. Chiu et al. (2023) highlight the role of teacher
+          involvement in fostering student motivation. To address these issues,
+          thoughtful design strategies and collaboration between educators and
+          developers are crucial.
+        </p>
+        <p>
+          The literature reveals a complex interplay of benefits and challenges
+          associated with chatbot use in higher education. While they offer
+          promising avenues for enhancing student engagement and personalized
+          learning experiences, successful implementation requires careful
+          consideration of design principles, educator involvement, and ongoing
+          development to address existing limitations. As institutions continue
+          exploring these technologies, further research will be essential to
+          fully realize their transformative potential.
+        </p>
       </>
     ),
     scenario: (
       <>
         <p>
-          Your students need support outside of regular office hours, and you
-          want to provide them with reliable, immediate assistance for common
-          questions and problems. You also want to ensure that students can get
-          help in their preferred learning style and pace.
+          By integrating a course-specific chatbot tutor into KlickerUZH, you
+          create an engaging and supportive learning environment that
+          complements traditional teaching methods while fostering autonomy and
+          engagement among students. Future analytics capabilities will empower
+          lecturers by offering data-driven insights into student learning
+          behaviors and course effectiveness.
         </p>
-        <p>KlickerUZH's AI tutoring chatbots provide:</p>
-        <ul>
-          <li>Immediate responses to student queries</li>
-          <li>Customized explanations based on learning level</li>
-          <li>Interactive problem-solving sessions</li>
-          <li>Supplementary learning resources</li>
-          <li>Progress tracking and reporting</li>
-        </ul>
+
+        <h4>Preparing a Course Chatbot</h4>
+        <p>
+          As a lecturer, you aim to provide your students with a flexible and
+          interactive way to engage with course materials outside the classroom.
+          To achieve this, you start by creating a course in KlickerUZH and
+          uploading relevant teaching materials, such as lecture slides, lecture
+          transcripts , or additional resources. These materials form the
+          knowledge base for the chatbot, enabling it to provide tailored
+          responses to student queries. You can also customize the chatbot's
+          settings, such as specifying the target language, adjusting the
+          language proficiency level (A1-C2), and adding specific guidance or
+          instructions for students.
+        </p>
+        <p>
+          Once configured, KlickerUZH generates a unique link to your
+          course-specific chatbot, which you can integrate directly into your
+          learning management system (LMS) via LTI (e.g., OLAT). Additionally,
+          your chatbot is available to students logged-in through the KlickerUZH
+          app. This integration ensures seamless access for students through
+          familiar platforms. A student log-in and course participation are
+          required to interact with chatbots to allow for both cost control and
+          moderation of access.
+        </p>
+        <p>
+          Enabling the chatbot functionality requires providing an API key for
+          one or multiple AI providers such as Azure OpenAI, OpenAI, Anthropic,
+          or others. To manage costs effectively, you can set a usage limit per
+          student and time period (e.g., $1 USD per month per student). The cost
+          of chatbot requests will be billed directly by your chosen API
+          providers. For an estimation of cost based on our experiences, please
+          refer to the final section of our use case.
+        </p>
+
+        <h4>Using the Chatbot</h4>
+        <p>
+          Students access the chatbot through OLAT or the KlickerUZH app and use
+          it to ask questions related to the course content. The chatbot
+          provides immediate, context-aware responses based on your uploaded
+          materials. Rather than giving direct answers, the chatbot's tutoring
+          mode seeks to encourage critical thinking by guiding students toward
+          solutions, fostering deeper engagement with the material. This
+          approach aligns with pedagogical best practices by promoting active
+          problem-solving and self-directed learning.
+        </p>
+        <p>
+          Students are able to select from a set of different language models –
+          based on your parameters and provided API keys – and can choose a
+          suitable chat mode. An additional “explainer” mode can be chosen by
+          students for questions that are not suitable for tutoring or when a
+          more detailed explanation is expected.
+        </p>
+        <p>
+          Additionally, students are shown the number of credits they have
+          remaining and the time at which the credits are reset. The number of
+          available credits depends on the lecturer's settings regarding maximum
+          cost per time period and student, as well as on the real usage of the
+          student within that time period.
+        </p>
+
+        <h4>Learning Analytics on AI</h4>
+        <p>
+          In the future, advanced learning analytics for AI could further
+          enhance the chatbot's value as an educational tool. These analytics
+          provide lecturers with aggregated insights into student interactions
+          with chatbots. For example, you will be able to identify topics that
+          generate frequent queries, highlighting areas where students commonly
+          struggle or need additional support. Sentiment analysis could also be
+          used to detect patterns in student confidence or frustration levels
+          during interactions.
+        </p>
+        <p>
+          Metrics such as "response success rates" (how often students find
+          chatbot responses helpful) and "engagement trends" (frequency and
+          timing of student interactions) will offer actionable feedback on both
+          student learning behaviors and the effectiveness of the chatbot. This
+          data will help inform adjustments to teaching strategies or updates to
+          course content. Importantly, all analytics will remain anonymized to
+          protect student privacy while providing you with meaningful insights
+          into collective learning trends.
+        </p>
+
+        <h4>Expanding your Knowledge Base</h4>
+        <p>
+          Based on student interactions with the chatbot, KlickerUZH's learning
+          analytics could help identify and summarize frequently asked questions
+          (FAQs). These FAQs can be reviewed by lecturers or teaching assistants
+          to ensure their relevancy and alignment with course objectives. Once
+          the response for these FAQs has been verified or adjusted, the FAQs
+          can be added to the chatbot's knowledge base. Through this iterative
+          process, the knowledge base is gradually extended, ensuring that
+          future queries on similar topics are answered more efficiently while
+          maintaining consistency across responses.
+        </p>
       </>
     ),
     learnings: (
       <>
         <p>
-          The implementation of AI tutoring chatbots has revealed several key
-          insights:
+          At the Department of Finance, University of Zurich, we have conducted
+          initial tests with AI-powered tutors in our large-scale undergraduate
+          courses with up to 900 students. In this use case, we share our
+          practical experiences from initial testing phases, key considerations,
+          and preliminary insights from our pilot implementations.
         </p>
         <p>
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
-          Should you be interested in participating, please fill out the form at
+          Should you be interested in participating, please fill out the form at{' '}
           <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be
           evaluated and summarized as part of this use case.
         </p>
+        <p>
+          Our initial assessment of this use case has also provided several
+          significant insights and preliminary learnings regarding the general
+          use of AI that are relevant for lecturers regarding the implementation
+          of AI use cases. Information about the associated challenges,
+          limitations, and remediation strategies for IT can be found here .
+        </p>
+        <p>Some of our most important preliminary findings include:</p>
         <ul>
           <li>
-            Accessibility: Students appreciate the 24/7 availability and
-            immediate response times.
+            <strong>Didactic challenges</strong>: AI chatbots, when implemented
+            naively, may hinder learning by providing direct answers to all
+            student queries. This approach risks discouraging critical thinking,
+            problem solving, and inquiry based learning, as students may become
+            overly reliant on the chatbot for solutions. Overuse of such tools
+            can undermine the development of essential academic and cognitive
+            skills, particularly in foundational courses where building a deep
+            understanding of concepts is critical.
+            <ul>
+              <li>
+                Evaluate a tutoring approach. Chatbots can guide students toward
+                solutions by offering hints, asking counter questions, or
+                breaking problems into smaller steps. This approach fosters
+                active engagement and critical thinking. Encourage students to
+                ask exploratory questions and reflect on their understanding by
+                designing chatbot prompts that stimulate curiosity and deeper
+                inquiry.
+              </li>
+              <li>
+                Introduce mechanisms that prompt students to reflect on their
+                interactions with the chatbot. For instance, limiting the number
+                of queries per session can encourage thoughtful engagement and
+                discourage over reliance on quick answers.
+              </li>
+              <li>
+                Use analytics tools to track how students interact with the
+                chatbot. Identify patterns of over reliance or surface level
+                engagement and use this data to refine chatbot behavior and
+                learning materials. For example, we identified that some
+                students copy/paste questions from our practice quizzes or
+                exercises to get additional explanations (which could mean that
+                the explanations in these quizzes are not satisfactory).
+              </li>
+              <li>
+                Create assignments that require higher order thinking,
+                creativity, or personal reflection—tasks that are less likely to
+                be fully solvable by chatbots (e.g., open ended questions,
+                project based tasks). Encourage students to use AI on these
+                tasks to help them build up essential AI skills.
+              </li>
+            </ul>
           </li>
           <li>
-            Learning support: Chatbots effectively handle common questions,
-            allowing instructors to focus on complex issues.
+            <strong>Enabling specific use cases</strong>: There are many
+            different use cases for chatbots in teaching. For example, chatbots
+            can be used to explain complex topics, to tutor students while
+            solving problems, or to provide students with practice material. The
+            chatbot should be tuned for the specific use cases by means of
+            specific prompts and examples such that the responses align with
+            learning goals. In our example, after many students asked the tutor
+            to "just give the explanation", we implemented a dedicated control
+            for students where they could select between "Tutor" and "Explainer"
+            mode, switching out the system prompt applied. While this is now
+            heavily used, most students still manually select the tutoring mode
+            to get step by step support. A recent use case we can see is
+            students trying to generate practice questions from contents, or
+            summarizing the entire lecture content, which are future use cases
+            we might cover with dedicated options (as the existing modes do not
+            cover these use cases with dedicated examples).
           </li>
           <li>
-            Student confidence: Regular interaction with AI tutors helps build
-            student confidence in tackling challenging topics.
+            <strong>Adoption rate and usage</strong>: While early student
+            feedback has been very positive, we also observed that adoption
+            rates varied significantly, with some students seeming very invested
+            in using the chatbot and others continuing to use familiar tools
+            like ChatGPT or choosing not to engage with AI systems at all. In
+            our first semester course with 900 students, some students used
+            multiple millions of tokens across all of their conversations.
+            During exam time, we received up to 750 messages per day from
+            students preparing for the exam. Overall, the chatbot served about
+            14'000 responses throughout the semester, more than half of it
+            during the last month of the semester.
           </li>
           <li>
-            Usage patterns: Peak usage occurs during exam preparation and
-            assignment periods.
+            <strong>Student feedback</strong>: Overall, the students that used
+            the chatbot really liked the experience. Some specific points that
+            were mentioned in a survey include the following:
+            <ul>
+              <li>
+                Students liked that the knowledge base was restricted and did
+                not introduce material outside of the course contents, and that
+                the tutor mode did not provide the solution immediately (and
+                ChatGPT or similar would have to be explicitly told to not
+                respond out of scope).
+              </li>
+              <li>
+                The inclusion of lecture transcripts was noted as a plus as also
+                administrative matters and current developments are included,
+                though it is recommended to double check transcripts before
+                adding them to the knowledge base.
+              </li>
+              <li>
+                Students also liked that the chatbot provided references to the
+                source material, though in some cases these could also be
+                hallucinated (which could be automatically identified as a
+                future improvement).
+              </li>
+              <li>
+                Students also highlighted the capability of switching language
+                models and the learning effect when interacting with different
+                models (more and less capable, across different providers). This
+                seems to be an important skill when interacting with AI and is a
+                large benefit.
+              </li>
+              <li>
+                Some students would have liked a way of uploading files to get a
+                solution (e.g., an exercise) though this was explicitly not the
+                goal of our tutoring approach.
+              </li>
+              <li>
+                Sometimes, the tutoring mode leads into a different direction
+                than the original question, as there will always be a follow up
+                question (no going back to the original topic once the question
+                has been answered).
+              </li>
+              <li>
+                Some students noted that they did not use the chatbot at all
+                because they do not trust AI to respond with accurate
+                information and that they rather look at the source materials on
+                their own (e.g., the lectures, the e learning, the lecture
+                script).
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Operational cost</strong>: We estimate that future
+            iterations of such a course could cost about $1.5 per student (with
+            further improvements in efficiency/performance and providing the
+            full experience, and assuming similar adoption). The cost of AI is
+            largely based on the consumed "tokens" for the input sent to the AI
+            provider (e.g., OpenAI) and the output generated by them. In our
+            pilots, token usage varied between about 5000 to 30000 tokens for a
+            single request from a student (depending on the size of the context,
+            the length of the chat history, etc.). With AI being mostly billed
+            per million tokens (e.g., $2.50/$10.00 for input/output of GPT-4o),
+            this would place the cost of a normal request with a capable model
+            (e.g., GPT-4o, Claude Sonnet 3.5) at about $0.05 to $0.10 (for just
+            the AI provider, there are a few other cost elements that are not
+            directly visible). Using more capable models (e.g., with reasoning
+            capabilities) would increase this cost, while using smaller models
+            (e.g., Llama 3.3 70b or GPT-4o mini) would significantly decrease
+            this cost. There are further measures to reduce AI cost (e.g.,
+            caching) that are either taken automatically by the provider
+            (OpenAI) or have to be applied manually (Anthropic).
+          </li>
+          <li>
+            <strong>Cost control</strong>: To control cost, we provided students
+            with "credits" that they were able to use for AI requests.
+            Initially, students got 1000 credits corresponding to about $1 in AI
+            usage, with a monthly reset of these credits. Later on in the
+            semester, these credits were changed to a weekly and then daily
+            reset to allow students to prepare for the exam. This made sure that
+            all students had the same allowance and our budget would not run out
+            unexpectedly. Additionally, the restriction encouraged students to
+            think about the requests they want to send to the chatbot, and to be
+            mindful when choosing the AI model to use (e.g., choose cheaper
+            models for easier questions). It is therefore recommended to always
+            add some kind of restriction even in the case of budget not being a
+            concern.
+          </li>
+          <li>
+            <strong>Maintenance effort</strong>: Chatbots require a maintenance
+            effort in that the cost and resource usage needs to be monitored and
+            billing accounts (e.g., OpenAI platform) need to be topped up
+            regularly. The knowledge base needs to be continuously updated,
+            especially if lecture transcripts or slides are provided to the
+            chatbot (which might make sense to have more current and
+            organizational information included).
+          </li>
+          <li>
+            <strong>Copyright</strong>: For copyright reasons, only materials
+            for which the lecturer/creator of the chatbot has the rights to
+            redistribute them should be added to the knowledge base. The chatbot
+            will implicitly redistribute these materials to students and might
+            output them "verbatim" from time to time. Also, consent from all
+            lecturers of the course should be gathered, especially if
+            transcripts are to be generated and used for the chatbot (such that
+            they are aware of the implications).
+          </li>
+          <li>
+            <strong>Monitoring</strong>: Student behavior when using the chatbot
+            should be monitored (by looking at the questions asked and responses
+            generated) such that potential misuse can be identified and
+            addressed early on. For example, certain conversations and materials
+            are not allowed by the API providers (e.g., OpenAI) and it might
+            result in problems if students continuously engage in such a way.
+            This requires the usage of an LLM monitoring software that allows
+            tracking user sessions and "traces" (user messages) along the token
+            usage and cost of requests.
+          </li>
+          <li>
+            <strong>Digital literacy</strong>: Not all students have equal
+            access to digital tools or possess the skills needed to effectively
+            use AI chatbots. This may exacerbate educational inequalities,
+            potentially leaving some students at a disadvantage. To enhance
+            digital literacy, lecturers should offer workshops or training
+            sessions during class aimed at improving students' digital literacy
+            and AI skills.
+          </li>
+          <li>
+            <strong>Ethical Considerations and Data Privacy</strong>: The
+            integration of AI chatbots into higher education presents
+            significant ethical and privacy concerns. Although well designed
+            systems can reduce the transmission of personal data to external
+            providers and the use of queries for model training, there remains a
+            risk that students might inadvertently include sensitive information
+            in their interactions/prompts. This could result in the external
+            processing or storage of personal data, potentially violating
+            privacy regulations and eroding user trust. In your lectures, ensure
+            that students are fully informed about how their data is collected,
+            processed, stored, and used. Clearly label chatbots as non human
+            entities in compliance with the EU AI Act. Implement mechanisms to
+            monitor chatbot interactions to identify potential ethical issues or
+            misuse. Educate students on responsible chatbot use through
+            onboarding materials or reminders within the chatbot interface,
+            emphasizing the importance of avoiding the inclusion of sensitive
+            information in queries. While there are also technical measures to
+            prevent the leakage of personal information, these are more
+            difficult to set up and would require an LLM that runs locally.
+          </li>
+          <li>
+            <strong>Missing accuracy and contextual relevance</strong>: AI
+            chatbots, while powerful, are prone to generating incorrect or
+            misleading responses ("hallucinations"). These inaccuracies can
+            confuse students, particularly when the chatbot provides overly
+            complex or irrelevant answers that do not align with course
+            materials. Additionally, the static nature of pre trained models
+            means they lack real time updates, which can exacerbate
+            inconsistencies in their responses. When allowing students to flag
+            low quality responses, provide feedback (e.g., thumbs up, comment),
+            or request regeneration, a human moderator should review these
+            questions and adjust the learning materials/knowledge base or other
+            chatbot parameters. It is also an option to provide corrections for
+            wrong responses or to label responses as "human verified", though
+            this is challenging in terms of workload.
           </li>
         </ul>
       </>
