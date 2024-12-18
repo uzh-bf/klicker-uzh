@@ -1606,8 +1606,8 @@ export const USE_CASES = {
       [
         'For Lecturers',
         [
-          'Use Learning Analytics to gain insights into and to understand students’ individual and collective en-gagement, knowledge levels, and performance to improve course design and delivery',
-          'Monitor student activities to recognize disengagement early and provide targeted interventions for improved outcomes',
+          'Use Learning Analytics (LA) to gain insights into and to understand students’ individual and collective engagement, knowledge levels, and performance to improve course design and delivery',
+          'Monitor student activities to recognize disengagement early and provide targeted interventions for im-proved outcomes',
           'Analyze data on learning resource usage and success rates to align course content with student needs',
           'Utilize LA insights for data-driven adjustments to teaching strategies and future course iterations',
           'Engage in reflective practices to develop pedagogical skills based on LA-driven evaluations',
@@ -1616,7 +1616,7 @@ export const USE_CASES = {
       [
         'For Students',
         [
-          'Access personalized feedback and dashboards to monitor progress, set goals, and plan effective study strategies (self-regulated learning)',
+          'Access personalized feedback and dashboards to monitor progress, set goals, and plan effective study strategies (self-regulated learning',
           'Utilize insights from LA to stay motivated and actively participate in learning activities',
           'Identify areas for improvement through detailed feedback and additional resources provided by LA tools',
         ],
@@ -1638,28 +1638,31 @@ export const USE_CASES = {
           learning processes.
         </p>
         <p>
-          Students, too, are increasingly interested in understanding their
-          academic performance relative to their peers. They seek to know: Have
-          they completed self-learning modules? How do their formative
-          assessment results compare to classmates? Learning Analytics offers a
-          sophisticated solution to these challenges. Defined by Long et al.
-          (2011) as "the measurement, collection, analysis, and reporting of
-          data about learners and their contexts, for purposes of understanding
-          and optimizing learning and the environments in which it occurs", this
-          emerging field provides unprecedented visibility into educational
-          engagement.
+          At the same time, students are also increasingly interested in
+          understanding their academic performance relative to their peers and
+          where their strengths and weaknesses are situated. Providing students
+          with insights on these topics could also prove intrinsically
+          motivating. Students seek to know: Have they completed self-learning
+          modules? How do their formative assessment results compare to
+          classmates?
         </p>
         <p>
-          The integration of online and blended learning has exponentially
-          expanded the volume of educational data available. As Stewart (2017)
-          highlighted, these data repositories serve as a foundational resource
-          for analyzing student behavior, identifying improvement opportunities,
-          and enhancing teaching and learning processes. Learning Analytics
-          enables lecturers to gain nuanced insights into actual student
-          learning patterns while simultaneously providing students with a
-          comparative perspective on their academic performance. By transforming
-          complex data into meaningful insights, this approach revolutionizes
-          our understanding of educational engagement.
+          Learning Analytics offers a sophisticated solution to these
+          challenges. Defined by Long et al. (2011) as "the measurement,
+          collection, analysis, and reporting of data about learners and their
+          contexts, for purposes of understanding and optimizing learning and
+          the environments in which it occurs", this emerging field provides
+          unprecedented visibility into educational engagement. The integration
+          of online and blended learning has exponentially expanded the volume
+          of educational data available. As Stewart (2017) highlighted, these
+          data repositories serve as a foundational resource for analyzing
+          student behavior, identifying improvement opportunities, and enhancing
+          teaching and learning processes. Learning Analytics enables lecturers
+          to gain nuanced insights into actual student learning patterns while
+          simultaneously providing students with a comparative perspective on
+          their academic performance. By transforming complex data into
+          meaningful insights, this approach enhances our understanding of
+          educational engagement.
         </p>
       </>
     ),
@@ -1669,9 +1672,9 @@ export const USE_CASES = {
           In higher education, understanding students' diverse learning
           behaviors and engagement levels is crucial for lecturers aiming to
           enhance their teaching practices (Volungevičienė et al., 2019).
-          How-ever, the growth in student numbers has reduced opportunities for
-          meaningful interactions, mak-ing it challenging for lecturers to fully
-          grasp students' learning processes (Lowes, 2020). The inte-gration of
+          However, the growth in student numbers has reduced opportunities for
+          meaningful interactions, making it challenging for lecturers to fully
+          grasp students' learning processes (Lowes, 2020). The integration of
           online and blended learning further amplifies this issue by generating
           vast amounts of educational data (Stewart, 2017). This data serves as
           a foundation for analyzing student behavior, identifying areas for
@@ -1680,9 +1683,9 @@ export const USE_CASES = {
         <p>
           Recognizing these challenges, Learning Analytics (LA) has emerged as a
           powerful tool to transform educational data into actionable insights.
-          LA facilitates a shift towards evidence-based education-al strategies,
+          LA facilitates a shift towards evidence-based educational strategies,
           benefiting students, lecturers, and administrators by creating more
-          effective and per-sonalized learning experiences.
+          effective and personalized learning experiences.
         </p>
         <p>
           One of LA's significant contributions lies in its ability to
@@ -1690,7 +1693,7 @@ export const USE_CASES = {
           self-reports and surveys (Caspari-Sadeghi, 2022). By automatically
           tracking digital activities, LA provides lecturers with insights into
           students' knowledge levels, error patterns, and engagement, enabling
-          them to adjust course designs and teaching methods effective-ly
+          them to adjust course designs and teaching methods effectively
           (Tervakari et al., 2014; Hui & Farvolden, 2017). LA also uncovers
           learning behavior patterns that may hinder effective learning
           (Tervakari et al., 2014). For instance, it can detect activity spikes
@@ -1705,12 +1708,12 @@ export const USE_CASES = {
         <p>
           Insights into student learning behavior provide a crucial foundation
           for the critical reflection of lecturers, allowing them to evaluate
-          and reconsider course materials, future course implementa-tions, and
+          and reconsider course materials, future course implementations, and
           pedagogical practices (Chatti et al., 2012; Karademir et al., 2021;
           Redmond et al., 2018). Based on this foundation, Learning Analytics
-          supports lecturers in decision-making regarding ad-justments in both
+          supports lecturers in decision-making regarding adjustments in both
           current and future course implementations (Volungevičienė et al.,
-          2019). Accord-ing to Ifenthaler (2020), such reflections contribute to
+          2019). According to Ifenthaler (2020), such reflections contribute to
           the professional development of educators in higher education.
         </p>
         <p>
@@ -1736,56 +1739,142 @@ export const USE_CASES = {
           environments, catering to individual student needs to maximize
           academic potential (Berland et al., 2014; Schumacher & Ifenthaler,
           2018a). By offering immediate feedback through automated analysis of
-          digital activities, LA en-hances self-regulated learning processes,
+          digital activities, LA enhances self-regulated learning processes,
           fostering autonomy and deeper engagement (Durall & Gros, 2014; Virkus
-          et al., 2023).Despite its potential, integrating students' needs into
+          et al., 2023). Despite its potential, integrating students' needs into
           LA system designs remains a challenge (Galaige et al., 2022). However,
-          the insights provided by LA form a ro-bust foundation for lecturers to
-          critically evaluate and refine their pedagogical practices,
-          support-ing ongoing professional development and future course
-          improvements (Ifenthaler, 2020).
+          the insights provided by LA form a robust foundation for lecturers to
+          critically evaluate and refine their pedagogical practices, supporting
+          ongoing professional development and future course improvements
+          (Ifenthaler, 2020).
         </p>
       </>
     ),
     scenario: (
       <>
         <p>
-          As an instructor, you want to understand how your students are
-          engaging with course materials and identify areas where they might be
-          struggling. KlickerUZH's Learning Analytics provides:
+          In KlickerUZH, learning analytics allow both lecturers and students to
+          gain insight into the learning behavior and success of their class
+          and/or themselves.For lecturers, different dashboards provide insight
+          into the activity, progress, and performance of an entire class. For
+          students, analytics focus on their achievement of competencies and
+          mastery in specific quizzes and topics of a course. Learning analytics
+          are anonymized and shown in aggregate to ensure the privacy of
+          individual students. An example of a future learning analytics
+          dashboard is shown below.
         </p>
+        <p>The three types of analytics for lecturers are the following:</p>
         <ul>
-          <li>Detailed participation and performance metrics</li>
-          <li>Engagement patterns across different types of activities</li>
-          <li>Progress tracking over time</li>
-          <li>Comparative analysis of class performance</li>
+          <li>
+            <strong>Activity Analytics</strong>: These visualizations aim to
+            offer a comprehensive view of how students interact with the course
+            materials, enabling lecturers to tailor their teaching strategies
+            accordingly. They display the activity of students across the
+            semester and highlight the changes from week to week.
+          </li>
+          <li>
+            <strong>Progress and Performance Analytics</strong>: These
+            visualizations offer lecturers insights into course progress,
+            students' knowledge levels across various course topics, and
+            individual student performance. They supports lecturers in
+            identifying areas where students excel or may need additional
+            support, facilitating targeted interventions.
+          </li>
+          <li>
+            <strong>Quiz Performance Analytics</strong>: Survey results indicate
+            that lecturers have the greatest interest in analyzing quiz results.
+            Quiz performance analytics include an overview of error rates,
+            student feedback on quizzes, and detailed views of aggregated quiz
+            results and individual quiz questions. This enables lecturers to
+            gain a deeper understanding of student performance and refine their
+            assessment strategies.
+          </li>
         </ul>
       </>
     ),
     learnings: (
       <>
         <p>
-          Implementation of Learning Analytics has revealed several key
-          insights:
+          Our preliminary research on implementing Learning Analytics in
+          KlickerUZH has yielded substantial initial insights. These findings
+          emerge from two complementary sources: a comprehensive survey (n=11)
+          with lecturers and teaching assistants from various disciplines and
+          the methodological challenges encountered during the development of
+          the LA.
         </p>
         <ul>
           <li>
-            Data insights: Instructors can make more informed decisions about
-            teaching strategies and content delivery.
+            <strong>
+              Understanding familiarity and application of learning analytics
+            </strong>
+            : The survey revealed varying levels of familiarity and
+            implementation of Learning Analytics (LA) among lecturers. Task
+            completion rate analysis was successfully used by 18.18% of
+            participants, with 63.64% expressing interest in future adoption.
+            Despite some unfamiliarity, the concept's potential is widely
+            recognized, highlighting an opportunity for broader implementation.
           </li>
+
           <li>
-            Early intervention: The ability to identify struggling students
-            early allows for timely support.
+            <strong>Adoption trends in quiz result analysis</strong>: According
+            to the survey, quiz result analysis showed higher adoption, with
+            36.36% of lecturers already using it and 45.45% interested in future
+            application. While behavior analytics and interaction time analysis
+            have yet to be integrated, they garnered significant interest,
+            indicating a readiness to explore these tools to enhance teaching
+            practices.
           </li>
+
           <li>
-            Course optimization: Analytics help in refining course content and
-            delivery methods based on student interaction patterns.
+            <strong>Growing interest in learning analytics tools</strong>:
+            According to the survey, there is a strong interest in adopting LA
+            tools if they are more accessible, particularly through platforms
+            like KlickerUZH. This suggests a growing recognition of LA's value
+            in providing deeper insights into student performance and
+            engagement, which can inform and improve educational strategies.
           </li>
+
           <li>
-            Student engagement: Visual analytics help students understand their
-            own progress and areas for improvement.
+            <strong>Ensuring data availability and quality</strong>: The
+            effectiveness of LA as a data-driven approach to improving education
+            heavily depends on the quantity, quality, and relevance of the data
+            collected. An identified limitation is the inability to track
+            offline learning activities (e.g. reading a book or even a printed
+            PDF script), which are not captured by digital tools. This gap can
+            lead to incomplete representations of student engagement and hinder
+            accurate predictions. Rets et al. (2021) suggest incorporating
+            features to log offline study efforts in LA dashboards to enhance
+            the accuracy of predictive analytics. If this is not possible or
+            done, it is essential for lecturers to critically evaluate the data,
+            recognizing that it encompasses only online activities and may not
+            fully capture offline learning efforts. Being aware of these
+            limitations allows educators to interpret the data more accurately
+            and make informed decisions that consider the entire learning
+            context.
+          </li>
+
+          <li>
+            <strong>Ethical considerations and data privacy</strong>: Beyond
+            technical challenges and limitations, the ethical and legal
+            dimensions of data collection and usage play a pivotal role in LA
+            adoption. Privacy concerns, data protection, and the lack of
+            transparency in data usage have been widely debated (Ferguson et
+            al., 2016; Khalil & Ebner, 2015; Pardo & Siemens, 2014). Addressing
+            these concerns requires not only robust anonymization but also
+            careful validation of data to ensure its relevance and reliability
+            (Ifenthaler, 2015; Seufert et al., 2020).
           </li>
         </ul>
+        <p>
+          To systematically validate and further extend these findings, we will
+          conduct comprehensive pilot studies during the spring term of 2025.
+          Should you be interested in participating, please fill out the form at
+          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+            https://forms.office.com/e/K8CXM2pKhJ
+          </a>{' '}
+          so that we may contact you. The results of the piloting will be
+          evaluated and summarized as part of this use case.
+        </p>
       </>
     ),
   },
@@ -1833,12 +1922,10 @@ export const USE_CASES = {
           This technological advancement supports self-regulated learning and
           helps students refine responses and understand complex concepts. The
           AI-generated feedback highlights strengths and suggests areas for
-          im-provement. This helps students identify areas for improvement and
-          deepen their understanding of course concepts. This feedback guides
-          students toward refining their answers without directly providing the
-          correct solution. Moreover, the system can dynamically assess response
-          quality, potentially awarding points based on predefined performance
-          thresholds.
+          im-provement. This feedback guides students toward refining their
+          answers without directly providing the correct solution. Moreover, the
+          system can dynamically assess response quality, potentially awarding
+          points based on predefined performance thresholds.
         </p>
       </>
     ),
