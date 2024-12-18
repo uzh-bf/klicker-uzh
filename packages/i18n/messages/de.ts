@@ -1866,6 +1866,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       errorRate: 'Fehlerrate',
       partialRate: 'Partielle Fehlerrate',
       correctRate: 'Erfolgsrate',
+      activities: 'Aktivitäten',
+      elements: 'Elemente',
+      answers: 'Antworten',
+      allAttempts: 'Alle Versuche',
+      firstAttempts: 'Erste Versuche',
+      lastAttempts: 'Letzte Versuche',
+      activityType: 'Aktivitätstyp',
+      allActivityTypes: 'Alle Aktivitätstypen',
+      elementType: 'Elementtyp',
+      allElementTypes: 'Alle Elementtypen',
+      noEntriesManageFilters:
+        'Für die gewählten Filter existieren keine Einträge in diesem Kurs. Bitte passen Sie die Filter gegebenenfalls an oder setzen Sie alle Filter zurück',
     },
   },
   control: {

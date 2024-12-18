@@ -1,4 +1,3 @@
-import { useTranslations } from 'next-intl'
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 
 const BarLabel = ({
@@ -42,8 +41,6 @@ function PerformanceRatesBarChart({
   rates,
   colors,
 }: PerformanceRatesBarChartProps) {
-  const t = useTranslations()
-
   const roundedErrorRate = Math.round(rates.incorrectRate * 100)
   const roundedPartialRate = Math.round(rates.partialRate * 100)
   const roundedCorrectRate = 100 - roundedErrorRate - roundedPartialRate

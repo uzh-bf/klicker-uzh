@@ -1853,6 +1853,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       errorRate: 'Error Rate',
       partialRate: 'Partial Error Rate',
       correctRate: 'Success Rate',
+      activities: 'Activities',
+      elements: 'Elements',
+      answers: 'Answers',
+      allAttempts: 'All Attempts',
+      firstAttempts: 'First Attempts',
+      lastAttempts: 'Last Attempts',
+      activityType: 'Activity Type',
+      allActivityTypes: 'All Activity Types',
+      elementType: 'Element Type',
+      allElementTypes: 'All Element Types',
+      noEntriesManageFilters:
+        'No entries exist for the selected filters in this course. Please adjust the filters accordingly or reset all filters.',
     },
   },
   control: {
