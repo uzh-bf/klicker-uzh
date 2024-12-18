@@ -52,14 +52,15 @@ function PerformanceRates({
   const [elementType, setElementType] = useState<ElementType | 'all'>(
     defaultFilters.elementType
   )
-  const [search, setSearch] = useState<string>('')
+  const [activitySearch, setActivitySearch] = useState<string>('')
+  const [instanceSearch, setInstanceSearch] = useState<string>('')
 
   // apply the search hook
   const searchResults = usePerformanceSearch(
     activityPerformances,
     instancePerformances,
     type,
-    search
+    type === 'activity' ? activitySearch : instanceSearch
   )
 
   // if any filters are provided, narrow down the performance rate entries shown
@@ -90,6 +91,8 @@ function PerformanceRates({
             setAttemptsType(defaultFilters.attemptsType)
             setActivityType(defaultFilters.activityType)
             setElementType(defaultFilters.elementType)
+            setActivitySearch('')
+            setInstanceSearch('')
           }}
         >
           <FontAwesomeIcon icon={faX} />
@@ -108,8 +111,8 @@ function PerformanceRates({
           />
           <PerformanceSearchField
             type={type}
-            value={search}
-            onChange={(value) => setSearch(value)}
+            value={activitySearch}
+            onChange={(value) => setActivitySearch(value)}
           />
         </div>
       ) : (
@@ -124,8 +127,8 @@ function PerformanceRates({
           />
           <PerformanceSearchField
             type={type}
-            value={search}
-            onChange={(value) => setSearch(value)}
+            value={instanceSearch}
+            onChange={(value) => setInstanceSearch(value)}
           />
         </div>
       )}
