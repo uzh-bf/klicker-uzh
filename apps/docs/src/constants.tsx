@@ -2202,7 +2202,7 @@ export const USE_CASES = {
   },
   ai_practice_content: {
     acknowledgements:
-      'We sincerely thank our collaborators and sponsors on this use case: Swissuniversities for funding the development of this use case as part of the P-8/DISK4U project; the University of Zurich (ULF) and the Department of Finance / Teaching Center for sponsoring the development of KlickerUZH and functionalities related to this use case; Xinyu Gong, Qingyu Jiang, Chu Jia, Hailan Yang, Qingxuan Chen for the contribution as part of their master project (UZH IFI) on "AI-assisted Content Generation in KlickerUZH".',
+      'We sincerely thank our collaborators and sponsors on this use case: Swissuniversities for funding the development of this use case as part of the P-8/DISK4U project; the University of Zurich (ULF) and the Department of Finance / Teaching Center for sponsoring the development of KlickerUZH and functionalities related to this use case; Xinyu Gong, Qingyu Jiang, Chu Jia, Hailan Yang, Qingxuan Chen for the contribution as part of their master project (UZH IFI) on "AI-assisted Content Generation in KlickerUZH"; Prof. Thomas Fritz and Roy Rutishauser for the collaboration on supervising the aforementioned.',
     title: 'AI-generated Practice Content',
     headerImgSrc: '/img_v3/simon-kadula-8gr6bObQLOI-unsplash.jpg',
     tags: ['Content generation', 'Bloom’s taxonomy', 'Constructive alignment'],
