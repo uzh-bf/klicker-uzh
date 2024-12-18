@@ -362,3 +362,32 @@ export type InstanceEvaluation =
   | IInstanceEvaluationFlashcard
   | IInstanceEvaluationContent
 // #endregion
+
+// ----- LEARNING ANALYTICS -----
+// #region
+export type PerformanceRates = {
+  firstErrorRate: number
+  lastErrorRate: number
+  errorRate: number
+  firstPartialRate: number
+  lastPartialRate: number
+  partialRate: number
+  firstCorrectRate: number
+  lastCorrectRate: number
+  correctRate: number
+}
+
+export type ActivityPerformance = {
+  id: number
+  activityName: string
+  activityType: ActivityType
+  rates: PerformanceRates
+}
+
+export type InstancePerformance = {
+  id: number
+  elementName: string
+  elementType: ElementType
+  rates: PerformanceRates
+}
+// #endregion

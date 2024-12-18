@@ -30,6 +30,13 @@ enum ActivityLevel {
   MEDIUM
 }
 
+type ActivityPerformance {
+  activityName: String!
+  activityType: ActivityType!
+  id: Int!
+  rates: PerformanceRates!
+}
+
 type ActivityProgress {
   activityName: String!
   activityType: ActivityType!
@@ -305,7 +312,9 @@ type CourseActivityAnalytics {
 }
 
 type CoursePerformanceAnalytics {
+  activityPerformances: [ActivityPerformance!]!
   activityProgresses: [ActivityProgress!]!
+  instancePerformances: [InstancePerformance!]!
   name: String!
   totalParticipants: Int!
 }
@@ -783,6 +792,13 @@ type GroupMessage {
 
 union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
 
+type InstancePerformance {
+  elementName: String!
+  elementType: ElementType!
+  id: Int!
+  rates: PerformanceRates!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -1224,6 +1240,18 @@ type Participation {
   isActive: Boolean!
   participant: Participant
   subscriptions: [PushSubscription!]
+}
+
+type PerformanceRates {
+  correctRate: Float!
+  errorRate: Float!
+  firstCorrectRate: Float!
+  firstErrorRate: Float!
+  firstPartialRate: Float!
+  lastCorrectRate: Float!
+  lastErrorRate: Float!
+  lastPartialRate: Float!
+  partialRate: Float!
 }
 
 type PracticeQuiz {

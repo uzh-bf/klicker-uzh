@@ -1,6 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityPerformance as ActivityPerformanceType,
+  ActivityType as ActivityTypeEnum,
+  InstancePerformance as InstancePerformanceType,
+  PerformanceRates as PerformanceRatesType,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { ElementType } from './elementData.js'
 
 export const ActivityLevel = builder.enumType('ActivityLevel', {
   values: Object.values(DB.ActivityLevel),
@@ -161,10 +167,50 @@ export const ActivityProgress = builder.objectType(ActivityProgressRef, {
   }),
 })
 
+export const PerformanceRatesRef =
+  builder.objectRef<PerformanceRatesType>('PerformanceRates')
+export const PerformanceRates = builder.objectType(PerformanceRatesRef, {
+  fields: (t) => ({
+    firstErrorRate: t.exposeFloat('firstErrorRate'),
+    lastErrorRate: t.exposeFloat('lastErrorRate'),
+    errorRate: t.exposeFloat('errorRate'),
+    firstPartialRate: t.exposeFloat('firstPartialRate'),
+    lastPartialRate: t.exposeFloat('lastPartialRate'),
+    partialRate: t.exposeFloat('partialRate'),
+    firstCorrectRate: t.exposeFloat('firstCorrectRate'),
+    lastCorrectRate: t.exposeFloat('lastCorrectRate'),
+    correctRate: t.exposeFloat('correctRate'),
+  }),
+})
+
+export const ActivityPerformanceRef =
+  builder.objectRef<ActivityPerformanceType>('ActivityPerformance')
+export const ActivityPerformance = builder.objectType(ActivityPerformanceRef, {
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    activityName: t.exposeString('activityName'),
+    activityType: t.expose('activityType', { type: ActivityType }),
+    rates: t.expose('rates', { type: PerformanceRates }),
+  }),
+})
+
+export const InstancePerformanceRef =
+  builder.objectRef<InstancePerformanceType>('InstancePerformance')
+export const InstancePerformance = builder.objectType(InstancePerformanceRef, {
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    elementName: t.exposeString('elementName'),
+    elementType: t.expose('elementType', { type: ElementType }),
+    rates: t.expose('rates', { type: PerformanceRates }),
+  }),
+})
+
 interface ICoursePerformanceAnalytics {
   name: string
   totalParticipants: number
   activityProgresses: IActivityProgress[]
+  activityPerformances: ActivityPerformanceType[]
+  instancePerformances: InstancePerformanceType[]
 }
 export const CoursePerformanceAnalyticsRef =
   builder.objectRef<ICoursePerformanceAnalytics>('CoursePerformanceAnalytics')
@@ -176,6 +222,12 @@ export const CoursePerformanceAnalytics = builder.objectType(
       totalParticipants: t.exposeInt('totalParticipants'),
       activityProgresses: t.expose('activityProgresses', {
         type: [ActivityProgress],
+      }),
+      activityPerformances: t.expose('activityPerformances', {
+        type: [ActivityPerformance],
+      }),
+      instancePerformances: t.expose('instancePerformances', {
+        type: [InstancePerformance],
       }),
     }),
   }

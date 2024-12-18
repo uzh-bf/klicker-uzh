@@ -1,4 +1,8 @@
-import { ActivityType } from '@klicker-uzh/types'
+import {
+  ActivityPerformance,
+  ActivityType,
+  InstancePerformance,
+} from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { ContextWithUser } from 'src/lib/context.js'
 
@@ -102,44 +106,165 @@ export async function getCoursePerformanceAnalytics(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, ownerId: ctx.user.sub },
     include: {
-      activityProgresses: {
+      _count: {
+        select: { participations: true },
+      },
+      practiceQuizzes: {
         include: {
-          practiceQuiz: true,
-          microLearning: true,
+          progress: true,
+          performance: true,
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  instancePerformance: true,
+                },
+              },
+            },
+          },
         },
+        orderBy: { createdAt: 'desc' },
+      },
+      microLearnings: {
+        include: {
+          progress: true,
+          performance: true,
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  instancePerformance: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { scheduledStartAt: 'desc' },
       },
     },
   })
 
-  if (!course || course.activityProgresses.length === 0) {
+  if (
+    !course ||
+    (course.practiceQuizzes.length === 0 && course.microLearnings.length === 0)
+  ) {
     return null
   }
 
-  // order the activity progresses by creation date
-  const orderedProgresses = course.activityProgresses.sort((a, b) =>
-    dayjs(b.practiceQuiz?.createdAt ?? b.microLearning?.createdAt).diff(
-      dayjs(a.practiceQuiz?.createdAt ?? a.microLearning?.createdAt)
-    )
-  )
+  // map the metrics for all activities in the course to the desired performance and progress values
+  const { activityProgresses, activityPerformances, instancePerformances } = [
+    ...course.practiceQuizzes,
+    ...course.microLearnings,
+  ].reduce<{
+    activityProgresses: {
+      activityName: string
+      activityType: ActivityType
+      startedCount: number
+      completedCount: number
+      repeatedCount: number | null
+    }[]
+    activityPerformances: ActivityPerformance[]
+    instancePerformances: InstancePerformance[]
+  }>(
+    (acc, activity) => {
+      const progress = activity.progress
+      const performance = activity.performance
 
-  // map the activity progresses into the format required by the frontend
-  const activityProgresses = orderedProgresses.map((progress) => ({
-    activityName:
-      progress.practiceQuizId !== null
-        ? (progress.practiceQuiz?.name ?? 'Unknown')
-        : (progress.microLearning?.name ?? 'Unknown'),
-    activityType:
-      progress.practiceQuizId !== null
-        ? ActivityType.PRACTICE_QUIZ
-        : ActivityType.MICRO_LEARNING,
-    startedCount: progress.startedCount,
-    completedCount: progress.completedCount,
-    repeatedCount: progress.repeatedCount,
-  }))
+      if (!progress) {
+        return acc
+      }
+
+      const activityType =
+        progress.practiceQuizId !== null
+          ? ActivityType.PRACTICE_QUIZ
+          : ActivityType.MICRO_LEARNING
+
+      // update the activity progress entries
+      acc.activityProgresses.push({
+        activityName: activity.name,
+        activityType,
+        startedCount: progress.startedCount,
+        completedCount: progress.completedCount,
+        repeatedCount: progress.repeatedCount,
+      })
+
+      if (!performance) {
+        return acc
+      }
+
+      // add the activity performance metrics to the error rates
+      acc.activityPerformances.push({
+        id: performance.id,
+        activityName: activity.name,
+        activityType,
+        rates: {
+          firstErrorRate:
+            performance.firstErrorRate ?? performance.totalErrorRate,
+          lastErrorRate:
+            performance.lastErrorRate ?? performance.totalErrorRate,
+          errorRate: performance.totalErrorRate,
+          firstPartialRate:
+            performance.firstPartialRate ?? performance.totalPartialRate,
+          lastPartialRate:
+            performance.lastPartialRate ?? performance.totalPartialRate,
+          partialRate: performance.totalPartialRate,
+          firstCorrectRate:
+            performance.firstCorrectRate ?? performance.totalCorrectRate,
+          lastCorrectRate:
+            performance.lastCorrectRate ?? performance.totalCorrectRate,
+          correctRate: performance.totalCorrectRate,
+        },
+      })
+
+      // extract the desired values from the instance performance entries
+      const instancePerformances = activity.stacks.flatMap((stack) =>
+        stack.elements.flatMap((element) => {
+          const iPerformance = element.instancePerformance
+
+          if (!iPerformance) {
+            return []
+          }
+
+          return {
+            id: iPerformance.id,
+            elementName: element.elementData.name,
+            elementType: element.elementData.type,
+            rates: {
+              firstErrorRate:
+                iPerformance.firstErrorRate ?? iPerformance.totalErrorRate,
+              lastErrorRate:
+                iPerformance.lastErrorRate ?? iPerformance.totalErrorRate,
+              errorRate: iPerformance.totalErrorRate,
+              firstPartialRate:
+                iPerformance.firstPartialRate ?? iPerformance.totalPartialRate,
+              lastPartialRate:
+                iPerformance.lastPartialRate ?? iPerformance.totalPartialRate,
+              partialRate: iPerformance.totalPartialRate,
+              firstCorrectRate:
+                iPerformance.firstCorrectRate ?? iPerformance.totalCorrectRate,
+              lastCorrectRate:
+                iPerformance.lastCorrectRate ?? iPerformance.totalCorrectRate,
+              correctRate: iPerformance.totalCorrectRate,
+            },
+          }
+        })
+      )
+      acc.instancePerformances.push(...instancePerformances)
+
+      return acc
+    },
+    {
+      activityProgresses: [],
+      activityPerformances: [],
+      instancePerformances: [],
+    }
+  )
 
   return {
     name: course.name,
-    totalParticipants: course.activityProgresses[0]!.totalCourseParticipants,
+    totalParticipants: course._count.participations,
     activityProgresses,
+    activityPerformances,
+    instancePerformances,
   }
 }

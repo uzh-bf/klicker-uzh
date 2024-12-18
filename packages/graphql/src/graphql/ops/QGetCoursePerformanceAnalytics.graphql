@@ -9,5 +9,39 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
       completedCount
       repeatedCount
     }
+    activityPerformances {
+      __typename
+      id
+      activityName
+      activityType
+      rates {
+        firstErrorRate
+        lastErrorRate
+        errorRate
+        firstPartialRate
+        lastPartialRate
+        partialRate
+        firstCorrectRate
+        lastCorrectRate
+        correctRate
+      }
+    }
+    instancePerformances {
+      __typename
+      id
+      elementName
+      elementType
+      rates {
+        firstErrorRate
+        lastErrorRate
+        errorRate
+        firstPartialRate
+        lastPartialRate
+        partialRate
+        firstCorrectRate
+        lastCorrectRate
+        correctRate
+      }
+    }
   }
 }
