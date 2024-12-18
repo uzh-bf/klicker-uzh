@@ -98,18 +98,19 @@ function UseCase({ slug }: UseCaseProps) {
         </div>
 
         <div className="prose order-3 col-span-1 max-w-none lg:col-span-3">
-          <section id="Background" className="mb-8">
+          <section id="Background" className="mb-12">
             <SectionHeader icon={faBookOpen} header="Background" />
-
             {useCase.background}
           </section>
-          <section id="Scenario" className="mb-8">
+
+          <section id="Scenario" className="mb-12">
             <SectionHeader
               icon={faToolbox}
               header="Scenario Description with KlickerUZH"
             />
             {useCase.scenario}
           </section>
+
           <section id="Learnings" className="mb-8">
             <SectionHeader icon={faLightbulb} header="Our Learnings" />
             {useCase.learnings}

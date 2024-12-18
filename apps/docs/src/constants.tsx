@@ -1,4 +1,8 @@
+import Image from '@theme/IdealImage'
 import { H3 } from '@uzh-bf/design-system'
+import Zoom from 'react-medium-image-zoom'
+import 'react-medium-image-zoom/dist/styles.css'
+import { twMerge } from 'tailwind-merge'
 
 export const FEATURES = [
   {
@@ -190,37 +194,37 @@ export const USE_CASES = {
         <p>You can implement questions with the following purposes: </p>
         <ul>
           <li>
-            Knowledge evaluation: To check whether the students have understood
-            the previously learned knowledge, single-choice questions with a
-            clear answer are suitable. (Example: What is the definition of the
-            Sharpe ratio?)
+            <strong>Knowledge evaluation:</strong> To check whether the students
+            have understood the previously learned knowledge, single-choice
+            questions with a clear answer are suitable. (Example: What is the
+            definition of the Sharpe ratio?)
           </li>
           <li>
-            Surveys: To obtain students' opinions on the topic being covered
-            lecturers can ask questions without right or wrong answers.
-            (Example: Which factors influence stock prices the most?). As the
-            results are promptly available to you as lecturer, you may choose to
-            share the findings with the class to facilitate further discourse
-            and interaction.
+            <strong>Surveys:</strong> To obtain students' opinions on the topic
+            being covered lecturers can ask questions without right or wrong
+            answers. (Example: Which factors influence stock prices the most?).
+            As the results are promptly available to you as lecturer, you may
+            choose to share the findings with the class to facilitate further
+            discourse and interaction.
           </li>
           <li>
-            Estimation questions: To activate students' engagement, questions
-            can be asked without a clear answer. This makes students think about
-            the discussed topic and gets them directly involved. (Example: Where
-            will the SMI be at the end of 2023?) Depending on your goals, you
-            can add gamification elements to your quizzes. Gamified live quizzes
-            increase student motivation and add a fun and competitive component
-            to lectures which can enhance students' ambition and motivation.
-            Several questions can be asked directly after each other (with a
-            timer) to best create a quiz situation. Participants can gather
-            points while responding to questions. Points are awarded based on
-            the correctness of the answer, as well as the speed/delay between
-            the first correct answer and one's own answer (if correct). A
-            leaderboard shows the current ranking of participants within the
-            quiz and gathered points are transferred to the course leaderboard
-            after the conclusion of the quiz (if enabled on a course level). For
-            more information on gamification elements in lectures, please
-            consult Gamification.
+            <strong>Estimation questions:</strong> To activate students'
+            engagement, questions can be asked without a clear answer. This
+            makes students think about the discussed topic and gets them
+            directly involved. (Example: Where will the SMI be at the end of
+            2023?) Depending on your goals, you can add gamification elements to
+            your quizzes. Gamified live quizzes increase student motivation and
+            add a fun and competitive component to lectures which can enhance
+            students' ambition and motivation. Several questions can be asked
+            directly after each other (with a timer) to best create a quiz
+            situation. Participants can gather points while responding to
+            questions. Points are awarded based on the correctness of the
+            answer, as well as the speed/delay between the first correct answer
+            and one's own answer (if correct). A leaderboard shows the current
+            ranking of participants within the quiz and gathered points are
+            transferred to the course leaderboard after the conclusion of the
+            quiz (if enabled on a course level). For more information on
+            gamification elements in lectures, please consult Gamification.
           </li>
         </ul>
       </>
@@ -242,84 +246,87 @@ export const USE_CASES = {
         </p>
         <ul>
           <li>
-            Lecture time consumption: Including a KlickerUZH question in a
-            lecture typically takes approximately 2 to 5 minutes, considering
-            the time required for answering and discussion.
+            <strong>Lecture time consumption:</strong> Including a KlickerUZH
+            question in a lecture typically takes approximately 2 to 5 minutes,
+            considering the time required for answering and discussion.
           </li>
           <li>
-            Pre-lecture time consumption: "Good things take time" applies to the
-            creation of good (multiple-choice) questions. Even experienced
-            authors typically anticipate spending an average of one hour to
-            produce a single multiple-choice question in exam quality (Krebs,
-            2004). This time is necessary to carefully consider the formulation
-            of the question, select the answer options precisely, and avoid
-            potential pitfalls. This conscientious approach ensures that the
-            questions align with the desired learning outcomes and provide
-            students with an appropriate level of challenge. The lecturer also
-            needs time to implement the questions in KlickerUZH before the
-            lecture.
+            <strong>Pre-lecture time consumption:</strong> "Good things take
+            time" applies to the creation of good (multiple-choice) questions.
+            Even experienced authors typically anticipate spending an average of
+            one hour to produce a single multiple-choice question in exam
+            quality (Krebs, 2004). This time is necessary to carefully consider
+            the formulation of the question, select the answer options
+            precisely, and avoid potential pitfalls. This conscientious approach
+            ensures that the questions align with the desired learning outcomes
+            and provide students with an appropriate level of challenge. The
+            lecturer also needs time to implement the questions in KlickerUZH
+            before the lecture.
           </li>
           <li>
-            Reaction to voting results: As a teacher, you have to react quickly
-            to the voting results. This can be challenging, especially when the
-            results are not as expected. It is advisable to consider the
-            reaction to the results in advance of the lecture.
+            <strong>Reaction to voting results:</strong> As a teacher, you have
+            to react quickly to the voting results. This can be challenging,
+            especially when the results are not as expected. It is advisable to
+            consider the reaction to the results in advance of the lecture.
           </li>
           <li>
-            Submitted responses: The participation rate varies depending on the
-            course but can be estimated at an average of 50% of the attending
-            students.
+            <strong>Submitted responses:</strong> The participation rate varies
+            depending on the course but can be estimated at an average of 50% of
+            the attending students.
           </li>
           <li>
-            Live Streaming and Podcasts: It should be noted that when lectures
-            are recorded, students who watch the recordings afterwards may not
-            have the opportunity to actively participate, thus missing out on
-            the interactive benefits offered by KlickerUZH. Furthermore, it is
-            important for lecturers to take into account the average 30-second
-            to 1-minute delay of the UZH live streaming service, as this affects
-            the timing of KlickerUZH questions and student responses, requiring
-            the questions to be open for a longer duration.
+            <strong>Live Streaming and Podcasts:</strong> It should be noted
+            that when lectures are recorded, students who watch the recordings
+            afterwards may not have the opportunity to actively participate,
+            thus missing out on the interactive benefits offered by KlickerUZH.
+            Furthermore, it is important for lecturers to take into account the
+            average 30-second to 1-minute delay of the UZH live streaming
+            service, as this affects the timing of KlickerUZH questions and
+            student responses, requiring the questions to be open for a longer
+            duration.
           </li>
           <li>
-            Participation level: The participation level in gamified live
-            quizzes tended to be higher in small lectures were students know
-            each other, likely due to the sense of belonging within a smaller
-            group.
+            <strong>Participation level:</strong> The participation level in
+            gamified live quizzes tended to be higher in small lectures were
+            students know each other, likely due to the sense of belonging
+            within a smaller group.
           </li>
           <li>
-            Student feedback: From the students' perspective, the use of
-            KlickerUZH is generally regarded as beneficial (average grade across
-            several years in different Department of Finance (DF) lectures:
-            5.0/6.0). Some critical voices express concerns about time loss and
-            question the effective benefits.
+            <strong>Student feedback:</strong> From the students' perspective,
+            the use of KlickerUZH is generally regarded as beneficial (average
+            grade across several years in different Department of Finance (DF)
+            lectures: 5.0/6.0). Some critical voices express concerns about time
+            loss and question the effective benefits.
           </li>
           <li>
-            Question type: So far, single-choice questions have been
-            predominantly used.
+            <strong>Question type:</strong> So far, single-choice questions have
+            been predominantly used.
           </li>
           <li>
-            Devices: According to an internal survey in spring semester 2023 in
-            one of the KlickerUZH 3.0 pilot lectures, most students (35 / 82)
-            participated in the live quiz through the Learning Management System
-            (LMS). Another significant portion (33 / 82) joined the quiz by
-            scanning the QR code shared by the lecturer. Only a small number of
-            students (6 / 82) joined through a personal bookmark, and (4 / 82)
-            opted to participate using the KlickerUZH App. Providing all
-            necessary components within a single system, integrating KlickerUZH
-            into OLAT, even solely for live quizzes, is strongly recommended.
+            <strong>Devices:</strong> According to an internal survey in spring
+            semester 2023 in one of the KlickerUZH 3.0 pilot lectures, most
+            students (35 / 82) participated in the live quiz through the
+            Learning Management System (LMS). Another significant portion (33 /
+            82) joined the quiz by scanning the QR code shared by the lecturer.
+            Only a small number of students (6 / 82) joined through a personal
+            bookmark, and (4 / 82) opted to participate using the KlickerUZH
+            App. Providing all necessary components within a single system,
+            integrating KlickerUZH into OLAT, even solely for live quizzes, is
+            strongly recommended.
           </li>
           <li>
-            Number of users per live quiz: In the events organized by the DBF,
-            KlickerUZH is mainly utilized in bachelor-level lectures with a
-            large number of students (150-800 students). In a single semester
-            (14 weeks), KlickerUZH was used between three to seven times in
-            these sessions, with an average of three questions asked per quiz.
+            <strong>Number of users per live quiz:</strong> In the events
+            organized by the DBF, KlickerUZH is mainly utilized in
+            bachelor-level lectures with a large number of students (150-800
+            students). In a single semester (14 weeks), KlickerUZH was used
+            between three to seven times in these sessions, with an average of
+            three questions asked per quiz.
           </li>
           <li>
-            Gamification: Incorporating gamification in live quizzes works
-            effectively when creating a quiz-like atmosphere in the lecture hall
-            and considering incentives or rewards, such as small gifts, to
-            enhance participation and engagement.
+            <strong>Gamification:</strong> Incorporating gamification in live
+            quizzes works effectively when creating a quiz-like atmosphere in
+            the lecture hall and considering incentives or rewards, such as
+            small gifts, to enhance participation and engagement.
           </li>
         </ul>
       </>
@@ -461,47 +468,47 @@ export const USE_CASES = {
         </p>
         <ul>
           <li>
-            Preparation of the student: It is crucial for students to engage in
-            self-learning and familiarize themselves with the learning materials
-            before attending the lecture to maximize their takeaway from the
-            session.
+            <strong>Preparation of the student:</strong> It is crucial for
+            students to engage in self-learning and familiarize themselves with
+            the learning materials before attending the lecture to maximize
+            their takeaway from the session.
           </li>
           <li>
-            Self-selection: There can be a high effect of self-selection,
-            especially if classroom sessions are optional, meaning that students
-            do not show up for sessions if they are not prepared. Vice versa,
-            students attending class tend to be motivated to discuss the
-            materials.
+            <strong>Self-selection:</strong> There can be a high effect of
+            self-selection, especially if classroom sessions are optional,
+            meaning that students do not show up for sessions if they are not
+            prepared. Vice versa, students attending class tend to be motivated
+            to discuss the materials.
           </li>
           <li>
-            Time consumption in the lecture: Each question being polled
-            throughout the session requires a sufficient time slot to be
-            appropriately polled and discussed. A good question can lead to 5 to
-            10 minutes of discussion, depending on the scope of the problem
-            being asked.
+            <strong>Time consumption in the lecture:</strong> Each question
+            being polled throughout the session requires a sufficient time slot
+            to be appropriately polled and discussed. A good question can lead
+            to 5 to 10 minutes of discussion, depending on the scope of the
+            problem being asked.
           </li>
           <li>
-            Pre-lecture time consumption: The lecturer needs time to create and
-            implement the questions in KlickerUZH before the lecture. "Good
-            things take time" also applies here. Even experienced authors
-            typically anticipate spending an average of one hour to produce a
-            single multiple-choice question in exam quality (Krebs, 2004). This
-            time is necessary to carefully consider the formulation of the
-            question, select the answer options precisely, and avoid potential
-            pitfalls. This conscientious approach ensures that the questions
-            align with the desired learning outcomes and provide students with
-            an appropriate level of challenge.
+            <strong>Pre-lecture time consumption:</strong> The lecturer needs
+            time to create and implement the questions in KlickerUZH before the
+            lecture. "Good things take time" also applies here. Even experienced
+            authors typically anticipate spending an average of one hour to
+            produce a single multiple-choice question in exam quality (Krebs,
+            2004). This time is necessary to carefully consider the formulation
+            of the question, select the answer options precisely, and avoid
+            potential pitfalls. This conscientious approach ensures that the
+            questions align with the desired learning outcomes and provide
+            students with an appropriate level of challenge.
           </li>
           <li>
-            Room for discussion: Questions used in the quiz should be designed
-            such that they leave enough room for discussion and further
-            explanation.
+            <strong>Room for discussion:</strong> Questions used in the quiz
+            should be designed such that they leave enough room for discussion
+            and further explanation.
           </li>
           <li>
-            Grading: It could be an option to make participation in sessions
-            and/or passing of quizzes before or during sessions mandatory or
-            part of the grade. However, this could also negatively influence the
-            openness of the discussions.
+            <strong>Grading:</strong> It could be an option to make
+            participation in sessions and/or passing of quizzes before or during
+            sessions mandatory or part of the grade. However, this could also
+            negatively influence the openness of the discussions.
           </li>
         </ul>
       </>
@@ -643,57 +650,59 @@ export const USE_CASES = {
         </p>
         <ul>
           <li>
-            Anywhere: When creating microlearning questions, ensure they can be
-            answered without the need for a calculator, any other tool or
-            reference materials, allowing students to engage with the content
-            anywhere.
+            <strong>Anywhere:</strong> When creating microlearning questions,
+            ensure they can be answered without the need for a calculator, any
+            other tool or reference materials, allowing students to engage with
+            the content anywhere.
           </li>
           <li>
-            Motivation and better understanding: Results indicate that students
-            generally have a positive attitude towards microlearnings. In the
-            internal survey, a majority of the participants, specifically 72%,
-            expressed that engaging with the microlearning content increased
-            their motivation to review the learning material. An even greater
-            number claimed microlearning helped them remember and understand the
-            material (87.0% of those who completed a session). Participants
-            mentioned they found it very helpful to revise the material on a
-            weekly basis and see whether they had understood the concepts. It
-            was even requested to increase the number of questions in the
-            microlearning sessions, which currently lay at 3.75 questions per
-            microlearning.
+            <strong>Motivation and better understanding:</strong> Results
+            indicate that students generally have a positive attitude towards
+            microlearnings. In the internal survey, a majority of the
+            participants, specifically 72%, expressed that engaging with the
+            microlearning content increased their motivation to review the
+            learning material. An even greater number claimed microlearning
+            helped them remember and understand the material (87.0% of those who
+            completed a session). Participants mentioned they found it very
+            helpful to revise the material on a weekly basis and see whether
+            they had understood the concepts. It was even requested to increase
+            the number of questions in the microlearning sessions, which
+            currently lay at 3.75 questions per microlearning.
           </li>
           <li>
-            Level of difficulty: While some students have criticized that the
-            questions are not of an exam-level difficulty, it is important to
-            clarify in advance that the purpose of these questions is to
-            facilitate repetition and enhance long-term retention of knowledge,
-            rather than to directly prepare students for exams.
+            <strong>Level of difficulty:</strong> While some students have
+            criticized that the questions are not of an exam-level difficulty,
+            it is important to clarify in advance that the purpose of these
+            questions is to facilitate repetition and enhance long-term
+            retention of knowledge, rather than to directly prepare students for
+            exams.
           </li>
           <li>
-            Alignment to lecture content: Microlearning questions need to match
-            the lecture content. If the originally planned content is not
-            covered by the lecturer during the lecture, the questions may need
-            to be rescheduled for the following week.
+            <strong>Alignment to lecture content:</strong> Microlearning
+            questions need to match the lecture content. If the originally
+            planned content is not covered by the lecturer during the lecture,
+            the questions may need to be rescheduled for the following week.
           </li>
           <li>
-            Investment: Creating new weekly microlearning questions can be quite
-            time-consuming, but the benefits of promoting active learning and
-            retention make it worthwhile.
+            <strong>Investment:</strong> Creating new weekly microlearning
+            questions can be quite time-consuming, but the benefits of promoting
+            active learning and retention make it worthwhile.
           </li>
           <li>
-            Regularity: To ensure the effectiveness of microlearning, it is
-            essential to schedule regular question sessions to provide ongoing
-            practice and reinforcement of the course material. However, some
-            students expressed a preference for having the microlearnings
-            available continuously, rather than within a fixed time window.
+            <strong>Regularity:</strong> To ensure the effectiveness of
+            microlearning, it is essential to schedule regular question sessions
+            to provide ongoing practice and reinforcement of the course
+            material. However, some students expressed a preference for having
+            the microlearnings available continuously, rather than within a
+            fixed time window.
           </li>
           <li>
-            Integration of microlearning into LMS: To accommodate students who
-            missed the microlearning sessions, we integrated the questions into
-            the learning management system (OLAT) some days after the
-            microlearning session. This enabled students to access and engage
-            with the questions, even if they couldn't attend the microlearning
-            sessions.
+            <strong>Integration of microlearning into LMS:</strong> To
+            accommodate students who missed the microlearning sessions, we
+            integrated the questions into the learning management system (OLAT)
+            some days after the microlearning session. This enabled students to
+            access and engage with the questions, even if they couldn't attend
+            the microlearning sessions.
           </li>
         </ul>
       </>
@@ -809,7 +818,7 @@ export const USE_CASES = {
           identify the level of difficulty of the question.
         </p>
         <p>
-          ShapeWhen using gamification, the time frame in which points can be
+          When using gamification, the time frame in which points can be
           collected from responding to the questions can be customized to, e.g.,
           once a week or day.
         </p>
@@ -829,34 +838,36 @@ export const USE_CASES = {
         </p>
         <ul>
           <li>
-            High participation: According to our own analysis, around 75% of all
-            students enrolled in the courses engaged with the practice quizzes
-            in the LMS. This is almost double as high as students completing the
-            microlearning.
+            <strong>High participation:</strong> According to our own analysis,
+            around 75% of all students enrolled in the courses engaged with the
+            practice quizzes in the LMS. This is almost double as high as
+            students completing the microlearning.
           </li>
           <li>
-            Peak: Striking is the over-proportional increase in total question
-            entries between weeks 12 and 15, just before the exam. The number of
-            users solving questions in this period is approximately double the
-            number solving questions in the second week and the total number of
-            questions solved is more than 5 times the start values; it becomes
-            clear to see when exam preparation peaked.
+            <strong>Peak:</strong> Striking is the over-proportional increase in
+            total question entries between weeks 12 and 15, just before the
+            exam. The number of users solving questions in this period is
+            approximately double the number solving questions in the second week
+            and the total number of questions solved is more than 5 times the
+            start values; it becomes clear to see when exam preparation peaked.
           </li>
           <li>
-            Gamification increased participation: First evaluation based on
-            multiple questions in the self-learning on OLAT, the questions were
-            identical (number and content) in the autumn semester 2020, 2021 and
-            2022. However, in 2022 we included the gamification approach and
-            added microlearnings on the course level. We saw higher access
-            numbers, more repetition across all students as well as more
-            repetition per student (fall 20/21: Average: 1.96x per student,
-            maximum: 21x vs. fall 2022: Average: 2.45x per student, Maximum:
-            41x).
+            <strong>Gamification increased participation:</strong> First
+            evaluation based on multiple questions in the self-learning on OLAT,
+            the questions were identical (number and content) in the autumn
+            semester 2020, 2021 and 2022. However, in 2022 we included the
+            gamification approach and added microlearnings on the course level.
+            We saw higher access numbers, more repetition across all students as
+            well as more repetition per student (fall 20/21: Average: 1.96x per
+            student, maximum: 21x vs. fall 2022: Average: 2.45x per student,
+            Maximum: 41x).
           </li>
           <li>
-            Repetition as the key performance factor in the mock exam: The most
-            significant positive correlation with good performance in a mock
-            exam in Banking and Finance II lies in the number of question
+            <strong>
+              Repetition as the key performance factor in the mock exam:
+            </strong>{' '}
+            The most significant positive correlation with good performance in a
+            mock exam in Banking and Finance II lies in the number of question
             entries, much more so than in their accuracy or the completed range
             across all available questions. High numbers of question entries
             also correlate the most strongly with high leaderboard points,
@@ -869,15 +880,15 @@ export const USE_CASES = {
             established neural connections is key to success.
           </li>
           <li>
-            Devices: The majority (85%) of the students participated in the
-            practice quizzes by using their laptop.
+            <strong>Devices:</strong> The majority (85%) of the students
+            participated in the practice quizzes by using their laptop.
           </li>
           <li>
-            Quick win: If you already have practice questions in another tool
-            (e.g., OLAT), you can easily implement them into the KlickerUZH.
-            This allows you to leverage the advantages of peer answer
-            distributions and the integration into the optional gamification
-            course concept.
+            <strong>Quick win:</strong> If you already have practice questions
+            in another tool (e.g., OLAT), you can easily implement them into the
+            KlickerUZH. This allows you to leverage the advantages of peer
+            answer distributions and the integration into the optional
+            gamification course concept.
           </li>
         </ul>
       </>
@@ -1029,47 +1040,47 @@ export const USE_CASES = {
         <p>Our learning was the following:</p>
         <ul>
           <li>
-            Number of groups: Since the group activity was optional and the
-            assessment courses demanded significant attention from students,
-            only a limited number of groups participated in the group activities
-            (autumn semester: 23 groups and spring semester: 6 groups). It is
-            worth considering that there may be more suitable lectures or
-            courses that offer better opportunities for integrating group tasks,
-            given the specific circumstances and requirements.
+            <strong>Number of groups:</strong> Since the group activity was
+            optional and the assessment courses demanded significant attention
+            from students, only a limited number of groups participated in the
+            group activities (autumn semester: 23 groups and spring semester: 6
+            groups). It is worth considering that there may be more suitable
+            lectures or courses that offer better opportunities for integrating
+            group tasks, given the specific circumstances and requirements.
           </li>
           <li>
-            Student feedback: In the internal survey, only 20.63% claimed they
-            had joined a group. Of those students who did not select “no
-            opinion” in the question regarding their view on the group
-            challenges, 28.6% found them cool, but 25.71% voted unnecessary.
-            This, again, shows that a select few like the group setting and the
-            extra efforts, but many see no added value with twice as many
-            claiming the challenges are too much effort than requiring the right
-            amount of effort.
+            <strong>Student feedback:</strong> In the internal survey, only
+            20.63% claimed they had joined a group. Of those students who did
+            not select "no opinion" in the question regarding their view on the
+            group challenges, 28.6% found them cool, but 25.71% voted
+            unnecessary. This, again, shows that a select few like the group
+            setting and the extra efforts, but many see no added value with
+            twice as many claiming the challenges are too much effort than
+            requiring the right amount of effort.
           </li>
           <li>
-            Real-world scenarios: The lecture focused on theory, while the group
-            activity involved working with real data sourced from annual reports
-            or price data from sources like Yahoo Finance. Careful consideration
-            was given when selecting companies and data, recognizing that
-            real-world scenarios can be complex. Simplification may be necessary
-            to make the exercises more manageable within the scope of the
-            course.
+            <strong>Real-world scenarios:</strong> The lecture focused on
+            theory, while the group activity involved working with real data
+            sourced from annual reports or price data from sources like Yahoo
+            Finance. Careful consideration was given when selecting companies
+            and data, recognizing that real-world scenarios can be complex.
+            Simplification may be necessary to make the exercises more
+            manageable within the scope of the course.
           </li>
           <li>
-            Grading: KlickerUZH enables automatic grading for choice-based
-            question types. However, for numerical response and free text
-            questions, manual correction is required. It is crucial to consider
-            the time and effort needed for manual grading as part of the overall
-            lecture planning process.
+            <strong>Grading:</strong> KlickerUZH enables automatic grading for
+            choice-based question types. However, for numerical response and
+            free text questions, manual correction is required. It is crucial to
+            consider the time and effort needed for manual grading as part of
+            the overall lecture planning process.
           </li>
           <li>
-            Discussion of results: Given the nature of real-life problems, there
-            may not always be a single solution. This aspect needs to be
-            considered during the correction process and feedback writing.
-            Flexibility and consideration for different approaches or
-            interpretations are often required when assessing the results of
-            group activities based on real-world scenarios.
+            <strong>Discussion of results:</strong> Given the nature of
+            real-life problems, there may not always be a single solution. This
+            aspect needs to be considered during the correction process and
+            feedback writing. Flexibility and consideration for different
+            approaches or interpretations are often required when assessing the
+            results of group activities based on real-world scenarios.
           </li>
         </ul>
       </>
@@ -1210,66 +1221,67 @@ export const USE_CASES = {
         </p>
         <ul>
           <li>
-            Moderation: In very large lectures, moderation of the Q&A channel
-            becomes crucial due to the high volume of questions, including
-            irrelevant ones. Moderation enables the filtering and approval of
-            questions before they are visible to other participants, ensuring
-            that only relevant and meaningful questions are addressed and
-            displayed.
+            <strong>Moderation:</strong> In very large lectures, moderation of
+            the Q&A channel becomes crucial due to the high volume of questions,
+            including irrelevant ones. Moderation enables the filtering and
+            approval of questions before they are visible to other participants,
+            ensuring that only relevant and meaningful questions are addressed
+            and displayed.
           </li>
           <li>
-            Participation level: The participation level in the Q&A channel
-            tends to be higher in larger lectures (500-800 students) compared to
-            the smaller lectures (200 students). In the large assessment
-            lectures based on our internal survey, more than half of the
-            participants claimed to have posted questions in the Q&A in at least
-            one lecture, 73% of these did so in 1-4 lectures during the
+            <strong>Participation level:</strong> The participation level in the
+            Q&A channel tends to be higher in larger lectures (500-800 students)
+            compared to the smaller lectures (200 students). In the large
+            assessment lectures based on our internal survey, more than half of
+            the participants claimed to have posted questions in the Q&A in at
+            least one lecture, 73% of these did so in 1-4 lectures during the
             semester.
           </li>
           <li>
-            Effort to manage the Q&A channel: According to survey responses from
-            lecturers, the effort required to manage the Q&A channel is
-            considered valuable and worthwhile. Lecturers recognize the benefits
-            of engaging with students through the Q&A functionality and find it
-            beneficial for enhancing the learning experience.
+            <strong>Effort to manage the Q&A channel:</strong> According to
+            survey responses from lecturers, the effort required to manage the
+            Q&A channel is considered valuable and worthwhile. Lecturers
+            recognize the benefits of engaging with students through the Q&A
+            functionality and find it beneficial for enhancing the learning
+            experience.
           </li>
           <li>
-            Continuing to use: All surveyed lecturers expressed a high
-            likelihood, whether likely or extremely likely, to continue using
-            the Q&A functionality in their future teaching. This suggests the
-            positive impact and value that the Q&A channel brings to their
+            <strong>Continuing to use:</strong> All surveyed lecturers expressed
+            a high likelihood, whether likely or extremely likely, to continue
+            using the Q&A functionality in their future teaching. This suggests
+            the positive impact and value that the Q&A channel brings to their
             instructional practices.
           </li>
           <li>
-            Time consumption: Answering questions orally during class takes
-            time. It is helpful not to answer questions too frequently so as not
-            to disrupt the flow of the lesson.
+            <strong>Time consumption:</strong> Answering questions orally during
+            class takes time. It is helpful not to answer questions too
+            frequently so as not to disrupt the flow of the lesson.
           </li>
           <li>
-            Interaction by students: Findings from the survey indicate that
-            around 45% of students actively read or upvoted existing questions,
-            indicating engagement with the Q&A channel. Additionally, 22% of
-            students posted their own questions, showing active participation.
-            Only a small percentage (5%) of students had not yet heard of the
-            Q&A channel, suggesting a widespread awareness among the student
-            population.
+            <strong>Interaction by students:</strong> Findings from the survey
+            indicate that around 45% of students actively read or upvoted
+            existing questions, indicating engagement with the Q&A channel.
+            Additionally, 22% of students posted their own questions, showing
+            active participation. Only a small percentage (5%) of students had
+            not yet heard of the Q&A channel, suggesting a widespread awareness
+            among the student population.
           </li>
           <li>
-            Student feedback: Feedback from students indicates a positive
-            perception of the Klicker Q&A functionality, with students
-            acknowledging its benefits in improving their understanding of the
-            lecture contents. The Q&A channel has provided a platform for
+            <strong>Student feedback:</strong> Feedback from students indicates
+            a positive perception of the Klicker Q&A functionality, with
+            students acknowledging its benefits in improving their understanding
+            of the lecture contents. The Q&A channel has provided a platform for
             students to seek clarification, receive answers to their questions,
             and gain a deeper understanding of the subject matter.
           </li>
           <li>
-            In November 2021, lecturers using the KlickerUZH Live Q&A
-            functionality have received over 400 questions, about 150 of which
-            were resolved with a response through the tool. 62 were resolved
-            without a response (e.g., orally or implicitly), and 68 were deleted
-            (e.g., because of their irrelevance). The length of feedback
-            responses ranged from extensive 530 character explanations to single
-            words like "No".
+            <strong>Usage statistics:</strong> In November 2021, lecturers using
+            the KlickerUZH Live Q&A functionality have received over 400
+            questions, about 150 of which were resolved with a response through
+            the tool. 62 were resolved without a response (e.g., orally or
+            implicitly), and 68 were deleted (e.g., because of their
+            irrelevance). The length of feedback responses ranged from extensive
+            530 character explanations to single words like "No".
           </li>
         </ul>
       </>
@@ -1482,106 +1494,110 @@ export const USE_CASES = {
         </p>
         <ul>
           <li>
-            Student feedback: 89.1% of participants claimed the full KlickerUZH
-            concept helped them understand the learning content and 74.6% found
-            the concept fun. These statistics are very encouraging to see; many
-            students explicitly expressed their gratitude for the concept and
-            named it the “best learning environment in the assessment!". 79.4%
-            would like to see it in further lectures as a tool to revise and
-            apply the material while interacting with other students. In a
-            multiple-choice question, 51.7% found the concept useful and more
-            than 20% deem the workload and difficulty appropriate. These results
-            indicate the majority of participants find added value in the
-            KlickerUZH and would like to engage in the concept in the future.
+            <strong>Student feedback:</strong> 89.1% of participants claimed the
+            full KlickerUZH concept helped them understand the learning content
+            and 74.6% found the concept fun. These statistics are very
+            encouraging to see; many students explicitly expressed their
+            gratitude for the concept and named it the "best learning
+            environment in the assessment!". 79.4% would like to see it in
+            further lectures as a tool to revise and apply the material while
+            interacting with other students. In a multiple-choice question,
+            51.7% found the concept useful and more than 20% deem the workload
+            and difficulty appropriate. These results indicate the majority of
+            participants find added value in the KlickerUZH and would like to
+            engage in the concept in the future.
           </li>
           <li>
-            BF Challenge: Even though 89.6% of the students enrolled in Banking
-            and Finance II had created a KlickerUZH account, only 25.5% found
-            the BF Challenge motivating. At no point in the spring semester did
-            more than 40.9% of users join the leaderboard, meaning the pool of
-            students who competed for prizes was relatively small. 55.6% of
-            KlickerUZH survey participants claimed they had never been active in
-            the self-learning environment with the sole objective of receiving
-            points and 44% replied they had done so at least once. And 84.1% of
-            participants felt the chance at potential prizes did not influence
-            the number of points they collected; they would not have collected
-            fewer had there been no prizes. This shows that not only were the
-            majority of users not interested in the BF Challenge, but they were
-            also not ambitious in reaching the top.
+            <strong>BF Challenge:</strong> Even though 89.6% of the students
+            enrolled in Banking and Finance II had created a KlickerUZH account,
+            only 25.5% found the BF Challenge motivating. At no point in the
+            spring semester did more than 40.9% of users join the leaderboard,
+            meaning the pool of students who competed for prizes was relatively
+            small. 55.6% of KlickerUZH survey participants claimed they had
+            never been active in the self-learning environment with the sole
+            objective of receiving points and 44% replied they had done so at
+            least once. And 84.1% of participants felt the chance at potential
+            prizes did not influence the number of points they collected; they
+            would not have collected fewer had there been no prizes. This shows
+            that not only were the majority of users not interested in the BF
+            Challenge, but they were also not ambitious in reaching the top.
           </li>
           <li>
-            Account creation: Even though they may not have wanted to compete
-            for prizes on the leaderboard, new accounts were created each week
-            and the ratio between completely inactive and active users declines
-            throughout the spring semester. This shows there was still some
-            general incentive to collect points or merely work with an avatar
-            throughout the semester since most of the features could have also
-            been completed without accounts. Students may have been interested
-            to see how they compare to their peers in the leaderboard without
-            wanting to compete, or they may have created an account for specific
-            features, such as the awarding of points from the mock exam or the
-            potential prizes after the two live quizzes.
+            <strong>Account creation:</strong> Even though they may not have
+            wanted to compete for prizes on the leaderboard, new accounts were
+            created each week and the ratio between completely inactive and
+            active users declines throughout the spring semester. This shows
+            there was still some general incentive to collect points or merely
+            work with an avatar throughout the semester since most of the
+            features could have also been completed without accounts. Students
+            may have been interested to see how they compare to their peers in
+            the leaderboard without wanting to compete, or they may have created
+            an account for specific features, such as the awarding of points
+            from the mock exam or the potential prizes after the two live
+            quizzes.
           </li>
           <li>
-            Gamification as a distractor: It is important to recognize that not
-            all students may be receptive to gamification. Some individuals may
-            have personal preferences or reasons for not enjoying or engaging
-            with gamified elements. 4% found the KlickerUZH concept distracting,
-            however, none deemed it unnecessary.
+            <strong>Gamification as a distractor:</strong> It is important to
+            recognize that not all students may be receptive to gamification.
+            Some individuals may have personal preferences or reasons for not
+            enjoying or engaging with gamified elements. 4% found the KlickerUZH
+            concept distracting, however, none deemed it unnecessary.
           </li>
           <li>
-            Top20 users: Though the average user may not have been ambitious in
-            climbing the leaderboard, several did stand out as the top20. These
-            students participated, on average, in a more extensive range of the
-            different features offered, such as the microlearning and mock exam,
-            and achieved higher scores in them. More than a quarter of all
-            practice quiz question entries stem from this pool of 5% of users;
-            they were more than five times as active as their average peer and
-            consistently scored high points not only in the leaderboard but also
-            in the mock exam.
+            <strong>Top20 users:</strong> Though the average user may not have
+            been ambitious in climbing the leaderboard, several did stand out as
+            the top20. These students participated, on average, in a more
+            extensive range of the different features offered, such as the
+            microlearning and mock exam, and achieved higher scores in them.
+            More than a quarter of all practice quiz question entries stem from
+            this pool of 5% of users; they were more than five times as active
+            as their average peer and consistently scored high points not only
+            in the leaderboard but also in the mock exam.
           </li>
           <li>
-            Link to performance in the mock exam: The most significant positive
-            correlation with good performance in the mock exam lies in the
-            number of question entries students complete throughout the
-            semester, much more so than in their accuracy or the completed range
-            across all available questions. High numbers of question entries
-            correlate the most strongly with high leaderboard points, too,
-            leading to the conclusion that a high engagement level is the
-            crucial factor influencing both the mock exam and leaderboard
+            <strong>Link to performance in the mock exam:</strong> The most
+            significant positive correlation with good performance in the mock
+            exam lies in the number of question entries students complete
+            throughout the semester, much more so than in their accuracy or the
+            completed range across all available questions. High numbers of
+            question entries correlate the most strongly with high leaderboard
+            points, too, leading to the conclusion that a high engagement level
+            is the crucial factor influencing both the mock exam and leaderboard
             points.
           </li>
           <li>
-            Peer pressure: The impact of gamification could also be influenced
-            by the size of the class and the level of familiarity among
-            students. Smaller classes (like the summer school course with around
-            40 students) benefit from stronger peer pressure and social
-            dynamics, which can enhance the effectiveness of gamification.
+            <strong>Peer pressure:</strong> The impact of gamification could
+            also be influenced by the size of the class and the level of
+            familiarity among students. Smaller classes (like the summer school
+            course with around 40 students) benefit from stronger peer pressure
+            and social dynamics, which can enhance the effectiveness of
+            gamification.
           </li>
           <li>
-            Overemphasis on competition: While competition can be a motivating
-            factor, an excessive focus on rankings and leaderboards may create
-            negative effects. Utilizing group activities and emphasizing
-            cooperative achievements can help balance competition and
-            collaboration.
+            <strong>Overemphasis on competition:</strong> While competition can
+            be a motivating factor, an excessive focus on rankings and
+            leaderboards may create negative effects. Utilizing group activities
+            and emphasizing cooperative achievements can help balance
+            competition and collaboration.
           </li>
           <li>
-            Choose motivational rewards: When implementing rewards, careful
-            consideration should be given to selecting appropriate rewards that
-            align with students' interests and preferences. Rewards do not need
-            to be costly but should be meaningful and incentivize students'
-            engagement and participation (this could also be choosing a song
-            that is played in the break, or that winner can influence the
-            company names / fictional people in an exam question in the future).
+            <strong>Choose motivational rewards:</strong> When implementing
+            rewards, careful consideration should be given to selecting
+            appropriate rewards that align with students' interests and
+            preferences. Rewards do not need to be costly but should be
+            meaningful and incentivize students' engagement and participation
+            (this could also be choosing a song that is played in the break, or
+            that winner can influence the company names / fictional people in an
+            exam question in the future).
           </li>
           <li>
-            Lecturer encouragement: Motivational encouragement from the lecturer
-            is indeed crucial to foster student participation in gamified
-            challenges.
+            <strong>Lecturer encouragement:</strong> Motivational encouragement
+            from the lecturer is indeed crucial to foster student participation
+            in gamified challenges.
           </li>
           <li>
-            Time consumption: Effectively designing gamified experiences
-            requires time, resources, and expertise. Poorly executed
+            <strong>Time consumption:</strong> Effectively designing gamified
+            experiences requires time, resources, and expertise. Poorly executed
             gamification attempts can lead to confusion or disengagement among
             students.
           </li>
@@ -2011,7 +2027,7 @@ export const USE_CASES = {
           scenario reduces the impact of potential mistakes made by the AI.
         </p>
 
-        <H3>Preparing Questions for Formative Feedback</H3>
+        <H3>1. Preparing Questions for Formative Feedback</H3>
 
         <p>
           As a lecturer, you aim to provide your students with a flexible and
@@ -2036,7 +2052,7 @@ export const USE_CASES = {
           cost control and moderation of access.
         </p>
 
-        <H3>Practicing Questions with Formative Feedback</H3>
+        <H3>2. Practicing Questions with Formative Feedback</H3>
 
         <p>
           Students access the learning activities through OLAT or the KlickerUZH
@@ -2308,7 +2324,7 @@ export const USE_CASES = {
           retaining full control over the final content.
         </p>
 
-        <H3>Content Upload and Processing</H3>
+        <H3>1. Content Upload and Processing</H3>
         <p>
           As a lecturer, you begin by uploading your teaching materials (PDF
           lecture scripts, slides, or other documents) to KlickerUZH . The
@@ -2318,7 +2334,7 @@ export const USE_CASES = {
           generation.
         </p>
 
-        <H3>AI-Powered Content Analysis</H3>
+        <H3>2. AI-Powered Content Analysis</H3>
         <p>
           The system analyzes the provided materials to create a comprehensive
           topic overview and extract key knowledge points. This analysis helps
@@ -2329,7 +2345,7 @@ export const USE_CASES = {
           generation to, e.g., focus on questions of a specific type or format.
         </p>
 
-        <H3>Question Generation and Selection</H3>
+        <H3>3. Question Generation and Selection</H3>
         <p>
           Based on the content analysis, KlickerUZH generates various question
           types (Single Choice, Multiple Choice, Kprim, Free Text, Numerical
@@ -2340,7 +2356,7 @@ export const USE_CASES = {
           helps improve future generations.
         </p>
 
-        <H3>Quality Assurance and Integration</H3>
+        <H3>4. Quality Assurance and Integration</H3>
         <p>
           Generated questions undergo automated quality checks for relevance,
           fluency, and answerability. You maintain full editorial control, with
@@ -2573,7 +2589,20 @@ export const USE_CASES = {
           behaviors and course effectiveness.
         </p>
 
-        <h3>Preparing a Course Chatbot</h3>
+        <figure className="m-0 mb-4 text-left">
+          <Zoom>
+            <Image
+              img="/img_v3/chatbot_example.png"
+              className={twMerge('max-h-[400px] p-1 shadow')}
+            />
+          </Zoom>
+          <figcaption className="mt-2 text-sm text-gray-600">
+            Example of a course-specific chatbot interface as used in Banking
+            and Finance I with 900 students
+          </figcaption>
+        </figure>
+
+        <h3>1. Preparing a Course Chatbot</h3>
         <p>
           As a lecturer, you aim to provide your students with a flexible and
           interactive way to engage with course materials outside the classroom.
@@ -2606,7 +2635,7 @@ export const USE_CASES = {
           refer to the final section of our use case.
         </p>
 
-        <h3>Using the Chatbot</h3>
+        <h3>2. Using the Chatbot with Students</h3>
         <p>
           Students access the chatbot through OLAT or the KlickerUZH app and use
           it to ask questions related to the course content. The chatbot
@@ -2632,7 +2661,7 @@ export const USE_CASES = {
           student within that time period.
         </p>
 
-        <h3>Learning Analytics on AI</h3>
+        <h3>3. Learning Analytics on AI</h3>
         <p>
           In the future, advanced learning analytics for AI could further
           enhance the chatbot's value as an educational tool. These analytics
@@ -2654,7 +2683,7 @@ export const USE_CASES = {
           into collective learning trends.
         </p>
 
-        <h3>Expanding your Knowledge Base</h3>
+        <h3>4. Expanding your Knowledge Base</h3>
         <p>
           Based on student interactions with the chatbot, KlickerUZH's learning
           analytics could help identify and summarize frequently asked questions
