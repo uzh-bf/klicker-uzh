@@ -1,4 +1,7 @@
-import { ParticipantCourseActivity } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ParticipantPerformance,
+  PerformanceLevel,
+} from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
 import { H2 } from '@uzh-bf/design-system'
@@ -13,39 +16,39 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import LevelTag from './LevelTag'
-import useTotalStudentActivityHistogram from './useTotalStudentActivityHistogram'
+import LevelTag from '../activity/LevelTag'
+import useTotalStudentPerformanceHistogram from './useTotalStudentPerformanceHistogram'
 
-interface TotalStudentActivityPlotProps {
+interface TotalStudentPerformancePlotProps {
   courseName: string
-  courseWeeks: number
-  participantActivity: ParticipantCourseActivity[]
+  participantPerformance: ParticipantPerformance[]
 }
 
-function TotalStudentActivityPlot({
+function TotalStudentPerformancePlot({
   courseName,
-  courseWeeks,
-  participantActivity,
-}: TotalStudentActivityPlotProps) {
+  participantPerformance,
+}: TotalStudentPerformancePlotProps) {
   const t = useTranslations()
-  const activityData = useTotalStudentActivityHistogram({
-    courseWeeks,
-    participantActivity,
+  const performanceData = useTotalStudentPerformanceHistogram({
+    participantPerformance,
   })
 
-  if (activityData.length === 0) {
+  if (performanceData.length === 0) {
     return null
   }
 
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
-      <H2>{t('manage.analytics.overallStudentActivity')}</H2>
+      <H2>{t('manage.analytics.overallStudentPerformance')}</H2>
       <div className="flex flex-col gap-2">
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={activityData} margin={{ bottom: 10, top: 20 }}>
+          <BarChart data={performanceData} margin={{ bottom: 15, top: 20 }}>
             <XAxis
-              dataKey="week"
-              label={{ value: t('manage.analytics.activeWeeks'), dy: 18 }}
+              dataKey="errorRate"
+              label={{
+                value: `${t('manage.analytics.errorRate')} [%]`,
+                dy: 18,
+              }}
             />
             <YAxis
               label={{
@@ -57,10 +60,10 @@ function TotalStudentActivityPlot({
             <Tooltip
               formatter={(value) => [
                 `${value}`,
-                t('manage.analytics.activeStudents'),
+                t('manage.analytics.numberOfStudents'),
               ]}
               labelFormatter={(label) =>
-                `${label} ${t('shared.generic.weeks')}`
+                `${t('manage.analytics.errorRate')}: ${label} %`
               }
               contentStyle={{
                 borderRadius: '8px',
@@ -68,11 +71,11 @@ function TotalStudentActivityPlot({
               }}
             />
             <Bar dataKey="count">
-              {activityData.map((entry, index) => (
+              {performanceData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Bar>
-            {activityData.map(
+            {performanceData.map(
               (entry, index) =>
                 (entry.isQ1 ||
                   entry.isQ3 ||
@@ -80,7 +83,7 @@ function TotalStudentActivityPlot({
                   entry.isMean) && (
                   <ReferenceLine
                     key={`line-${index}`}
-                    x={entry.week}
+                    x={entry.errorRate}
                     stroke={
                       entry.isMean ? 'red' : entry.isMedian ? 'blue' : '#666'
                     }
@@ -113,68 +116,70 @@ function TotalStudentActivityPlot({
               header: t('shared.generic.student'),
             },
             {
-              accessorKey: 'activeWeeks',
+              accessorKey: 'totalErrorRate',
               header: ({ column }: any) => {
                 return (
                   <TableSortingButton
                     column={column}
-                    title={t('manage.analytics.activeWeeks')}
-                  />
-                )
-              },
-            },
-            {
-              accessorKey: 'activeDaysPerWeek',
-              header: ({ column }: any) => {
-                return (
-                  <TableSortingButton
-                    column={column}
-                    title={t('manage.analytics.activeDaysPerWeek')}
+                    title={t('manage.analytics.totalErrorRate')}
                   />
                 )
               },
               cell: ({ row }: any) =>
-                `${parseFloat(row.getValue('activeDaysPerWeek')).toFixed(2)}`,
+                `${Math.round(parseFloat(row.getValue('totalErrorRate')) * 100)} %`,
             },
             {
-              accessorKey: 'meanElementsPerDay',
+              accessorKey: 'firstErrorRate',
               header: ({ column }: any) => {
                 return (
                   <TableSortingButton
                     column={column}
-                    title={t('manage.analytics.meanElementsPerDay')}
+                    title={t('manage.analytics.firstAttempt')}
                   />
                 )
               },
               cell: ({ row }: any) =>
-                `${parseFloat(row.getValue('meanElementsPerDay')).toFixed(2)}`,
+                `${Math.round(parseFloat(row.getValue('firstErrorRate')) * 100)} %`,
             },
             {
-              accessorKey: 'activityLevelNumber',
+              accessorKey: 'lastErrorRate',
               header: ({ column }: any) => {
                 return (
                   <TableSortingButton
                     column={column}
-                    title={t('manage.analytics.activityLevel')}
+                    title={t('manage.analytics.lastAttempt')}
+                  />
+                )
+              },
+              cell: ({ row }: any) =>
+                `${Math.round(parseFloat(row.getValue('lastErrorRate')) * 100)} %`,
+            },
+            {
+              accessorKey: 'performanceLevelNumber',
+              header: ({ column }: any) => {
+                return (
+                  <TableSortingButton
+                    column={column}
+                    title={t('manage.analytics.performanceLevel')}
                   />
                 )
               },
               cell: ({ row }: any) => (
-                <LevelTag level={row.getValue('activityLevelNumber')} />
+                <LevelTag level={row.getValue('performanceLevelNumber')} />
               ),
             },
           ]}
-          data={participantActivity.map((entry, ix) => ({
+          data={participantPerformance.map((entry, ix) => ({
             ...entry,
             student: t('manage.analytics.studentN', { number: ix + 1 }),
-            activityLevelNumber:
-              entry.activityLevel === 'HIGH'
+            performanceLevelNumber:
+              entry.totalPerformance === PerformanceLevel.High
                 ? 3
-                : entry.activityLevel === 'MEDIUM'
+                : entry.totalPerformance === PerformanceLevel.Medium
                   ? 2
                   : 1,
           }))}
-          csvFilename={`${courseName.replace(' ', '-')}_participant_activity`}
+          csvFilename={`${courseName.replace(' ', '-')}_participant_performance`}
           className={{
             tableHeader: 'h-7 p-2',
             tableCell: 'h-7 p-2',
@@ -183,6 +188,8 @@ function TotalStudentActivityPlot({
       </div>
     </div>
   )
+
+  return null
 }
 
-export default TotalStudentActivityPlot
+export default TotalStudentPerformancePlot

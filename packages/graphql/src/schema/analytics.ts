@@ -3,6 +3,7 @@ import {
   ActivityPerformance as ActivityPerformanceType,
   ActivityType as ActivityTypeEnum,
   InstancePerformance as InstancePerformanceType,
+  ParticipantPerformance as ParticipantPerformanceType,
   PerformanceRates as PerformanceRatesType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
@@ -14,6 +15,10 @@ export const ActivityLevel = builder.enumType('ActivityLevel', {
 
 export const ActivityType = builder.enumType('ActivityType', {
   values: Object.values(ActivityTypeEnum),
+})
+
+export const PerformanceLevel = builder.enumType('PerformanceLevel', {
+  values: Object.values(DB.PerformanceLevel),
 })
 
 // ------ Activity Analytics ------
@@ -205,12 +210,34 @@ export const InstancePerformance = builder.objectType(InstancePerformanceRef, {
   }),
 })
 
+export const ParticipantPerformanceRef =
+  builder.objectRef<ParticipantPerformanceType>('ParticipantPerformance')
+export const ParticipantPerformance = builder.objectType(
+  ParticipantPerformanceRef,
+  {
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      firstErrorRate: t.exposeFloat('firstErrorRate'),
+      firstPerformance: t.expose('firstPerformance', {
+        type: PerformanceLevel,
+      }),
+      lastErrorRate: t.exposeFloat('lastErrorRate'),
+      lastPerformance: t.expose('lastPerformance', { type: PerformanceLevel }),
+      totalErrorRate: t.exposeFloat('totalErrorRate'),
+      totalPerformance: t.expose('totalPerformance', {
+        type: PerformanceLevel,
+      }),
+    }),
+  }
+)
+
 interface ICoursePerformanceAnalytics {
   name: string
   totalParticipants: number
   activityProgresses: IActivityProgress[]
   activityPerformances: ActivityPerformanceType[]
   instancePerformances: InstancePerformanceType[]
+  participantPerformances: ParticipantPerformanceType[]
 }
 export const CoursePerformanceAnalyticsRef =
   builder.objectRef<ICoursePerformanceAnalytics>('CoursePerformanceAnalytics')
@@ -228,6 +255,9 @@ export const CoursePerformanceAnalytics = builder.objectType(
       }),
       instancePerformances: t.expose('instancePerformances', {
         type: [InstancePerformance],
+      }),
+      participantPerformances: t.expose('participantPerformances', {
+        type: [ParticipantPerformance],
       }),
     }),
   }
