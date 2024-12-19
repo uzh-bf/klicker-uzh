@@ -188,8 +188,6 @@ function TotalStudentPerformancePlot({
       </div>
     </div>
   )
-
-  return null
 }
 
 export default TotalStudentPerformancePlot

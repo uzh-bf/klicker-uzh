@@ -1,4 +1,13 @@
 function computeHistogramStatistics(data: number[]) {
+  if (data.length === 0) {
+    return {
+      q1: 0,
+      q3: 0,
+      median: 0,
+      mean: 0,
+    }
+  }
+
   const sorted = [...data].sort((a, b) => a - b)
   const len = sorted.length
 
