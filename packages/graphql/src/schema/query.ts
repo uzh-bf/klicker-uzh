@@ -14,6 +14,7 @@ import * as StacksService from '../services/stacks.js'
 import {
   CourseActivityAnalytics,
   CoursePerformanceAnalytics,
+  CourseQuizAnalytics,
   ElementFeedback,
   WeeklyCourseActivities,
 } from './analytics.js'
@@ -778,6 +779,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return AnalyticsService.getCoursePerformanceAnalytics(args, ctx)
+        },
+      }),
+
+      getCourseQuizAnalytics: asUser.field({
+        nullable: true,
+        type: CourseQuizAnalytics,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AnalyticsService.getCourseQuizAnalytics(args, ctx)
         },
       }),
     }

@@ -1,6 +1,13 @@
 import {
+  ElementFeedback,
+  ElementInstance,
+  ElementStack,
+} from '@klicker-uzh/prisma'
+import {
+  ActivityFeedback,
   ActivityPerformance,
   ActivityType,
+  InstanceFeedback,
   InstancePerformance,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
@@ -268,5 +275,200 @@ export async function getCoursePerformanceAnalytics(
     activityPerformances,
     instancePerformances,
     participantPerformances: course.participantPerformances,
+  }
+}
+
+// this function compute the upvote and downvote rates based on the element responses linked to instances in the course
+function aggregateInstanceFeedbacks({
+  stacks,
+  activityType,
+  activityId,
+}: {
+  stacks: (ElementStack & {
+    elements: (ElementInstance & { feedbacks: ElementFeedback[] })[]
+  })[]
+  activityType: ActivityType
+  activityId: string
+}): InstanceFeedback[] {
+  return stacks
+    .flatMap((stack) =>
+      stack.elements.flatMap((element) =>
+        element.feedbacks.reduce<{
+          instanceId: number
+          instanceName: string
+          upvotes: number
+          downvotes: number
+          totalVotes: number
+        }>(
+          (acc, feedback) => {
+            if (feedback.upvote) {
+              acc.upvotes++
+              acc.totalVotes++
+            }
+            if (feedback.downvote) {
+              acc.downvotes++
+              acc.totalVotes++
+            }
+
+            return acc
+          },
+          {
+            instanceId: element.id,
+            instanceName: element.elementData.name,
+            upvotes: 0,
+            downvotes: 0,
+            totalVotes: 0,
+          }
+        )
+      )
+    )
+    .map((instanceFeedback) => ({
+      activityType,
+      activityId,
+      instanceId: instanceFeedback.instanceId,
+      instanceName: instanceFeedback.instanceName,
+      upvoteRate:
+        instanceFeedback.upvotes === 0
+          ? instanceFeedback.upvotes
+          : instanceFeedback.upvotes / instanceFeedback.totalVotes,
+      downvoteRate:
+        instanceFeedback.downvotes === 0
+          ? instanceFeedback.downvotes
+          : instanceFeedback.downvotes / instanceFeedback.totalVotes,
+    }))
+}
+
+// based on the instance feedbacks, an unweighted average of the entire activity can be computed
+function aggregateActivityFeedbacks({
+  instanceFeedbacks,
+  activityType,
+  activityId,
+  activityName,
+}: {
+  instanceFeedbacks: InstanceFeedback[]
+  activityType: ActivityType
+  activityId: string
+  activityName: string
+}) {
+  return instanceFeedbacks.reduce<ActivityFeedback & { count: number }>(
+    (acc, instanceFeedback) => {
+      // if no votes were submitted for the instance, skip it
+      if (
+        instanceFeedback.upvoteRate === 0 &&
+        instanceFeedback.downvoteRate === 0
+      ) {
+        return acc
+      }
+
+      // combine the upvotes and downvote rates over all instances
+      acc.upvoteRate =
+        (acc.upvoteRate * acc.count + instanceFeedback.upvoteRate) /
+        (acc.count + 1)
+      acc.downvoteRate =
+        (acc.downvoteRate * acc.count + instanceFeedback.downvoteRate) /
+        (acc.count + 1)
+      acc.count++
+
+      return acc
+    },
+    {
+      activityType,
+      activityId,
+      activityName,
+      upvoteRate: 0,
+      downvoteRate: 0,
+      count: 0,
+    }
+  )
+}
+
+export async function getCourseQuizAnalytics(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, ownerId: ctx.user.sub },
+    include: {
+      participations: true,
+      practiceQuizzes: {
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  feedbacks: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      microLearnings: {
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  feedbacks: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) {
+    return null
+  }
+
+  // compute instance and activity feedbacks aggregated over instance or activity
+  const instanceFeedbacks: InstanceFeedback[] = []
+  const activityFeedbacks: ActivityFeedback[] = []
+  course.practiceQuizzes.forEach((quiz) => {
+    // aggregate instance element feedbacks
+    const quizInstanceFeedbacks = aggregateInstanceFeedbacks({
+      stacks: quiz.stacks,
+      activityType: ActivityType.PRACTICE_QUIZ,
+      activityId: quiz.id,
+    })
+
+    // aggregate activity vote rates
+    const activityFeedback = aggregateActivityFeedbacks({
+      instanceFeedbacks: quizInstanceFeedbacks,
+      activityType: ActivityType.PRACTICE_QUIZ,
+      activityId: quiz.id,
+      activityName: quiz.name,
+    })
+
+    instanceFeedbacks.push(...quizInstanceFeedbacks)
+    activityFeedbacks.push(activityFeedback)
+  })
+  course.microLearnings.forEach((micro) => {
+    // aggregate instance element feedbacks
+    const microInstanceFeedbacks = aggregateInstanceFeedbacks({
+      stacks: micro.stacks,
+      activityType: ActivityType.MICRO_LEARNING,
+      activityId: micro.id,
+    })
+
+    // aggregate activity vote rates
+    const activityFeedback = aggregateActivityFeedbacks({
+      instanceFeedbacks: microInstanceFeedbacks,
+      activityType: ActivityType.MICRO_LEARNING,
+      activityId: micro.id,
+      activityName: micro.name,
+    })
+
+    instanceFeedbacks.push(...microInstanceFeedbacks)
+    activityFeedbacks.push(activityFeedback)
+  })
+
+  return {
+    name: course.name,
+    totalParticipants: course.participations.length,
+    instanceFeedbacks,
+    activityFeedbacks,
   }
 }

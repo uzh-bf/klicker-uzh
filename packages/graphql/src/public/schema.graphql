@@ -24,6 +24,14 @@ type ActivityEvaluation {
   results: [StackEvaluation!]!
 }
 
+type ActivityFeedback {
+  activityId: String!
+  activityName: String!
+  activityType: ActivityType!
+  downvoteRate: Float!
+  upvoteRate: Float!
+}
+
 enum ActivityLevel {
   HIGH
   LOW
@@ -317,6 +325,13 @@ type CoursePerformanceAnalytics {
   instancePerformances: [InstancePerformance!]!
   name: String!
   participantPerformances: [ParticipantPerformance!]!
+  totalParticipants: Int!
+}
+
+type CourseQuizAnalytics {
+  activityFeedbacks: [ActivityFeedback!]!
+  instanceFeedbacks: [InstanceFeedback!]!
+  name: String!
   totalParticipants: Int!
 }
 
@@ -792,6 +807,15 @@ type GroupMessage {
 }
 
 union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
+
+type InstanceFeedback {
+  activityId: String!
+  activityType: ActivityType!
+  downvoteRate: Float!
+  instanceId: Int!
+  instanceName: String!
+  upvoteRate: Float!
+}
 
 type InstancePerformance {
   elementName: String!
@@ -1321,6 +1345,7 @@ type Query {
   getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
+  getCourseQuizAnalytics(courseId: String!): CourseQuizAnalytics
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
   getCourseSummary(courseId: String!): CourseSummary
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities

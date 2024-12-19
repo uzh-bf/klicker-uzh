@@ -1,27 +1,62 @@
-import { H1, H3 } from '@uzh-bf/design-system'
+import { useQuery } from '@apollo/client'
+import { GetCourseQuizAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import ActivityDashboardLabel from '~/components/analytics/overview/ActivityDashboardLabel'
-import AnalyticsNavigation from '~/components/analytics/overview/AnalyticsNavigation'
-import PerformanceDashboardLabel from '~/components/analytics/overview/PerformanceDashboardLabel'
+import AnalyticsErrorView from '~/components/analytics/AnalyticsErrorView'
+import AnalyticsLoadingView from '~/components/analytics/AnalyticsLoadingView'
+import QuizAnalyticsNavigation from '~/components/analytics/quiz/QuizAnalyticsNavigation'
 import Layout from '~/components/Layout'
 
 function QuizDashboard() {
   const t = useTranslations()
   const router = useRouter()
+  const courseId = router.query.courseId as string
+
+  const { data, loading, error } = useQuery(GetCourseQuizAnalyticsDocument, {
+    variables: { courseId },
+    skip: !courseId,
+  })
+
+  const navigation = <QuizAnalyticsNavigation courseId={courseId} />
+  const course = data?.getCourseQuizAnalytics
+
+  // loading state
+  if (loading || !courseId) {
+    return (
+      <AnalyticsLoadingView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
+  // error state
+  if (course === null || typeof course === 'undefined' || error) {
+    return (
+      <AnalyticsErrorView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
 
   return (
     <Layout displayName={t('manage.analytics.quizDashboard')}>
-      <AnalyticsNavigation
-        hrefLeft={`/analytics/${router.query.courseId}/performance`}
-        labelLeft={<PerformanceDashboardLabel />}
-        hrefRight={`/analytics/${router.query.courseId}/activity`}
-        labelRight={<ActivityDashboardLabel />}
-      />
+      {navigation}
       <div>
-        <H1>{t('manage.analytics.quizDashboard')}</H1>
-        <H3>Coursename Placeholder</H3>
+        <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
+          <H1 className={{ root: 'mb-0' }}>
+            {t('manage.analytics.quizDashboard')}: {course.name}
+          </H1>
+          <div>
+            {t('manage.analytics.totalParticipants', {
+              number: course.totalParticipants,
+            })}
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">{/* // TODO */}</div>
       </div>
     </Layout>
   )

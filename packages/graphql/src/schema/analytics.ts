@@ -1,7 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityFeedback as ActivityFeedbackType,
   ActivityPerformance as ActivityPerformanceType,
   ActivityType as ActivityTypeEnum,
+  InstanceFeedback as InstanceFeedbackType,
   InstancePerformance as InstancePerformanceType,
   ParticipantPerformance as ParticipantPerformanceType,
   PerformanceRates as PerformanceRatesType,
@@ -263,3 +265,52 @@ export const CoursePerformanceAnalytics = builder.objectType(
   }
 )
 // #endregion
+
+// ------ Quiz and Instance Analytics ------
+// #region
+export const InstanceFeedbackRef =
+  builder.objectRef<InstanceFeedbackType>('InstanceFeedback')
+export const InstanceFeedback = builder.objectType(InstanceFeedbackRef, {
+  fields: (t) => ({
+    activityType: t.expose('activityType', { type: ActivityType }),
+    activityId: t.exposeString('activityId'),
+    instanceId: t.exposeInt('instanceId'),
+    instanceName: t.exposeString('instanceName'),
+    upvoteRate: t.exposeFloat('upvoteRate'),
+    downvoteRate: t.exposeFloat('downvoteRate'),
+  }),
+})
+
+export const ActivityFeedbackRef =
+  builder.objectRef<ActivityFeedbackType>('ActivityFeedback')
+export const ActivityFeedback = builder.objectType(ActivityFeedbackRef, {
+  fields: (t) => ({
+    activityType: t.expose('activityType', { type: ActivityType }),
+    activityId: t.exposeString('activityId'),
+    activityName: t.exposeString('activityName'),
+    upvoteRate: t.exposeFloat('upvoteRate'),
+    downvoteRate: t.exposeFloat('downvoteRate'),
+  }),
+})
+
+interface ICourseQuizAnalytics {
+  name: string
+  totalParticipants: number
+  instanceFeedbacks: InstanceFeedbackType[]
+  activityFeedbacks: ActivityFeedbackType[]
+}
+export const CourseQuizAnalyticsRef = builder.objectRef<ICourseQuizAnalytics>(
+  'CourseQuizAnalytics'
+)
+export const CourseQuizAnalytics = builder.objectType(CourseQuizAnalyticsRef, {
+  fields: (t) => ({
+    name: t.exposeString('name'),
+    totalParticipants: t.exposeInt('totalParticipants'),
+    instanceFeedbacks: t.expose('instanceFeedbacks', {
+      type: [InstanceFeedback],
+    }),
+    activityFeedbacks: t.expose('activityFeedbacks', {
+      type: [ActivityFeedback],
+    }),
+  }),
+})

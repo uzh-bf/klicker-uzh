@@ -1,0 +1,23 @@
+query GetCourseQuizAnalytics($courseId: String!) {
+  getCourseQuizAnalytics(courseId: $courseId) {
+    name
+    totalParticipants
+    instanceFeedbacks {
+      __typename
+      activityId
+      activityType
+      instanceId
+      instanceName
+      upvoteRate
+      downvoteRate
+    }
+    activityFeedbacks {
+      __typename
+      activityId
+      activityType
+      activityName
+      upvoteRate
+      downvoteRate
+    }
+  }
+}

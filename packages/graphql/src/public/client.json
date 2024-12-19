@@ -120,6 +120,7 @@
    "GetCourseOverviewData": "fe16bc8ac7ebe8c4ea42314a6b209843a13a077bc3ebd9e3845e4d8f0472fc77",
    "GetCoursePerformanceAnalytics": "a81e2165bd384de1ee1227486e6624ebd4f4aaa1dd9470bbfe69daad0386418f",
    "GetCoursePracticeQuiz": "c85b76ca88a32805628003e4ef1db94904e609d70712436536475eedd9c714c7",
+   "GetCourseQuizAnalytics": "4ba5b320c828c535decb277026e029e4629278c03b16c7f6acf42f20827d27bf",
    "GetCourseRunningLiveQuizzes": "ce037e4ed631347550ff54d45e5d0b4c94389f35d77873e535ce8e676fd2aec1",
    "GetCourseSummary": "ab045b4abe94c4ba4e86150994ce42656310ff79241fd52a2e3b03396d6d0571",
    "GetCourseWeeklyActivity": "769cc8d45ec0f063e4ca121bf1cc362ea9fa9f822ef1eab1a578f9f7db59bdb4",
