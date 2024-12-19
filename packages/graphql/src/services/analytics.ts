@@ -141,6 +141,7 @@ export async function getCoursePerformanceAnalytics(
         },
         orderBy: { scheduledStartAt: 'desc' },
       },
+      participantPerformances: true,
     },
   })
 
@@ -266,5 +267,6 @@ export async function getCoursePerformanceAnalytics(
     activityProgresses,
     activityPerformances,
     instancePerformances,
+    participantPerformances: course.participantPerformances,
   }
 }

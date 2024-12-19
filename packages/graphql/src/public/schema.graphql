@@ -316,6 +316,7 @@ type CoursePerformanceAnalytics {
   activityProgresses: [ActivityProgress!]!
   instancePerformances: [InstancePerformance!]!
   name: String!
+  participantPerformances: [ParticipantPerformance!]!
   totalParticipants: Int!
 }
 
@@ -1223,6 +1224,16 @@ type ParticipantLearningData {
   participation: Participation
 }
 
+type ParticipantPerformance {
+  firstErrorRate: Float!
+  firstPerformance: PerformanceLevel!
+  id: Int!
+  lastErrorRate: Float!
+  lastPerformance: PerformanceLevel!
+  totalErrorRate: Float!
+  totalPerformance: PerformanceLevel!
+}
+
 type ParticipantTokenData {
   participant: Participant
   participantToken: String
@@ -1240,6 +1251,12 @@ type Participation {
   isActive: Boolean!
   participant: Participant
   subscriptions: [PushSubscription!]
+}
+
+enum PerformanceLevel {
+  HIGH
+  LOW
+  MEDIUM
 }
 
 type PerformanceRates {

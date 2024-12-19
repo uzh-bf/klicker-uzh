@@ -43,5 +43,15 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
         correctRate
       }
     }
+    participantPerformances {
+      __typename
+      id
+      firstErrorRate
+      firstPerformance
+      lastErrorRate
+      lastPerformance
+      totalErrorRate
+      totalPerformance
+    }
   }
 }

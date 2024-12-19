@@ -1,4 +1,8 @@
-import type { Element, ElementType } from '@klicker-uzh/prisma'
+import type {
+  Element,
+  ElementType,
+  PerformanceLevel,
+} from '@klicker-uzh/prisma'
 
 export type ElementKeys = keyof Element
 
@@ -389,5 +393,15 @@ export type InstancePerformance = {
   elementName: string
   elementType: ElementType
   rates: PerformanceRates
+}
+
+export type ParticipantPerformance = {
+  id: number
+  firstErrorRate: number
+  firstPerformance: PerformanceLevel
+  lastErrorRate: number
+  lastPerformance: PerformanceLevel
+  totalErrorRate: number
+  totalPerformance: PerformanceLevel
 }
 // #endregion
