@@ -7,41 +7,40 @@ import Layout from '@theme/Layout'
 import { twMerge } from 'tailwind-merge'
 import { USE_CASES, USE_CASE_CATEGORIES } from '../../constants'
 
+// Generate sidebar items for a use case
+const getUseCaseItems = (slug: string) => {
+  const items = [
+    {
+      type: 'link',
+      label: 'Introduction',
+      href: `/use_cases/${slug}#Introduction`,
+    },
+    {
+      type: 'link',
+      label: 'Background',
+      href: `/use_cases/${slug}#Background`,
+    },
+    {
+      type: 'link',
+      label: 'Scenario',
+      href: `/use_cases/${slug}#Scenario`,
+    },
+    {
+      type: 'link',
+      label: 'Learnings',
+      href: `/use_cases/${slug}#Learnings`,
+    },
+  ]
+
+  return items
+}
+
 interface UseCaseLayoutProps {
   path: string
   children: React.ReactNode
 }
 
 function UseCaseLayout({ path, children }: UseCaseLayoutProps) {
-  // Generate sidebar items for a use case
-  const getUseCaseItems = (slug: string) => {
-    const useCase = USE_CASES[slug]
-    const items = [
-      {
-        type: 'link',
-        label: 'Introduction',
-        href: `/use_cases/${slug}#Introduction`,
-      },
-      {
-        type: 'link',
-        label: 'Background',
-        href: `/use_cases/${slug}#Background`,
-      },
-      {
-        type: 'link',
-        label: 'Scenario',
-        href: `/use_cases/${slug}#Scenario`,
-      },
-      {
-        type: 'link',
-        label: 'Learnings',
-        href: `/use_cases/${slug}#Learnings`,
-      },
-    ]
-
-    return items
-  }
-
   // Generate sidebar structure
   const sidebar = [
     { type: 'link', href: '/use_cases', label: 'Overview' },

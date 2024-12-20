@@ -1,3 +1,4 @@
+import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import {
   faBook,
   faBookOpen,
@@ -11,7 +12,12 @@ import { H1, H2, Tag } from '@uzh-bf/design-system'
 import { USE_CASES } from '../../constants'
 import UseCaseLayout from './UseCaseLayout'
 
-function SectionHeader({ icon, header }) {
+interface SectionHeaderProps {
+  icon: IconProp
+  header: string
+}
+
+function SectionHeader({ icon, header }: SectionHeaderProps) {
   return (
     <div className="mb-4 flex flex-row items-center gap-4 rounded bg-slate-100 p-4 text-slate-700">
       <FontAwesomeIcon icon={icon} className="text-3xl" />

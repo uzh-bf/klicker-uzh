@@ -4,7 +4,12 @@ import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
 import { twMerge } from 'tailwind-merge'
 
-function Figure({ imgSrc, caption }) {
+interface FigureProps {
+  imgSrc: string
+  caption: string
+}
+
+function Figure({ imgSrc, caption }: FigureProps) {
   return (
     <figure className="m-0 mb-4 mt-2 text-left">
       <Zoom zoomMargin={100}>
