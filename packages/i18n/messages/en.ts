@@ -1821,6 +1821,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityDashboard: 'Activity Dashboard',
       performanceDashboard: 'Performance and Progress Dashboard',
       quizDashboard: 'Quiz Dashboard',
+      quizAnalytics: 'Quiz Analytics',
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
         'An error occurred while loading the analytics data. Please try again later or contact the support.',
@@ -1883,6 +1884,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       studentPerformance: 'Student Performance',
       feedbackOverview: 'Feedback Overview',
       dataSource: 'Data Source',
+      selectActivityAnalytics:
+        'Please select one of the activities from your course to view the corresponding analytics. Please note that analytics are only available for activities accessible for students.',
+      noPracticeQuizzes: "This course doesn't contain any practice quizzes.",
+      noMicroLearnings: "This course doesn't contain any microlearnings.",
+      searchPracticeQuizzes: 'Search practice quizzes...',
+      searchMicroLearnings: 'Search microlearnings...',
     },
   },
   control: {

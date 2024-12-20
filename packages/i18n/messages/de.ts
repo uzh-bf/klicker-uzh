@@ -1833,6 +1833,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityDashboard: 'Aktivitäts-Dashboard',
       performanceDashboard: 'Leistungs- und Fortschritts-Dashboard',
       quizDashboard: 'Quiz-Dashboard',
+      quizAnalytics: 'Quiz Analytics',
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
@@ -1897,6 +1898,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       studentPerformance: 'Studierendenleistung',
       feedbackOverview: 'Feedback-Übersicht',
       dataSource: 'Datenquelle',
+      selectActivityAnalytics:
+        'Bitte wählen Sie eine Aktivität aus Ihrem Kurs aus, um die entsprechenden Analyse-Daten anzuzeigen. Bitte beachten Sie, dass die Analyse nur für Aktivitäten verfügbar ist, die für Studierende zugänglich sind.',
+      noPracticeQuizzes: 'Dieser Kurs enthält keine Übungs-Quizzes.',
+      noMicroLearnings: 'Dieser Kurs enthält keine Microlearnings.',
+      searchPracticeQuizzes: 'Übungs-Quizzes durchsuchen...',
+      searchMicroLearnings: 'Microlearnings durchsuchen...',
     },
   },
   control: {

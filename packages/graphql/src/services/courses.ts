@@ -1162,3 +1162,44 @@ export async function publishScheduledActivities(ctx: Context) {
 
   return true
 }
+
+export async function getCourseActivities(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      practiceQuizzes: {
+        where: {
+          isDeleted: false,
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          _count: {
+            select: { stacks: true },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      microLearnings: {
+        where: {
+          isDeleted: false,
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          _count: {
+            select: { stacks: true },
+          },
+        },
+        orderBy: {
+          scheduledStartAt: 'desc',
+        },
+      },
+    },
+  })
+
+  return course
+}

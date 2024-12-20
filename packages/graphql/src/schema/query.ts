@@ -780,6 +780,17 @@ export const Query = builder.queryType({
           return AnalyticsService.getCoursePerformanceAnalytics(args, ctx)
         },
       }),
+
+      getCourseActivities: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseActivities(args, ctx)
+        },
+      }),
     }
   },
 })
