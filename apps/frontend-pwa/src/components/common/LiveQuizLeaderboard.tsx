@@ -69,7 +69,7 @@ function LiveQuizLeaderboard({
 
             setBlockDelta({
               score: selfEntry.score - prevStoredEntry.score,
-              rank: selfEntry.rank - prevStoredEntry.rank,
+              rank: -(selfEntry.rank - prevStoredEntry.rank),
             })
           } catch (error) {
             console.warn(error)

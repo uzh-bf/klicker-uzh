@@ -788,6 +788,7 @@ type Level {
 type LiveQuiz {
   accessMode: LiveQuizAccessMode!
   activeBlock: ElementBlock
+  beforeFirstBlock: Boolean
   blocks: [ElementBlock!]
   confusionFeedbacks: [ConfusionTimestep!]
   confusionSummary: ConfusionSummary

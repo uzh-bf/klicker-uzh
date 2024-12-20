@@ -16,6 +16,7 @@ const quizDescription1New = quizDescription1 + ' NEW'
 const quizName1Dupl = quizName1New + ' (Copy)'
 const quizName2 = 'Live Quiz 2'
 const quizDisplayName2 = 'Live Quiz 2 (Display)'
+const quizDescription2 = 'Live Quiz 2 Description'
 const courseGamified = 'Testkurs'
 const courseNonGamified = 'Non-Gamified Course'
 
@@ -586,6 +587,12 @@ describe('Different live-quiz workflows', () => {
 
     // Step 2: Display name and description
     cy.get('[data-cy="insert-live-display-name"]').type(quizDisplayName2)
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
+      .type(quizDescription2)
+    cy.get('[data-cy="insert-live-description"]')
+      .realClick()
+      .contains(quizDescription2)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
@@ -651,7 +658,30 @@ describe('Different live-quiz workflows', () => {
 
     // start live quiz and first block
     cy.get(`[data-cy="start-live-quiz-${quizName2}"]`).click()
+    cy.wait(1000)
+  })
+
+  it('Check that the live quiz description is correctly shown to students', () => {
+    // check if live quiz description is shown to students on desktop view
+    cy.loginStudent()
+    cy.findByText(quizDisplayName2).click()
+    cy.get('[data-cy="live-quiz-description"]').contains(quizDisplayName2)
+    cy.get('[data-cy="live-quiz-description"]').contains(quizDescription2)
+
+    // check if the description is also shown correctly on mobile view
+    cy.viewport('iphone-x')
+    cy.get('[data-cy="live-quiz-description"]').contains(quizDisplayName2)
+    cy.get('[data-cy="live-quiz-description"]').contains(quizDescription2)
+  })
+
+  it('Start the first block of the live quiz', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit${quizName2}"]`).click()
+    cy.wait(1000)
+
     cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
   })
 
   it('Responds to the first block of the running live quiz from the student view', () => {
