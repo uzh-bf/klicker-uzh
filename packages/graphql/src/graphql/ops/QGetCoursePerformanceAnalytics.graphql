@@ -53,5 +53,24 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
       totalErrorRate
       totalPerformance
     }
+    instanceFeedbacks {
+      __typename
+      id
+      activityType
+      instanceName
+      instanceType
+      upvoteRate
+      downvoteRate
+      feedbackCount
+    }
+    activityFeedbacks {
+      __typename
+      id
+      activityType
+      activityName
+      upvoteRate
+      downvoteRate
+      feedbackCount
+    }
   }
 }

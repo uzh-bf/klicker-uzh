@@ -1,12 +1,8 @@
-import { useQuery } from '@apollo/client'
-import { GetCourseQuizAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
-import ActivityInstanceFeedbacksPlot from '../../../components/analytics/quiz/ActivityInstanceFeedbacksPlot'
 import QuizAnalyticsNavigation from '../../../components/analytics/quiz/QuizAnalyticsNavigation'
 import Layout from '../../../components/Layout'
 
@@ -15,13 +11,17 @@ function QuizDashboard() {
   const router = useRouter()
   const courseId = router.query.courseId as string
 
-  const { data, loading, error } = useQuery(GetCourseQuizAnalyticsDocument, {
-    variables: { courseId },
-    skip: !courseId,
-  })
+  // const { data, loading, error } = useQuery(GetCourseQuizAnalyticsDocument, {
+  //   variables: { courseId },
+  //   skip: !courseId,
+  // })
+  const data = null
+  const loading = false
+  const error = false
+  const course = null
 
   const navigation = <QuizAnalyticsNavigation courseId={courseId} />
-  const course = data?.getCourseQuizAnalytics
+  // const course = data?.getCourseQuizAnalytics
 
   // loading state
   if (loading || !courseId) {
@@ -48,21 +48,16 @@ function QuizDashboard() {
       {navigation}
       <div>
         <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-          <H1 className={{ root: 'mb-0' }}>
+          {/* <H1 className={{ root: 'mb-0' }}>
             {t('manage.analytics.quizDashboard')}: {course.name}
-          </H1>
-          <div>
+          </H1> */}
+          {/* <div>
             {t('manage.analytics.totalParticipants', {
               number: course.totalParticipants,
             })}
-          </div>
+          </div> */}
         </div>
-        <div className="flex flex-col gap-4">
-          <ActivityInstanceFeedbacksPlot
-            instanceFeedbacks={course.instanceFeedbacks}
-            activityFeedbacks={course.activityFeedbacks}
-          />
-        </div>
+        <div className="flex flex-col gap-4">QUIZ ANALYTICS</div>
       </div>
     </Layout>
   )

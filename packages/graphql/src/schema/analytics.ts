@@ -233,41 +233,6 @@ export const ParticipantPerformance = builder.objectType(
   }
 )
 
-interface ICoursePerformanceAnalytics {
-  name: string
-  totalParticipants: number
-  activityProgresses: IActivityProgress[]
-  activityPerformances: ActivityPerformanceType[]
-  instancePerformances: InstancePerformanceType[]
-  participantPerformances: ParticipantPerformanceType[]
-}
-export const CoursePerformanceAnalyticsRef =
-  builder.objectRef<ICoursePerformanceAnalytics>('CoursePerformanceAnalytics')
-export const CoursePerformanceAnalytics = builder.objectType(
-  CoursePerformanceAnalyticsRef,
-  {
-    fields: (t) => ({
-      name: t.exposeString('name'),
-      totalParticipants: t.exposeInt('totalParticipants'),
-      activityProgresses: t.expose('activityProgresses', {
-        type: [ActivityProgress],
-      }),
-      activityPerformances: t.expose('activityPerformances', {
-        type: [ActivityPerformance],
-      }),
-      instancePerformances: t.expose('instancePerformances', {
-        type: [InstancePerformance],
-      }),
-      participantPerformances: t.expose('participantPerformances', {
-        type: [ParticipantPerformance],
-      }),
-    }),
-  }
-)
-// #endregion
-
-// ------ Quiz and Instance Analytics ------
-// #region
 export const InstanceFeedbackRef =
   builder.objectRef<InstanceFeedbackType>('InstanceFeedback')
 export const InstanceFeedback = builder.objectType(InstanceFeedbackRef, {
@@ -295,24 +260,43 @@ export const ActivityFeedback = builder.objectType(ActivityFeedbackRef, {
   }),
 })
 
-interface ICourseQuizAnalytics {
+interface ICoursePerformanceAnalytics {
   name: string
   totalParticipants: number
+  activityProgresses: IActivityProgress[]
+  activityPerformances: ActivityPerformanceType[]
+  instancePerformances: InstancePerformanceType[]
+  participantPerformances: ParticipantPerformanceType[]
   instanceFeedbacks: InstanceFeedbackType[]
   activityFeedbacks: ActivityFeedbackType[]
 }
-export const CourseQuizAnalyticsRef = builder.objectRef<ICourseQuizAnalytics>(
-  'CourseQuizAnalytics'
+export const CoursePerformanceAnalyticsRef =
+  builder.objectRef<ICoursePerformanceAnalytics>('CoursePerformanceAnalytics')
+export const CoursePerformanceAnalytics = builder.objectType(
+  CoursePerformanceAnalyticsRef,
+  {
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      totalParticipants: t.exposeInt('totalParticipants'),
+      activityProgresses: t.expose('activityProgresses', {
+        type: [ActivityProgress],
+      }),
+      activityPerformances: t.expose('activityPerformances', {
+        type: [ActivityPerformance],
+      }),
+      instancePerformances: t.expose('instancePerformances', {
+        type: [InstancePerformance],
+      }),
+      participantPerformances: t.expose('participantPerformances', {
+        type: [ParticipantPerformance],
+      }),
+      instanceFeedbacks: t.expose('instanceFeedbacks', {
+        type: [InstanceFeedback],
+      }),
+      activityFeedbacks: t.expose('activityFeedbacks', {
+        type: [ActivityFeedback],
+      }),
+    }),
+  }
 )
-export const CourseQuizAnalytics = builder.objectType(CourseQuizAnalyticsRef, {
-  fields: (t) => ({
-    name: t.exposeString('name'),
-    totalParticipants: t.exposeInt('totalParticipants'),
-    instanceFeedbacks: t.expose('instanceFeedbacks', {
-      type: [InstanceFeedback],
-    }),
-    activityFeedbacks: t.expose('activityFeedbacks', {
-      type: [ActivityFeedback],
-    }),
-  }),
-})
+// #endregion

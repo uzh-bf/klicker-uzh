@@ -321,18 +321,13 @@ type CourseActivityAnalytics {
 }
 
 type CoursePerformanceAnalytics {
+  activityFeedbacks: [ActivityFeedback!]!
   activityPerformances: [ActivityPerformance!]!
   activityProgresses: [ActivityProgress!]!
+  instanceFeedbacks: [InstanceFeedback!]!
   instancePerformances: [InstancePerformance!]!
   name: String!
   participantPerformances: [ParticipantPerformance!]!
-  totalParticipants: Int!
-}
-
-type CourseQuizAnalytics {
-  activityFeedbacks: [ActivityFeedback!]!
-  instanceFeedbacks: [InstanceFeedback!]!
-  name: String!
   totalParticipants: Int!
 }
 
@@ -1347,7 +1342,6 @@ type Query {
   getCourseGroups(courseId: String!): Course
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
-  getCourseQuizAnalytics(courseId: String!): CourseQuizAnalytics
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
   getCourseSummary(courseId: String!): CourseSummary
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities

@@ -10,6 +10,7 @@ import ActivityProgressPlot from '../../../components/analytics/performance/Acti
 import PerformanceAnalyticsNavigation from '../../../components/analytics/performance/PerformanceAnalyticsNavigation'
 import PerformanceRates from '../../../components/analytics/performance/PerformanceRates'
 import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
+import ActivityInstanceFeedbacksPlot from '../../../components/analytics/quiz/ActivityInstanceFeedbacksPlot'
 import Layout from '../../../components/Layout'
 
 function PerformanceDashboard() {
@@ -71,6 +72,10 @@ function PerformanceDashboard() {
           <TotalStudentPerformancePlot
             courseName={course.name}
             participantPerformance={course.participantPerformances}
+          />
+          <ActivityInstanceFeedbacksPlot
+            instanceFeedbacks={course.instanceFeedbacks}
+            activityFeedbacks={course.activityFeedbacks}
           />
         </div>
       </div>
