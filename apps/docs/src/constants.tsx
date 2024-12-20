@@ -1824,7 +1824,7 @@ export const USE_CASES = {
             identifying areas where students excel or may need additional
             support, facilitating targeted interventions.
             <Figure
-              imgSrc="/img_v3/la_lecturers_async.png"
+              imgSrc="/img_v3/la_performance_students.png"
               caption="Example of a progress diagram by D'Andrea (2024)"
             />
           </li>
