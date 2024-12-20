@@ -5,7 +5,7 @@ import remarkMath from 'remark-math'
 
 const config: Config = {
   future: {
-    experimental_faster: true,
+    experimental_faster: false,
   },
   trailingSlash: true,
   title: 'KlickerUZH',
@@ -74,6 +74,7 @@ const config: Config = {
     },
 
     'docusaurus-plugin-matomo',
+
     [
       '@docusaurus/plugin-ideal-image',
       {
@@ -103,11 +104,9 @@ const config: Config = {
   themeConfig: {
     matomo: {
       matomoUrl: 'https://webstats.uzh.ch',
-      siteUrl: 'https://www.klicker.uzh.ch',
       siteId: '356',
-      phpLoader: 'matomo.php',
-      jsLoader: 'matomo.js',
-      dev: true,
+      phpLoader: '/matomo.php',
+      jsLoader: '/matomo.js',
     },
     announcementBar: {
       id: 'release_v3',
