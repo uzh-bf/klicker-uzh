@@ -48,11 +48,12 @@ const tileContent = [
       {
         content: 'Groups and Group Activities',
         href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-1-release-information/310/2',
-        status: 'Released in v3.0 (HS23) and v3.1 (FS24)',
+        status: 'Released in v3.0/v3.1 (HS23/FS24)',
       },
       {
         content: 'Randomized Group Formation',
-        status: 'Work in Progress',
+        href: 'https://www.gbl.uzh.ch/quartz/index',
+        status: 'Released in v3.2 (HS24)',
       },
       {
         content: 'Synchronous Group Activities',
