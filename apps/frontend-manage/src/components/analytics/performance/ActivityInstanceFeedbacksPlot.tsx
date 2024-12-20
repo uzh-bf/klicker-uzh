@@ -72,38 +72,40 @@ function ActivityInstanceFeedbacksPlot({
     instanceSearch,
   })
 
+  const ResetButton = () => (
+    <Button
+      className={{
+        root: 'py-0.25 flex h-8 w-max flex-row items-center gap-2 self-end px-2 shadow-none',
+      }}
+      disabled={
+        type === defaultFilters.type &&
+        activityType === defaultFilters.activityType &&
+        elementType === defaultFilters.elementType &&
+        activitySearchTerm === defaultFilters.searchTerm &&
+        instanceSearchTerm === defaultFilters.searchTerm
+      }
+      onClick={() => {
+        setType(defaultFilters.type)
+        setActivityType(defaultFilters.activityType)
+        setElementType(defaultFilters.elementType)
+        setActivitySearch('')
+        setInstanceSearch('')
+      }}
+    >
+      <FontAwesomeIcon icon={faX} />
+      <div>{t('manage.analytics.resetSelectors')}</div>
+    </Button>
+  )
+
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
-      <div className="flex flex-row items-center justify-between">
-        <div className="mb-2 flex flex-row gap-8">
-          <H2>{t('manage.analytics.negativeFeedbackOverview')}</H2>
-          <ActivitiesElementsSwitch type={type} setType={setType} />
-        </div>
-        <Button
-          className={{
-            root: 'py-0.25 flex h-8 flex-row items-center gap-2 px-2',
-          }}
-          disabled={
-            type === defaultFilters.type &&
-            activityType === defaultFilters.activityType &&
-            elementType === defaultFilters.elementType &&
-            activitySearchTerm === defaultFilters.searchTerm &&
-            instanceSearchTerm === defaultFilters.searchTerm
-          }
-          onClick={() => {
-            setType(defaultFilters.type)
-            setActivityType(defaultFilters.activityType)
-            setElementType(defaultFilters.elementType)
-            setActivitySearch('')
-            setInstanceSearch('')
-          }}
-        >
-          <FontAwesomeIcon icon={faX} />
-          <div>{t('manage.analytics.resetSelectors')}</div>
-        </Button>
+      <div className="flex w-full flex-row justify-between gap-8">
+        <H2>{t('manage.analytics.feedbackOverviewActivityInstances')}</H2>
+        <ResetButton />
       </div>
       {type === 'activity' ? (
         <div className="flex flex-row items-center gap-8">
+          <ActivitiesElementsSwitch type={type} setType={setType} />
           <ActivityTypeFilter
             activityType={activityType}
             setActivityType={setActivityType}
@@ -116,6 +118,7 @@ function ActivityInstanceFeedbacksPlot({
         </div>
       ) : (
         <div className="flex flex-row items-center gap-8">
+          <ActivitiesElementsSwitch type={type} setType={setType} />
           <ElementTypeFilter
             elementType={elementType}
             setElementType={setElementType}
@@ -145,9 +148,8 @@ function ActivityInstanceFeedbacksPlot({
             wrapperStyle={{ top: 0, right: 0 }}
           />
           <div className="flex flex-col pt-6">
-            {entries.length > 0 && (
-              <div className="max-h-[13rem] overflow-y-scroll">
-                {entries.map((feedback) => (
+            {entries.length > 0
+              ? entries.map((feedback) => (
                   <ElementFeedbackBarChart
                     key={`upvotes-${feedback.id}`}
                     title={
@@ -160,9 +162,8 @@ function ActivityInstanceFeedbacksPlot({
                     feedback={feedback}
                     colors={chartColors}
                   />
-                ))}
-              </div>
-            )}
+                ))
+              : null}
           </div>
         </div>
       ) : (

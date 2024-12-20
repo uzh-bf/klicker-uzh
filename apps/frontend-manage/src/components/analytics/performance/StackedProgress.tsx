@@ -3,16 +3,19 @@ import { useTranslations } from 'next-intl'
 import {
   Bar,
   BarChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
+import { twMerge } from 'tailwind-merge'
 
 function StackedProgress({
   progress,
   participants,
   colors,
+  showScale = false,
 }: {
   progress: ActivityProgress
   participants: number
@@ -21,6 +24,7 @@ function StackedProgress({
     completed: string
     repeated: string
   }
+  showScale?: boolean
 }) {
   const t = useTranslations()
   const repeatedSet =
@@ -42,19 +46,27 @@ function StackedProgress({
   ]
 
   return (
-    <div className="flex h-8 items-center gap-4">
-      <div className="w-48 overflow-hidden overflow-ellipsis whitespace-nowrap">
+    <div
+      className={twMerge('flex h-8 items-center gap-4', showScale && 'h-16')}
+    >
+      <div
+        className={twMerge(
+          'w-48 overflow-hidden overflow-ellipsis whitespace-nowrap',
+          showScale && 'mb-8'
+        )}
+      >
         {progress.activityName}
       </div>
       <div className="flex-1">
-        <ResponsiveContainer width="100%" height={35}>
+        <ResponsiveContainer width="100%" height={showScale ? 65 : 35}>
           <BarChart data={data} layout="vertical">
-            <XAxis type="number" domain={[0, 100]} hide />
+            <XAxis
+              type="number"
+              domain={[0, 100]}
+              hide={!showScale}
+              tickCount={5}
+            />
             <YAxis type="category" hide />
-            <Bar dataKey="repeated" stackId="a" fill={colors.repeated} />
-            <Bar dataKey="completed" stackId="a" fill={colors.completed} />
-            <Bar dataKey="started" stackId="a" fill={colors.started} />
-            <Bar dataKey="full" stackId="a" fill="#f0f0f0" />
             <Tooltip
               wrapperStyle={{ zIndex: 20 }}
               content={({ payload }) => {
@@ -77,6 +89,13 @@ function StackedProgress({
                 )
               }}
             />
+            <Bar dataKey="repeated" stackId="a" fill={colors.repeated} />
+            <Bar dataKey="completed" stackId="a" fill={colors.completed} />
+            <Bar dataKey="started" stackId="a" fill={colors.started} />
+            <Bar dataKey="full" stackId="a" fill="#f0f0f0" />
+            <ReferenceLine x={25} stroke="#666" strokeDasharray="3 3" />
+            <ReferenceLine x={50} stroke="#666" strokeDasharray="3 3" />
+            <ReferenceLine x={75} stroke="#666" strokeDasharray="3 3" />
           </BarChart>
         </ResponsiveContainer>
       </div>
