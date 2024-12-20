@@ -67,15 +67,7 @@ function StackedProgress({
               tickCount={5}
             />
             <YAxis type="category" hide />
-            <Bar dataKey="repeated" stackId="a" fill={colors.repeated} />
-            <Bar dataKey="completed" stackId="a" fill={colors.completed} />
-            <Bar dataKey="started" stackId="a" fill={colors.started} />
-            <Bar dataKey="full" stackId="a" fill="#f0f0f0" />
-            <ReferenceLine x={25} stroke="#666" strokeDasharray="3 3" />
-            <ReferenceLine x={50} stroke="#666" strokeDasharray="3 3" />
-            <ReferenceLine x={75} stroke="#666" strokeDasharray="3 3" />
             <Tooltip
-              cursor={{ fill: '#ffffff00' }}
               wrapperStyle={{ zIndex: 20 }}
               content={({ payload }) => {
                 if (!payload?.length) return null
@@ -97,6 +89,13 @@ function StackedProgress({
                 )
               }}
             />
+            <Bar dataKey="repeated" stackId="a" fill={colors.repeated} />
+            <Bar dataKey="completed" stackId="a" fill={colors.completed} />
+            <Bar dataKey="started" stackId="a" fill={colors.started} />
+            <Bar dataKey="full" stackId="a" fill="#f0f0f0" />
+            <ReferenceLine x={25} stroke="#666" strokeDasharray="3 3" />
+            <ReferenceLine x={50} stroke="#666" strokeDasharray="3 3" />
+            <ReferenceLine x={75} stroke="#666" strokeDasharray="3 3" />
           </BarChart>
         </ResponsiveContainer>
       </div>
