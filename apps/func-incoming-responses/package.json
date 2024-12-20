@@ -15,14 +15,14 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^20.16.1",
+    "@types/node": "^20.17.10",
     "@uzh-bf/design-system": "3.0.0-alpha.35",
-    "azure-functions-core-tools": "~4.0.6280",
+    "azure-functions-core-tools": "~4.0.6610",
     "cross-env": "~7.0.3",
-    "dotenv": "~16.4.5",
+    "dotenv": "~16.4.7",
     "eslint": "~8.45.0",
     "npm-run-all": "~4.1.5",
-    "tsup": "~8.3.0",
+    "tsup": "~8.3.5",
     "typescript": "~5.6.3"
   },
   "scripts": {

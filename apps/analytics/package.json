@@ -3,7 +3,7 @@
   "version": "3.3.0-alpha.8",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "nodemon": "~3.1.7"
+    "nodemon": "~3.1.9"
   },
   "scripts": {
     "dev": "doppler run --config dev -- nodemon --exec 'poetry run poe main' --watch src,prisma --ext py,prisma",
