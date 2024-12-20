@@ -404,4 +404,23 @@ export type ParticipantPerformance = {
   totalErrorRate: number
   totalPerformance: PerformanceLevel
 }
+
+export type InstanceFeedback = {
+  id: number
+  activityType: ActivityType
+  instanceName: string
+  instanceType: ElementType
+  upvoteRate: number
+  downvoteRate: number
+  feedbackCount: number
+}
+
+export type ActivityFeedback = {
+  id: string
+  activityType: ActivityType
+  activityName: string
+  upvoteRate: number
+  downvoteRate: number
+  feedbackCount: number
+}
 // #endregion

@@ -1874,6 +1874,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       firstAttempt: 'First Attempt',
       lastAttempt: 'Last Attempt',
       performanceLevel: 'Performance Level',
+      negativeFeedbackOverview: 'Negative Feedback Overview',
+      upvotes: 'Upvotes',
+      downvotes: 'Downvotes',
     },
   },
   control: {

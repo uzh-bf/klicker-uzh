@@ -4,13 +4,14 @@ import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import AnalyticsErrorView from '~/components/analytics/AnalyticsErrorView'
-import AnalyticsLoadingView from '~/components/analytics/AnalyticsLoadingView'
-import ActivityProgressPlot from '~/components/analytics/performance/ActivityProgressPlot'
-import PerformanceAnalyticsNavigation from '~/components/analytics/performance/PerformanceAnalyticsNavigation'
-import PerformanceRates from '~/components/analytics/performance/PerformanceRates'
-import TotalStudentPerformancePlot from '~/components/analytics/performance/TotalStudentPerformancePlot'
-import Layout from '~/components/Layout'
+import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
+import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
+import ActivityInstanceFeedbacksPlot from '../../../components/analytics/performance/ActivityInstanceFeedbacksPlot'
+import ActivityProgressPlot from '../../../components/analytics/performance/ActivityProgressPlot'
+import PerformanceAnalyticsNavigation from '../../../components/analytics/performance/PerformanceAnalyticsNavigation'
+import PerformanceRates from '../../../components/analytics/performance/PerformanceRates'
+import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
+import Layout from '../../../components/Layout'
 
 function PerformanceDashboard() {
   const t = useTranslations()
@@ -71,6 +72,10 @@ function PerformanceDashboard() {
           <TotalStudentPerformancePlot
             courseName={course.name}
             participantPerformance={course.participantPerformances}
+          />
+          <ActivityInstanceFeedbacksPlot
+            instanceFeedbacks={course.instanceFeedbacks}
+            activityFeedbacks={course.activityFeedbacks}
           />
         </div>
       </div>

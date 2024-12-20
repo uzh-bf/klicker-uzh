@@ -1,30 +1,5 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
-
-const BarLabel = ({
-  value,
-  x,
-  width,
-  y,
-  height,
-}: {
-  value: number
-  x: number
-  y: number
-  width: number
-  height: number
-}) => (
-  <text
-    x={x + width / 2}
-    y={y + height / 2 + 1}
-    fill="white"
-    fontSize={14}
-    textAnchor="middle"
-    dominantBaseline="middle"
-    className="font-bold"
-  >
-    {value} %
-  </text>
-)
+import StackedBarChartLabel from '../StackedBarChartLabel'
 
 interface PerformanceRatesBarChartProps {
   title: string
@@ -61,7 +36,7 @@ function PerformanceRatesBarChart({
                 stackId="1"
                 fill={colors.incorrect}
                 label={(props) => (
-                  <BarLabel {...props} value={roundedErrorRate} />
+                  <StackedBarChartLabel {...props} value={roundedErrorRate} />
                 )}
               />
             )}
@@ -71,7 +46,7 @@ function PerformanceRatesBarChart({
                 stackId="1"
                 fill={colors.partial}
                 label={(props) => (
-                  <BarLabel {...props} value={roundedPartialRate} />
+                  <StackedBarChartLabel {...props} value={roundedPartialRate} />
                 )}
               />
             )}
@@ -81,7 +56,7 @@ function PerformanceRatesBarChart({
                 stackId="1"
                 fill={colors.correct}
                 label={(props) => (
-                  <BarLabel {...props} value={roundedCorrectRate} />
+                  <StackedBarChartLabel {...props} value={roundedCorrectRate} />
                 )}
               />
             )}

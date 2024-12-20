@@ -1,6 +1,20 @@
 import {
+  ActivityProgress,
+  Course,
+  ElementFeedback,
+  ElementInstance,
+  ElementStack,
+  ElementType,
+  MicroLearning,
+  PracticeQuiz,
+  ActivityPerformance as PrismaActivityPerformance,
+  InstancePerformance as PrismaInstancePerformance,
+} from '@klicker-uzh/prisma'
+import {
+  ActivityFeedback,
   ActivityPerformance,
   ActivityType,
+  InstanceFeedback,
   InstancePerformance,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
@@ -99,64 +113,211 @@ export async function getCourseWeeklyActivity(
   return { totalParticipants: course.participations.length, weeklyActivity }
 }
 
-export async function getCoursePerformanceAnalytics(
-  { courseId }: { courseId: string },
-  ctx: ContextWithUser
-) {
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, ownerId: ctx.user.sub },
-    include: {
-      _count: {
-        select: { participations: true },
-      },
-      practiceQuizzes: {
-        include: {
-          progress: true,
-          performance: true,
-          stacks: {
-            include: {
-              elements: {
-                include: {
-                  instancePerformance: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      },
-      microLearnings: {
-        include: {
-          progress: true,
-          performance: true,
-          stacks: {
-            include: {
-              elements: {
-                include: {
-                  instancePerformance: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: { scheduledStartAt: 'desc' },
-      },
-      participantPerformances: true,
-    },
-  })
+// this function compute the upvote and downvote rates based on the element responses linked to instances in the course
+function aggregateInstanceFeedbacks({
+  stacks,
+  activityType,
+}: {
+  stacks: (ElementStack & {
+    elements: (ElementInstance & { feedbacks: ElementFeedback[] })[]
+  })[]
+  activityType: ActivityType
+}): InstanceFeedback[] {
+  return stacks
+    .flatMap((stack) =>
+      stack.elements.flatMap((element) =>
+        element.feedbacks.reduce<{
+          id: number
+          instanceName: string
+          instanceType: ElementType
+          upvotes: number
+          downvotes: number
+          totalVotes: number
+        }>(
+          (acc, feedback) => {
+            if (feedback.upvote) {
+              acc.upvotes++
+              acc.totalVotes++
+            }
+            if (feedback.downvote) {
+              acc.downvotes++
+              acc.totalVotes++
+            }
 
-  if (
-    !course ||
-    (course.practiceQuizzes.length === 0 && course.microLearnings.length === 0)
-  ) {
-    return null
+            return acc
+          },
+          {
+            id: element.id,
+            instanceName: element.elementData.name,
+            instanceType: element.elementData.type,
+            upvotes: 0,
+            downvotes: 0,
+            totalVotes: 0,
+          }
+        )
+      )
+    )
+    .flatMap((instanceFeedback) => {
+      // entries without votes are not returned / illustrated
+      if (instanceFeedback.totalVotes === 0) {
+        return []
+      }
+
+      return {
+        ...instanceFeedback,
+        activityType,
+        upvoteRate: instanceFeedback.upvotes / instanceFeedback.totalVotes,
+        downvoteRate: instanceFeedback.downvotes / instanceFeedback.totalVotes,
+        feedbackCount: instanceFeedback.totalVotes,
+      }
+    })
+}
+
+// based on the instance feedbacks, an unweighted average of the entire activity can be computed
+function aggregateActivityFeedbacks({
+  instanceFeedbacks,
+  activityType,
+  activityId,
+  activityName,
+}: {
+  instanceFeedbacks: InstanceFeedback[]
+  activityType: ActivityType
+  activityId: string
+  activityName: string
+}) {
+  // if no instance feedbacks were provided, do not return statistics for this activity
+  if (instanceFeedbacks.length === 0) {
+    return undefined
   }
 
-  // map the metrics for all activities in the course to the desired performance and progress values
-  const { activityProgresses, activityPerformances, instancePerformances } = [
-    ...course.practiceQuizzes,
-    ...course.microLearnings,
-  ].reduce<{
+  return instanceFeedbacks.reduce<ActivityFeedback>(
+    (acc, instanceFeedback) => {
+      // if no votes were submitted for the instance, skip it
+      if (
+        instanceFeedback.upvoteRate === 0 &&
+        instanceFeedback.downvoteRate === 0
+      ) {
+        return acc
+      }
+
+      // combine the upvotes and downvote rates over all instances
+      acc.upvoteRate =
+        (acc.upvoteRate * acc.feedbackCount + instanceFeedback.upvoteRate) /
+        (acc.feedbackCount + 1)
+      acc.downvoteRate =
+        (acc.downvoteRate * acc.feedbackCount + instanceFeedback.downvoteRate) /
+        (acc.feedbackCount + 1)
+      acc.feedbackCount++
+
+      return acc
+    },
+    {
+      id: activityId,
+      activityType,
+      activityName,
+      upvoteRate: 0,
+      downvoteRate: 0,
+      feedbackCount: 0,
+    }
+  )
+}
+
+function computeActivityInstanceFeedbacks({
+  course,
+}: {
+  course: Course & {
+    practiceQuizzes: (PracticeQuiz & {
+      stacks: (ElementStack & {
+        elements: (ElementInstance & { feedbacks: ElementFeedback[] })[]
+      })[]
+    })[]
+    microLearnings: (MicroLearning & {
+      stacks: (ElementStack & {
+        elements: (ElementInstance & { feedbacks: ElementFeedback[] })[]
+      })[]
+    })[]
+  }
+}) {
+  // compute instance and activity feedbacks aggregated over instance or activity
+  // this computation only considers instances where a non-zero number of votes were submitted
+  const instanceFeedbacks: InstanceFeedback[] = []
+  const activityFeedbacks: ActivityFeedback[] = []
+  course.practiceQuizzes.forEach((quiz) => {
+    // aggregate instance element feedbacks
+    const quizInstanceFeedbacks = aggregateInstanceFeedbacks({
+      stacks: quiz.stacks,
+      activityType: ActivityType.PRACTICE_QUIZ,
+    })
+    instanceFeedbacks.push(...quizInstanceFeedbacks)
+
+    // aggregate activity vote rates
+    const activityFeedback = aggregateActivityFeedbacks({
+      instanceFeedbacks: quizInstanceFeedbacks,
+      activityType: ActivityType.PRACTICE_QUIZ,
+      activityId: quiz.id,
+      activityName: quiz.name,
+    })
+
+    if (activityFeedback) {
+      activityFeedbacks.push(activityFeedback)
+    }
+  })
+  course.microLearnings.forEach((micro) => {
+    // aggregate instance element feedbacks
+    const microInstanceFeedbacks = aggregateInstanceFeedbacks({
+      stacks: micro.stacks,
+      activityType: ActivityType.MICRO_LEARNING,
+    })
+    instanceFeedbacks.push(...microInstanceFeedbacks)
+
+    // aggregate activity vote rates
+    const activityFeedback = aggregateActivityFeedbacks({
+      instanceFeedbacks: microInstanceFeedbacks,
+      activityType: ActivityType.MICRO_LEARNING,
+      activityId: micro.id,
+      activityName: micro.name,
+    })
+
+    if (activityFeedback) {
+      activityFeedbacks.push(activityFeedback)
+    }
+  })
+
+  // sort instance feedbacks and activity feedbacks by decreasing feedbackCount
+  instanceFeedbacks.sort((a, b) => b.feedbackCount - a.feedbackCount)
+  activityFeedbacks.sort((a, b) => b.feedbackCount - a.feedbackCount)
+
+  return {
+    instanceFeedbacks,
+    activityFeedbacks,
+  }
+}
+
+function computeActivityInstancePerformance({
+  course,
+}: {
+  course: Course & {
+    practiceQuizzes: (PracticeQuiz & {
+      stacks: (ElementStack & {
+        elements: (ElementInstance & {
+          instancePerformance: PrismaInstancePerformance
+        })[]
+      })[]
+      progress: ActivityProgress | null
+      performance: PrismaActivityPerformance | null
+    })[]
+    microLearnings: (MicroLearning & {
+      stacks: (ElementStack & {
+        elements: (ElementInstance & {
+          instancePerformance: PrismaInstancePerformance
+        })[]
+      })[]
+      progress: ActivityProgress | null
+      performance: PrismaActivityPerformance | null
+    })[]
+  }
+}) {
+  return [...course.practiceQuizzes, ...course.microLearnings].reduce<{
     activityProgresses: {
       activityName: string
       activityType: ActivityType
@@ -260,6 +421,71 @@ export async function getCoursePerformanceAnalytics(
       instancePerformances: [],
     }
   )
+}
+
+export async function getCoursePerformanceAnalytics(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, ownerId: ctx.user.sub },
+    include: {
+      _count: {
+        select: { participations: true },
+      },
+      practiceQuizzes: {
+        include: {
+          progress: true,
+          performance: true,
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  instancePerformance: true,
+                  feedbacks: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+      microLearnings: {
+        include: {
+          progress: true,
+          performance: true,
+          stacks: {
+            include: {
+              elements: {
+                include: {
+                  instancePerformance: true,
+                  feedbacks: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { scheduledStartAt: 'desc' },
+      },
+      participantPerformances: true,
+    },
+  })
+
+  if (
+    !course ||
+    (course.practiceQuizzes.length === 0 && course.microLearnings.length === 0)
+  ) {
+    return null
+  }
+
+  // map the metrics for all activities in the course to the desired performance and progress values
+  const { activityProgresses, activityPerformances, instancePerformances } =
+    computeActivityInstancePerformance({
+      course,
+    })
+
+  const { instanceFeedbacks, activityFeedbacks } =
+    computeActivityInstanceFeedbacks({ course })
 
   return {
     name: course.name,
@@ -268,5 +494,7 @@ export async function getCoursePerformanceAnalytics(
     activityPerformances,
     instancePerformances,
     participantPerformances: course.participantPerformances,
+    instanceFeedbacks,
+    activityFeedbacks,
   }
 }

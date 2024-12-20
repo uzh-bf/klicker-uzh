@@ -1,6 +1,6 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useTranslations } from 'next-intl'
-import Layout from '~/components/Layout'
+import Layout from '../Layout'
 
 function AnalyticsLoadingView({
   title,

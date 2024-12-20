@@ -1,7 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityFeedback as ActivityFeedbackType,
   ActivityPerformance as ActivityPerformanceType,
   ActivityType as ActivityTypeEnum,
+  InstanceFeedback as InstanceFeedbackType,
   InstancePerformance as InstancePerformanceType,
   ParticipantPerformance as ParticipantPerformanceType,
   PerformanceRates as PerformanceRatesType,
@@ -231,6 +233,33 @@ export const ParticipantPerformance = builder.objectType(
   }
 )
 
+export const InstanceFeedbackRef =
+  builder.objectRef<InstanceFeedbackType>('InstanceFeedback')
+export const InstanceFeedback = builder.objectType(InstanceFeedbackRef, {
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    activityType: t.expose('activityType', { type: ActivityType }),
+    instanceName: t.exposeString('instanceName'),
+    instanceType: t.expose('instanceType', { type: ElementType }),
+    upvoteRate: t.exposeFloat('upvoteRate'),
+    downvoteRate: t.exposeFloat('downvoteRate'),
+    feedbackCount: t.exposeInt('feedbackCount'),
+  }),
+})
+
+export const ActivityFeedbackRef =
+  builder.objectRef<ActivityFeedbackType>('ActivityFeedback')
+export const ActivityFeedback = builder.objectType(ActivityFeedbackRef, {
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    activityType: t.expose('activityType', { type: ActivityType }),
+    activityName: t.exposeString('activityName'),
+    upvoteRate: t.exposeFloat('upvoteRate'),
+    downvoteRate: t.exposeFloat('downvoteRate'),
+    feedbackCount: t.exposeInt('feedbackCount'),
+  }),
+})
+
 interface ICoursePerformanceAnalytics {
   name: string
   totalParticipants: number
@@ -238,6 +267,8 @@ interface ICoursePerformanceAnalytics {
   activityPerformances: ActivityPerformanceType[]
   instancePerformances: InstancePerformanceType[]
   participantPerformances: ParticipantPerformanceType[]
+  instanceFeedbacks: InstanceFeedbackType[]
+  activityFeedbacks: ActivityFeedbackType[]
 }
 export const CoursePerformanceAnalyticsRef =
   builder.objectRef<ICoursePerformanceAnalytics>('CoursePerformanceAnalytics')
@@ -258,6 +289,12 @@ export const CoursePerformanceAnalytics = builder.objectType(
       }),
       participantPerformances: t.expose('participantPerformances', {
         type: [ParticipantPerformance],
+      }),
+      instanceFeedbacks: t.expose('instanceFeedbacks', {
+        type: [InstanceFeedback],
+      }),
+      activityFeedbacks: t.expose('activityFeedbacks', {
+        type: [ActivityFeedback],
       }),
     }),
   }

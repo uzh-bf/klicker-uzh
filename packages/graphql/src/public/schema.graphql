@@ -24,6 +24,15 @@ type ActivityEvaluation {
   results: [StackEvaluation!]!
 }
 
+type ActivityFeedback {
+  activityName: String!
+  activityType: ActivityType!
+  downvoteRate: Float!
+  feedbackCount: Int!
+  id: String!
+  upvoteRate: Float!
+}
+
 enum ActivityLevel {
   HIGH
   LOW
@@ -312,8 +321,10 @@ type CourseActivityAnalytics {
 }
 
 type CoursePerformanceAnalytics {
+  activityFeedbacks: [ActivityFeedback!]!
   activityPerformances: [ActivityPerformance!]!
   activityProgresses: [ActivityProgress!]!
+  instanceFeedbacks: [InstanceFeedback!]!
   instancePerformances: [InstancePerformance!]!
   name: String!
   participantPerformances: [ParticipantPerformance!]!
@@ -792,6 +803,16 @@ type GroupMessage {
 }
 
 union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
+
+type InstanceFeedback {
+  activityType: ActivityType!
+  downvoteRate: Float!
+  feedbackCount: Int!
+  id: Int!
+  instanceName: String!
+  instanceType: ElementType!
+  upvoteRate: Float!
+}
 
 type InstancePerformance {
   elementName: String!

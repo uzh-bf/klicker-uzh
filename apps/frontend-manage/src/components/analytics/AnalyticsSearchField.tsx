@@ -1,17 +1,17 @@
 import { TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface PerformanceSearchFieldProps {
+interface AnalyticsSearchFieldProps {
   type: 'activity' | 'instance'
   value: string
   onChange: (value: string) => void
 }
 
-function PerformanceSearchField({
+function AnalyticsSearchField({
   type,
   value,
   onChange,
-}: PerformanceSearchFieldProps) {
+}: AnalyticsSearchFieldProps) {
   const t = useTranslations()
 
   return (
@@ -31,4 +31,4 @@ function PerformanceSearchField({
   )
 }
 
-export default PerformanceSearchField
+export default AnalyticsSearchField
