@@ -72,8 +72,6 @@ function ActivityInstanceFeedbacksPlot({
     instanceSearch,
   })
 
-  // TODO: implement UI for searching and filtering
-
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
       <div className="flex flex-row items-center justify-between">
