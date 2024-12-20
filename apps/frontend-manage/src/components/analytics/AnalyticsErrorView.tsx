@@ -1,7 +1,7 @@
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
-import Layout from '~/components/Layout'
+import Layout from '../Layout'
 
 function AnalyticsErrorView({
   title,

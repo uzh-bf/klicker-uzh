@@ -25,10 +25,10 @@ type ActivityEvaluation {
 }
 
 type ActivityFeedback {
-  activityId: String!
   activityName: String!
   activityType: ActivityType!
   downvoteRate: Float!
+  id: String!
   upvoteRate: Float!
 }
 
@@ -809,11 +809,11 @@ type GroupMessage {
 union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
 
 type InstanceFeedback {
-  activityId: String!
   activityType: ActivityType!
   downvoteRate: Float!
-  instanceId: Int!
+  id: Int!
   instanceName: String!
+  instanceType: ElementType!
   upvoteRate: Float!
 }
 

@@ -4,16 +4,16 @@ query GetCourseQuizAnalytics($courseId: String!) {
     totalParticipants
     instanceFeedbacks {
       __typename
-      activityId
+      id
       activityType
-      instanceId
       instanceName
+      instanceType
       upvoteRate
       downvoteRate
     }
     activityFeedbacks {
       __typename
-      activityId
+      id
       activityType
       activityName
       upvoteRate

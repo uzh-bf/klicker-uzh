@@ -406,17 +406,17 @@ export type ParticipantPerformance = {
 }
 
 export type InstanceFeedback = {
+  id: number
   activityType: ActivityType
-  activityId: string
-  instanceId: number
   instanceName: string
+  instanceType: ElementType
   upvoteRate: number
   downvoteRate: number
 }
 
 export type ActivityFeedback = {
+  id: string
   activityType: ActivityType
-  activityId: string
   activityName: string
   upvoteRate: number
   downvoteRate: number

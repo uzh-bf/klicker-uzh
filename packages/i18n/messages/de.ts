@@ -1888,6 +1888,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       firstAttempt: 'Erster Lösungsversuch',
       lastAttempt: 'Letzter Lösungsversuch',
       performanceLevel: 'Leistungslevel',
+      negativeFeedbackOverview: 'Übersicht Negative Bewertungen',
+      upvotes: 'Positive Bewertungen',
+      downvotes: 'Negative Bewertungen',
     },
   },
   control: {

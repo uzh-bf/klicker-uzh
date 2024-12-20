@@ -2,6 +2,7 @@ import {
   ElementFeedback,
   ElementInstance,
   ElementStack,
+  ElementType,
 } from '@klicker-uzh/prisma'
 import {
   ActivityFeedback,
@@ -282,20 +283,19 @@ export async function getCoursePerformanceAnalytics(
 function aggregateInstanceFeedbacks({
   stacks,
   activityType,
-  activityId,
 }: {
   stacks: (ElementStack & {
     elements: (ElementInstance & { feedbacks: ElementFeedback[] })[]
   })[]
   activityType: ActivityType
-  activityId: string
 }): InstanceFeedback[] {
   return stacks
     .flatMap((stack) =>
       stack.elements.flatMap((element) =>
         element.feedbacks.reduce<{
-          instanceId: number
+          id: number
           instanceName: string
+          instanceType: ElementType
           upvotes: number
           downvotes: number
           totalVotes: number
@@ -313,8 +313,9 @@ function aggregateInstanceFeedbacks({
             return acc
           },
           {
-            instanceId: element.id,
+            id: element.id,
             instanceName: element.elementData.name,
+            instanceType: element.elementData.type,
             upvotes: 0,
             downvotes: 0,
             totalVotes: 0,
@@ -322,20 +323,19 @@ function aggregateInstanceFeedbacks({
         )
       )
     )
-    .map((instanceFeedback) => ({
-      activityType,
-      activityId,
-      instanceId: instanceFeedback.instanceId,
-      instanceName: instanceFeedback.instanceName,
-      upvoteRate:
-        instanceFeedback.upvotes === 0
-          ? instanceFeedback.upvotes
-          : instanceFeedback.upvotes / instanceFeedback.totalVotes,
-      downvoteRate:
-        instanceFeedback.downvotes === 0
-          ? instanceFeedback.downvotes
-          : instanceFeedback.downvotes / instanceFeedback.totalVotes,
-    }))
+    .flatMap((instanceFeedback) => {
+      // entries without votes are not returned / illustrated
+      if (instanceFeedback.totalVotes === 0) {
+        return []
+      }
+
+      return {
+        ...instanceFeedback,
+        activityType,
+        upvoteRate: instanceFeedback.upvotes / instanceFeedback.totalVotes,
+        downvoteRate: instanceFeedback.downvotes / instanceFeedback.totalVotes,
+      }
+    })
 }
 
 // based on the instance feedbacks, an unweighted average of the entire activity can be computed
@@ -350,6 +350,11 @@ function aggregateActivityFeedbacks({
   activityId: string
   activityName: string
 }) {
+  // if no instance feedbacks were provided, do not return statistics for this activity
+  if (instanceFeedbacks.length === 0) {
+    return undefined
+  }
+
   return instanceFeedbacks.reduce<ActivityFeedback & { count: number }>(
     (acc, instanceFeedback) => {
       // if no votes were submitted for the instance, skip it
@@ -372,8 +377,8 @@ function aggregateActivityFeedbacks({
       return acc
     },
     {
+      id: activityId,
       activityType,
-      activityId,
       activityName,
       upvoteRate: 0,
       downvoteRate: 0,
@@ -424,6 +429,7 @@ export async function getCourseQuizAnalytics(
   }
 
   // compute instance and activity feedbacks aggregated over instance or activity
+  // this computation only considers instances where a non-zero number of votes were submitted
   const instanceFeedbacks: InstanceFeedback[] = []
   const activityFeedbacks: ActivityFeedback[] = []
   course.practiceQuizzes.forEach((quiz) => {
@@ -431,8 +437,8 @@ export async function getCourseQuizAnalytics(
     const quizInstanceFeedbacks = aggregateInstanceFeedbacks({
       stacks: quiz.stacks,
       activityType: ActivityType.PRACTICE_QUIZ,
-      activityId: quiz.id,
     })
+    instanceFeedbacks.push(...quizInstanceFeedbacks)
 
     // aggregate activity vote rates
     const activityFeedback = aggregateActivityFeedbacks({
@@ -442,16 +448,17 @@ export async function getCourseQuizAnalytics(
       activityName: quiz.name,
     })
 
-    instanceFeedbacks.push(...quizInstanceFeedbacks)
-    activityFeedbacks.push(activityFeedback)
+    if (activityFeedback) {
+      activityFeedbacks.push(activityFeedback)
+    }
   })
   course.microLearnings.forEach((micro) => {
     // aggregate instance element feedbacks
     const microInstanceFeedbacks = aggregateInstanceFeedbacks({
       stacks: micro.stacks,
       activityType: ActivityType.MICRO_LEARNING,
-      activityId: micro.id,
     })
+    instanceFeedbacks.push(...microInstanceFeedbacks)
 
     // aggregate activity vote rates
     const activityFeedback = aggregateActivityFeedbacks({
@@ -461,8 +468,9 @@ export async function getCourseQuizAnalytics(
       activityName: micro.name,
     })
 
-    instanceFeedbacks.push(...microInstanceFeedbacks)
-    activityFeedbacks.push(activityFeedback)
+    if (activityFeedback) {
+      activityFeedbacks.push(activityFeedback)
+    }
   })
 
   return {
