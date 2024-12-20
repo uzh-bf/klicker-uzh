@@ -28,6 +28,7 @@ type ActivityFeedback {
   activityName: String!
   activityType: ActivityType!
   downvoteRate: Float!
+  feedbackCount: Int!
   id: String!
   upvoteRate: Float!
 }
@@ -811,6 +812,7 @@ union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation
 type InstanceFeedback {
   activityType: ActivityType!
   downvoteRate: Float!
+  feedbackCount: Int!
   id: Int!
   instanceName: String!
   instanceType: ElementType!

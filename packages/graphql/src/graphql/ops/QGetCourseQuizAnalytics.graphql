@@ -10,6 +10,7 @@ query GetCourseQuizAnalytics($courseId: String!) {
       instanceType
       upvoteRate
       downvoteRate
+      feedbackCount
     }
     activityFeedbacks {
       __typename
@@ -18,6 +19,7 @@ query GetCourseQuizAnalytics($courseId: String!) {
       activityName
       upvoteRate
       downvoteRate
+      feedbackCount
     }
   }
 }

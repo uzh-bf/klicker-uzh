@@ -334,6 +334,7 @@ function aggregateInstanceFeedbacks({
         activityType,
         upvoteRate: instanceFeedback.upvotes / instanceFeedback.totalVotes,
         downvoteRate: instanceFeedback.downvotes / instanceFeedback.totalVotes,
+        feedbackCount: instanceFeedback.totalVotes,
       }
     })
 }
@@ -355,7 +356,7 @@ function aggregateActivityFeedbacks({
     return undefined
   }
 
-  return instanceFeedbacks.reduce<ActivityFeedback & { count: number }>(
+  return instanceFeedbacks.reduce<ActivityFeedback>(
     (acc, instanceFeedback) => {
       // if no votes were submitted for the instance, skip it
       if (
@@ -367,12 +368,12 @@ function aggregateActivityFeedbacks({
 
       // combine the upvotes and downvote rates over all instances
       acc.upvoteRate =
-        (acc.upvoteRate * acc.count + instanceFeedback.upvoteRate) /
-        (acc.count + 1)
+        (acc.upvoteRate * acc.feedbackCount + instanceFeedback.upvoteRate) /
+        (acc.feedbackCount + 1)
       acc.downvoteRate =
-        (acc.downvoteRate * acc.count + instanceFeedback.downvoteRate) /
-        (acc.count + 1)
-      acc.count++
+        (acc.downvoteRate * acc.feedbackCount + instanceFeedback.downvoteRate) /
+        (acc.feedbackCount + 1)
+      acc.feedbackCount++
 
       return acc
     },
@@ -382,7 +383,7 @@ function aggregateActivityFeedbacks({
       activityName,
       upvoteRate: 0,
       downvoteRate: 0,
-      count: 0,
+      feedbackCount: 0,
     }
   )
 }
@@ -474,6 +475,10 @@ export async function getCourseQuizAnalytics(
       activityFeedbacks.push(activityFeedback)
     }
   })
+
+  // sort instance feedbacks and activity feedbacks by decreasing feedbackCount
+  instanceFeedbacks.sort((a, b) => b.feedbackCount - a.feedbackCount)
+  activityFeedbacks.sort((a, b) => b.feedbackCount - a.feedbackCount)
 
   return {
     name: course.name,

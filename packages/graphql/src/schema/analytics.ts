@@ -278,6 +278,7 @@ export const InstanceFeedback = builder.objectType(InstanceFeedbackRef, {
     instanceType: t.expose('instanceType', { type: ElementType }),
     upvoteRate: t.exposeFloat('upvoteRate'),
     downvoteRate: t.exposeFloat('downvoteRate'),
+    feedbackCount: t.exposeInt('feedbackCount'),
   }),
 })
 
@@ -290,6 +291,7 @@ export const ActivityFeedback = builder.objectType(ActivityFeedbackRef, {
     activityName: t.exposeString('activityName'),
     upvoteRate: t.exposeFloat('upvoteRate'),
     downvoteRate: t.exposeFloat('downvoteRate'),
+    feedbackCount: t.exposeInt('feedbackCount'),
   }),
 })
 

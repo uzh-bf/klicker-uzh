@@ -1,9 +1,13 @@
+import {
+  ActivityFeedback,
+  InstanceFeedback,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import StackedBarChartLabel from '../StackedBarChartLabel'
 
 interface ElementFeedbackBarChartProps {
   title: string
-  feedback: { downvoteRate: number; upvoteRate: number }
+  feedback: InstanceFeedback | ActivityFeedback
   colors: {
     downvotes: string
     upvotes: string
@@ -53,6 +57,9 @@ function ElementFeedbackBarChart({
             )}
           </BarChart>
         </ResponsiveContainer>
+      </div>
+      <div className="mr-2.5 text-sm text-gray-500">
+        (N = {feedback.feedbackCount})
       </div>
     </div>
   )

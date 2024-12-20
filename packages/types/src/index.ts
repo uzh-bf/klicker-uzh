@@ -412,6 +412,7 @@ export type InstanceFeedback = {
   instanceType: ElementType
   upvoteRate: number
   downvoteRate: number
+  feedbackCount: number
 }
 
 export type ActivityFeedback = {
@@ -420,5 +421,6 @@ export type ActivityFeedback = {
   activityName: string
   upvoteRate: number
   downvoteRate: number
+  feedbackCount: number
 }
 // #endregion
