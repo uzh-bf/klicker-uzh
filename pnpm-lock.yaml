@@ -1725,9 +1725,6 @@ importers:
 
   packages/prisma:
     dependencies:
-      '@klicker-uzh/types':
-        specifier: workspace:*
-        version: link:../types
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../util
