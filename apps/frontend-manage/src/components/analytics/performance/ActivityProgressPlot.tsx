@@ -25,60 +25,65 @@ function ActivityProgressPlot({
     repeated: '#064e3b',
   }
 
+  const ProgressLegend = () => (
+    <Legend
+      payload={[
+        {
+          value: t('manage.analytics.started'),
+          color: chartColors.started,
+          type: 'rect',
+        },
+        {
+          value: t('manage.analytics.completed'),
+          color: chartColors.completed,
+          type: 'rect',
+        },
+        {
+          value: t('manage.analytics.repeated'),
+          color: chartColors.repeated,
+          type: 'rect',
+        },
+      ]}
+      wrapperStyle={{ bottom: 0, right: 0 }}
+    />
+  )
+
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
-      <div className="relative">
-        <H2>{t('manage.analytics.asynchronousActivityProgress')}</H2>
-        <Legend
-          payload={[
-            {
-              value: t('manage.analytics.started'),
-              color: chartColors.started,
-              type: 'rect',
-            },
-            {
-              value: t('manage.analytics.completed'),
-              color: chartColors.completed,
-              type: 'rect',
-            },
-            {
-              value: t('manage.analytics.repeated'),
-              color: chartColors.repeated,
-              type: 'rect',
-            },
-          ]}
-          wrapperStyle={{ bottom: 0, right: 0 }}
-        />
-      </div>
+      <H2>{t('manage.analytics.asynchronousActivityProgress')}</H2>
       <div className="flex flex-col gap-6">
         {pqProgresses.length > 0 && (
           <div>
-            <H4>{t('shared.generic.practiceQuizzes')}</H4>
-            <div className="max-h-[13rem] overflow-y-scroll">
-              {pqProgresses.map((progress, idx) => (
-                <StackedProgress
-                  key={`activity-progress-pq-${idx}`}
-                  progress={progress}
-                  participants={participants}
-                  colors={chartColors}
-                />
-              ))}
+            <div className="relative flex flex-row">
+              <H4>{t('shared.generic.practiceQuizzes')}</H4>
+              <ProgressLegend />
             </div>
+            {pqProgresses.map((progress, idx) => (
+              <StackedProgress
+                key={`activity-progress-pq-${idx}`}
+                progress={progress}
+                participants={participants}
+                colors={chartColors}
+                showScale={idx === pqProgresses.length - 1}
+              />
+            ))}
           </div>
         )}
         {mlProgresses.length > 0 && (
           <div>
-            <H4>{t('shared.generic.microlearnings')}</H4>
-            <div className="max-h-[13rem] overflow-y-scroll">
-              {mlProgresses.map((progress, idx) => (
-                <StackedProgress
-                  key={`activity-progress-ml-${idx}`}
-                  progress={progress}
-                  participants={participants}
-                  colors={chartColors}
-                />
-              ))}
+            <div className="relative flex flex-row">
+              <H4>{t('shared.generic.microlearnings')}</H4>
+              <ProgressLegend />
             </div>
+            {mlProgresses.map((progress, idx) => (
+              <StackedProgress
+                key={`activity-progress-ml-${idx}`}
+                progress={progress}
+                participants={participants}
+                colors={chartColors}
+                showScale={idx === mlProgresses.length - 1}
+              />
+            ))}
           </div>
         )}
       </div>

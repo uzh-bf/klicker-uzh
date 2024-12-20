@@ -1874,9 +1874,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       firstAttempt: 'First Attempt',
       lastAttempt: 'Last Attempt',
       performanceLevel: 'Performance Level',
-      negativeFeedbackOverview: 'Negative Feedback Overview',
+      feedbackOverviewActivityInstances:
+        'Overview of Activity and Element Ratings',
       upvotes: 'Upvotes',
       downvotes: 'Downvotes',
+      performanceRates: 'Performance Rates',
+      activityProgress: 'Activity Progress',
+      studentPerformance: 'Student Performance',
+      feedbackOverview: 'Feedback Overview',
+      dataSource: 'Data Source',
     },
   },
   control: {
