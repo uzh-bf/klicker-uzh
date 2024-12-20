@@ -17,8 +17,8 @@ function useElementFeedbackSearch({
     activitySearch.addIndex('activityName')
     activitySearch.addDocuments(activityFeedbacks)
 
-    const instanceSearch = new JsSearch.Search('elementName')
-    instanceSearch.addIndex('elementName')
+    const instanceSearch = new JsSearch.Search('instanceName')
+    instanceSearch.addIndex('instanceName')
     instanceSearch.addDocuments(instanceFeedbacks)
 
     return { activitySearch, instanceSearch }
