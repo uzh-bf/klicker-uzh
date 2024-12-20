@@ -3,12 +3,12 @@ import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 
-function PerformanceActivityTypeFilter({
+function ActivityTypeFilter({
   activityType,
   setActivityType,
 }: {
   activityType: ActivityType | 'all'
-  setActivityType: Dispatch<SetStateAction<'all' | ActivityType>>
+  setActivityType: Dispatch<SetStateAction<ActivityType | 'all'>>
 }) {
   const t = useTranslations()
 
@@ -33,4 +33,4 @@ function PerformanceActivityTypeFilter({
   )
 }
 
-export default PerformanceActivityTypeFilter
+export default ActivityTypeFilter

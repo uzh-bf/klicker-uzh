@@ -13,11 +13,11 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Legend } from 'recharts'
 import ActivitiesElementsSwitch from '../ActivitiesElementsSwitch'
-import PerformanceActivityTypeFilter from './PerformanceActivityTypeFilter'
+import ActivityTypeFilter from '../ActivityTypeFilter'
+import AnalyticsSearchField from '../AnalyticsSearchField'
+import ElementTypeFilter from '../ElementTypeFilter'
 import PerformanceAttemptsFilter from './PerformanceAttemptsFilter'
-import PerformanceElementTypeFilter from './PerformanceElementTypeFilter'
 import PerformanceRatesBarChart from './PerformanceRatesBarChart'
-import PerformanceSearchField from './PerformanceSearchField'
 
 interface PerformanceRatesProps {
   activityPerformances: ActivityPerformance[]
@@ -107,11 +107,11 @@ function PerformanceRates({
             attemptsType={attemptsType}
             setAttemptsType={setAttemptsType}
           />
-          <PerformanceActivityTypeFilter
+          <ActivityTypeFilter
             activityType={activityType}
             setActivityType={setActivityType}
           />
-          <PerformanceSearchField
+          <AnalyticsSearchField
             type={type}
             value={activitySearch}
             onChange={(value) => setActivitySearch(value)}
@@ -123,11 +123,11 @@ function PerformanceRates({
             attemptsType={attemptsType}
             setAttemptsType={setAttemptsType}
           />
-          <PerformanceElementTypeFilter
+          <ElementTypeFilter
             elementType={elementType}
             setElementType={setElementType}
           />
-          <PerformanceSearchField
+          <AnalyticsSearchField
             type={type}
             value={instanceSearch}
             onChange={(value) => setInstanceSearch(value)}

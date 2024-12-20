@@ -11,6 +11,9 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { Legend } from 'recharts'
 import ActivitiesElementsSwitch from '../ActivitiesElementsSwitch'
+import ActivityTypeFilter from '../ActivityTypeFilter'
+import AnalyticsSearchField from '../AnalyticsSearchField'
+import ElementTypeFilter from '../ElementTypeFilter'
 import ElementFeedbackBarChart from './ElementFeedbackBarChart'
 import useElementFeedbackFilters from './useElementFeedbackFilters'
 import useElementFeedbackSearch from './useElementFeedbackSearch'
@@ -69,9 +72,6 @@ function ActivityInstanceFeedbacksPlot({
     instanceSearch,
   })
 
-  // TODO: remove dbeugging
-  console.log(entries)
-
   // TODO: implement UI for searching and filtering
 
   return (
@@ -106,37 +106,27 @@ function ActivityInstanceFeedbacksPlot({
       </div>
       {type === 'activity' ? (
         <div className="flex flex-row items-center gap-8">
-          ACTIVITY FILTERS
-          {/* <PerformanceAttemptsFilter
-            attemptsType={attemptsType}
-            setAttemptsType={setAttemptsType}
-          />
-          <PerformanceActivityTypeFilter
+          <ActivityTypeFilter
             activityType={activityType}
             setActivityType={setActivityType}
           />
-          <PerformanceSearchField
+          <AnalyticsSearchField
             type={type}
-            value={activitySearch}
+            value={activitySearchTerm}
             onChange={(value) => setActivitySearch(value)}
-          /> */}
+          />
         </div>
       ) : (
         <div className="flex flex-row items-center gap-8">
-          INSTANCE FILTERS
-          {/* <PerformanceAttemptsFilter
-            attemptsType={attemptsType}
-            setAttemptsType={setAttemptsType}
-          />
-          <PerformanceElementTypeFilter
+          <ElementTypeFilter
             elementType={elementType}
             setElementType={setElementType}
           />
-          <PerformanceSearchField
+          <AnalyticsSearchField
             type={type}
-            value={instanceSearch}
+            value={instanceSearchTerm}
             onChange={(value) => setInstanceSearch(value)}
-          /> */}
+          />
         </div>
       )}
       {entries.length > 0 ? (
