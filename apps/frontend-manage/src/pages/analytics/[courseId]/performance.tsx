@@ -6,11 +6,11 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
+import ActivityInstanceFeedbacksPlot from '../../../components/analytics/performance/ActivityInstanceFeedbacksPlot'
 import ActivityProgressPlot from '../../../components/analytics/performance/ActivityProgressPlot'
 import PerformanceAnalyticsNavigation from '../../../components/analytics/performance/PerformanceAnalyticsNavigation'
 import PerformanceRates from '../../../components/analytics/performance/PerformanceRates'
 import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
-import ActivityInstanceFeedbacksPlot from '../../../components/analytics/quiz/ActivityInstanceFeedbacksPlot'
 import Layout from '../../../components/Layout'
 
 function PerformanceDashboard() {
