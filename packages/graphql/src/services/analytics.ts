@@ -407,6 +407,7 @@ export async function getCourseQuizAnalytics(
             },
           },
         },
+        orderBy: { createdAt: 'desc' },
       },
       microLearnings: {
         include: {
@@ -420,6 +421,7 @@ export async function getCourseQuizAnalytics(
             },
           },
         },
+        orderBy: { scheduledStartAt: 'desc' },
       },
     },
   })
