@@ -1,1 +1,2 @@
+pnpm install --frozen-lockfile
 pnpm run check
