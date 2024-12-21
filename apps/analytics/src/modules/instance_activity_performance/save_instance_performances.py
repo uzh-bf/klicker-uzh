@@ -8,6 +8,7 @@ def save_instance_performances(
             "totalErrorRate": row["totalErrorRate"],
             "totalPartialRate": row["totalPartialRate"],
             "totalCorrectRate": row["totalCorrectRate"],
+            "averageTimeSpent": row["averageTimeSpent"],
         }
 
         # only define first and last response rates if applicable

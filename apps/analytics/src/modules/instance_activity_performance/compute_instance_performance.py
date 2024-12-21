@@ -82,6 +82,9 @@ def compute_instance_performance(db, activity, total_only=False):
             total_partial_rate = df_responses["responsePartialRate"].mean()
             total_correct_rate = df_responses["responseCorrectRate"].mean()
 
+            # compute average response time
+            avg_response_time = df_responses["averageTimeSpent"].mean()
+
             # append instance values to dataframe
             instance_performance = {
                 "instanceId": instance["id"],
@@ -89,6 +92,7 @@ def compute_instance_performance(db, activity, total_only=False):
                 "totalErrorRate": total_error_rate,
                 "totalPartialRate": total_partial_rate,
                 "totalCorrectRate": total_correct_rate,
+                "averageTimeSpent": avg_response_time,
             }
 
             if not total_only:

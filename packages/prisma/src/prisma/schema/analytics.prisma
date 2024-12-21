@@ -195,7 +195,8 @@ model ParticipantPerformance {
 model InstancePerformance {
   id Int @id @default(autoincrement())
 
-  responseCount Int // total number of responses to this instance
+  responseCount    Int // total number of responses to this instance
+  averageTimeSpent Float @db.Real // average time students spent on this instance
 
   firstErrorRate   Float? @db.Real // fraction of wrong answers to this instance (first attempt, PQ only)
   firstPartialRate Float? @db.Real // fraction of partially correct answers to this instance (first attempt, PQ only)
