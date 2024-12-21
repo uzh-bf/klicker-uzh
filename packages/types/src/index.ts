@@ -445,6 +445,7 @@ export type InstanceQuizAnalytics = {
 
 export type ActivityQuizAnalytics = {
   numberOfAnswers: number
+  averageTimeSpent: number
   firstErrorRate: number | null
   firstPartialRate: number | null
   firstCorrectRate: number | null

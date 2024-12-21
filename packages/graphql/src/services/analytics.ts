@@ -510,7 +510,6 @@ export async function getActivityAnalytics(
         elements: {
           include: {
             feedbacks: true,
-            responses: true, // TODO: once responses are available in instance performance, remove this join
             instancePerformance: true,
             _count: {
               select: { detailResponses: true },
@@ -546,79 +545,79 @@ export async function getActivityAnalytics(
     return null
   }
 
-  const { instanceQuizAnalytics, numberOfAnswersActivity } =
-    activity.stacks.reduce<{
-      instanceQuizAnalytics: InstanceQuizAnalytics[]
-      numberOfAnswersActivity: number
-    }>(
-      (acc, stack) => {
-        const newInstanceStatistics = stack.elements.flatMap((element) => {
-          // if performance has not been computed, skip this instance
-          const performance = element.instancePerformance
-          if (!performance) {
-            return []
-          }
+  const {
+    instanceQuizAnalytics,
+    numberOfAnswersActivity,
+    totalAverageInstanceTimes,
+  } = activity.stacks.reduce<{
+    instanceQuizAnalytics: InstanceQuizAnalytics[]
+    numberOfAnswersActivity: number
+    totalAverageInstanceTimes: number
+  }>(
+    (acc, stack) => {
+      const newInstanceStatistics = stack.elements.flatMap((element) => {
+        // if performance has not been computed, skip this instance
+        const performance = element.instancePerformance
+        if (!performance) {
+          return []
+        }
 
-          // number of answers = number of question response details
-          const numberOfAnswers = element._count.detailResponses
-          const uniqueParticipants = performance.responseCount
+        // number of answers = number of question response details
+        const numberOfAnswers = element._count.detailResponses
+        const uniqueParticipants = performance.responseCount
 
-          // TODO: modify instance performance to include the average time spent and then directly include it from there below
-          const averageTimeSpent =
-            element.responses.reduce(
-              (acc, response) => acc + response.averageTimeSpent,
-              0
-            ) / performance.responseCount
-
-          // compute the upvote and downvote rates
-          const { upvoteRate, downvoteRate } = element.feedbacks.reduce<{
-            upvoteRate: number
-            downvoteRate: number
-            totalVotes: number
-          }>(
-            (acc, feedback) => {
-              if (feedback.upvote) {
-                acc.upvoteRate =
-                  (acc.upvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
-                acc.totalVotes++
-              } else if (feedback.downvote) {
-                acc.downvoteRate =
-                  (acc.downvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
-                acc.totalVotes++
-              }
-
-              return acc
-            },
-            {
-              upvoteRate: 0,
-              downvoteRate: 0,
-              totalVotes: 0,
+        // compute the upvote and downvote rates
+        const { upvoteRate, downvoteRate } = element.feedbacks.reduce<{
+          upvoteRate: number
+          downvoteRate: number
+          totalVotes: number
+        }>(
+          (acc, feedback) => {
+            if (feedback.upvote) {
+              acc.upvoteRate =
+                (acc.upvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
+              acc.totalVotes++
+            } else if (feedback.downvote) {
+              acc.downvoteRate =
+                (acc.downvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
+              acc.totalVotes++
             }
-          )
 
-          // increment number of answers on activity
-          acc.numberOfAnswersActivity += numberOfAnswers
-
-          return {
-            ...performance,
-            averageTimeSpent, // TODO: remove once included in performance itself
-            upvoteRate,
-            downvoteRate,
-            elementName: element.elementData.name,
-            elementType: element.elementData.type,
-            numberOfAnswers,
-            uniqueParticipants,
+            return acc
+          },
+          {
+            upvoteRate: 0,
+            downvoteRate: 0,
+            totalVotes: 0,
           }
-        })
+        )
 
-        acc.instanceQuizAnalytics.push(...newInstanceStatistics)
-        return acc
-      },
-      {
-        instanceQuizAnalytics: [],
-        numberOfAnswersActivity: 0,
-      }
-    )
+        // increment number of answers on activity
+        acc.numberOfAnswersActivity += numberOfAnswers
+
+        // increment total average instance times
+        acc.totalAverageInstanceTimes += performance.averageTimeSpent
+
+        return {
+          ...performance,
+          upvoteRate,
+          downvoteRate,
+          elementName: element.elementData.name,
+          elementType: element.elementData.type,
+          numberOfAnswers,
+          uniqueParticipants,
+        }
+      })
+
+      acc.instanceQuizAnalytics.push(...newInstanceStatistics)
+      return acc
+    },
+    {
+      instanceQuizAnalytics: [],
+      numberOfAnswersActivity: 0,
+      totalAverageInstanceTimes: 0,
+    }
+  )
 
   return {
     activityName: activity.name,
@@ -627,6 +626,8 @@ export async function getActivityAnalytics(
     activityQuizAnalytics: {
       ...activity.performance,
       numberOfAnswers: numberOfAnswersActivity,
+      averageTimeSpent:
+        totalAverageInstanceTimes / instanceQuizAnalytics.length,
     },
     instanceQuizAnalytics,
   }

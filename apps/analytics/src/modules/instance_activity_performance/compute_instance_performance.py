@@ -16,6 +16,7 @@ def compute_instance_performance(db, activity, total_only=False):
             "totalErrorRate",
             "totalPartialRate",
             "totalCorrectRate",
+            "averageTimeSpent",
         ]
     )
 
