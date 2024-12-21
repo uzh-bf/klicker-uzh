@@ -6,13 +6,11 @@ query GetCourseActivities($courseId: String!) {
       id
       name
       status
-      createdAt
     }
     microLearnings {
       id
       name
       status
-      scheduledStartAt
     }
   }
 }

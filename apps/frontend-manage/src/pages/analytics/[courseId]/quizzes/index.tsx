@@ -41,7 +41,7 @@ const ActivityLink = ({
   </Link>
 )
 
-function QuizDashboard() {
+function ActivityDashboard() {
   const t = useTranslations()
   const router = useRouter()
   const courseId = router.query.courseId as string
@@ -188,4 +188,4 @@ export function getStaticPaths() {
   }
 }
 
-export default QuizDashboard
+export default ActivityDashboard
