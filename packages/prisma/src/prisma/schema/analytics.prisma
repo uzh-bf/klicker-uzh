@@ -248,6 +248,25 @@ model ActivityPerformance {
   updatedAt DateTime @updatedAt
 }
 
+model ParticipantActivityPerformance {
+  id Int @id @default(autoincrement())
+
+  totalScore Int // total score of the participant in this activity (sum of all instance scores)
+  completion Float @db.Real // fraction of instances completed (answered at least once) by the participant
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @unique @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @unique @db.Uuid
+
+  @@unique([participantId, practiceQuizId])
+  @@unique([participantId, microLearningId])
+}
+
 model ActivityProgress {
   id Int @id @default(autoincrement())
 
