@@ -133,7 +133,7 @@ while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   # Show recent logs periodically
   if [ $((elapsed % 30)) -eq 0 ]; then
     echo "📑 Recent service logs:"
-    tail -n 5 service.log
+    tail -n 30 service.log
   fi
 done
 

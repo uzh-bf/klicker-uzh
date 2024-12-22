@@ -136,6 +136,15 @@ jobs:
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
 
+      - name: Upload service logs
+        if: always() # This ensures logs are uploaded even if the previous step fails
+        uses: actions/upload-artifact@v3
+        with:
+          name: service-logs
+          path: service.log
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Cypress run
         uses: cypress-io/github-action@v6
         timeout-minutes: 60
