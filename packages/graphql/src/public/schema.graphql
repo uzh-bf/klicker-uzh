@@ -16,6 +16,7 @@ type Achievement {
 
 type ActivityEvaluation {
   confusionFeedbacks: [ConfusionTimestep!]
+  courseId: String
   description: String
   displayName: String
   feedbacks: [Feedback!]
@@ -1363,6 +1364,7 @@ type PushSubscription {
 type Query {
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
+  checkFeaturePreviewAvailable: Boolean!
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
@@ -1590,6 +1592,7 @@ type User {
   catalyst: Boolean!
   catalystTier: String
   email: String!
+  featurePreview: Boolean!
   firstLogin: Boolean!
   id: ID!
   locale: LocaleType!

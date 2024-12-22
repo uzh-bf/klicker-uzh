@@ -1628,9 +1628,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieser Kurs enthält keine Leaderboard-Einträge.',
       deleteLeaderboardEntries:
         '{number} Leaderboard-Einträge werden unwiderruflich gelöscht.',
+      activityAnalytics: 'Quiz Analysen',
     },
     course: {
       modifyCourse: 'Kurs bearbeiten',
+      learningAnalytics: 'Learning Analytics',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
       requiredPin: 'Die für den Beitritt benötigte PIN lautet: <b>{pin}</b>',

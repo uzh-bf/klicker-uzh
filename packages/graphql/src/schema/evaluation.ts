@@ -13,6 +13,7 @@ export interface IActivityEvaluation {
   name: string
   displayName?: string | null
   description?: string | null
+  courseId?: string | null
   results: IStackEvaluation[]
   feedbacks?: IFeedback[] | null
   confusionFeedbacks?: DB.ConfusionTimestep[] | null
@@ -149,6 +150,7 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
+    courseId: t.exposeString('courseId', { nullable: true }),
     results: t.expose('results', {
       type: [StackEvaluation],
     }),

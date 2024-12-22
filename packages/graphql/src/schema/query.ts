@@ -715,6 +715,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      checkFeaturePreviewAvailable: asUser.field({
+        nullable: false,
+        type: 'Boolean',
+        resolve(_, __, ctx) {
+          return AccountService.checkFeaturePreviewAvailable(ctx)
+        },
+      }),
+
       checkValidCoursePin: t.field({
         nullable: true,
         type: 'String',

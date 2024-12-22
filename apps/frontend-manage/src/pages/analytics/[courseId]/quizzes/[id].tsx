@@ -1,6 +1,11 @@
 import { useQuery } from '@apollo/client'
-import { GetActivityAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H1 } from '@uzh-bf/design-system'
+import { faChartSimple } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  ActivityType,
+  GetActivityAnalyticsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button, H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -61,6 +66,21 @@ function QuizAnalytics() {
           <H1 className={{ root: 'mb-0' }}>
             {t('manage.analytics.quizAnalytics')}: {analytics.activityName}
           </H1>
+          <Button
+            className={{ root: 'flex h-8 flex-row gap-3' }}
+            onClick={() =>
+              window.open(
+                analytics.activityType === ActivityType.PracticeQuiz
+                  ? `/practiceQuiz/${activityId}/evaluation`
+                  : `/microLearning/${activityId}/evaluation`,
+                '_blank'
+              )
+            }
+            data={{ cy: 'activity-evaluation-link' }}
+          >
+            <FontAwesomeIcon icon={faChartSimple} />
+            <div>{t('shared.generic.evaluation')}</div>
+          </Button>
         </div>
         <ActivityAnalyticsCharts
           activityName={analytics.activityName}

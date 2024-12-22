@@ -1,0 +1,3 @@
+query CheckFeaturePreviewAvailable {
+  checkFeaturePreviewAvailable
+}
