@@ -1609,9 +1609,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This course contains no leaderboard entries.',
       deleteLeaderboardEntries:
         '{number} leaderboard entrie(s) will be irreversibly deleted.',
+      activityAnalytics: 'Activity Analytics',
     },
     course: {
       modifyCourse: 'Modify course',
+      learningAnalytics: 'Learning Analytics',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
       requiredPin: 'The PIN required to join is: <b>{pin}</b>',

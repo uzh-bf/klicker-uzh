@@ -25,7 +25,7 @@ function CircularPerformancePlot({
       <H3 className={{ root: 'mt-4' }}>{title}</H3>
       <div className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart margin={{ top: -10, right: 0, bottom: 0, left: 0 }}>
+          <PieChart margin={{ top: -10, right: 15, bottom: 0, left: 15 }}>
             <Pie
               data={data}
               cx="50%"
@@ -43,7 +43,7 @@ function CircularPerformancePlot({
                 return <Cell key={`cell-${index}`} fill={colorValues[index]} />
               })}
             </Pie>
-            {activeIndex !== undefined && (
+            {/* {activeIndex !== undefined && (
               <text
                 x="50%"
                 y="48%"
@@ -53,7 +53,7 @@ function CircularPerformancePlot({
               >
                 {data[activeIndex].name}
               </text>
-            )}
+            )} */}
           </PieChart>
         </ResponsiveContainer>
       </div>

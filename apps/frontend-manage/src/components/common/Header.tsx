@@ -47,12 +47,16 @@ function Header({ user }: HeaderProps): React.ReactElement {
       active: router.pathname == '/courses',
       cy: 'courses',
     },
-    {
-      href: '/analytics',
-      label: t('manage.general.analytics'),
-      active: router.pathname == '/analytics',
-      cy: 'analytics',
-    },
+    ...(user?.featurePreview
+      ? [
+          {
+            href: '/analytics',
+            label: t('manage.general.analytics'),
+            active: router.pathname == '/analytics',
+            cy: 'analytics',
+          },
+        ]
+      : []),
   ]
 
   return (
