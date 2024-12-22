@@ -230,6 +230,7 @@ export default {
       q3: 'Q3',
       weeks: 'Wochen',
       student: 'Studierende(r)',
+      activity: 'Aktivität',
     },
     contentInput: {
       boldStyle:
