@@ -22,7 +22,9 @@ function QuizAnalytics() {
     skip: !activityId,
   })
 
-  const navigation = <QuizAnalyticsNavigation courseId={courseId} />
+  const navigation = (
+    <QuizAnalyticsNavigation courseId={courseId} activityId={activityId} />
+  )
   const analytics = data?.getActivityAnalytics
 
   const chartColors = {

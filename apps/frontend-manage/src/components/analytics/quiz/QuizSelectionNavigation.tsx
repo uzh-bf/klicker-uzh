@@ -9,6 +9,7 @@ function QuizSelectionNavigation({ courseId }: { courseId: string }) {
       labelLeft={<PerformanceDashboardLabel />}
       hrefRight={`/analytics/${courseId}/activity`}
       labelRight={<ActivityDashboardLabel />}
+      slug="quizzes"
     />
   )
 }
