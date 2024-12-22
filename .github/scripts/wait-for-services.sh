@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Exit on error
+set -e
+
 # Validate required environment variables
 if [ -z "${SERVICE_ENDPOINTS:-}" ]; then
   # Default endpoints if not specified
@@ -17,25 +20,45 @@ fi
 # Cleanup function
 cleanup() {
   local exit_code=$?
-  # Only kill the service if we're exiting with an error
-  if [ $exit_code -ne 0 ] && [ ! -z "${SERVICE_PID:-}" ]; then
-    echo "Cleaning up service process..."
+
+  # If we have a service PID and either we're exiting with an error or received a signal
+  if [ ! -z "${SERVICE_PID:-}" ] && { [ $exit_code -ne 0 ] || [ "${1:-}" = "TERM" ]; }; then
+    echo "🛑 Cleaning up service process (PID: $SERVICE_PID)..."
     kill $SERVICE_PID 2>/dev/null || true
+    wait $SERVICE_PID 2>/dev/null || true
   fi
+
+  # If we received SIGTERM, exit with special code
+  if [ "${1:-}" = "TERM" ]; then
+    echo "⚠️ Received termination signal"
+    exit 143  # 128 + 15 (SIGTERM)
+  fi
+
   exit $exit_code
 }
 
-# Set up trap for cleanup
+# Set up traps for cleanup
+trap 'cleanup TERM' TERM
 trap cleanup EXIT
 
 # Start the service in the background and capture all output
-if ! pnpm run start:test > service.log 2>&1 & then
-  echo "❌ Failed to start service"
-  exit 1
-fi
+echo "🚀 Starting service..."
+pnpm run start:test > service.log 2>&1 &
 
 # Store the PID of the background process
 SERVICE_PID=$!
+
+# Give the process a moment to fail fast if it's going to
+sleep 2
+
+# Check if process is still running after initial start
+if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
+  echo "❌ Service failed to start. Last few lines of output:"
+  tail -n 20 service.log
+  exit 1
+fi
+
+echo "📋 Initial service start successful (PID: $SERVICE_PID)"
 
 # Function to check if process is still running
 check_process() {
@@ -83,9 +106,9 @@ check_endpoints() {
 # Initialize elapsed time
 elapsed=0
 
-echo "🚀 Starting services and waiting for readiness..."
-echo "Monitoring endpoints: $SERVICE_ENDPOINTS"
-echo "Timeout: ${TIMEOUT_SECONDS}s, Check interval: ${CHECK_INTERVAL}s"
+echo "⚙️ Configuration:"
+echo "🔍 Monitoring endpoints: $SERVICE_ENDPOINTS"
+echo "⏲️ Timeout: ${TIMEOUT_SECONDS}s, Check interval: ${CHECK_INTERVAL}s"
 
 while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   # Check if the process is still running
@@ -97,7 +120,8 @@ while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   if check_endpoints; then
     echo "✨ All services are ready!"
     # Keep the background process running but exit the script successfully
-    trap - EXIT  # Remove the trap as we want to keep the service running
+    trap - TERM  # Remove SIGTERM trap as we want to keep the service running
+    trap - EXIT  # Remove exit trap as we want to keep the service running
     exit 0
   fi
 
