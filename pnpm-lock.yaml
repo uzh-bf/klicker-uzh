@@ -1046,8 +1046,8 @@ importers:
   apps/func-incoming-responses:
     dependencies:
       '@azure/functions':
-        specifier: 4.5.1
-        version: 4.5.1
+        specifier: 4.6.0
+        version: 4.6.0
       '@azure/service-bus':
         specifier: 7.9.5
         version: 7.9.5
@@ -1068,8 +1068,8 @@ importers:
         specifier: 3.0.0-alpha.35
         version: 3.0.0-alpha.35(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.1)(@types/react@18.3.11)(class-variance-authority@0.7.0)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.47))(postcss@8.4.47)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.8.0(@swc/helpers@0.5.13))(@types/node@20.16.1)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.8.0(@swc/helpers@0.5.13))(@types/node@20.16.1)(typescript@5.6.3))))(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.8.0(@swc/helpers@0.5.13))(@types/node@20.16.1)(typescript@5.6.3)))(yup@1.4.0)
       azure-functions-core-tools:
-        specifier: ~4.0.6280
-        version: 4.0.6280
+        specifier: ~4.0.6610
+        version: 4.0.6610
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1092,8 +1092,8 @@ importers:
   apps/func-response-processor:
     dependencies:
       '@azure/functions':
-        specifier: 4.5.1
-        version: 4.5.1
+        specifier: 4.6.0
+        version: 4.6.0
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../../packages/grading
@@ -1120,8 +1120,8 @@ importers:
         specifier: 3.0.0-alpha.35
         version: 3.0.0-alpha.35(@fortawesome/fontawesome-svg-core@6.6.0)(@fortawesome/free-regular-svg-icons@6.6.0)(@fortawesome/free-solid-svg-icons@6.6.0)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.6.0)(react@18.3.1))(@types/react-dom@18.3.1)(@types/react@18.3.11)(class-variance-authority@0.7.0)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@18.3.1))(lucide-react@0.424.0(react@18.3.1))(postcss-import@16.1.0(postcss@8.4.47))(postcss@8.4.47)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(tailwind-merge@2.5.4)(tailwindcss-animate@1.0.7(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.8.0(@swc/helpers@0.5.13))(@types/node@20.16.1)(typescript@5.6.3))))(tailwindcss-radix@3.0.5(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.8.0(@swc/helpers@0.5.13))(@types/node@20.16.1)(typescript@5.6.3))))(tailwindcss@3.4.14(ts-node@10.9.1(@swc/core@1.8.0(@swc/helpers@0.5.13))(@types/node@20.16.1)(typescript@5.6.3)))(yup@1.4.0)
       azure-functions-core-tools:
-        specifier: ~4.0.6280
-        version: 4.0.6280
+        specifier: ~4.0.6610
+        version: 4.0.6610
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -2302,8 +2302,8 @@ packages:
     resolution: {integrity: sha512-J4FYAqakGXcbfeZjwjMzjNcpcH4E+JtEBv+xcV1yL0Ydn/6wbQfeFKTCHh9wttAi0lmajHw7yBbHPRG+YHckZQ==}
     engines: {node: '>=18.0.0'}
 
-  '@azure/functions@4.5.1':
-    resolution: {integrity: sha512-ikiw1IrM2W9NlQM3XazcX+4Sq3XAjZi4eeG22B5InKC2x5i7MatGF2S/Gn1ACZ+fEInwu+Ru9J8DlnBv1/hIvg==}
+  '@azure/functions@4.6.0':
+    resolution: {integrity: sha512-vGq9jXlgrJ3KaI8bepgfpk26zVY8vFZsQukF85qjjKTAR90eFOOBNaa+mc/0ViDY2lcdrU2fL/o1pQyZUtTDsw==}
     engines: {node: '>=18.0'}
 
   '@azure/identity@1.5.2':
@@ -8293,8 +8293,8 @@ packages:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
     engines: {node: '>= 0.4'}
 
-  azure-functions-core-tools@4.0.6280:
-    resolution: {integrity: sha512-DVSgYNnT4POLbj/YV3FKtNdo9KT/M5Dl//slWEmVwZo1y4aJEsUApn6DtkZswut76I3S9eKGC5IaC84j5OGNaA==}
+  azure-functions-core-tools@4.0.6610:
+    resolution: {integrity: sha512-TpSu2YTlpdnuptFkVA+fD6/lfwJRDZTBmUK3T4ESZQXoj06A1R7cRpnhW+hF4z42ShRaSE61xney0Ja5+QVLcg==}
     engines: {node: '>=6.9.1'}
     os: [win32, darwin, linux]
     hasBin: true
@@ -9051,10 +9051,6 @@ packages:
 
   cookie@0.5.0:
     resolution: {integrity: sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==}
-    engines: {node: '>= 0.6'}
-
-  cookie@0.6.0:
-    resolution: {integrity: sha512-U71cyTamuh1CRNCfpGY6to28lxvNwPG4Guz/EVjgf3Jmzv0vlDp1atT9eS5dDjMYHucpHbWns6Lwf3BKz6svdw==}
     engines: {node: '>= 0.6'}
 
   cookie@0.7.1:
@@ -11032,8 +11028,8 @@ packages:
     resolution: {integrity: sha512-JrF8SSLVmcvc5NducxgyOrKXe3EsyHMgBFgSaIUGmArKe+rwr0uphRkRXvwiom3I+fpIfoItveHrfudL8/rxuA==}
     engines: {node: '>=16'}
 
-  https-proxy-agent@5.0.0:
-    resolution: {integrity: sha512-EkYm5BcKUGiduxzSt3Eppko+PiNWNEpa4ySk9vTC6wDsQJW9rHSa+UhGNJoRYp7bz6Ht1eaRIa6QaJqO5rCFbA==}
+  https-proxy-agent@5.0.1:
+    resolution: {integrity: sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==}
     engines: {node: '>= 6'}
 
   https-proxy-agent@7.0.5:
@@ -17550,9 +17546,9 @@ snapshots:
       fast-xml-parser: 4.5.0
       tslib: 2.8.0
 
-  '@azure/functions@4.5.1':
+  '@azure/functions@4.6.0':
     dependencies:
-      cookie: 0.6.0
+      cookie: 0.7.2
       long: 4.0.0
       undici: 5.28.4
 
@@ -22778,7 +22774,7 @@ snapshots:
     dependencies:
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       jest-mock: 29.7.0
 
   '@jest/expect-utils@29.7.0':
@@ -22796,7 +22792,7 @@ snapshots:
     dependencies:
       '@jest/types': 29.6.3
       '@sinonjs/fake-timers': 10.3.0
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       jest-message-util: 29.7.0
       jest-mock: 29.7.0
       jest-util: 29.7.0
@@ -25404,7 +25400,7 @@ snapshots:
     dependencies:
       '@types/http-cache-semantics': 4.0.4
       '@types/keyv': 3.1.4
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       '@types/responselike': 1.0.3
 
   '@types/connect-history-api-fallback@1.5.4':
@@ -25504,7 +25500,7 @@ snapshots:
   '@types/glob@7.2.0':
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
 
   '@types/graceful-fs@4.1.9':
     dependencies:
@@ -25535,7 +25531,7 @@ snapshots:
 
   '@types/http-proxy@1.17.15':
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
 
   '@types/ioredis-mock@8.2.5':
     dependencies:
@@ -25587,7 +25583,7 @@ snapshots:
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
 
   '@types/lodash@4.17.10': {}
 
@@ -25627,7 +25623,7 @@ snapshots:
 
   '@types/node-forge@1.3.11':
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
 
   '@types/node-schedule@2.1.7':
     dependencies:
@@ -25725,7 +25721,7 @@ snapshots:
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
 
   '@types/retry@0.12.0': {}
 
@@ -25831,7 +25827,7 @@ snapshots:
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
     optional: true
 
   '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.45.0)(typescript@5.6.3))(eslint@7.32.0)(typescript@4.9.5)':
@@ -26796,11 +26792,11 @@ snapshots:
 
   axobject-query@4.1.0: {}
 
-  azure-functions-core-tools@4.0.6280:
+  azure-functions-core-tools@4.0.6610:
     dependencies:
       chalk: 3.0.0
       extract-zip: 2.0.1
-      https-proxy-agent: 5.0.0
+      https-proxy-agent: 5.0.1
       progress: 2.0.3
       rimraf: 4.4.1
     transitivePeerDependencies:
@@ -27829,8 +27825,6 @@ snapshots:
 
   cookie@0.5.0: {}
 
-  cookie@0.6.0: {}
-
   cookie@0.7.1: {}
 
   cookie@0.7.2: {}
@@ -28620,7 +28614,7 @@ snapshots:
     dependencies:
       '@types/cookie': 0.4.1
       '@types/cors': 2.8.17
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       accepts: 1.3.8
       base64id: 2.0.0
       cookie: 0.4.2
@@ -30423,7 +30417,7 @@ snapshots:
 
   http_ece@1.2.0: {}
 
-  https-proxy-agent@5.0.0:
+  https-proxy-agent@5.0.1:
     dependencies:
       agent-base: 6.0.2
       debug: 4.3.7(supports-color@5.5.0)
@@ -30997,7 +30991,7 @@ snapshots:
       '@jest/expect': 29.7.0
       '@jest/test-result': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       chalk: 4.1.2
       co: 4.6.0
       dedent: 1.5.3(babel-plugin-macros@3.1.0)
@@ -31124,7 +31118,7 @@ snapshots:
       '@jest/environment': 29.7.0
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       jest-mock: 29.7.0
       jest-util: 29.7.0
 
@@ -31173,7 +31167,7 @@ snapshots:
   jest-mock@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       jest-util: 29.7.0
 
   jest-pnp-resolver@1.2.3(jest-resolve@29.7.0):
@@ -31316,13 +31310,13 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
   jest-worker@29.7.0:
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
@@ -34553,7 +34547,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
       long: 5.2.3
 
   proxy-addr@2.0.7:
@@ -37809,7 +37803,7 @@ snapshots:
 
   wkx@0.5.0:
     dependencies:
-      '@types/node': 20.16.12
+      '@types/node': 20.16.14
 
   word-wrap@1.2.5: {}
 
