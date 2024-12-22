@@ -1899,6 +1899,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       successRates: 'Success Rates',
       successRate: 'Success Rate',
       partialErrorRate: 'Partial Error Rate',
+      microLearningOneSubmissionHint:
+        'For microlearnings no separation of first and last submitted answers is possible, since every participant can solve each element of the activity only once.',
+      totalAnswers: 'Total Answers: <b>{number}</b>',
+      numberOfStudentsN: 'Number of Students: <b>{number}</b>',
+      averageTimeSpentInstance: 'Average Time Spent: <b>{min}:{sec} min</b>',
+      studentFeedback: 'Student Feedback',
     },
   },
   control: {

@@ -1913,6 +1913,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       successRates: 'Erfolgsraten',
       successRate: 'Erfolgsrate',
       partialErrorRate: 'Partielle Fehlerrate',
+      microLearningOneSubmissionHint:
+        'Für Microlearnings ist keine Trennung von ersten und letzten Lösungversuchen möglich, da Teilnehmende jedes Element der Aktivität nur einmal lösen können.',
+      totalAnswers: 'Gesamtzahl Antworten: <b>{number}</b>',
+      numberOfStudentsN: 'Anzahl Studierende: <b>{number}</b>',
+      averageTimeSpentInstance:
+        'Durchschnittliche Bearbeitungszeit: <b>{min}:{sec} min</b>',
+      studentFeedback: 'Studierenden-Feedback',
     },
   },
   control: {

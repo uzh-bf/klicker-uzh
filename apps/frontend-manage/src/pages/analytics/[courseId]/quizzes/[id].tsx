@@ -62,6 +62,7 @@ function QuizAnalytics() {
         </div>
         <ActivityAnalyticsCharts
           activityName={analytics.activityName}
+          activityType={analytics.activityType}
           analytics={analytics.activityQuizAnalytics}
           colors={chartColors}
           className="mb-6 w-full"

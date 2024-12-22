@@ -1,4 +1,5 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import { twMerge } from 'tailwind-merge'
 import StackedBarChartLabel from '../StackedBarChartLabel'
 
 interface PerformanceRatesBarChartProps {
@@ -9,12 +10,16 @@ interface PerformanceRatesBarChartProps {
     partial: string
     correct: string
   }
+  className?: {
+    title?: string
+  }
 }
 
 function PerformanceRatesBarChart({
   title,
   rates,
   colors,
+  className,
 }: PerformanceRatesBarChartProps) {
   const roundedErrorRate = Math.round(rates.incorrectRate * 100)
   const roundedPartialRate = Math.round(rates.partialRate * 100)
@@ -22,7 +27,12 @@ function PerformanceRatesBarChart({
 
   return (
     <div className="flex h-8 items-center gap-4">
-      <div className="w-48 overflow-hidden overflow-ellipsis whitespace-nowrap">
+      <div
+        className={twMerge(
+          'w-48 overflow-hidden overflow-ellipsis whitespace-nowrap',
+          className?.title
+        )}
+      >
         {title}
       </div>
       <div className="flex-1">
