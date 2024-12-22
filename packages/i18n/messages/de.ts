@@ -1921,6 +1921,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       averageTimeSpentInstance:
         'Durchschnittliche Bearbeitungszeit: <b>{min}:{sec} min</b>',
       studentFeedback: 'Studierenden-Feedback (N = {numOfVotes})',
+      noWeeklyActivityData:
+        'Bisher sind keine wöchentlichen Aktivitätsdaten für diesen Kurs verfügbar.',
+      noDailyActivityData:
+        'Bisher sind keine täglichen Aktivitätsdaten für diesen Kurs verfügbar.',
+      noActivityDistributionData:
+        'Bisher sind keine Aktivitätsverteilungsdaten für diesen Kurs verfügbar.',
+      noStudentActivity:
+        'Bisher wurde keine Studierendenaktivität für diesen Kurs berechnet.',
+      noAsynchronousActivityProgressData:
+        'Bisher sind keine Daten zum Fortschritt in asynchronen Aktivitäten für diesen Kurs verfügbar.',
+      noStudentPerformanceData:
+        'Bisher sind keine Daten zur Studierendenleistung für diesen Kurs verfügbar.',
     },
   },
   control: {
