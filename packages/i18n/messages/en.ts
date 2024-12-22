@@ -1906,6 +1906,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       numberOfStudentsN: 'Number of Students: <b>{number}</b>',
       averageTimeSpentInstance: 'Average Time Spent: <b>{min}:{sec} min</b>',
       studentFeedback: 'Student Feedback (N = {numOfVotes})',
+      noWeeklyActivityData:
+        'Until now, no weekly activity data is available for this course.',
+      noDailyActivityData:
+        'Until now, no daily activity data is available for this course.',
+      noActivityDistributionData:
+        'No activity distribution data is available for this course yet.',
+      noStudentActivity:
+        'No student activity has been calculated for this course yet.',
+      noAsynchronousActivityProgressData:
+        'No asynchronous activity progress data is available for this course yet.',
+      noStudentPerformanceData:
+        'No student performance data is available for this course yet.',
     },
   },
   control: {

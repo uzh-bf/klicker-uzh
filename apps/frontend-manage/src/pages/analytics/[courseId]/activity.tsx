@@ -50,6 +50,8 @@ function ActivityDashboard() {
     )
   }
 
+  console.log(course)
+
   return (
     <Layout displayName={t('manage.analytics.activityDashboard')}>
       {navigation}

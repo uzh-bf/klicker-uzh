@@ -127,6 +127,7 @@ function ActivityDashboard() {
               <UserNotification
                 type="info"
                 message={t('manage.analytics.noPracticeQuizzes')}
+                className={{ root: 'w-full' }}
               />
             ) : (
               <div className="grid w-full grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
@@ -153,6 +154,7 @@ function ActivityDashboard() {
               <UserNotification
                 type="info"
                 message={t('manage.analytics.noMicroLearnings')}
+                className={{ root: 'w-full' }}
               />
             ) : (
               <div className="grid w-full grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">

@@ -472,11 +472,24 @@ export async function getCoursePerformanceAnalytics(
     },
   })
 
-  if (
-    !course ||
-    (course.practiceQuizzes.length === 0 && course.microLearnings.length === 0)
-  ) {
+  if (!course) {
     return null
+  }
+
+  if (
+    course.practiceQuizzes.length === 0 &&
+    course.microLearnings.length === 0
+  ) {
+    return {
+      name: course.name,
+      totalParticipants: course._count.participations,
+      activityProgresses: [],
+      activityPerformances: [],
+      instancePerformances: [],
+      participantPerformances: course.participantPerformances,
+      instanceFeedbacks: [],
+      activityFeedbacks: [],
+    }
   }
 
   // map the metrics for all activities in the course to the desired performance and progress values

@@ -1,5 +1,5 @@
 import { ActivityProgress, ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { H2, H4 } from '@uzh-bf/design-system'
+import { H2, H4, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Legend } from 'recharts'
 import StackedProgress from './StackedProgress'
@@ -51,42 +51,49 @@ function ActivityProgressPlot({
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
       <H2>{t('manage.analytics.asynchronousActivityProgress')}</H2>
-      <div className="flex flex-col gap-6">
-        {pqProgresses.length > 0 && (
-          <div>
-            <div className="relative flex flex-row">
-              <H4>{t('shared.generic.practiceQuizzes')}</H4>
-              <ProgressLegend />
+      {pqProgresses.length > 0 || mlProgresses.length > 0 ? (
+        <div className="flex flex-col gap-6">
+          {pqProgresses.length > 0 && (
+            <div>
+              <div className="relative flex flex-row">
+                <H4>{t('shared.generic.practiceQuizzes')}</H4>
+                <ProgressLegend />
+              </div>
+              {pqProgresses.map((progress, idx) => (
+                <StackedProgress
+                  key={`activity-progress-pq-${idx}`}
+                  progress={progress}
+                  participants={participants}
+                  colors={chartColors}
+                  showScale={idx === pqProgresses.length - 1}
+                />
+              ))}
             </div>
-            {pqProgresses.map((progress, idx) => (
-              <StackedProgress
-                key={`activity-progress-pq-${idx}`}
-                progress={progress}
-                participants={participants}
-                colors={chartColors}
-                showScale={idx === pqProgresses.length - 1}
-              />
-            ))}
-          </div>
-        )}
-        {mlProgresses.length > 0 && (
-          <div>
-            <div className="relative flex flex-row">
-              <H4>{t('shared.generic.microlearnings')}</H4>
-              <ProgressLegend />
+          )}
+          {mlProgresses.length > 0 && (
+            <div>
+              <div className="relative flex flex-row">
+                <H4>{t('shared.generic.microlearnings')}</H4>
+                <ProgressLegend />
+              </div>
+              {mlProgresses.map((progress, idx) => (
+                <StackedProgress
+                  key={`activity-progress-ml-${idx}`}
+                  progress={progress}
+                  participants={participants}
+                  colors={chartColors}
+                  showScale={idx === mlProgresses.length - 1}
+                />
+              ))}
             </div>
-            {mlProgresses.map((progress, idx) => (
-              <StackedProgress
-                key={`activity-progress-ml-${idx}`}
-                progress={progress}
-                participants={participants}
-                colors={chartColors}
-                showScale={idx === mlProgresses.length - 1}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      ) : (
+        <UserNotification
+          message={t('manage.analytics.noAsynchronousActivityProgressData')}
+          type="info"
+        />
+      )}
     </div>
   )
 }
