@@ -423,4 +423,40 @@ export type ActivityFeedback = {
   downvoteRate: number
   feedbackCount: number
 }
+
+export type InstanceQuizAnalytics = {
+  id: number
+  elementName: string
+  elementType: ElementType
+  numberOfAnswers: number
+  uniqueParticipants: number
+  averageTimeSpent: number
+  firstErrorRate?: number | null
+  firstPartialRate?: number | null
+  firstCorrectRate?: number | null
+  lastErrorRate?: number | null
+  lastPartialRate?: number | null
+  lastCorrectRate?: number | null
+  totalErrorRate: number
+  totalPartialRate: number
+  totalCorrectRate: number
+  upvoteRate: number
+  downvoteRate: number
+  feedbackCount: number
+}
+
+export type ActivityQuizAnalytics = {
+  id: number
+  numberOfAnswers: number
+  averageTimeSpent: number
+  firstErrorRate?: number | null
+  firstPartialRate?: number | null
+  firstCorrectRate?: number | null
+  lastErrorRate?: number | null
+  lastPartialRate?: number | null
+  lastCorrectRate?: number | null
+  totalErrorRate: number
+  totalPartialRate: number
+  totalCorrectRate: number
+}
 // #endregion

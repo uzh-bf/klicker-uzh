@@ -11,11 +11,11 @@ import usePerformanceSearch from '@lib/hooks/usePerformanceSearch'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { Legend } from 'recharts'
 import ActivitiesElementsSwitch from '../ActivitiesElementsSwitch'
 import ActivityTypeFilter from '../ActivityTypeFilter'
 import AnalyticsSearchField from '../AnalyticsSearchField'
 import ElementTypeFilter from '../ElementTypeFilter'
+import ErrorRatesLegend from './ErrorRatesLegend'
 import PerformanceAttemptsFilter from './PerformanceAttemptsFilter'
 import PerformanceRatesBarChart from './PerformanceRatesBarChart'
 
@@ -142,26 +142,7 @@ function PerformanceRates({
 
       {entries.length > 0 ? (
         <div className="relative">
-          <Legend
-            payload={[
-              {
-                value: t('manage.analytics.errorRate'),
-                color: chartColors.incorrect,
-                type: 'rect',
-              },
-              {
-                value: t('manage.analytics.partialRate'),
-                color: chartColors.partial,
-                type: 'rect',
-              },
-              {
-                value: t('manage.analytics.correctRate'),
-                color: chartColors.correct,
-                type: 'rect',
-              },
-            ]}
-            wrapperStyle={{ top: 0, right: 0 }}
-          />
+          <ErrorRatesLegend colors={chartColors} />
           <div className="flex flex-col pt-6">
             {entries.length > 0
               ? entries.map((progress) => (

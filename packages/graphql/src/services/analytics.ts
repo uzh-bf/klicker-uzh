@@ -16,6 +16,7 @@ import {
   ActivityType,
   InstanceFeedback,
   InstancePerformance,
+  InstanceQuizAnalytics,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { ContextWithUser } from 'src/lib/context.js'
@@ -496,5 +497,142 @@ export async function getCoursePerformanceAnalytics(
     participantPerformances: course.participantPerformances,
     instanceFeedbacks,
     activityFeedbacks,
+  }
+}
+
+export async function getActivityAnalytics(
+  { activityId }: { activityId: string },
+  ctx: ContextWithUser
+) {
+  const activityIncludes = {
+    stacks: {
+      include: {
+        elements: {
+          include: {
+            feedbacks: true,
+            instancePerformance: true,
+            _count: {
+              select: { detailResponses: true },
+            },
+          },
+        },
+      },
+    },
+    course: {
+      include: {
+        _count: {
+          select: { participations: true },
+        },
+      },
+    },
+    performance: true,
+  }
+
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id: activityId },
+    include: activityIncludes,
+  })
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id: activityId },
+    include: activityIncludes,
+  })
+  const activity = practiceQuiz ?? microLearning
+  const activityType = practiceQuiz
+    ? ActivityType.PRACTICE_QUIZ
+    : ActivityType.MICRO_LEARNING
+
+  if (!activity) {
+    return null
+  }
+
+  const {
+    instanceQuizAnalytics,
+    numberOfAnswersActivity,
+    totalAverageInstanceTimes,
+  } = activity.stacks.reduce<{
+    instanceQuizAnalytics: InstanceQuizAnalytics[]
+    numberOfAnswersActivity: number
+    totalAverageInstanceTimes: number
+  }>(
+    (acc, stack) => {
+      const newInstanceStatistics = stack.elements.flatMap((element) => {
+        // if performance has not been computed, skip this instance
+        const performance = element.instancePerformance
+        if (!performance) {
+          return []
+        }
+
+        // number of answers = number of question response details
+        const numberOfAnswers = element._count.detailResponses
+        const uniqueParticipants = performance.responseCount
+
+        // compute the upvote and downvote rates
+        const { upvoteRate, downvoteRate, totalVotes } =
+          element.feedbacks.reduce<{
+            upvoteRate: number
+            downvoteRate: number
+            totalVotes: number
+          }>(
+            (acc, feedback) => {
+              if (feedback.upvote) {
+                acc.upvoteRate =
+                  (acc.upvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
+                acc.totalVotes++
+              } else if (feedback.downvote) {
+                acc.downvoteRate =
+                  (acc.downvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
+                acc.totalVotes++
+              }
+
+              return acc
+            },
+            {
+              upvoteRate: 0,
+              downvoteRate: 0,
+              totalVotes: 0,
+            }
+          )
+
+        // increment number of answers on activity
+        acc.numberOfAnswersActivity += numberOfAnswers
+
+        // increment total average instance times
+        acc.totalAverageInstanceTimes += performance.averageTimeSpent
+
+        return {
+          ...performance,
+          upvoteRate,
+          downvoteRate,
+          feedbackCount: totalVotes,
+          elementName: element.elementData.name,
+          elementType: element.elementData.type,
+          numberOfAnswers,
+          uniqueParticipants,
+        }
+      })
+
+      acc.instanceQuizAnalytics.push(...newInstanceStatistics)
+      return acc
+    },
+    {
+      instanceQuizAnalytics: [],
+      numberOfAnswersActivity: 0,
+      totalAverageInstanceTimes: 0,
+    }
+  )
+
+  return {
+    activityName: activity.name,
+    activityType,
+    courseParticipants: activity.course._count.participations,
+    activityQuizAnalytics: activity.performance
+      ? {
+          ...activity.performance,
+          id: activity.performance?.id ?? 0,
+          numberOfAnswers: numberOfAnswersActivity,
+          averageTimeSpent: totalAverageInstanceTimes,
+        }
+      : null,
+    instanceQuizAnalytics,
   }
 }

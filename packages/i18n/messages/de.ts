@@ -1833,6 +1833,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityDashboard: 'Aktivitäts-Dashboard',
       performanceDashboard: 'Leistungs- und Fortschritts-Dashboard',
       quizDashboard: 'Quiz-Dashboard',
+      quizAnalytics: 'Quiz Analytics',
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
@@ -1885,6 +1886,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       overallStudentPerformance:
         'Gesamtleistung der Studierenden (Fehlerraten)',
       totalErrorRate: 'Totale Fehlerrate',
+      total: 'Total',
       firstAttempt: 'Erster Lösungsversuch',
       lastAttempt: 'Letzter Lösungsversuch',
       performanceLevel: 'Leistungslevel',
@@ -1897,6 +1899,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       studentPerformance: 'Studierendenleistung',
       feedbackOverview: 'Feedback-Übersicht',
       dataSource: 'Datenquelle',
+      selectActivityAnalytics:
+        'Bitte wählen Sie eine Aktivität aus Ihrem Kurs aus, um die entsprechenden Analyse-Daten anzuzeigen. Bitte beachten Sie, dass die Analyse nur für Aktivitäten verfügbar ist, die für Studierende zugänglich sind.',
+      noPracticeQuizzes: 'Dieser Kurs enthält keine Übungs-Quizzes.',
+      noMicroLearnings: 'Dieser Kurs enthält keine Microlearnings.',
+      searchPracticeQuizzes: 'Übungs-Quizzes durchsuchen...',
+      searchMicroLearnings: 'Microlearnings durchsuchen...',
+      backToActivitySelection: 'Zurück zur Aktivitätsauswahl',
+      totalAnsweredElements:
+        'Gesamtzahl beantworteter Elemente in {activityName}: <b>{number}</b>',
+      averageTimeSpentActivity:
+        'Durchschnittlich aufgewendete Gesamtzeit pro Studierender: <b>{min}:{sec} min</b>',
+      successRates: 'Erfolgsraten',
+      successRate: 'Erfolgsrate',
+      partialErrorRate: 'Partielle Fehlerrate',
+      microLearningOneSubmissionHint:
+        'Für Microlearnings ist keine Trennung von ersten und letzten Lösungversuchen möglich, da Teilnehmende jedes Element der Aktivität nur einmal lösen können.',
+      totalAnswers: 'Gesamtzahl Antworten: <b>{number}</b>',
+      numberOfStudentsN: 'Anzahl Studierende: <b>{number}</b>',
+      averageTimeSpentInstance:
+        'Durchschnittliche Bearbeitungszeit: <b>{min}:{sec} min</b>',
+      studentFeedback: 'Studierenden-Feedback (N = {numOfVotes})',
     },
   },
   control: {

@@ -15,6 +15,7 @@ import {
   CourseActivityAnalytics,
   CoursePerformanceAnalytics,
   ElementFeedback,
+  QuizAnalytics,
   WeeklyCourseActivities,
 } from './analytics.js'
 import {
@@ -778,6 +779,28 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return AnalyticsService.getCoursePerformanceAnalytics(args, ctx)
+        },
+      }),
+
+      getCourseActivities: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseActivities(args, ctx)
+        },
+      }),
+
+      getActivityAnalytics: asUser.field({
+        nullable: true,
+        type: QuizAnalytics,
+        args: {
+          activityId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AnalyticsService.getActivityAnalytics(args, ctx)
         },
       }),
     }

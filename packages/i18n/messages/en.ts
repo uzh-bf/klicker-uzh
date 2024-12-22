@@ -1821,6 +1821,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityDashboard: 'Activity Dashboard',
       performanceDashboard: 'Performance and Progress Dashboard',
       quizDashboard: 'Quiz Dashboard',
+      quizAnalytics: 'Quiz Analytics',
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
         'An error occurred while loading the analytics data. Please try again later or contact the support.',
@@ -1871,6 +1872,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementNameLabel: 'Element Name',
       overallStudentPerformance: 'Overall Student Performance (Error Rates)',
       totalErrorRate: 'Total Error Rate',
+      total: 'Total',
       firstAttempt: 'First Attempt',
       lastAttempt: 'Last Attempt',
       performanceLevel: 'Performance Level',
@@ -1883,6 +1885,26 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       studentPerformance: 'Student Performance',
       feedbackOverview: 'Feedback Overview',
       dataSource: 'Data Source',
+      selectActivityAnalytics:
+        'Please select one of the activities from your course to view the corresponding analytics. Please note that analytics are only available for activities accessible for students.',
+      noPracticeQuizzes: "This course doesn't contain any practice quizzes.",
+      noMicroLearnings: "This course doesn't contain any microlearnings.",
+      searchPracticeQuizzes: 'Search practice quizzes...',
+      searchMicroLearnings: 'Search microlearnings...',
+      backToActivitySelection: 'Back to activity selection',
+      totalAnsweredElements:
+        'Total answered elements in {activityName}: <b>{number}</b>',
+      averageTimeSpentActivity:
+        'Average total time spent per student: <b>{min}:{sec} min</b>',
+      successRates: 'Success Rates',
+      successRate: 'Success Rate',
+      partialErrorRate: 'Partial Error Rate',
+      microLearningOneSubmissionHint:
+        'For microlearnings no separation of first and last submitted answers is possible, since every participant can solve each element of the activity only once.',
+      totalAnswers: 'Total Answers: <b>{number}</b>',
+      numberOfStudentsN: 'Number of Students: <b>{number}</b>',
+      averageTimeSpentInstance: 'Average Time Spent: <b>{min}:{sec} min</b>',
+      studentFeedback: 'Student Feedback (N = {numOfVotes})',
     },
   },
   control: {

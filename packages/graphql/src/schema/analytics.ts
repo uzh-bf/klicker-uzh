@@ -2,9 +2,11 @@ import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityFeedback as ActivityFeedbackType,
   ActivityPerformance as ActivityPerformanceType,
+  ActivityQuizAnalytics as ActivityQuizAnalyticsType,
   ActivityType as ActivityTypeEnum,
   InstanceFeedback as InstanceFeedbackType,
   InstancePerformance as InstancePerformanceType,
+  InstanceQuizAnalytics as InstanceQuizAnalyticsType,
   ParticipantPerformance as ParticipantPerformanceType,
   PerformanceRates as PerformanceRatesType,
 } from '@klicker-uzh/types'
@@ -299,4 +301,81 @@ export const CoursePerformanceAnalytics = builder.objectType(
     }),
   }
 )
+// #endregion
+
+// ------ Quiz Analytics ------
+// #region
+export const InstanceQuizAnalyticsRef =
+  builder.objectRef<InstanceQuizAnalyticsType>('InstanceQuizAnalytics')
+export const InstanceQuizAnalytics = builder.objectType(
+  InstanceQuizAnalyticsRef,
+  {
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      elementName: t.exposeString('elementName'),
+      elementType: t.expose('elementType', { type: ElementType }),
+      numberOfAnswers: t.exposeInt('numberOfAnswers'),
+      uniqueParticipants: t.exposeInt('uniqueParticipants'),
+      averageTimeSpent: t.exposeFloat('averageTimeSpent'),
+      firstErrorRate: t.exposeFloat('firstErrorRate', { nullable: true }),
+      firstPartialRate: t.exposeFloat('firstPartialRate', { nullable: true }),
+      firstCorrectRate: t.exposeFloat('firstCorrectRate', { nullable: true }),
+      lastErrorRate: t.exposeFloat('lastErrorRate', { nullable: true }),
+      lastPartialRate: t.exposeFloat('lastPartialRate', { nullable: true }),
+      lastCorrectRate: t.exposeFloat('lastCorrectRate', { nullable: true }),
+      totalErrorRate: t.exposeFloat('totalErrorRate'),
+      totalPartialRate: t.exposeFloat('totalPartialRate'),
+      totalCorrectRate: t.exposeFloat('totalCorrectRate'),
+      upvoteRate: t.exposeFloat('upvoteRate'),
+      downvoteRate: t.exposeFloat('downvoteRate'),
+      feedbackCount: t.exposeInt('feedbackCount'),
+    }),
+  }
+)
+
+export const ActivityQuizAnalyticsRef =
+  builder.objectRef<ActivityQuizAnalyticsType>('ActivityQuizAnalytics')
+export const ActivityQuizAnalytics = builder.objectType(
+  ActivityQuizAnalyticsRef,
+  {
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      averageTimeSpent: t.exposeFloat('averageTimeSpent'),
+      numberOfAnswers: t.exposeInt('numberOfAnswers'),
+      firstErrorRate: t.exposeFloat('firstErrorRate', { nullable: true }),
+      firstPartialRate: t.exposeFloat('firstPartialRate', { nullable: true }),
+      firstCorrectRate: t.exposeFloat('firstCorrectRate', { nullable: true }),
+      lastErrorRate: t.exposeFloat('lastErrorRate', { nullable: true }),
+      lastPartialRate: t.exposeFloat('lastPartialRate', { nullable: true }),
+      lastCorrectRate: t.exposeFloat('lastCorrectRate', { nullable: true }),
+      totalErrorRate: t.exposeFloat('totalErrorRate'),
+      totalPartialRate: t.exposeFloat('totalPartialRate'),
+      totalCorrectRate: t.exposeFloat('totalCorrectRate'),
+    }),
+  }
+)
+
+interface IQuizAnalytics {
+  activityName: string
+  activityType: ActivityTypeEnum
+  courseParticipants: number
+  activityQuizAnalytics?: ActivityQuizAnalyticsType | null
+  instanceQuizAnalytics: InstanceQuizAnalyticsType[]
+}
+export const QuizAnalyticsRef =
+  builder.objectRef<IQuizAnalytics>('QuizAnalytics')
+export const QuizAnalytics = builder.objectType(QuizAnalyticsRef, {
+  fields: (t) => ({
+    activityName: t.exposeString('activityName'),
+    activityType: t.expose('activityType', { type: ActivityType }),
+    courseParticipants: t.exposeInt('courseParticipants'),
+    activityQuizAnalytics: t.expose('activityQuizAnalytics', {
+      type: ActivityQuizAnalytics,
+      nullable: true,
+    }),
+    instanceQuizAnalytics: t.expose('instanceQuizAnalytics', {
+      type: [InstanceQuizAnalytics],
+    }),
+  }),
+})
 // #endregion
