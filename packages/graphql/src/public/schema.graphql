@@ -54,6 +54,21 @@ type ActivityProgress {
   startedCount: Int!
 }
 
+type ActivityQuizAnalytics {
+  averageTimeSpent: Float!
+  firstCorrectRate: Float
+  firstErrorRate: Float
+  firstPartialRate: Float
+  id: Int!
+  lastCorrectRate: Float
+  lastErrorRate: Float
+  lastPartialRate: Float
+  numberOfAnswers: Int!
+  totalCorrectRate: Float!
+  totalErrorRate: Float!
+  totalPartialRate: Float!
+}
+
 type ActivitySummary {
   numOfAnonymousResponses: Int!
   numOfResponses: Int!
@@ -821,6 +836,26 @@ type InstancePerformance {
   rates: PerformanceRates!
 }
 
+type InstanceQuizAnalytics {
+  averageTimeSpent: Float!
+  downvoteRate: Float!
+  elementName: String!
+  elementType: ElementType!
+  firstCorrectRate: Float
+  firstErrorRate: Float
+  firstPartialRate: Float
+  id: Int!
+  lastCorrectRate: Float
+  lastErrorRate: Float
+  lastPartialRate: Float
+  numberOfAnswers: Int!
+  totalCorrectRate: Float!
+  totalErrorRate: Float!
+  totalPartialRate: Float!
+  uniqueParticipants: Int!
+  upvoteRate: Float!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -1338,6 +1373,7 @@ type Query {
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
+  getActivityAnalytics(activityId: String!): QuizAnalytics
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseActivities(courseId: String!): Course
@@ -1400,6 +1436,14 @@ type QuestionFeedback {
   feedback: String
   ix: Int!
   value: String!
+}
+
+type QuizAnalytics {
+  activityName: String!
+  activityQuizAnalytics: ActivityQuizAnalytics
+  activityType: ActivityType!
+  courseParticipants: Int!
+  instanceQuizAnalytics: [InstanceQuizAnalytics!]!
 }
 
 enum ResponseCorrectnessType {

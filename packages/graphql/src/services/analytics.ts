@@ -623,12 +623,14 @@ export async function getActivityAnalytics(
     activityName: activity.name,
     activityType,
     courseParticipants: activity.course._count.participations,
-    activityQuizAnalytics: {
-      ...activity.performance,
-      numberOfAnswers: numberOfAnswersActivity,
-      averageTimeSpent:
-        totalAverageInstanceTimes / instanceQuizAnalytics.length,
-    },
+    activityQuizAnalytics: activity.performance
+      ? {
+          ...activity.performance,
+          id: activity.performance?.id ?? 0,
+          numberOfAnswers: numberOfAnswersActivity,
+          averageTimeSpent: totalAverageInstanceTimes,
+        }
+      : null,
     instanceQuizAnalytics,
   }
 }

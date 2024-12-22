@@ -1886,6 +1886,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       overallStudentPerformance:
         'Gesamtleistung der Studierenden (Fehlerraten)',
       totalErrorRate: 'Totale Fehlerrate',
+      total: 'Total',
       firstAttempt: 'Erster Lösungsversuch',
       lastAttempt: 'Letzter Lösungsversuch',
       performanceLevel: 'Leistungslevel',
@@ -1904,6 +1905,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noMicroLearnings: 'Dieser Kurs enthält keine Microlearnings.',
       searchPracticeQuizzes: 'Übungs-Quizzes durchsuchen...',
       searchMicroLearnings: 'Microlearnings durchsuchen...',
+      backToActivitySelection: 'Zurück zur Aktivitätsauswahl',
+      totalAnsweredElements:
+        'Gesamtzahl beantworteter Elemente in {activityName}: <b>{number}</b>',
+      averageTimeSpentActivity:
+        'Durchschnittlich aufgewendete Gesamtzeit pro Studierender: <b>{min}:{sec} min</b>',
+      successRates: 'Erfolgsraten',
+      successRate: 'Erfolgsrate',
+      partialErrorRate: 'Partielle Fehlerrate',
     },
   },
   control: {

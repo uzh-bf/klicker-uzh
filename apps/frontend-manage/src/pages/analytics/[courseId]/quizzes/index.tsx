@@ -19,7 +19,7 @@ import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
-import QuizAnalyticsNavigation from '../../../../components/analytics/quiz/QuizAnalyticsNavigation'
+import QuizSelectionNavigation from '../../../../components/analytics/quiz/QuizSelectionNavigation'
 import Layout from '../../../../components/Layout'
 
 const ActivityLink = ({
@@ -53,7 +53,7 @@ function ActivityDashboard() {
     skip: !courseId,
   })
 
-  const navigation = <QuizAnalyticsNavigation courseId={courseId} />
+  const navigation = <QuizSelectionNavigation courseId={courseId} />
   const course = data?.getCourseActivities
 
   const practiceSearchEngine = useMemo(() => {

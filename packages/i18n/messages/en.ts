@@ -1872,6 +1872,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       elementNameLabel: 'Element Name',
       overallStudentPerformance: 'Overall Student Performance (Error Rates)',
       totalErrorRate: 'Total Error Rate',
+      total: 'Total',
       firstAttempt: 'First Attempt',
       lastAttempt: 'Last Attempt',
       performanceLevel: 'Performance Level',
@@ -1890,6 +1891,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noMicroLearnings: "This course doesn't contain any microlearnings.",
       searchPracticeQuizzes: 'Search practice quizzes...',
       searchMicroLearnings: 'Search microlearnings...',
+      backToActivitySelection: 'Back to activity selection',
+      totalAnsweredElements:
+        'Total answered elements in {activityName}: <b>{number}</b>',
+      averageTimeSpentActivity:
+        'Average total time spent per student: <b>{min}:{sec} min</b>',
+      successRates: 'Success Rates',
+      successRate: 'Success Rate',
+      partialErrorRate: 'Partial Error Rate',
     },
   },
   control: {
