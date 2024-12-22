@@ -6,7 +6,7 @@ set -e
 # Validate required environment variables
 if [ -z "${SERVICE_ENDPOINTS:-}" ]; then
   # Default endpoints if not specified
-  SERVICE_ENDPOINTS="http://127.0.0.1:3000/api/graphql http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010"
+  SERVICE_ENDPOINTS="http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010"
 fi
 
 if [ -z "${TIMEOUT_SECONDS:-}" ]; then
@@ -16,6 +16,26 @@ fi
 if [ -z "${CHECK_INTERVAL:-}" ]; then
   CHECK_INTERVAL=5
 fi
+
+# Check Redis
+check_redis() {
+  if ! nc -z localhost 6379 2>/dev/null; then
+    echo "❌ Redis is not running on port 6379"
+    return 1
+  fi
+  echo "✅ Redis is running on port 6379"
+  return 0
+}
+
+# Check PostgreSQL
+check_postgres() {
+  if ! nc -z localhost 5432 2>/dev/null; then
+    echo "❌ PostgreSQL is not running on port 5432"
+    return 1
+  fi
+  echo "✅ PostgreSQL is running on port 5432"
+  return 0
+}
 
 # Cleanup function
 cleanup() {
@@ -40,6 +60,11 @@ cleanup() {
 # Set up traps for cleanup
 trap 'cleanup TERM' TERM
 trap cleanup EXIT
+
+# Check dependencies before starting
+echo "🔍 Checking dependencies..."
+check_redis || { echo "❌ Redis check failed"; exit 1; }
+check_postgres || { echo "❌ PostgreSQL check failed"; exit 1; }
 
 # Start the service in the background and capture all output
 echo "🚀 Starting service..."
@@ -113,6 +138,8 @@ echo "⏲️ Timeout: ${TIMEOUT_SECONDS}s, Check interval: ${CHECK_INTERVAL}s"
 while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   # Check if the process is still running
   if ! check_process; then
+    echo "📑 Full service log:"
+    cat service.log
     exit 1
   fi
 
@@ -137,6 +164,6 @@ while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   fi
 done
 
-echo "⚠️ Timeout waiting for services to be ready. Last few lines of output:"
-tail -n 20 service.log
+echo "⚠️ Timeout waiting for services to be ready. Full service log:"
+cat service.log
 exit 1

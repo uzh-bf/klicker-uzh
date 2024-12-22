@@ -132,7 +132,7 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/api/graphql http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
 
@@ -150,7 +150,7 @@ jobs:
         timeout-minutes: 60
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
           wait-on-timeout: 300
           record: true
           browser: electron
