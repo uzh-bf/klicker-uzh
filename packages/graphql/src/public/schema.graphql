@@ -1332,7 +1332,7 @@ type PracticeQuiz {
   availableFrom: Date
   course: Course
   courseId: String
-  createdAt: Date!
+  createdAt: Date
   description: String
   displayName: String!
   id: String!
@@ -1344,7 +1344,7 @@ type PracticeQuiz {
   resetTimeDays: Int!
   stacks: [ElementStack!]
   status: PublicationStatus!
-  updatedAt: Date!
+  updatedAt: Date
 }
 
 enum PublicationStatus {

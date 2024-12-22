@@ -2105,7 +2105,7 @@ export type PracticeQuiz = {
   availableFrom?: Maybe<Scalars['Date']['output']>;
   course?: Maybe<Course>;
   courseId?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['Date']['output'];
+  createdAt?: Maybe<Scalars['Date']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   displayName: Scalars['String']['output'];
   id: Scalars['String']['output'];
@@ -2117,7 +2117,7 @@ export type PracticeQuiz = {
   resetTimeDays: Scalars['Int']['output'];
   stacks?: Maybe<Array<ElementStack>>;
   status: PublicationStatus;
-  updatedAt: Scalars['Date']['output'];
+  updatedAt?: Maybe<Scalars['Date']['output']>;
 };
 
 export enum PublicationStatus {
