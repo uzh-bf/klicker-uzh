@@ -328,6 +328,7 @@ export const InstanceQuizAnalytics = builder.objectType(
       totalCorrectRate: t.exposeFloat('totalCorrectRate'),
       upvoteRate: t.exposeFloat('upvoteRate'),
       downvoteRate: t.exposeFloat('downvoteRate'),
+      feedbackCount: t.exposeInt('feedbackCount'),
     }),
   }
 )

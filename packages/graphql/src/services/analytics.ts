@@ -567,30 +567,31 @@ export async function getActivityAnalytics(
         const uniqueParticipants = performance.responseCount
 
         // compute the upvote and downvote rates
-        const { upvoteRate, downvoteRate } = element.feedbacks.reduce<{
-          upvoteRate: number
-          downvoteRate: number
-          totalVotes: number
-        }>(
-          (acc, feedback) => {
-            if (feedback.upvote) {
-              acc.upvoteRate =
-                (acc.upvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
-              acc.totalVotes++
-            } else if (feedback.downvote) {
-              acc.downvoteRate =
-                (acc.downvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
-              acc.totalVotes++
-            }
+        const { upvoteRate, downvoteRate, totalVotes } =
+          element.feedbacks.reduce<{
+            upvoteRate: number
+            downvoteRate: number
+            totalVotes: number
+          }>(
+            (acc, feedback) => {
+              if (feedback.upvote) {
+                acc.upvoteRate =
+                  (acc.upvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
+                acc.totalVotes++
+              } else if (feedback.downvote) {
+                acc.downvoteRate =
+                  (acc.downvoteRate * acc.totalVotes + 1) / (acc.totalVotes + 1)
+                acc.totalVotes++
+              }
 
-            return acc
-          },
-          {
-            upvoteRate: 0,
-            downvoteRate: 0,
-            totalVotes: 0,
-          }
-        )
+              return acc
+            },
+            {
+              upvoteRate: 0,
+              downvoteRate: 0,
+              totalVotes: 0,
+            }
+          )
 
         // increment number of answers on activity
         acc.numberOfAnswersActivity += numberOfAnswers
@@ -602,6 +603,7 @@ export async function getActivityAnalytics(
           ...performance,
           upvoteRate,
           downvoteRate,
+          feedbackCount: totalVotes,
           elementName: element.elementData.name,
           elementType: element.elementData.type,
           numberOfAnswers,

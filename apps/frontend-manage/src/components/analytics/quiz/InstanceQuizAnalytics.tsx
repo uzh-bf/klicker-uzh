@@ -61,15 +61,18 @@ function InstanceQuizAnalytics({
           <div>
             {t.rich('manage.analytics.averageTimeSpentInstance', {
               min: Math.floor((analytics?.averageTimeSpent ?? 0) / 60),
-              sec: Math.floor((analytics?.averageTimeSpent ?? 0) % 60),
+              sec: Math.floor((analytics?.averageTimeSpent ?? 0) % 60)
+                .toString()
+                .padStart(2, '0'),
               b: (children) => <span className="font-bold">{children}</span>,
             })}
           </div>
         </div>
-        {/* // TODO: include the number of votes here */}
         <div className="w-full md:w-1/2 md:pl-4">
           <div className="font-bold">
-            {t('manage.analytics.studentFeedback')}:
+            {t('manage.analytics.studentFeedback', {
+              numOfVotes: analytics.feedbackCount,
+            })}
           </div>
           <div className="flex flex-row">
             <div

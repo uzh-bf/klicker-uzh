@@ -1904,7 +1904,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       totalAnswers: 'Total Answers: <b>{number}</b>',
       numberOfStudentsN: 'Number of Students: <b>{number}</b>',
       averageTimeSpentInstance: 'Average Time Spent: <b>{min}:{sec} min</b>',
-      studentFeedback: 'Student Feedback',
+      studentFeedback: 'Student Feedback (N = {numOfVotes})',
     },
   },
   control: {

@@ -9445,6 +9445,22 @@
             "deprecationReason": null
           },
           {
+            "name": "feedbackCount",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "firstCorrectRate",
             "description": null,
             "args": [],

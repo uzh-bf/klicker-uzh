@@ -39,7 +39,9 @@ function ActivityAnalyticsCharts({
       <div>
         {t.rich('manage.analytics.averageTimeSpentActivity', {
           min: Math.floor((analytics?.averageTimeSpent ?? 0) / 60),
-          sec: Math.floor((analytics?.averageTimeSpent ?? 0) % 60),
+          sec: Math.floor((analytics?.averageTimeSpent ?? 0) % 60)
+            .toString()
+            .padStart(2, '0'),
           b: (children) => <span className="font-bold">{children}</span>,
         })}
       </div>

@@ -1919,7 +1919,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       numberOfStudentsN: 'Anzahl Studierende: <b>{number}</b>',
       averageTimeSpentInstance:
         'Durchschnittliche Bearbeitungszeit: <b>{min}:{sec} min</b>',
-      studentFeedback: 'Studierenden-Feedback',
+      studentFeedback: 'Studierenden-Feedback (N = {numOfVotes})',
     },
   },
   control: {

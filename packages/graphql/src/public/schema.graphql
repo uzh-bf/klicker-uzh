@@ -841,6 +841,7 @@ type InstanceQuizAnalytics {
   downvoteRate: Float!
   elementName: String!
   elementType: ElementType!
+  feedbackCount: Int!
   firstCorrectRate: Float
   firstErrorRate: Float
   firstPartialRate: Float

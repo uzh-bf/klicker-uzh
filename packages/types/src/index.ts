@@ -442,6 +442,7 @@ export type InstanceQuizAnalytics = {
   totalCorrectRate: number
   upvoteRate: number
   downvoteRate: number
+  feedbackCount: number
 }
 
 export type ActivityQuizAnalytics = {
