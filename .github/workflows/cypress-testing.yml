@@ -125,10 +125,10 @@ jobs:
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
 
       - name: Start services in the background
-        run: pnpm run start:test &
+        # run: pnpm run start:test &
         env:
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
-        # run: pnpm run start:test
+        run: pnpm run start:test
 
       - name: Cypress run
         uses: cypress-io/github-action@v6
