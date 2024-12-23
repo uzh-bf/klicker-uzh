@@ -1930,6 +1930,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       emailMissing: 'n/a',
       selectAllActivities: 'Select all activities',
       deselectAllActivities: 'Deselect all activities',
+      noActivitySelected:
+        'Please select at least one activity to display the collected points and the progress of the students.',
     },
   },
   control: {

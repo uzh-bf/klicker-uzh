@@ -1945,6 +1945,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emailMissing: 'n/a',
       selectAllActivities: 'Alle Aktivitäten auswählen',
       deselectAllActivities: 'Alle Aktivitäten abwählen',
+      noActivitySelected:
+        'Bitte wählen Sie mindestens eine Aktivität aus, um die gesammelten Punkte und den Fortschritt der Studierenden anzuzeigen.',
     },
   },
   control: {

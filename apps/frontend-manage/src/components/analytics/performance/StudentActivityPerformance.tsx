@@ -93,7 +93,6 @@ function StudentActivityPerformance({
     return <Loader />
   }
 
-  // TODO: add user notification if no activity is selected and add option to select all activities at once (hide table?!)
   // TODO: add explanation what we can see in the plot (total score and completion percentage)
   // TODO: fix issue where column names in csv export correspond to access keys and, if possible, also include completion percentage therein
   return (
@@ -153,7 +152,7 @@ function StudentActivityPerformance({
           ))}
         </div>
       </div>
-      {performances.length > 0 ? (
+      {performances.length > 0 && selectedActivities.length > 0 ? (
         <DataTable
           isPaginated
           isResetSortingEnabled
@@ -191,6 +190,11 @@ function StudentActivityPerformance({
             tableHeader: 'h-7 p-2',
             tableCell: 'h-7 p-2',
           }}
+        />
+      ) : selectedActivities.length === 0 ? (
+        <UserNotification
+          type="info"
+          message={t('manage.analytics.noActivitySelected')}
         />
       ) : (
         <UserNotification
