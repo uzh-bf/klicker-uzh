@@ -30,6 +30,7 @@ interface DataTableProps<TData, TValue> {
     accessorKey: string
     className?: string
     csvOnly?: boolean
+    displayName?: string
   })[]
   data: TData[]
   csvFilename?: string
@@ -81,6 +82,7 @@ function DataTable<TData, TValue>({
       return {
         id: column.accessorKey,
         label: column.header,
+        displayName: column.displayName,
       }
     })
   }, [columns])

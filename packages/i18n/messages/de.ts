@@ -1900,6 +1900,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       upvotes: 'Positive Bewertungen',
       downvotes: 'Negative Bewertungen',
       performanceRates: 'Performance-Raten',
+      totalScore: 'Gesamtpunktzahl',
       activityProgress: 'Aktivitätsfortschritt',
       studentPerformance: 'Studierendenleistung',
       feedbackOverview: 'Feedback-Übersicht',

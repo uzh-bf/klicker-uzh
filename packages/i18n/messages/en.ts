@@ -1886,6 +1886,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       upvotes: 'Upvotes',
       downvotes: 'Downvotes',
       performanceRates: 'Performance Rates',
+      totalScore: 'Total Score',
       activityProgress: 'Activity Progress',
       studentPerformance: 'Student Performance',
       feedbackOverview: 'Feedback Overview',

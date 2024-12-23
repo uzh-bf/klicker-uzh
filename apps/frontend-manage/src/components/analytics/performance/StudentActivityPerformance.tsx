@@ -124,30 +124,40 @@ function StudentActivityPerformance({
               {
                 accessorKey: 'participantUsername',
                 header: t('manage.analytics.studentUsername'),
+                displayName: t('manage.analytics.studentUsername'),
               },
               {
                 accessorKey: 'participantEmail',
                 header: t('manage.analytics.studentEmail'),
+                displayName: t('manage.analytics.studentEmail'),
               },
-              ...selectedActivities.map((activityId) => {
+              ...selectedActivities.flatMap((activityId) => {
                 const activityName = activityNameMap[activityId]
 
-                return {
-                  accessorKey: `${activityId}-totalScore`,
-                  header: ({ column }: any) => {
-                    return (
-                      <TableSortingButton
-                        column={column}
-                        title={activityName}
-                      />
-                    )
+                return [
+                  {
+                    accessorKey: `${activityId}-totalScore`,
+                    header: ({ column }: any) => {
+                      return (
+                        <TableSortingButton
+                          column={column}
+                          title={activityName}
+                        />
+                      )
+                    },
+                    displayName: `${t('manage.analytics.totalScore')}: ${activityName} [${t('shared.generic.points')}]`,
+                    cell: ({ row }: any) => {
+                      const rowData = row.original
+                      return `${rowData[`${activityId}-totalScore`]} ${t('shared.generic.points')} (${rowData[`${activityId}-completion`]} %)`
+                    },
+                    className: 'min-w-40',
                   },
-                  cell: ({ row }: any) => {
-                    const rowData = row.original
-                    return `${rowData[`${activityId}-totalScore`]} ${t('shared.generic.points')} (${rowData[`${activityId}-completion`]} %)`
+                  {
+                    accessorKey: `${activityId}-completion`,
+                    csvOnly: true,
+                    displayName: `${t('manage.analytics.activityProgress')}: ${activityName} [%]`,
                   },
-                  className: 'min-w-40',
-                }
+                ]
               }),
             ]}
             data={tableData ?? []}
