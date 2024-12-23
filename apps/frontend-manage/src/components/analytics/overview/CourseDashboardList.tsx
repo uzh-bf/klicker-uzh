@@ -1,7 +1,7 @@
 import { Course } from '@klicker-uzh/graphql/dist/ops'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import PreviewTag from '~/components/common/PreviewTag'
+import PreviewTag from '../../common/PreviewTag'
 import AnalyticsCourseLabel from './AnalyticsCourseLabel'
 import DashboardButtons from './DashboardButtons'
 

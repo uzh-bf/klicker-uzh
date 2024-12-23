@@ -10,7 +10,9 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
 import { Button, Checkbox, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import useActivityMap from './useActivityMap'
+import useStudentActivityPerformanceTableData from './useStudentActivityPerformanceTableData'
 
 function StudentActivityPerformance({
   courseId,
@@ -37,57 +39,16 @@ function StudentActivityPerformance({
     })
   }
 
-  // TODO: extract the following functions to custom hooks
-  const activityNameMap = useMemo(
-    () => ({
-      ...(course?.practiceQuizzes?.reduce<Record<string, string>>((acc, pq) => {
-        acc[pq.id] = pq.name
-        return acc
-      }, {}) ?? {}),
-      ...(course?.microLearnings?.reduce<Record<string, string>>((acc, ml) => {
-        acc[ml.id] = ml.name
-        return acc
-      }, {}) ?? {}),
-    }),
-    [course?.practiceQuizzes, course?.microLearnings]
-  )
+  const { activityNameMap, allActivityIds } = useActivityMap({
+    practiceQuizzes: course?.practiceQuizzes,
+    microLearnings: course?.microLearnings,
+  })
 
-  const allActivityIds = useMemo(
-    () => [
-      ...(course?.practiceQuizzes?.map((quiz) => quiz.id) ?? []),
-      ...(course?.microLearnings?.map((ml) => ml.id) ?? []),
-    ],
-    [course?.practiceQuizzes, course?.microLearnings]
-  )
-
-  const tableData = useMemo(() => {
-    if (loading || !course) {
-      return []
-    }
-
-    // map the performances to a data structure where every selected activity entry can be
-    // identified through a direct key - {activityId}-totalScore and {activityId}-completion
-    return performances.map((studentPerformance) =>
-      studentPerformance.performances.reduce<Record<string, string | number>>(
-        (acc, performance) => {
-          if (selectedActivities.includes(performance.activityId)) {
-            acc[`${performance.activityId}-totalScore`] = performance.totalScore
-            acc[`${performance.activityId}-completion`] = Math.round(
-              performance.completion * 100
-            )
-          }
-
-          return acc
-        },
-        {
-          participantUsername: studentPerformance.participantUsername,
-          participantEmail:
-            studentPerformance.participantEmail ??
-            t('manage.analytics.emailMissing'),
-        }
-      )
-    )
-  }, [loading, course, performances, t, selectedActivities])
+  const tableData = useStudentActivityPerformanceTableData({
+    dataAvailable: !loading && !!course,
+    performances,
+    selectedActivities,
+  })
 
   if (loading || !tableData) {
     return <Loader />

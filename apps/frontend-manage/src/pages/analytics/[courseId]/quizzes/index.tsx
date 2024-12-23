@@ -17,10 +17,10 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
-import PreviewTag from '~/components/common/PreviewTag'
 import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
 import QuizSelectionNavigation from '../../../../components/analytics/quiz/QuizSelectionNavigation'
+import PreviewTag from '../../../../components/common/PreviewTag'
 import Layout from '../../../../components/Layout'
 
 const ActivityLink = ({

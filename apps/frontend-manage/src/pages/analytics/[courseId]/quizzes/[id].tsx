@@ -9,13 +9,13 @@ import { Button, H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import ActivityAnalyticsCharts from '~/components/analytics/quiz/ActivityAnalyticsCharts'
-import InstanceQuizAnalytics from '~/components/analytics/quiz/InstanceQuizAnalytics'
-import QuizAnalyticsNavigation from '~/components/analytics/quiz/QuizAnalyticsNavigation'
-import PreviewTag from '~/components/common/PreviewTag'
-import Layout from '~/components/Layout'
 import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
+import ActivityAnalyticsCharts from '../../../../components/analytics/quiz/ActivityAnalyticsCharts'
+import InstanceQuizAnalytics from '../../../../components/analytics/quiz/InstanceQuizAnalytics'
+import QuizAnalyticsNavigation from '../../../../components/analytics/quiz/QuizAnalyticsNavigation'
+import PreviewTag from '../../../../components/common/PreviewTag'
+import Layout from '../../../../components/Layout'
 
 function QuizAnalytics() {
   const router = useRouter()

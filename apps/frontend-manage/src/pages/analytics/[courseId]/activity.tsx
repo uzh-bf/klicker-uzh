@@ -4,7 +4,6 @@ import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import PreviewTag from '~/components/common/PreviewTag'
 import ActivityAnalyticsNavigation from '../../../components/analytics/activity/ActivityAnalyticsNavigation'
 import DailyActivityPlot from '../../../components/analytics/activity/DailyActivityPlot'
 import DailyActivityTimeSeries from '../../../components/analytics/activity/DailyActivityTimeSeries'
@@ -12,6 +11,7 @@ import TotalStudentActivityPlot from '../../../components/analytics/activity/Tot
 import WeeklyActivityTimeSeries from '../../../components/analytics/activity/WeeklyActivityTimeSeries'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
+import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
 
 function ActivityDashboard() {

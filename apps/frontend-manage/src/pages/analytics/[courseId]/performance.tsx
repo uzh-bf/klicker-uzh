@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import PreviewTag from '~/components/common/PreviewTag'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
 import ActivityInstanceFeedbacksPlot from '../../../components/analytics/performance/ActivityInstanceFeedbacksPlot'
@@ -15,6 +14,7 @@ import PerformanceAnalyticsNavigation from '../../../components/analytics/perfor
 import PerformanceRates from '../../../components/analytics/performance/PerformanceRates'
 import StudentActivityPerformance from '../../../components/analytics/performance/StudentActivityPerformance'
 import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
+import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
 
 function PerformanceDashboard() {
