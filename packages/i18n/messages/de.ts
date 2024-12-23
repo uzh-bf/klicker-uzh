@@ -1949,7 +1949,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noActivitySelected:
         'Bitte wählen Sie mindestens eine Aktivität aus, um die gesammelten Punkte und den Fortschritt der Studierenden anzuzeigen.',
       participantActivityPerformanceDescription:
-        'Diese Tabelle stellt den Fortschritt und die gesammelten Punkte der Studierenden in den ausgewählten Aktivitäten dar. Es werden alle berechneten Punkte (inkl. Repetitionen bei Übungs-Quizzes) dargestellt. Diese Zahl kann aufgrund der Bepunktungslogik bei Repetitionen von der Anzahl gesammelter Punkte auf dem Kurs-Leaderboard abweichen. Der prozentuale Fortschritt entspricht der Anzahl Elemente in der Aktivität, welche mindestens einmal beantwortet wurden.',
+        'Diese Tabelle stellt den Fortschritt und die gesammelten Punkte der Studierenden in den ausgewählten Aktivitäten dar. Es werden alle berechneten Punkte (inkl. Repetitionen bei Übungs-Quizzes) dargestellt. Diese Zahl kann aufgrund der Bepunktungslogik bei Repetitionen von der Anzahl gesammelter Punkte auf dem Kurs-Leaderboard abweichen. Der prozentuale Fortschritt entspricht der Anzahl Elemente in der Aktivität, welche mindestens einmal beantwortet wurden. Eine Aktivität wird zu den abgeschlossenen Aktivitäten gezählt, wenn der prozentuale Fortschritt 100% beträgt.',
+      completedActivitiesExplanation:
+        'Abgeschlossene Aktivitäten (mit 100% Fortschritt)',
+      completedActivities: 'Abgeschlossene Aktivitäten',
     },
   },
   control: {
