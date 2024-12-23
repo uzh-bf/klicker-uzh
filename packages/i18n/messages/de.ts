@@ -1940,6 +1940,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noStudentActivityPerformanceData:
         'Bisher sind keine Daten zur Studierendenleistung für Aktivitäten in diesem Kurs verfügbar.',
       studentActivityPerformance: 'Leistung der Studierenden in Aktivitäten',
+      studentUsername: 'Nutzername',
+      studentEmail: 'E-Mail Adresse',
+      emailMissing: 'n/a',
     },
   },
   control: {

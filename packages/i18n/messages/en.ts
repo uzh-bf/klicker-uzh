@@ -1925,6 +1925,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noStudentActivityPerformanceData:
         'No student performance data is available for activities in this course yet.',
       studentActivityPerformance: 'Student Activity Performance',
+      studentUsername: 'Username',
+      studentEmail: 'E-Mail Address',
+      emailMissing: 'n/a',
     },
   },
   control: {
