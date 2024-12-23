@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.12...v3.3.0-alpha.13) (2024-12-23)
+
+
+### Features
+
+* add initial version of learning analytics computation and dashboard illustrations ([#4211](https://github.com/uzh-bf/klicker-uzh/issues/4211)) ([d14d9dc](https://github.com/uzh-bf/klicker-uzh/commit/d14d9dc9ce3bee77da8fe68c441ba7d353525ec0))
+* add scripts to compute periodic participant learning analytics from past question response details ([#4213](https://github.com/uzh-bf/klicker-uzh/issues/4213)) ([a1736ff](https://github.com/uzh-bf/klicker-uzh/commit/a1736ff46f6e7ccb43def0b292ea3df977f3e7f9))
+
+
+### Bug Fixes
+
+* **apps/analytics:** ensure that correct response data is queried for course-duration participant analytics ([#4386](https://github.com/uzh-bf/klicker-uzh/issues/4386)) ([e8f2791](https://github.com/uzh-bf/klicker-uzh/commit/e8f2791bd619d35cea6b933213180c8c32651b3f))
+* **apps/analytics:** ensure that free text questions without sample solution are handled correctly ([4ca93c7](https://github.com/uzh-bf/klicker-uzh/commit/4ca93c704f047b0822945e2fb3b42372e255eb33))
+* **apps/frontend-manage:** ensure that activity evaluation sidebar rescales during resizing ([1e721db](https://github.com/uzh-bf/klicker-uzh/commit/1e721db621603d1275e995958f0f01a8aabca755))
+* **cypress:** resolve translation issue in microlearning test workflow ([#4411](https://github.com/uzh-bf/klicker-uzh/issues/4411)) ([c4b22e0](https://github.com/uzh-bf/klicker-uzh/commit/c4b22e002a027f6ed1c14a3b86980973727db5e1))
+
+
+### Other
+
+* **apps/analytics:** organize performance analytics in tab structure ([#4404](https://github.com/uzh-bf/klicker-uzh/issues/4404)) ([09b14b1](https://github.com/uzh-bf/klicker-uzh/commit/09b14b11dd246083a5f1fce2e13bf3c44e62b415))
+
+
+### Dependencies
+
+* upgrade to prisma 6.1.0 ([#4403](https://github.com/uzh-bf/klicker-uzh/issues/4403)) ([1a7b2eb](https://github.com/uzh-bf/klicker-uzh/commit/1a7b2ebf78b96a812058ab7c2684e20ab1de7641))
+
+
+### Enhancements
+
+* add first version of activity dashboard with daily and weekly student activity charts ([#4393](https://github.com/uzh-bf/klicker-uzh/issues/4393)) ([b8a134a](https://github.com/uzh-bf/klicker-uzh/commit/b8a134aec969f2f369a345ba71ca8930164350ff))
+* add python logic to compute daily participant analytics based on question response details ([#4212](https://github.com/uzh-bf/klicker-uzh/issues/4212)) ([ed7e745](https://github.com/uzh-bf/klicker-uzh/commit/ed7e7452f7c7bb5a34a05a3f66f6ad9ab4f4de94))
+* **apps/analytics:** add computation logic for activity progress ([#4392](https://github.com/uzh-bf/klicker-uzh/issues/4392)) ([28d64f6](https://github.com/uzh-bf/klicker-uzh/commit/28d64f67f952aa009e0f879a8bba5466f68e15ff))
+* **apps/analytics:** add computation logic for instance and activity performance analytics ([#4391](https://github.com/uzh-bf/klicker-uzh/issues/4391)) ([a04be0a](https://github.com/uzh-bf/klicker-uzh/commit/a04be0a2adcc8e9b800987963e89c54d703d17dd))
+* **apps/analytics:** add computation logic for participant activity performance ([#4409](https://github.com/uzh-bf/klicker-uzh/issues/4409)) ([ebbb581](https://github.com/uzh-bf/klicker-uzh/commit/ebbb58147adf80ca911a2254bc43f06fa06963d6))
+* **apps/analytics:** add computation logic for participant course performance ([#4390](https://github.com/uzh-bf/klicker-uzh/issues/4390)) ([cb471c3](https://github.com/uzh-bf/klicker-uzh/commit/cb471c3f16659b4e763d028815d6b8398718c799))
+* **apps/analytics:** add course data comparison for weekly student activity chart ([#4394](https://github.com/uzh-bf/klicker-uzh/issues/4394)) ([a799972](https://github.com/uzh-bf/klicker-uzh/commit/a799972b9e8eeed54620ca78bc4938297b987ddf))
+* **apps/analytics:** add illustration of individual student performances ([#4400](https://github.com/uzh-bf/klicker-uzh/issues/4400)) ([5630619](https://github.com/uzh-bf/klicker-uzh/commit/56306191c037922a35b30813c13ce3030919d1f5))
+* **apps/analytics:** add illustration of participant activity performance as table ([#4412](https://github.com/uzh-bf/klicker-uzh/issues/4412)) ([f8c8cb1](https://github.com/uzh-bf/klicker-uzh/commit/f8c8cb1e99c88e7bf1f385d0f032629faeca0837))
+* **apps/analytics:** add illustrations for asynchronous activity progress on performance dashboard ([#4396](https://github.com/uzh-bf/klicker-uzh/issues/4396)) ([1310b0c](https://github.com/uzh-bf/klicker-uzh/commit/1310b0cf36585ffcc55f6c28dec921b7d801468f))
+* **apps/analytics:** add illustrations for performance rates on activities and instances ([#4398](https://github.com/uzh-bf/klicker-uzh/issues/4398)) ([dd3014f](https://github.com/uzh-bf/klicker-uzh/commit/dd3014f22b0028678a44b7a55089427939640b13))
+* **apps/analytics:** add logic for computation of participant course analytics ([#4387](https://github.com/uzh-bf/klicker-uzh/issues/4387)) ([4b60b7e](https://github.com/uzh-bf/klicker-uzh/commit/4b60b7e8bf53a7ff07e281243d262a7f1c6693fa))
+* **apps/analytics:** add logic for the computation of aggregated course analytics ([#4388](https://github.com/uzh-bf/klicker-uzh/issues/4388)) ([4e11fa1](https://github.com/uzh-bf/klicker-uzh/commit/4e11fa103a6dc4502b32236c3afc90391a2a5d05))
+* **apps/analytics:** add overview of element feedbacks on activities and instances ([#4401](https://github.com/uzh-bf/klicker-uzh/issues/4401)) ([990cd6f](https://github.com/uzh-bf/klicker-uzh/commit/990cd6f7031ce03a5a4aab45c83efc09d4b907b9))
+* **apps/analytics:** add scripts for the computation of aggregated analytics ([#4385](https://github.com/uzh-bf/klicker-uzh/issues/4385)) ([76c2300](https://github.com/uzh-bf/klicker-uzh/commit/76c2300929e935b253c3fdb6df1200ea3aff3459))
+* **apps/analytics:** add student activity to learning analytics activity dashboard ([#4395](https://github.com/uzh-bf/klicker-uzh/issues/4395)) ([69cc23b](https://github.com/uzh-bf/klicker-uzh/commit/69cc23b4fd92a0d7320286642bbb020d2f43e881))
+* **apps/analytics:** allow switching between courses and activities on analytics dashboards ([#4406](https://github.com/uzh-bf/klicker-uzh/issues/4406)) ([4a6f88e](https://github.com/uzh-bf/klicker-uzh/commit/4a6f88ee9307e04ab1fdbb7c651b8c843de5dd01))
+* **apps/analytics:** implement quiz analytics dashboard for asynchronous activities ([#4405](https://github.com/uzh-bf/klicker-uzh/issues/4405)) ([6fa3bb6](https://github.com/uzh-bf/klicker-uzh/commit/6fa3bb6184c3290302b18b178b9f0d26570c8fd4))
+* **apps/frontend-manage:** add links from and to learning analytics pages behind feature flag ([#4408](https://github.com/uzh-bf/klicker-uzh/issues/4408)) ([c8e79fc](https://github.com/uzh-bf/klicker-uzh/commit/c8e79fca7a33649e2d48bf80bb36b02db4221dd2))
+* **apps/frontend-manage:** add loading state for comparison course loading on activity analytics dashboard ([189cfed](https://github.com/uzh-bf/klicker-uzh/commit/189cfed0cff359487de333f7672173b04a7e1c60))
+
 ## [3.3.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.11...v3.3.0-alpha.12) (2024-12-23)
 
 
