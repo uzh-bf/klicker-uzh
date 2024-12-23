@@ -1,4 +1,6 @@
 import { useQuery } from '@apollo/client'
+import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseActivitiesDocument,
   ParticipantActivityPerformances,
@@ -6,7 +8,7 @@ import {
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
-import { Checkbox, H2, UserNotification } from '@uzh-bf/design-system'
+import { Button, Checkbox, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 
@@ -50,6 +52,14 @@ function StudentActivityPerformance({
     [course?.practiceQuizzes, course?.microLearnings]
   )
 
+  const allActivityIds = useMemo(
+    () => [
+      ...(course?.practiceQuizzes?.map((quiz) => quiz.id) ?? []),
+      ...(course?.microLearnings?.map((ml) => ml.id) ?? []),
+    ],
+    [course?.practiceQuizzes, course?.microLearnings]
+  )
+
   const tableData = useMemo(() => {
     if (loading || !course) {
       return []
@@ -88,10 +98,34 @@ function StudentActivityPerformance({
   // TODO: fix issue where column names in csv export correspond to access keys and, if possible, also include completion percentage therein
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
-      <H2 className={{ root: 'mb-3' }}>
-        {t('manage.analytics.studentActivityPerformance')}
-      </H2>
-      <div className="mb-6">
+      <div className="mb-3 flex flex-row items-center gap-10">
+        <H2 className={{ root: 'mb-0' }}>
+          {t('manage.analytics.studentActivityPerformance')}
+        </H2>
+        <Button
+          onClick={() => {
+            setSelectedActivities((prev) =>
+              prev.length === allActivityIds.length ? [] : allActivityIds
+            )
+          }}
+          className={{
+            root: 'h-7 w-max',
+          }}
+        >
+          {selectedActivities.length === allActivityIds.length ? (
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faX} />
+              {t('manage.analytics.deselectAllActivities')}
+            </div>
+          ) : (
+            <div className="flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faCheck} />
+              {t('manage.analytics.selectAllActivities')}
+            </div>
+          )}
+        </Button>
+      </div>
+      <div className="mb-3 flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {course?.practiceQuizzes?.map((quiz) => (
             <div key={quiz.id} className="flex items-center space-x-2">

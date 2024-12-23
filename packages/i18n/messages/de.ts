@@ -1943,6 +1943,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       studentUsername: 'Nutzername',
       studentEmail: 'E-Mail Adresse',
       emailMissing: 'n/a',
+      selectAllActivities: 'Alle Aktivitäten auswählen',
+      deselectAllActivities: 'Alle Aktivitäten abwählen',
     },
   },
   control: {

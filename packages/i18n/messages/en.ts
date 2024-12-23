@@ -1928,6 +1928,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       studentUsername: 'Username',
       studentEmail: 'E-Mail Address',
       emailMissing: 'n/a',
+      selectAllActivities: 'Select all activities',
+      deselectAllActivities: 'Deselect all activities',
     },
   },
   control: {
