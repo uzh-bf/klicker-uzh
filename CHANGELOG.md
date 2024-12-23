@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.11...v3.3.0-alpha.12) (2024-12-23)
+
+
+### Dependencies
+
+* upgrade azure functions tooling and pass --javascript flag to start commands ([05343ba](https://github.com/uzh-bf/klicker-uzh/commit/05343ba8943ca4881920b850bcec5b1a03a9003a))
+
 ## [3.3.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.10...v3.3.0-alpha.11) (2024-12-22)
 
 
