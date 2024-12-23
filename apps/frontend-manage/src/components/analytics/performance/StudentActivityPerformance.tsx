@@ -93,7 +93,6 @@ function StudentActivityPerformance({
     return <Loader />
   }
 
-  // TODO: add explanation what we can see in the plot (total score and completion percentage)
   // TODO: fix issue where column names in csv export correspond to access keys and, if possible, also include completion percentage therein
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
@@ -153,44 +152,52 @@ function StudentActivityPerformance({
         </div>
       </div>
       {performances.length > 0 && selectedActivities.length > 0 ? (
-        <DataTable
-          isPaginated
-          isResetSortingEnabled
-          columns={[
-            {
-              accessorKey: 'participantUsername',
-              header: t('manage.analytics.studentUsername'),
-            },
-            {
-              accessorKey: 'participantEmail',
-              header: t('manage.analytics.studentEmail'),
-            },
-            ...selectedActivities.map((activityId) => {
-              const activityName = activityNameMap[activityId]
+        <>
+          <UserNotification className={{ root: 'mb-2 mt-6' }}>
+            {t('manage.analytics.participantActivityPerformanceDescription')}
+          </UserNotification>
+          <DataTable
+            isPaginated
+            isResetSortingEnabled
+            columns={[
+              {
+                accessorKey: 'participantUsername',
+                header: t('manage.analytics.studentUsername'),
+              },
+              {
+                accessorKey: 'participantEmail',
+                header: t('manage.analytics.studentEmail'),
+              },
+              ...selectedActivities.map((activityId) => {
+                const activityName = activityNameMap[activityId]
 
-              return {
-                accessorKey: `${activityId}-totalScore`,
-                header: ({ column }: any) => {
-                  return (
-                    <TableSortingButton column={column} title={activityName} />
-                  )
-                },
-                cell: ({ row }: any) => {
-                  const rowData = row.original
-                  return `${rowData[`${activityId}-totalScore`]} ${t('shared.generic.points')} (${rowData[`${activityId}-completion`]} %)`
-                },
-                className: 'min-w-40',
-              }
-            }),
-          ]}
-          data={tableData ?? []}
-          csvFilename={`${course?.name.replace(' ', '-')}_participant_activity`}
-          className={{
-            table: 'overflow-x-auto',
-            tableHeader: 'h-7 p-2',
-            tableCell: 'h-7 p-2',
-          }}
-        />
+                return {
+                  accessorKey: `${activityId}-totalScore`,
+                  header: ({ column }: any) => {
+                    return (
+                      <TableSortingButton
+                        column={column}
+                        title={activityName}
+                      />
+                    )
+                  },
+                  cell: ({ row }: any) => {
+                    const rowData = row.original
+                    return `${rowData[`${activityId}-totalScore`]} ${t('shared.generic.points')} (${rowData[`${activityId}-completion`]} %)`
+                  },
+                  className: 'min-w-40',
+                }
+              }),
+            ]}
+            data={tableData ?? []}
+            csvFilename={`${course?.name.replace(' ', '-')}_participant_activity`}
+            className={{
+              table: 'overflow-x-auto',
+              tableHeader: 'h-7 p-2',
+              tableCell: 'h-7 p-2',
+            }}
+          />
+        </>
       ) : selectedActivities.length === 0 ? (
         <UserNotification
           type="info"

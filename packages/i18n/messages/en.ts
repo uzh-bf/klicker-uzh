@@ -1932,6 +1932,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deselectAllActivities: 'Deselect all activities',
       noActivitySelected:
         'Please select at least one activity to display the collected points and the progress of the students.',
+      participantActivityPerformanceDescription:
+        'This table illustrates the progress and collected points of the participants in the selected activities. It displays all calculated points (including repetitions of practice quizzes). This number may differ from the number of collected points on the course leaderboard due to the scoring logic for repetitions. The percentage progress corresponds to the number of elements in the activity that have been answered at least once.',
     },
   },
   control: {
