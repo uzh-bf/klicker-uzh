@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.14...v3.3.0-alpha.15) (2024-12-23)
+
+
+### Other
+
+* **apps/frontend-manage:** add visual separation between selection areas for practice quiz and microlearning activities ([76cdf9b](https://github.com/uzh-bf/klicker-uzh/commit/76cdf9b23aabc42634da5ef101364a6ecccbb90a))
+
 ## [3.3.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.13...v3.3.0-alpha.14) (2024-12-23)
 
 
