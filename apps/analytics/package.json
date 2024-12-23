@@ -11,7 +11,7 @@
     "main": "doppler run --config dev -- poetry run poe main",
     "script": "doppler run --config dev -- poetry run python -m",
     "script:prod": "doppler run --config prd -- poetry run python -m",
-    "script:qa": "doppler run --config qa -- poetry run python -m"
+    "script:qa": "doppler run --config stg -- poetry run python -m"
   },
   "engines": {
     "node": "=20"
