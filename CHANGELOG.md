@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.13...v3.3.0-alpha.14) (2024-12-23)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add number of completed activities to participant activity performance table on analytics dashboard ([#4414](https://github.com/uzh-bf/klicker-uzh/issues/4414)) ([1993e1f](https://github.com/uzh-bf/klicker-uzh/commit/1993e1f7117da51d8cfe172b4471226dc6a3518b))
+
 ## [3.3.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.12...v3.3.0-alpha.13) (2024-12-23)
 
 
