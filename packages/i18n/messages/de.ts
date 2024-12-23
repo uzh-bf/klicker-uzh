@@ -1937,6 +1937,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bisher sind keine Daten zum Fortschritt in asynchronen Aktivitäten für diesen Kurs verfügbar.',
       noStudentPerformanceData:
         'Bisher sind keine Daten zur Studierendenleistung für diesen Kurs verfügbar.',
+      noStudentActivityPerformanceData:
+        'Bisher sind keine Daten zur Studierendenleistung für Aktivitäten in diesem Kurs verfügbar.',
+      studentActivityPerformance: 'Leistung der Studierenden in Aktivitäten',
     },
   },
   control: {

@@ -13,6 +13,7 @@ import ActivityInstanceFeedbacksPlot from '../../../components/analytics/perform
 import ActivityProgressPlot from '../../../components/analytics/performance/ActivityProgressPlot'
 import PerformanceAnalyticsNavigation from '../../../components/analytics/performance/PerformanceAnalyticsNavigation'
 import PerformanceRates from '../../../components/analytics/performance/PerformanceRates'
+import StudentActivityPerformance from '../../../components/analytics/performance/StudentActivityPerformance'
 import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
 import Layout from '../../../components/Layout'
 
@@ -164,11 +165,17 @@ function PerformanceDashboard() {
           <Tabs.TabContent
             key="content-studentPerformance"
             value="studentPerformance"
-            className={{ root: 'overflow-y-auto px-0 py-2' }}
+            className={{
+              root: 'flex flex-col gap-3 overflow-y-auto px-0 py-2',
+            }}
           >
             <TotalStudentPerformancePlot
               courseName={course.name}
               participantPerformance={course.participantPerformances}
+            />
+            <StudentActivityPerformance
+              courseId={courseId}
+              performances={course.participantActivityPerformances}
             />
           </Tabs.TabContent>
           <Tabs.TabContent

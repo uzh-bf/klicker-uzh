@@ -388,6 +388,20 @@ export type ActivityPerformance = {
   rates: PerformanceRates
 }
 
+export type ParticipantActivityPerformances = {
+  participantId: string
+  participantUsername: string
+  participantEmail: string | null
+  activityPerformances: ParticipantActivityPerformance[]
+}
+
+export type ParticipantActivityPerformance = {
+  id: number
+  activityId: string
+  totalScore: number
+  completion: number
+}
+
 export type InstancePerformance = {
   id: number
   elementName: string

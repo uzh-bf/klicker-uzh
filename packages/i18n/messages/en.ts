@@ -1922,6 +1922,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No asynchronous activity progress data is available for this course yet.',
       noStudentPerformanceData:
         'No student performance data is available for this course yet.',
+      noStudentActivityPerformanceData:
+        'No student performance data is available for activities in this course yet.',
+      studentActivityPerformance: 'Student Activity Performance',
     },
   },
   control: {
