@@ -20,6 +20,7 @@ import { useMemo, useState } from 'react'
 import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
 import QuizSelectionNavigation from '../../../../components/analytics/quiz/QuizSelectionNavigation'
+import PreviewTag from '../../../../components/common/PreviewTag'
 import Layout from '../../../../components/Layout'
 
 const ActivityLink = ({
@@ -109,9 +110,12 @@ function ActivityDashboard() {
       {navigation}
       <div>
         <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-          <H1 className={{ root: 'mb-0' }}>
-            {t('manage.analytics.quizAnalytics')}: {course.name}
-          </H1>
+          <div className="flex flex-row items-center gap-5">
+            <H1 className={{ root: 'mb-0' }}>
+              {t('manage.analytics.quizAnalytics')}: {course.name}
+            </H1>
+            <PreviewTag className="text-base" />
+          </div>
         </div>
         <div>{t('manage.analytics.selectActivityAnalytics')}</div>
         <div className="mt-8 flex h-max flex-row">

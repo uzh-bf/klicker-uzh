@@ -11,6 +11,7 @@ import TotalStudentActivityPlot from '../../../components/analytics/activity/Tot
 import WeeklyActivityTimeSeries from '../../../components/analytics/activity/WeeklyActivityTimeSeries'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
+import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
 
 function ActivityDashboard() {
@@ -50,15 +51,16 @@ function ActivityDashboard() {
     )
   }
 
-  console.log(course)
-
   return (
     <Layout displayName={t('manage.analytics.activityDashboard')}>
       {navigation}
       <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-        <H1 className={{ root: 'mb-0' }}>
-          {t('manage.analytics.activityDashboard')}: {course.name}
-        </H1>
+        <div className="flex flex-row items-center gap-5">
+          <H1 className={{ root: 'mb-0' }}>
+            {t('manage.analytics.activityDashboard')}: {course.name}
+          </H1>
+          <PreviewTag className="text-base" />
+        </div>
         <div>
           {t('manage.analytics.totalParticipants', {
             number: course.totalParticipants,

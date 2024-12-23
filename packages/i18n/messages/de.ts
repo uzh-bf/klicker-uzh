@@ -231,6 +231,8 @@ export default {
       weeks: 'Wochen',
       student: 'Studierende(r)',
       activity: 'Aktivität',
+      featurePreview: 'Feature-Vorschau',
+      new: 'Neu',
     },
     contentInput: {
       boldStyle:
@@ -1898,6 +1900,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       upvotes: 'Positive Bewertungen',
       downvotes: 'Negative Bewertungen',
       performanceRates: 'Performance-Raten',
+      totalScore: 'Gesamtpunktzahl',
       activityProgress: 'Aktivitätsfortschritt',
       studentPerformance: 'Studierendenleistung',
       feedbackOverview: 'Feedback-Übersicht',
@@ -1935,6 +1938,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bisher sind keine Daten zum Fortschritt in asynchronen Aktivitäten für diesen Kurs verfügbar.',
       noStudentPerformanceData:
         'Bisher sind keine Daten zur Studierendenleistung für diesen Kurs verfügbar.',
+      noStudentActivityPerformanceData:
+        'Bisher sind keine Daten zur Studierendenleistung für Aktivitäten in diesem Kurs verfügbar.',
+      studentActivityPerformance: 'Leistung der Studierenden in Aktivitäten',
+      studentUsername: 'Nutzername',
+      studentEmail: 'E-Mail Adresse',
+      emailMissing: 'n/a',
+      selectAllActivities: 'Alle Aktivitäten auswählen',
+      deselectAllActivities: 'Alle Aktivitäten abwählen',
+      noActivitySelected:
+        'Bitte wählen Sie mindestens eine Aktivität aus, um die gesammelten Punkte und den Fortschritt der Studierenden anzuzeigen.',
+      participantActivityPerformanceDescription:
+        'Diese Tabelle stellt den Fortschritt und die gesammelten Punkte der Studierenden in den ausgewählten Aktivitäten dar. Es werden alle berechneten Punkte (inkl. Repetitionen bei Übungs-Quizzes) dargestellt. Diese Zahl kann aufgrund der Bepunktungslogik bei Repetitionen von der Anzahl gesammelter Punkte auf dem Kurs-Leaderboard abweichen. Der prozentuale Fortschritt entspricht der Anzahl Elemente in der Aktivität, welche mindestens einmal beantwortet wurden.',
     },
   },
   control: {

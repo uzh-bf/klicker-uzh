@@ -343,6 +343,7 @@ type CoursePerformanceAnalytics {
   instanceFeedbacks: [InstanceFeedback!]!
   instancePerformances: [InstancePerformance!]!
   name: String!
+  participantActivityPerformances: [ParticipantActivityPerformances!]!
   participantPerformances: [ParticipantPerformance!]!
   totalParticipants: Int!
 }
@@ -1243,6 +1244,20 @@ type ParticipantAchievementInstance {
   achievedCount: Int!
   achievement: Achievement!
   id: Int!
+}
+
+type ParticipantActivityPerformance {
+  activityId: String!
+  completion: Float!
+  id: Int!
+  totalScore: Int!
+}
+
+type ParticipantActivityPerformances {
+  participantEmail: String
+  participantId: String!
+  participantUsername: String!
+  performances: [ParticipantActivityPerformance!]!
 }
 
 type ParticipantActivityTimestamp {

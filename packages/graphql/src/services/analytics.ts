@@ -6,9 +6,11 @@ import {
   ElementStack,
   ElementType,
   MicroLearning,
+  Participant,
   PracticeQuiz,
   ActivityPerformance as PrismaActivityPerformance,
   InstancePerformance as PrismaInstancePerformance,
+  ParticipantActivityPerformance as PrismaParticipantActivityPerformance,
 } from '@klicker-uzh/prisma'
 import {
   ActivityFeedback,
@@ -17,6 +19,7 @@ import {
   InstanceFeedback,
   InstancePerformance,
   InstanceQuizAnalytics,
+  ParticipantActivityPerformance,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import { ContextWithUser } from 'src/lib/context.js'
@@ -306,6 +309,9 @@ function computeActivityInstancePerformance({
       })[]
       progress: ActivityProgress | null
       performance: PrismaActivityPerformance | null
+      participantPerformances: (PrismaParticipantActivityPerformance & {
+        participant: Participant
+      })[]
     })[]
     microLearnings: (MicroLearning & {
       stacks: (ElementStack & {
@@ -315,10 +321,16 @@ function computeActivityInstancePerformance({
       })[]
       progress: ActivityProgress | null
       performance: PrismaActivityPerformance | null
+      participantPerformances: (PrismaParticipantActivityPerformance & {
+        participant: Participant
+      })[]
     })[]
   }
 }) {
-  return [...course.practiceQuizzes, ...course.microLearnings].reduce<{
+  const activityInstanceAnalytics = [
+    ...course.practiceQuizzes,
+    ...course.microLearnings,
+  ].reduce<{
     activityProgresses: {
       activityName: string
       activityType: ActivityType
@@ -422,6 +434,55 @@ function computeActivityInstancePerformance({
       instancePerformances: [],
     }
   )
+
+  const participantActivityObject = [
+    ...course.practiceQuizzes,
+    ...course.microLearnings,
+  ].reduce<
+    Record<
+      string,
+      {
+        participantUsername: string
+        participantEmail: string | null
+        activityPerformances: ParticipantActivityPerformance[]
+      }
+    >
+  >((acc, activity) => {
+    activity.participantPerformances.map((performance) => {
+      // extract performance data that should be tracked (table cell value)
+      const performanceEntry = {
+        id: performance.id,
+        totalScore: performance.totalScore,
+        completion: performance.completion,
+        activityId: activity.id,
+      }
+
+      // create a new entry in the accumulator or update it with the corresponding activity performance data
+      if (!acc[performance.participant.id]) {
+        acc[performance.participant.id] = {
+          participantUsername: performance.participant.username,
+          participantEmail: performance.participant.email,
+          activityPerformances: [performanceEntry],
+        }
+      } else {
+        acc[performance.participant.id]!.activityPerformances.push(
+          performanceEntry
+        )
+      }
+    })
+
+    return acc
+  }, {})
+
+  // transfer the data into a list format before returning it
+  const participantActivityPerformances = Object.entries(
+    participantActivityObject
+  ).map(([participantId, entry]) => ({
+    participantId,
+    ...entry,
+  }))
+
+  return { ...activityInstanceAnalytics, participantActivityPerformances }
 }
 
 export async function getCoursePerformanceAnalytics(
@@ -438,6 +499,11 @@ export async function getCoursePerformanceAnalytics(
         include: {
           progress: true,
           performance: true,
+          participantPerformances: {
+            include: {
+              participant: true,
+            },
+          },
           stacks: {
             include: {
               elements: {
@@ -455,6 +521,11 @@ export async function getCoursePerformanceAnalytics(
         include: {
           progress: true,
           performance: true,
+          participantPerformances: {
+            include: {
+              participant: true,
+            },
+          },
           stacks: {
             include: {
               elements: {
@@ -485,6 +556,7 @@ export async function getCoursePerformanceAnalytics(
       totalParticipants: course._count.participations,
       activityProgresses: [],
       activityPerformances: [],
+      participantActivityPerformances: [],
       instancePerformances: [],
       participantPerformances: course.participantPerformances,
       instanceFeedbacks: [],
@@ -493,10 +565,14 @@ export async function getCoursePerformanceAnalytics(
   }
 
   // map the metrics for all activities in the course to the desired performance and progress values
-  const { activityProgresses, activityPerformances, instancePerformances } =
-    computeActivityInstancePerformance({
-      course,
-    })
+  const {
+    activityProgresses,
+    activityPerformances,
+    participantActivityPerformances,
+    instancePerformances,
+  } = computeActivityInstancePerformance({
+    course,
+  })
 
   const { instanceFeedbacks, activityFeedbacks } =
     computeActivityInstanceFeedbacks({ course })
@@ -506,6 +582,7 @@ export async function getCoursePerformanceAnalytics(
     totalParticipants: course._count.participations,
     activityProgresses,
     activityPerformances,
+    participantActivityPerformances,
     instancePerformances,
     participantPerformances: course.participantPerformances,
     instanceFeedbacks,

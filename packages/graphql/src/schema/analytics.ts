@@ -7,6 +7,8 @@ import {
   InstanceFeedback as InstanceFeedbackType,
   InstancePerformance as InstancePerformanceType,
   InstanceQuizAnalytics as InstanceQuizAnalyticsType,
+  ParticipantActivityPerformance as ParticipantActivityPerformanceType,
+  ParticipantActivityPerformances as ParticipantActivityPerformancesType,
   ParticipantPerformance as ParticipantPerformanceType,
   PerformanceRates as PerformanceRatesType,
 } from '@klicker-uzh/types'
@@ -235,6 +237,40 @@ export const ParticipantPerformance = builder.objectType(
   }
 )
 
+export const ParticipantActivityPerformanceRef =
+  builder.objectRef<ParticipantActivityPerformanceType>(
+    'ParticipantActivityPerformance'
+  )
+export const ParticipantActivityPerformance = builder.objectType(
+  ParticipantActivityPerformanceRef,
+  {
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      activityId: t.exposeString('activityId'),
+      totalScore: t.exposeInt('totalScore'),
+      completion: t.exposeFloat('completion'),
+    }),
+  }
+)
+
+export const ParticipantActivityPerformancesRef =
+  builder.objectRef<ParticipantActivityPerformancesType>(
+    'ParticipantActivityPerformances'
+  )
+export const ParticipantActivityPerformances = builder.objectType(
+  ParticipantActivityPerformancesRef,
+  {
+    fields: (t) => ({
+      participantId: t.exposeString('participantId'),
+      participantUsername: t.exposeString('participantUsername'),
+      participantEmail: t.exposeString('participantEmail', { nullable: true }),
+      performances: t.expose('activityPerformances', {
+        type: [ParticipantActivityPerformance],
+      }),
+    }),
+  }
+)
+
 export const InstanceFeedbackRef =
   builder.objectRef<InstanceFeedbackType>('InstanceFeedback')
 export const InstanceFeedback = builder.objectType(InstanceFeedbackRef, {
@@ -269,6 +305,7 @@ interface ICoursePerformanceAnalytics {
   activityPerformances: ActivityPerformanceType[]
   instancePerformances: InstancePerformanceType[]
   participantPerformances: ParticipantPerformanceType[]
+  participantActivityPerformances: ParticipantActivityPerformancesType[]
   instanceFeedbacks: InstanceFeedbackType[]
   activityFeedbacks: ActivityFeedbackType[]
 }
@@ -292,6 +329,12 @@ export const CoursePerformanceAnalytics = builder.objectType(
       participantPerformances: t.expose('participantPerformances', {
         type: [ParticipantPerformance],
       }),
+      participantActivityPerformances: t.expose(
+        'participantActivityPerformances',
+        {
+          type: [ParticipantActivityPerformances],
+        }
+      ),
       instanceFeedbacks: t.expose('instanceFeedbacks', {
         type: [InstanceFeedback],
       }),

@@ -231,6 +231,8 @@ export default {
       weeks: 'Weeks',
       student: 'Student',
       activity: 'Activity',
+      featurePreview: 'Feature Preview',
+      new: 'New',
     },
     contentInput: {
       boldStyle:
@@ -1884,6 +1886,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       upvotes: 'Upvotes',
       downvotes: 'Downvotes',
       performanceRates: 'Performance Rates',
+      totalScore: 'Total Score',
       activityProgress: 'Activity Progress',
       studentPerformance: 'Student Performance',
       feedbackOverview: 'Feedback Overview',
@@ -1920,6 +1923,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No asynchronous activity progress data is available for this course yet.',
       noStudentPerformanceData:
         'No student performance data is available for this course yet.',
+      noStudentActivityPerformanceData:
+        'No student performance data is available for activities in this course yet.',
+      studentActivityPerformance: 'Student Activity Performance',
+      studentUsername: 'Username',
+      studentEmail: 'E-Mail Address',
+      emailMissing: 'n/a',
+      selectAllActivities: 'Select all activities',
+      deselectAllActivities: 'Deselect all activities',
+      noActivitySelected:
+        'Please select at least one activity to display the collected points and the progress of the students.',
+      participantActivityPerformanceDescription:
+        'This table illustrates the progress and collected points of the participants in the selected activities. It displays all calculated points (including repetitions of practice quizzes). This number may differ from the number of collected points on the course leaderboard due to the scoring logic for repetitions. The percentage progress corresponds to the number of elements in the activity that have been answered at least once.',
     },
   },
   control: {

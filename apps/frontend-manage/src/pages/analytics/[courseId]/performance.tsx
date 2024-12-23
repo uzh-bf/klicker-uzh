@@ -12,7 +12,9 @@ import ActivityInstanceFeedbacksPlot from '../../../components/analytics/perform
 import ActivityProgressPlot from '../../../components/analytics/performance/ActivityProgressPlot'
 import PerformanceAnalyticsNavigation from '../../../components/analytics/performance/PerformanceAnalyticsNavigation'
 import PerformanceRates from '../../../components/analytics/performance/PerformanceRates'
+import StudentActivityPerformance from '../../../components/analytics/performance/StudentActivityPerformance'
 import TotalStudentPerformancePlot from '../../../components/analytics/performance/TotalStudentPerformancePlot'
+import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
 
 function PerformanceDashboard() {
@@ -60,9 +62,12 @@ function PerformanceDashboard() {
       {navigation}
       <div>
         <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-          <H1 className={{ root: 'mb-0' }}>
-            {t('manage.analytics.performanceDashboard')}: {course.name}
-          </H1>
+          <div className="flex flex-row items-center gap-5">
+            <H1 className={{ root: 'mb-0' }}>
+              {t('manage.analytics.performanceDashboard')}: {course.name}
+            </H1>
+            <PreviewTag className="text-base" />
+          </div>
           <div>
             {t('manage.analytics.totalParticipants', {
               number: course.totalParticipants,
@@ -160,11 +165,17 @@ function PerformanceDashboard() {
           <Tabs.TabContent
             key="content-studentPerformance"
             value="studentPerformance"
-            className={{ root: 'overflow-y-auto px-0 py-2' }}
+            className={{
+              root: 'flex flex-col gap-3 overflow-y-auto px-0 py-2',
+            }}
           >
             <TotalStudentPerformancePlot
               courseName={course.name}
               participantPerformance={course.participantPerformances}
+            />
+            <StudentActivityPerformance
+              courseId={courseId}
+              performances={course.participantActivityPerformances}
             />
           </Tabs.TabContent>
           <Tabs.TabContent
