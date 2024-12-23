@@ -20,10 +20,6 @@ from src.modules.participant_analytics.compute_participant_course_analytics impo
 )
 
 db = Prisma()
-
-# set the environment variable DATABASE_URL to the connection string of your database
-os.environ["DATABASE_URL"] = "postgresql://klicker:klicker@localhost:5432/klicker-prod"
-
 db.connect()
 
 # Script settings

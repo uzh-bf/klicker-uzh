@@ -31,10 +31,6 @@ from src.modules.instance_activity_performance.save_activity_performance import 
 )
 
 db = Prisma()
-
-# set the environment variable DATABASE_URL to the connection string of your database
-os.environ["DATABASE_URL"] = "postgresql://klicker:klicker@localhost:5432/klicker-prod"
-
 db.connect()
 
 # Script settings

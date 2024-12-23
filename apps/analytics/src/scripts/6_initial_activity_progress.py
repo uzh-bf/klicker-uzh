@@ -2,8 +2,6 @@
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
 import os
-import json
-from datetime import datetime
 from prisma import Prisma
 import pandas as pd
 import sys
@@ -29,10 +27,6 @@ from src.modules.activity_progress.save_microlearning_progress import (
 
 
 db = Prisma()
-
-# set the environment variable DATABASE_URL to the connection string of your database
-os.environ["DATABASE_URL"] = "postgresql://klicker:klicker@localhost:5432/klicker-prod"
-
 db.connect()
 
 # Script settings
