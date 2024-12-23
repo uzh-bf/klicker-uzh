@@ -304,7 +304,7 @@ function LiveQuizWizard({
             )}
             name={formData.name}
             editMode={editMode}
-            viewElementHref="/sessions"
+            viewElementHref="/quizzes"
             onRestartForm={() => {
               setIsWizardCompleted(false)
               closeWizard()
@@ -322,7 +322,7 @@ function LiveQuizWizard({
                       id: data.createLiveQuiz!.id,
                     },
                   })
-                  router.push(`/sessions/${data.createLiveQuiz!.id}/cockpit`)
+                  router.push(`/quizzes/${data.createLiveQuiz!.id}/cockpit`)
                 }}
                 className={{ root: 'space-x-1' }}
               >

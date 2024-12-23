@@ -2998,7 +2998,6 @@ function computeInstanceEvaluation({
     'responses' in instance.results &&
     'responses' in instance.anonymousResults
   ) {
-    console.log('COMPUTING INSTANCE EVALUATION')
     return computeNumericalEvaluation({
       options: instance.elementData.options,
       results: instance.results,

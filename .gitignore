@@ -22,4 +22,5 @@ packages/prisma/src/seed
 .turbo
 
 out/
+!out/.gitkeep
 .rollup.cache/

@@ -122,7 +122,7 @@ describe('Different practice quiz workflows', () => {
   // ! Part 1: Practice Quiz Creation
   it('Test the creation of a practice quiz', () => {
     cy.loginLecturer()
-    cy.get('[data-cy="questions"]').click()
+    cy.get('[data-cy="library"]').click()
 
     // create practice quiz
     cy.get('[data-cy="create-practice-quiz"]').click()

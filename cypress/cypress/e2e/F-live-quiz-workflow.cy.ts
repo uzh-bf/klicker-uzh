@@ -677,7 +677,7 @@ describe('Different live-quiz workflows', () => {
   it('Start the first block of the live quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.get(`[data-cy="live-quiz-cockpit${quizName2}"]`).click()
+    cy.get(`[data-cy="live-quiz-cockpit-${quizName2}"]`).click()
     cy.wait(1000)
 
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -725,7 +725,7 @@ describe('Different live-quiz workflows', () => {
   it('Start the second block of the live quiz', () => {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.get(`[data-cy="live-quiz-cockpit${quizName2}"]`).click()
+    cy.get(`[data-cy="live-quiz-cockpit-${quizName2}"]`).click()
     cy.wait(1000)
 
     cy.get('[data-cy="next-block-timeline"]').click()
@@ -737,7 +737,7 @@ describe('Different live-quiz workflows', () => {
   it('Make feedbacks visible, respond to one and disable moderation', () => {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.get(`[data-cy="live-quiz-cockpit${quizName2}"]`).click()
+    cy.get(`[data-cy="live-quiz-cockpit-${quizName2}"]`).click()
     cy.wait(1000)
 
     // make both feedbacks visible and respond to one of them (moderation enabled)
@@ -791,7 +791,7 @@ describe('Different live-quiz workflows', () => {
     cy.loginLecturer()
 
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.get(`[data-cy="live-quiz-cockpit${quizName2}"]`).click()
+    cy.get(`[data-cy="live-quiz-cockpit-${quizName2}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
 
@@ -816,7 +816,7 @@ describe('Different live-quiz workflows', () => {
     cy.loginLecturer()
 
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.get(`[data-cy="live-quiz-cockpit${quizName2}"]`).click()
+    cy.get(`[data-cy="live-quiz-cockpit-${quizName2}"]`).click()
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
   })

@@ -29,6 +29,7 @@ import React, { useState } from 'react'
 import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import StatusTag from './StatusTag'
+import ActivityAnalyticsLink from './actions/ActivityAnalyticsLink'
 import PracticeQuizAccessLink from './actions/PracticeQuizAccessLink'
 import PracticeQuizEvaluationLink from './actions/PracticeQuizEvaluationLink'
 import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
@@ -127,6 +128,7 @@ function PracticeQuizElement({
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
+  const user = dataUser?.userProfile
 
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument, {
     variables: { id: practiceQuiz.id! },
@@ -231,7 +233,7 @@ function PracticeQuizElement({
                     t,
                     name: practiceQuiz.name,
                   }),
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -292,7 +294,7 @@ function PracticeQuizElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -349,7 +351,7 @@ function PracticeQuizElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -384,6 +386,17 @@ function PracticeQuizElement({
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
                     },
                   }),
+                  user?.featurePreview
+                    ? {
+                        label: (
+                          <ActivityAnalyticsLink
+                            courseId={courseId}
+                            activityId={practiceQuiz.id}
+                          />
+                        ),
+                        onClick: () => null,
+                      }
+                    : [],
                   deletionItem,
                 ].flat()}
                 triggerIcon={faHandPointer}

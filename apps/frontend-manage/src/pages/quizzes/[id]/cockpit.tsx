@@ -96,7 +96,7 @@ function Cockpit() {
           quizName={name}
           handleEndLiveQuiz={() => {
             endLiveQuiz({ variables: { id: id } })
-            router.push('/sessions')
+            router.push('/quizzes')
           }}
           handleOpenBlock={(blockId: number) => {
             activateLiveQuizBlock({

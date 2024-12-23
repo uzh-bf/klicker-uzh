@@ -1,0 +1,9 @@
+query GetCourseWeeklyActivity($courseId: String) {
+  getCourseWeeklyActivity(courseId: $courseId) {
+    totalParticipants
+    weeklyActivity {
+      date
+      activeParticipants
+    }
+  }
+}

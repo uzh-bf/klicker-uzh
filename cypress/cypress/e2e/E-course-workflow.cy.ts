@@ -513,7 +513,7 @@ describe('Test course creation and editing functionalities', () => {
     cy.reload()
 
     // create a question with sample solution
-    cy.get('[data-cy="questions"]').click()
+    cy.get('[data-cy="library"]').click()
     cy.createQuestionSC({
       title: questionTitle,
       content: questionContent,
