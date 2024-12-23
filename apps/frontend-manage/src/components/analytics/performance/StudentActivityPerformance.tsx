@@ -8,7 +8,13 @@ import {
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
-import { Button, Checkbox, H2, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Checkbox,
+  H2,
+  H4,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import useActivityMap from './useActivityMap'
@@ -84,31 +90,41 @@ function StudentActivityPerformance({
         </Button>
       </div>
       <div className="mb-3 flex flex-col gap-3">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {course?.practiceQuizzes?.map((quiz) => (
-            <div key={quiz.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`checkbox-${quiz.id}`}
-                checked={selectedActivities.includes(quiz.id)}
-                onCheck={() => handleActivityToggle(quiz.id)}
-              />
-              <label htmlFor={quiz.id} className="text-sm">
-                {quiz.name}
-              </label>
+        <div className="flex flex-col gap-4">
+          <div>
+            <H4>{t('shared.generic.practiceQuizzes')}</H4>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {course?.practiceQuizzes?.map((quiz) => (
+                <div key={quiz.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`checkbox-${quiz.id}`}
+                    checked={selectedActivities.includes(quiz.id)}
+                    onCheck={() => handleActivityToggle(quiz.id)}
+                  />
+                  <label htmlFor={quiz.id} className="text-sm">
+                    {quiz.name}
+                  </label>
+                </div>
+              ))}
             </div>
-          ))}
-          {course?.microLearnings?.map((ml) => (
-            <div key={ml.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`checkbox-${ml.id}`}
-                checked={selectedActivities.includes(ml.id)}
-                onCheck={() => handleActivityToggle(ml.id)}
-              />
-              <label htmlFor={ml.id} className="text-sm">
-                {ml.name}
-              </label>
+          </div>
+          <div>
+            <H4>{t('shared.generic.microlearnings')}</H4>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {course?.microLearnings?.map((ml) => (
+                <div key={ml.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`checkbox-${ml.id}`}
+                    checked={selectedActivities.includes(ml.id)}
+                    onCheck={() => handleActivityToggle(ml.id)}
+                  />
+                  <label htmlFor={ml.id} className="text-sm">
+                    {ml.name}
+                  </label>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
       {performances.length > 0 && selectedActivities.length > 0 ? (
