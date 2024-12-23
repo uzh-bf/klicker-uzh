@@ -285,7 +285,7 @@ describe('Different microlearning workflows', () => {
 
     cy.get(`[data-cy="microlearning-actions-${runningMLNameOLD}"]`).click()
     cy.get(`[data-cy="edit-microlearning-${runningMLNameOLD}"]`).click()
-    cy.findByText('Edit ' + messages.shared.generic.microlearnings).should(
+    cy.findByText('Edit ' + messages.shared.generic.microlearning).should(
       'exist'
     )
 
@@ -382,7 +382,7 @@ describe('Different microlearning workflows', () => {
     // recheck if the changes have been saved
     cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
     cy.get(`[data-cy="edit-microlearning-${runningMLName}"]`).click()
-    cy.findByText('Edit ' + messages.shared.generic.microlearnings).should(
+    cy.findByText('Edit ' + messages.shared.generic.microlearning).should(
       'exist'
     )
     cy.get('[data-cy="insert-microlearning-name"]')
@@ -432,7 +432,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
     cy.get(`[data-cy="duplicate-microlearning-${runningMLName}"]`).click()
-    cy.findByText('Create ' + messages.shared.generic.microlearnings).should(
+    cy.findByText('Create ' + messages.shared.generic.microlearning).should(
       'exist'
     )
 
