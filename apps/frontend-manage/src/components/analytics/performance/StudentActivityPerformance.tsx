@@ -54,7 +54,6 @@ function StudentActivityPerformance({
     return <Loader />
   }
 
-  // TODO: fix issue where column names in csv export correspond to access keys and, if possible, also include completion percentage therein
   return (
     <div className="border-uzh-grey-80 rounded-xl border border-solid p-3">
       <div className="mb-3 flex flex-row items-center gap-10">
