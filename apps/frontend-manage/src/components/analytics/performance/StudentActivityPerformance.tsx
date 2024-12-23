@@ -158,6 +158,20 @@ function StudentActivityPerformance({
                   },
                 ]
               }),
+              {
+                accessorKey: 'completedActivities',
+                header: ({ column }: any) => {
+                  return (
+                    <TableSortingButton
+                      column={column}
+                      title={t(
+                        'manage.analytics.completedActivitiesExplanation'
+                      )}
+                    />
+                  )
+                },
+                displayName: t('manage.analytics.completedActivities'),
+              },
             ]}
             data={tableData ?? []}
             csvFilename={`${course?.name.replace(' ', '-')}_participant_activity`}

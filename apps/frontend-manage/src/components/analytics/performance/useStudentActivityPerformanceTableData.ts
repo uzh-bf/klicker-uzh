@@ -28,6 +28,10 @@ function useStudentActivityPerformanceTableData({
             acc[`${performance.activityId}-completion`] = Math.round(
               performance.completion * 100
             )
+
+            if (performance.completion === 1) {
+              acc.completedActivities = (acc.completedActivities as number) + 1
+            }
           }
 
           return acc
@@ -37,6 +41,7 @@ function useStudentActivityPerformanceTableData({
           participantEmail:
             studentPerformance.participantEmail ??
             t('manage.analytics.emailMissing'),
+          completedActivities: 0,
         }
       )
     )
