@@ -1,0 +1,63 @@
+# This script computes the initial participant performance analytics
+# ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
+
+import os
+import json
+from datetime import datetime
+from prisma import Prisma
+import pandas as pd
+import sys
+
+# set the python path correctly for module imports to work
+sys.path.append("../../")
+
+from src.modules.participant_course_analytics.get_running_past_courses import (
+    get_running_past_courses,
+)
+from src.modules.participant_performance.compute_response_error_rates import (
+    compute_response_error_rates,
+)
+from src.modules.participant_performance.compute_performance_levels import (
+    compute_performance_levels,
+)
+from src.modules.participant_performance.save_participant_performance import (
+    save_participant_performance,
+)
+
+db = Prisma()
+
+# set the environment variable DATABASE_URL to the connection string of your database
+os.environ["DATABASE_URL"] = "postgresql://klicker:klicker@localhost:5432/klicker-prod"
+
+db.connect()
+
+# Script settings
+verbose = False
+
+
+# Fetch all courses from the database
+df_courses = get_running_past_courses(db)
+
+# Iterate over the course and fetch all question responses linked to it
+for idx, course in df_courses.iterrows():
+    course_id = course["id"]
+    print(f"Processing course", idx, "of", len(df_courses), "with id", course_id)
+
+    # fetch all question responses linked to this course
+    question_responses = db.questionresponse.find_many(where={"courseId": course_id})
+    df_responses = pd.DataFrame(list(map(lambda x: x.dict(), question_responses)))
+
+    # if no responses are linked to the course, skip the iteration
+    if df_responses.empty:
+        print("No responses linked to course", course_id)
+        continue
+
+    df_performance = compute_response_error_rates(df_responses)
+    df_performance = compute_performance_levels(df_performance)
+
+    # store computed performance analytics in the corresponding database table
+    save_participant_performance(db, df_performance, course_id)
+
+
+# Disconnect from the database
+db.disconnect()
