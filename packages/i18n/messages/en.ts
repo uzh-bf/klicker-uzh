@@ -232,6 +232,7 @@ export default {
       student: 'Student',
       activity: 'Activity',
       featurePreview: 'Feature Preview',
+      new: 'New',
     },
     contentInput: {
       boldStyle:

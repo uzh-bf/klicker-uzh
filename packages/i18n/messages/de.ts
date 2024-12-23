@@ -232,6 +232,7 @@ export default {
       student: 'Studierende(r)',
       activity: 'Aktivität',
       featurePreview: 'Feature-Vorschau',
+      new: 'Neu',
     },
     contentInput: {
       boldStyle:

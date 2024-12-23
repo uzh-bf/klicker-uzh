@@ -10,6 +10,7 @@ import {
   User,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Navigation } from '@uzh-bf/design-system'
+import { Badge } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -50,6 +51,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
     ...(user?.featurePreview
       ? [
           {
+            new: true,
             href: '/analytics',
             label: t('manage.general.analytics'),
             active: router.pathname == '/analytics',
@@ -73,7 +75,16 @@ function Header({ user }: HeaderProps): React.ReactElement {
           <Navigation.ButtonItem
             data={{ cy: item.cy }}
             key={item.href}
-            label={item.label}
+            label={
+              <div className="flex items-center gap-2">
+                {item.label}
+                {item.new && (
+                  <Badge className="py-0.25 rounded bg-green-700 px-1.5 text-xs font-semibold text-white hover:bg-green-800">
+                    {t('shared.generic.new')}
+                  </Badge>
+                )}
+              </div>
+            }
             className={{
               label: twMerge(
                 'bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base text-slate-700 transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
