@@ -5,3 +5,4 @@ from .aggregated_course_analytics import *
 from .participant_performance import *
 from .instance_activity_performance import *
 from .activity_progress import *
+from .participant_activity_performance import *
