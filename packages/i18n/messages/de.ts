@@ -231,6 +231,7 @@ export default {
       weeks: 'Wochen',
       student: 'Studierende(r)',
       activity: 'Aktivität',
+      featurePreview: 'Feature-Vorschau',
     },
     contentInput: {
       boldStyle:

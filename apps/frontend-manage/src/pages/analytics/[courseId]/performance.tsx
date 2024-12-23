@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import PreviewTag from '~/components/common/PreviewTag'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
 import ActivityInstanceFeedbacksPlot from '../../../components/analytics/performance/ActivityInstanceFeedbacksPlot'
@@ -60,9 +61,12 @@ function PerformanceDashboard() {
       {navigation}
       <div>
         <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-          <H1 className={{ root: 'mb-0' }}>
-            {t('manage.analytics.performanceDashboard')}: {course.name}
-          </H1>
+          <div className="flex flex-row items-center gap-5">
+            <H1 className={{ root: 'mb-0' }}>
+              {t('manage.analytics.performanceDashboard')}: {course.name}
+            </H1>
+            <PreviewTag className="text-base" />
+          </div>
           <div>
             {t('manage.analytics.totalParticipants', {
               number: course.totalParticipants,

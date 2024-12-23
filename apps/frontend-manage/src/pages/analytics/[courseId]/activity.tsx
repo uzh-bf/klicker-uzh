@@ -4,6 +4,7 @@ import { H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import PreviewTag from '~/components/common/PreviewTag'
 import ActivityAnalyticsNavigation from '../../../components/analytics/activity/ActivityAnalyticsNavigation'
 import DailyActivityPlot from '../../../components/analytics/activity/DailyActivityPlot'
 import DailyActivityTimeSeries from '../../../components/analytics/activity/DailyActivityTimeSeries'
@@ -50,15 +51,16 @@ function ActivityDashboard() {
     )
   }
 
-  console.log(course)
-
   return (
     <Layout displayName={t('manage.analytics.activityDashboard')}>
       {navigation}
       <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-        <H1 className={{ root: 'mb-0' }}>
-          {t('manage.analytics.activityDashboard')}: {course.name}
-        </H1>
+        <div className="flex flex-row items-center gap-5">
+          <H1 className={{ root: 'mb-0' }}>
+            {t('manage.analytics.activityDashboard')}: {course.name}
+          </H1>
+          <PreviewTag className="text-base" />
+        </div>
         <div>
           {t('manage.analytics.totalParticipants', {
             number: course.totalParticipants,

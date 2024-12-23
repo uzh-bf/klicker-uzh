@@ -12,6 +12,7 @@ import { useRouter } from 'next/router'
 import ActivityAnalyticsCharts from '~/components/analytics/quiz/ActivityAnalyticsCharts'
 import InstanceQuizAnalytics from '~/components/analytics/quiz/InstanceQuizAnalytics'
 import QuizAnalyticsNavigation from '~/components/analytics/quiz/QuizAnalyticsNavigation'
+import PreviewTag from '~/components/common/PreviewTag'
 import Layout from '~/components/Layout'
 import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
@@ -63,9 +64,12 @@ function QuizAnalytics() {
       {navigation}
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
         <div className="relative mb-3 flex w-full flex-row items-end justify-between">
-          <H1 className={{ root: 'mb-0' }}>
-            {t('manage.analytics.quizAnalytics')}: {analytics.activityName}
-          </H1>
+          <div className="flex flex-row items-center gap-5">
+            <H1 className={{ root: 'mb-0' }}>
+              {t('manage.analytics.quizAnalytics')}: {analytics.activityName}
+            </H1>
+            <PreviewTag className="text-base" />
+          </div>
           <Button
             className={{ root: 'flex h-8 flex-row gap-3' }}
             onClick={() =>
