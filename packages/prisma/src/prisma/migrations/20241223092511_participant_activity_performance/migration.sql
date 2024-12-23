@@ -11,12 +11,6 @@ CREATE TABLE "ParticipantActivityPerformance" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ParticipantActivityPerformance_practiceQuizId_key" ON "ParticipantActivityPerformance"("practiceQuizId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "ParticipantActivityPerformance_microLearningId_key" ON "ParticipantActivityPerformance"("microLearningId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "ParticipantActivityPerformance_participantId_practiceQuizId_key" ON "ParticipantActivityPerformance"("participantId", "practiceQuizId");
 
 -- CreateIndex

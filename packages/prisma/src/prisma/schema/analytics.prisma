@@ -258,10 +258,10 @@ model ParticipantActivityPerformance {
   participantId String      @db.Uuid
 
   practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  practiceQuizId String?       @unique @db.Uuid
+  practiceQuizId String?       @db.Uuid
 
   microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  microLearningId String?        @unique @db.Uuid
+  microLearningId String?        @db.Uuid
 
   @@unique([participantId, practiceQuizId])
   @@unique([participantId, microLearningId])
