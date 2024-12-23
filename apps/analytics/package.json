@@ -12,5 +12,11 @@
     "script": "doppler run --config dev -- poetry run python -m",
     "script:prod": "doppler run --config prd -- poetry run python -m",
     "script:qa": "doppler run --config qa -- poetry run python -m"
+  },
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
   }
 }
