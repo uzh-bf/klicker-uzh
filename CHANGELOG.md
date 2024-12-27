@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.15...v3.3.0-alpha.16) (2024-12-27)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** do not distinguish between results and anonymous results in live quizzes ([77ed91f](https://github.com/uzh-bf/klicker-uzh/commit/77ed91f7116e4939ff3306c8186a2593ec730185))
+* **packages/graphql:** ensure that live quiz evaluation for free text questions without sample solution does not break ([#4415](https://github.com/uzh-bf/klicker-uzh/issues/4415)) ([5ca0d5f](https://github.com/uzh-bf/klicker-uzh/commit/5ca0d5f8accf9481ab88d0e7a147fb4af6fd2b81))
+
 ## [3.3.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.14...v3.3.0-alpha.15) (2024-12-23)
 
 
