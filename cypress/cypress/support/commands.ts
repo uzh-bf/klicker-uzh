@@ -531,7 +531,7 @@ Cypress.Commands.add(
       const dataTransfer = new DataTransfer()
 
       blocks[0].questions.forEach((question, ix) => {
-        cy.get(`[data-cy="question-item-${question}"]`)
+        cy.get(`[data-cy="element-item-${question}"]`)
           .contains(question)
           .trigger('dragstart', {
             dataTransfer,
@@ -562,7 +562,7 @@ function createStacks({
 }) {
   stacks[0].elements.forEach((element, ix) => {
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${element}"]`)
+    cy.get(`[data-cy="element-item-${element}"]`)
       .contains(element)
       .trigger('dragstart', {
         dataTransfer,
@@ -580,7 +580,7 @@ function createStacks({
       cy.get(`[data-cy="drop-elements-add-${type}"]`).click()
       stack.elements.forEach((element, jx) => {
         const dataTransfer = new DataTransfer()
-        cy.get(`[data-cy="question-item-${element}"]`)
+        cy.get(`[data-cy="element-item-${element}"]`)
           .contains(element)
           .trigger('dragstart', {
             dataTransfer,

@@ -307,7 +307,7 @@ describe('Different live-quiz workflows', () => {
     // TODO: replace with createStacks function and corresponding type
     // add two questions in separate blocks, move blocks and add time limit of 10 for first and 20 for second block
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${SCQuestion1Title}"]`)
+    cy.get(`[data-cy="element-item-${SCQuestion1Title}"]`)
       .contains(SCQuestion1Title)
       .trigger('dragstart', {
         dataTransfer,
@@ -315,7 +315,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get(`[data-cy="question-item-${SCQuestion2Title}"]`)
+    cy.get(`[data-cy="element-item-${SCQuestion2Title}"]`)
       .contains(SCQuestion2Title)
       .trigger('dragstart', {
         dataTransfer,
@@ -323,26 +323,26 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="drop-elements-add-block"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="question-0-stack-0"]')
+    cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
       .should('contain', SCQuestion1Title.substring(0, 20))
-    cy.get('[data-cy="question-0-stack-1"]')
+    cy.get('[data-cy="element-0-block-1"]')
       .should('exist')
       .should('contain', SCQuestion2Title.substring(0, 20))
 
     // test sorting of blocks
     cy.get('[data-cy="move-block-1-left"]').click()
-    cy.get('[data-cy="question-0-stack-0"]')
+    cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
       .should('contain', SCQuestion2Title.substring(0, 20))
-    cy.get('[data-cy="question-0-stack-1"]')
+    cy.get('[data-cy="element-0-block-1"]')
       .should('exist')
       .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="move-block-0-right"]').click()
-    cy.get('[data-cy="question-0-stack-0"]')
+    cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
       .should('contain', SCQuestion1Title.substring(0, 20))
-    cy.get('[data-cy="question-0-stack-1"]')
+    cy.get('[data-cy="element-0-block-1"]')
       .should('exist')
       .should('contain', SCQuestion2Title.substring(0, 20))
 
@@ -497,10 +497,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check questions and modify them
-    cy.get('[data-cy="question-0-stack-0"]')
+    cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
       .should('contain', SCQuestion1Title.substring(0, 20))
-    cy.get('[data-cy="question-0-stack-1"]')
+    cy.get('[data-cy="element-0-block-1"]')
       .should('exist')
       .should('contain', SCQuestion2Title.substring(0, 20))
     cy.get('[data-cy="open-block-0-settings"]').click()
@@ -519,10 +519,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="block-time-limit"]').should('have.value', '25')
     cy.get('[data-cy="close-block-settings"]').click()
     cy.get('[data-cy="move-block-1-left"]').click()
-    cy.get('[data-cy="question-0-stack-0"]')
+    cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
       .should('contain', SCQuestion2Title.substring(0, 20))
-    cy.get('[data-cy="question-0-stack-1"]')
+    cy.get('[data-cy="element-0-block-1"]')
       .should('exist')
       .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
@@ -582,10 +582,10 @@ describe('Different live-quiz workflows', () => {
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="question-0-stack-0"]')
+    cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
       .should('contain', SCQuestion2Title.substring(0, 20))
-    cy.get('[data-cy="question-0-stack-1"]')
+    cy.get('[data-cy="element-0-block-1"]')
       .should('exist')
       .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="open-block-0-settings"]').click()
@@ -619,10 +619,10 @@ describe('Different live-quiz workflows', () => {
       .contains(quizDescription1New)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="question-0-stack-0"]')
+    cy.get('[data-cy="element-0-block-0"]')
       .should('exist')
       .should('contain', SCQuestion2Title.substring(0, 20))
-    cy.get('[data-cy="question-0-stack-1"]')
+    cy.get('[data-cy="element-0-block-1"]')
       .should('exist')
       .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()

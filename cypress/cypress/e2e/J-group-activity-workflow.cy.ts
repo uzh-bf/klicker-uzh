@@ -293,7 +293,7 @@ describe('Create and solve a group activity', () => {
     ]
     elements.forEach((title, ix) => {
       const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${title}"]`)
+      cy.get(`[data-cy="element-item-${title}"]`)
         .contains(title)
         .trigger('dragstart', {
           dataTransfer,
@@ -455,7 +455,7 @@ describe('Create and solve a group activity', () => {
 
     // add another question to the group activity
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${SCQuestionTitle}"]`)
+    cy.get(`[data-cy="element-item-${SCQuestionTitle}"]`)
       .contains(SCQuestionTitle)
       .trigger('dragstart', {
         dataTransfer,
@@ -465,7 +465,7 @@ describe('Create and solve a group activity', () => {
     })
 
     const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="question-item-${CTQuestionTitle}"]`)
+    cy.get(`[data-cy="element-item-${CTQuestionTitle}"]`)
       .contains(CTQuestionTitle)
       .trigger('dragstart', {
         dataTransfer2,
@@ -475,25 +475,25 @@ describe('Create and solve a group activity', () => {
     })
 
     // verify that the contained questions are correct
-    cy.get(`[data-cy="question-0-stack-0"]`)
+    cy.get(`[data-cy="element-0-stack-0"]`)
       .should('exist')
       .should('contain', SCQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-1-stack-0"]`)
+    cy.get(`[data-cy="element-1-stack-0"]`)
       .should('exist')
       .should('contain', MCQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-2-stack-0"]`)
+    cy.get(`[data-cy="element-2-stack-0"]`)
       .should('exist')
       .should('contain', KPRIMQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-3-stack-0"]`)
+    cy.get(`[data-cy="element-3-stack-0"]`)
       .should('exist')
       .should('contain', NRQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-4-stack-0"]`)
+    cy.get(`[data-cy="element-4-stack-0"]`)
       .should('exist')
       .should('contain', FTQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-5-stack-0"]`)
+    cy.get(`[data-cy="element-5-stack-0"]`)
       .should('exist')
       .should('contain', SCQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-6-stack-0"]`)
+    cy.get(`[data-cy="element-6-stack-0"]`)
       .should('exist')
       .should('contain', CTQuestionTitle.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()

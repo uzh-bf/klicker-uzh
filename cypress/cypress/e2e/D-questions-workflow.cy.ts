@@ -31,9 +31,9 @@ describe('Create questions', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(
       messages.shared.DRAFT.statusLabel
     )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
@@ -65,9 +65,9 @@ describe('Create questions', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(
       messages.shared.REVIEW.statusLabel
     )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
@@ -112,9 +112,9 @@ describe('Create questions', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(
       messages.shared.READY.statusLabel
     )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
@@ -171,9 +171,9 @@ describe('Create questions', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(
       messages.shared.READY.statusLabel
     )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
@@ -260,9 +260,9 @@ describe('Create questions', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(
       messages.shared.READY.statusLabel
     )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
@@ -298,9 +298,9 @@ describe('Create questions', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(
       messages.shared.READY.statusLabel
     )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
@@ -336,9 +336,9 @@ describe('Create questions', () => {
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(question)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(questionTitle)
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).contains(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(question)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(questionTitle)
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).contains(
       messages.shared.READY.statusLabel
     )
     cy.get(`[data-cy="edit-question-${questionTitle}"]`).click()
@@ -372,19 +372,19 @@ describe('Create questions', () => {
     cy.wait(500)
 
     // check if duplicated question exists alongside original question
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).should('exist')
-    cy.get(`[data-cy="question-item-${questionTitle + ' (Copy)'}"]`).should(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).should('exist')
+    cy.get(`[data-cy="element-item-${questionTitle + ' (Copy)'}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="question-item-${questionTitle + ' (Copy)'}"]`).contains(
+    cy.get(`[data-cy="element-item-${questionTitle + ' (Copy)'}"]`).contains(
       messages.shared.DRAFT.statusLabel
     )
 
     // delete the duplicated question
     cy.get(`[data-cy="delete-question-${questionTitle} (Copy)"]`).click()
     cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="question-item-${questionTitle}"]`).should('exist')
-    cy.get(`[data-cy="question-item-${questionTitle + ' (Copy)'}"]`).should(
+    cy.get(`[data-cy="element-item-${questionTitle}"]`).should('exist')
+    cy.get(`[data-cy="element-item-${questionTitle + ' (Copy)'}"]`).should(
       'not.exist'
     )
   })

@@ -197,7 +197,7 @@ describe('Different practice quiz workflows', () => {
 
     // SC question without sample solution should be rejected
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${SCQuestionTitleNoSol}"]`)
+    cy.get(`[data-cy="element-item-${SCQuestionTitleNoSol}"]`)
       .contains(SCQuestionTitleNoSol)
       .trigger('dragstart', {
         dataTransfer,
@@ -205,7 +205,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="question-1-stack-1"]').contains(SCQuestionTitleNoSol)
+    cy.get('[data-cy="element-1-stack-1"]').contains(SCQuestionTitleNoSol)
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
     cy.get('[data-cy="remove-element-1-stack-1"]').click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
@@ -280,31 +280,31 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Check content of stacks and add another question
-    cy.get('[data-cy="question-0-stack-0"]').contains(
+    cy.get('[data-cy="element-0-stack-0"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-1"]').contains(
+    cy.get('[data-cy="element-0-stack-1"]').contains(
       MCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-2"]').contains(
+    cy.get('[data-cy="element-0-stack-2"]').contains(
       KPRIMQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-3"]').contains(
+    cy.get('[data-cy="element-0-stack-3"]').contains(
       NRQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-4"]').contains(
+    cy.get('[data-cy="element-0-stack-4"]').contains(
       FTQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-5"]').contains(
+    cy.get('[data-cy="element-0-stack-5"]').contains(
       FCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-6"]').contains(
+    cy.get('[data-cy="element-0-stack-6"]').contains(
       CTQuestionTitle.substring(0, 20)
     )
 
     cy.get('[data-cy="drop-elements-add-stack"]').click()
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${SCQuestionTitle}"]`)
+    cy.get(`[data-cy="element-item-${SCQuestionTitle}"]`)
       .contains(SCQuestionTitle)
       .trigger('dragstart', {
         dataTransfer,
@@ -312,7 +312,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="drop-elements-stack-7"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="question-0-stack-7"]').contains(
+    cy.get('[data-cy="element-0-stack-7"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -364,28 +364,28 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Check content of stacks and add another question
-    cy.get('[data-cy="question-0-stack-0"]').contains(
+    cy.get('[data-cy="element-0-stack-0"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-1"]').contains(
+    cy.get('[data-cy="element-0-stack-1"]').contains(
       MCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-2"]').contains(
+    cy.get('[data-cy="element-0-stack-2"]').contains(
       KPRIMQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-3"]').contains(
+    cy.get('[data-cy="element-0-stack-3"]').contains(
       NRQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-4"]').contains(
+    cy.get('[data-cy="element-0-stack-4"]').contains(
       FTQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-5"]').contains(
+    cy.get('[data-cy="element-0-stack-5"]').contains(
       FCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-6"]').contains(
+    cy.get('[data-cy="element-0-stack-6"]').contains(
       CTQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-7"]').contains(
+    cy.get('[data-cy="element-0-stack-7"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -443,28 +443,28 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Check content of stacks and add another question
-    cy.get('[data-cy="question-0-stack-0"]').contains(
+    cy.get('[data-cy="element-0-stack-0"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-1"]').contains(
+    cy.get('[data-cy="element-0-stack-1"]').contains(
       MCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-2"]').contains(
+    cy.get('[data-cy="element-0-stack-2"]').contains(
       KPRIMQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-3"]').contains(
+    cy.get('[data-cy="element-0-stack-3"]').contains(
       NRQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-4"]').contains(
+    cy.get('[data-cy="element-0-stack-4"]').contains(
       FTQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-5"]').contains(
+    cy.get('[data-cy="element-0-stack-5"]').contains(
       FCQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-6"]').contains(
+    cy.get('[data-cy="element-0-stack-6"]').contains(
       CTQuestionTitle.substring(0, 20)
     )
-    cy.get('[data-cy="question-0-stack-7"]').contains(
+    cy.get('[data-cy="element-0-stack-7"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
