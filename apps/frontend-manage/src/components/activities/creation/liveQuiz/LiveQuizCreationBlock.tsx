@@ -17,7 +17,7 @@ import DropElementsStack from '../DropElementsStack'
 import PasteSelectionButton from '../PasteSelectionButton'
 import WizardElementList from '../WizardElementList'
 import {
-  ElememntBlockErrorValues,
+  ElementBlockErrorValues,
   ElementBlockFormValues,
 } from '../WizardLayout'
 import LiveQuizBlocksError from './LiveQuizBlocksError'
@@ -33,7 +33,7 @@ interface LiveQuizCreationBlockProps {
   replace: (blockIx: number, value: ElementBlockFormValues) => void
   selection?: Record<number, Element>
   resetSelection?: () => void
-  error?: ElememntBlockErrorValues[]
+  error?: ElementBlockErrorValues[]
 }
 
 function LiveQuizCreationBlock({
@@ -160,6 +160,7 @@ function LiveQuizCreationBlock({
       </div>
 
       <WizardElementList
+        type="block"
         stack={block}
         stackIx={blockIx}
         replace={replace}

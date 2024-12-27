@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
+import * as AnalyticsService from '../services/analytics.js'
 import * as CourseService from '../services/courses.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
@@ -10,7 +11,13 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as StacksService from '../services/stacks.js'
-import { ElementFeedback } from './analytics.js'
+import {
+  CourseActivityAnalytics,
+  CoursePerformanceAnalytics,
+  ElementFeedback,
+  QuizAnalytics,
+  WeeklyCourseActivities,
+} from './analytics.js'
 import {
   Course,
   CourseSummary,
@@ -708,6 +715,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      checkFeaturePreviewAvailable: asUser.field({
+        nullable: false,
+        type: 'Boolean',
+        resolve(_, __, ctx) {
+          return AccountService.checkFeaturePreviewAvailable(ctx)
+        },
+      }),
+
       checkValidCoursePin: t.field({
         nullable: true,
         type: 'String',
@@ -739,6 +754,61 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return PracticeQuizService.getBookmarksPracticeQuiz(args, ctx)
+        },
+      }),
+
+      getCourseActivityAnalytics: asUser.field({
+        nullable: true,
+        type: CourseActivityAnalytics,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AnalyticsService.getCourseActivityAnalytics(args, ctx)
+        },
+      }),
+
+      getCourseWeeklyActivity: asUser.field({
+        nullable: true,
+        type: WeeklyCourseActivities,
+        args: {
+          courseId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return AnalyticsService.getCourseWeeklyActivity(args, ctx)
+        },
+      }),
+
+      getCoursePerformanceAnalytics: asUser.field({
+        nullable: true,
+        type: CoursePerformanceAnalytics,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AnalyticsService.getCoursePerformanceAnalytics(args, ctx)
+        },
+      }),
+
+      getCourseActivities: asUser.field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseActivities(args, ctx)
+        },
+      }),
+
+      getActivityAnalytics: asUser.field({
+        nullable: true,
+        type: QuizAnalytics,
+        args: {
+          activityId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return AnalyticsService.getActivityAnalytics(args, ctx)
         },
       }),
     }

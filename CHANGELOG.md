@@ -2,6 +2,146 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.15...v3.3.0-alpha.16) (2024-12-27)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** do not distinguish between results and anonymous results in live quizzes ([77ed91f](https://github.com/uzh-bf/klicker-uzh/commit/77ed91f7116e4939ff3306c8186a2593ec730185))
+* **packages/graphql:** ensure that live quiz evaluation for free text questions without sample solution does not break ([#4415](https://github.com/uzh-bf/klicker-uzh/issues/4415)) ([5ca0d5f](https://github.com/uzh-bf/klicker-uzh/commit/5ca0d5f8accf9481ab88d0e7a147fb4af6fd2b81))
+
+## [3.3.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.14...v3.3.0-alpha.15) (2024-12-23)
+
+
+### Other
+
+* **apps/frontend-manage:** add visual separation between selection areas for practice quiz and microlearning activities ([76cdf9b](https://github.com/uzh-bf/klicker-uzh/commit/76cdf9b23aabc42634da5ef101364a6ecccbb90a))
+
+## [3.3.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.13...v3.3.0-alpha.14) (2024-12-23)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add number of completed activities to participant activity performance table on analytics dashboard ([#4414](https://github.com/uzh-bf/klicker-uzh/issues/4414)) ([1993e1f](https://github.com/uzh-bf/klicker-uzh/commit/1993e1f7117da51d8cfe172b4471226dc6a3518b))
+
+## [3.3.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.12...v3.3.0-alpha.13) (2024-12-23)
+
+
+### Features
+
+* add initial version of learning analytics computation and dashboard illustrations ([#4211](https://github.com/uzh-bf/klicker-uzh/issues/4211)) ([d14d9dc](https://github.com/uzh-bf/klicker-uzh/commit/d14d9dc9ce3bee77da8fe68c441ba7d353525ec0))
+* add scripts to compute periodic participant learning analytics from past question response details ([#4213](https://github.com/uzh-bf/klicker-uzh/issues/4213)) ([a1736ff](https://github.com/uzh-bf/klicker-uzh/commit/a1736ff46f6e7ccb43def0b292ea3df977f3e7f9))
+
+
+### Bug Fixes
+
+* **apps/analytics:** ensure that correct response data is queried for course-duration participant analytics ([#4386](https://github.com/uzh-bf/klicker-uzh/issues/4386)) ([e8f2791](https://github.com/uzh-bf/klicker-uzh/commit/e8f2791bd619d35cea6b933213180c8c32651b3f))
+* **apps/analytics:** ensure that free text questions without sample solution are handled correctly ([4ca93c7](https://github.com/uzh-bf/klicker-uzh/commit/4ca93c704f047b0822945e2fb3b42372e255eb33))
+* **apps/frontend-manage:** ensure that activity evaluation sidebar rescales during resizing ([1e721db](https://github.com/uzh-bf/klicker-uzh/commit/1e721db621603d1275e995958f0f01a8aabca755))
+* **cypress:** resolve translation issue in microlearning test workflow ([#4411](https://github.com/uzh-bf/klicker-uzh/issues/4411)) ([c4b22e0](https://github.com/uzh-bf/klicker-uzh/commit/c4b22e002a027f6ed1c14a3b86980973727db5e1))
+
+
+### Other
+
+* **apps/analytics:** organize performance analytics in tab structure ([#4404](https://github.com/uzh-bf/klicker-uzh/issues/4404)) ([09b14b1](https://github.com/uzh-bf/klicker-uzh/commit/09b14b11dd246083a5f1fce2e13bf3c44e62b415))
+
+
+### Dependencies
+
+* upgrade to prisma 6.1.0 ([#4403](https://github.com/uzh-bf/klicker-uzh/issues/4403)) ([1a7b2eb](https://github.com/uzh-bf/klicker-uzh/commit/1a7b2ebf78b96a812058ab7c2684e20ab1de7641))
+
+
+### Enhancements
+
+* add first version of activity dashboard with daily and weekly student activity charts ([#4393](https://github.com/uzh-bf/klicker-uzh/issues/4393)) ([b8a134a](https://github.com/uzh-bf/klicker-uzh/commit/b8a134aec969f2f369a345ba71ca8930164350ff))
+* add python logic to compute daily participant analytics based on question response details ([#4212](https://github.com/uzh-bf/klicker-uzh/issues/4212)) ([ed7e745](https://github.com/uzh-bf/klicker-uzh/commit/ed7e7452f7c7bb5a34a05a3f66f6ad9ab4f4de94))
+* **apps/analytics:** add computation logic for activity progress ([#4392](https://github.com/uzh-bf/klicker-uzh/issues/4392)) ([28d64f6](https://github.com/uzh-bf/klicker-uzh/commit/28d64f67f952aa009e0f879a8bba5466f68e15ff))
+* **apps/analytics:** add computation logic for instance and activity performance analytics ([#4391](https://github.com/uzh-bf/klicker-uzh/issues/4391)) ([a04be0a](https://github.com/uzh-bf/klicker-uzh/commit/a04be0a2adcc8e9b800987963e89c54d703d17dd))
+* **apps/analytics:** add computation logic for participant activity performance ([#4409](https://github.com/uzh-bf/klicker-uzh/issues/4409)) ([ebbb581](https://github.com/uzh-bf/klicker-uzh/commit/ebbb58147adf80ca911a2254bc43f06fa06963d6))
+* **apps/analytics:** add computation logic for participant course performance ([#4390](https://github.com/uzh-bf/klicker-uzh/issues/4390)) ([cb471c3](https://github.com/uzh-bf/klicker-uzh/commit/cb471c3f16659b4e763d028815d6b8398718c799))
+* **apps/analytics:** add course data comparison for weekly student activity chart ([#4394](https://github.com/uzh-bf/klicker-uzh/issues/4394)) ([a799972](https://github.com/uzh-bf/klicker-uzh/commit/a799972b9e8eeed54620ca78bc4938297b987ddf))
+* **apps/analytics:** add illustration of individual student performances ([#4400](https://github.com/uzh-bf/klicker-uzh/issues/4400)) ([5630619](https://github.com/uzh-bf/klicker-uzh/commit/56306191c037922a35b30813c13ce3030919d1f5))
+* **apps/analytics:** add illustration of participant activity performance as table ([#4412](https://github.com/uzh-bf/klicker-uzh/issues/4412)) ([f8c8cb1](https://github.com/uzh-bf/klicker-uzh/commit/f8c8cb1e99c88e7bf1f385d0f032629faeca0837))
+* **apps/analytics:** add illustrations for asynchronous activity progress on performance dashboard ([#4396](https://github.com/uzh-bf/klicker-uzh/issues/4396)) ([1310b0c](https://github.com/uzh-bf/klicker-uzh/commit/1310b0cf36585ffcc55f6c28dec921b7d801468f))
+* **apps/analytics:** add illustrations for performance rates on activities and instances ([#4398](https://github.com/uzh-bf/klicker-uzh/issues/4398)) ([dd3014f](https://github.com/uzh-bf/klicker-uzh/commit/dd3014f22b0028678a44b7a55089427939640b13))
+* **apps/analytics:** add logic for computation of participant course analytics ([#4387](https://github.com/uzh-bf/klicker-uzh/issues/4387)) ([4b60b7e](https://github.com/uzh-bf/klicker-uzh/commit/4b60b7e8bf53a7ff07e281243d262a7f1c6693fa))
+* **apps/analytics:** add logic for the computation of aggregated course analytics ([#4388](https://github.com/uzh-bf/klicker-uzh/issues/4388)) ([4e11fa1](https://github.com/uzh-bf/klicker-uzh/commit/4e11fa103a6dc4502b32236c3afc90391a2a5d05))
+* **apps/analytics:** add overview of element feedbacks on activities and instances ([#4401](https://github.com/uzh-bf/klicker-uzh/issues/4401)) ([990cd6f](https://github.com/uzh-bf/klicker-uzh/commit/990cd6f7031ce03a5a4aab45c83efc09d4b907b9))
+* **apps/analytics:** add scripts for the computation of aggregated analytics ([#4385](https://github.com/uzh-bf/klicker-uzh/issues/4385)) ([76c2300](https://github.com/uzh-bf/klicker-uzh/commit/76c2300929e935b253c3fdb6df1200ea3aff3459))
+* **apps/analytics:** add student activity to learning analytics activity dashboard ([#4395](https://github.com/uzh-bf/klicker-uzh/issues/4395)) ([69cc23b](https://github.com/uzh-bf/klicker-uzh/commit/69cc23b4fd92a0d7320286642bbb020d2f43e881))
+* **apps/analytics:** allow switching between courses and activities on analytics dashboards ([#4406](https://github.com/uzh-bf/klicker-uzh/issues/4406)) ([4a6f88e](https://github.com/uzh-bf/klicker-uzh/commit/4a6f88ee9307e04ab1fdbb7c651b8c843de5dd01))
+* **apps/analytics:** implement quiz analytics dashboard for asynchronous activities ([#4405](https://github.com/uzh-bf/klicker-uzh/issues/4405)) ([6fa3bb6](https://github.com/uzh-bf/klicker-uzh/commit/6fa3bb6184c3290302b18b178b9f0d26570c8fd4))
+* **apps/frontend-manage:** add links from and to learning analytics pages behind feature flag ([#4408](https://github.com/uzh-bf/klicker-uzh/issues/4408)) ([c8e79fc](https://github.com/uzh-bf/klicker-uzh/commit/c8e79fca7a33649e2d48bf80bb36b02db4221dd2))
+* **apps/frontend-manage:** add loading state for comparison course loading on activity analytics dashboard ([189cfed](https://github.com/uzh-bf/klicker-uzh/commit/189cfed0cff359487de333f7672173b04a7e1c60))
+
+## [3.3.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.11...v3.3.0-alpha.12) (2024-12-23)
+
+
+### Dependencies
+
+* upgrade azure functions tooling and pass --javascript flag to start commands ([05343ba](https://github.com/uzh-bf/klicker-uzh/commit/05343ba8943ca4881920b850bcec5b1a03a9003a))
+
+## [3.3.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.10...v3.3.0-alpha.11) (2024-12-22)
+
+
+### Features
+
+* introduce activity preview for practice quizzes and microlearnings ([#4367](https://github.com/uzh-bf/klicker-uzh/issues/4367)) ([b014faa](https://github.com/uzh-bf/klicker-uzh/commit/b014faa40c46f4371e663c05a13474a1dd21f715))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** correctly indicate student rank difference after live quiz block closure ([#4381](https://github.com/uzh-bf/klicker-uzh/issues/4381)) ([685ff39](https://github.com/uzh-bf/klicker-uzh/commit/685ff397e1387ac3752a403eb422ceda5db8cec4))
+* ensure that app replicas variable in helmfile can be correctly read ([ad44023](https://github.com/uzh-bf/klicker-uzh/commit/ad44023f6c3162fdc7ac39ce027f3b743a50d8b2))
+* improve live session to live quiz migration script ([#4368](https://github.com/uzh-bf/klicker-uzh/issues/4368)) ([48b5675](https://github.com/uzh-bf/klicker-uzh/commit/48b5675c90ea58c7247dfcdf9b6d63e462aa662f))
+* message for PQ start date ([d2f3a43](https://github.com/uzh-bf/klicker-uzh/commit/d2f3a43592883cbb250b74b69ca366b8299c073e))
+* migrate numerical question evaluation on asynchronous activities to new histogram ([#4340](https://github.com/uzh-bf/klicker-uzh/issues/4340)) ([9a54f78](https://github.com/uzh-bf/klicker-uzh/commit/9a54f78abf64a1ccfbdc2aea6b9651eaa629ab42))
+* only parse solutions in processCachedData if they are not undefined ([20eb487](https://github.com/uzh-bf/klicker-uzh/commit/20eb4871d149f3acab911208f0d9da9ea78a8210))
+* **packages/graphql:** await instance migrations in redis migration script ([c4e050f](https://github.com/uzh-bf/klicker-uzh/commit/c4e050f4549b64c9806222a4b1db1d601098d09e))
+* **packages/graphql:** ensure we read the old instances by originalId from redis session ([53dcc38](https://github.com/uzh-bf/klicker-uzh/commit/53dcc38abb9465ed8ea1a89ae4178bfe538ccf55))
+* **packages/graphql:** update getCachedBlockResults to fetch from redis sequentially to prevent instance mismatches due to ordering ([8fa77cb](https://github.com/uzh-bf/klicker-uzh/commit/8fa77cbe1bae7331b28329e465534248cd8de3ca))
+* **packages/graphql:** use originalIds in live quiz migration where missing ([1cfab1c](https://github.com/uzh-bf/klicker-uzh/commit/1cfab1c4f1ca46b883dacf6ae98db2a97ec9311b))
+* **packages/shared-components:** fix grid view of options on choices questions ([#4383](https://github.com/uzh-bf/klicker-uzh/issues/4383)) ([51bbba9](https://github.com/uzh-bf/klicker-uzh/commit/51bbba935c90b70aecdbb887dc5681d3d9506f54))
+* use full combined results for student evaluation on asynchronous activities ([#4341](https://github.com/uzh-bf/klicker-uzh/issues/4341)) ([25859ff](https://github.com/uzh-bf/klicker-uzh/commit/25859ff0844c7635765b66cc623b5432a16f201b))
+
+
+### Refactors
+
+* add query components of running live quiz on lecturer and student views ([#4345](https://github.com/uzh-bf/klicker-uzh/issues/4345)) ([1e8b0c5](https://github.com/uzh-bf/klicker-uzh/commit/1e8b0c5f0918b428584a6c881a2f980396381355))
+* implement functionalities for live quiz interaction besides question answering workflow ([#4352](https://github.com/uzh-bf/klicker-uzh/issues/4352)) ([6ce6287](https://github.com/uzh-bf/klicker-uzh/commit/6ce62876d7d2b33392d7c0b1c650b706d7ea69c3))
+* migrate creation and editing process to new element instance structure ([#4343](https://github.com/uzh-bf/klicker-uzh/issues/4343)) ([524bb29](https://github.com/uzh-bf/klicker-uzh/commit/524bb298fc676ec9e8c02031bb742fc267de13d4))
+* migrate live quiz evaluation to new database structure ([#4355](https://github.com/uzh-bf/klicker-uzh/issues/4355)) ([8dd73f1](https://github.com/uzh-bf/klicker-uzh/commit/8dd73f1dcefd14bd344fcfd8cc09be14b93e7e46))
+* migrate live quiz execution (including cache operations) to new architecture ([#4353](https://github.com/uzh-bf/klicker-uzh/issues/4353)) ([4a1ddc5](https://github.com/uzh-bf/klicker-uzh/commit/4a1ddc58ed6617baa3fb6c941ff503e51a23888a))
+* migrate live quiz to unified data structure (i.e., from question instances/blocks to element block and element instances) ([#4338](https://github.com/uzh-bf/klicker-uzh/issues/4338)) ([801d9f0](https://github.com/uzh-bf/klicker-uzh/commit/801d9f047fce4e348a47ab0f278d5123d0e554f0))
+* migrate test seed and demo quiz to new live quiz structure ([#4351](https://github.com/uzh-bf/klicker-uzh/issues/4351)) ([218bdee](https://github.com/uzh-bf/klicker-uzh/commit/218bdeed6823e30ae1293ba549d162de8ad9ffc8))
+* **packages/graphql:** merge functions into getCachedBlockResults ([20ab05a](https://github.com/uzh-bf/klicker-uzh/commit/20ab05a866ad5d73b38d05bf15a62ebd80330ee0))
+* replace question preview with student element and move artificial instance computation to backend ([#4357](https://github.com/uzh-bf/klicker-uzh/issues/4357)) ([9a82194](https://github.com/uzh-bf/klicker-uzh/commit/9a82194d2a894b8577faa1df65d5e8b8002a744c))
+* simplify response logic for element stacks and add unit testing ([#4337](https://github.com/uzh-bf/klicker-uzh/issues/4337)) ([72fa749](https://github.com/uzh-bf/klicker-uzh/commit/72fa74954bc4d56bca6349e78f25b0ca1db97a18))
+
+
+### Enhancements
+
+* add direct forwarding for live quiz evaluation embedding ([#4359](https://github.com/uzh-bf/klicker-uzh/issues/4359)) ([d56edb2](https://github.com/uzh-bf/klicker-uzh/commit/d56edb256f59aa002e1bc6e825051945a5ffc934))
+* **apps/docs:** improve and extend landing page content and layout ([#4304](https://github.com/uzh-bf/klicker-uzh/issues/4304)) ([235b67a](https://github.com/uzh-bf/klicker-uzh/commit/235b67a89ad37c551623f5d3b63bd8df3eb9c5e0))
+* **apps/frontend-manage:** extend question pool search with content and tags ([#4377](https://github.com/uzh-bf/klicker-uzh/issues/4377)) ([6a0894f](https://github.com/uzh-bf/klicker-uzh/commit/6a0894f9d042b679c5edba1708b1b55ba521837b))
+* **apps/frontend-manage:** make activity evaluation pages resizable ([#4362](https://github.com/uzh-bf/klicker-uzh/issues/4362)) ([192ce17](https://github.com/uzh-bf/klicker-uzh/commit/192ce17551c2491371c58a2cfa4f046144b62d66))
+* combine scheduling logic for practice quizzes into publication logic ([#4374](https://github.com/uzh-bf/klicker-uzh/issues/4374)) ([234ec9b](https://github.com/uzh-bf/klicker-uzh/commit/234ec9b9a3997b1ffb998a77a1de4b052ace9865))
+* define new element blocks for improved live quiz data structure ([#4342](https://github.com/uzh-bf/klicker-uzh/issues/4342)) ([b8cef82](https://github.com/uzh-bf/klicker-uzh/commit/b8cef827ff5c5e3f442866d40da3163dd5aaa7e6))
+* **docs:** add new use cases and improve website structure ([#4399](https://github.com/uzh-bf/klicker-uzh/issues/4399)) ([6d8aa25](https://github.com/uzh-bf/klicker-uzh/commit/6d8aa259b0940788a6cb0686c856a47854fa392a))
+* introduce statistics for numerical questions in asynchronous activities ([#4354](https://github.com/uzh-bf/klicker-uzh/issues/4354)) ([7bc80d6](https://github.com/uzh-bf/klicker-uzh/commit/7bc80d6d8042438e1d728c9809f1a8f0d95664bf))
+* **packages/graphql:** store correctness along open answers in live quiz results ([#4360](https://github.com/uzh-bf/klicker-uzh/issues/4360)) ([ec964c8](https://github.com/uzh-bf/klicker-uzh/commit/ec964c8c063a036e366e804b8112e1e7ae7fa73e))
+* **packages/shared-components:** initially sort evaluation table charts by count ([#4382](https://github.com/uzh-bf/klicker-uzh/issues/4382)) ([371c5ad](https://github.com/uzh-bf/klicker-uzh/commit/371c5ad47e2183fa4351100c433847aed3e7804c))
+* show live quiz description to students before first block activation ([#4379](https://github.com/uzh-bf/klicker-uzh/issues/4379)) ([cc424db](https://github.com/uzh-bf/klicker-uzh/commit/cc424dbf930dde270d908610b4ae1366d2e50b02))
+
+
+### Dependencies
+
+* **apps/frontend-manage:** move react-tagcloud to production deps ([1a789b7](https://github.com/uzh-bf/klicker-uzh/commit/1a789b71dfe7edf12b285ebaa1fa01c8ed34b311))
+* remove circular dependency with @klicker-uzh/types and @klicker-uzh/prisma ([c29e798](https://github.com/uzh-bf/klicker-uzh/commit/c29e7988778cdc0a3a44d13a4212a2961deeb682))
+* restore necessary production deps ([1d804f2](https://github.com/uzh-bf/klicker-uzh/commit/1d804f2bb00e83af56bd11c234e1590f6a5ca686))
+* upgrade design system to include fix in free text field ([8ae67c3](https://github.com/uzh-bf/klicker-uzh/commit/8ae67c34679731cc76f39a6c2e53bf0da796fc5d))
+* upgrade to prisma 6.1.0 ([eb7dcbf](https://github.com/uzh-bf/klicker-uzh/commit/eb7dcbfa0d9ea45997bb21c1f54d9173771833c3))
+
 ## [3.3.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.9...v3.3.0-alpha.10) (2024-11-18)
 
 

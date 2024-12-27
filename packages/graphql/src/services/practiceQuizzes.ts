@@ -136,6 +136,7 @@ export async function getPracticeQuizEvaluation(
     name: practiceQuiz.name,
     displayName: practiceQuiz.displayName,
     description: practiceQuiz.description,
+    courseId: practiceQuiz.courseId,
     results: stackEvaluation,
   }
 }

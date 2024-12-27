@@ -156,7 +156,7 @@ function LiveQuizTimeline({
           <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
             <Link
               passHref
-              href={`/sessions/${quizId}/evaluation`}
+              href={`/quizzes/${quizId}/evaluation`}
               className="flex-1"
               rel="noopener noreferrer"
               target="_blank"

@@ -1,0 +1,44 @@
+query GetActivityAnalytics($activityId: String!) {
+  getActivityAnalytics(activityId: $activityId) {
+    __typename
+    activityName
+    activityType
+    courseParticipants
+    instanceQuizAnalytics {
+      __typename
+      id
+      elementName
+      elementType
+      numberOfAnswers
+      uniqueParticipants
+      averageTimeSpent
+      firstErrorRate
+      firstPartialRate
+      firstCorrectRate
+      lastErrorRate
+      lastPartialRate
+      lastCorrectRate
+      totalErrorRate
+      totalPartialRate
+      totalCorrectRate
+      upvoteRate
+      downvoteRate
+      feedbackCount
+    }
+    activityQuizAnalytics {
+      __typename
+      id
+      numberOfAnswers
+      averageTimeSpent
+      firstErrorRate
+      firstPartialRate
+      firstCorrectRate
+      lastErrorRate
+      lastPartialRate
+      lastCorrectRate
+      totalErrorRate
+      totalPartialRate
+      totalCorrectRate
+    }
+  }
+}

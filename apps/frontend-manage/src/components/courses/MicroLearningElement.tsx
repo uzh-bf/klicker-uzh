@@ -32,6 +32,7 @@ import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
+import ActivityAnalyticsLink from './actions/ActivityAnalyticsLink'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningEvaluationLink from './actions/MicroLearningEvaluationLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
@@ -68,6 +69,7 @@ function MicroLearningElement({
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
+  const user = dataUser?.userProfile
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/microlearning/${microLearning.id}/`
   const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
@@ -176,7 +178,7 @@ function MicroLearningElement({
                     t,
                     name: microLearning.name,
                   }),
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -240,7 +242,7 @@ function MicroLearningElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -299,7 +301,7 @@ function MicroLearningElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -397,6 +399,17 @@ function MicroLearningElement({
                         },
                       ]
                     : []),
+                  user?.featurePreview
+                    ? {
+                        label: (
+                          <ActivityAnalyticsLink
+                            courseId={courseId}
+                            activityId={microLearning.id}
+                          />
+                        ),
+                        onClick: () => null,
+                      }
+                    : [],
                   deletionElement,
                 ].flat()}
                 triggerIcon={faHandPointer}

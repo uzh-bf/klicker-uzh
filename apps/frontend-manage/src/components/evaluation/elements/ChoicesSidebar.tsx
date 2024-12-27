@@ -28,7 +28,7 @@ function ChoicesSidebar({
   return (
     <div
       className={twMerge(
-        'order-1 flex flex-none flex-col justify-between overflow-hidden border-l px-4 py-2 md:order-2 md:w-64 lg:w-72 xl:w-80',
+        'order-1 flex h-full w-full flex-col justify-between overflow-hidden px-3 py-2 md:order-2',
         textSize.text
       )}
     >

@@ -105,6 +105,7 @@ export async function getMicroLearningEvaluation(
     name: microLearning.name,
     displayName: microLearning.displayName,
     description: microLearning.description,
+    courseId: microLearning.courseId,
     results: stackEvaluation,
   }
 }

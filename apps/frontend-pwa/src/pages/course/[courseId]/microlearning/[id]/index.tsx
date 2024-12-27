@@ -27,9 +27,9 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import Layout from '~/components/Layout'
-import PreviewMessage from '~/components/common/PreviewMessage'
-import MicroLearningSubscriber from '~/components/microLearning/MicroLearningSubscriber'
+import Layout from '../../../../../components/Layout'
+import PreviewMessage from '../../../../../components/common/PreviewMessage'
+import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 
 function MicrolearningIntroduction({
   id,

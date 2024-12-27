@@ -19,10 +19,10 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import GroupActivitySubscriber from '~/components/groupActivity/GroupActivitySubscriber'
 import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
 import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
+import GroupActivitySubscriber from '../../../../components/groupActivity/GroupActivitySubscriber'
 
 function GroupActivityDetails() {
   const t = useTranslations()

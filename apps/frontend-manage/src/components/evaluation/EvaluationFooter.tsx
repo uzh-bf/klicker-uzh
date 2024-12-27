@@ -13,6 +13,7 @@ import { ActiveStackType } from './ActivityEvaluation'
 import { TextSizeType } from './textSizes'
 
 interface EvaluationFooterProps {
+  type: 'LiveQuiz' | 'Asynchronous'
   currentInstance: ElementInstanceEvaluation
   activeStack: ActiveStackType
   textSize: TextSizeType
@@ -26,6 +27,7 @@ interface EvaluationFooterProps {
 }
 
 function EvaluationFooter({
+  type,
   currentInstance,
   activeStack,
   textSize,
@@ -42,7 +44,8 @@ function EvaluationFooter({
       {typeof activeStack === 'number' && (
         <div className="m-0 flex flex-row items-center justify-between py-2.5">
           <div className="text-lg" data-cy="live-quiz-total-participants">
-            {currentInstance.results.anonymousAnswers > 0
+            {currentInstance.results.anonymousAnswers > 0 &&
+            type === 'Asynchronous'
               ? t('manage.evaluation.totalParticipantsInclAnon', {
                   number: currentInstance.results.totalAnswers,
                   anonymous: currentInstance.results.anonymousAnswers,

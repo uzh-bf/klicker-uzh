@@ -369,7 +369,7 @@ Cypress.Commands.add(
       cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
     }
 
-    if (solutionRanges.length > 0) {
+    if (typeof solutionRanges !== 'undefined' && solutionRanges.length > 0) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       solutionRanges.forEach((range, ix) => {
         cy.get('[data-cy="add-solution-range"]').click()
@@ -391,12 +391,19 @@ interface CreateQuestionFTArgs {
   title: string
   content: string
   maxLength?: string
+  solutions?: string[]
   multiplier?: string
 }
 
 Cypress.Commands.add(
   'createQuestionFT',
-  ({ title, content, maxLength, multiplier }: CreateQuestionFTArgs) => {
+  ({
+    title,
+    content,
+    maxLength,
+    solutions,
+    multiplier,
+  }: CreateQuestionFTArgs) => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
     cy.get(
@@ -420,6 +427,14 @@ Cypress.Commands.add(
 
     if (typeof maxLength !== 'undefined') {
       cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
+    }
+
+    if (typeof solutions !== 'undefined' && solutions.length > 0) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      solutions.forEach((solution, ix) => {
+        cy.get(`[data-cy="add-solution-value"]`).click()
+        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
+      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -483,7 +498,7 @@ interface CreateLiveQuizArgs {
   name: string
   displayName: string
   courseName?: string
-  blocks: BlockType[]
+  blocks: { elements: string[] }[]
 }
 
 Cypress.Commands.add(
@@ -511,7 +526,10 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Blocks & Questions
-    cy.createBlocks({ blocks })
+    cy.createStacks({
+      stacks: blocks,
+      type: 'block',
+    })
     cy.get('[data-cy="next-or-submit"]').click()
   }
 )
@@ -520,36 +538,42 @@ interface StackType {
   elements: string[]
 }
 
-function createStacks({ stacks }: { stacks: StackType[] }) {
+function createStacks({
+  stacks,
+  type = 'stack',
+}: {
+  stacks: StackType[]
+  type?: 'block' | 'stack'
+}) {
   stacks[0].elements.forEach((element, ix) => {
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${element}"]`)
+    cy.get(`[data-cy="element-item-${element}"]`)
       .contains(element)
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
+    cy.get(`[data-cy="drop-elements-${type}-0"]`).trigger('drop', {
       dataTransfer,
     })
-    cy.get(`[data-cy="question-${ix}-stack-0"]`).contains(
+    cy.get(`[data-cy="element-${ix}-${type}-0"]`).contains(
       element.substring(0, 20)
     )
   })
 
   if (stacks.length > 1) {
     stacks.slice(1).forEach((stack, ix) => {
-      cy.get('[data-cy="drop-elements-add-stack"]').click()
+      cy.get(`[data-cy="drop-elements-add-${type}"]`).click()
       stack.elements.forEach((element, jx) => {
         const dataTransfer = new DataTransfer()
-        cy.get(`[data-cy="question-item-${element}"]`)
+        cy.get(`[data-cy="element-item-${element}"]`)
           .contains(element)
           .trigger('dragstart', {
             dataTransfer,
           })
-        cy.get(`[data-cy="drop-elements-stack-${ix + 1}"]`).trigger('drop', {
+        cy.get(`[data-cy="drop-elements-${type}-${ix + 1}"]`).trigger('drop', {
           dataTransfer,
         })
-        cy.get(`[data-cy="question-${jx}-stack-${ix + 1}"]`).contains(
+        cy.get(`[data-cy="element-${jx}-${type}-${ix + 1}"]`).contains(
           element.substring(0, 20)
         )
       })
@@ -557,36 +581,6 @@ function createStacks({ stacks }: { stacks: StackType[] }) {
   }
 }
 Cypress.Commands.add('createStacks', createStacks)
-
-interface BlockType {
-  questions: string[]
-}
-
-function createBlocks({ blocks }: { blocks: BlockType[] }) {
-  if (!blocks || blocks.length === 0) {
-    throw new Error('No blocks provided.')
-  }
-  blocks.forEach((block, blockIndex) => {
-    if (blockIndex > 0) {
-      cy.get('[data-cy="drop-elements-add-stack"]').click()
-    }
-    block.questions.forEach((element, questionIndex) => {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${element}"]`)
-        .contains(element)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get(`[data-cy="drop-elements-block-${blockIndex}"]`).trigger('drop', {
-        dataTransfer,
-      })
-      cy.get(
-        `[data-cy="question-${questionIndex}-stack-${blockIndex}"]`
-      ).contains(element.substring(0, 20))
-    })
-  })
-}
-Cypress.Commands.add('createBlocks', createBlocks)
 
 interface CreatePracticeQuizArgs {
   name: string
@@ -834,6 +828,7 @@ declare global {
         title,
         content,
         maxLength,
+        solutions,
         multiplier,
       }: CreateQuestionFTArgs): Chainable<void>
       createFlashcard({
@@ -848,8 +843,13 @@ declare global {
         courseName,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
-      createStacks({ stacks }: { stacks: StackType[] }): Chainable<void>
-      createBlocks({ blocks }: { blocks: BlockType[] }): Chainable<void>
+      createStacks({
+        stacks,
+        type,
+      }: {
+        stacks: StackType[]
+        type?: 'block' | 'stack'
+      }): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,

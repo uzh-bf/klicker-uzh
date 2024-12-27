@@ -30,6 +30,7 @@ interface DataTableProps<TData, TValue> {
     accessorKey: string
     className?: string
     csvOnly?: boolean
+    displayName?: string
   })[]
   data: TData[]
   csvFilename?: string
@@ -41,6 +42,7 @@ interface DataTableProps<TData, TValue> {
   footerContent?: React.ReactNode
   isPaginated?: boolean
   isResetSortingEnabled?: boolean
+  initialSorting?: SortingState
 }
 
 function DataTable<TData, TValue>({
@@ -51,9 +53,10 @@ function DataTable<TData, TValue>({
   footerContent,
   isPaginated,
   isResetSortingEnabled,
+  initialSorting,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations()
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = useState<SortingState>(initialSorting ?? [])
 
   const table = useReactTable({
     data,
@@ -79,6 +82,7 @@ function DataTable<TData, TValue>({
       return {
         id: column.accessorKey,
         label: column.header,
+        displayName: column.displayName,
       }
     })
   }, [columns])

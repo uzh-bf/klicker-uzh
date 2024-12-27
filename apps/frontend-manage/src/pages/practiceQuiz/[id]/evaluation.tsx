@@ -32,8 +32,11 @@ function PracticeQuizEvaluation() {
   }
 
   const evaluation = data?.getPracticeQuizEvaluation
+
   return (
     <ActivityEvaluation
+      courseId={evaluation?.courseId}
+      activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
     />

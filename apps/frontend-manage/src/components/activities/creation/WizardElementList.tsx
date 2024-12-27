@@ -11,6 +11,7 @@ import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import { swapIndices } from 'remeda'
 import {
+  ElementBlockErrorValues,
   ElementBlockFormValues,
   ElementStackErrorValues,
   ElementStackFormValues,
@@ -21,6 +22,7 @@ interface BaseProps {
 }
 
 interface StackWizardElementListProps extends BaseProps {
+  type: 'stack'
   stack: ElementStackFormValues
   error: ElementStackErrorValues | ElementStackErrorValues[] | undefined
   replace: (index: number, value: ElementStackFormValues) => void
@@ -28,13 +30,15 @@ interface StackWizardElementListProps extends BaseProps {
 }
 
 interface BlockWizardElementListProps extends BaseProps {
+  type: 'block'
   stack: ElementBlockFormValues
-  error: ElementBlockFormValues | undefined
+  error: ElementBlockErrorValues | ElementBlockErrorValues[] | undefined
   replace: (index: number, value: ElementBlockFormValues) => void
   highlightFTNoSL?: never
 }
 
 function WizardElementList({
+  type,
   stackIx,
   stack,
   error,
@@ -55,7 +59,7 @@ function WizardElementList({
           <div
             key={`${elementIdx}-${element.title}`}
             className="flex flex-row items-center border-b border-solid border-slate-200 py-0.5 text-xs last:border-b-0"
-            data-cy={`question-${elementIdx}-stack-${stackIx}`}
+            data-cy={`element-${elementIdx}-${type}-${stackIx}`}
           >
             <div className="flex-1">
               <Ellipsis
@@ -100,7 +104,7 @@ function WizardElementList({
                   }
                 }}
                 data={{
-                  cy: `move-question-${elementIdx}-stack-${stackIx}-up`,
+                  cy: `move-element-${elementIdx}-${type}-${stackIx}-up`,
                 }}
               >
                 <FontAwesomeIcon icon={faArrowUp} />
@@ -129,7 +133,7 @@ function WizardElementList({
                   }
                 }}
                 data={{
-                  cy: `move-question-${elementIdx}-stack-${stackIx}-down`,
+                  cy: `move-element-${elementIdx}-${type}-${stackIx}-down`,
                 }}
               >
                 <FontAwesomeIcon icon={faArrowDown} />
@@ -148,7 +152,7 @@ function WizardElementList({
                     .concat(stack.elements.slice(elementIdx + 1)),
                 })
               }}
-              data={{ cy: `delete-question-${elementIdx}-stack-${stackIx}` }}
+              data={{ cy: `remove-element-${elementIdx}-${type}-${stackIx}` }}
             >
               <Button.Icon>
                 <FontAwesomeIcon icon={faTrash} />

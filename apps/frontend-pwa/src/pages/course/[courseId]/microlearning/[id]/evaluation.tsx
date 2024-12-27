@@ -12,9 +12,9 @@ import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import PreviewMessage from '~/components/common/PreviewMessage'
-import useStackEvaluationAggregation from '~/components/hooks/useStackEvaluationAggregation'
-import Layout from '~/components/Layout'
+import PreviewMessage from '../../../../../components/common/PreviewMessage'
+import useStackEvaluationAggregation from '../../../../../components/hooks/useStackEvaluationAggregation'
+import Layout from '../../../../../components/Layout'
 
 function MicrolearningEvaluation() {
   const t = useTranslations()

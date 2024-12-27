@@ -80,10 +80,11 @@ model ElementInstance {
   /// [PrismaElementResults]
   anonymousResults Json // contains the collection of gathered results by anonymous participants
 
-  responses          QuestionResponse[]
-  detailResponses    QuestionResponseDetail[]
-  feedbacks          ElementFeedback[]
-  instanceStatistics InstanceStatistics?
+  responses           QuestionResponse[]
+  detailResponses     QuestionResponseDetail[]
+  feedbacks           ElementFeedback[]
+  instanceStatistics  InstanceStatistics?
+  instancePerformance InstancePerformance?
 
   element        Element       @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementId      Int
@@ -122,8 +123,8 @@ model InstanceStatistics {
   lastWrongCount           Int?
 
   // only logged in participants impact the following counts (consistent with results and counts above)
-  uniqueParticipantCount Int  @default(0)
-  averageTimeSpent       Int? // computed based on averageTimeSpent per participant
+  uniqueParticipantCount Int    @default(0)
+  averageTimeSpent       Float? @db.Real // computed based on averageTimeSpent per participant
 
   elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementInstanceId Int             @id

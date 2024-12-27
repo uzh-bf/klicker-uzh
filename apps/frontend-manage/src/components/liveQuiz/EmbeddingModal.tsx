@@ -23,7 +23,7 @@ function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
 
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
-  }/sessions/${quizId}/evaluation?hmac=${quizHMAC.data?.liveQuizHMAC}${
+  }/quizzes/${quizId}/evaluation?hmac=${quizHMAC.data?.liveQuizHMAC}${
     params ? `&${params}` : ''
   }`
 

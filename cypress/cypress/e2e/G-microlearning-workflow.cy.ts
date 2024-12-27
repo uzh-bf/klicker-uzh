@@ -193,7 +193,7 @@ describe('Different microlearning workflows', () => {
 
     // SC question without sample solution should be rejected
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${SCQuestionTitleNoSol}"]`)
+    cy.get(`[data-cy="element-item-${SCQuestionTitleNoSol}"]`)
       .contains(SCQuestionTitleNoSol)
       .trigger('dragstart', {
         dataTransfer,
@@ -201,9 +201,9 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="question-2-stack-1"]').contains(SCQuestionTitleNoSol)
+    cy.get('[data-cy="element-2-stack-1"]').contains(SCQuestionTitleNoSol)
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
-    cy.get('[data-cy="delete-question-2-stack-1"]').click()
+    cy.get('[data-cy="remove-element-2-stack-1"]').click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add displayname and description to stacks
@@ -225,10 +225,10 @@ describe('Different microlearning workflows', () => {
 
     // move stacks around
     cy.get('[data-cy="move-stack-0-right"]').click()
-    cy.get('[data-cy="question-0-stack-1"]').contains(SCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-1"]').contains(FTQuestionTitle)
-    cy.get('[data-cy="question-0-stack-0"]').contains(FCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-0"]').contains(CTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-1"]').contains(SCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-1"]').contains(FTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-0"]').contains(FCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-0"]').contains(CTQuestionTitle)
     cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
@@ -242,10 +242,10 @@ describe('Different microlearning workflows', () => {
     )
     cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="move-stack-1-left"]').click()
-    cy.get('[data-cy="question-0-stack-0"]').contains(SCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-0"]').contains(FTQuestionTitle)
-    cy.get('[data-cy="question-0-stack-1"]').contains(FCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-1"]').contains(CTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-0"]').contains(SCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-0"]').contains(FTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-1"]').contains(FCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-1"]').contains(CTQuestionTitle)
     cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
@@ -260,12 +260,12 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="close-stack-description"]').click()
 
     // move questions in stack
-    cy.get('[data-cy="move-question-0-stack-1-down"]').click()
-    cy.get('[data-cy="question-0-stack-1"]').contains(CTQuestionTitle)
-    cy.get('[data-cy="question-1-stack-1"]').contains(FCQuestionTitle)
-    cy.get('[data-cy="move-question-1-stack-1-up"]').click()
-    cy.get('[data-cy="question-0-stack-1"]').contains(FCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-1"]').contains(CTQuestionTitle)
+    cy.get('[data-cy="move-element-0-stack-1-down"]').click()
+    cy.get('[data-cy="element-0-stack-1"]').contains(CTQuestionTitle)
+    cy.get('[data-cy="element-1-stack-1"]').contains(FCQuestionTitle)
+    cy.get('[data-cy="move-element-1-stack-1-up"]').click()
+    cy.get('[data-cy="element-0-stack-1"]').contains(FCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-1"]').contains(CTQuestionTitle)
 
     // finalize microlearning creation
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
@@ -285,7 +285,7 @@ describe('Different microlearning workflows', () => {
 
     cy.get(`[data-cy="microlearning-actions-${runningMLNameOLD}"]`).click()
     cy.get(`[data-cy="edit-microlearning-${runningMLNameOLD}"]`).click()
-    cy.findByText('Edit ' + messages.shared.generic.microlearnings).should(
+    cy.findByText('Edit ' + messages.shared.generic.microlearning).should(
       'exist'
     )
 
@@ -342,7 +342,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="drop-elements-add-stack"]').click()
     addQuestions.forEach((element, ix) => {
       const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${element}"]`)
+      cy.get(`[data-cy="element-item-${element}"]`)
         .contains(element)
         .trigger('dragstart', {
           dataTransfer,
@@ -350,7 +350,7 @@ describe('Different microlearning workflows', () => {
       cy.get(`[data-cy="drop-elements-stack-2"]`).trigger('drop', {
         dataTransfer,
       })
-      cy.get(`[data-cy="question-${ix}-stack-2"]`).contains(element)
+      cy.get(`[data-cy="element-${ix}-stack-2"]`).contains(element)
     })
 
     // check stack descriptions
@@ -382,7 +382,7 @@ describe('Different microlearning workflows', () => {
     // recheck if the changes have been saved
     cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
     cy.get(`[data-cy="edit-microlearning-${runningMLName}"]`).click()
-    cy.findByText('Edit ' + messages.shared.generic.microlearnings).should(
+    cy.findByText('Edit ' + messages.shared.generic.microlearning).should(
       'exist'
     )
     cy.get('[data-cy="insert-microlearning-name"]')
@@ -404,12 +404,12 @@ describe('Different microlearning workflows', () => {
       .should('have.value', runningEnd)
     cy.get('[data-cy="next-or-submit"]').click()
 
-    cy.get('[data-cy="question-0-stack-0"]').contains(SCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-0"]').contains(FTQuestionTitle)
-    cy.get('[data-cy="question-0-stack-1"]').contains(FCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-1"]').contains(CTQuestionTitle)
-    cy.get('[data-cy="question-0-stack-2"]').contains(SCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-2"]').contains(FTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-0"]').contains(SCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-0"]').contains(FTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-1"]').contains(FCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-1"]').contains(CTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-2"]').contains(SCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-2"]').contains(FTQuestionTitle)
     cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should('have.value', stackTitle1)
     cy.get('[data-cy="close-stack-description"]').click()
@@ -432,7 +432,7 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-actions-${runningMLName}"]`).click()
     cy.get(`[data-cy="duplicate-microlearning-${runningMLName}"]`).click()
-    cy.findByText('Create ' + messages.shared.generic.microlearnings).should(
+    cy.findByText('Create ' + messages.shared.generic.microlearning).should(
       'exist'
     )
 
@@ -467,12 +467,12 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the elements are correctly duplicated
-    cy.get('[data-cy="question-0-stack-0"]').contains(SCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-0"]').contains(FTQuestionTitle)
-    cy.get('[data-cy="question-0-stack-1"]').contains(FCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-1"]').contains(CTQuestionTitle)
-    cy.get('[data-cy="question-0-stack-2"]').contains(SCQuestionTitle)
-    cy.get('[data-cy="question-1-stack-2"]').contains(FTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-0"]').contains(SCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-0"]').contains(FTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-1"]').contains(FCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-1"]').contains(CTQuestionTitle)
+    cy.get('[data-cy="element-0-stack-2"]').contains(SCQuestionTitle)
+    cy.get('[data-cy="element-1-stack-2"]').contains(FTQuestionTitle)
     cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should('have.value', stackTitle1)
     cy.get('[data-cy="close-stack-description"]').click()

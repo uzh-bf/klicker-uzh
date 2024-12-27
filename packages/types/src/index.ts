@@ -1,4 +1,8 @@
-import type { Element, ElementType } from '@klicker-uzh/prisma'
+import type {
+  Element,
+  ElementType,
+  PerformanceLevel,
+} from '@klicker-uzh/prisma'
 
 export type ElementKeys = keyof Element
 
@@ -8,12 +12,11 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-enum QuestionType {
-  SC = 'SC',
-  MC = 'MC',
-  KPRIM = 'KPRIM',
-  NUMERICAL = 'NUMERICAL',
-  FREE_TEXT = 'FREE_TEXT',
+export enum ActivityType {
+  LIVE_QUIZ = 'LIVE_QUIZ',
+  PRACTICE_QUIZ = 'PRACTICE_QUIZ',
+  MICRO_LEARNING = 'MICRO_LEARNING',
+  GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
 export type StackInput = {
@@ -362,4 +365,112 @@ export type InstanceEvaluation =
   | IInstanceEvaluationFreeText
   | IInstanceEvaluationFlashcard
   | IInstanceEvaluationContent
+// #endregion
+
+// ----- LEARNING ANALYTICS -----
+// #region
+export type PerformanceRates = {
+  firstErrorRate: number
+  lastErrorRate: number
+  errorRate: number
+  firstPartialRate: number
+  lastPartialRate: number
+  partialRate: number
+  firstCorrectRate: number
+  lastCorrectRate: number
+  correctRate: number
+}
+
+export type ActivityPerformance = {
+  id: number
+  activityName: string
+  activityType: ActivityType
+  rates: PerformanceRates
+}
+
+export type ParticipantActivityPerformances = {
+  participantId: string
+  participantUsername: string
+  participantEmail: string | null
+  activityPerformances: ParticipantActivityPerformance[]
+}
+
+export type ParticipantActivityPerformance = {
+  id: number
+  activityId: string
+  totalScore: number
+  completion: number
+}
+
+export type InstancePerformance = {
+  id: number
+  elementName: string
+  elementType: ElementType
+  rates: PerformanceRates
+}
+
+export type ParticipantPerformance = {
+  id: number
+  firstErrorRate: number
+  firstPerformance: PerformanceLevel
+  lastErrorRate: number
+  lastPerformance: PerformanceLevel
+  totalErrorRate: number
+  totalPerformance: PerformanceLevel
+}
+
+export type InstanceFeedback = {
+  id: number
+  activityType: ActivityType
+  instanceName: string
+  instanceType: ElementType
+  upvoteRate: number
+  downvoteRate: number
+  feedbackCount: number
+}
+
+export type ActivityFeedback = {
+  id: string
+  activityType: ActivityType
+  activityName: string
+  upvoteRate: number
+  downvoteRate: number
+  feedbackCount: number
+}
+
+export type InstanceQuizAnalytics = {
+  id: number
+  elementName: string
+  elementType: ElementType
+  numberOfAnswers: number
+  uniqueParticipants: number
+  averageTimeSpent: number
+  firstErrorRate?: number | null
+  firstPartialRate?: number | null
+  firstCorrectRate?: number | null
+  lastErrorRate?: number | null
+  lastPartialRate?: number | null
+  lastCorrectRate?: number | null
+  totalErrorRate: number
+  totalPartialRate: number
+  totalCorrectRate: number
+  upvoteRate: number
+  downvoteRate: number
+  feedbackCount: number
+}
+
+export type ActivityQuizAnalytics = {
+  id: number
+  numberOfAnswers: number
+  averageTimeSpent: number
+  firstErrorRate?: number | null
+  firstPartialRate?: number | null
+  firstCorrectRate?: number | null
+  lastErrorRate?: number | null
+  lastPartialRate?: number | null
+  lastCorrectRate?: number | null
+  totalErrorRate: number
+  totalPartialRate: number
+  totalCorrectRate: number
+}
 // #endregion
