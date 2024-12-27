@@ -1,12 +1,78 @@
 import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
-// global variables to change live quiz settings
-const questionTitle1 = 'Title ' + uuid()
-const questionContent1 = 'Question Content 1'
-const questionTitle2 = 'Title ' + uuid()
-const questionContent2 = 'Question Content 2'
+// questions used in live quiz workflows, including a question with and without sample solution for each supported type
+const SCQuestion1Title = 'SC Title ' + uuid()
+const SCQuestion1Content = 'SC Question Content 1'
+const SCQuestion1Choices = [{ content: '50%' }, { content: '100%' }]
+const SCQuestion2Title = 'SC Title ' + uuid()
+const SCQuestion2Content = 'SC Question Content 2'
+const SCQuestion2Choices = [
+  { content: '50%', correct: true },
+  { content: '100%' },
+]
 
+const MCQuestion1Title = 'MC Title ' + uuid()
+const MCQuestion1Content = 'MC Question Content 1'
+const MCQuestion1Choices = [
+  { content: '25%' },
+  { content: '50%' },
+  { content: '75%' },
+  { content: '100%' },
+]
+const MCQuestion2Title = 'MC Title ' + uuid()
+const MCQuestion2Content = 'MC Question Content 2'
+const MCQuestion2Choices = [
+  { content: '25%', correct: false },
+  { content: '50%', correct: true },
+  { content: '75%' },
+  { content: '100%' },
+]
+
+const KPRIMQuestion1Title = 'KPRIM Title ' + uuid()
+const KPRIMQuestion1Content = 'KPRIM Question Content 1'
+const KPRIMQuestion1Choices = [
+  { content: '10%' },
+  { content: '50%' },
+  { content: '80%' },
+  { content: '100%' },
+]
+const KPRIMQuestion2Title = 'KPRIM Title ' + uuid()
+const KPRIMQuestion2Content = 'KPRIM Question Content 2'
+const KPRIMQuestion2Choices = [
+  { content: '10%', correct: false },
+  { content: '50%', correct: true },
+  { content: '80%' },
+  { content: '100%' },
+]
+
+const NRQuestion1Title = 'NR Title ' + uuid()
+const NRQuestion1Content = 'NR Question Content 1'
+const NRQuestion1Options = {
+  min: '0',
+  max: '100',
+  unit: '%',
+  accuracy: '2',
+  solutionRanges: [
+    { min: '0', max: '25' },
+    { min: '75', max: '100' },
+  ],
+}
+const NRQuestion2Title = 'NR Title ' + uuid()
+const NRQuestion2Content = 'NR Question Content 2'
+const NRQuestion2Options = {}
+
+const FTQuestion1Title = 'FT Title ' + uuid()
+const FTQuestion1Content = 'FT Question Content 1'
+const FTQuestion1Options = {
+  maxLength: '100',
+  solutions: ['Solution 1', 'Solution 2'],
+}
+const FTQuestion2Title = 'FT Title ' + uuid()
+const FTQuestion2Content = 'FT Question Content 2'
+const FTQuestion2Options = {}
+
+// global variables to change live quiz settings
 const quizName1 = 'Live Quiz 1'
 const quizDisplayName1 = 'Live Quiz 1 (Display)'
 const quizDescription1 = 'Live Quiz 1 Description'
@@ -32,14 +98,58 @@ describe('Different live-quiz workflows', () => {
   it('Create the questions required in the live quiz test workflows', () => {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: questionTitle1,
-      content: questionContent1,
-      choices: [{ content: '50%' }, { content: '100%' }],
+      title: SCQuestion1Title,
+      content: SCQuestion1Content,
+      choices: SCQuestion1Choices,
     })
     cy.createQuestionSC({
-      title: questionTitle2,
-      content: questionContent2,
-      choices: [{ content: '50%' }, { content: '100%' }],
+      title: SCQuestion2Title,
+      content: SCQuestion2Content,
+      choices: SCQuestion2Choices,
+    })
+
+    cy.createQuestionMC({
+      title: MCQuestion1Title,
+      content: MCQuestion1Content,
+      choices: MCQuestion1Choices,
+    })
+    cy.createQuestionMC({
+      title: MCQuestion2Title,
+      content: MCQuestion2Content,
+      choices: MCQuestion2Choices,
+    })
+
+    cy.createQuestionKPRIM({
+      title: KPRIMQuestion1Title,
+      content: KPRIMQuestion1Content,
+      choices: KPRIMQuestion1Choices,
+    })
+    cy.createQuestionKPRIM({
+      title: KPRIMQuestion2Title,
+      content: KPRIMQuestion2Content,
+      choices: KPRIMQuestion2Choices,
+    })
+
+    cy.createQuestionNR({
+      title: NRQuestion1Title,
+      content: NRQuestion1Content,
+      ...NRQuestion1Options,
+    })
+    cy.createQuestionNR({
+      title: NRQuestion2Title,
+      content: NRQuestion2Content,
+      ...NRQuestion2Options,
+    })
+
+    cy.createQuestionFT({
+      title: FTQuestion1Title,
+      content: FTQuestion1Content,
+      ...FTQuestion1Options,
+    })
+    cy.createQuestionFT({
+      title: FTQuestion2Title,
+      content: FTQuestion2Content,
+      ...FTQuestion2Options,
     })
   })
 
@@ -196,16 +306,16 @@ describe('Different live-quiz workflows', () => {
 
     // add two questions in separate blocks, move blocks and add time limit of 10 for first and 20 for second block
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${questionTitle1}"]`)
-      .contains(questionTitle1)
+    cy.get(`[data-cy="question-item-${SCQuestion1Title}"]`)
+      .contains(SCQuestion1Title)
       .trigger('dragstart', {
         dataTransfer,
       })
     cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get(`[data-cy="question-item-${questionTitle2}"]`)
-      .contains(questionTitle2)
+    cy.get(`[data-cy="question-item-${SCQuestion2Title}"]`)
+      .contains(SCQuestion2Title)
       .trigger('dragstart', {
         dataTransfer,
       })
@@ -214,26 +324,26 @@ describe('Different live-quiz workflows', () => {
     })
     cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
-      .should('contain', questionTitle1.substring(0, 20))
+      .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
+      .should('contain', SCQuestion2Title.substring(0, 20))
 
     // test sorting of blocks
     cy.get('[data-cy="move-block-1-left"]').click()
     cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
+      .should('contain', SCQuestion2Title.substring(0, 20))
     cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
-      .should('contain', questionTitle1.substring(0, 20))
+      .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="move-block-0-right"]').click()
     cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
-      .should('contain', questionTitle1.substring(0, 20))
+      .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
+      .should('contain', SCQuestion2Title.substring(0, 20))
 
     // add time limits
     cy.get('[data-cy="open-block-0-settings"]').click()
@@ -388,10 +498,10 @@ describe('Different live-quiz workflows', () => {
     // check questions and modify them
     cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
-      .should('contain', questionTitle1.substring(0, 20))
+      .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
+      .should('contain', SCQuestion2Title.substring(0, 20))
     cy.get('[data-cy="open-block-0-settings"]').click()
     cy.get('[data-cy="block-time-limit"]').should('have.value', '10')
     cy.get('[data-cy="block-time-limit"]').clear().type('15')
@@ -410,10 +520,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="move-block-1-left"]').click()
     cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
+      .should('contain', SCQuestion2Title.substring(0, 20))
     cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
-      .should('contain', questionTitle1.substring(0, 20))
+      .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
 
     //  start editing again and check if correct values were saved
@@ -473,10 +583,10 @@ describe('Different live-quiz workflows', () => {
 
     cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
+      .should('contain', SCQuestion2Title.substring(0, 20))
     cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
-      .should('contain', questionTitle1.substring(0, 20))
+      .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="open-block-0-settings"]').click()
     cy.get('[data-cy="block-time-limit"]').should('have.value', '25')
     cy.get('[data-cy="close-block-settings"]').click()
@@ -510,10 +620,10 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="question-0-stack-0"]')
       .should('exist')
-      .should('contain', questionTitle2.substring(0, 20))
+      .should('contain', SCQuestion2Title.substring(0, 20))
     cy.get('[data-cy="question-0-stack-1"]')
       .should('exist')
-      .should('contain', questionTitle1.substring(0, 20))
+      .should('contain', SCQuestion1Title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.contains('[data-cy="live-quiz-block"]', quizName1Dupl)
@@ -577,7 +687,7 @@ describe('Different live-quiz workflows', () => {
   })
 
   // ! Part 3: Full Live Quiz Execution Cycle
-  it('Create and start a live quiz to test the entire execution cycle', () => {
+  it('Create and start a live quiz with all question types (with and without sample solution) to test the entire execution cycle', () => {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
 
@@ -629,8 +739,8 @@ describe('Different live-quiz workflows', () => {
     // Step 4: Questions
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle1}"]`)
-        .contains(questionTitle1)
+      cy.get(`[data-cy="question-item-${SCQuestion1Title}"]`)
+        .contains(SCQuestion1Title)
         .trigger('dragstart', {
           dataTransfer,
         })
@@ -642,8 +752,8 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="drop-elements-add-stack"]').click()
     for (let i = 0; i < 2; i++) {
       const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${questionTitle2}"]`)
-        .contains(questionTitle2)
+      cy.get(`[data-cy="question-item-${SCQuestion2Title}"]`)
+        .contains(SCQuestion2Title)
         .trigger('dragstart', {
           dataTransfer,
         })
@@ -704,7 +814,7 @@ describe('Different live-quiz workflows', () => {
     cy.viewport('iphone-x')
     cy.loginStudent()
     cy.findByText(quizDisplayName2).click()
-    cy.findByText(questionContent1).should('exist')
+    cy.findByText(SCQuestion1Content).should('exist')
 
     cy.get('[data-cy="mobile-menu-leaderboard"]').click()
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()

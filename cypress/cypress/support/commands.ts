@@ -369,7 +369,7 @@ Cypress.Commands.add(
       cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
     }
 
-    if (solutionRanges.length > 0) {
+    if (typeof solutionRanges !== 'undefined' && solutionRanges.length > 0) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       solutionRanges.forEach((range, ix) => {
         cy.get('[data-cy="add-solution-range"]').click()
@@ -391,12 +391,19 @@ interface CreateQuestionFTArgs {
   title: string
   content: string
   maxLength?: string
+  solutions?: string[]
   multiplier?: string
 }
 
 Cypress.Commands.add(
   'createQuestionFT',
-  ({ title, content, maxLength, multiplier }: CreateQuestionFTArgs) => {
+  ({
+    title,
+    content,
+    maxLength,
+    solutions,
+    multiplier,
+  }: CreateQuestionFTArgs) => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
     cy.get(
@@ -420,6 +427,14 @@ Cypress.Commands.add(
 
     if (typeof maxLength !== 'undefined') {
       cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
+    }
+
+    if (typeof solutions !== 'undefined' && solutions.length > 0) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      solutions.forEach((solution, ix) => {
+        cy.get(`[data-cy="add-solution-value"]`).click()
+        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
+      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -821,6 +836,7 @@ declare global {
         title,
         content,
         maxLength,
+        solutions,
         multiplier,
       }: CreateQuestionFTArgs): Chainable<void>
       createFlashcard({

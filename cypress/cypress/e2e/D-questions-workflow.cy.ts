@@ -269,7 +269,7 @@ describe('Create questions', () => {
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
   })
 
-  it('Create a Numeric question', () => {
+  it('Create a Numerical question', () => {
     const randomQuestionNumber = uuid()
     const questionTitle = 'A Numeric ' + randomQuestionNumber
     const question = 'Was ist die Wahrscheinlichkeit? ' + randomQuestionNumber
