@@ -188,19 +188,19 @@ describe('@klicker-uzh/grading', () => {
       solutions: [],
       response: 'Test',
     })
-    expect(points5).toEqual(0)
+    expect(points5).toEqual(null)
 
     const points6 = gradeQuestionFreeText({
       solutions: undefined,
       response: 'Test',
     })
-    expect(points6).toEqual(1)
+    expect(points6).toEqual(null)
 
     const points7 = gradeQuestionFreeText({
       solutions: null,
       response: 'Test',
     })
-    expect(points7).toEqual(1)
+    expect(points7).toEqual(null)
   })
 
   it('should compute the awarded points correctly for live quizzes', () => {
