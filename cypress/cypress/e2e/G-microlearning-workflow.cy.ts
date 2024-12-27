@@ -203,7 +203,7 @@ describe('Different microlearning workflows', () => {
     })
     cy.get('[data-cy="question-2-stack-1"]').contains(SCQuestionTitleNoSol)
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
-    cy.get('[data-cy="delete-question-2-stack-1"]').click()
+    cy.get('[data-cy="remove-element-2-stack-1"]').click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add displayname and description to stacks
@@ -260,10 +260,10 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="close-stack-description"]').click()
 
     // move questions in stack
-    cy.get('[data-cy="move-question-0-stack-1-down"]').click()
+    cy.get('[data-cy="move-element-0-stack-1-down"]').click()
     cy.get('[data-cy="question-0-stack-1"]').contains(CTQuestionTitle)
     cy.get('[data-cy="question-1-stack-1"]').contains(FCQuestionTitle)
-    cy.get('[data-cy="move-question-1-stack-1-up"]').click()
+    cy.get('[data-cy="move-element-1-stack-1-up"]').click()
     cy.get('[data-cy="question-0-stack-1"]').contains(FCQuestionTitle)
     cy.get('[data-cy="question-1-stack-1"]').contains(CTQuestionTitle)
 
@@ -350,7 +350,7 @@ describe('Different microlearning workflows', () => {
       cy.get(`[data-cy="drop-elements-stack-2"]`).trigger('drop', {
         dataTransfer,
       })
-      cy.get(`[data-cy="question-${ix}-stack-2"]`).contains(element)
+      cy.get(`[data-cy="element-${ix}-stack-2"]`).contains(element)
     })
 
     // check stack descriptions

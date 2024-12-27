@@ -301,7 +301,7 @@ describe('Create and solve a group activity', () => {
       cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
         dataTransfer,
       })
-      cy.get(`[data-cy="question-${ix}-stack-0"]`)
+      cy.get(`[data-cy="element-${ix}-stack-0"]`)
         .should('exist')
         .should('contain', title.substring(0, 20))
     })

@@ -166,7 +166,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
-    cy.get('[data-cy="drop-elements-add-stack"]').click()
+    cy.get('[data-cy="drop-elements-add-block"]').click()
     cy.get('[data-cy="block-container-header"]').should('have.length', 2)
     cy.get('[data-cy="delete-block-1"]').click()
     cy.get('[data-cy="block-container-header"]').should('have.length', 1)
@@ -304,6 +304,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
+    // TODO: replace with createStacks function and corresponding type
     // add two questions in separate blocks, move blocks and add time limit of 10 for first and 20 for second block
     const dataTransfer = new DataTransfer()
     cy.get(`[data-cy="question-item-${SCQuestion1Title}"]`)
@@ -319,7 +320,7 @@ describe('Different live-quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-add-stack"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-add-block"]').trigger('drop', {
       dataTransfer,
     })
     cy.get('[data-cy="question-0-stack-0"]')
@@ -735,32 +736,14 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="set-liveqa-enabled"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // TODO: replace this with cy.createStacks function after migration to element stacks
     // Step 4: Questions
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${SCQuestion1Title}"]`)
-        .contains(SCQuestion1Title)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
-        dataTransfer,
-      })
-    }
-
-    cy.get('[data-cy="drop-elements-add-stack"]').click()
-    for (let i = 0; i < 2; i++) {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${SCQuestion2Title}"]`)
-        .contains(SCQuestion2Title)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-elements-block-1"]').trigger('drop', {
-        dataTransfer,
-      })
-    }
+    cy.createStacks({
+      stacks: [
+        { elements: [SCQuestion1Title, SCQuestion1Title] },
+        { elements: [SCQuestion2Title, SCQuestion2Title] },
+      ],
+      type: 'block',
+    })
     cy.get('[data-cy="next-or-submit"]').click()
 
     cy.get('[data-cy="load-live-quiz-list"]').click()

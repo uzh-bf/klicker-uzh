@@ -525,6 +525,7 @@ Cypress.Commands.add(
     }
     cy.get('[data-cy="next-or-submit"]').click()
 
+    // TODO: use createStacks function with blocks option (fix input types first)
     // Step 4: Blocks & Questions
     if (blocks.length > 0) {
       const dataTransfer = new DataTransfer()
@@ -538,7 +539,7 @@ Cypress.Commands.add(
         cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
           dataTransfer,
         })
-        cy.get(`[data-cy="question-${ix}-stack-0"]`)
+        cy.get(`[data-cy="element-${ix}-stack-0"]`)
           .should('exist')
           .should('contain', question.substring(0, 20))
       })
@@ -552,7 +553,13 @@ interface StackType {
   elements: string[]
 }
 
-function createStacks({ stacks }: { stacks: StackType[] }) {
+function createStacks({
+  stacks,
+  type = 'stack',
+}: {
+  stacks: StackType[]
+  type?: 'block' | 'stack'
+}) {
   stacks[0].elements.forEach((element, ix) => {
     const dataTransfer = new DataTransfer()
     cy.get(`[data-cy="question-item-${element}"]`)
@@ -560,17 +567,17 @@ function createStacks({ stacks }: { stacks: StackType[] }) {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
+    cy.get(`[data-cy="drop-elements-${type}-0"]`).trigger('drop', {
       dataTransfer,
     })
-    cy.get(`[data-cy="question-${ix}-stack-0"]`).contains(
+    cy.get(`[data-cy="element-${ix}-${type}-0"]`).contains(
       element.substring(0, 20)
     )
   })
 
   if (stacks.length > 1) {
     stacks.slice(1).forEach((stack, ix) => {
-      cy.get('[data-cy="drop-elements-add-stack"]').click()
+      cy.get(`[data-cy="drop-elements-add-${type}"]`).click()
       stack.elements.forEach((element, jx) => {
         const dataTransfer = new DataTransfer()
         cy.get(`[data-cy="question-item-${element}"]`)
@@ -578,10 +585,10 @@ function createStacks({ stacks }: { stacks: StackType[] }) {
           .trigger('dragstart', {
             dataTransfer,
           })
-        cy.get(`[data-cy="drop-elements-stack-${ix + 1}"]`).trigger('drop', {
+        cy.get(`[data-cy="drop-elements-${type}-${ix + 1}"]`).trigger('drop', {
           dataTransfer,
         })
-        cy.get(`[data-cy="question-${jx}-stack-${ix + 1}"]`).contains(
+        cy.get(`[data-cy="element-${jx}-${type}-${ix + 1}"]`).contains(
           element.substring(0, 20)
         )
       })
@@ -851,7 +858,13 @@ declare global {
         courseName,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
-      createStacks({ stacks }: { stacks: StackType[] }): Chainable<void>
+      createStacks({
+        stacks,
+        type,
+      }: {
+        stacks: StackType[]
+        type?: 'block' | 'stack'
+      }): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,

@@ -207,7 +207,7 @@ describe('Different practice quiz workflows', () => {
     })
     cy.get('[data-cy="question-1-stack-1"]').contains(SCQuestionTitleNoSol)
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
-    cy.get('[data-cy="delete-question-1-stack-1"]').click()
+    cy.get('[data-cy="remove-element-1-stack-1"]').click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // end the practice quiz creation
