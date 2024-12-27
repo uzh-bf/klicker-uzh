@@ -48,7 +48,10 @@ const KPRIMQuestion2Choices = [
 
 const NRQuestion1Title = 'NR Title ' + uuid()
 const NRQuestion1Content = 'NR Question Content 1'
-const NRQuestion1Options = {
+const NRQuestion1Options = {}
+const NRQuestion2Title = 'NR Title ' + uuid()
+const NRQuestion2Content = 'NR Question Content 2'
+const NRQuestion2Options = {
   min: '0',
   max: '100',
   unit: '%',
@@ -58,19 +61,20 @@ const NRQuestion1Options = {
     { min: '75', max: '100' },
   ],
 }
-const NRQuestion2Title = 'NR Title ' + uuid()
-const NRQuestion2Content = 'NR Question Content 2'
-const NRQuestion2Options = {}
+const NRAnswer1 = '50'
+const NRAnswer2 = '100'
 
 const FTQuestion1Title = 'FT Title ' + uuid()
 const FTQuestion1Content = 'FT Question Content 1'
-const FTQuestion1Options = {
+const FTQuestion1Options = {}
+const FTQuestion2Title = 'FT Title ' + uuid()
+const FTQuestion2Content = 'FT Question Content 2'
+const FTQuestion2Options = {
   maxLength: '100',
   solutions: ['Solution 1', 'Solution 2'],
 }
-const FTQuestion2Title = 'FT Title ' + uuid()
-const FTQuestion2Content = 'FT Question Content 2'
-const FTQuestion2Options = {}
+const FTAnswer1 = 'Solution 1'
+const FTAnswer2 = 'Answer 2'
 
 // global variables to change live quiz settings
 const quizName1 = 'Live Quiz 1'
@@ -722,13 +726,28 @@ describe('Different live-quiz workflows', () => {
     // Step 4: Questions
     cy.createStacks({
       stacks: [
-        { elements: [SCQuestion1Title, SCQuestion1Title] },
-        { elements: [SCQuestion2Title, SCQuestion2Title] },
+        {
+          elements: [
+            SCQuestion1Title,
+            MCQuestion1Title,
+            KPRIMQuestion1Title,
+            NRQuestion1Title,
+            FTQuestion1Title,
+          ],
+        },
+        {
+          elements: [
+            SCQuestion2Title,
+            MCQuestion2Title,
+            KPRIMQuestion2Title,
+            NRQuestion2Title,
+            FTQuestion2Title,
+          ],
+        },
       ],
       type: 'block',
     })
     cy.get('[data-cy="next-or-submit"]').click()
-
     cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="live-quiz"]').contains(quizName2)
 
@@ -764,7 +783,20 @@ describe('Different live-quiz workflows', () => {
     // login student and answer first question
     cy.loginStudent()
     cy.findByText(quizDisplayName2).click()
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-1"]').click()
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
@@ -780,12 +812,17 @@ describe('Different live-quiz workflows', () => {
     cy.viewport('iphone-x')
     cy.loginStudent()
     cy.findByText(quizDisplayName2).click()
-    cy.findByText(SCQuestion1Content).should('exist')
+    cy.findByText(NRQuestion1Content).should('exist')
 
     cy.get('[data-cy="mobile-menu-leaderboard"]').click()
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
     cy.get('[data-cy="mobile-menu-questions"]').click()
-    cy.get('[data-cy="sc-2-answer-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-4"]').clear().type(NRAnswer1)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-5"]').type(FTAnswer1)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
@@ -840,7 +877,20 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="sc-2-answer-option-1"]').click()
+    cy.get('[data-cy="mc-2-answer-option-1"]').click()
+    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="input-numerical-4"]').clear().type(NRAnswer2)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="free-text-input-5"]').type(FTAnswer2)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
   })
