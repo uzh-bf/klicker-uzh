@@ -77,7 +77,14 @@ function Header({ user }: HeaderProps): React.ReactElement {
             key={item.href}
             label={
               <div className="flex items-center gap-2">
-                {item.label}
+                <div
+                  className={twMerge(
+                    item.active &&
+                      'underline decoration-2 underline-offset-[0.3rem]'
+                  )}
+                >
+                  {item.label}
+                </div>
                 {item.new && (
                   <Badge className="py-0.25 rounded bg-green-700 px-1.5 text-xs font-semibold text-white hover:bg-green-800">
                     {t('shared.generic.new')}
@@ -86,11 +93,8 @@ function Header({ user }: HeaderProps): React.ReactElement {
               </div>
             }
             className={{
-              label: twMerge(
+              label:
                 'bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base text-slate-700 transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
-                item.active &&
-                  'underline decoration-2 underline-offset-[0.3rem]'
-              ),
               root: 'group text-slate-700 transition-all duration-300 ease-in-out hover:bg-inherit',
             }}
             onClick={() => {

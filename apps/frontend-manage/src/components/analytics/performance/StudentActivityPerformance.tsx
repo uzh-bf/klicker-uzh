@@ -190,7 +190,7 @@ function StudentActivityPerformance({
               },
             ]}
             data={tableData ?? []}
-            csvFilename={`${course?.name.replace(' ', '-')}_participant_activity`}
+            csvFilename={`${course?.name.replace(' ', '-')}_participant_activity_performance`}
             className={{
               table: 'overflow-x-auto',
               tableHeader: 'h-7 p-2',
