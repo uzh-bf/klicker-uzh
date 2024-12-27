@@ -1,18 +1,17 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
 // questions used in live quiz workflows, including a question with and without sample solution for each supported type
-const SCQuestion1Title = 'SC Title ' + uuid()
+const SCQuestion1Title = 'SC Title LQ Test 1'
 const SCQuestion1Content = 'SC Question Content 1'
 const SCQuestion1Choices = [{ content: '50%' }, { content: '100%' }]
-const SCQuestion2Title = 'SC Title ' + uuid()
+const SCQuestion2Title = 'SC Title LQ Test 2'
 const SCQuestion2Content = 'SC Question Content 2'
 const SCQuestion2Choices = [
   { content: '50%', correct: true },
   { content: '100%' },
 ]
 
-const MCQuestion1Title = 'MC Title ' + uuid()
+const MCQuestion1Title = 'MC Title LQ Test 1'
 const MCQuestion1Content = 'MC Question Content 1'
 const MCQuestion1Choices = [
   { content: '25%' },
@@ -20,7 +19,7 @@ const MCQuestion1Choices = [
   { content: '75%' },
   { content: '100%' },
 ]
-const MCQuestion2Title = 'MC Title ' + uuid()
+const MCQuestion2Title = 'MC Title LQ Test 2'
 const MCQuestion2Content = 'MC Question Content 2'
 const MCQuestion2Choices = [
   { content: '25%', correct: false },
@@ -29,7 +28,7 @@ const MCQuestion2Choices = [
   { content: '100%' },
 ]
 
-const KPRIMQuestion1Title = 'KPRIM Title ' + uuid()
+const KPRIMQuestion1Title = 'KPRIM Title LQ Test 1'
 const KPRIMQuestion1Content = 'KPRIM Question Content 1'
 const KPRIMQuestion1Choices = [
   { content: '10%' },
@@ -37,7 +36,7 @@ const KPRIMQuestion1Choices = [
   { content: '80%' },
   { content: '100%' },
 ]
-const KPRIMQuestion2Title = 'KPRIM Title ' + uuid()
+const KPRIMQuestion2Title = 'KPRIM Title LQ Test 2'
 const KPRIMQuestion2Content = 'KPRIM Question Content 2'
 const KPRIMQuestion2Choices = [
   { content: '10%', correct: false },
@@ -46,10 +45,10 @@ const KPRIMQuestion2Choices = [
   { content: '100%' },
 ]
 
-const NRQuestion1Title = 'NR Title ' + uuid()
+const NRQuestion1Title = 'NR Title LQ Test 1'
 const NRQuestion1Content = 'NR Question Content 1'
 const NRQuestion1Options = {}
-const NRQuestion2Title = 'NR Title ' + uuid()
+const NRQuestion2Title = 'NR Title LQ Test 2'
 const NRQuestion2Content = 'NR Question Content 2'
 const NRQuestion2Options = {
   min: '0',
@@ -64,10 +63,10 @@ const NRQuestion2Options = {
 const NRAnswer1 = '50'
 const NRAnswer2 = '100'
 
-const FTQuestion1Title = 'FT Title ' + uuid()
+const FTQuestion1Title = 'FT Title LQ Test 1'
 const FTQuestion1Content = 'FT Question Content 1'
 const FTQuestion1Options = {}
-const FTQuestion2Title = 'FT Title ' + uuid()
+const FTQuestion2Title = 'FT Title LQ Test 2'
 const FTQuestion2Content = 'FT Question Content 2'
 const FTQuestion2Options = {
   maxLength: '100',
@@ -913,6 +912,79 @@ describe('Different live-quiz workflows', () => {
     cy.wait(500)
   })
 
+  it('Check out evaluation view of live quiz and its content', () => {
+    cy.loginLecturer()
+
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${quizName2}"]`).click()
+    cy.wait(1000)
+
+    // extract the quiz id from the URL and visit the evaluation view
+    cy.location('href').then((href) => {
+      const quizId = href.split('/')[4]
+      cy.visit(`${Cypress.env('URL_MANAGE')}/quizzes/${quizId}/evaluation`)
+    })
+
+    // check content of evaluation view
+    cy.findByText(SCQuestion1Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(MCQuestion1Content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(SCQuestion1Content).should('exist')
+
+    // test instance navigation
+    cy.get('[data-cy="evaluate-question-select"]')
+      .should('exist')
+      .contains(SCQuestion1Title)
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${KPRIMQuestion1Title}"]`
+    ).click()
+    cy.get('[data-cy="evaluate-question-select"]').contains(KPRIMQuestion1Title)
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(`[data-cy="evaluation-select-instance-${SCQuestion1Title}"]`).click()
+    cy.get('[data-cy="evaluate-question-select"]').contains(SCQuestion1Title)
+
+    // navigate forwards and backwards through all questions
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(KPRIMQuestion1Title).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(NRQuestion1Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(FTQuestion1Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(SCQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(MCQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(KPRIMQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(NRQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(FTQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(NRQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(SCQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(FTQuestion1Content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(MCQuestion1Title).should('exist')
+
+    // test navigation through blocks
+    cy.get('[data-cy="evaluate-stack-1"]').click()
+    cy.findByText(SCQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-stack-0"]').click()
+    cy.findByText(SCQuestion1Title).should('exist')
+    cy.get('[data-cy="evaluate-stack-1"]').click()
+    cy.findByText(SCQuestion2Content).should('exist')
+  })
+
   it('Close block and delete feedback / feedback response', () => {
     cy.loginLecturer()
 
@@ -931,7 +1003,6 @@ describe('Different live-quiz workflows', () => {
   it('Check that the deleted feedbacks are not visible anymore', () => {
     cy.loginStudent()
     cy.findByText(quizDisplayName2).click()
-
     cy.findByText(feedbackDesktop).should('exist')
     cy.findByText(feedbackDesktop2).should('exist')
     cy.findByText(feedbackMobile).should('not.exist')
@@ -955,5 +1026,28 @@ describe('Different live-quiz workflows', () => {
     cy.get(`[data-cy="delete-live-quiz-${quizName2}"]`).click()
     cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
     cy.findByText(quizName2).should('not.exist')
+  })
+
+  it('Cleanup: Delete the created questions from the question pool for repeated test execution', () => {
+    cy.loginLecturer()
+
+    const questions = [
+      SCQuestion1Title,
+      MCQuestion1Title,
+      KPRIMQuestion1Title,
+      NRQuestion1Title,
+      FTQuestion1Title,
+      SCQuestion2Title,
+      MCQuestion2Title,
+      KPRIMQuestion2Title,
+      NRQuestion2Title,
+      FTQuestion2Title,
+    ]
+    questions.forEach((question) => {
+      cy.get(`[data-cy="element-item-${question}"]`).should('exist')
+      cy.get(`[data-cy="delete-question-${question}"]`).click()
+      cy.get('[data-cy="confirm-question-deletion"]').click()
+      cy.get(`[data-cy="element-item-${question}"]`).should('not.exist')
+    })
   })
 })
