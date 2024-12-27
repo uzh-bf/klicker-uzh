@@ -138,12 +138,21 @@ async function getCachedBlockResults({
         omitBy(results, (_, key) => key === 'participants')
       ).reduce<Record<string, { value: string; count: number }>>(
         (responses_acc, [responseHash, count]) => {
-          const solutions =
-            typeof info.solutions !== 'undefined'
-              ? JSON.parse(info.solutions)
-              : []
-          const response = responseHashes[responseHash] ?? responseHash
+          let solutions = []
+          try {
+            solutions =
+              'hasSampleSolution' in instance.elementData.options &&
+              instance.elementData.options.hasSampleSolution
+                ? JSON.parse(info.solutions)
+                : []
+          } catch (e) {
+            console.log(
+              'An error occured while parsing the solutions array from the cache:'
+            )
+            console.error(e)
+          }
 
+          const response = responseHashes[responseHash] ?? responseHash
           let grading: number | undefined
           if (solutions && solutions.length > 0) {
             if (instance.elementType === ElementType.NUMERICAL) {

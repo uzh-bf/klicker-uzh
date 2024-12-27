@@ -108,7 +108,7 @@ export function gradeQuestionNumerical({
 
 interface GradeQuestionFreeTextArgs {
   response: string
-  solutions: string[]
+  solutions: string[] | undefined | null
 }
 
 export function gradeQuestionFreeText({
