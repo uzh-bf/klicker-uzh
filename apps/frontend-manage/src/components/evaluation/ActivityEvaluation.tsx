@@ -211,6 +211,7 @@ function ActivityEvaluation({
         )}
       >
         <EvaluationFooter
+          type={type}
           activeStack={activeStack}
           textSize={textSize}
           setTextSize={setTextSize}
