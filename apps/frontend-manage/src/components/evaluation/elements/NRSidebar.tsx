@@ -42,7 +42,7 @@ function NRSidebar({
   return (
     <div
       className={twMerge(
-        'order-1 flex w-full flex-none flex-col justify-between overflow-hidden px-3 py-2 md:order-2',
+        'order-1 flex h-full w-full flex-col justify-between overflow-hidden px-3 py-2 md:order-2',
         textSize.text
       )}
     >
