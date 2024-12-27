@@ -284,26 +284,18 @@ describe('Create and solve a group activity', () => {
     cy.findByText(clueContent3).should('exist')
 
     // Step 4: Questions / Elements
-    const elements = [
-      SCQuestionTitle,
-      MCQuestionTitle,
-      KPRIMQuestionTitle,
-      NRQuestionTitle,
-      FTQuestionTitle,
-    ]
-    elements.forEach((title, ix) => {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="element-item-${title}"]`)
-        .contains(title)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-        dataTransfer,
-      })
-      cy.get(`[data-cy="element-${ix}-stack-0"]`)
-        .should('exist')
-        .should('contain', title.substring(0, 20))
+    cy.createStacks({
+      stacks: [
+        {
+          elements: [
+            SCQuestionTitle,
+            MCQuestionTitle,
+            KPRIMQuestionTitle,
+            NRQuestionTitle,
+            FTQuestionTitle,
+          ],
+        },
+      ],
     })
 
     cy.get('[data-cy="back-activity-creation"]').click()

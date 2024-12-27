@@ -498,7 +498,7 @@ interface CreateLiveQuizArgs {
   name: string
   displayName: string
   courseName?: string
-  blocks: { questions: string[] }[]
+  blocks: { elements: string[] }[]
 }
 
 Cypress.Commands.add(
@@ -525,26 +525,11 @@ Cypress.Commands.add(
     }
     cy.get('[data-cy="next-or-submit"]').click()
 
-    // TODO: use createStacks function with blocks option (fix input types first)
     // Step 4: Blocks & Questions
-    if (blocks.length > 0) {
-      const dataTransfer = new DataTransfer()
-
-      blocks[0].questions.forEach((question, ix) => {
-        cy.get(`[data-cy="element-item-${question}"]`)
-          .contains(question)
-          .trigger('dragstart', {
-            dataTransfer,
-          })
-        cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
-          dataTransfer,
-        })
-        cy.get(`[data-cy="element-${ix}-stack-0"]`)
-          .should('exist')
-          .should('contain', question.substring(0, 20))
-      })
-    }
-
+    cy.createStacks({
+      stacks: blocks,
+      type: 'block',
+    })
     cy.get('[data-cy="next-or-submit"]').click()
   }
 )

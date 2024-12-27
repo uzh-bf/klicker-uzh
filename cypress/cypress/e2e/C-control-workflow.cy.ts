@@ -26,7 +26,7 @@ describe('Test functionalities of frontend-control application', () => {
       displayName: quiz,
       blocks: [
         {
-          questions: [questionTitle],
+          elements: [questionTitle],
         },
       ],
     })
