@@ -1132,7 +1132,7 @@ type NumericalElementResults {
   maxValue: Float
   minValue: Float
   responseValues: [NumericalElementResult!]!
-  solutionRanges: [NumericalElementSolutions!]!
+  solutionRanges: [NumericalElementSolutions!]
   totalAnswers: Int!
 }
 

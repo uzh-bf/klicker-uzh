@@ -525,7 +525,7 @@ describe('Test course creation and editing functionalities', () => {
       name: liveQuizName,
       displayName: liveQuizName,
       courseName: courseDelName,
-      blocks: [{ questions: [questionTitle] }],
+      blocks: [{ elements: [questionTitle] }],
     })
     cy.get('[data-cy="create-new-element"]').click()
 

@@ -223,6 +223,7 @@ function StackBlockCreation({
       </div>
 
       <WizardElementList
+        type="stack"
         stack={stack}
         stackIx={stackIx}
         replace={replace}
