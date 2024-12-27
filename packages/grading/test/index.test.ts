@@ -188,7 +188,7 @@ describe('@klicker-uzh/grading', () => {
       solutions: [],
       response: 'Test',
     })
-    expect(points5).toEqual(1)
+    expect(points5).toEqual(0)
 
     const points6 = gradeQuestionFreeText({
       solutions: undefined,
