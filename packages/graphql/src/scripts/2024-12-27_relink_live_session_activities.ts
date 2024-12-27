@@ -97,7 +97,7 @@ async function run() {
   const mismatchingConfusionFeedbacks =
     await prisma.$executeRaw`SELECT ct.id FROM "ConfusionTimestep" ct WHERE ct."liveQuizId" IS NULL OR ct."sessionId" != ct."liveQuizId"`
   const mismatchingLeaderboardEntries =
-    await prisma.$executeRaw`SELECT fb.id FROM "LeaderboardEntry" fb WHERE fb.type='SESSION' AND fb."liveQuizId" IS NULL OR fb."sessionId" != fb."liveQuizId"`
+    await prisma.$executeRaw`SELECT fb.id FROM "LeaderboardEntry" fb WHERE fb.type='SESSION' AND (fb."liveQuizId" IS NULL OR fb."sessionId" != fb."liveQuizId")`
 
   console.log(
     'Number of feedbacks with mismatching live session and live quiz ids',
