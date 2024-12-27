@@ -49,7 +49,7 @@ function ElementChart({
       <ElementHistogram
         type={instanceEvaluation.type}
         responses={responses}
-        solutionRanges={instanceEvaluation.results.solutionRanges}
+        solutionRanges={instanceEvaluation.results.solutionRanges ?? []}
         statistics={instanceEvaluation.statistics}
         minValue={instanceEvaluation.results.minValue}
         maxValue={instanceEvaluation.results.maxValue}
