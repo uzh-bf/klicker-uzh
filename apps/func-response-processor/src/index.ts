@@ -137,7 +137,7 @@ const serviceBusTrigger = async function (
       choiceCount,
       pointsMultiplier,
     } = instanceInfo
-    let parsedSolutions
+    let parsedSolutions = undefined
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)

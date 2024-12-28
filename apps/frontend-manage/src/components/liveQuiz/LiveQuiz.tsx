@@ -186,13 +186,13 @@ function LiveQuiz({
 
                 {PublicationStatus.Published === quiz.status && (
                   <Link
-                    href={`/sessions/${quiz.id}/cockpit`}
+                    href={`/quizzes/${quiz.id}/cockpit`}
                     legacyBehavior
                     passHref
                   >
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`live-quiz-cockpit${quiz.name}`}
+                      data-cy={`live-quiz-cockpit-${quiz.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.liveQuizzes.lecturerCockpit')}</div>
@@ -201,7 +201,7 @@ function LiveQuiz({
                 )}
                 {PublicationStatus.Ended === quiz.status && (
                   <Link
-                    href={`/sessions/${quiz.id}/evaluation`}
+                    href={`/quizzes/${quiz.id}/evaluation`}
                     legacyBehavior
                     passHref
                   >
@@ -223,7 +223,7 @@ function LiveQuiz({
                     disabled={startingQuiz}
                     onClick={async () => {
                       await startLiveQuiz()
-                      router.push(`sessions/${quiz.id}/cockpit`)
+                      router.push(`quizzes/${quiz.id}/cockpit`)
                     }}
                     data={{ cy: `start-live-quiz-${quiz.name}` }}
                   >

@@ -94,6 +94,8 @@ model User {
   catalystIndividual    Boolean @default(false)
   catalystTier          String?
 
+  featurePreview Boolean @default(false)
+
   logins            UserLogin[]
   session           Session[]
   accounts          Account[]

@@ -1,8 +1,8 @@
 import { useTranslations } from 'next-intl'
-import { ElememntBlockErrorValues } from '../WizardLayout'
+import { ElementBlockErrorValues } from '../WizardLayout'
 
 interface LiveQuizBlocksErrorProps {
-  errors: ElememntBlockErrorValues
+  errors: ElementBlockErrorValues
 }
 
 function LiveQuizBlocksError({ errors }: LiveQuizBlocksErrorProps) {

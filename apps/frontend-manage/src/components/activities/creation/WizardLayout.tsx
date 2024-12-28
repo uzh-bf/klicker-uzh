@@ -35,7 +35,7 @@ export interface ElementBlockFormValues {
   }[]
 }
 
-export interface ElememntBlockErrorValues {
+export interface ElementBlockErrorValues {
   timeLimit?: string
   elements?:
     | string

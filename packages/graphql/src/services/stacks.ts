@@ -155,7 +155,7 @@ type SpacedRepetitionResult = {
   nextDueAt: Date
 }
 
-function updateSpacedRepetition({
+export function updateSpacedRepetition({
   eFactor,
   interval,
   streak,
@@ -192,6 +192,9 @@ function updateSpacedRepetition({
       newInterval = Math.ceil(interval * newEfactor)
     }
   }
+
+  // ensure that maximum interval is bounded
+  newInterval = Math.min(newInterval, 36500)
 
   // compute next due date to sort by (=> spaced repetition)
   const nextDueAt = dayjs().add(newInterval, 'day').toDate()
@@ -543,7 +546,7 @@ async function upsertFlashcardResponse({
   participantId: string
   courseId: string
   response: FlashcardCorrectness
-  newAverageResponseTime?: number
+  newAverageResponseTime: number
   existingInstance: ExistingInstanceType
   existingResponse: PrismaQuestionResponse | null
   responseCorrectness: ResponseCorrectness
@@ -720,7 +723,10 @@ async function respondToFlashcard(
           existingResponse,
           answerTime,
         })
-      : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
+      : {
+          newAverageInstanceTime: undefined,
+          newAverageResponseTime: answerTime,
+        }
 
     // compute updated instance statistics
     const instanceInPracticeQuiz =
@@ -891,7 +897,7 @@ async function upsertContentResponse({
   id: number
   participantId: string
   courseId: string
-  newAverageResponseTime?: number
+  newAverageResponseTime: number
   existingInstance: ExistingInstanceType
   aggregatedResponses: ElementResultsContent
   resultSpacedRepetition: SpacedRepetitionResult
@@ -1051,7 +1057,10 @@ async function respondToContent(
           existingResponse,
           answerTime,
         })
-      : { newAverageInstanceTime: undefined, newAverageResponseTime: undefined }
+      : {
+          newAverageInstanceTime: undefined,
+          newAverageResponseTime: answerTime,
+        }
 
     // compute updated instance statistics
     const instanceInPracticeQuiz =
@@ -1336,7 +1345,7 @@ function computeQuestionEvaluation({
   }
 }
 
-function evaluateChoicesAnswerCorrectness({
+export function evaluateChoicesAnswerCorrectness({
   elementData,
   response,
 }: {
@@ -1381,7 +1390,7 @@ function evaluateChoicesAnswerCorrectness({
   }
 }
 
-function evaluateNumericalAnswerCorrectness({
+export function evaluateNumericalAnswerCorrectness({
   elementData,
   response,
 }: {
@@ -1403,13 +1412,20 @@ function evaluateNumericalAnswerCorrectness({
   return correctness
 }
 
-function evaluateFreeTextAnswerCorrectness({
+export function evaluateFreeTextAnswerCorrectness({
   elementData,
   response,
+  treatFTDefaultCorrect = false,
 }: {
   elementData: FreeTextElementData
   response: ResponseInput
+  treatFTDefaultCorrect?: boolean
 }) {
+  // if the corresponding option is activated, treat FT questions without a sample solution always as correct
+  if (treatFTDefaultCorrect && !elementData.options.hasSampleSolution) {
+    return 1
+  }
+
   if (
     !('value' in response) ||
     response.value === null ||
@@ -1912,7 +1928,7 @@ async function upsertQuestionResponse({
   lastAwardedAt: Date
   xpAwarded: number
   lastXpAwardedAt: Date
-  newAverageResponseTime: number | undefined
+  newAverageResponseTime: number
   existingResponse: PrismaQuestionResponse | null
   newAggResponses: ElementInstanceResults
   practiceQuizId?: string
@@ -2199,7 +2215,7 @@ export async function respondToQuestion(
         })
       : {
           newAverageInstanceTime: undefined,
-          newAverageResponseTime: undefined,
+          newAverageResponseTime: answerTime,
         }
 
     // compute updated instance statistics
@@ -2982,7 +2998,6 @@ function computeInstanceEvaluation({
     'responses' in instance.results &&
     'responses' in instance.anonymousResults
   ) {
-    console.log('COMPUTING INSTANCE EVALUATION')
     return computeNumericalEvaluation({
       options: instance.elementData.options,
       results: instance.results,

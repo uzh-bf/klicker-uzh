@@ -137,6 +137,9 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     // completedCount: t.exposeInt('completedCount', { nullable: true }),
     // repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
+    updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
   }),
 })
 

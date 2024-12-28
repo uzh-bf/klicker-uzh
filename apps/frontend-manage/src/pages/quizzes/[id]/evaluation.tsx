@@ -56,6 +56,7 @@ function Evaluation() {
 
   return (
     <ActivityEvaluation
+      activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}
       feedbacks={evaluation?.feedbacks}

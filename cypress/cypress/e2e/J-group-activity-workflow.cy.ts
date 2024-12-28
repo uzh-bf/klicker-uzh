@@ -284,26 +284,18 @@ describe('Create and solve a group activity', () => {
     cy.findByText(clueContent3).should('exist')
 
     // Step 4: Questions / Elements
-    const elements = [
-      SCQuestionTitle,
-      MCQuestionTitle,
-      KPRIMQuestionTitle,
-      NRQuestionTitle,
-      FTQuestionTitle,
-    ]
-    elements.forEach((title, ix) => {
-      const dataTransfer = new DataTransfer()
-      cy.get(`[data-cy="question-item-${title}"]`)
-        .contains(title)
-        .trigger('dragstart', {
-          dataTransfer,
-        })
-      cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-        dataTransfer,
-      })
-      cy.get(`[data-cy="question-${ix}-stack-0"]`)
-        .should('exist')
-        .should('contain', title.substring(0, 20))
+    cy.createStacks({
+      stacks: [
+        {
+          elements: [
+            SCQuestionTitle,
+            MCQuestionTitle,
+            KPRIMQuestionTitle,
+            NRQuestionTitle,
+            FTQuestionTitle,
+          ],
+        },
+      ],
     })
 
     cy.get('[data-cy="back-activity-creation"]').click()
@@ -455,7 +447,7 @@ describe('Create and solve a group activity', () => {
 
     // add another question to the group activity
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${SCQuestionTitle}"]`)
+    cy.get(`[data-cy="element-item-${SCQuestionTitle}"]`)
       .contains(SCQuestionTitle)
       .trigger('dragstart', {
         dataTransfer,
@@ -465,7 +457,7 @@ describe('Create and solve a group activity', () => {
     })
 
     const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="question-item-${CTQuestionTitle}"]`)
+    cy.get(`[data-cy="element-item-${CTQuestionTitle}"]`)
       .contains(CTQuestionTitle)
       .trigger('dragstart', {
         dataTransfer2,
@@ -475,25 +467,25 @@ describe('Create and solve a group activity', () => {
     })
 
     // verify that the contained questions are correct
-    cy.get(`[data-cy="question-0-stack-0"]`)
+    cy.get(`[data-cy="element-0-stack-0"]`)
       .should('exist')
       .should('contain', SCQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-1-stack-0"]`)
+    cy.get(`[data-cy="element-1-stack-0"]`)
       .should('exist')
       .should('contain', MCQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-2-stack-0"]`)
+    cy.get(`[data-cy="element-2-stack-0"]`)
       .should('exist')
       .should('contain', KPRIMQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-3-stack-0"]`)
+    cy.get(`[data-cy="element-3-stack-0"]`)
       .should('exist')
       .should('contain', NRQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-4-stack-0"]`)
+    cy.get(`[data-cy="element-4-stack-0"]`)
       .should('exist')
       .should('contain', FTQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-5-stack-0"]`)
+    cy.get(`[data-cy="element-5-stack-0"]`)
       .should('exist')
       .should('contain', SCQuestionTitle.substring(0, 20))
-    cy.get(`[data-cy="question-6-stack-0"]`)
+    cy.get(`[data-cy="element-6-stack-0"]`)
       .should('exist')
       .should('contain', CTQuestionTitle.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()

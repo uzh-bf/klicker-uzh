@@ -1,14 +1,14 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-response-processor",
-  "version": "3.3.0-alpha.10",
+  "version": "3.3.0-alpha.16",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
     "dist/"
   ],
   "dependencies": {
-    "@azure/functions": "4.5.1",
+    "@azure/functions": "4.6.0",
     "@klicker-uzh/grading": "workspace:*",
     "@sentry/node": "7.103.0",
     "ioredis": "5.4.1",
@@ -18,8 +18,8 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.16.1",
-    "@uzh-bf/design-system": "3.0.0-alpha.35",
-    "azure-functions-core-tools": "~4.0.6280",
+    "@uzh-bf/design-system": "3.0.0-alpha.36",
+    "azure-functions-core-tools": "~4.0.6610",
     "cross-env": "~7.0.3",
     "dotenv": "~16.4.5",
     "eslint": "~8.45.0",
@@ -36,8 +36,8 @@
     "dev:func": "func start -p 7073 --verbose --javascript",
     "dev:ts": "tsup --watch",
     "prestart": "pnpm run build",
-    "start": "func start -p 7073",
-    "start:test": "func start -p 7073"
+    "start": "func start -p 7073 --verbose --javascript",
+    "start:test": "func start -p 7073 --verbose --javascript"
   },
   "engines": {
     "node": "=20"
