@@ -140,9 +140,14 @@ export function prepareNumericalArgs({
       exactSolutions:
         values.options.hasSampleSolution &&
         values.options.solutionType === 'exact'
-          ? values.options.exactSolutions?.map((solution) =>
-              typeof solution === 'number' ? solution : parseFloat(solution)
-            )
+          ? values.options.exactSolutions?.map((solution) => {
+              if (typeof solution === 'number') {
+                return solution
+              }
+
+              const precision = parseInt(String(values.options.accuracy))
+              return parseFloat(parseFloat(solution).toFixed(precision))
+            })
           : undefined,
     },
     tags: values.tags,
