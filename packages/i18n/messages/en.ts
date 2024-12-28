@@ -1324,6 +1324,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The minimum value of a solution interval must be less than its maximum value.',
       NRMinLessThanMax:
         'The minimum value must be less than the maximum value.',
+      NROneValueRequired:
+        'For solution ranges at least one boundary value must be entered.',
       NRPrecision: 'The number of decimal places must be at least 0.',
       chooseSolutionType:
         'Please choose a solution type for your numerical question or deactivate the sample solution.',

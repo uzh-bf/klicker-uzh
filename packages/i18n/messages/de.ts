@@ -1333,6 +1333,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       NRMinLessThanMaxSol:
         'Das Minimum eines Lösungsintervalls muss kleiner als das Maximum sein.',
       NRMinLessThanMax: 'Das Minimum muss kleiner als das Maximum sein.',
+      NROneValueRequired:
+        'Bei einem Lösungsbereich muss mindestens ein Wert angegeben werden.',
       NRPrecision: 'Die Anzahl Nachkommastellen muss mindestens 0 sein.',
       chooseSolutionType:
         'Bitte wählen Sie einen Lösungstyp für Ihre numerische Frage aus oder deaktivieren Sie die Musterlösung.',

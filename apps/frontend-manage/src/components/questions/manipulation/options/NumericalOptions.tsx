@@ -11,7 +11,6 @@ interface NumericalOptionsProps {
 function NumericalOptions({ values }: NumericalOptionsProps) {
   const t = useTranslations()
 
-  // TODO: either deselect solutionType on disabling sampleSolution (not optimal) or check for sample solution activity in validation as well (otherwise form might be blocked even if sample solution disabled)
   // TODO: add UI for entering exact numerical solutions
 
   return (
@@ -52,11 +51,12 @@ function NumericalOptions({ values }: NumericalOptionsProps) {
           solutionType={values.options.solutionType}
         />
       )}
-      {values.options.solutionType === 'range' && (
-        <NumericalSolutionRangesInput
-          solutionRanges={values.options.solutionRanges}
-        />
-      )}
+      {values.options.hasSampleSolution &&
+        values.options.solutionType === 'range' && (
+          <NumericalSolutionRangesInput
+            solutionRanges={values.options.solutionRanges}
+          />
+        )}
     </div>
   )
 }

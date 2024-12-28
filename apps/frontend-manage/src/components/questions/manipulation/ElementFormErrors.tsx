@@ -102,11 +102,21 @@ function ElementFormErrors({
           errors.options &&
           'solutionRanges' in errors.options &&
           errors.options.solutionRanges &&
-          typeof errors.options.solutionRanges === 'string' && (
+          (typeof errors.options.solutionRanges === 'string' ? (
             <li>{`${t('manage.questionForms.solutionRanges')}: ${
               errors.options.solutionRanges
             }`}</li>
-          )}
+          ) : (
+            (errors.options.solutionRanges as string[]).map(
+              (rangeError, ix) => (
+                <li
+                  key={`solution-range-error-${ix}`}
+                >{`${t('manage.questionForms.solutionRanges')} ${ix + 1}: ${
+                  rangeError
+                }`}</li>
+              )
+            )
+          ))}
         {'options' in errors &&
           errors.options &&
           'exactSolutions' in errors.options &&

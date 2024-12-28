@@ -124,28 +124,6 @@ function useOptionsSchemaKPRIM() {
 
 function useOptionsSchemaNumerical() {
   const t = useTranslations()
-  const baseSolutionRanges = yup
-    .array()
-    .of(
-      yup.object().shape({
-        min: yup
-          .number()
-          .nullable()
-          // we can only handle one case to avoid cyclic dependencies
-          .when('max', {
-            is: (max?: number | null) =>
-              typeof max !== 'undefined' && max !== null,
-            then: (schema) =>
-              schema.test({
-                message: t('manage.formErrors.NRMinLessThanMaxSol'),
-                test: (value, context) =>
-                  value ? value < context.parent.max : true,
-              }),
-          }),
-        max: yup.number().nullable(),
-      })
-    )
-    .nullable()
 
   return {
     hasSampleSolution: yup.boolean(),
@@ -186,13 +164,78 @@ function useOptionsSchemaNumerical() {
           schema.required(t('manage.formErrors.chooseSolutionType')),
       }),
 
-    solutionRanges: baseSolutionRanges.when('solutionType', {
-      is: 'range',
-      then: (schema) =>
-        schema
-          .required(t('manage.formErrors.solutionRequired'))
-          .min(1, t('manage.formErrors.solutionRangeRequired')),
-    }),
+    solutionRanges: yup
+      .array()
+      .of(
+        yup.object().shape({
+          min: yup.number().nullable(),
+          max: yup.number().nullable(),
+        })
+      )
+      .nullable()
+      .when(['hasSampleSolution', 'solutionType'], {
+        is: (hasSampleSolution: boolean, solutionType: string) =>
+          hasSampleSolution && solutionType === 'range',
+        then: (schema) =>
+          schema
+            .required(t('manage.formErrors.solutionRequired'))
+            .min(1, t('manage.formErrors.solutionRangeRequired'))
+            .test({
+              message: t('manage.formErrors.NROneValueRequired'),
+              test: (value) => {
+                if (!value) return true
+                return !value.some(
+                  (range) =>
+                    (range.min === null || typeof range.min === 'undefined') &&
+                    (range.max === null || typeof range.max === 'undefined')
+                )
+              },
+            })
+            .test({
+              message: t('manage.formErrors.NRMinLessThanMaxSol'),
+              test: (value) => {
+                if (!value) return true
+                return !value.some(
+                  (range) =>
+                    range.min !== null &&
+                    range.max !== null &&
+                    typeof range.min !== 'undefined' &&
+                    typeof range.max !== 'undefined' &&
+                    range.min >= range.max
+                )
+              },
+            })
+            .test({
+              message: t('manage.formErrors.NRUnderflow'),
+              test: (value) => {
+                if (!value) return true
+                return !value.some(
+                  (range) =>
+                    (range.min !== null &&
+                      typeof range.min !== 'undefined' &&
+                      range.min < -1e30) ||
+                    (range.max !== null &&
+                      typeof range.max !== 'undefined' &&
+                      range.max < -1e30)
+                )
+              },
+            })
+            .test({
+              message: t('manage.formErrors.NROverflow'),
+              test: (value) => {
+                if (!value) return true
+                return !value.some(
+                  (range) =>
+                    (range.min !== null &&
+                      typeof range.min !== 'undefined' &&
+                      range.min > 1e30) ||
+                    (range.max !== null &&
+                      typeof range.max !== 'undefined' &&
+                      range.max > 1e30)
+                )
+              },
+            }),
+      }),
 
     exactSolutions: yup
       .array()
@@ -203,12 +246,16 @@ function useOptionsSchemaNumerical() {
           .min(-1e30, t('manage.formErrors.NRUnderflow'))
           .max(1e30, t('manage.formErrors.NROverflow'))
       )
-      .when('solutionType', {
-        is: 'exact',
+      .when('hasSampleSolution', {
+        is: true,
         then: (schema) =>
-          schema
-            .required(t('manage.formErrors.solutionRequired'))
-            .min(1, t('manage.formErrors.exactSolutionRequired')),
+          schema.when('solutionType', {
+            is: 'exact',
+            then: (schema) =>
+              schema
+                .required(t('manage.formErrors.solutionRequired'))
+                .min(1, t('manage.formErrors.exactSolutionRequired')),
+          }),
       }),
   }
 }
