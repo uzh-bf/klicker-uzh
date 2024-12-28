@@ -997,6 +997,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       solutionTypeNumericalTooltip:
         'Choose between the option of solution ranges and exact solutions for this question',
       addSolutionRange: 'Add new solution range',
+      addExactSolution: 'Add new exact solution',
       maximumLength: 'Maximum length',
       answerLength: 'Answer length',
       possibleSolutionN: 'Possible solution {number}',

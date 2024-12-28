@@ -1,6 +1,7 @@
 import { FormikNumberField, FormikTextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementFormTypesNumerical } from '../types'
+import NumericalExactSolutionsInput from './NumericalExactSolutionsInput'
 import NumericalSolutionRangesInput from './NumericalSolutionRangesInput'
 import NumericalSolutionTypeSwitch from './NumericalSolutionTypeSwitch'
 
@@ -55,6 +56,12 @@ function NumericalOptions({ values }: NumericalOptionsProps) {
         values.options.solutionType === 'range' && (
           <NumericalSolutionRangesInput
             solutionRanges={values.options.solutionRanges}
+          />
+        )}
+      {values.options.hasSampleSolution &&
+        values.options.solutionType === 'exact' && (
+          <NumericalExactSolutionsInput
+            exactSolutions={values.options.exactSolutions}
           />
         )}
     </div>

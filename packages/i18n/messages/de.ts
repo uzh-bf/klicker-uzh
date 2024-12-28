@@ -996,6 +996,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       solutionTypeNumericalTooltip:
         'Wählen Sie zwischen der Option von Lösungsbereichen und exakten Lösungen für diese Frage',
       addSolutionRange: 'Neuen Lösungsbereich hinzufügen',
+      addExactSolution: 'Neue exakte Lösung hinzufügen',
       maximumLength: 'Maximale Länge',
       answerLength: 'Antwort Länge',
       possibleSolutionN: 'Mögliche Lösung {number}',
