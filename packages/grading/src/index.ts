@@ -74,34 +74,48 @@ export function gradeQuestionKPRIM({
 
 interface GradeQuestionNumericalArgs {
   response: number
-  solutionRanges: {
-    min?: number | null
-    max?: number | null
-  }[]
+  solutionRanges?:
+    | {
+        min?: number | null
+        max?: number | null
+      }[]
+    | null
+  exactSolutions?: number[] | null
 }
 
 export function gradeQuestionNumerical({
   response,
   solutionRanges,
+  exactSolutions,
 }: GradeQuestionNumericalArgs): number | null {
-  if (!solutionRanges?.length) return null
+  if (!solutionRanges?.length && !exactSolutions?.length) return null
 
-  const definedSolutionRanges = solutionRanges.filter(({ min, max }) => {
-    return typeof min === 'number' || typeof max === 'number'
-  })
+  if (solutionRanges && solutionRanges.length > 0) {
+    // TODO: maybe incorporate distance from ranges for partial credit?
+    const definedSolutionRanges = solutionRanges.filter(({ min, max }) => {
+      return typeof min === 'number' || typeof max === 'number'
+    })
 
-  if (definedSolutionRanges.length === 0) return null
+    if (definedSolutionRanges.length === 0) return null
 
-  const withinRanges = definedSolutionRanges.map(({ min, max }) => {
-    if (min && response < min - Number.EPSILON) return false
-    if (max && response > max + Number.EPSILON) return false
-    return true
-  })
+    const withinRanges = definedSolutionRanges.map(({ min, max }) => {
+      if (min && response < min - Number.EPSILON) return false
+      if (max && response > max + Number.EPSILON) return false
+      return true
+    })
 
-  // if the response is within one of the solution ranges
-  if (withinRanges.some((match) => match === true)) return 1
+    // if the response is within one of the solution ranges
+    if (withinRanges.some((match) => match === true)) return 1
+  } else if (exactSolutions && exactSolutions.length > 0) {
+    const solutionMatches = exactSolutions.map((solution) => {
+      return (
+        solution - Number.EPSILON <= response &&
+        response <= solution + Number.EPSILON
+      )
+    })
 
-  // TODO: maybe incorporate distance from ranges for partial credit?
+    return solutionMatches.some((match) => match === true) ? 1 : 0
+  }
 
   return 0
 }

@@ -171,6 +171,24 @@ export const QUESTIONS = [
       },
     ],
   },
+  {
+    originalId: '2',
+    name: 'Testfrage NUMERICAL',
+    content: 'Wie viel würdest du in Aktien anlegen? Beni mag 17%.',
+    explanation: 'NR generische Erklärung, warum diese Frage richtig ist.',
+    type: ElementType.NUMERICAL,
+    options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: false,
+      accuracy: 2,
+      unit: '%',
+      restrictions: {
+        min: -10,
+        max: 100,
+      },
+      exactSolutions: ['0', '20', '100'],
+    },
+  },
 ]
 
 export const LIVE_QUIZZES = [

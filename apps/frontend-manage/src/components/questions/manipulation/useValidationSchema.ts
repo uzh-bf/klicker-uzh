@@ -139,7 +139,7 @@ function useOptionsSchemaNumerical() {
               schema.test({
                 message: t('manage.formErrors.NRMinLessThanMaxSol'),
                 test: (value, context) =>
-                  value ? value <= context.parent.max : true,
+                  value ? value < context.parent.max : true,
               }),
           }),
         max: yup.number().nullable(),
@@ -177,13 +177,39 @@ function useOptionsSchemaNumerical() {
         .nullable(),
     }),
 
-    solutionRanges: baseSolutionRanges.when('hasSampleSolution', {
-      is: true,
+    solutionType: yup
+      .string()
+      .oneOf(['range', 'exact'])
+      .when('hasSampleSolution', {
+        is: true,
+        then: (schema) =>
+          schema.required(t('manage.formErrors.chooseSolutionType')),
+      }),
+
+    solutionRanges: baseSolutionRanges.when('solutionType', {
+      is: 'range',
       then: (schema) =>
         schema
           .required(t('manage.formErrors.solutionRequired'))
           .min(1, t('manage.formErrors.solutionRangeRequired')),
     }),
+
+    exactSolutions: yup
+      .array()
+      .of(
+        yup
+          .number()
+          .nullable()
+          .min(-1e30, t('manage.formErrors.NRUnderflow'))
+          .max(1e30, t('manage.formErrors.NROverflow'))
+      )
+      .when('solutionType', {
+        is: 'exact',
+        then: (schema) =>
+          schema
+            .required(t('manage.formErrors.solutionRequired'))
+            .min(1, t('manage.formErrors.exactSolutionRequired')),
+      }),
   }
 }
 

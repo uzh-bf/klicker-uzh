@@ -92,11 +92,28 @@ function ElementFormErrors({
           )}
         {'options' in errors &&
           errors.options &&
+          'solutionType' in errors.options &&
+          errors.options.solutionType && (
+            <li>{`${t('manage.questionForms.solutionTypeNumerical')}: ${
+              errors.options.solutionType
+            }`}</li>
+          )}
+        {'options' in errors &&
+          errors.options &&
           'solutionRanges' in errors.options &&
           errors.options.solutionRanges &&
           typeof errors.options.solutionRanges === 'string' && (
             <li>{`${t('manage.questionForms.solutionRanges')}: ${
               errors.options.solutionRanges
+            }`}</li>
+          )}
+        {'options' in errors &&
+          errors.options &&
+          'exactSolutions' in errors.options &&
+          errors.options.exactSolutions &&
+          typeof errors.options.exactSolutions === 'string' && (
+            <li>{`${t('manage.questionForms.exactSolutions')}: ${
+              errors.options.exactSolutions
             }`}</li>
           )}
 

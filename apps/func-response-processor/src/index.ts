@@ -241,9 +241,16 @@ const serviceBusTrigger = async function (
         )
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
+        const exactSolutionsDefined =
+          typeof parsedSolutions !== 'undefined' &&
+          parsedSolutions.length > 0 &&
+          (typeof parsedSolutions[0] === 'number' ||
+            typeof parsedSolutions[0] === 'string')
+
         const answerCorrect = gradeQuestionNumerical({
           response: response.value,
-          solutionRanges: parsedSolutions,
+          solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
+          exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
         })
 
         if (participantData) {

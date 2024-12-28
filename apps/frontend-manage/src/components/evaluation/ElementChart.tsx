@@ -50,6 +50,7 @@ function ElementChart({
         type={instanceEvaluation.type}
         responses={responses}
         solutionRanges={instanceEvaluation.results.solutionRanges ?? []}
+        exactSolutions={instanceEvaluation.results.exactSolutions ?? []}
         statistics={instanceEvaluation.statistics}
         minValue={instanceEvaluation.results.minValue}
         maxValue={instanceEvaluation.results.maxValue}

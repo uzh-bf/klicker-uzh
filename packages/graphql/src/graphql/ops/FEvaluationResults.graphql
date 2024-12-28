@@ -73,6 +73,7 @@ fragment EvaluationResults on ActivityEvaluation {
             min
             max
           }
+          exactSolutions
           responseValues {
             value
             correct

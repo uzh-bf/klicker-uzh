@@ -1153,7 +1153,7 @@ type ChoicesEvaluationReturnType = Pick<
 >
 type NumericalEvaluationReturnType = Pick<
   InstanceEvaluationNumerical,
-  SharedEvaluationProps | 'solutionRanges' | 'responses'
+  SharedEvaluationProps | 'solutionRanges' | 'exactSolutions' | 'responses'
 >
 type FreeTextEvaluationReturnType = Pick<
   InstanceEvaluationFreeText,
@@ -1254,6 +1254,7 @@ function evaluateNumericalElementResponse({
     pointsMultiplier: multiplier ?? 1,
     explanation: elementData.explanation,
     solutionRanges: elementData.options.solutionRanges ?? [],
+    exactSolutions: elementData.options.exactSolutions ?? [],
   }
 }
 
@@ -1408,6 +1409,7 @@ export function evaluateNumericalAnswerCorrectness({
   const correctness = gradeQuestionNumerical({
     response: parseFloat(String(response.value)),
     solutionRanges: elementData.options.solutionRanges ?? [],
+    exactSolutions: elementData.options.exactSolutions ?? [],
   })
   return correctness
 }
@@ -2876,6 +2878,7 @@ function computeNumericalEvaluation({
       maxValue: options.restrictions?.max,
       minValue: options.restrictions?.min,
       solutionRanges: options.solutionRanges,
+      exactSolutions: options.exactSolutions,
       responseValues: combinedResults,
     },
     statistics: computeNumericalStatistics(combinedResults),
@@ -3211,6 +3214,11 @@ function getPreviousEvaluationNumerical({
         elementData.options.hasSampleSolution &&
         elementData.options.solutionRanges
           ? elementData.options.solutionRanges
+          : [],
+      exactSolutions:
+        elementData.options.hasSampleSolution &&
+        elementData.options.exactSolutions
+          ? elementData.options.exactSolutions
           : [],
       correctness,
       lastResponse,

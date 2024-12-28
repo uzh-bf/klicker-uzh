@@ -989,6 +989,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       solutionRanges: 'Lösungsbereiche',
       solutionRangesTooltip:
         'Geben Sie hier die Intervalle an, die als korrekt gewertet werden sollen.',
+      exactSolutions: 'Exakte Lösungen',
+      exactSolutionsTooltip:
+        'Geben Sie hier die exakten Lösungen an, die als korrekt gewertet werden sollen.',
+      solutionTypeNumerical: 'Art der Lösung',
+      solutionTypeNumericalTooltip:
+        'Wählen Sie zwischen der Option von Lösungsbereichen und exakten Lösungen für diese Frage',
       addSolutionRange: 'Neuen Lösungsbereich hinzufügen',
       maximumLength: 'Maximale Länge',
       answerLength: 'Antwort Länge',
@@ -1328,8 +1334,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Minimum eines Lösungsintervalls muss kleiner als das Maximum sein.',
       NRMinLessThanMax: 'Das Minimum muss kleiner als das Maximum sein.',
       NRPrecision: 'Die Anzahl Nachkommastellen muss mindestens 0 sein.',
+      chooseSolutionType:
+        'Bitte wählen Sie einen Lösungstyp für Ihre numerische Frage aus oder deaktivieren Sie die Musterlösung.',
       solutionRangeRequired:
         'Bitte geben Sie mindestens einen Lösungsbereich an.',
+      exactSolutionRequired:
+        'Bitte geben Sie mindestens eine exakte Lösung an.',
       NumberQuestionsRequired:
         'Es muss mindestens eine Antwortmöglichkeit gegeben werden',
       NumberQuestionsRequiredKPRIM:
@@ -1465,6 +1475,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       value: 'Wert',
       histogramRange: 'Bereich',
       histogramBins: 'Unterteilungen',
+      correctLabel: 'Korrekt',
+      correctLabelValue: 'Korrekt: {value}',
       resetSorting: 'Sortierung zurücksetzen',
       noFeedbacksMatchFilter:
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',

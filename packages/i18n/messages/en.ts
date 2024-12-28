@@ -990,6 +990,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       solutionRanges: 'Solution ranges',
       solutionRangesTooltip:
         'Enter the intervals that should be considered correct here.',
+      exactSolutions: 'Exact solutions',
+      exactSolutionsTooltip:
+        'Enter the exact solutions that should be considered correct here.',
+      solutionTypeNumerical: 'Solution Type',
+      solutionTypeNumericalTooltip:
+        'Choose between the option of solution ranges and exact solutions for this question',
       addSolutionRange: 'Add new solution range',
       maximumLength: 'Maximum length',
       answerLength: 'Answer length',
@@ -1313,13 +1319,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       FTMaxLength:
         'The maximum length of a free text question response has to be at least 1.',
       solutionRequired:
-        'Please enter at least one solution of deactivate the sample solution.',
+        'Please enter at least one solution or deactivate the sample solution.',
       NRMinLessThanMaxSol:
         'The minimum value of a solution interval must be less than its maximum value.',
       NRMinLessThanMax:
         'The minimum value must be less than the maximum value.',
       NRPrecision: 'The number of decimal places must be at least 0.',
+      chooseSolutionType:
+        'Please choose a solution type for your numerical question or deactivate the sample solution.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
+      exactSolutionRequired: 'Please enter at least one exact solution.',
       NumberQuestionsRequired: 'At least one answer option must be given',
       NumberQuestionsRequiredKPRIM:
         'There must be exactly four answer options for Kprim questions',
@@ -1453,6 +1462,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       value: 'Value',
       histogramRange: 'Range',
       histogramBins: 'Bins',
+      correctLabel: 'Correct',
+      correctLabelValue: 'Correct: {value}',
       resetSorting: 'Reset sorting',
       noFeedbacksMatchFilter:
         'No feedbacks match the current filter settings...',

@@ -55,6 +55,7 @@ query GetSingleQuestion($id: Int!) {
           min
           max
         }
+        exactSolutions
       }
 
       tags {

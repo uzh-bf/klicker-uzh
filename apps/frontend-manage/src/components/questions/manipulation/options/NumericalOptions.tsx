@@ -1,12 +1,8 @@
-import {
-  Button,
-  FormLabel,
-  FormikNumberField,
-  FormikTextField,
-} from '@uzh-bf/design-system'
-import { FieldArray, FieldArrayRenderProps } from 'formik'
+import { FormikNumberField, FormikTextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ElementFormTypesNumerical } from '../types'
+import NumericalSolutionRangesInput from './NumericalSolutionRangesInput'
+import NumericalSolutionTypeSwitch from './NumericalSolutionTypeSwitch'
 
 interface NumericalOptionsProps {
   values: ElementFormTypesNumerical
@@ -14,6 +10,9 @@ interface NumericalOptionsProps {
 
 function NumericalOptions({ values }: NumericalOptionsProps) {
   const t = useTranslations()
+
+  // TODO: either deselect solutionType on disabling sampleSolution (not optimal) or check for sample solution activity in validation as well (otherwise form might be blocked even if sample solution disabled)
+  // TODO: add UI for entering exact numerical solutions
 
   return (
     <div>
@@ -49,75 +48,14 @@ function NumericalOptions({ values }: NumericalOptionsProps) {
         </div>
       </div>
       {values.options.hasSampleSolution && (
-        <div className="mt-3">
-          <FormLabel
-            required
-            label={t('manage.questionForms.solutionRanges')}
-            labelType="small"
-            tooltip={t('manage.questionForms.solutionRangesTooltip')}
-          />
-          <FieldArray name="options.solutionRanges">
-            {({ push, remove }: FieldArrayRenderProps) => (
-              <div className="flex w-max flex-col gap-1">
-                {values.options.solutionRanges
-                  ? values.options.solutionRanges.map(
-                      (_range: any, index: number) => (
-                        <div
-                          className="flex flex-row items-end gap-2"
-                          key={`${index}-${values.options.solutionRanges!.length}`}
-                        >
-                          <FormikNumberField
-                            required={index === 0}
-                            name={`options.solutionRanges.${index}.min`}
-                            label={t('shared.generic.min')}
-                            placeholder={t('shared.generic.minLong')}
-                            data={{
-                              cy: `set-solution-range-min-${index}`,
-                            }}
-                          />
-                          <FormikNumberField
-                            required={index === 0}
-                            name={`options.solutionRanges.${index}.max`}
-                            label={t('shared.generic.max')}
-                            placeholder={t('shared.generic.maxLong')}
-                            data={{
-                              cy: `set-solution-range-max-${index}`,
-                            }}
-                          />
-                          <Button
-                            onClick={() => remove(index)}
-                            className={{
-                              root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
-                            }}
-                            data={{
-                              cy: `delete-solution-range-ix-${index}`,
-                            }}
-                          >
-                            {t('shared.generic.delete')}
-                          </Button>
-                        </div>
-                      )
-                    )
-                  : null}
-                <Button
-                  fluid
-                  className={{
-                    root: 'border-uzh-grey-100 flex-1 border border-solid font-bold',
-                  }}
-                  onClick={() =>
-                    push({
-                      min: undefined,
-                      max: undefined,
-                    })
-                  }
-                  data={{ cy: 'add-solution-range' }}
-                >
-                  {t('manage.questionForms.addSolutionRange')}
-                </Button>
-              </div>
-            )}
-          </FieldArray>
-        </div>
+        <NumericalSolutionTypeSwitch
+          solutionType={values.options.solutionType}
+        />
+      )}
+      {values.options.solutionType === 'range' && (
+        <NumericalSolutionRangesInput
+          solutionRanges={values.options.solutionRanges}
+        />
       )}
     </div>
   )

@@ -23,6 +23,7 @@ function NREvaluation({ options, evaluation, reference }: NREvaluationProps) {
         type={ElementType.Numerical}
         responses={evaluation.responses ?? []}
         solutionRanges={options.solutionRanges ?? undefined}
+        exactSolutions={options.exactSolutions ?? undefined}
         minValue={options.restrictions?.min}
         maxValue={options.restrictions?.max}
         showSolution={true}

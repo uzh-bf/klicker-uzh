@@ -85,6 +85,7 @@ export interface INumericalQuestionOptions {
   unit?: string | null
   restrictions?: INumericalRestrictions | null
   solutionRanges?: NumericalSolutionRangeType[] | null
+  exactSolutions?: number[] | null
 }
 export const NumericalQuestionOptions = builder
   .objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')
@@ -107,6 +108,7 @@ export const NumericalQuestionOptions = builder
         type: [NumericalSolutionRange],
         nullable: true,
       }),
+      exactSolutions: t.exposeFloatList('exactSolutions', { nullable: true }),
     }),
   })
 

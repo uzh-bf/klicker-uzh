@@ -41,12 +41,14 @@ export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
       min?: number | string | null
       max?: number | string | null
     } | null
+    solutionType?: 'range' | 'exact'
     solutionRanges?:
       | {
           min?: number | string | null
           max?: number | string | null
         }[]
       | null
+    exactSolutions?: (number | string)[] | null
   }
 }
 

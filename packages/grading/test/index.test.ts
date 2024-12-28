@@ -157,6 +157,54 @@ describe('@klicker-uzh/grading', () => {
       response: 95,
     })
     expect(points7).toEqual(1)
+
+    const points8 = gradeQuestionNumerical({
+      solutionRanges: [],
+      response: 0,
+    })
+    expect(points8).toEqual(null)
+
+    const points9 = gradeQuestionNumerical({
+      exactSolutions: [0],
+      response: 0,
+    })
+    expect(points9).toEqual(1)
+
+    const points10 = gradeQuestionNumerical({
+      exactSolutions: [0],
+      response: 1,
+    })
+    expect(points10).toEqual(0)
+
+    const points11 = gradeQuestionNumerical({
+      exactSolutions: [0, 100],
+      response: 0,
+    })
+    expect(points11).toEqual(1)
+
+    const points12 = gradeQuestionNumerical({
+      exactSolutions: [0, 100],
+      response: 100,
+    })
+    expect(points12).toEqual(1)
+
+    const points13 = gradeQuestionNumerical({
+      exactSolutions: [0, 100],
+      response: 50,
+    })
+    expect(points13).toEqual(0)
+
+    const points14 = gradeQuestionNumerical({
+      exactSolutions: [0, 100],
+      response: 1e-30,
+    })
+    expect(points14).toEqual(1)
+
+    const points15 = gradeQuestionNumerical({
+      exactSolutions: [],
+      response: 0.1,
+    })
+    expect(points15).toEqual(null)
   })
 
   it('should grade FREE_TEXT questions correctly', () => {

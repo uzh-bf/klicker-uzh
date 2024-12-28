@@ -62,6 +62,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
         min
         max
       }
+      exactSolutions
       lastResponse {
         __typename
         value

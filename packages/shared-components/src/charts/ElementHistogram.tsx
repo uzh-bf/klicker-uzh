@@ -21,6 +21,7 @@ interface ElementHistogramProps {
   type: ElementType
   responses: { value: number; count: number }[]
   solutionRanges?: { min?: number | null; max?: number | null }[]
+  exactSolutions?: (number | string)[] | null
   statistics?: Statistics | null
   minValue?: number | null
   maxValue?: number | null
@@ -43,6 +44,7 @@ function ElementHistogram({
   type,
   responses,
   solutionRanges,
+  exactSolutions,
   statistics,
   minValue,
   maxValue,
@@ -232,7 +234,7 @@ function ElementHistogram({
                       ? {
                           fill: CHART_SOLUTION_COLORS.correct,
                           position: 'top',
-                          value: 'Korrekt',
+                          value: t('manage.evaluation.correctLabel'),
                         }
                       : undefined
                   }
@@ -240,6 +242,26 @@ function ElementHistogram({
                 />
               )
             )}
+
+          {showSolution &&
+            exactSolutions &&
+            exactSolutions.length > 0 &&
+            exactSolutions.map((solution, idx) => (
+              <ReferenceLine
+                key={`exact-solution-${idx}`}
+                isFront
+                x={parseFloat(String(solution))}
+                stroke={CHART_SOLUTION_COLORS.correct}
+                label={{
+                  fill: CHART_SOLUTION_COLORS.correct,
+                  position: 'top',
+                  value: t('manage.evaluation.correctLabelValue', {
+                    value: solution,
+                  }),
+                }}
+                className={textSize}
+              />
+            ))}
         </BarChart>
       </ResponsiveContainer>
 
