@@ -1341,6 +1341,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Numerical quantities cannot be smaller than -1e30 for technical reasons.',
       NROverflow:
         'Numerical quantities cannot be larger than 1e30 for technical reasons.',
+      NRSolutionRangesWithinRestrictions:
+        'The solution ranges must lie within the specified restrictions.',
+      NRExactSolutionsWithinRestrictions:
+        'The exact solutions must lie within the specified restrictions.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',

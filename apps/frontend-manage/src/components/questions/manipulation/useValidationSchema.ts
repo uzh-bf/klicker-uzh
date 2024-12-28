@@ -180,6 +180,7 @@ function useOptionsSchemaNumerical() {
           schema
             .required(t('manage.formErrors.solutionRequired'))
             .min(1, t('manage.formErrors.solutionRangeRequired'))
+            // verify that either a min or max value are specified
             .test({
               message: t('manage.formErrors.NROneValueRequired'),
               test: (value) => {
@@ -191,6 +192,7 @@ function useOptionsSchemaNumerical() {
                 )
               },
             })
+            // check that the min value is less than the max value
             .test({
               message: t('manage.formErrors.NRMinLessThanMaxSol'),
               test: (value) => {
@@ -205,6 +207,7 @@ function useOptionsSchemaNumerical() {
                 )
               },
             })
+            // check that the min and max values are within the system restrictions
             .test({
               message: t('manage.formErrors.NRUnderflow'),
               test: (value) => {
@@ -234,6 +237,53 @@ function useOptionsSchemaNumerical() {
                       range.max > 1e30)
                 )
               },
+            })
+            // check that the solution ranges are within the optionally defined restrictions
+            .test({
+              message: t(
+                'manage.formErrors.NRSolutionRangesWithinRestrictions'
+              ),
+              test: (ranges, context) => {
+                if (!ranges) return true
+
+                const restrictions = context.parent.restrictions
+
+                return !ranges.some((range) => {
+                  if (
+                    restrictions.min !== null &&
+                    typeof restrictions.min !== 'undefined'
+                  ) {
+                    if (
+                      (range.min !== null &&
+                        typeof range.min !== 'undefined' &&
+                        range.min < restrictions.min) ||
+                      (range.max !== null &&
+                        typeof range.max !== 'undefined' &&
+                        range.max < restrictions.min)
+                    ) {
+                      return true
+                    }
+                  }
+
+                  if (
+                    restrictions.max !== null &&
+                    typeof restrictions.max !== 'undefined'
+                  ) {
+                    if (
+                      (range.min !== null &&
+                        typeof range.min !== 'undefined' &&
+                        range.min > restrictions.max) ||
+                      (range.max !== null &&
+                        typeof range.max !== 'undefined' &&
+                        range.max > restrictions.max)
+                    ) {
+                      return true
+                    }
+                  }
+
+                  return false
+                })
+              },
             }),
       }),
 
@@ -242,7 +292,7 @@ function useOptionsSchemaNumerical() {
       .of(
         yup
           .number()
-          .nullable()
+          .required(t('manage.formErrors.enterSolution'))
           .min(-1e30, t('manage.formErrors.NRUnderflow'))
           .max(1e30, t('manage.formErrors.NROverflow'))
       )
@@ -254,7 +304,36 @@ function useOptionsSchemaNumerical() {
             then: (schema) =>
               schema
                 .required(t('manage.formErrors.solutionRequired'))
-                .min(1, t('manage.formErrors.exactSolutionRequired')),
+                .min(1, t('manage.formErrors.exactSolutionRequired'))
+                .test({
+                  message: t(
+                    'manage.formErrors.NRExactSolutionsWithinRestrictions'
+                  ),
+                  test: (solution, context) => {
+                    const restrictions = context.parent.restrictions
+                    return !solution.some((sol) => {
+                      if (!sol) return false
+
+                      if (
+                        restrictions.min !== null &&
+                        typeof restrictions.min !== 'undefined' &&
+                        sol < restrictions.min
+                      ) {
+                        return true
+                      }
+
+                      if (
+                        restrictions.max !== null &&
+                        typeof restrictions.max !== 'undefined' &&
+                        sol > restrictions.max
+                      ) {
+                        return true
+                      }
+
+                      return false
+                    })
+                  },
+                }),
           }),
       }),
   }

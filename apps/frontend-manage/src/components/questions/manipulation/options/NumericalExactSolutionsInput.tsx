@@ -29,6 +29,7 @@ function NumericalExactSolutionsInput({
                 key={`exact-solution-${index}`}
               >
                 <FormikNumberField
+                  hideError
                   required={index === 0}
                   name={`options.exactSolutions.${index}`}
                   label={t('shared.generic.value')}

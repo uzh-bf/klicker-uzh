@@ -1353,6 +1353,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Numerische Angaben dürfen aus technischen Gründen nicht kleiner als -1e30 sein.',
       NROverflow:
         'Numerische Angaben dürfen aus technischen Gründen nicht größer als 1e30 sein.',
+      NRSolutionRangesWithinRestrictions:
+        'Die Lösungsbereiche müssen innerhalb der angegebenen Einschränkungen liegen.',
+      NRExactSolutionsWithinRestrictions:
+        'Die exakten Lösungen müssen innerhalb der angegebenen Einschränkungen liegen.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Live Quizzes',
