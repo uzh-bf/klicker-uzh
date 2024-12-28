@@ -5,8 +5,10 @@ import { ElementFormTypesNumerical } from '../types'
 
 function NumericalExactSolutionsInput({
   exactSolutions,
+  precision,
 }: {
   exactSolutions: ElementFormTypesNumerical['options']['exactSolutions']
+  precision?: string | null
 }) {
   const t = useTranslations()
 
@@ -31,6 +33,7 @@ function NumericalExactSolutionsInput({
                   name={`options.exactSolutions.${index}`}
                   label={t('shared.generic.value')}
                   placeholder={`${t('shared.generic.value')} ${index + 1}`}
+                  precision={precision ? parseInt(precision) : undefined}
                   data={{
                     cy: `set-exact-solution-${index}`,
                   }}

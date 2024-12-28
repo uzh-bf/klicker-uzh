@@ -12,8 +12,6 @@ interface NumericalOptionsProps {
 function NumericalOptions({ values }: NumericalOptionsProps) {
   const t = useTranslations()
 
-  // TODO: add UI for entering exact numerical solutions
-
   return (
     <div>
       <div className="w-full">
@@ -62,6 +60,7 @@ function NumericalOptions({ values }: NumericalOptionsProps) {
         values.options.solutionType === 'exact' && (
           <NumericalExactSolutionsInput
             exactSolutions={values.options.exactSolutions}
+            precision={String(values.options.accuracy)}
           />
         )}
     </div>
