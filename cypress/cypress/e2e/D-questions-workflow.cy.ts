@@ -824,6 +824,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one solution range is required
     cy.wait(500)
 
+    cy.get('[data-cy="set-solution-type-range"]').click()
     NRSolutionRanges.forEach((range, ix) => {
       cy.get('[data-cy="add-solution-range"]').click()
       if (typeof range.min !== 'undefined') {

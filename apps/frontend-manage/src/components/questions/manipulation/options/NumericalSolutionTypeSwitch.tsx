@@ -26,6 +26,7 @@ function NumericalSolutionTypeSwitch({
           className={{
             root: `py-0.25 h-8 rounded-l border !border-r-0 border-solid px-2 ${solutionType === 'range' ? 'bg-primary-100 border-primary-100 text-white' : ''}`,
           }}
+          data={{ cy: 'set-solution-type-range' }}
         >
           {t('manage.questionForms.solutionRanges')}
         </Button>
@@ -35,6 +36,7 @@ function NumericalSolutionTypeSwitch({
           className={{
             root: `h-8 rounded-r border !border-l-0 border-solid px-2 py-0.5 ${solutionType === 'exact' ? 'bg-primary-100 border-primary-100 text-white' : ''}`,
           }}
+          data={{ cy: 'set-solution-type-exact' }}
         >
           {t('manage.questionForms.exactSolutions')}
         </Button>
