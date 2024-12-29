@@ -171,6 +171,7 @@ export interface ElementOptionsNumerical extends BaseQuestionOptions {
     max?: number
   }
   solutionRanges?: NumericalSolutionRange[]
+  exactSolutions?: number[]
 }
 
 export interface ElementOptionsFreeText extends BaseQuestionOptions {
@@ -337,6 +338,7 @@ export type SingleNumericalResponse = { count: number; value: number }
 export interface IInstanceEvaluationNumerical extends IBaseInstanceEvaluation {
   responses?: SingleNumericalResponse[]
   solutionRanges?: NumericalSolutionRange[]
+  exactSolutions?: number[]
   lastResponse?: SingleQuestionResponseValue | null
 }
 export type InstanceEvaluationNumerical = IInstanceEvaluationNumerical

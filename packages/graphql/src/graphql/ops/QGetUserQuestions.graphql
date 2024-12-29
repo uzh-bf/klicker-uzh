@@ -64,6 +64,7 @@ query GetUserQuestions {
           min
           max
         }
+        exactSolutions
         restrictions {
           __typename
           min

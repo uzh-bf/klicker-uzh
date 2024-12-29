@@ -1129,6 +1129,7 @@ type NumericalElementResult {
 
 type NumericalElementResults {
   anonymousAnswers: Int!
+  exactSolutions: [Float!]
   maxValue: Float
   minValue: Float
   responseValues: [NumericalElementResult!]!
@@ -1144,6 +1145,7 @@ type NumericalElementSolutions {
 type NumericalInstanceEvaluation {
   correctness: Float
   elementType: ElementType!
+  exactSolutions: [Float!]
   explanation: String
   feedbacks: [QuestionFeedback!]
   instanceId: Int!
@@ -1163,6 +1165,7 @@ type NumericalInstanceEvaluation {
 
 type NumericalQuestionOptions {
   accuracy: Int
+  exactSolutions: [Float!]
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
   placeholder: String
@@ -1206,6 +1209,7 @@ input OptionsFreeTextInput {
 
 input OptionsNumericalInput {
   accuracy: Int
+  exactSolutions: [Float!]
   feedback: String
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean

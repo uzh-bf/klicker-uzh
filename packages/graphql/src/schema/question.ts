@@ -90,6 +90,7 @@ export const OptionsNumericalInput = builder.inputType(
         type: [SolutionRangeInput],
         required: false,
       }),
+      exactSolutions: t.floatList({ required: false }),
       feedback: t.string({ required: false }),
     }),
   }
@@ -253,6 +254,7 @@ export const NumericalInstanceEvaluation = builder
         type: [NumericalSolutionRange],
         nullable: true,
       }),
+      exactSolutions: t.exposeFloatList('exactSolutions', { nullable: true }),
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseValue,
         nullable: true,

@@ -51,6 +51,7 @@ const NRSolutionRanges = [
   { min: -50, max: 20 },
   { min: undefined, max: -80 },
 ]
+const NRSolutionsExact = [-10, 10, 50]
 
 const FTTitle = 'Free Text Question Title'
 const FTContent = 'Free Text Question Text'
@@ -821,9 +822,11 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-    cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one solution range is required
     cy.wait(500)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // selection of sample solution type required
 
+    cy.get('[data-cy="set-solution-type-range"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // selection of sample solution type required
     NRSolutionRanges.forEach((range, ix) => {
       cy.get('[data-cy="add-solution-range"]').click()
       if (typeof range.min !== 'undefined') {
@@ -838,6 +841,33 @@ describe('Create different types of elements (with and without sample solution) 
       }
       cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     })
+
+    // solution ranges with min below restrictions min or max above restrictions max are not allowed
+    const newIx = NRSolutionRanges.length
+    cy.get('[data-cy="add-solution-range"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // min or max required
+    cy.get(`[data-cy="set-solution-range-min-${newIx}"]`)
+      .click()
+      .type(String(NRMinEdited - 10))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get(`[data-cy="set-solution-range-min-${newIx}"]`)
+      .click()
+      .clear()
+      .type(String(NRMinEdited))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get(`[data-cy="delete-solution-range-ix-${newIx}"]`).click()
+    cy.get('[data-cy="add-solution-range"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // min or max required
+    cy.get(`[data-cy="set-solution-range-max-${newIx}"]`)
+      .click()
+      .type(String(NRMaxEdited + 10))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get(`[data-cy="set-solution-range-max-${newIx}"]`)
+      .click()
+      .clear()
+      .type(String(NRMaxEdited))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get(`[data-cy="delete-solution-range-ix-${newIx}"]`).click()
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
@@ -885,6 +915,51 @@ describe('Create different types of elements (with and without sample solution) 
       }
     })
 
+    cy.get('[data-cy="close-question-modal"]').click()
+  })
+
+  it('Edit the numerical question again and set an exact solution', () => {
+    cy.get(`[data-cy="edit-question-${NRTitleEdited}"]`).click()
+    cy.get('[data-cy="set-solution-type-exact"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
+
+    NRSolutionsExact.forEach((solution, ix) => {
+      cy.get(`[data-cy="add-exact-solution"]`).click()
+      cy.get(`[data-cy="set-exact-solution-${ix}"]`)
+        .click()
+        .type(String(solution))
+      cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    })
+
+    // exact solutions outside of the restrictions are not allowed
+    const newIx = NRSolutionsExact.length
+    cy.get(`[data-cy="add-exact-solution"]`).click()
+    cy.get(`[data-cy="set-exact-solution-${newIx}"]`)
+      .click()
+      .type(String(NRMinEdited - 10))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get(`[data-cy="delete-exact-solution-${newIx}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get(`[data-cy="add-exact-solution"]`).click()
+    cy.get(`[data-cy="set-exact-solution-${newIx}"]`)
+      .click()
+      .type(String(NRMaxEdited + 10))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get(`[data-cy="delete-exact-solution-${newIx}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(1000)
+  })
+
+  it('Verify that the exact solutions of the numerical question are stored and loaded correctly', () => {
+    cy.get(`[data-cy="edit-question-${NRTitleEdited}"]`).click()
+    NRSolutionsExact.forEach((solution, ix) => {
+      cy.get(`[data-cy="set-exact-solution-${ix}"]`).should(
+        'have.value',
+        String(solution)
+      )
+    })
     cy.get('[data-cy="close-question-modal"]').click()
   })
 

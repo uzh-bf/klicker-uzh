@@ -129,10 +129,26 @@ export function prepareNumericalArgs({
             ? undefined
             : parseFloat(String(values.options.restrictions.max)),
       },
-      solutionRanges: values.options.solutionRanges?.map((range) => ({
-        min: range.min === '' ? undefined : parseFloat(String(range.min)),
-        max: range.max === '' ? undefined : parseFloat(String(range.max)),
-      })),
+      solutionRanges:
+        values.options.hasSampleSolution &&
+        values.options.solutionType === 'range'
+          ? values.options.solutionRanges?.map((range) => ({
+              min: range.min === '' ? undefined : parseFloat(String(range.min)),
+              max: range.max === '' ? undefined : parseFloat(String(range.max)),
+            }))
+          : undefined,
+      exactSolutions:
+        values.options.hasSampleSolution &&
+        values.options.solutionType === 'exact'
+          ? values.options.exactSolutions?.map((solution) => {
+              if (typeof solution === 'number') {
+                return solution
+              }
+
+              const precision = parseInt(String(values.options.accuracy))
+              return parseFloat(parseFloat(solution).toFixed(precision))
+            })
+          : undefined,
     },
     tags: values.tags,
   }

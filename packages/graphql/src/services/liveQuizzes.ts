@@ -156,10 +156,14 @@ async function getCachedBlockResults({
           let grading: number | undefined
           if (solutions && solutions.length > 0) {
             if (instance.elementType === ElementType.NUMERICAL) {
+              const exactSolutionsDefined =
+                typeof solutions[0] === 'number' ||
+                typeof solutions[0] === 'string'
               grading =
                 gradeQuestionNumerical({
                   response,
-                  solutionRanges: solutions,
+                  solutionRanges: exactSolutionsDefined ? undefined : solutions,
+                  exactSolutions: exactSolutionsDefined ? solutions : undefined,
                 }) ?? undefined
             } else if (instance.elementType === ElementType.FREE_TEXT) {
               grading =
@@ -956,7 +960,11 @@ export async function activateLiveQuizBlock(
       case ElementType.NUMERICAL: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          solutions: JSON.stringify(elementData.options.solutionRanges),
+          solutions:
+            elementData.options.exactSolutions &&
+            elementData.options.exactSolutions.length > 0
+              ? JSON.stringify(elementData.options.exactSolutions)
+              : JSON.stringify(elementData.options.solutionRanges),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,

@@ -90,6 +90,7 @@ function useElementFormInitialValues({
         type: ElementType.Numerical,
         options: {
           hasSampleSolution: options.hasSampleSolution ?? false,
+          solutionType: options.exactSolutions ? 'exact' : 'range',
           accuracy: options.accuracy,
           unit: options.unit,
           restrictions: options.restrictions
@@ -104,6 +105,7 @@ function useElementFormInitialValues({
                 max: range.max,
               }))
             : undefined,
+          exactSolutions: options.exactSolutions ?? undefined,
         },
       }
     } else if (question.__typename === 'FreeTextElement') {

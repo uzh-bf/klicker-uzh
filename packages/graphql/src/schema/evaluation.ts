@@ -79,6 +79,7 @@ export interface INumericalElementEvaluationResults {
   maxValue?: number | null
   minValue?: number | null
   solutionRanges?: INumericalElementSolutionRange[] | null
+  exactSolutions?: number[] | null
   responseValues: {
     value: number
     count: number
@@ -279,6 +280,7 @@ export const NumericalElementResults = NumericalElementResultsRef.implement({
       type: [NumericalElementSolutions],
       nullable: true,
     }),
+    exactSolutions: t.exposeFloatList('exactSolutions', { nullable: true }),
     responseValues: t.expose('responseValues', {
       type: [NumericalElementResult],
     }),

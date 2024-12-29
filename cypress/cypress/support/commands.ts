@@ -371,6 +371,7 @@ Cypress.Commands.add(
 
     if (typeof solutionRanges !== 'undefined' && solutionRanges.length > 0) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      cy.get('[data-cy="set-solution-type-range"]').click()
       solutionRanges.forEach((range, ix) => {
         cy.get('[data-cy="add-solution-range"]').click()
         cy.get(`[data-cy="set-solution-range-min-${ix}"]`)

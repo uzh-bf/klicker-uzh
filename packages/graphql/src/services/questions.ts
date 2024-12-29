@@ -37,6 +37,7 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
           max: options?.restrictions?.max ?? undefined,
         },
         solutionRanges: options?.solutionRanges ?? undefined,
+        exactSolutions: options?.exactSolutions ?? undefined,
       }
     }
 
@@ -162,6 +163,7 @@ interface QuestionOptionsArgs {
   } | null
   feedback?: string | null
   solutionRanges?: { min?: number | null; max?: number | null }[] | null
+  exactSolutions?: number[] | null
   solutions?: string[] | null
   choices?:
     | {

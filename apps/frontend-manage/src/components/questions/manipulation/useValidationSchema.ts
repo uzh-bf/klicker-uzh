@@ -124,28 +124,6 @@ function useOptionsSchemaKPRIM() {
 
 function useOptionsSchemaNumerical() {
   const t = useTranslations()
-  const baseSolutionRanges = yup
-    .array()
-    .of(
-      yup.object().shape({
-        min: yup
-          .number()
-          .nullable()
-          // we can only handle one case to avoid cyclic dependencies
-          .when('max', {
-            is: (max?: number | null) =>
-              typeof max !== 'undefined' && max !== null,
-            then: (schema) =>
-              schema.test({
-                message: t('manage.formErrors.NRMinLessThanMaxSol'),
-                test: (value, context) =>
-                  value ? value <= context.parent.max : true,
-              }),
-          }),
-        max: yup.number().nullable(),
-      })
-    )
-    .nullable()
 
   return {
     hasSampleSolution: yup.boolean(),
@@ -177,13 +155,187 @@ function useOptionsSchemaNumerical() {
         .nullable(),
     }),
 
-    solutionRanges: baseSolutionRanges.when('hasSampleSolution', {
-      is: true,
-      then: (schema) =>
-        schema
-          .required(t('manage.formErrors.solutionRequired'))
-          .min(1, t('manage.formErrors.solutionRangeRequired')),
-    }),
+    solutionType: yup
+      .string()
+      .oneOf(['range', 'exact'])
+      .when('hasSampleSolution', {
+        is: true,
+        then: (schema) =>
+          schema.required(t('manage.formErrors.chooseSolutionType')),
+      }),
+
+    solutionRanges: yup
+      .array()
+      .of(
+        yup.object().shape({
+          min: yup.number().nullable(),
+          max: yup.number().nullable(),
+        })
+      )
+      .nullable()
+      .when(['hasSampleSolution', 'solutionType'], {
+        is: (hasSampleSolution: boolean, solutionType: string) =>
+          hasSampleSolution && solutionType === 'range',
+        then: (schema) =>
+          schema
+            .required(t('manage.formErrors.solutionRequired'))
+            .min(1, t('manage.formErrors.solutionRangeRequired'))
+            // verify that either a min or max value are specified
+            .test({
+              message: t('manage.formErrors.NROneValueRequired'),
+              test: (value) => {
+                if (!value) return true
+                return !value.some(
+                  (range) =>
+                    (range.min === null || typeof range.min === 'undefined') &&
+                    (range.max === null || typeof range.max === 'undefined')
+                )
+              },
+            })
+            // check that the min value is less than the max value
+            .test({
+              message: t('manage.formErrors.NRMinLessThanMaxSol'),
+              test: (value) => {
+                if (!value) return true
+                return !value.some(
+                  (range) =>
+                    range.min !== null &&
+                    range.max !== null &&
+                    typeof range.min !== 'undefined' &&
+                    typeof range.max !== 'undefined' &&
+                    range.min >= range.max
+                )
+              },
+            })
+            // check that the min and max values are within the system restrictions
+            .test({
+              message: t('manage.formErrors.NRUnderflow'),
+              test: (value) => {
+                if (!value) return true
+                return !value.some(
+                  (range) =>
+                    (range.min !== null &&
+                      typeof range.min !== 'undefined' &&
+                      range.min < -1e30) ||
+                    (range.max !== null &&
+                      typeof range.max !== 'undefined' &&
+                      range.max < -1e30)
+                )
+              },
+            })
+            .test({
+              message: t('manage.formErrors.NROverflow'),
+              test: (value) => {
+                if (!value) return true
+                return !value.some(
+                  (range) =>
+                    (range.min !== null &&
+                      typeof range.min !== 'undefined' &&
+                      range.min > 1e30) ||
+                    (range.max !== null &&
+                      typeof range.max !== 'undefined' &&
+                      range.max > 1e30)
+                )
+              },
+            })
+            // check that the solution ranges are within the optionally defined restrictions
+            .test({
+              message: t(
+                'manage.formErrors.NRSolutionRangesWithinRestrictions'
+              ),
+              test: (ranges, context) => {
+                if (!ranges) return true
+
+                const restrictions = context.parent.restrictions
+
+                return !ranges.some((range) => {
+                  if (
+                    restrictions.min !== null &&
+                    typeof restrictions.min !== 'undefined'
+                  ) {
+                    if (
+                      (range.min !== null &&
+                        typeof range.min !== 'undefined' &&
+                        range.min < restrictions.min) ||
+                      (range.max !== null &&
+                        typeof range.max !== 'undefined' &&
+                        range.max < restrictions.min)
+                    ) {
+                      return true
+                    }
+                  }
+
+                  if (
+                    restrictions.max !== null &&
+                    typeof restrictions.max !== 'undefined'
+                  ) {
+                    if (
+                      (range.min !== null &&
+                        typeof range.min !== 'undefined' &&
+                        range.min > restrictions.max) ||
+                      (range.max !== null &&
+                        typeof range.max !== 'undefined' &&
+                        range.max > restrictions.max)
+                    ) {
+                      return true
+                    }
+                  }
+
+                  return false
+                })
+              },
+            }),
+      }),
+
+    exactSolutions: yup
+      .array()
+      .of(
+        yup
+          .number()
+          .required(t('manage.formErrors.enterSolution'))
+          .min(-1e30, t('manage.formErrors.NRUnderflow'))
+          .max(1e30, t('manage.formErrors.NROverflow'))
+      )
+      .when('hasSampleSolution', {
+        is: true,
+        then: (schema) =>
+          schema.when('solutionType', {
+            is: 'exact',
+            then: (schema) =>
+              schema
+                .required(t('manage.formErrors.solutionRequired'))
+                .min(1, t('manage.formErrors.exactSolutionRequired'))
+                .test({
+                  message: t(
+                    'manage.formErrors.NRExactSolutionsWithinRestrictions'
+                  ),
+                  test: (solution, context) => {
+                    const restrictions = context.parent.restrictions
+                    return !solution.some((sol) => {
+                      if (!sol) return false
+
+                      if (
+                        restrictions.min !== null &&
+                        typeof restrictions.min !== 'undefined' &&
+                        sol < restrictions.min
+                      ) {
+                        return true
+                      }
+
+                      if (
+                        restrictions.max !== null &&
+                        typeof restrictions.max !== 'undefined' &&
+                        sol > restrictions.max
+                      ) {
+                        return true
+                      }
+
+                      return false
+                    })
+                  },
+                }),
+          }),
+      }),
   }
 }
 
