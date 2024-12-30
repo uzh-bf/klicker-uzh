@@ -26,10 +26,10 @@ function NREvaluation({ options, evaluation, reference }: NREvaluationProps) {
         exactSolutions={options.exactSolutions ?? undefined}
         minValue={options.restrictions?.min}
         maxValue={options.restrictions?.max}
-        showSolution={true}
         textSize="md"
         className={{ root: 'h-40' }}
         reference={reference ? parseFloat(reference) : undefined}
+        showSolution
         hideBins
         basic
       />
