@@ -60,9 +60,18 @@ function ElementHistogram({
   const supportedElementTypes = [ElementType.Numerical]
   const [numBins, setNumBins] = useState('20')
 
+  const showSolutionRanges = showSolution && solutionRanges
+  const showExactSolutions =
+    showSolution && exactSolutions && exactSolutions.length > 0
   const processedData = useEvaluationHistogramData({
     type,
     responses,
+    solutionRanges: showSolutionRanges ? solutionRanges : undefined,
+    exactSolutions: showExactSolutions
+      ? exactSolutions.map((solution) =>
+          typeof solution === 'number' ? solution : parseFloat(solution)
+        )
+      : undefined,
     minValue,
     maxValue,
     binCount: parseInt(numBins),
@@ -214,8 +223,7 @@ function ElementHistogram({
             />
           )}
 
-          {showSolution &&
-            solutionRanges &&
+          {showSolutionRanges &&
             solutionRanges.map(
               (
                 solutionRange: { min?: number | null; max?: number | null },
@@ -243,9 +251,7 @@ function ElementHistogram({
               )
             )}
 
-          {showSolution &&
-            exactSolutions &&
-            exactSolutions.length > 0 &&
+          {showExactSolutions &&
             exactSolutions.map((solution, idx) => (
               <ReferenceLine
                 key={`exact-solution-${idx}`}
