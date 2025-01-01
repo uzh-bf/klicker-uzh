@@ -1,6 +1,5 @@
 query GetAnswerCollections {
   getAnswerCollections {
-    __typename
     answerCollections {
       id
       name

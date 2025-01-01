@@ -199,3 +199,62 @@ export async function modifyAnswerCollection(
     numSharedUsers,
   }
 }
+
+export async function editAnswerCollectionEntry(
+  {
+    id,
+    value,
+  }: {
+    id: number
+    value: string
+  },
+  ctx: ContextWithUser
+) {
+  const updatedEntry = await ctx.prisma.answerCollectionEntry.update({
+    where: {
+      id,
+    },
+    data: {
+      value,
+    },
+  })
+
+  return updatedEntry
+}
+
+export async function deleteAnswerCollectionEntry(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const updatedEntry = await ctx.prisma.answerCollectionEntry.delete({
+    where: {
+      id,
+    },
+  })
+
+  return updatedEntry.id
+}
+
+export async function addAnswerCollectionOption(
+  {
+    collectionId,
+    value,
+  }: {
+    collectionId: number
+    value: string
+  },
+  ctx: ContextWithUser
+) {
+  const newEntry = await ctx.prisma.answerCollectionEntry.create({
+    data: {
+      value,
+      collection: {
+        connect: {
+          id: collectionId,
+        },
+      },
+    },
+  })
+
+  return newEntry
+}

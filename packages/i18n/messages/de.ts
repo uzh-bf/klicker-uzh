@@ -1857,6 +1857,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Antwort-Sammlung wird bereits von anderen Nutzern verwendet. Sie können die Zugriffsregeln daher nur weiter lockern oder nach einer vollständigen Veröffentlichung nicht mehr einschränken.',
       successfulCollectionEdit:
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
+      answerOptions: 'Antwort-Optionen',
+      addAnswerOption: 'Antwort-Option hinzufügen',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

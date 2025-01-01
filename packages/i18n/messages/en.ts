@@ -1845,6 +1845,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This answer collection is already used by other users. Therefore, you can only relax the access rules further or no longer restrict them after a complete publication.',
       successfulCollectionEdit:
         'The changes to the answer collection have been saved successfully.',
+      answerOptions: 'Answer Options',
+      addAnswerOption: 'Add Answer Option',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

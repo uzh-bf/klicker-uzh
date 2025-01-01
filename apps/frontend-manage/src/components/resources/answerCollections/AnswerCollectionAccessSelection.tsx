@@ -33,6 +33,7 @@ function AnswerCollectionAccessSelection({
             </div>
           ),
           disabled: privateDisabled,
+          data: { cy: 'answer-collection-access-private' },
         },
         {
           value: CollectionAccess.Public,
@@ -42,6 +43,7 @@ function AnswerCollectionAccessSelection({
               {t(`manage.resources.access${CollectionAccess.Public}`)}
             </div>
           ),
+          data: { cy: 'answer-collection-access-public' },
         },
         {
           value: CollectionAccess.Restricted,
@@ -52,6 +54,7 @@ function AnswerCollectionAccessSelection({
             </div>
           ),
           disabled: restrictedDisabled,
+          data: { cy: 'answer-collection-access-restricted' },
         },
       ]}
       data={{ cy: 'answer-collection-access' }}

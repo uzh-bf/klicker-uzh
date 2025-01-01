@@ -59,7 +59,11 @@ import {
   OptionsNumericalInput,
   Tag,
 } from './question.js'
-import { AnswerCollection, CollectionAccess } from './resource.js'
+import {
+  AnswerCollection,
+  AnswerCollectionEntry,
+  CollectionAccess,
+} from './resource.js'
 import {
   FileUploadSAS,
   LocaleType,
@@ -1164,6 +1168,41 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.modifyAnswerCollection(args, ctx)
+        },
+      }),
+
+      editAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollectionEntry,
+        args: {
+          id: t.arg.int({ required: true }),
+          value: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.editAnswerCollectionEntry(args, ctx)
+        },
+      }),
+
+      deleteAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Int',
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.deleteAnswerCollectionEntry(args, ctx)
+        },
+      }),
+
+      addAnswerCollectionOption: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollectionEntry,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          value: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.addAnswerCollectionOption(args, ctx)
         },
       }),
       // #endregion
