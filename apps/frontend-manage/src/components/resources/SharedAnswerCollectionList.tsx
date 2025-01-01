@@ -2,7 +2,11 @@ import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import AnswerCollectionCollapsible from './answerCollections/AnswerCollectionCollapsible'
 
-function SharedAnswerCollectionList({}: {
+function SharedAnswerCollectionList({
+  sharedCollections,
+  requestedCollections,
+  loading,
+}: {
   sharedCollections?: AnswerCollection[]
   requestedCollections?: AnswerCollection[]
   loading: boolean

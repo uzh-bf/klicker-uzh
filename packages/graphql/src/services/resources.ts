@@ -183,6 +183,7 @@ export async function modifyAnswerCollection(
   const updatedCollection = await ctx.prisma.answerCollection.update({
     where: {
       id,
+      ownerId: ctx.user.sub,
     },
     data: {
       name: name ?? undefined,
