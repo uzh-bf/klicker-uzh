@@ -20,7 +20,7 @@ function AnswerCollectionList({
     >
       {loading ? <Loader /> : null}
       {collections && collections.length === 0 ? (
-        <UserNotification type="info">
+        <UserNotification type="info" className={{ root: 'mt-1.5' }}>
           {t('manage.resources.noAnswerCollections')}
         </UserNotification>
       ) : (

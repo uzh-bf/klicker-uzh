@@ -1422,6 +1422,7 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getAnswerCollectionSelection: [AnswerCollection!]
   getAnswerCollections: UserAnswerCollections
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]

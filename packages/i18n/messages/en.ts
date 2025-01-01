@@ -233,6 +233,7 @@ export default {
       activity: 'Activity',
       featurePreview: 'Feature Preview',
       new: 'New',
+      search: 'Search',
     },
     contentInput: {
       boldStyle:
@@ -1847,6 +1848,20 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The changes to the answer collection have been saved successfully.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
+      accessTypes: 'Access Types',
+      all: 'All',
+      userShortnames: 'User Shortnames',
+      requestImport: 'Request / Import',
+      noPublicRestrictedCollections:
+        'No public or restricted answer collections were found for the entered search criteria and filters.',
+      requestImportCollection: 'Request / Import Answer Collection',
+      requestAccessMessage:
+        'Here you can request access to the answer collection "<b>{name}</b>". Once the owner accepts your request, the entire answer collection will be available to you automatically when creating the corresponding question types and on this page for viewing.',
+      importCollectionMessage:
+        'Here you can add the answer collection "<b>{name}</b>" to your collections. It is then immediately available to you when creating the corresponding question types and for viewing on this page.',
+      showAnswers: 'Show Answers',
+      importCollection: 'Import Answer Collection',
+      requestAccess: 'Request Access',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

@@ -4,13 +4,14 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import AnswerCollectionCreation from './AnswerCollectionCreation'
+import AnswerCollectionImport from './AnswerCollectionImport'
 import CollectionErrorToast from './CollectionErrorToast'
 import CollectionSuccessToast from './CollectionSuccessToast'
 
 function CreateAddCollection() {
   const t = useTranslations()
   const [creationOpen, setCreationOpen] = useState(false)
-  const [browsingOpen, setBrowsingOpen] = useState(false) // TODO: add form for browsing shared collections
+  const [browsingOpen, setBrowsingOpen] = useState(false)
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
 
@@ -40,6 +41,9 @@ function CreateAddCollection() {
           openSuccessToast={() => setSuccessToast(true)}
           openErrorToast={() => setErrorToast(true)}
         />
+      ) : null}
+      {browsingOpen ? (
+        <AnswerCollectionImport onClose={() => setBrowsingOpen(false)} />
       ) : null}
       <CollectionSuccessToast open={successToast} setOpen={setSuccessToast} />
       <CollectionErrorToast open={errorToast} setOpen={setErrorToast} />

@@ -53,7 +53,7 @@ import {
   StackFeedback,
 } from './practiceQuiz.js'
 import { Element, ElementInstance, Tag } from './question.js'
-import { UserAnswerCollections } from './resource.js'
+import { AnswerCollection, UserAnswerCollections } from './resource.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -819,6 +819,14 @@ export const Query = builder.queryType({
         type: UserAnswerCollections,
         resolve(_, __, ctx) {
           return ResourcesService.getAnswerCollections(ctx)
+        },
+      }),
+
+      getAnswerCollectionSelection: asUser.field({
+        nullable: true,
+        type: [AnswerCollection],
+        resolve(_, __, ctx) {
+          return ResourcesService.getAnswerCollectionSelection(ctx)
         },
       }),
     }

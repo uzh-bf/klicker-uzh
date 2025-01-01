@@ -259,3 +259,39 @@ export async function addAnswerCollectionOption(
 
   return newEntry
 }
+
+export async function getAnswerCollectionSelection(ctx: ContextWithUser) {
+  const collections = await ctx.prisma.answerCollection.findMany({
+    where: {
+      access: {
+        in: [DB.CollectionAccess.PUBLIC, DB.CollectionAccess.RESTRICTED],
+      },
+      ownerId: {
+        not: ctx.user.sub,
+      },
+    },
+    include: {
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+      entries: {
+        orderBy: {
+          value: 'asc',
+        },
+      },
+    },
+  })
+
+  // TODO: remove collections that have been shared with the user or requested by the user
+
+  return collections.map((collection) => ({
+    ...collection,
+    entries:
+      collection.access === DB.CollectionAccess.PUBLIC
+        ? collection.entries
+        : [],
+    ownerShortname: collection.owner?.shortname,
+  }))
+}
