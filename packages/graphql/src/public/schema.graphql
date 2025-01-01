@@ -88,6 +88,7 @@ type AnswerCollection {
   entries: [AnswerCollectionEntry!]
   id: Int!
   name: String!
+  numSharedUsers: Int
   ownerShortname: String
 }
 
@@ -1067,6 +1068,7 @@ type Mutation {
   manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
+  modifyAnswerCollection(access: CollectionAccess, description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback

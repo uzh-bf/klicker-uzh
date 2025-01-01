@@ -1,0 +1,23 @@
+mutation ModifyAnswerCollection(
+  $id: Int!
+  $name: String
+  $access: CollectionAccess
+  $description: String
+) {
+  modifyAnswerCollection(
+    id: $id
+    name: $name
+    access: $access
+    description: $description
+  ) {
+    id
+    name
+    access
+    description
+    numSharedUsers
+    entries {
+      id
+      value
+    }
+  }
+}

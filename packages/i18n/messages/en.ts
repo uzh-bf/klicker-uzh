@@ -1839,6 +1839,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
       clickToViewEdit: 'Click to view / edit',
+      answerCollection: 'Answer Collection: {name}',
+      saveChanges: 'Save changes',
+      infoAccessChangeLimited:
+        'This answer collection is already used by other users. Therefore, you can only relax the access rules further or no longer restrict them after a complete publication.',
+      successfulCollectionEdit:
+        'The changes to the answer collection have been saved successfully.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

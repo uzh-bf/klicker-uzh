@@ -19,6 +19,7 @@ export const AnswerCollectionEntry = AnswerCollectionEntryRef.implement({
 interface IAnswerCollection extends DB.AnswerCollection {
   entries?: DB.AnswerCollectionEntry[]
   ownerShortname?: string
+  numSharedUsers?: number
 }
 
 export const AnswerCollectionRef =
@@ -34,6 +35,7 @@ export const AnswerCollection = AnswerCollectionRef.implement({
       nullable: true,
     }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
+    numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
   }),
 })
 

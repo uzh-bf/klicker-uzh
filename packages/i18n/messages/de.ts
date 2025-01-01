@@ -1819,10 +1819,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
       access: 'Zugriff',
       accessTooltip:
-        "Wählen Sie aus, ob diese Antwort-Sammlung nur für Sie sichtbar sein soll oder auch durch andere Nutzer importiert werden kann. Bei einem 'beschränkten' Zugriff können andere Nutzer den Zugriff auf Ihre Antwort-Sammlung nur anfragen.",
+        "Wählen Sie aus, ob diese Antwort-Sammlung nur für Sie sichtbar sein soll oder auch durch andere Nutzer importiert werden kann. Bei einem 'eingeschränkten' Zugriff können andere Nutzer den Zugriff auf Ihre Antwort-Sammlung nur anfragen.",
       accessPUBLIC: 'Öffentlich',
       accessPRIVATE: 'Privat',
-      accessRESTRICTED: 'Beschränkt',
+      accessRESTRICTED: 'Eingeschränkt',
       descriptionTooltip:
         'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
       descriptionPlaceholder:
@@ -1840,7 +1840,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       infoAccessPRIVATE:
         'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
       infoAccessRESTRICTED:
-        'Beschränkte Antwort-Sammlungen können von anderen Nutzern angefragt und nach Ihrer Zustimmung importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+        'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern angefragt und nach Ihrer Zustimmung importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
       collectionCreationSuccess:
         'Die Antwort-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
@@ -1851,6 +1851,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       numOfAnswers: '{number} Antworten',
       byOwner: 'von {owner}',
       clickToViewEdit: 'Ansehen / Editieren',
+      answerCollection: 'Antwort-Sammlung: {name}',
+      saveChanges: 'Änderungen speichern',
+      infoAccessChangeLimited:
+        'Diese Antwort-Sammlung wird bereits von anderen Nutzern verwendet. Sie können die Zugriffsregeln daher nur weiter lockern oder nach einer vollständigen Veröffentlichung nicht mehr einschränken.',
+      successfulCollectionEdit:
+        'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

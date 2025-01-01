@@ -12,6 +12,7 @@ import {
 import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 
 function AnswerCollectionItem({
   collection,
@@ -83,6 +84,11 @@ function AnswerCollectionItem({
           <div>VIEW SHARED CONTENT</div>
         )}
       </Button>
+      <AnswerCollectionEditModal
+        collection={collection}
+        open={editModal}
+        onClose={() => setEditModal(false)}
+      />
     </>
   )
 }

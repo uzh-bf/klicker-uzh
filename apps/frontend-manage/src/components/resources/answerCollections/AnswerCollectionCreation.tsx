@@ -2,11 +2,8 @@ import { useMutation } from '@apollo/client'
 import {
   faBan,
   faCheck,
-  faLock,
-  faLockOpen,
   faPlusCircle,
   faTrashCan,
-  faUserLock,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -15,7 +12,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
-  FormikSelectField,
   FormikTextField,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -23,6 +19,7 @@ import { FieldArray, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
+import AnswerCollectionAccessSelection from './AnswerCollectionAccessSelection'
 
 type AnswerCollectionFormValues = {
   name?: string
@@ -97,47 +94,7 @@ function AnswerCollectionCreation({
                 tooltip={t('manage.resources.nameTooltip')}
                 data={{ cy: 'answer-collection-name' }}
               />
-              <FormikSelectField
-                required
-                name="access"
-                label={t('manage.resources.access')}
-                tooltip={t('manage.resources.accessTooltip')}
-                items={[
-                  {
-                    value: CollectionAccess.Private,
-                    label: (
-                      <div className="flex flex-row items-center gap-2 text-red-700">
-                        <FontAwesomeIcon icon={faLock} />
-                        {t(
-                          `manage.resources.access${CollectionAccess.Private}`
-                        )}
-                      </div>
-                    ),
-                  },
-                  {
-                    value: CollectionAccess.Public,
-                    label: (
-                      <div className="flex flex-row items-center gap-2 text-green-700">
-                        <FontAwesomeIcon icon={faLockOpen} />
-                        {t(`manage.resources.access${CollectionAccess.Public}`)}
-                      </div>
-                    ),
-                  },
-                  {
-                    value: CollectionAccess.Restricted,
-                    label: (
-                      <div className="flex flex-row items-center gap-2 text-orange-600">
-                        <FontAwesomeIcon icon={faUserLock} />
-                        {t(
-                          `manage.resources.access${CollectionAccess.Restricted}`
-                        )}
-                      </div>
-                    ),
-                  },
-                ]}
-                data={{ cy: 'answer-collection-access' }}
-                className={{ select: { trigger: 'h-9 w-40' } }}
-              />
+              <AnswerCollectionAccessSelection />
             </div>
             {typeof values.access !== 'undefined' ? (
               <UserNotification

@@ -71,6 +71,11 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
               value: 'asc',
             },
           },
+          _count: {
+            select: {
+              accessGranted: true,
+            },
+          },
         },
         orderBy: {
           name: 'asc',
@@ -113,7 +118,10 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
   }
 
   return {
-    answerCollections: user.answerCollections,
+    answerCollections: user.answerCollections.map((collection) => ({
+      ...collection,
+      numSharedUsers: collection._count?.accessGranted,
+    })),
     sharedCollections: user.sharedCollections.map((collection) => ({
       ...collection,
       ownerShortname: collection.owner?.shortname,
@@ -122,5 +130,72 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       ...collection,
       ownerShortname: collection.owner?.shortname,
     })),
+  }
+}
+
+export async function modifyAnswerCollection(
+  {
+    id,
+    name,
+    access,
+    description,
+  }: {
+    id: number
+    name?: string | null
+    access?: DB.CollectionAccess | null
+    description?: string | null
+  },
+  ctx: ContextWithUser
+) {
+  // fetch the existing answer collection
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      _count: {
+        select: {
+          accessGranted: true,
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // if other users are already using the collection, their access rights must not be restricted
+  const numSharedUsers = collection._count?.accessGranted ?? 0
+  if (
+    (numSharedUsers > 0 &&
+      (collection.access === DB.CollectionAccess.RESTRICTED ||
+        collection.access === DB.CollectionAccess.PUBLIC) &&
+      access === DB.CollectionAccess.PRIVATE) ||
+    (numSharedUsers > 0 &&
+      collection.access === DB.CollectionAccess.PUBLIC &&
+      access === DB.CollectionAccess.RESTRICTED)
+  ) {
+    return null
+  }
+
+  // update changes in the database
+  const updatedCollection = await ctx.prisma.answerCollection.update({
+    where: {
+      id,
+    },
+    data: {
+      name: name ?? undefined,
+      access: access ?? undefined,
+      description: description ?? undefined,
+    },
+    include: {
+      entries: true,
+    },
+  })
+
+  return {
+    ...updatedCollection,
+    numSharedUsers,
   }
 }
