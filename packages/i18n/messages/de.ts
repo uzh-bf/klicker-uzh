@@ -780,6 +780,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       analytics: 'Analytics',
       liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
+      resources: 'Ressourcen',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -1803,6 +1804,61 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSchedulingHint:
         'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
       confirmScheduling: 'Geplante Veröffentlichung bestätigen',
+    },
+    resources: {
+      mediaLibrary: 'Mediathek',
+      mediaLibraryAvailableSoon:
+        'Bald wird hier Ihre Mediathek verfügbar sein und Ihnen ermöglichen, hochgeladene Ressourcen einzusehen.',
+      answerCollections: 'Antwort-Sammlungen',
+      answerCollectionsDescription:
+        'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Zusätzlich können Sie hier öffentliche Antwort-Sammlungen anderer Nutzer importieren bzw. Zugriff auf diese anfragen.',
+      newAnswerCollection: 'Neue Antwort-Sammlung',
+      addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
+      name: 'Name',
+      nameTooltip:
+        'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
+      access: 'Zugriff',
+      accessTooltip:
+        "Wählen Sie aus, ob diese Antwort-Sammlung nur für Sie sichtbar sein soll oder auch durch andere Nutzer importiert werden kann. Bei einem 'eingeschränkten' Zugriff können andere Nutzer den Zugriff auf Ihre Antwort-Sammlung nur anfragen.",
+      accessPUBLIC: 'Öffentlich',
+      accessPRIVATE: 'Privat',
+      accessRESTRICTED: 'Eingeschränkt',
+      descriptionTooltip:
+        'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
+      descriptionPlaceholder:
+        'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung...',
+      answerEntry: 'Antwort-Eintrag {index}',
+      addValue: 'Wert hinzufügen',
+      nameRequired: 'Bitte geben Sie einen Namen für die Antwort-Sammlung an.',
+      descriptionRequired:
+        'Bitte geben Sie eine Beschreibung für die Antwort-Sammlung an.',
+      valueRequired: 'Bitte geben Sie einen Wert für den Eintrag an.',
+      minTwoEntriesRequired:
+        'Bitte fügen Sie mindestens zwei Einträge zu Ihrer Sammlung hinzu.',
+      infoAccessPUBLIC:
+        'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und importiert werden.',
+      infoAccessPRIVATE:
+        'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+      infoAccessRESTRICTED:
+        'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern angefragt und nach Ihrer Zustimmung importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+      collectionCreationSuccess:
+        'Die Antwort-Sammlung wurde erfolgreich erstellt.',
+      collectionCreationError:
+        'Beim Erstellen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass der Name der Sammlung einzigartig ist und versuchen Sie es erneut.',
+      createdAnswerCollections: 'Erstellte Antwort-Sammlungen',
+      sharedAnswerCollections: 'Geteilte Antwort-Sammlungen',
+      noAnswerCollections: 'Es wurden noch keine Antwort-Sammlungen erstellt.',
+      numOfAnswers: '{number} Antworten',
+      byOwner: 'von {owner}',
+      clickToViewEdit: 'Ansehen / Editieren',
+      answerCollection: 'Antwort-Sammlung: {name}',
+      saveChanges: 'Änderungen speichern',
+      infoAccessChangeLimited:
+        'Diese Antwort-Sammlung wird bereits von anderen Nutzern verwendet. Sie können die Zugriffsregeln daher nur weiter lockern oder nach einer vollständigen Veröffentlichung nicht mehr einschränken.',
+      successfulCollectionEdit:
+        'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
+      answerOptions: 'Antwort-Optionen',
+      addAnswerOption: 'Antwort-Option hinzufügen',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

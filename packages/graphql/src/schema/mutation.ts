@@ -11,6 +11,7 @@ import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
+import * as ResourcesService from '../services/resources.js'
 import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
@@ -58,6 +59,11 @@ import {
   OptionsNumericalInput,
   Tag,
 } from './question.js'
+import {
+  AnswerCollection,
+  AnswerCollectionEntry,
+  CollectionAccess,
+} from './resource.js'
 import {
   FileUploadSAS,
   LocaleType,
@@ -1134,6 +1140,69 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return AccountService.changeInitialSettings(args, ctx)
+        },
+      }),
+
+      createAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          name: t.arg.string({ required: true }),
+          access: t.arg({ type: CollectionAccess, required: true }),
+          description: t.arg.string({ required: true }),
+          answers: t.arg.stringList({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.createAnswerCollection(args, ctx)
+        },
+      }),
+
+      modifyAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          id: t.arg.int({ required: true }),
+          name: t.arg.string({ required: false }),
+          access: t.arg({ type: CollectionAccess, required: false }),
+          description: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.modifyAnswerCollection(args, ctx)
+        },
+      }),
+
+      editAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollectionEntry,
+        args: {
+          id: t.arg.int({ required: true }),
+          value: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.editAnswerCollectionEntry(args, ctx)
+        },
+      }),
+
+      deleteAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Int',
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.deleteAnswerCollectionEntry(args, ctx)
+        },
+      }),
+
+      addAnswerCollectionOption: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollectionEntry,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          value: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.addAnswerCollectionOption(args, ctx)
         },
       }),
       // #endregion

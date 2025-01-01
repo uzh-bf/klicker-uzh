@@ -82,6 +82,21 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
+type AnswerCollection {
+  access: CollectionAccess!
+  description: String!
+  entries: [AnswerCollectionEntry!]
+  id: Int!
+  name: String!
+  numSharedUsers: Int
+  ownerShortname: String
+}
+
+type AnswerCollectionEntry {
+  id: Int!
+  value: String!
+}
+
 type ArchivedElement {
   id: Int!
   isArchived: Boolean!
@@ -216,6 +231,12 @@ type ChoicesInstanceEvaluation {
 
 type ClassAchievementInstance {
   id: Int!
+}
+
+enum CollectionAccess {
+  PRIVATE
+  PUBLIC
+  RESTRICTED
 }
 
 type ConfusionSummary {
@@ -977,6 +998,7 @@ type MicroLearning {
 type Mutation {
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
+  addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
@@ -988,6 +1010,7 @@ type Mutation {
   changeParticipantLocale(locale: LocaleType!): Participant
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
+  createAnswerCollection(access: CollectionAccess!, answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -998,6 +1021,7 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
+  deleteAnswerCollectionEntry(id: Int!): Int
   deleteCourse(id: String!): Course
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
@@ -1009,6 +1033,7 @@ type Mutation {
   deleteQuestion(id: Int!): Element
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
+  editAnswerCollectionEntry(id: Int!, value: String!): AnswerCollectionEntry
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
   editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
@@ -1046,6 +1071,7 @@ type Mutation {
   manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
+  modifyAnswerCollection(access: CollectionAccess, description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -1396,6 +1422,7 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getAnswerCollections: UserAnswerCollections
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseActivities(courseId: String!): Course
@@ -1620,6 +1647,12 @@ type User {
   mediaFiles: [MediaFile!]
   sendProjectUpdates: Boolean!
   shortname: String!
+}
+
+type UserAnswerCollections {
+  answerCollections: [AnswerCollection!]!
+  requestedCollections: [AnswerCollection!]!
+  sharedCollections: [AnswerCollection!]!
 }
 
 type UserLogin {

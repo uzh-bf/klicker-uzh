@@ -782,6 +782,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       analytics: 'Analytics',
       liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
+      resources: 'Resources',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
@@ -1791,6 +1792,61 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSchedulingHint:
         'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
+    },
+    resources: {
+      mediaLibrary: 'Media Library',
+      mediaLibraryAvailableSoon:
+        'Your media library will be available here soon, allowing you to access all your uploaded resources.',
+      answerCollections: 'Answer Collections',
+      answerCollectionsDescription:
+        'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. Additionally, you can import public answer collections from other users or request access to them.',
+      newAnswerCollection: 'New Answer Collection',
+      addSharedAnswerCollection: 'Add Shared Answer Collection',
+      name: 'Name',
+      nameTooltip:
+        'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',
+      access: 'Access',
+      accessTooltip:
+        'Choose whether this answer collection should only be visible to you or can also be imported by other users. With "restricted" access, other users can only request access to your answer collection.',
+      accessPUBLIC: 'Public',
+      accessRESTRICTED: 'Restricted',
+      accessPRIVATE: 'Private',
+      descriptionTooltip:
+        'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
+      descriptionPlaceholder:
+        'Describe the content and purpose of the answer collection...',
+      answerEntry: 'Answer Entry {index}',
+      addValue: 'Add Value',
+      nameRequired: 'Please enter a name for the answer collection.',
+      descriptionRequired:
+        'Please enter a description for the answer collection.',
+      valueRequired: 'Please enter a value for the answer entry.',
+      minTwoEntriesRequired:
+        'At least two answer entries are required to create an answer collection.',
+      infoAccessPUBLIC:
+        'Public answer collections can be viewed and imported by all users.',
+      infoAccessPRIVATE:
+        'Private answer collections are only visible to you and cannot be viewed or imported by other users. Once other users use your answer collection, you cannot change the access of your collection anymore.',
+      infoAccessRESTRICTED:
+        'Restricted answer collections can be requested by other users and imported after your approval. Once other users use your answer collection, you cannot change the access of your collection anymore.',
+      collectionCreationSuccess:
+        'The answer collection was created successfully.',
+      collectionCreationError:
+        'An error occurred while creating the answer collection. Please make sure that the name of the collection is unique and try again.',
+      createdAnswerCollections: 'Created Answer Collections',
+      sharedAnswerCollections: 'Shared Answer Collections',
+      noAnswerCollections: 'No answer collections have been created.',
+      numOfAnswers: '{number} Answers',
+      byOwner: 'by {owner}',
+      clickToViewEdit: 'Click to view / edit',
+      answerCollection: 'Answer Collection: {name}',
+      saveChanges: 'Save changes',
+      infoAccessChangeLimited:
+        'This answer collection is already used by other users. Therefore, you can only relax the access rules further or no longer restrict them after a complete publication.',
+      successfulCollectionEdit:
+        'The changes to the answer collection have been saved successfully.',
+      answerOptions: 'Answer Options',
+      addAnswerOption: 'Add Answer Option',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

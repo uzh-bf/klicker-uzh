@@ -10,6 +10,7 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
+import * as ResourcesService from '../services/resources.js'
 import * as StacksService from '../services/stacks.js'
 import {
   CourseActivityAnalytics,
@@ -52,6 +53,7 @@ import {
   StackFeedback,
 } from './practiceQuiz.js'
 import { Element, ElementInstance, Tag } from './question.js'
+import { UserAnswerCollections } from './resource.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -809,6 +811,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return AnalyticsService.getActivityAnalytics(args, ctx)
+        },
+      }),
+
+      getAnswerCollections: asUser.field({
+        nullable: true,
+        type: UserAnswerCollections,
+        resolve(_, __, ctx) {
+          return ResourcesService.getAnswerCollections(ctx)
         },
       }),
     }

@@ -17,6 +17,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       password: 'abcd',
       catalystIndividual: true,
       catalystInstitutional: true,
+      featurePreview: true,
     })
   )
 

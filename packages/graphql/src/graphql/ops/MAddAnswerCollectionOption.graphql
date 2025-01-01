@@ -1,0 +1,6 @@
+mutation AddAnswerCollectionOption($collectionId: Int!, $value: String!) {
+  addAnswerCollectionOption(collectionId: $collectionId, value: $value) {
+    id
+    value
+  }
+}
