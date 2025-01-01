@@ -112,6 +112,10 @@ model User {
   liveQuizzes       LiveQuiz[]
   competencyTrees   CompetencyTree[]
 
+  answerCollections    AnswerCollection[] @relation("userAnswerCollections")
+  requestedCollections AnswerCollection[] @relation("answerCollectionAccessRequested")
+  sharedCollections    AnswerCollection[] @relation("answerCollectionShared")
+
   firstLogin Boolean @default(true)
 
   createdAt DateTime @default(now())
