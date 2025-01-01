@@ -5,8 +5,6 @@ import { useTranslations } from 'next-intl'
 import AnswerCollectionCollapsible from './AnswerCollectionCollapsible'
 import AnswerCollectionItem from './AnswerCollectionItem'
 
-// TODO: add editing mechanism (in modal?!)
-
 function AnswerCollectionList({
   collections,
   loading,
