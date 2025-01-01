@@ -1829,6 +1829,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung...',
       answerEntry: 'Antwort-Eintrag {index}',
       addValue: 'Wert hinzufügen',
+      nameRequired: 'Bitte geben Sie einen Namen für die Antwort-Sammlung an.',
+      descriptionRequired:
+        'Bitte geben Sie eine Beschreibung für die Antwort-Sammlung an.',
+      valueRequired: 'Bitte geben Sie einen Wert für den Eintrag an.',
+      minTwoEntriesRequired:
+        'Bitte fügen Sie mindestens zwei Einträge zu Ihrer Sammlung hinzu.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

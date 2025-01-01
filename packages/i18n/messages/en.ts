@@ -1817,6 +1817,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Describe the content and purpose of the answer collection...',
       answerEntry: 'Answer Entry {index}',
       addValue: 'Add Value',
+      nameRequired: 'Please enter a name for the answer collection.',
+      descriptionRequired:
+        'Please enter a description for the answer collection.',
+      valueRequired: 'Please enter a value for the answer entry.',
+      minTwoEntriesRequired:
+        'At least two answer entries are required to create an answer collection.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

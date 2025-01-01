@@ -10,13 +10,30 @@ import {
   Button,
   FormikSelectField,
   FormikTextField,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { FieldArray, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
 
 function AnswerCollectionCreation({ onClose }: { onClose: () => void }) {
   const t = useTranslations()
+
+  const validationSchema = Yup.object({
+    name: Yup.string().required(t('manage.resources.nameRequired')),
+    access: Yup.string().required(),
+    description: Yup.string().required(
+      t('manage.resources.descriptionRequired')
+    ),
+    entries: Yup.array()
+      .of(
+        Yup.object().shape({
+          value: Yup.string().required(t('manage.resources.valueRequired')),
+        })
+      )
+      .min(2, t('manage.resources.minTwoEntriesRequired')),
+  })
 
   return (
     <div className="mb-6">
@@ -31,9 +48,10 @@ function AnswerCollectionCreation({ onClose }: { onClose: () => void }) {
           // TODO: implement submission logic
           console.log(values)
         }}
-        // TODO: add validation schema
+        validationSchema={validationSchema}
+        validateOnMount
       >
-        {({ values, isValid, isSubmitting }) => (
+        {({ values, errors, isValid, isSubmitting }) => (
           <Form>
             <div className="flex space-x-4">
               <FormikTextField
@@ -104,6 +122,13 @@ function AnswerCollectionCreation({ onClose }: { onClose: () => void }) {
                 </div>
               )}
             />
+            {errors && typeof errors.entries === 'string' ? (
+              <UserNotification
+                type="error"
+                message={t('manage.resources.minTwoEntriesRequired')}
+                className={{ root: 'mt-2 text-base' }}
+              />
+            ) : null}
             <div className="mt-3 flex w-full flex-row justify-between">
               <Button className={{ root: 'border-red-400' }} onClick={onClose}>
                 <FontAwesomeIcon icon={faBan} />
