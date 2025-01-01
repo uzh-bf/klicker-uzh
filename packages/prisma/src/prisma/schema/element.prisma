@@ -298,7 +298,7 @@ enum CollectionAccess {
 model AnswerCollection {
   id          Int                     @id @default(autoincrement())
   name        String
-  description String?
+  description String
   version     Int                     @default(1)
   entries     AnswerCollectionEntry[]
 

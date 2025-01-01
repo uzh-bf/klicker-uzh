@@ -1841,6 +1841,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
       infoAccessRESTRICTED:
         'Beschränkte Antwort-Sammlungen können von anderen Nutzern angefragt und nach Ihrer Zustimmung importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+      collectionCreationSuccess:
+        'Die Antwort-Sammlung wurde erfolgreich erstellt.',
+      collectionCreationError:
+        'Beim Erstellen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass der Name der Sammlung einzigartig ist und versuchen Sie es erneut.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

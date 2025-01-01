@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client'
 import {
   faBan,
   faCheck,
@@ -8,7 +9,10 @@ import {
   faUserLock,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CollectionAccess } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CollectionAccess,
+  CreateAnswerCollectionDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
@@ -20,8 +24,24 @@ import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
 
-function AnswerCollectionCreation({ onClose }: { onClose: () => void }) {
+type AnswerCollectionFormValues = {
+  name?: string
+  access: CollectionAccess
+  description?: string
+  entries: { value?: string }[]
+}
+
+function AnswerCollectionCreation({
+  onClose,
+  openSuccessToast,
+  openErrorToast,
+}: {
+  onClose: () => void
+  openSuccessToast: () => void
+  openErrorToast: () => void
+}) {
   const t = useTranslations()
+  const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
 
   const validationSchema = Yup.object({
     name: Yup.string().required(t('manage.resources.nameRequired')),
@@ -47,9 +67,22 @@ function AnswerCollectionCreation({ onClose }: { onClose: () => void }) {
           description: undefined,
           entries: [{ value: undefined }, { value: undefined }],
         }}
-        onSubmit={(values) => {
-          // TODO: implement submission logic
-          console.log(values)
+        onSubmit={async (values: AnswerCollectionFormValues) => {
+          const { data } = await createAnswerCollection({
+            variables: {
+              name: values.name!,
+              description: values.description!,
+              access: values.access,
+              answers: values.entries.map((entry) => entry.value!),
+            },
+          })
+
+          if (data?.createAnswerCollection?.id) {
+            onClose()
+            openSuccessToast()
+          } else {
+            openErrorToast()
+          }
         }}
         validationSchema={validationSchema}
         validateOnMount

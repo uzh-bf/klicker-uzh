@@ -4,11 +4,15 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import AnswerCollectionCreation from './AnswerCollectionCreation'
+import CollectionErrorToast from './CollectionErrorToast'
+import CollectionSuccessToast from './CollectionSuccessToast'
 
 function CreateAddCollection() {
   const t = useTranslations()
-  const [creationOpen, setCreationOpen] = useState(false) // TODO: add form for creation
+  const [creationOpen, setCreationOpen] = useState(false)
   const [browsingOpen, setBrowsingOpen] = useState(false) // TODO: add form for browsing shared collections
+  const [successToast, setSuccessToast] = useState(false)
+  const [errorToast, setErrorToast] = useState(false)
 
   return (
     <>
@@ -31,8 +35,14 @@ function CreateAddCollection() {
         </div>
       ) : null}
       {creationOpen ? (
-        <AnswerCollectionCreation onClose={() => setCreationOpen(false)} />
+        <AnswerCollectionCreation
+          onClose={() => setCreationOpen(false)}
+          openSuccessToast={() => setSuccessToast(true)}
+          openErrorToast={() => setErrorToast(true)}
+        />
       ) : null}
+      <CollectionSuccessToast open={successToast} setOpen={setSuccessToast} />
+      <CollectionErrorToast open={errorToast} setOpen={setErrorToast} />
     </>
   )
 }

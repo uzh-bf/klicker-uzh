@@ -5,7 +5,7 @@ CREATE TYPE "CollectionAccess" AS ENUM ('PUBLIC', 'PRIVATE', 'RESTRICTED');
 CREATE TABLE "AnswerCollection" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "description" TEXT,
+    "description" TEXT NOT NULL,
     "version" INTEGER NOT NULL DEFAULT 1,
     "access" "CollectionAccess" NOT NULL DEFAULT 'PRIVATE',
     "ownerId" UUID,

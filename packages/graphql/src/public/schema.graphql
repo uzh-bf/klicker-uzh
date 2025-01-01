@@ -82,6 +82,20 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
+type AnswerCollection {
+  access: CollectionAccess!
+  description: String!
+  entries: [AnswerCollectionEntry!]!
+  id: Int!
+  name: String!
+  ownerShortname: String
+}
+
+type AnswerCollectionEntry {
+  id: Int!
+  value: String!
+}
+
 type ArchivedElement {
   id: Int!
   isArchived: Boolean!
@@ -994,6 +1008,7 @@ type Mutation {
   changeParticipantLocale(locale: LocaleType!): Participant
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
+  createAnswerCollection(access: CollectionAccess!, answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
