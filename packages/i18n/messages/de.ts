@@ -1845,6 +1845,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Antwort-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
         'Beim Erstellen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass der Name der Sammlung einzigartig ist und versuchen Sie es erneut.',
+      createdAnswerCollections: 'Erstellte Antwort-Sammlungen',
+      sharedAnswerCollections: 'Geteilte Antwort-Sammlungen',
+      noAnswerCollections: 'Es wurden noch keine Antwort-Sammlungen erstellt.',
+      numOfAnswers: '{number} Antworten',
+      byOwner: 'von {owner}',
+      clickToViewEdit: 'Ansehen / Editieren',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

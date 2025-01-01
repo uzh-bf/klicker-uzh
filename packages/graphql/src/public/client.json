@@ -109,6 +109,7 @@
    "CheckValidCoursePin": "2126ef90ecc0ffc980dd92bbd62dfa48387a97d210d5edf4f6a1116a41fb0483",
    "GetActiveUserCourses": "877f83a65cb320f69a51a5bf243f0d62bb8cce9e4c1d0bcab8cec8dd367bed86",
    "GetActivityAnalytics": "bcbe895236bd0027e2db37d5884645cfa3230e90a7ce6de893783c5fdc54fa1b",
+   "GetAnswerCollections": "fc3a425c9083c2105455f2894359826b74ad31c0ed6e3f66b03b4773a3e55df0",
    "GetArtificialInstance": "af867c3f5673d1ccdab5912713886d47189c6c8cc393c8b46f58dc75cdff654b",
    "GetBasicCourseInformation": "14169116abd9278adb08977b9c153403e6065ab0c3d02a6beb38017e1c8b19d6",
    "GetBookmarkedElementStacks": "97e44398e5f1ae9efb9f4b78b58f75b81d2305d9c1ca622c6d09ed263eeda4aa",

@@ -85,7 +85,7 @@ enum ActivityType {
 type AnswerCollection {
   access: CollectionAccess!
   description: String!
-  entries: [AnswerCollectionEntry!]!
+  entries: [AnswerCollectionEntry!]
   id: Int!
   name: String!
   ownerShortname: String
@@ -1417,6 +1417,7 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getAnswerCollections: UserAnswerCollections
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCourseActivities(courseId: String!): Course
@@ -1641,6 +1642,12 @@ type User {
   mediaFiles: [MediaFile!]
   sendProjectUpdates: Boolean!
   shortname: String!
+}
+
+type UserAnswerCollections {
+  answerCollections: [AnswerCollection!]!
+  requestedCollections: [AnswerCollection!]!
+  sharedCollections: [AnswerCollection!]!
 }
 
 type UserLogin {

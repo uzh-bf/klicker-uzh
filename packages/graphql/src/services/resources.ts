@@ -57,3 +57,70 @@ export async function createAnswerCollection(
 
   return { ...newCollection, ownerShortname: newCollection.owner?.shortname }
 }
+
+export async function getAnswerCollections(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      answerCollections: {
+        include: {
+          entries: {
+            orderBy: {
+              value: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      },
+      sharedCollections: {
+        include: {
+          entries: {
+            orderBy: {
+              value: 'asc',
+            },
+          },
+          owner: {
+            select: {
+              shortname: true,
+            },
+          },
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      },
+      requestedCollections: {
+        include: {
+          owner: {
+            select: {
+              shortname: true,
+            },
+          },
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      },
+    },
+  })
+
+  if (!user) {
+    return null
+  }
+
+  return {
+    answerCollections: user.answerCollections,
+    sharedCollections: user.sharedCollections.map((collection) => ({
+      ...collection,
+      ownerShortname: collection.owner?.shortname,
+    })),
+    requestedCollections: user.requestedCollections.map((collection) => ({
+      ...collection,
+      ownerShortname: collection.owner?.shortname,
+    })),
+  }
+}

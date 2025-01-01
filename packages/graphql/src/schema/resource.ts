@@ -17,7 +17,7 @@ export const AnswerCollectionEntry = AnswerCollectionEntryRef.implement({
 })
 
 interface IAnswerCollection extends DB.AnswerCollection {
-  entries: DB.AnswerCollectionEntry[]
+  entries?: DB.AnswerCollectionEntry[]
   ownerShortname?: string
 }
 
@@ -29,8 +29,32 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     name: t.exposeString('name'),
     access: t.expose('access', { type: CollectionAccess }),
     description: t.exposeString('description'),
-    entries: t.expose('entries', { type: [AnswerCollectionEntryRef] }),
+    entries: t.expose('entries', {
+      type: [AnswerCollectionEntryRef],
+      nullable: true,
+    }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
+  }),
+})
+
+interface IUserAnswerCollections {
+  answerCollections: IAnswerCollection[]
+  sharedCollections: IAnswerCollection[]
+  requestedCollections: IAnswerCollection[]
+}
+export const UserAnswerCollectionsRef =
+  builder.objectRef<IUserAnswerCollections>('UserAnswerCollections')
+export const UserAnswerCollections = UserAnswerCollectionsRef.implement({
+  fields: (t) => ({
+    answerCollections: t.expose('answerCollections', {
+      type: [AnswerCollectionRef],
+    }),
+    sharedCollections: t.expose('sharedCollections', {
+      type: [AnswerCollectionRef],
+    }),
+    requestedCollections: t.expose('requestedCollections', {
+      type: [AnswerCollectionRef],
+    }),
   }),
 })
 // #endregion

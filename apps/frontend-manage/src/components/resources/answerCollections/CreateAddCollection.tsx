@@ -17,7 +17,7 @@ function CreateAddCollection() {
   return (
     <>
       {!creationOpen && !browsingOpen ? (
-        <div className="mb-3 flex flex-col gap-3 sm:flex-row">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <Button
             className={{ root: 'w-full sm:w-1/2' }}
             onClick={() => setCreationOpen(true)}

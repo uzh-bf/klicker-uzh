@@ -1833,6 +1833,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The answer collection was created successfully.',
       collectionCreationError:
         'An error occurred while creating the answer collection. Please make sure that the name of the collection is unique and try again.',
+      createdAnswerCollections: 'Created Answer Collections',
+      sharedAnswerCollections: 'Shared Answer Collections',
+      noAnswerCollections: 'No answer collections have been created.',
+      numOfAnswers: '{number} Answers',
+      byOwner: 'by {owner}',
+      clickToViewEdit: 'Click to view / edit',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

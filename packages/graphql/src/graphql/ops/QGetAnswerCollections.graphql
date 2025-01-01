@@ -1,0 +1,33 @@
+query GetAnswerCollections {
+  getAnswerCollections {
+    __typename
+    answerCollections {
+      id
+      name
+      access
+      description
+      entries {
+        id
+        value
+      }
+    }
+    sharedCollections {
+      id
+      name
+      access
+      description
+      ownerShortname
+      entries {
+        id
+        value
+      }
+    }
+    requestedCollections {
+      id
+      name
+      access
+      description
+      ownerShortname
+    }
+  }
+}
