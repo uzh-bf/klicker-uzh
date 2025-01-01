@@ -1,8 +1,11 @@
 import {
   faBan,
   faCheck,
+  faLock,
+  faLockOpen,
   faPlusCircle,
   faTrashCan,
+  faUserLock,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CollectionAccess } from '@klicker-uzh/graphql/dist/ops'
@@ -66,14 +69,49 @@ function AnswerCollectionCreation({ onClose }: { onClose: () => void }) {
                 name="access"
                 label={t('manage.resources.access')}
                 tooltip={t('manage.resources.accessTooltip')}
-                items={Object.values(CollectionAccess).map((value) => ({
-                  value,
-                  label: t(`manage.resources.access${value}`),
-                }))}
+                items={[
+                  {
+                    value: CollectionAccess.Private,
+                    label: (
+                      <div className="flex flex-row items-center gap-2 text-red-700">
+                        <FontAwesomeIcon icon={faLock} />
+                        {t(
+                          `manage.resources.access${CollectionAccess.Private}`
+                        )}
+                      </div>
+                    ),
+                  },
+                  {
+                    value: CollectionAccess.Public,
+                    label: (
+                      <div className="flex flex-row items-center gap-2 text-green-700">
+                        <FontAwesomeIcon icon={faLockOpen} />
+                        {t(`manage.resources.access${CollectionAccess.Public}`)}
+                      </div>
+                    ),
+                  },
+                  {
+                    value: CollectionAccess.Restricted,
+                    label: (
+                      <div className="flex flex-row items-center gap-2 text-orange-600">
+                        <FontAwesomeIcon icon={faUserLock} />
+                        {t(
+                          `manage.resources.access${CollectionAccess.Restricted}`
+                        )}
+                      </div>
+                    ),
+                  },
+                ]}
                 data={{ cy: 'answer-collection-access' }}
                 className={{ select: { trigger: 'h-9 w-40' } }}
               />
             </div>
+            {typeof values.access !== 'undefined' ? (
+              <UserNotification
+                message={t(`manage.resources.infoAccess${values.access}`)}
+                className={{ root: 'my-2' }}
+              />
+            ) : null}
             <EditorField
               required
               label={t('shared.generic.description')}
@@ -130,7 +168,11 @@ function AnswerCollectionCreation({ onClose }: { onClose: () => void }) {
               />
             ) : null}
             <div className="mt-3 flex w-full flex-row justify-between">
-              <Button className={{ root: 'border-red-400' }} onClick={onClose}>
+              <Button
+                className={{ root: 'border-red-400' }}
+                onClick={onClose}
+                data={{ cy: 'cancel-create-answer-collection' }}
+              >
                 <FontAwesomeIcon icon={faBan} />
                 {t('shared.generic.cancel')}
               </Button>
@@ -139,6 +181,7 @@ function AnswerCollectionCreation({ onClose }: { onClose: () => void }) {
                 disabled={!isValid}
                 loading={isSubmitting}
                 className={{ root: 'border-green-700' }}
+                data={{ cy: 'submit-create-answer-collection' }}
               >
                 <FontAwesomeIcon icon={faCheck} />
                 {t('shared.generic.create')}

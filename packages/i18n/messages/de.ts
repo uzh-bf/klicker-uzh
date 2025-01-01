@@ -1835,6 +1835,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       valueRequired: 'Bitte geben Sie einen Wert für den Eintrag an.',
       minTwoEntriesRequired:
         'Bitte fügen Sie mindestens zwei Einträge zu Ihrer Sammlung hinzu.',
+      infoAccessPUBLIC:
+        'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und importiert werden.',
+      infoAccessPRIVATE:
+        'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+      infoAccessRESTRICTED:
+        'Beschränkte Antwort-Sammlungen können von anderen Nutzern angefragt und nach Ihrer Zustimmung importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
