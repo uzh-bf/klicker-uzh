@@ -218,6 +218,12 @@ type ClassAchievementInstance {
   id: Int!
 }
 
+enum CollectionAccess {
+  PRIVATE
+  PUBLIC
+  RESTRICTED
+}
+
 type ConfusionSummary {
   difficulty: Float!
   numberOfParticipants: Int

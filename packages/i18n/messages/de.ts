@@ -780,6 +780,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       analytics: 'Analytics',
       liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
+      resources: 'Ressourcen',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -1803,6 +1804,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSchedulingHint:
         'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
       confirmScheduling: 'Geplante Veröffentlichung bestätigen',
+    },
+    resources: {
+      mediaLibrary: 'Mediathek',
+      mediaLibraryAvailableSoon:
+        'Bald wird hier Ihre Mediathek verfügbar sein und Ihnen ermöglichen, hochgeladene Ressourcen einzusehen.',
+      answerCollections: 'Antwort-Sammlungen',
+      answerCollectionsDescription:
+        'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Zusätzlich können Sie hier öffentliche Antwort-Sammlungen anderer Nutzer importieren bzw. Zugriff auf diese anfragen.',
+      newAnswerCollection: 'Neue Antwort-Sammlung',
+      addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
+      name: 'Name',
+      nameTooltip:
+        'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
+      access: 'Zugriff',
+      accessTooltip:
+        "Wählen Sie aus, ob diese Antwort-Sammlung nur für Sie sichtbar sein soll oder auch durch andere Nutzer importiert werden kann. Bei einem 'beschränkten' Zugriff können andere Nutzer den Zugriff auf Ihre Antwort-Sammlung nur anfragen.",
+      accessPUBLIC: 'Öffentlich',
+      accessPRIVATE: 'Privat',
+      accessRESTRICTED: 'Beschränkt',
+      descriptionTooltip:
+        'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
+      descriptionPlaceholder:
+        'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung...',
+      answerEntry: 'Antwort-Eintrag {index}',
+      addValue: 'Wert hinzufügen',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

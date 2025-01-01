@@ -48,6 +48,13 @@ function Header({ user }: HeaderProps): React.ReactElement {
       active: router.pathname == '/courses',
       cy: 'courses',
     },
+    {
+      new: true,
+      href: '/resources',
+      label: t('manage.general.resources'),
+      active: router.pathname == '/resources',
+      cy: 'resources',
+    },
     ...(user?.featurePreview
       ? [
           {

@@ -782,6 +782,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       analytics: 'Analytics',
       liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
+      resources: 'Resources',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
@@ -1791,6 +1792,31 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       practiceQuizSchedulingHint:
         'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
+    },
+    resources: {
+      mediaLibrary: 'Media Library',
+      mediaLibraryAvailableSoon:
+        'Your media library will be available here soon, allowing you to access all your uploaded resources.',
+      answerCollections: 'Answer Collections',
+      answerCollectionsDescription:
+        'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. Additionally, you can import public answer collections from other users or request access to them.',
+      newAnswerCollection: 'New Answer Collection',
+      addSharedAnswerCollection: 'Add Shared Answer Collection',
+      name: 'Name',
+      nameTooltip:
+        'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',
+      access: 'Access',
+      accessTooltip:
+        'Choose whether this answer collection should only be visible to you or can also be imported by other users. With "restricted" access, other users can only request access to your answer collection.',
+      accessPUBLIC: 'Public',
+      accessRESTRICTED: 'Restricted',
+      accessPRIVATE: 'Private',
+      descriptionTooltip:
+        'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
+      descriptionPlaceholder:
+        'Describe the content and purpose of the answer collection...',
+      answerEntry: 'Answer Entry {index}',
+      addValue: 'Add Value',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

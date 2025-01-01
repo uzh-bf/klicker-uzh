@@ -257,6 +257,12 @@ export type ClassAchievementInstance = {
   id: Scalars['Int']['output'];
 };
 
+export enum CollectionAccess {
+  Private = 'PRIVATE',
+  Public = 'PUBLIC',
+  Restricted = 'RESTRICTED'
+}
+
 export type ConfusionSummary = {
   __typename?: 'ConfusionSummary';
   difficulty: Scalars['Float']['output'];

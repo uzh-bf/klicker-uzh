@@ -20,11 +20,9 @@ function Analytics() {
     )
   }
 
-  const courses = dataCourses?.userCourses
-
   return (
     <Layout displayName={t('shared.generic.learningAnalytics')}>
-      <CourseDashboardList courses={courses} />
+      <CourseDashboardList courses={dataCourses?.userCourses} />
     </Layout>
   )
 }
