@@ -1,0 +1,12 @@
+mutation ApproveCollectionSharingRequest(
+  $collectionId: Int!
+  $userId: String!
+) {
+  approveCollectionSharingRequest(
+    collectionId: $collectionId
+    userId: $userId
+  ) {
+    collectionId
+    userId
+  }
+}

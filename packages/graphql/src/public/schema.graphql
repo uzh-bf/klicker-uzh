@@ -1009,6 +1009,7 @@ type Mutation {
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
+  approveCollectionSharingRequest(collectionId: Int!, userId: String!): SharingRequestResponse
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   changeEmailSettings(projectUpdates: Boolean!): User
@@ -1029,6 +1030,7 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
+  declineCollectionSharingRequest(collectionId: Int!, userId: String!): SharingRequestResponse
   deleteAnswerCollectionEntry(id: Int!): Int
   deleteCourse(id: String!): Course
   deleteFeedback(id: Int!): Feedback
@@ -1523,6 +1525,11 @@ type RunningLiveQuizSummary {
   numOfFeedbacks: Int!
   numOfLeaderboardEntries: Int!
   numOfResponses: Int!
+}
+
+type SharingRequestResponse {
+  collectionId: Int!
+  userId: String!
 }
 
 type SingleChoiceResponse {

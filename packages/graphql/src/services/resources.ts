@@ -454,3 +454,51 @@ export async function getCollectionSharingRequests(ctx: ContextWithUser) {
 
   return requestedCollections
 }
+
+export async function resolveCollectionSharingRequest(
+  {
+    collectionId,
+    userId,
+    approved,
+  }: {
+    collectionId: number
+    userId: string
+    approved: boolean
+  },
+  ctx: ContextWithUser
+) {
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      accessRequested: {
+        where: {
+          id: userId,
+        },
+      },
+    },
+  })
+
+  // check that the collection exists and that the user has requested access
+  if (!collection || collection.accessRequested.length === 0) {
+    return null
+  }
+
+  // update the collection with the new access rights
+  const updatedCollection = await ctx.prisma.answerCollection.update({
+    where: {
+      id: collectionId,
+    },
+    data: {
+      accessRequested: { disconnect: { id: userId } },
+      accessGranted: approved ? { connect: { id: userId } } : undefined,
+    },
+  })
+
+  return {
+    collectionId: updatedCollection.id,
+    userId,
+  }
+}

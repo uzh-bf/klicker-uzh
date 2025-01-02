@@ -63,6 +63,7 @@ import {
   AnswerCollection,
   AnswerCollectionEntry,
   CollectionAccess,
+  SharingRequestResponse,
 } from './resource.js'
 import {
   FileUploadSAS,
@@ -1225,6 +1226,36 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.requestAnswerCollection(args, ctx)
+        },
+      }),
+
+      approveCollectionSharingRequest: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: SharingRequestResponse,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          userId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.resolveCollectionSharingRequest(
+            { ...args, approved: true },
+            ctx
+          )
+        },
+      }),
+
+      declineCollectionSharingRequest: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: SharingRequestResponse,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          userId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.resolveCollectionSharingRequest(
+            { ...args, approved: false },
+            ctx
+          )
         },
       }),
       // #endregion

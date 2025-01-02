@@ -1,7 +1,11 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetCollectionSharingRequestsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ApproveCollectionSharingRequestDocument,
+  DeclineCollectionSharingRequestDocument,
+  GetCollectionSharingRequestsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { Badge } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
@@ -10,6 +14,12 @@ import AnswerCollectionCollapsible from './AnswerCollectionCollapsible'
 function CollectionSharingRequests() {
   const t = useTranslations()
   const { data, loading } = useQuery(GetCollectionSharingRequestsDocument)
+  const [approveCollectionSharingRequest] = useMutation(
+    ApproveCollectionSharingRequestDocument
+  )
+  const [declineCollectionSharingRequest] = useMutation(
+    DeclineCollectionSharingRequestDocument
+  )
 
   if (loading) {
     return null
@@ -47,6 +57,39 @@ function CollectionSharingRequests() {
                   className={{
                     root: 'h-7 border-green-600 hover:border-green-600 hover:text-green-800',
                   }}
+                  onClick={() =>
+                    approveCollectionSharingRequest({
+                      variables: {
+                        collectionId: request.collectionId,
+                        userId: request.userId,
+                      },
+                      update: (cache, { data }) => {
+                        if (!data?.approveCollectionSharingRequest) return
+                        const resolvedRequest =
+                          data.approveCollectionSharingRequest
+
+                        const queryData = cache.readQuery({
+                          query: GetCollectionSharingRequestsDocument,
+                        })
+                        const previousRequests =
+                          queryData?.getCollectionSharingRequests
+                        if (!previousRequests) return
+
+                        cache.writeQuery({
+                          query: GetCollectionSharingRequestsDocument,
+                          data: {
+                            getCollectionSharingRequests:
+                              previousRequests.filter(
+                                (r) =>
+                                  r.collectionId !==
+                                    resolvedRequest.collectionId ||
+                                  r.userId !== resolvedRequest.userId
+                              ),
+                          },
+                        })
+                      },
+                    })
+                  }
                 >
                   <FontAwesomeIcon icon={faCheck} />
                   <div>{t('shared.generic.accept')}</div>
@@ -55,6 +98,39 @@ function CollectionSharingRequests() {
                   className={{
                     root: 'h-7 border-red-600 hover:border-red-600 hover:text-red-700',
                   }}
+                  onClick={() =>
+                    declineCollectionSharingRequest({
+                      variables: {
+                        collectionId: request.collectionId,
+                        userId: request.userId,
+                      },
+                      update: (cache, { data }) => {
+                        if (!data?.declineCollectionSharingRequest) return
+                        const resolvedRequest =
+                          data.declineCollectionSharingRequest
+
+                        const queryData = cache.readQuery({
+                          query: GetCollectionSharingRequestsDocument,
+                        })
+                        const previousRequests =
+                          queryData?.getCollectionSharingRequests
+                        if (!previousRequests) return
+
+                        cache.writeQuery({
+                          query: GetCollectionSharingRequestsDocument,
+                          data: {
+                            getCollectionSharingRequests:
+                              previousRequests.filter(
+                                (r) =>
+                                  r.collectionId !==
+                                    resolvedRequest.collectionId ||
+                                  r.userId !== resolvedRequest.userId
+                              ),
+                          },
+                        })
+                      },
+                    })
+                  }
                 >
                   <FontAwesomeIcon icon={faBan} />
                   <div>{t('shared.generic.decline')}</div>

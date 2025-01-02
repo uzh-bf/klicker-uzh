@@ -75,4 +75,17 @@ export const AnswerCollectionSharingRequest =
       userEmail: t.exposeString('userEmail'),
     }),
   })
+
+interface ISharingRequestResponse {
+  collectionId: number
+  userId: string
+}
+export const SharingRequestResponseRef =
+  builder.objectRef<ISharingRequestResponse>('SharingRequestResponse')
+export const SharingRequestResponse = SharingRequestResponseRef.implement({
+  fields: (t) => ({
+    collectionId: t.exposeInt('collectionId'),
+    userId: t.exposeString('userId'),
+  }),
+})
 // #endregion
