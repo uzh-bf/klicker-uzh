@@ -66,6 +66,7 @@ function AnswerCollectionItem({
             !editable && !accessGranted && 'cursor-default'
           ),
         }}
+        data={{ cy: `answer-collection-${collection.name}` }}
       >
         <div className="flex flex-col items-start">
           <div className={twMerge('flex flex-row gap-2', editable && 'gap-5')}>

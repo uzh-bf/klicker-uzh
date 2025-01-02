@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CollectionAccess,
   CreateAnswerCollectionDocument,
+  GetAnswerCollectionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -71,6 +72,33 @@ function AnswerCollectionCreation({
               description: values.description!,
               access: values.access,
               answers: values.entries.map((entry) => entry.value!),
+            },
+            update: (cache, { data }) => {
+              if (!data?.createAnswerCollection) return
+
+              const queryData = cache.readQuery({
+                query: GetAnswerCollectionsDocument,
+              })
+              const previousCollections =
+                queryData?.getAnswerCollections?.answerCollections
+              if (!previousCollections) return
+
+              cache.writeQuery({
+                query: GetAnswerCollectionsDocument,
+                data: {
+                  getAnswerCollections: {
+                    requestedCollections:
+                      queryData.getAnswerCollections?.requestedCollections ??
+                      [],
+                    sharedCollections:
+                      queryData.getAnswerCollections?.sharedCollections ?? [],
+                    answerCollections: [
+                      ...previousCollections,
+                      data.createAnswerCollection,
+                    ],
+                  },
+                },
+              })
             },
           })
 

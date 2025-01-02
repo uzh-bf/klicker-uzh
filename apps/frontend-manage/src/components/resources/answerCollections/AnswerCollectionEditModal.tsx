@@ -37,11 +37,12 @@ function AnswerCollectionEditModal({
         <H3 className={{ root: 'mb-0' }}>
           {t('manage.resources.answerOptions')}
         </H3>
-        {collection.entries!.map((entry) => (
+        {collection.entries!.map((entry, ix) => (
           <AnswerCollectionOption
             key={`collection-entry-${entry.id}`}
             id={entry.id}
             value={entry.value}
+            index={ix}
             collectionId={collection.id}
             deletionDisabled={collection.entries!.length <= 2}
             editDisabled={optionsEditingDisabled}

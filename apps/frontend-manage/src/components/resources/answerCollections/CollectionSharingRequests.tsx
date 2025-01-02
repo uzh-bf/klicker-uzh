@@ -47,6 +47,7 @@ function CollectionSharingRequests() {
             <div
               key={`sharing-request-${request.collectionId}-${request.userId}`}
               className="flex flex-row items-center justify-between"
+              data-cy={`sharing-request-${request.collectionName}-${request.userShortname}`}
             >
               <div>
                 <div className="font-bold">{request.collectionName}</div>
@@ -56,6 +57,9 @@ function CollectionSharingRequests() {
                 <Button
                   className={{
                     root: 'h-7 border-green-600 hover:border-green-600 hover:text-green-800',
+                  }}
+                  data={{
+                    cy: `approve-sharing-request-${request.collectionName}-${request.userShortname}`,
                   }}
                   onClick={() =>
                     approveCollectionSharingRequest({
@@ -97,6 +101,9 @@ function CollectionSharingRequests() {
                 <Button
                   className={{
                     root: 'h-7 border-red-600 hover:border-red-600 hover:text-red-700',
+                  }}
+                  data={{
+                    cy: `deny-sharing-request-${request.collectionName}-${request.userShortname}`,
                   }}
                   onClick={() =>
                     declineCollectionSharingRequest({

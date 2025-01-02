@@ -24,6 +24,7 @@ function CreateAddCollection() {
           <Button
             className={{ root: 'w-full sm:w-1/2' }}
             onClick={() => setCreationOpen(true)}
+            data={{ cy: 'create-answer-collection' }}
           >
             <FontAwesomeIcon icon={faPlusCircle} />
             {t('manage.resources.newAnswerCollection')}
@@ -31,6 +32,7 @@ function CreateAddCollection() {
           <Button
             className={{ root: 'w-full sm:w-1/2' }}
             onClick={() => setBrowsingOpen(true)}
+            data={{ cy: 'add-shared-answer-collection' }}
           >
             <FontAwesomeIcon icon={faDownload} />
             {t('manage.resources.addSharedAnswerCollection')}

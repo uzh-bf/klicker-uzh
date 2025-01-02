@@ -17,7 +17,11 @@ function AnswerCollectionImportTypeFilter({
     <SelectField
       label={t('manage.resources.accessTypes')}
       items={[
-        { value: '', label: t('manage.resources.all') },
+        {
+          value: '',
+          label: t('manage.resources.all'),
+          data: { cy: 'answer-collection-access-all' },
+        },
         {
           value: CollectionAccess.Public,
           label: <CollectionAccessLabel accessType={CollectionAccess.Public} />,
@@ -36,6 +40,7 @@ function AnswerCollectionImportTypeFilter({
         setTypeFilter(newValue as CollectionAccess)
       }}
       className={{ select: { trigger: 'h-9 w-40' } }}
+      data={{ cy: 'answer-collection-access-filter' }}
     />
   )
 }
