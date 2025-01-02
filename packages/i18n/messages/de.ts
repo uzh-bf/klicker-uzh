@@ -1865,7 +1865,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       userShortnames: 'Nutzer Kurznamen',
       requestImport: 'Anfragen / Importieren',
       noPublicRestrictedCollections:
-        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Antwort-Sammlungen gefunden werden.',
+        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Antwort-Sammlungen gefunden werden. Sammlungen, welche bereits importiert oder angefragt wurden, werden hier nicht angezeigt.',
       requestImportCollection: 'Antwort-Sammlung anfragen / importieren',
       requestAccessMessage:
         "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' anfragen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
@@ -1874,6 +1874,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showAnswers: 'Antworten anzeigen',
       importCollection: 'Antwort-Sammlung importieren',
       requestAccess: 'Zugriff beantragen',
+      requestImportSuccess:
+        'Die Antwort-Sammlung wurder erfolgreich importiert / beantragt',
+      importError:
+        'Beim Importieren der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      requestError:
+        'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

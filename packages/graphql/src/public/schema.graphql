@@ -1051,6 +1051,7 @@ type Mutation {
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
+  importAnswerCollection(collectionId: Int!): AnswerCollection
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -1081,6 +1082,7 @@ type Mutation {
   publishScheduledActivities: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
+  requestAnswerCollection(collectionId: Int!): AnswerCollection
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback

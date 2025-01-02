@@ -1,0 +1,13 @@
+mutation ImportAnswerCollection($collectionId: Int!) {
+  importAnswerCollection(collectionId: $collectionId) {
+    id
+    name
+    access
+    description
+    ownerShortname
+    entries {
+      id
+      value
+    }
+  }
+}

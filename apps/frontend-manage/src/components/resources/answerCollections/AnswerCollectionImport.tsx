@@ -19,7 +19,13 @@ import AnswerCollectionImportTypeFilter from './AnswerCollectionImportTypeFilter
 import useCollectionShortnames from './useCollectionShortnames'
 import useCollectionFilters from './useCollectionsFilters'
 
-function AnswerCollectionImport({ onClose }: { onClose: () => void }) {
+function AnswerCollectionImport({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void
+  onSuccess: () => void
+}) {
   const t = useTranslations()
   const [search, setSearch] = useState('')
   const [shortnameFilter, setShortnameFilter] = useState('')
@@ -74,13 +80,14 @@ function AnswerCollectionImport({ onClose }: { onClose: () => void }) {
           />
         </div>
       </div>
-      <div className="mb-3 flex flex-col gap-2">
+      <div className="mb-2 flex flex-col gap-2">
         {filteredCollections && filteredCollections.length > 0 ? (
           filteredCollections?.map((collection) => (
             <AnswerCollectionImportItem
               key={`collection-button-selection-${collection.id}`}
               collection={collection}
               onClose={onClose}
+              onSuccess={onSuccess}
             />
           ))
         ) : (

@@ -13,13 +13,14 @@ import CollectionImportRequestModal from './CollectionImportRequestModal'
 function AnswerCollectionImportItem({
   collection,
   onClose,
+  onSuccess,
 }: {
   collection: AnswerCollection
   onClose: () => void
+  onSuccess: () => void
 }) {
   const t = useTranslations()
   const [modalOpen, setModalOpen] = useState(false)
-
   const collectionAccessMap: Record<CollectionAccess, React.ReactNode | null> =
     {
       [CollectionAccess.Public]: (
@@ -66,7 +67,10 @@ function AnswerCollectionImportItem({
         open={modalOpen}
         collection={collection}
         onClose={() => setModalOpen(false)}
-        onSuccess={onClose}
+        onSuccess={() => {
+          onClose()
+          onSuccess()
+        }}
       />
     </>
   )

@@ -1853,7 +1853,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       userShortnames: 'User Shortnames',
       requestImport: 'Request / Import',
       noPublicRestrictedCollections:
-        'No public or restricted answer collections were found for the entered search criteria and filters.',
+        'No public or restricted answer collections were found for the entered search criteria and filters. Collections that have already been imported or requested are not shown here.',
       requestImportCollection: 'Request / Import Answer Collection',
       requestAccessMessage:
         'Here you can request access to the answer collection "<b>{name}</b>". Once the owner accepts your request, the entire answer collection will be available to you automatically when creating the corresponding question types and on this page for viewing.',
@@ -1862,6 +1862,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       showAnswers: 'Show Answers',
       importCollection: 'Import Answer Collection',
       requestAccess: 'Request Access',
+      requestImportSuccess:
+        'The answer collection was successfully imported / requested.',
+      importError:
+        'An error occurred while importing the answer collection. Please try again or contact the support.',
+      requestError:
+        'An error occurred while requesting the answer collection. Please try again or contact the support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

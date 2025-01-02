@@ -1,12 +1,16 @@
+import { useMutation } from '@apollo/client'
 import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
 import { faBan, faDownload } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
   CollectionAccess,
+  GetAnswerCollectionsDocument,
+  ImportAnswerCollectionDocument,
+  RequestAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Button, H3, Modal } from '@uzh-bf/design-system'
+import { Button, H3, Modal, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -23,11 +27,76 @@ function CollectionImportRequestModal({
 }) {
   const t = useTranslations()
   const [showEntries, setShowEntries] = useState(false)
+  const [showImportError, setShowImportError] = useState(false)
+  const [showRequestError, setShowRequestError] = useState(false)
   const publicCollection = collection.access === CollectionAccess.Public
 
-  // TODO: implement mutations
-  const importAnswerCollection = async () => null
-  const requestAnswerCollection = async () => null
+  const [importAnswerCollection, { loading: importLoading }] = useMutation(
+    ImportAnswerCollectionDocument,
+    {
+      variables: { collectionId: collection.id },
+      update: (cache, { data }) => {
+        if (!data?.importAnswerCollection) return
+        const newCollection = data.importAnswerCollection
+
+        const queryData = cache.readQuery({
+          query: GetAnswerCollectionsDocument,
+        })
+        const prevSharedCollections =
+          queryData?.getAnswerCollections?.sharedCollections
+        if (!prevSharedCollections) return
+
+        cache.writeQuery({
+          query: GetAnswerCollectionsDocument,
+          data: {
+            getAnswerCollections: {
+              requestedCollections:
+                queryData.getAnswerCollections?.requestedCollections ?? [],
+              sharedCollections: [
+                ...(queryData.getAnswerCollections?.sharedCollections ?? []),
+                newCollection,
+              ],
+              answerCollections:
+                queryData.getAnswerCollections?.answerCollections ?? [],
+            },
+          },
+        })
+      },
+    }
+  )
+  const [requestAnswerCollection, { loading: requestLoading }] = useMutation(
+    RequestAnswerCollectionDocument,
+    {
+      variables: { collectionId: collection.id },
+      update: (cache, { data }) => {
+        if (!data?.requestAnswerCollection) return
+        const reqCollection = data.requestAnswerCollection
+
+        const queryData = cache.readQuery({
+          query: GetAnswerCollectionsDocument,
+        })
+        const prevSharedCollections =
+          queryData?.getAnswerCollections?.sharedCollections
+        if (!prevSharedCollections) return
+
+        cache.writeQuery({
+          query: GetAnswerCollectionsDocument,
+          data: {
+            getAnswerCollections: {
+              requestedCollections: [
+                ...(queryData.getAnswerCollections?.requestedCollections ?? []),
+                reqCollection,
+              ],
+              sharedCollections:
+                queryData.getAnswerCollections?.sharedCollections ?? [],
+              answerCollections:
+                queryData.getAnswerCollections?.answerCollections ?? [],
+            },
+          },
+        })
+      },
+    }
+  )
 
   return (
     <Modal
@@ -93,11 +162,24 @@ function CollectionImportRequestModal({
         </Button>
         <Button
           className={{ root: 'border-primary-80 h-8' }}
-          onClick={() =>
-            publicCollection
-              ? importAnswerCollection()
-              : requestAnswerCollection()
-          }
+          onClick={async () => {
+            if (publicCollection) {
+              const res = await importAnswerCollection()
+              if (res.data?.importAnswerCollection?.id) {
+                onSuccess()
+              } else {
+                setShowImportError(true)
+              }
+            } else {
+              const res = await requestAnswerCollection()
+              if (res.data?.requestAnswerCollection?.id) {
+                onSuccess()
+              } else {
+                setShowRequestError(true)
+              }
+            }
+          }}
+          loading={importLoading || requestLoading}
         >
           <FontAwesomeIcon
             icon={publicCollection ? faDownload : faPaperPlane}
@@ -107,6 +189,18 @@ function CollectionImportRequestModal({
             : t('manage.resources.requestAccess')}
         </Button>
       </div>
+      <Toast
+        openExternal={showImportError}
+        onCloseExternal={() => setShowImportError(false)}
+      >
+        {t('manage.resources.importError')}
+      </Toast>
+      <Toast
+        openExternal={showRequestError}
+        onCloseExternal={() => setShowRequestError(false)}
+      >
+        {t('manage.resources.requestError')}
+      </Toast>
     </Modal>
   )
 }

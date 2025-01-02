@@ -7,12 +7,14 @@ import AnswerCollectionCreation from './AnswerCollectionCreation'
 import AnswerCollectionImport from './AnswerCollectionImport'
 import CollectionErrorToast from './CollectionErrorToast'
 import CollectionSuccessToast from './CollectionSuccessToast'
+import ImportRequestSuccessToast from './ImportRequestSuccessToast'
 
 function CreateAddCollection() {
   const t = useTranslations()
   const [creationOpen, setCreationOpen] = useState(false)
   const [browsingOpen, setBrowsingOpen] = useState(false)
   const [successToast, setSuccessToast] = useState(false)
+  const [importRequestSuccess, setImportRequestSuccess] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
 
   return (
@@ -43,8 +45,15 @@ function CreateAddCollection() {
         />
       ) : null}
       {browsingOpen ? (
-        <AnswerCollectionImport onClose={() => setBrowsingOpen(false)} />
+        <AnswerCollectionImport
+          onClose={() => setBrowsingOpen(false)}
+          onSuccess={() => setImportRequestSuccess(true)}
+        />
       ) : null}
+      <ImportRequestSuccessToast
+        open={importRequestSuccess}
+        setOpen={setImportRequestSuccess}
+      />
       <CollectionSuccessToast open={successToast} setOpen={setSuccessToast} />
       <CollectionErrorToast open={errorToast} setOpen={setErrorToast} />
     </>
