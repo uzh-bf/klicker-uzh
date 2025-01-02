@@ -7,7 +7,7 @@ function AnswerCollectionCollapsible({
   title,
   children,
 }: {
-  title: string
+  title: string | React.ReactNode
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(true)
@@ -18,7 +18,7 @@ function AnswerCollectionCollapsible({
         basic
         onClick={() => setOpen((prev) => !prev)}
         className={{
-          root: 'mb-0 flex w-full flex-row items-center justify-between border-b',
+          root: 'mb-0 flex w-full flex-row items-center justify-between border-b border-b-gray-400',
         }}
       >
         <H3>{title}</H3>

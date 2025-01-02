@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { AnswerCollectionSharingRequest as AnswerCollectionSharingRequestType } from '@klicker-uzh/types'
 import builder from '../builder.js'
 
 export const CollectionAccess = builder.enumType('CollectionAccess', {
@@ -57,6 +58,34 @@ export const UserAnswerCollections = UserAnswerCollectionsRef.implement({
     requestedCollections: t.expose('requestedCollections', {
       type: [AnswerCollectionRef],
     }),
+  }),
+})
+
+export const AnswerCollectionSharingRequestRef =
+  builder.objectRef<AnswerCollectionSharingRequestType>(
+    'AnswerCollectionSharingRequest'
+  )
+export const AnswerCollectionSharingRequest =
+  AnswerCollectionSharingRequestRef.implement({
+    fields: (t) => ({
+      collectionId: t.exposeInt('collectionId'),
+      collectionName: t.exposeString('collectionName'),
+      userId: t.exposeString('userId'),
+      userShortname: t.exposeString('userShortname'),
+      userEmail: t.exposeString('userEmail'),
+    }),
+  })
+
+interface ISharingRequestResponse {
+  collectionId: number
+  userId: string
+}
+export const SharingRequestResponseRef =
+  builder.objectRef<ISharingRequestResponse>('SharingRequestResponse')
+export const SharingRequestResponse = SharingRequestResponseRef.implement({
+  fields: (t) => ({
+    collectionId: t.exposeInt('collectionId'),
+    userId: t.exposeString('userId'),
   }),
 })
 // #endregion

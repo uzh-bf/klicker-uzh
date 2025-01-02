@@ -234,6 +234,9 @@ export default {
       featurePreview: 'Feature Preview',
       new: 'New',
       search: 'Search',
+      accept: 'Accept',
+      decline: 'Decline',
+      user: 'User',
     },
     contentInput: {
       boldStyle:
@@ -1856,7 +1859,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No public or restricted answer collections were found for the entered search criteria and filters. Collections that have already been imported or requested are not shown here.',
       requestImportCollection: 'Request / Import Answer Collection',
       requestAccessMessage:
-        'Here you can request access to the answer collection "<b>{name}</b>". Once the owner accepts your request, the entire answer collection will be available to you automatically when creating the corresponding question types and on this page for viewing.',
+        'Here you can request access to the answer collection "<b>{name}</b>". The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once the owner accepts your request, the entire answer collection will be available to you automatically when creating the corresponding question types and on this page for viewing.',
       importCollectionMessage:
         'Here you can add the answer collection "<b>{name}</b>" to your collections. It is then immediately available to you when creating the corresponding question types and for viewing on this page.',
       showAnswers: 'Show Answers',
@@ -1872,6 +1875,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No shared answer collections have been imported or requested.',
       viewCollection: 'View Collection',
       requestedAccess: 'Requested Access',
+      sharingRequests: 'Sharing Requests',
+      unresolved: 'Unresolved',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

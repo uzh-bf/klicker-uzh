@@ -6,6 +6,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  GetCollectionSharingRequestsDocument,
   GetUserRunningLiveQuizzesDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -26,6 +27,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
+  const { data: requestData } = useQuery(GetCollectionSharingRequestsDocument)
   const { data } = useQuery(GetUserRunningLiveQuizzesDocument)
   const quizzes = data?.userRunningLiveQuizzes
 
@@ -50,6 +52,8 @@ function Header({ user }: HeaderProps): React.ReactElement {
     },
     {
       new: true,
+      notification:
+        (requestData?.getCollectionSharingRequests?.length ?? 0) > 0,
       href: '/resources',
       label: t('manage.general.resources'),
       active: router.pathname == '/resources',
@@ -84,13 +88,18 @@ function Header({ user }: HeaderProps): React.ReactElement {
             key={item.href}
             label={
               <div className="flex items-center gap-2">
-                <div
-                  className={twMerge(
-                    item.active &&
-                      'underline decoration-2 underline-offset-[0.3rem]'
+                <div className="relative">
+                  <div
+                    className={twMerge(
+                      item.active &&
+                        'underline decoration-2 underline-offset-[0.3rem]'
+                    )}
+                  >
+                    {item.label}
+                  </div>
+                  {item.notification && (
+                    <div className="absolute -right-2.5 -top-0.5 h-3 w-3 rounded-full bg-red-600" />
                   )}
-                >
-                  {item.label}
                 </div>
                 {item.new && (
                   <Badge className="py-0.25 rounded bg-green-700 px-1.5 text-xs font-semibold text-white hover:bg-green-800">

@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { AnswerCollectionSharingRequest } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 
 export async function createAnswerCollection(
@@ -415,5 +416,91 @@ export async function requestAnswerCollection(
   return {
     ...updatedCollection,
     ownerShortname: updatedCollection.owner?.shortname,
+  }
+}
+
+export async function getCollectionSharingRequests(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      answerCollections: {
+        include: {
+          accessRequested: true,
+        },
+      },
+    },
+  })
+
+  if (!user) {
+    return null
+  }
+
+  const requestedCollections = user.answerCollections.reduce<
+    AnswerCollectionSharingRequest[]
+  >((acc, collection) => {
+    const innerRequests = collection.accessRequested.map((request) => ({
+      collectionId: collection.id,
+      collectionName: collection.name,
+      userId: request.id,
+      userShortname: request.shortname,
+      userEmail: request.email,
+    }))
+
+    acc.push(...innerRequests)
+    return acc
+  }, [])
+
+  return requestedCollections
+}
+
+export async function resolveCollectionSharingRequest(
+  {
+    collectionId,
+    userId,
+    approved,
+  }: {
+    collectionId: number
+    userId: string
+    approved: boolean
+  },
+  ctx: ContextWithUser
+) {
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      accessRequested: {
+        where: {
+          id: userId,
+        },
+      },
+    },
+  })
+
+  // check that the collection exists and that the user has requested access
+  if (!collection || collection.accessRequested.length === 0) {
+    return null
+  }
+
+  // update the collection with the new access rights
+  const updatedCollection = await ctx.prisma.answerCollection.update({
+    where: {
+      id: collectionId,
+    },
+    data: {
+      accessRequested: { disconnect: { id: userId } },
+      accessGranted: approved ? { connect: { id: userId } } : undefined,
+    },
+  })
+
+  // TODO: send email to user that requested access about the approval / (and denial?)
+
+  return {
+    collectionId: updatedCollection.id,
+    userId,
   }
 }
