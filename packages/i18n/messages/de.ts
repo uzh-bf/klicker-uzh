@@ -234,6 +234,9 @@ export default {
       featurePreview: 'Feature-Vorschau',
       new: 'Neu',
       search: 'Suche',
+      accept: 'Akzeptieren',
+      decline: 'Ablehnen',
+      user: 'Nutzer',
     },
     contentInput: {
       boldStyle:
@@ -1868,7 +1871,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Antwort-Sammlungen gefunden werden. Sammlungen, welche bereits importiert oder angefragt wurden, werden hier nicht angezeigt.',
       requestImportCollection: 'Antwort-Sammlung anfragen / importieren',
       requestAccessMessage:
-        "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' anfragen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
+        "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
       importCollectionMessage:
         "Hier können Sie die Antwort-Sammlung '<b>{name}</b>' automatisch zu Ihren Sammlungen hinzufügen. Diese steht Ihnen ab sofort zur Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
       showAnswers: 'Antworten anzeigen',
@@ -1884,6 +1887,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es wurden noch keine Antwort-Sammlungen angefragt oder importiert.',
       viewCollection: 'Sammlung ansehen',
       requestedAccess: 'Zugriff beantragt',
+      sharingRequests: 'Zugriffs-Anfragen',
+      unresolved: 'Unbearbeitet',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

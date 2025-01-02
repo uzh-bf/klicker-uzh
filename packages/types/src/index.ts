@@ -96,6 +96,17 @@ export type AvatarSettings = {
 }
 // #endregion
 
+// ----- RESOURCES -----
+// #region
+export type AnswerCollectionSharingRequest = {
+  collectionId: number
+  collectionName: string
+  userId: string
+  userShortname: string
+  userEmail: string
+}
+// #endregion
+
 // ----- ELEMENT DATA AND INSTANCES -----
 // #region
 export type SingleQuestionResponseChoices = {

@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { AnswerCollectionSharingRequest } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 
 export async function createAnswerCollection(
@@ -416,4 +417,40 @@ export async function requestAnswerCollection(
     ...updatedCollection,
     ownerShortname: updatedCollection.owner?.shortname,
   }
+}
+
+export async function getCollectionSharingRequests(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      answerCollections: {
+        include: {
+          accessRequested: true,
+        },
+      },
+    },
+  })
+
+  if (!user) {
+    return null
+  }
+
+  const requestedCollections = user.answerCollections.reduce<
+    AnswerCollectionSharingRequest[]
+  >((acc, collection) => {
+    const innerRequests = collection.accessRequested.map((request) => ({
+      collectionId: collection.id,
+      collectionName: collection.name,
+      userId: request.id,
+      userShortname: request.shortname,
+      userEmail: request.email,
+    }))
+
+    acc.push(...innerRequests)
+    return acc
+  }, [])
+
+  return requestedCollections
 }

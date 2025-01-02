@@ -97,6 +97,14 @@ type AnswerCollectionEntry {
   value: String!
 }
 
+type AnswerCollectionSharingRequest {
+  collectionId: Int!
+  collectionName: String!
+  userEmail: String!
+  userId: String!
+  userShortname: String!
+}
+
 type ArchivedElement {
   id: Int!
   isArchived: Boolean!
@@ -1428,6 +1436,7 @@ type Query {
   getAnswerCollections: UserAnswerCollections
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
+  getCollectionSharingRequests: [AnswerCollectionSharingRequest!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseGroups(courseId: String!): Course

@@ -7,7 +7,7 @@ function AnswerCollectionCollapsible({
   title,
   children,
 }: {
-  title: string
+  title: string | React.ReactNode
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(true)

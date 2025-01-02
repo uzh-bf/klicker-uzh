@@ -122,6 +122,7 @@
    "GetBookmarkedElementStacks": "97e44398e5f1ae9efb9f4b78b58f75b81d2305d9c1ca622c6d09ed263eeda4aa",
    "GetBookmarksPracticeQuiz": "162b4bf626d9ea2356883d0a5d85f564dc4e9428c0cc2030fcd68130f3b82184",
    "GetCockpitQuiz": "ecd339907487ea618f2cd166999a1c7b8c0c64755ba91fc18317069740e9bbdc",
+   "GetCollectionSharingRequests": "9ee449a7ab84cf26441f4a5c43698597f1ee59cbbdab59fe73e78d2203e13386",
    "GetControlCourse": "e75fbff1c5cb7ff5e8ba8dea58c1cf225065c420b007433ad34477dd8c75c42b",
    "GetControlCourses": "f62c7d2cb59eb42a077e6d527c90f4838a2888cb9a9f60259979114b6a3b759f",
    "GetControlLiveQuiz": "8f20969b7ca79ad364ba7d6f86bb726ac727fd7f6eaf2591ab6e2671d2c36c9d",
