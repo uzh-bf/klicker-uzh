@@ -25,19 +25,19 @@ CREATE TABLE "AnswerCollectionEntry" (
 );
 
 -- CreateTable
-CREATE TABLE "_answerCollectionAccessRequested" (
+CREATE TABLE "_AnswerCollectionAccessRequested" (
     "A" INTEGER NOT NULL,
     "B" UUID NOT NULL,
 
-    CONSTRAINT "_answerCollectionAccessRequested_AB_pkey" PRIMARY KEY ("A","B")
+    CONSTRAINT "_AnswerCollectionAccessRequested_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateTable
-CREATE TABLE "_answerCollectionShared" (
+CREATE TABLE "_AnswerCollectionShared" (
     "A" INTEGER NOT NULL,
     "B" UUID NOT NULL,
 
-    CONSTRAINT "_answerCollectionShared_AB_pkey" PRIMARY KEY ("A","B")
+    CONSTRAINT "_AnswerCollectionShared_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -47,10 +47,10 @@ CREATE UNIQUE INDEX "AnswerCollection_ownerId_name_key" ON "AnswerCollection"("o
 CREATE UNIQUE INDEX "AnswerCollectionEntry_collectionId_value_key" ON "AnswerCollectionEntry"("collectionId", "value");
 
 -- CreateIndex
-CREATE INDEX "_answerCollectionAccessRequested_B_index" ON "_answerCollectionAccessRequested"("B");
+CREATE INDEX "_AnswerCollectionAccessRequested_B_index" ON "_AnswerCollectionAccessRequested"("B");
 
 -- CreateIndex
-CREATE INDEX "_answerCollectionShared_B_index" ON "_answerCollectionShared"("B");
+CREATE INDEX "_AnswerCollectionShared_B_index" ON "_AnswerCollectionShared"("B");
 
 -- AddForeignKey
 ALTER TABLE "AnswerCollection" ADD CONSTRAINT "AnswerCollection_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE SET NULL;
@@ -59,13 +59,13 @@ ALTER TABLE "AnswerCollection" ADD CONSTRAINT "AnswerCollection_ownerId_fkey" FO
 ALTER TABLE "AnswerCollectionEntry" ADD CONSTRAINT "AnswerCollectionEntry_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "AnswerCollection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_answerCollectionAccessRequested" ADD CONSTRAINT "_answerCollectionAccessRequested_A_fkey" FOREIGN KEY ("A") REFERENCES "AnswerCollection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_AnswerCollectionAccessRequested" ADD CONSTRAINT "_AnswerCollectionAccessRequested_A_fkey" FOREIGN KEY ("A") REFERENCES "AnswerCollection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_answerCollectionAccessRequested" ADD CONSTRAINT "_answerCollectionAccessRequested_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_AnswerCollectionAccessRequested" ADD CONSTRAINT "_AnswerCollectionAccessRequested_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_answerCollectionShared" ADD CONSTRAINT "_answerCollectionShared_A_fkey" FOREIGN KEY ("A") REFERENCES "AnswerCollection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_AnswerCollectionShared" ADD CONSTRAINT "_AnswerCollectionShared_A_fkey" FOREIGN KEY ("A") REFERENCES "AnswerCollection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "_answerCollectionShared" ADD CONSTRAINT "_answerCollectionShared_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "_AnswerCollectionShared" ADD CONSTRAINT "_AnswerCollectionShared_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
