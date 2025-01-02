@@ -162,14 +162,22 @@ function CollectionImportRequestModal({
       </div>
       <div className="border-uzh-grey-100 mt-2 rounded border border-solid p-2">
         <div className="flex flex-row items-end gap-2">
-          <H3 className={{ root: 'mb-0' }}>{collection.name}</H3>
+          <H3
+            className={{ root: 'mb-0' }}
+            data={{ cy: 'import-modal-collection-name' }}
+          >
+            {collection.name}
+          </H3>
           <div className="mb-[0.16rem] text-sm text-gray-500">
             {t('manage.resources.byOwner', {
               owner: collection.ownerShortname,
             })}
           </div>
         </div>
-        <Markdown content={`**Description:** ${collection.description}`} />
+        <Markdown
+          content={`**Description:** ${collection.description}`}
+          data={{ cy: 'import-modal-collection-description' }}
+        />
         {publicCollection &&
         collection.entries &&
         collection.entries.length > 0 ? (
@@ -180,8 +188,13 @@ function CollectionImportRequestModal({
                   {t('manage.resources.answerOptions')}
                 </div>
                 <ul className="list-inside list-disc">
-                  {collection.entries.map((entry) => (
-                    <li key={entry.id}>{entry.value}</li>
+                  {collection.entries.map((entry, ix) => (
+                    <li
+                      key={entry.id}
+                      data-cy={`public-collection-answer-option-${ix}`}
+                    >
+                      {entry.value}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -190,6 +203,7 @@ function CollectionImportRequestModal({
                 basic
                 className={{ root: 'text-primary-100' }}
                 onClick={() => setShowEntries(true)}
+                data={{ cy: 'public-collection-show-answers' }}
               >
                 {t('manage.resources.showAnswers')}
               </Button>
@@ -198,7 +212,14 @@ function CollectionImportRequestModal({
         ) : null}
       </div>
       <div className="mt-3 flex flex-row justify-between">
-        <Button className={{ root: 'h-8 border-red-600' }}>
+        <Button
+          className={{ root: 'h-8 border-red-600' }}
+          data={{ cy: 'import-modal-cancel' }}
+          onClick={() => {
+            onClose()
+            setShowEntries(false)
+          }}
+        >
           <FontAwesomeIcon icon={faBan} />
           {t('shared.generic.cancel')}
         </Button>
@@ -222,6 +243,7 @@ function CollectionImportRequestModal({
             }
           }}
           loading={importLoading || requestLoading}
+          data={{ cy: 'import-modal-confirm' }}
         >
           <FontAwesomeIcon
             icon={publicCollection ? faDownload : faPaperPlane}

@@ -46,6 +46,7 @@ function AnswerCollectionImportItem({
         className={{
           root: 'flex flex-row justify-between rounded border border-solid px-2 py-0.5 shadow-sm',
         }}
+        data={{ cy: `import-list-collection-${collection.name}` }}
       >
         <div className="flex flex-col items-start">
           <div className="flex flex-row gap-5">

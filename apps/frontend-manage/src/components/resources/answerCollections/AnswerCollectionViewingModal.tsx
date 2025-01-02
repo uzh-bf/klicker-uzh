@@ -20,7 +20,10 @@ function AnswerCollectionViewingModal({
       open={open}
       onClose={onClose}
       title={
-        <div className="flex flex-row items-end gap-2">
+        <div
+          className="flex flex-row items-end gap-2"
+          data-cy="viewing-collection-title"
+        >
           <div>{collection.name}</div>
           <div className="mb-0.5 hidden text-base font-normal text-gray-500 md:block">
             {t('manage.resources.byOwner', {
@@ -29,17 +32,26 @@ function AnswerCollectionViewingModal({
           </div>
         </div>
       }
+      dataCloseButton={{ cy: 'close-viewing-collection-modal' }}
     >
-      <Markdown content={`**Description:** ${collection.description}`} />
-      <div className="flex flex-row items-center gap-3">
+      <Markdown
+        content={`**Description:** ${collection.description}`}
+        data={{ cy: 'viewing-collection-description' }}
+      />
+      <div
+        className="flex flex-row items-center gap-3"
+        data-cy="viewing-collection-access"
+      >
         <div className="font-bold">{t('manage.resources.access')}:</div>
         <CollectionAccessLabel accessType={collection.access} />
       </div>
       <div className="mt-2">
         <div className="font-bold">{t('manage.resources.answerOptions')}</div>
         <ul className="list-inside list-disc">
-          {collection.entries?.map((entry) => (
-            <li key={entry.id}>{entry.value}</li>
+          {collection.entries?.map((entry, ix) => (
+            <li key={entry.id} data-cy={`viewing-collection-answer-${ix}`}>
+              {entry.value}
+            </li>
           ))}
         </ul>
       </div>

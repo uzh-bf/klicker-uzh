@@ -222,7 +222,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
 
     cy.get('[data-cy="delegated-login-button"').should('be.enabled').click()
     cy.get('[data-cy="identifier-field"]').type(
-      Cypress.env('LECTURER_IDENTIFIER')
+      Cypress.env('LECTURER_SHORTNAME')
     )
     cy.get('[data-cy="password-field"]').type(Cypress.env('LECTURER_PASSWORD'))
     cy.get('form > button[type=submit]').click()

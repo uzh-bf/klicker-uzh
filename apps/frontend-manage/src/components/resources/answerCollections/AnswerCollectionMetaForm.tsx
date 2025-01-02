@@ -106,6 +106,7 @@ function AnswerCollectionMetaForm({
             className={{ root: 'self-end border-green-600' }}
             disabled={!isValid}
             loading={isSubmitting}
+            data={{ cy: 'save-changes-answer-collection' }}
           >
             <FontAwesomeIcon icon={faSave} className="mr-1" />
             <div>{t('manage.resources.saveChanges')}</div>

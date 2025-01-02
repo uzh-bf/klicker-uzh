@@ -15,6 +15,7 @@ import { twMerge } from 'tailwind-merge'
 function AnswerCollectionOption({
   id,
   value,
+  index,
   collectionId,
   deletionDisabled,
   editDisabled,
@@ -22,6 +23,7 @@ function AnswerCollectionOption({
 }: {
   id: number
   value: string
+  index: number
   collectionId: number
   deletionDisabled?: boolean
   editDisabled: boolean
@@ -45,6 +47,7 @@ function AnswerCollectionOption({
           ),
         }}
         disabled={deletionDisabled}
+        data={{ cy: `delete-answer-option-${index}` }}
         onClick={async () => {
           await deleteAnswerCollectionEntry({
             variables: { id },
@@ -98,11 +101,15 @@ function AnswerCollectionOption({
             setEditDisabled(true)
           }}
           disabled={editDisabled}
+          data={{ cy: `edit-answer-option-${index}` }}
         >
           <FontAwesomeIcon icon={faPencil} />
         </Button>
       ) : null}
-      <div className={twMerge('w-full', !editMode && 'ml-2')}>
+      <div
+        className={twMerge('w-full', !editMode && 'ml-2')}
+        data-cy={`answer-option-${index}`}
+      >
         {editMode ? (
           <Formik
             initialValues={{ value }}
@@ -173,10 +180,15 @@ function AnswerCollectionOption({
                     ),
                   }}
                   disabled={isSubmitting}
+                  data={{ cy: 'save-edit-answer-option' }}
                 >
                   <FontAwesomeIcon icon={faSave} />
                 </Button>
-                <FormikTextField name="value" className={{ input: 'h-8' }} />
+                <FormikTextField
+                  name="value"
+                  data={{ cy: 'edit-answer-option-input' }}
+                  className={{ input: 'h-8' }}
+                />
               </Form>
             )}
           </Formik>

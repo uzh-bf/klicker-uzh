@@ -33,6 +33,7 @@ function AddAnswerCollectionEntry({
           setFieldOpen(true)
           setOptionsEditingDisabled(true)
         }}
+        data={{ cy: 'add-answer-option' }}
       >
         <FontAwesomeIcon icon={faPlusCircle} className="mr-1" />
         {t('manage.resources.addAnswerOption')}
@@ -95,14 +96,19 @@ function AddAnswerCollectionEntry({
       }}
       validateOnMount
     >
-      {({ values, isValid, isSubmitting }) => (
+      {({ isValid, isSubmitting }) => (
         <Form className="flex flex-row gap-1">
-          <FormikTextField name="newValue" className={{ input: 'h-8' }} />
+          <FormikTextField
+            name="newValue"
+            className={{ input: 'h-8' }}
+            data={{ cy: 'input-new-answer-option' }}
+          />
           <Button
             type="submit"
             className={{ root: 'border-primary-80 h-8' }}
             disabled={!isValid}
             loading={isSubmitting}
+            data={{ cy: 'save-new-answer-option' }}
           >
             <FontAwesomeIcon icon={faSave} className="mr-0.5" />
             <div className="w-max">{t('shared.generic.save')}</div>

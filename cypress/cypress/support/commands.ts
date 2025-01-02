@@ -121,12 +121,57 @@ Cypress.Commands.add('loginControlApp', () => {
   cy.clearAllLocalStorage()
   cy.viewport('macbook-16')
   cy.get('[data-cy="login-logo"]').should('exist')
-  cy.get('[data-cy="shortname-field"]').type(Cypress.env('LECTURER_IDENTIFIER'))
+  cy.get('[data-cy="shortname-field"]').type(Cypress.env('LECTURER_SHORTNAME'))
   cy.get('@token').then((token) => {
     cy.get('[data-cy="token-field"]').type(String(token))
   })
   cy.get('[data-cy="submit-login"]').click()
 })
+
+interface AnswerCollectionArgs {
+  name: string
+  accessCy: string
+  access: string
+  description: string
+  entries: string[]
+}
+
+Cypress.Commands.add(
+  'createAnswerCollection',
+  ({ name, accessCy, access, description, entries }: AnswerCollectionArgs) => {
+    cy.get('[data-cy="create-answer-collection"]').click()
+    cy.get('[data-cy="answer-collection-name"]').type(name)
+    cy.get('[data-cy="answer-collection-name"]').should('have.value', name)
+
+    cy.get('[data-cy="answer-collection-access"]').contains(
+      messages.manage.resources.accessPRIVATE
+    )
+    cy.get('[data-cy="answer-collection-access"]').click()
+    cy.get(`[data-cy="answer-collection-access-${accessCy}"]`).click()
+    cy.get('[data-cy="answer-collection-access"]').contains(access)
+
+    cy.get('[data-cy="answer-collection-description"]')
+      .realClick()
+      .type(description)
+    cy.get('[data-cy="answer-collection-description"]')
+      .realClick()
+      .contains(description)
+
+    cy.get('[data-cy="response-entry-0"]').type(entries[0])
+    cy.get('[data-cy="response-entry-0"]').should('have.value', entries[0])
+    cy.get('[data-cy="response-entry-1"]').type(entries[1])
+    cy.get('[data-cy="response-entry-1"]').should('have.value', entries[1])
+    entries.slice(2).forEach((value, ix) => {
+      cy.get('[data-cy="add-response-entry"]').click()
+      cy.get(`[data-cy="response-entry-${ix + 2}"]`).type(value)
+      cy.get(`[data-cy="response-entry-${ix + 2}"]`).should('have.value', value)
+    })
+
+    cy.get('[data-cy="submit-create-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${name}"]`).should('exist')
+    cy.get(`[data-cy="answer-collection-${name}"]`).contains(access)
+  }
+)
 
 interface CreateChoicesQuestionArgs {
   title: string
@@ -797,6 +842,13 @@ declare global {
       loginStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       loginControlApp(): Chainable<void>
+      createAnswerCollection({
+        name,
+        accessCy,
+        access,
+        description,
+        entries,
+      }: AnswerCollectionArgs): Chainable<void>
       createQuestionSC({
         title,
         content,

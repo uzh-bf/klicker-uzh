@@ -59,6 +59,7 @@ function AnswerCollectionImport({
           className={{
             input: 'w-60',
           }}
+          data={{ cy: 'search-answer-collection' }}
         />
         <div className="flex flex-row gap-3">
           <AnswerCollectionImportTypeFilter
