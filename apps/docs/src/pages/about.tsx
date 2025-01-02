@@ -1,7 +1,7 @@
 import Layout from '@theme/Layout'
 import { H1, H2 } from '@uzh-bf/design-system'
 
-const PEOPLE = [
+const PEOPLE: { name: string; role: string; imageUrl?: string }[] = [
   {
     name: 'Roland Schläfli',
     role: 'Project Manager',
@@ -17,17 +17,36 @@ const PEOPLE = [
   {
     name: 'Johanna Braun',
     role: 'Head Teaching Center',
-    imageUrl: '',
+    imageUrl:
+      'https://www.df.uzh.ch/contacts/df/admin/teaching-center/jbraun/photo/Braun%20Johanna.jpg.jpg',
   },
   {
     name: 'Benjamin Wilding',
     role: 'Managing Director Teaching DF',
-    imageUrl: '',
+    imageUrl:
+      'https://www.df.uzh.ch/contacts/df/admin/management/bwilding/photo/Benjamin%20Wilding.jpg.jpg',
   },
   {
     name: 'Walter Farkas',
     role: 'Director Teaching Center',
-    imageUrl: '',
+    imageUrl:
+      'https://www.df.uzh.ch/contacts/df/professors/efarkas/photo/farkas-erich_walter.jpg.jpg',
+  },
+  {
+    name: 'Jannis Alsbach',
+    role: 'Contributor',
+    imageUrl:
+      'https://www.df.uzh.ch/contacts/df/student-assistants/jalsbach/photo/20220504_Alsbach-Jannis-006.jpg.jpg',
+  },
+  {
+    name: 'Julia Gut',
+    role: 'Contributor (Content)',
+    imageUrl:
+      'https://www.df.uzh.ch/contacts/df/student-assistants/jgut/photo/Julia%20Gut.jpg.jpg',
+  },
+  {
+    name: 'Selina De Pizzol',
+    role: 'Contributor (Content)',
   },
   {
     name: 'Bulin Shaqiri',
@@ -58,28 +77,16 @@ const PEOPLE = [
     role: 'Contributor (Alumnus)',
   },
   {
-    name: 'Jannis Alsbach',
-    role: 'Contributor',
-  },
-  {
     name: 'Valentin Meyer',
     role: 'Contributor (Alumnus)',
   },
   {
     name: 'Christopher Narayanan',
-    role: 'Contributor',
+    role: 'Contributor (Alumnus)',
   },
   {
     name: 'Jonas Gebel',
     role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Julia Gut',
-    role: 'Contributor (Content)',
-  },
-  {
-    name: 'Selina De Pizzol',
-    role: 'Contributor (Content)',
   },
 ]
 
@@ -94,36 +101,44 @@ const About = () => {
             KlickerUZH is a web application that supports the interaction
             between lecturers and their audience in various ways. The platform
             is being developed by the Teaching Center of the Department of
-            Finance at the University of Zurich, Switzerland. The development is
-            entirely open-source, allowing for further extensibility and
-            collaboration.
+            Finance at the University of Zurich, Switzerland. The development is{' '}
+            <span
+              onClick={() =>
+                window.open('https://github.com/uzh-bf/klicker-uzh', '_blank')
+              }
+              className="cursor-pointer text-blue-800 hover:underline"
+            >
+              entirely open-source
+            </span>
+            , allowing for further extensibility and collaboration.
           </p>
         </div>
 
-        <iframe
-          src="https://api.cast.switch.ch/p/106/embedPlaykitJs/uiconf_id/23449004/partner_id/106?iframeembed=true&playerId=kaltura_player&entry_id=0_ol91rao1"
-          width="100%"
-          height="360"
-          allowFullScreen
-          allow="fullscreen"
-          title="Video Player"
-        />
+        <div className="mb-10 flex w-full flex-col items-center">
+          <iframe
+            src="https://api.cast.switch.ch/p/106/embedPlaykitJs/uiconf_id/23449004/partner_id/106?iframeembed=true&playerId=kaltura_player&entry_id=0_ol91rao1"
+            className="aspect-video w-full max-w-3xl border-2 border-solid border-black"
+            allowFullScreen
+            allow="fullscreen"
+            title="Video Player"
+          />
+        </div>
 
-        <H2>Our Team</H2>
+        <H2 className={{ root: 'mb-4' }}>Our Team</H2>
         <ul
           role="list"
-          className="grid list-none gap-x-8 gap-y-12 sm:grid-cols-4 sm:gap-y-16 xl:col-span-2"
+          className="mb-14 grid list-none gap-x-8 gap-y-10 sm:grid-cols-2 sm:gap-y-12 md:grid-cols-3 lg:grid-cols-4 xl:col-span-2"
         >
-          {PEOPLE.sort((a, b) => a.name.localeCompare(b.name)).map((person) => (
+          {PEOPLE.map((person) => (
             <li key={person.name}>
               <div className="flex items-center gap-x-6">
                 <img
-                  alt=""
-                  src={person.imageUrl}
-                  className="size-16 rounded-full"
+                  alt={`Profile photo of ${person.name}`}
+                  src={person.imageUrl ?? '/img_v3/anonymousUser.svg'}
+                  className="aspect-ratio w-14 rounded-full"
                 />
-                <div>
-                  <h3 className="text-base/7 font-semibold tracking-tight text-gray-900">
+                <div className="h-max">
+                  <h3 className="mb-0 text-base/7 font-semibold tracking-tight text-gray-900">
                     {person.name}
                   </h3>
                   <p className="text-sm/6 font-semibold text-indigo-600">
