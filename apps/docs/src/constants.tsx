@@ -2,18 +2,22 @@ import Image from '@theme/IdealImage'
 import { H3 } from '@uzh-bf/design-system'
 import Zoom from 'react-medium-image-zoom'
 import 'react-medium-image-zoom/dist/styles.css'
-import { twMerge } from 'tailwind-merge'
 
 interface FigureProps {
   imgSrc: string
   caption: string
+  width?: number
 }
 
-function Figure({ imgSrc, caption }: FigureProps) {
+function Figure({ imgSrc, caption, width }: FigureProps) {
   return (
     <figure className="m-0 mb-4 mt-2 text-left">
       <Zoom zoomMargin={100}>
-        <Image img={imgSrc} className={twMerge('max-w-[400px] p-1 shadow')} />
+        <Image
+          img={imgSrc}
+          className={'p-1 shadow'}
+          style={{ maxWidth: `${width ?? 400}px` }}
+        />
       </Zoom>
       <figcaption className="mt-2 text-sm text-gray-600">{caption}</figcaption>
     </figure>
@@ -1817,8 +1821,9 @@ export const USE_CASES = {
             accordingly. They display the activity of students across the
             semester and highlight the changes from week to week.
             <Figure
-              imgSrc="/img_v3/la_lecturers_daily.png"
-              caption="Example of an activity diagram by D'Andrea (2024)"
+              imgSrc="/img_v3/la_activity_dashboard_example.png"
+              caption="Example illustration from the KlickerUZH activity dashboard"
+              width={900}
             />
           </li>
           <li>
@@ -1829,8 +1834,9 @@ export const USE_CASES = {
             identifying areas where students excel or may need additional
             support, facilitating targeted interventions.
             <Figure
-              imgSrc="/img_v3/la_performance_students.png"
-              caption="Example of a progress diagram by D'Andrea (2024)"
+              imgSrc="/img_v3/la_performance_dashboard_example.png"
+              caption="Example illustration of the KlickerUZH performance dashboard"
+              width={700}
             />
           </li>
           <li>
@@ -1842,8 +1848,9 @@ export const USE_CASES = {
             gain a deeper understanding of student performance and refine their
             assessment strategies.
             <Figure
-              imgSrc="/img_v3/la_lecturers_question.png"
-              caption="Example of a performance diagram by D'Andrea (2024)"
+              imgSrc="/img_v3/la_quiz_dashboard_example.png"
+              caption="Example illustration of the KlickerUZH quiz dashboard"
+              width={500}
             />
           </li>
         </ul>
