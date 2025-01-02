@@ -497,6 +497,8 @@ export async function resolveCollectionSharingRequest(
     },
   })
 
+  // TODO: send email to user that requested access about the approval / (and denial?)
+
   return {
     collectionId: updatedCollection.id,
     userId,
