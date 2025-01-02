@@ -303,10 +303,10 @@ model AnswerCollection {
   entries     AnswerCollectionEntry[]
 
   access          CollectionAccess @default(PRIVATE)
-  accessRequested User[]           @relation("answerCollectionAccessRequested")
-  accessGranted   User[]           @relation("answerCollectionShared")
+  accessRequested User[]           @relation("AnswerCollectionAccessRequested")
+  accessGranted   User[]           @relation("AnswerCollectionShared")
 
-  owner   User?   @relation(name: "userAnswerCollections", fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+  owner   User?   @relation(name: "UserAnswerCollections", fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   ownerId String? @db.Uuid
 
   createdAt DateTime @default(now())

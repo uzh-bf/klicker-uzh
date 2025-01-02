@@ -112,9 +112,9 @@ model User {
   liveQuizzes       LiveQuiz[]
   competencyTrees   CompetencyTree[]
 
-  answerCollections    AnswerCollection[] @relation("userAnswerCollections")
-  requestedCollections AnswerCollection[] @relation("answerCollectionAccessRequested")
-  sharedCollections    AnswerCollection[] @relation("answerCollectionShared")
+  answerCollections    AnswerCollection[] @relation("UserAnswerCollections")
+  requestedCollections AnswerCollection[] @relation("AnswerCollectionAccessRequested")
+  sharedCollections    AnswerCollection[] @relation("AnswerCollectionShared")
 
   firstLogin Boolean @default(true)
 
