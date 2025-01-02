@@ -496,3 +496,75 @@ export const Achievements: {
     type: 'PARTICIPANT',
   },
 ]
+
+export const ANSWER_COLLECTIONS = [
+  {
+    name: 'Public Collection (Fruits)',
+    description:
+      'This collection contains questions about fruits. The description supports markdown syntax such as **bold** and *italic*.',
+    access: Prisma.CollectionAccess.PUBLIC,
+    entries: [
+      {
+        value: 'Apple',
+      },
+      {
+        value: 'Banana',
+      },
+      {
+        value: 'Cherry',
+      },
+      {
+        value: 'Date',
+      },
+      {
+        value: 'Elderberry',
+      },
+    ],
+  },
+  {
+    name: 'Private Collection (Vegetables)',
+    description:
+      'This collection contains questions about vegetables. The description supports markdown syntax such as **bold** and *italic*.',
+    access: Prisma.CollectionAccess.PRIVATE,
+    entries: [
+      {
+        value: 'Artichoke',
+      },
+      {
+        value: 'Broccoli',
+      },
+      {
+        value: 'Cabbage',
+      },
+      {
+        value: 'Dill',
+      },
+    ],
+  },
+  {
+    name: 'Restricted Collection (Animals)',
+    description:
+      'This collection contains questions about animals. The description supports markdown syntax such as **bold** and *italic*.',
+    access: Prisma.CollectionAccess.RESTRICTED,
+    entries: [
+      {
+        value: 'Antelope',
+      },
+      {
+        value: 'Bear',
+      },
+      {
+        value: 'Cat',
+      },
+      {
+        value: 'Dog',
+      },
+      {
+        value: 'Elephant',
+      },
+      {
+        value: 'Fox',
+      },
+    ],
+  },
+]

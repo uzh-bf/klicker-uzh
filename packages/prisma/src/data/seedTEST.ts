@@ -110,6 +110,34 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedCompetencyTree(prisma)
   await seedEmailTemplates(prisma)
 
+  // seed answer collections
+  const answerCollections = await Promise.all(
+    DATA_TEST.ANSWER_COLLECTIONS.map(async (data) => {
+      return prisma.answerCollection.upsert({
+        where: {
+          ownerId_name: {
+            ownerId: USER_ID_TEST,
+            name: data.name,
+          },
+        },
+        create: {
+          name: data.name,
+          description: data.description,
+          access: data.access,
+          owner: {
+            connect: {
+              id: USER_ID_TEST,
+            },
+          },
+          entries: {
+            create: data.entries,
+          },
+        },
+        update: {},
+      })
+    })
+  )
+
   const courseTest = await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST,
