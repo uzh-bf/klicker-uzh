@@ -27,6 +27,7 @@ function AnswerCollectionEditModal({
         onClose()
       }}
       title={t('manage.resources.answerCollection', { name: collection.name })}
+      escapeDisabled
     >
       <AnswerCollectionMetaForm
         collection={collection}

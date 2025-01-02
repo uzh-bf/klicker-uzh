@@ -1880,6 +1880,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Importieren der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       requestError:
         'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      noSharedRequestedAnswerCollections:
+        'Es wurden noch keine Antwort-Sammlungen angefragt oder importiert.',
+      viewCollection: 'Sammlung ansehen',
+      requestedAccess: 'Zugriff beantragt',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

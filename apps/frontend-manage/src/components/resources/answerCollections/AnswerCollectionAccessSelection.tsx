@@ -1,12 +1,7 @@
-import {
-  faLock,
-  faLockOpen,
-  faUserLock,
-} from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CollectionAccess } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import CollectionAccessLabel from './CollectionAccessLabel'
 
 function AnswerCollectionAccessSelection({
   restrictedDisabled = false,
@@ -27,31 +22,20 @@ function AnswerCollectionAccessSelection({
         {
           value: CollectionAccess.Private,
           label: (
-            <div className="flex flex-row items-center gap-2 text-red-700">
-              <FontAwesomeIcon icon={faLock} />
-              {t(`manage.resources.access${CollectionAccess.Private}`)}
-            </div>
+            <CollectionAccessLabel accessType={CollectionAccess.Private} />
           ),
           disabled: privateDisabled,
           data: { cy: 'answer-collection-access-private' },
         },
         {
           value: CollectionAccess.Public,
-          label: (
-            <div className="flex flex-row items-center gap-2 text-green-700">
-              <FontAwesomeIcon icon={faLockOpen} />
-              {t(`manage.resources.access${CollectionAccess.Public}`)}
-            </div>
-          ),
+          label: <CollectionAccessLabel accessType={CollectionAccess.Public} />,
           data: { cy: 'answer-collection-access-public' },
         },
         {
           value: CollectionAccess.Restricted,
           label: (
-            <div className="flex flex-row items-center gap-2 text-orange-600">
-              <FontAwesomeIcon icon={faUserLock} />
-              {t(`manage.resources.access${CollectionAccess.Restricted}`)}
-            </div>
+            <CollectionAccessLabel accessType={CollectionAccess.Restricted} />
           ),
           disabled: restrictedDisabled,
           data: { cy: 'answer-collection-access-restricted' },

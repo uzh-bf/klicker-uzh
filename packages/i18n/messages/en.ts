@@ -1868,6 +1868,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while importing the answer collection. Please try again or contact the support.',
       requestError:
         'An error occurred while requesting the answer collection. Please try again or contact the support.',
+      noSharedRequestedAnswerCollections:
+        'No shared answer collections have been imported or requested.',
+      viewCollection: 'View Collection',
+      requestedAccess: 'Requested Access',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

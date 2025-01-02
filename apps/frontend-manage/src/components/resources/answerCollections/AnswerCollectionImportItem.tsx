@@ -1,5 +1,4 @@
 import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
-import { faLockOpen, faUserLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
@@ -8,6 +7,7 @@ import {
 import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import CollectionAccessLabel from './CollectionAccessLabel'
 import CollectionImportRequestModal from './CollectionImportRequestModal'
 
 function AnswerCollectionImportItem({
@@ -24,16 +24,16 @@ function AnswerCollectionImportItem({
   const collectionAccessMap: Record<CollectionAccess, React.ReactNode | null> =
     {
       [CollectionAccess.Public]: (
-        <div className="flex flex-row items-center gap-1.5 text-sm text-green-700">
-          <FontAwesomeIcon icon={faLockOpen} />
-          {t(`manage.resources.access${CollectionAccess.Public}`)}
-        </div>
+        <CollectionAccessLabel
+          accessType={CollectionAccess.Public}
+          className="text-sm"
+        />
       ),
       [CollectionAccess.Restricted]: (
-        <div className="flex flex-row items-center gap-1.5 text-sm text-orange-600">
-          <FontAwesomeIcon icon={faUserLock} />
-          {t(`manage.resources.access${CollectionAccess.Restricted}`)}
-        </div>
+        <CollectionAccessLabel
+          accessType={CollectionAccess.Restricted}
+          className="text-sm"
+        />
       ),
       [CollectionAccess.Private]: null,
     }

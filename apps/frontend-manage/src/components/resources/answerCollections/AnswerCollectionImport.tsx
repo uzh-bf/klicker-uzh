@@ -67,10 +67,16 @@ function AnswerCollectionImport({
           />
           <SelectField
             label={t('manage.resources.userShortnames')}
-            items={shortnames.map((shortname) => ({
-              label: shortname,
-              value: shortname,
-            }))}
+            items={[
+              {
+                label: t('manage.resources.all'),
+                value: '',
+              },
+              ...shortnames.map((shortname) => ({
+                label: shortname,
+                value: shortname,
+              })),
+            ]}
             value={shortnameFilter}
             onChange={(newValue) => {
               setShortnameFilter(newValue)
