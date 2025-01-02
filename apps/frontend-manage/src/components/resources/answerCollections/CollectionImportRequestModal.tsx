@@ -6,6 +6,7 @@ import {
   AnswerCollection,
   CollectionAccess,
   GetAnswerCollectionsDocument,
+  GetAnswerCollectionSelectionDocument,
   ImportAnswerCollectionDocument,
   RequestAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -39,31 +40,52 @@ function CollectionImportRequestModal({
         if (!data?.importAnswerCollection) return
         const newCollection = data.importAnswerCollection
 
-        const queryData = cache.readQuery({
+        // update lists of answer collections
+        const collectionsListQuery = cache.readQuery({
           query: GetAnswerCollectionsDocument,
         })
         const prevSharedCollections =
-          queryData?.getAnswerCollections?.sharedCollections
-        if (!prevSharedCollections) return
-
-        cache.writeQuery({
-          query: GetAnswerCollectionsDocument,
-          data: {
-            getAnswerCollections: {
-              requestedCollections:
-                queryData.getAnswerCollections?.requestedCollections ?? [],
-              sharedCollections: [
-                ...(queryData.getAnswerCollections?.sharedCollections ?? []),
-                newCollection,
-              ],
-              answerCollections:
-                queryData.getAnswerCollections?.answerCollections ?? [],
+          collectionsListQuery?.getAnswerCollections?.sharedCollections
+        if (prevSharedCollections) {
+          cache.writeQuery({
+            query: GetAnswerCollectionsDocument,
+            data: {
+              getAnswerCollections: {
+                requestedCollections:
+                  collectionsListQuery.getAnswerCollections
+                    ?.requestedCollections ?? [],
+                sharedCollections: [
+                  ...(collectionsListQuery.getAnswerCollections
+                    ?.sharedCollections ?? []),
+                  newCollection,
+                ],
+                answerCollections:
+                  collectionsListQuery.getAnswerCollections
+                    ?.answerCollections ?? [],
+              },
             },
-          },
+          })
+        }
+
+        // update list of collections available for selection
+        const selectionQuery = cache.readQuery({
+          query: GetAnswerCollectionSelectionDocument,
         })
+        const prevSelection = selectionQuery?.getAnswerCollectionSelection ?? []
+        if (prevSelection) {
+          cache.writeQuery({
+            query: GetAnswerCollectionSelectionDocument,
+            data: {
+              getAnswerCollectionSelection: prevSelection.filter(
+                (c) => c.id !== collection.id
+              ),
+            },
+          })
+        }
       },
     }
   )
+
   const [requestAnswerCollection, { loading: requestLoading }] = useMutation(
     RequestAnswerCollectionDocument,
     {
@@ -72,28 +94,48 @@ function CollectionImportRequestModal({
         if (!data?.requestAnswerCollection) return
         const reqCollection = data.requestAnswerCollection
 
-        const queryData = cache.readQuery({
+        // update lists of answer collections
+        const collectionsListQuery = cache.readQuery({
           query: GetAnswerCollectionsDocument,
         })
         const prevSharedCollections =
-          queryData?.getAnswerCollections?.sharedCollections
-        if (!prevSharedCollections) return
-
-        cache.writeQuery({
-          query: GetAnswerCollectionsDocument,
-          data: {
-            getAnswerCollections: {
-              requestedCollections: [
-                ...(queryData.getAnswerCollections?.requestedCollections ?? []),
-                reqCollection,
-              ],
-              sharedCollections:
-                queryData.getAnswerCollections?.sharedCollections ?? [],
-              answerCollections:
-                queryData.getAnswerCollections?.answerCollections ?? [],
+          collectionsListQuery?.getAnswerCollections?.sharedCollections
+        if (prevSharedCollections) {
+          cache.writeQuery({
+            query: GetAnswerCollectionsDocument,
+            data: {
+              getAnswerCollections: {
+                requestedCollections: [
+                  ...(collectionsListQuery.getAnswerCollections
+                    ?.requestedCollections ?? []),
+                  reqCollection,
+                ],
+                sharedCollections:
+                  collectionsListQuery.getAnswerCollections
+                    ?.sharedCollections ?? [],
+                answerCollections:
+                  collectionsListQuery.getAnswerCollections
+                    ?.answerCollections ?? [],
+              },
             },
-          },
+          })
+        }
+
+        // update list of collections available for selection
+        const selectionQuery = cache.readQuery({
+          query: GetAnswerCollectionSelectionDocument,
         })
+        const prevSelection = selectionQuery?.getAnswerCollectionSelection ?? []
+        if (prevSelection) {
+          cache.writeQuery({
+            query: GetAnswerCollectionSelectionDocument,
+            data: {
+              getAnswerCollectionSelection: prevSelection.filter(
+                (c) => c.id !== collection.id
+              ),
+            },
+          })
+        }
       },
     }
   )
