@@ -1205,6 +1205,28 @@ export const Mutation = builder.mutationType({
           return ResourcesService.addAnswerCollectionOption(args, ctx)
         },
       }),
+
+      importAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.importAnswerCollection(args, ctx)
+        },
+      }),
+
+      requestAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.requestAnswerCollection(args, ctx)
+        },
+      }),
       // #endregion
 
       // ----- USER WITH CATALYST -----

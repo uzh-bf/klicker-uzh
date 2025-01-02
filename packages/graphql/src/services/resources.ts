@@ -259,3 +259,161 @@ export async function addAnswerCollectionOption(
 
   return newEntry
 }
+
+export async function getAnswerCollectionSelection(ctx: ContextWithUser) {
+  const collections = await ctx.prisma.answerCollection.findMany({
+    where: {
+      access: {
+        in: [DB.CollectionAccess.PUBLIC, DB.CollectionAccess.RESTRICTED],
+      },
+      ownerId: {
+        not: ctx.user.sub,
+      },
+    },
+    include: {
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+      entries: {
+        orderBy: {
+          value: 'asc',
+        },
+      },
+      accessGranted: {
+        where: {
+          id: ctx.user.sub,
+        },
+      },
+      accessRequested: {
+        where: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+  })
+
+  return collections
+    .filter(
+      (collection) =>
+        // do not show collections that the user already has access to / requested
+        collection.accessGranted.length === 0 &&
+        collection.accessRequested.length === 0
+    )
+    .map((collection) => ({
+      ...collection,
+      entries:
+        collection.access === DB.CollectionAccess.PUBLIC
+          ? collection.entries
+          : [],
+      ownerShortname: collection.owner?.shortname,
+    }))
+}
+
+export async function importAnswerCollection(
+  { collectionId }: { collectionId: number },
+  ctx: ContextWithUser
+) {
+  // get answer collection and verify public access
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+    },
+  })
+
+  if (!collection || collection.access !== DB.CollectionAccess.PUBLIC) {
+    return null
+  }
+
+  // add user to the shared users of the collection
+  const updatedCollection = await ctx.prisma.answerCollection.update({
+    where: {
+      id: collectionId,
+    },
+    data: {
+      accessGranted: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+      entries: {
+        orderBy: {
+          value: 'asc',
+        },
+      },
+    },
+  })
+
+  return {
+    ...updatedCollection,
+    ownerShortname: updatedCollection.owner?.shortname,
+  }
+}
+
+export async function requestAnswerCollection(
+  { collectionId }: { collectionId: number },
+  ctx: ContextWithUser
+) {
+  // verify that the answer collection is restricted and that the user does not already have access / requested it
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+    },
+    include: {
+      accessGranted: {
+        where: {
+          id: ctx.user.sub,
+        },
+      },
+      accessRequested: {
+        where: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+  })
+
+  if (
+    !collection ||
+    collection.access !== DB.CollectionAccess.RESTRICTED ||
+    collection.accessGranted.length > 0 ||
+    collection.accessRequested.length > 0
+  ) {
+    return null
+  }
+
+  const updatedCollection = await ctx.prisma.answerCollection.update({
+    where: {
+      id: collectionId,
+    },
+    data: {
+      accessRequested: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  // TODO: notify owner of the collection by e-mail that there is a new access request
+
+  return {
+    ...updatedCollection,
+    ownerShortname: updatedCollection.owner?.shortname,
+  }
+}

@@ -159,7 +159,7 @@ function AnswerCollectionCreation({
             ) : null}
             <div className="mt-3 flex w-full flex-row justify-between">
               <Button
-                className={{ root: 'border-red-400' }}
+                className={{ root: 'h-8 border-red-400' }}
                 onClick={onClose}
                 data={{ cy: 'cancel-create-answer-collection' }}
               >
@@ -170,7 +170,7 @@ function AnswerCollectionCreation({
                 type="submit"
                 disabled={!isValid}
                 loading={isSubmitting}
-                className={{ root: 'border-green-700' }}
+                className={{ root: 'h-8 border-green-700' }}
                 data={{ cy: 'submit-create-answer-collection' }}
               >
                 <FontAwesomeIcon icon={faCheck} />

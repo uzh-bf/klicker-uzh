@@ -1,0 +1,13 @@
+query GetAnswerCollectionSelection {
+  getAnswerCollectionSelection {
+    id
+    name
+    access
+    description
+    ownerShortname
+    entries {
+      id
+      value
+    }
+  }
+}

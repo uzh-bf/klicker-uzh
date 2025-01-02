@@ -1,9 +1,4 @@
-import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
-import {
-  faLock,
-  faLockOpen,
-  faUserLock,
-} from '@fortawesome/free-solid-svg-icons'
+import { faClock, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
@@ -12,35 +7,41 @@ import {
 import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
+import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
+import CollectionAccessLabel from './CollectionAccessLabel'
 
 function AnswerCollectionItem({
   collection,
-  editable,
+  editable = false,
+  accessGranted = false,
 }: {
   collection: AnswerCollection
-  editable: boolean
+  editable?: boolean
+  accessGranted?: boolean
 }) {
   const t = useTranslations()
   const [editModal, setEditModal] = useState(false)
+  const [viewingModal, setViewingModal] = useState(false)
   const collectionAccessMap: Record<CollectionAccess, React.ReactNode> = {
     [CollectionAccess.Private]: (
-      <div className="flex flex-row items-center gap-1.5 text-sm text-red-700">
-        <FontAwesomeIcon icon={faLock} />
-        {t(`manage.resources.access${CollectionAccess.Private}`)}
-      </div>
+      <CollectionAccessLabel
+        accessType={CollectionAccess.Private}
+        className="text-sm"
+      />
     ),
     [CollectionAccess.Public]: (
-      <div className="flex flex-row items-center gap-1.5 text-sm text-green-700">
-        <FontAwesomeIcon icon={faLockOpen} />
-        {t(`manage.resources.access${CollectionAccess.Public}`)}
-      </div>
+      <CollectionAccessLabel
+        accessType={CollectionAccess.Public}
+        className="text-sm"
+      />
     ),
     [CollectionAccess.Restricted]: (
-      <div className="flex flex-row items-center gap-1.5 text-sm text-orange-600">
-        <FontAwesomeIcon icon={faUserLock} />
-        {t(`manage.resources.access${CollectionAccess.Restricted}`)}
-      </div>
+      <CollectionAccessLabel
+        accessType={CollectionAccess.Restricted}
+        className="text-sm"
+      />
     ),
   }
 
@@ -48,18 +49,31 @@ function AnswerCollectionItem({
     <>
       <Button
         basic
-        onClick={editable ? () => setEditModal(true) : undefined}
+        onClick={() => {
+          // open editing modal for own collections
+          if (editable) {
+            setEditModal(true)
+          }
+
+          // allow viewing of shared collections (not for requested ones)
+          if (accessGranted) {
+            setViewingModal(true)
+          }
+        }}
         className={{
-          root: 'flex flex-row justify-between rounded border border-solid px-2 py-0.5 shadow-sm',
+          root: twMerge(
+            'flex flex-row justify-between rounded border border-solid px-2 py-0.5 shadow-sm',
+            !editable && !accessGranted && 'cursor-default'
+          ),
         }}
       >
         <div className="flex flex-col items-start">
-          <div className="flex flex-row gap-5">
+          <div className={twMerge('flex flex-row gap-2', editable && 'gap-5')}>
             <H4 className={{ root: 'mb-0' }}>{collection.name}</H4>
             {editable ? (
               collectionAccessMap[collection.access]
             ) : (
-              <div className="text-xs text-gray-500">
+              <div className="mb-[0.1rem] self-end text-sm text-gray-500">
                 {t('manage.resources.byOwner', {
                   owner: collection.ownerShortname,
                 })}
@@ -80,15 +94,32 @@ function AnswerCollectionItem({
             <FontAwesomeIcon icon={faHandPointer} />
             <div>{t('manage.resources.clickToViewEdit')}</div>
           </div>
+        ) : accessGranted ? (
+          <div className="text-primary-100 flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faHandPointer} />
+            <div>{t('manage.resources.viewCollection')}</div>
+          </div>
         ) : (
-          <div>VIEW SHARED CONTENT</div>
+          <div className="text-primary-100 flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faClock} />
+            <div>{t('manage.resources.requestedAccess')}</div>
+          </div>
         )}
       </Button>
-      <AnswerCollectionEditModal
-        collection={collection}
-        open={editModal}
-        onClose={() => setEditModal(false)}
-      />
+      {editable ? (
+        <AnswerCollectionEditModal
+          collection={collection}
+          open={editModal}
+          onClose={() => setEditModal(false)}
+        />
+      ) : null}
+      {accessGranted ? (
+        <AnswerCollectionViewingModal
+          collection={collection}
+          open={viewingModal}
+          onClose={() => setViewingModal(false)}
+        />
+      ) : null}
     </>
   )
 }
