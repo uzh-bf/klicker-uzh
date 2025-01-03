@@ -1,92 +1,82 @@
+import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { faEnvelope, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
 import { H1, H2 } from '@uzh-bf/design-system'
 
-const PEOPLE: { name: string; role: string; imageUrl?: string }[] = [
+const PEOPLE: {
+  name: string
+  role: string
+  imageUrl?: string
+  info?: string
+  email?: string
+  github?: string
+}[] = [
   {
     name: 'Roland Schläfli',
     role: 'Project Manager',
     imageUrl:
       'https://www.df.uzh.ch/contacts/df/admin/teaching-center/rschl%C3%A4fli/photo/Schl%C3%A4fli-Roland.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/staff/teaching-center/roland-schlaefli.html',
+    email: 'roland.schlaefli@df.uzh.ch',
+    github: 'https://github.com/rschlaefli',
   },
   {
     name: 'Julius Schlapbach',
     role: 'Project Maintainer',
     imageUrl:
       'https://www.df.uzh.ch/contacts/df/student-assistants/jschlapbach/photo/20220504_Schlapbach-Julius-019.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/student-assistants/julius-schlapbach.html',
+    email: 'julius.schlapbach@df.uzh.ch',
+    github: 'https://github.com/sjschlapbach',
   },
   {
     name: 'Johanna Braun',
     role: 'Head Teaching Center',
     imageUrl:
       'https://www.df.uzh.ch/contacts/df/admin/teaching-center/jbraun/photo/Braun%20Johanna.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/staff/teaching-center/Johanna-Braun.html',
   },
   {
     name: 'Benjamin Wilding',
     role: 'Managing Director Teaching DF',
     imageUrl:
       'https://www.df.uzh.ch/contacts/df/admin/management/bwilding/photo/Benjamin%20Wilding.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/staff/management/benjamin-wilding.html',
   },
-  {
-    name: 'Walter Farkas',
-    role: 'Director Teaching Center',
-    imageUrl:
-      'https://www.df.uzh.ch/contacts/df/professors/efarkas/photo/farkas-erich_walter.jpg.jpg',
-  },
+  // {
+  //   name: 'Walter Farkas',
+  //   role: 'Director Teaching Center',
+  //   imageUrl:
+  //     'https://www.df.uzh.ch/contacts/df/professors/efarkas/photo/farkas-erich_walter.jpg.jpg',
+  //   info: 'https://www.df.uzh.ch/en/people/professors/erich-walter-farkas.html',
+  // },
   {
     name: 'Jannis Alsbach',
     role: 'Contributor',
     imageUrl:
       'https://www.df.uzh.ch/contacts/df/student-assistants/jalsbach/photo/20220504_Alsbach-Jannis-006.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/student-assistants/jannis-alsbach.html',
+    github: 'https://github.com/TheHummel',
   },
   {
     name: 'Julia Gut',
     role: 'Contributor (Content)',
     imageUrl:
       'https://www.df.uzh.ch/contacts/df/student-assistants/jgut/photo/Julia%20Gut.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/student-assistants/julia-gut.html',
+  },
+  {
+    name: "Alessio D'Andrea",
+    role: 'Contributor (Content)',
+    imageUrl:
+      'https://www.df.uzh.ch/contacts/df/student-assistants/ad-andrea/photo/Alessio%20D&%23039;Andrea.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/student-assistants/alessio-dandrea.html',
   },
   {
     name: 'Selina De Pizzol',
     role: 'Contributor (Content)',
-  },
-  {
-    name: 'Bulin Shaqiri',
-    role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Alex Scheitlin',
-    role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Lisa Liechti',
-    role: 'Project Manager (Alumnus)',
-  },
-  {
-    name: 'Felix Schelbert',
-    role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Luca Locher',
-    role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Florina Vogel',
-    role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Maximilian Weber',
-    role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Valentin Meyer',
-    role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Christopher Narayanan',
-    role: 'Contributor (Alumnus)',
-  },
-  {
-    name: 'Jonas Gebel',
-    role: 'Contributor (Alumnus)',
+    info: 'https://www.df.uzh.ch/en/people/student-assistants/selina-de-pizzol.html',
   },
 ]
 
@@ -125,25 +115,73 @@ const About = () => {
         </div>
 
         <H2 className={{ root: 'mb-4' }}>Our Team</H2>
+        <p>
+          The following people are activtely involved in the KlickerUZH project
+          and its continued development. If you have any questions or feedback,
+          feel free to reach out to the project manager or maintainers. Former
+          contributors can be found in our{' '}
+          <span
+            onClick={() =>
+              window.open(
+                'https://github.com/uzh-bf/klicker-uzh/graphs/contributors',
+                '_blank'
+              )
+            }
+            className="cursor-pointer text-blue-800 hover:underline"
+          >
+            <FontAwesomeIcon icon={faGithub} className="mx-1" />
+            open-source GitHub repository
+          </span>
+          .
+        </p>
         <ul
           role="list"
-          className="mb-14 grid list-none gap-x-8 gap-y-10 sm:grid-cols-2 sm:gap-y-12 md:grid-cols-3 lg:grid-cols-4 xl:col-span-2"
+          className="mb-14 grid list-none gap-x-8 gap-y-10 pl-0 sm:grid-cols-2 sm:gap-y-12 md:grid-cols-3 lg:grid-cols-4 xl:col-span-2"
         >
           {PEOPLE.map((person) => (
             <li key={person.name}>
-              <div className="flex items-center gap-x-6">
+              <div className="flex items-start gap-x-6">
                 <img
                   alt={`Profile photo of ${person.name}`}
                   src={person.imageUrl ?? '/img_v3/anonymousUser.svg'}
                   className="aspect-ratio w-14 rounded-full"
                 />
-                <div className="h-max">
+                <div className="flex h-max flex-col">
                   <h3 className="mb-0 text-base/7 font-semibold tracking-tight text-gray-900">
                     {person.name}
                   </h3>
-                  <p className="text-sm/6 font-semibold text-indigo-600">
+                  <p className="mb-1 text-sm/6 font-semibold text-indigo-600">
                     {person.role}
                   </p>
+                  <div className="mt-0 flex flex-row items-center gap-3">
+                    {person.info ? (
+                      <FontAwesomeIcon
+                        icon={faInfoCircle}
+                        onClick={() => {
+                          window.open(person.info, '_blank')
+                        }}
+                        className="w-max hover:cursor-pointer"
+                      />
+                    ) : null}
+                    {person.email ? (
+                      <FontAwesomeIcon
+                        icon={faEnvelope}
+                        onClick={() => {
+                          window.location.href = `mailto:${person.email}?subject=[KlickerUZH]: Request`
+                        }}
+                        className="w-max hover:cursor-pointer"
+                      />
+                    ) : null}
+                    {person.github ? (
+                      <FontAwesomeIcon
+                        icon={faGithub}
+                        onClick={() => {
+                          window.open(person.github, '_blank')
+                        }}
+                        className="w-max hover:cursor-pointer"
+                      />
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </li>
