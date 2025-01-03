@@ -44,13 +44,13 @@ const PEOPLE: {
       'https://www.df.uzh.ch/contacts/df/admin/management/bwilding/photo/Benjamin%20Wilding.jpg.jpg',
     info: 'https://www.df.uzh.ch/en/people/staff/management/benjamin-wilding.html',
   },
-  // {
-  //   name: 'Walter Farkas',
-  //   role: 'Director Teaching Center',
-  //   imageUrl:
-  //     'https://www.df.uzh.ch/contacts/df/professors/efarkas/photo/farkas-erich_walter.jpg.jpg',
-  //   info: 'https://www.df.uzh.ch/en/people/professors/erich-walter-farkas.html',
-  // },
+  {
+    name: 'Walter Farkas',
+    role: 'Director Teaching Center',
+    imageUrl:
+      'https://www.df.uzh.ch/contacts/df/professors/efarkas/photo/farkas-erich_walter.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/professors/erich-walter-farkas.html',
+  },
   {
     name: 'Jannis Alsbach',
     role: 'Contributor',
