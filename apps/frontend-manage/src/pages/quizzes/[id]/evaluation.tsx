@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import ActivityEvaluation from '@components/evaluation/ActivityEvaluation'
-import Layout from '@components/Layout'
 import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -22,15 +21,11 @@ function Evaluation() {
   })
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader />
-      </Layout>
-    )
+    return <Loader />
   }
 
   if (error && !data) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    router.push('/404')
   }
 
   if (

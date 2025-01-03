@@ -715,7 +715,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkFeaturePreviewAvailable: asUser.field({
+      checkFeaturePreviewAvailable: t.field({
         nullable: false,
         type: 'Boolean',
         resolve(_, __, ctx) {
