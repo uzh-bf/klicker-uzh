@@ -142,7 +142,7 @@ const About = () => {
         </p>
         <ul
           role="list"
-          className="mb-14 grid list-none gap-x-8 gap-y-10 pl-0 sm:grid-cols-2 sm:gap-y-12 md:grid-cols-3 lg:grid-cols-4 xl:col-span-2"
+          className="mb-14 grid list-none grid-cols-1 gap-x-8 gap-y-10 pl-0 sm:grid-cols-2 sm:gap-y-12 md:grid-cols-3 lg:grid-cols-4 xl:col-span-2"
         >
           {PEOPLE.map((person) => (
             <li key={person.name}>
