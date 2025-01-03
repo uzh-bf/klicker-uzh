@@ -186,7 +186,7 @@ const About = () => {
         </ul>
 
         <H2>Project Sponsors</H2>
-        <div className="mb-4 flex h-12 flex-row items-start">
+        <div className="mb-4 flex h-24 flex-col items-start md:h-12 md:flex-row">
           <img src="/img/logo_swissuniversities.png" className="mr-8 h-full" />
           <img src="/img/logo_uzh.jpeg" className="h-full" />
         </div>
