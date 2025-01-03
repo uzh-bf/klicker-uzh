@@ -11,21 +11,20 @@ function Evaluation() {
   const t = useTranslations()
 
   // fetch evaluation data
-  const { data, loading, error } = useQuery(GetLiveQuizEvaluationDocument, {
+  const { data, loading } = useQuery(GetLiveQuizEvaluationDocument, {
     variables: {
       id: router.query.id as string,
       hmac: router.query.hmac as string,
     },
     pollInterval: 5000,
     skip: !router.query.id,
+    onError: () => {
+      router.push('/404')
+    },
   })
 
   if (loading) {
     return <Loader />
-  }
-
-  if (error && !data) {
-    router.push('/404')
   }
 
   if (
