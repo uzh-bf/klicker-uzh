@@ -912,6 +912,68 @@ describe('Different live-quiz workflows', () => {
     cy.wait(500)
   })
 
+  it('Check out the public evaluation links accessible through the embedding modal', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${quizName2}"]`).click()
+    cy.wait(1000)
+
+    // read required public evaluation links
+    cy.get('[data-cy="embed-evaluation-cockpit"]').click()
+    cy.get('[data-cy="open-embedding-link-generic-evaluation"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('publicLinkEvaluation')
+      })
+    cy.get('[data-cy="open-embedding-link-question-0"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('publicLinkQuestion0')
+      })
+    cy.get('[data-cy="open-embedding-link-question-7"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('publicLinkQuestion7')
+      })
+    cy.get('[data-cy="open-embedding-link-leaderboard"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('publicLinkLeaderboard')
+      })
+
+    // log out as a lecturer
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.wait(500)
+    cy.reload()
+    cy.get('button[data-cy="tos-checkbox"]').should('exist')
+
+    // check out generic evaluation
+    cy.get('@publicLinkEvaluation').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(SCQuestion1Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(MCQuestion1Content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(SCQuestion1Content).should('exist')
+
+    // check out specific question evaluation
+    cy.get('@publicLinkQuestion0').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(SCQuestion1Content).should('exist')
+    cy.get('@publicLinkQuestion7').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(KPRIMQuestion2Content).should('exist')
+
+    // check out leaderboard
+    cy.get('@publicLinkLeaderboard').then((link) => {
+      cy.visit(String(link))
+    })
+  })
+
   it('Check out evaluation view of live quiz and its content', () => {
     cy.loginLecturer()
 
