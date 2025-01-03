@@ -16,7 +16,15 @@ interface EmbeddingModalProps {
   quizId: string
 }
 
-function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
+function LazyHMACLink({
+  quizId,
+  params,
+  identifier,
+}: {
+  quizId: string
+  params: string
+  identifier: string
+}) {
   const quizHMAC = useQuery(GetLiveQuizHmacDocument, {
     variables: {
       id: quizId,
@@ -41,7 +49,7 @@ function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
         onClick={() => navigator?.clipboard?.writeText(link)}
       />
       <Link href={link} target="_blank" legacyBehavior passHref>
-        <a data-cy={`open-embedding-link-quiz-${quizId}`}>{link}</a>
+        <a data-cy={`open-embedding-link-${identifier}`}>{link}</a>
       </Link>
     </div>
   )
@@ -91,7 +99,11 @@ function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
                 element.elementData.name
               }`}</div>
               <div className="bg-uzh-grey-40 mr-2 flex flex-row items-center gap-3 rounded border border-solid px-1.5 py-0.5">
-                <LazyHMACLink quizId={quizId} params={`questionIx=${ix}`} />
+                <LazyHMACLink
+                  quizId={quizId}
+                  params={`questionIx=${ix}`}
+                  identifier={`question-${ix}`}
+                />
               </div>
             </div>
           )
@@ -99,7 +111,11 @@ function EmbeddingModal({ open, setOpen, quizId }: EmbeddingModalProps) {
       </div>
       <div className="mt-3">
         <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
-        <LazyHMACLink quizId={quizId} params={`leaderboard=true`} />
+        <LazyHMACLink
+          quizId={quizId}
+          params={`leaderboard=true`}
+          identifier="leaderboard"
+        />
       </div>
     </Modal>
   )
