@@ -113,7 +113,7 @@ const About = () => {
 
         <H2 className={{ root: 'mb-4' }}>Our Team</H2>
         <p>
-          The following people are activtely involved in the KlickerUZH project
+          The following people are actively involved in the KlickerUZH project
           and its continued development. If you have any questions or feedback,
           feel free to reach out to us via e-mail at{' '}
           <span
