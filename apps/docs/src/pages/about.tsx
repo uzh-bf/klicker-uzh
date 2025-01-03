@@ -1,5 +1,5 @@
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
-import { faEnvelope, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Layout from '@theme/Layout'
 import { H1, H2 } from '@uzh-bf/design-system'
@@ -9,7 +9,6 @@ const PEOPLE: {
   role: string
   imageUrl?: string
   info?: string
-  email?: string
   github?: string
 }[] = [
   {
@@ -18,7 +17,6 @@ const PEOPLE: {
     imageUrl:
       'https://www.df.uzh.ch/contacts/df/admin/teaching-center/rschl%C3%A4fli/photo/Schl%C3%A4fli-Roland.jpg.jpg',
     info: 'https://www.df.uzh.ch/en/people/staff/teaching-center/roland-schlaefli.html',
-    email: 'roland.schlaefli@df.uzh.ch',
     github: 'https://github.com/rschlaefli',
   },
   {
@@ -27,7 +25,6 @@ const PEOPLE: {
     imageUrl:
       'https://www.df.uzh.ch/contacts/df/student-assistants/jschlapbach/photo/20220504_Schlapbach-Julius-019.jpg.jpg',
     info: 'https://www.df.uzh.ch/en/people/student-assistants/julius-schlapbach.html',
-    email: 'julius.schlapbach@df.uzh.ch',
     github: 'https://github.com/sjschlapbach',
   },
   {
@@ -118,8 +115,17 @@ const About = () => {
         <p>
           The following people are activtely involved in the KlickerUZH project
           and its continued development. If you have any questions or feedback,
-          feel free to reach out to the project manager or maintainers. Former
-          contributors can be found in our{' '}
+          feel free to reach out to us via e-mail at{' '}
+          <span
+            onClick={() =>
+              (window.location.href =
+                'mailto:klicker@df.uzh.ch?subject=[KlickerUZH]: Website Request')
+            }
+            className="cursor-pointer text-blue-800 hover:underline"
+          >
+            klicker@df.uzh.ch
+          </span>
+          . Former contributors can be found in our{' '}
           <span
             onClick={() =>
               window.open(
@@ -159,15 +165,6 @@ const About = () => {
                         icon={faInfoCircle}
                         onClick={() => {
                           window.open(person.info, '_blank')
-                        }}
-                        className="w-max hover:cursor-pointer"
-                      />
-                    ) : null}
-                    {person.email ? (
-                      <FontAwesomeIcon
-                        icon={faEnvelope}
-                        onClick={() => {
-                          window.location.href = `mailto:${person.email}?subject=[KlickerUZH]: Request`
                         }}
                         className="w-max hover:cursor-pointer"
                       />
