@@ -21,7 +21,7 @@ export function URLForm({ slideID }: URLFormProps) {
         url: yup
           .string()
           .matches(
-            /https:\/\/manage\.klicker\.uzh\.ch\/sessions\/.{36}\/evaluation\?hmac=.{64}.*/,
+            /https:\/\/manage\.klicker\.uzh\.ch\/(sessions|quizzes)\/.{36}\/evaluation\?hmac=.{64}.*/,
             'Please enter a valid URL according to the steps described'
           )
           .required(
