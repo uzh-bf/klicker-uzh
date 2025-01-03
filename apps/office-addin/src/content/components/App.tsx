@@ -54,7 +54,7 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
         <div className="mb-4 flex flex-row gap-4">
           <div className="flex-1">
             <ol className="list-inside list-decimal">
-              <li>Go to https://manage.klicker.uzh.ch/sessions</li>
+              <li>Go to https://manage.klicker.uzh.ch/quizzes</li>
               <li>
                 For the quiz you want to embed, open the &ldquo;Embed
                 Evaluation&rdquo; dialog
