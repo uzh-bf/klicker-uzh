@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import ActivityEvaluation from '@components/evaluation/ActivityEvaluation'
-import Layout from '@components/Layout'
 import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -12,25 +11,20 @@ function Evaluation() {
   const t = useTranslations()
 
   // fetch evaluation data
-  const { data, loading, error } = useQuery(GetLiveQuizEvaluationDocument, {
+  const { data, loading } = useQuery(GetLiveQuizEvaluationDocument, {
     variables: {
       id: router.query.id as string,
       hmac: router.query.hmac as string,
     },
     pollInterval: 5000,
     skip: !router.query.id,
+    onError: () => {
+      router.push('/404')
+    },
   })
 
   if (loading) {
-    return (
-      <Layout>
-        <Loader />
-      </Layout>
-    )
-  }
-
-  if (error && !data) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    return <Loader />
   }
 
   if (

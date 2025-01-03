@@ -1,4 +1,5 @@
 import Layout from '@theme/Layout'
+import { H1 } from '@uzh-bf/design-system'
 import RoadmapTile from '../components/development/RoadmapTile'
 
 const tileContent = [
@@ -105,9 +106,7 @@ const Development = () => {
     <Layout>
       <div className="m-auto max-w-[1300px] p-8">
         <div className="mb-4 flex h-12 flex-row items-start justify-between">
-          <div className="mb-8 text-3xl font-bold md:mb-0">
-            Get Involved - P-8 "Digital Skills"
-          </div>
+          <H1>Get Involved - P-8 "Digital Skills"</H1>
           <div className="hidden h-full flex-row gap-4 md:flex">
             <img
               src="/img/logo_swissuniversities.png"

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.16...v3.3.0-alpha.17) (2025-01-03)
+
+
+### Bug Fixes
+
+* ensure that live quiz evaluation continues to work in PPT addin with new paths ([#4428](https://github.com/uzh-bf/klicker-uzh/issues/4428)) ([e8f20d6](https://github.com/uzh-bf/klicker-uzh/commit/e8f20d61fea935c405ec474ed09934ac676235c2))
+
+
+### Enhancements
+
+* **apps/docs:** add about page ([#4376](https://github.com/uzh-bf/klicker-uzh/issues/4376)) ([62d556a](https://github.com/uzh-bf/klicker-uzh/commit/62d556a0477b65a01aa78a97fe23483f12010779))
+
 ## [3.3.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.15...v3.3.0-alpha.16) (2024-12-27)
 
 
