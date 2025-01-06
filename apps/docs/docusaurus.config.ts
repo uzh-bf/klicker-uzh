@@ -130,8 +130,8 @@ const config: Config = {
     navbar: {
       hideOnScroll: false,
       logo: {
-        src: '/img/KlickerLogo.png',
-        srcDark: '/img/KlickerLogo.png',
+        src: '/img/logos/KlickerLogo.png',
+        srcDark: '/img/logos/KlickerLogo.png',
         href: '/',
       },
       items: [
@@ -200,7 +200,7 @@ const config: Config = {
     footer: {
       logo: {
         alt: 'KlickerUZH Logo',
-        src: '/img/KlickerLogo.png',
+        src: '/img/logos/KlickerLogo.png',
         width: 250,
         // height: 51,
       },

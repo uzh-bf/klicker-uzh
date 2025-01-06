@@ -21,13 +21,13 @@ function Home() {
             title: 'Live Quizzes',
             icon: faArrowRight,
             text: 'You can prepare Live Quizzes and launch them during class. Students can answer questions using their mobile devices or laptops. The results are displayed in real-time.',
-            hoverImage: '/img_v3/06_live_quiz.png',
+            hoverImage: '/img/live_quiz/lq_student_view.png',
           },
           {
             title: 'Live Q&A',
             icon: faArrowRight,
             text: 'You can launch a Live Q&A session during your lecture. Students can ask and upvote questions from other students and give real-time feedback. You can answer questions live in writing or orally.',
-            hoverImage: '/img_v3/06_live_qa.png',
+            hoverImage: '/img/landing/live_qa.png',
           },
         ]}
       />
@@ -40,19 +40,19 @@ function Home() {
             title: 'Microlearning',
             icon: faArrowRight,
             text: 'You can prepare short Microlearning units that students can work through at their own pace. The units are time-restricted and can be used to combat the forgetting curve.',
-            hoverImage: '/img_v3/microlearning_cut.png',
+            hoverImage: '/img/microlearning/ml_mobile_views.png',
           },
           {
             title: 'Practice Quizzes',
             icon: faArrowRight,
             text: 'You can create Practice Quizzes that students can repeat as often as they want. Questions can be ordered by sequence or using a spaced repetition algorithm.',
-            hoverImage: '/img_v3/07_practice_quiz.png',
+            hoverImage: '/img/practice_quiz/pq_olat_view.png',
           },
           {
             title: 'Group Activities',
             icon: faArrowRight,
             text: 'Students form groups and engage in collaborative tasks, encouraging teamwork and collective problem-solving within a gamified context.',
-            hoverImage: '/img_v3/16_group_activity_graded_students.png',
+            hoverImage: '/img/group_activity/ga_graded_students.png',
           },
         ]}
       />
@@ -65,14 +65,14 @@ function Home() {
             title: 'Points and Leaderboards',
             icon: faArrowRight,
             text: 'Individual and group leaderboards display rankings, inspiring a sense of friendly competition and prompting students to stay engaged.',
-            hoverImage: '/img_v3/08_gamification.png',
+            hoverImage: '/img/leaderboard/course_leaderboard.png',
             shadow: false,
           },
           {
             title: 'Group Formation',
             icon: faArrowRight,
             text: 'Students can form groups with their peers by choice or randomly and collaborate and compete against other groups.',
-            hoverImage: '/img_v3/10_group_overview.png',
+            hoverImage: '/img/group/group_student_view.png',
           },
         ]}
       />
@@ -105,7 +105,7 @@ function Home() {
       <FeatureFocusSection
         title="Question Pool and Activity Management"
         description="Manage everything in one place."
-        imgSrc="/img_v3/question_pool.png"
+        imgSrc="/img/elements/library.png"
         features={[
           {
             title: 'Wide Array of Learning Activities',

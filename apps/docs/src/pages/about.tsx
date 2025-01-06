@@ -149,7 +149,7 @@ const About = () => {
               <div className="flex items-start gap-x-6">
                 <img
                   alt={`Profile photo of ${person.name}`}
-                  src={person.imageUrl ?? '/img_v3/anonymousUser.svg'}
+                  src={person.imageUrl ?? '/img/app/anonymous-user.svg'}
                   className="aspect-ratio w-14 rounded-full"
                 />
                 <div className="flex h-max flex-col">
@@ -187,8 +187,11 @@ const About = () => {
 
         <H2>Project Sponsors</H2>
         <div className="mb-4 flex h-24 flex-col items-start md:h-12 md:flex-row">
-          <img src="/img/logo_swissuniversities.png" className="mr-8 h-full" />
-          <img src="/img/logo_uzh.jpeg" className="h-full" />
+          <img
+            src="/img/logos/logo_swissuniversities.png"
+            className="mr-8 h-full"
+          />
+          <img src="/img/logos/logo_uzh.jpeg" className="h-full" />
         </div>
       </div>
     </Layout>

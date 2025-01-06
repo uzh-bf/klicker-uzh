@@ -22,7 +22,7 @@ Plattenstrasse 14<br/>
         <Column className="w-42">
           <Img
             className="h-12"
-            src="https://www.klicker.uzh.ch/img/KlickerLogo.png"
+            src="https://www.klicker.uzh.ch/img/logos/KlickerLogo.png"
           />
         </Column>
       </Row>
