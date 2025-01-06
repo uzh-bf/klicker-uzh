@@ -243,6 +243,7 @@ export async function pinFeedback(
   })
 
   ctx.pubSub.publish('feedbackUpdated', updatedFeedback)
+  ctx.pubSub.publish('feedbackPinned', updatedFeedback)
   ctx.emitter.emit('invalidate', {
     typename: 'LiveQuiz',
     id: updatedFeedback.liveQuizId,

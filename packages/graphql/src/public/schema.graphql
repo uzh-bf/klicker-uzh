@@ -1573,6 +1573,7 @@ type StudentCourse {
 type Subscription {
   feedbackAdded(quizId: String!): Feedback!
   feedbackCreated(quizId: String!): Feedback!
+  feedbackPinned(quizId: String!): Feedback!
   feedbackRemoved(quizId: String!): String!
   feedbackUpdated(quizId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
