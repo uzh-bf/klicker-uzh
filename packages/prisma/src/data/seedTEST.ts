@@ -1429,7 +1429,7 @@ Mehr bla bla...
         },
       },
       pointsMultiplier: 1,
-      status: Prisma.PublicationStatus.PUBLISHED,
+      status: Prisma.PublicationStatus.ENDED,
       scheduledEndAt: new Date('2024-01-01T11:00:00.000Z'),
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
       stacks: {
@@ -1470,7 +1470,7 @@ Mehr bla bla...
         },
       },
       pointsMultiplier: 1,
-      status: Prisma.PublicationStatus.PUBLISHED,
+      status: Prisma.PublicationStatus.ENDED,
       scheduledEndAt: new Date('2024-01-01T11:00:00.000Z'),
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
       stacks: {
