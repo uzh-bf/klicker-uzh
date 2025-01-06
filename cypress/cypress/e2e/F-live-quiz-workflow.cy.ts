@@ -621,7 +621,14 @@ describe('Different live-quiz workflows', () => {
     cy.get(`[data-cy="live-quizzes"]`).click()
     cy.findByText(quizName1Dupl).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${quizName1Dupl}"]`).click()
-    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
+    cy.get(`[data-cy="delete-live-quiz-${quizName1Dupl}"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.findByText(quizName1Dupl).should('not.exist')
   })
 
@@ -667,9 +674,12 @@ describe('Different live-quiz workflows', () => {
 
     cy.findByText(quizName1New).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${quizName1New}"]`).click()
-    cy.get(`[data-cy="cancel-delete-live-quiz"]`).click()
-    cy.get(`[data-cy="delete-live-quiz-${quizName1New}"]`).click()
-    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.findByText(quizName1New).should('not.exist')
   })
 
@@ -1086,7 +1096,24 @@ describe('Different live-quiz workflows', () => {
 
     cy.findByText(quizName2).should('exist')
     cy.get(`[data-cy="delete-live-quiz-${quizName2}"]`).click()
-    cy.get(`[data-cy="confirm-delete-live-quiz"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
+    cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'not.be.disabled'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-cancel"]`).click()
+    cy.get(`[data-cy="delete-live-quiz-${quizName2}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
+      'be.disabled'
+    )
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.findByText(quizName2).should('not.exist')
   })
 

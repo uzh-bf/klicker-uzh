@@ -31,7 +31,7 @@ import EvaluationLinkLiveQuiz from './actions/EvaluationLinkLiveQuiz'
 import RunningLiveQuizLink from './actions/RunningLiveQuizLink'
 import StartLiveQuizButton from './actions/StartLiveQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
-import DeletionModal from './modals/DeletionModal'
+import LiveQuizDeletionModal from './modals/LiveQuizDeletionModal'
 
 export type LiveQuizListElementType = Pick<
   LiveQuiz,
@@ -87,37 +87,40 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
     [PublicationStatus.Graded]: null,
   }
 
-  const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument, {
-    variables: { id: quiz.id },
-    update(cache, res) {
-      const data = cache.readQuery({
-        query: GetSingleCourseDocument,
-      })
+  const [deleteLiveQuiz, { loading: deletingLiveQuiz }] = useMutation(
+    DeleteLiveQuizDocument,
+    {
+      variables: { id: quiz.id },
+      update(cache, res) {
+        const data = cache.readQuery({
+          query: GetSingleCourseDocument,
+        })
 
-      if (!data?.course || !res.data?.deleteLiveQuiz) {
-        return null
-      }
+        if (!data?.course || !res.data?.deleteLiveQuiz) {
+          return null
+        }
 
-      cache.writeQuery({
-        query: GetSingleCourseDocument,
-        data: {
-          course: {
-            ...data.course,
-            liveQuizzes: data.course.liveQuizzes?.filter(
-              (quiz) => quiz.id !== res.data!.deleteLiveQuiz!.id
-            ),
+        cache.writeQuery({
+          query: GetSingleCourseDocument,
+          data: {
+            course: {
+              ...data.course,
+              liveQuizzes: data.course.liveQuizzes?.filter(
+                (quiz) => quiz.id !== res.data!.deleteLiveQuiz!.id
+              ),
+            },
           },
-        },
-      })
-    },
-    optimisticResponse: {
-      deleteLiveQuiz: {
-        __typename: 'LiveQuiz',
-        id: quiz.id,
+        })
       },
-    },
-    refetchQueries: [GetSingleCourseDocument],
-  })
+      optimisticResponse: {
+        deleteLiveQuiz: {
+          __typename: 'LiveQuiz',
+          id: quiz.id,
+        },
+      },
+      refetchQueries: [GetSingleCourseDocument],
+    }
+  )
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/${dataUser?.userProfile?.shortname}`
 
@@ -285,16 +288,12 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
         </div>
 
         <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
-        <DeletionModal
-          title={t('manage.liveQuizzes.deleteLiveQuiz')}
-          description={t('manage.liveQuizzes.confirmLiveQuizDeletion')}
-          elementName={quiz.name}
-          message={t('manage.liveQuizzes.liveQuizDeletionHint')}
-          deleteElement={deleteLiveQuiz}
+        <LiveQuizDeletionModal
+          quizId={quiz.id}
           open={deletionModal}
           setOpen={setDeletionModal}
-          primaryData={{ cy: 'confirm-delete-live-quiz' }}
-          secondaryData={{ cy: 'cancel-delete-live-quiz' }}
+          onDelete={deleteLiveQuiz}
+          deleting={deletingLiveQuiz}
         />
       </div>
 

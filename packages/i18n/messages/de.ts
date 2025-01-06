@@ -943,9 +943,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     tags: {
       deleteTag: 'Tag löschen',
       confirmTagDeletion:
-        'Sind Sie sich sicher, dass Sie den folgenden Tag löschen möchten?',
-      tagDeletionHint:
-        'Gelöschte Tags können nicht wieder hergestellt werden. Alle Fragen mit diesem Tag bleiben bestehen, der Tag wird jedoch entfernt.',
+        'Bitte bestätigen Sie, dass Sie den Tag <b>{name}</b> löschen möchten. Fragen mit diesem Tag bleiben erhalten, der Tag wird jedoch entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
       validName: 'Geben Sie einen gültigen Namen für Ihren Tag ein.',
     },
     questionForms: {
@@ -1355,12 +1353,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
       deleteLiveQuiz: 'Live Quiz löschen',
-      confirmLiveQuizDeletion:
-        'Sind Sie sich sicher, dass Sie die folgendes Live Quiz löschen möchten?',
-      liveQuizDeletionHint:
-        'Das Löschen eines Live Quizzes ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
-      pastLiveQuizDeletionHint:
-        'Das Löschen eines abgeschlossenen Live Quizzes entfernt dieses aus der Dozierendenansicht. Gesammelte Punkte und Antworten der Teilnehmenden bleiben jedoch erhalten und allfällige öffentliche Evaluationslinks bleiben weiterhin gültig. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      deleteLiveQuizMessage:
+        'Bitte bestätigen Sie die Löschung aller mit diesem Live Quiz verbundenen Resultate und Feedbacks. Durch die Teilnehmenden gesammelte Punkte werden durch die Löschung nicht beeinflusst.',
+      noResponsesToDelete:
+        'Für dieses Live-Quiz wurden noch keine Antworten abgegeben.',
+      deleteResponses:
+        '{number} Antwort(en) von Studierenden in diesem Live-Quiz werden gelöscht.',
+      noFeedbacksToDelete:
+        'Für dieses Live-Quiz wurden noch keine Fragen im Q&A-Kanal abgegeben.',
+      deleteFeedbacks:
+        '{number} Fragen(s) im Live-Q&A-Kanal und Antworten auf diese werden unwiderruflich gelöscht.',
+      noConfusionFeedbacksToDelete:
+        'Für dieses Live-Quiz wurden noch keine Confusion-Feedbacks abgegeben.',
+      deleteConfusionFeedbacks:
+        '{number} Confusion-Feedback(s) werden unwiderruflich gelöscht.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:

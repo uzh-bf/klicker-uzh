@@ -944,9 +944,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     tags: {
       deleteTag: 'Delete tag',
-      confirmTagDeletion: 'Are you sure you want to delete the following tag?',
-      tagDeletionHint:
-        'Deleted tags cannot be restored. All questions with this tag will remain, but the tag will be removed.',
+      confirmTagDeletion:
+        'Please confirm that you want to delete the tag <b>{name}</b>. Questions with this tag will remain, but the tag will be removed. This action cannot be undone.',
       validName: 'Please enter a valid name for your tag.',
     },
     questionForms: {
@@ -1343,13 +1342,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       duplicateLiveQuiz: 'Duplicate Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
-      deleteLiveQuiz: 'Delete Quiz',
-      confirmLiveQuizDeletion:
-        'Are you sure you want to delete the following live quiz?',
-      liveQuizDeletionHint:
-        'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
-      pastLiveQuizDeletionHint:
-        'Deleting a completed live quiz removes it from your lecturer view. Collected points and answers of the participants remain, and any public evaluation links stay valid. Deleted live quizzes cannot be restored at a later date.',
+      deleteLiveQuiz: 'Delete live quiz',
+      deleteLiveQuizMessage:
+        'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
+      noResponsesToDelete:
+        'For this live quiz no responses have been collected yet.',
+      deleteResponses:
+        '{number} response(s) in this live quiz submitted by students will be deleted.',
+      noFeedbacksToDelete:
+        'For this live quiz no questions have been submitted in the Q&A channel yet.',
+      deleteFeedbacks:
+        '{number} questions(s) in the live Q&A channel and their answers will be irreversibly deleted.',
+      noConfusionFeedbacksToDelete:
+        'For this live quiz no confusion feedbacks have been submitted yet.',
+      deleteConfusionFeedbacks:
+        '{number} confusion feedback(s) will be irreversibly deleted.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
