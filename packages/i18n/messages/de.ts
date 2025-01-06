@@ -233,6 +233,7 @@ export default {
       activity: 'Aktivität',
       featurePreview: 'Feature-Vorschau',
       new: 'Neu',
+      correctness: 'Korrektheit',
     },
     contentInput: {
       boldStyle:
@@ -1658,6 +1659,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupLeaderboard: 'Gruppen Leaderboard',
       groups: 'Gruppen',
       assignRandomGroups: 'Zufällige Gruppen zuweisen',
+      emailsInLeaderboardExport:
+        'Um zusätzlich zu den Nutzernamen auch die hinterlegten E-Mail Adressen der Studierenden einzusehen, exportieren Sie bitte die untenstehende Tablle über die CSV-Export Funktion.',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
       runningLiveQuiz: 'Laufendes Live Quiz',

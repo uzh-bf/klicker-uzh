@@ -115,6 +115,7 @@ function TotalStudentPerformancePlot({
               {
                 accessorKey: 'student',
                 header: t('shared.generic.student'),
+                displayName: t('shared.generic.student'),
               },
               {
                 accessorKey: 'totalErrorRate',
@@ -128,6 +129,7 @@ function TotalStudentPerformancePlot({
                 },
                 cell: ({ row }: any) =>
                   `${Math.round(parseFloat(row.getValue('totalErrorRate')) * 100)} %`,
+                displayName: t('manage.analytics.totalErrorRate'),
               },
               {
                 accessorKey: 'firstErrorRate',
@@ -141,6 +143,7 @@ function TotalStudentPerformancePlot({
                 },
                 cell: ({ row }: any) =>
                   `${Math.round(parseFloat(row.getValue('firstErrorRate')) * 100)} %`,
+                displayName: t('manage.analytics.firstAttempt'),
               },
               {
                 accessorKey: 'lastErrorRate',
@@ -154,6 +157,7 @@ function TotalStudentPerformancePlot({
                 },
                 cell: ({ row }: any) =>
                   `${Math.round(parseFloat(row.getValue('lastErrorRate')) * 100)} %`,
+                displayName: t('manage.analytics.lastAttempt'),
               },
               {
                 accessorKey: 'performanceLevelNumber',
@@ -168,6 +172,7 @@ function TotalStudentPerformancePlot({
                 cell: ({ row }: any) => (
                   <LevelTag level={row.getValue('performanceLevelNumber')} />
                 ),
+                displayName: t('manage.analytics.performanceLevel'),
               },
             ]}
             data={participantPerformance.map((entry, ix) => ({

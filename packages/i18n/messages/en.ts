@@ -233,6 +233,7 @@ export default {
       activity: 'Activity',
       featurePreview: 'Feature Preview',
       new: 'New',
+      correctness: 'Correctness',
     },
     contentInput: {
       boldStyle:
@@ -1640,6 +1641,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupLeaderboard: 'Group Leaderboard',
       groups: 'Groups',
       assignRandomGroups: 'Assign random groups',
+      emailsInLeaderboardExport:
+        'To see the email addresses of the students in addition to the usernames, please export the table below using the CSV export function.',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
       runningLiveQuiz: 'Running live quiz',
