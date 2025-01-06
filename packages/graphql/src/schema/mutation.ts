@@ -261,6 +261,13 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      endExpiredActivities: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return CourseService.endExpiredActivities(ctx)
+        },
+      }),
+
       createParticipantAccount: t.field({
         nullable: true,
         type: ParticipantTokenData,

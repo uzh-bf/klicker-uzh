@@ -1,11 +1,11 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "chart.fullname" . }}-cron-activity-pubs
+  name: {{ include "chart.fullname" . }}-cron-activity-ends
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
-  schedule: {{ .Values.cron.activityPublications | quote }}
+  schedule: {{ .Values.cron.activityEndings | quote }}
   jobTemplate:
     spec:
       template:
@@ -22,16 +22,16 @@ spec:
             - -H
             - "x-token: {{ .Values.cron.token }}"
             - -H
-            - "x-graphql-yoga-csrf: publishScheduledActivities"
+            - "x-graphql-yoga-csrf: endExpiredActivities"
             - -d
             - >
                 {
-                    "operationName": "PublishScheduledActivities",
+                    "operationName": "EndExpiredActivities",
                     "variables": {},
                     "extensions": {
                         "persistedQuery": {
                             "version": 1,
-                            "sha256Hash": "fa95285ce30b364b49ed276d38bc68d5edccc4e2b89e7903814e7233aacd6040"
+                            "sha256Hash": "94b26526a4451d4f67c32743f023094384ce4d4002d40c87a6cf3f0585c472fc"
                         }
                     }
                 }

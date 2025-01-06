@@ -30,8 +30,6 @@ export async function getMicroLearningData(
       OR: [
         {
           AND: {
-            scheduledStartAt: { lte: new Date() },
-            scheduledEndAt: { gte: new Date() },
             status: PublicationStatus.PUBLISHED,
             isDeleted: false,
           },
@@ -210,8 +208,13 @@ export async function manipulateMicroLearning(
     if (!oldElement) {
       throw new GraphQLError('MicroLearning not found')
     }
-    if (oldElement.status === PublicationStatus.PUBLISHED) {
-      throw new GraphQLError('Cannot edit a published microLearning')
+    if (
+      oldElement.status === PublicationStatus.PUBLISHED ||
+      oldElement.status === PublicationStatus.ENDED
+    ) {
+      throw new GraphQLError(
+        'Cannot edit a published or completed microLearning'
+      )
     }
 
     await ctx.prisma.microLearning.update({
@@ -458,6 +461,7 @@ export async function endMicroLearning(
       isDeleted: false,
     },
     data: {
+      status: PublicationStatus.ENDED,
       scheduledEndAt: new Date(),
     },
   })
