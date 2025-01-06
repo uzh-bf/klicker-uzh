@@ -1123,6 +1123,10 @@ export async function publishScheduledActivities(ctx: Context) {
     })
   })
 
+  return true
+}
+
+export async function endExpiredActivities(ctx: Context) {
   // ! Set microlearning status to ended for all published microlearnings that have ended
   const microlearningsToEnd = await ctx.prisma.microLearning.findMany({
     where: {
@@ -1148,7 +1152,7 @@ export async function publishScheduledActivities(ctx: Context) {
 
   if (updatedMicroLearningsToEnd.length !== 0) {
     await sendTeamsNotifications(
-      'graphql/endMicroLearnings',
+      'graphql/endMicroLearningsCronjob',
       `Successfully ended ${updatedMicroLearningsToEnd.length} microlearnings`
     )
   }
@@ -1186,7 +1190,7 @@ export async function publishScheduledActivities(ctx: Context) {
 
   if (updatedGroupActivitiesToEnd.length !== 0) {
     await sendTeamsNotifications(
-      'graphql/endGroupActivities',
+      'graphql/endGroupActivitiesCronjob',
       `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
     )
   }
