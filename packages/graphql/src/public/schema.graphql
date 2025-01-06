@@ -945,6 +945,13 @@ type LiveQuizMeta {
   status: PublicationStatus!
 }
 
+type LiveQuizSummary {
+  numOfConfusionFeedbacks: Int!
+  numOfFeedbacks: Int!
+  numOfLeaderboardEntries: Int!
+  numOfResponses: Int!
+}
+
 enum LocaleType {
   de
   en
@@ -1405,7 +1412,7 @@ type Query {
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
-  getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
+  getLiveQuizSummary(quizId: String!): LiveQuizSummary
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
@@ -1473,13 +1480,6 @@ enum ResponseCorrectnessType {
 input ResponseInput {
   choices: [Int!]
   value: String
-}
-
-type RunningLiveQuizSummary {
-  numOfConfusionFeedbacks: Int!
-  numOfFeedbacks: Int!
-  numOfLeaderboardEntries: Int!
-  numOfResponses: Int!
 }
 
 type SingleChoiceResponse {

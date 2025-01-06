@@ -1355,12 +1355,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
       deleteLiveQuiz: 'Live Quiz löschen',
-      confirmLiveQuizDeletion:
-        'Sind Sie sich sicher, dass Sie die folgendes Live Quiz löschen möchten?',
-      liveQuizDeletionHint:
-        'Das Löschen eines Live Quizzes ist nur möglich, solange sie nicht bereits gestartet wurde. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
-      pastLiveQuizDeletionHint:
-        'Das Löschen eines abgeschlossenen Live Quizzes entfernt dieses aus der Dozierendenansicht. Gesammelte Punkte und Antworten der Teilnehmenden bleiben jedoch erhalten und allfällige öffentliche Evaluationslinks bleiben weiterhin gültig. Gelöschte Live Quizzes können nicht zu einem späteren Zeitpunkt wiederhergestellt werden.',
+      deleteLiveQuizMessage:
+        'Bitte bestätigen Sie die Löschung aller mit diesem Live Quiz verbundenen Resultate und Feedbacks. Durch die Teilnehmenden gesammelte Punkte werden durch die Löschung nicht beeinflusst.',
+      noFeedbacksToDelete:
+        'Für dieses Live-Quiz wurden noch keine Fragen im Q&A-Kanal abgegeben.',
+      deleteFeedbacks:
+        '{number} Fragen(s) im Live-Q&A-Kanal und Antworten auf diese werden unwiderruflich gelöscht.',
+      noConfusionFeedbacksToDelete:
+        'Für dieses Live-Quiz wurden noch keine Confusion-Feedbacks abgegeben.',
+      deleteConfusionFeedbacks:
+        '{number} Confusion-Feedback(s) werden unwiderruflich gelöscht.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:

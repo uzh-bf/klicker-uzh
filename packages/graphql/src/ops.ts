@@ -1031,6 +1031,14 @@ export type LiveQuizMeta = {
   status: PublicationStatus;
 };
 
+export type LiveQuizSummary = {
+  __typename?: 'LiveQuizSummary';
+  numOfConfusionFeedbacks: Scalars['Int']['output'];
+  numOfFeedbacks: Scalars['Int']['output'];
+  numOfLeaderboardEntries: Scalars['Int']['output'];
+  numOfResponses: Scalars['Int']['output'];
+};
+
 export enum LocaleType {
   De = 'de',
   En = 'en'
@@ -2182,7 +2190,7 @@ export type Query = {
   getGradingGroupActivity?: Maybe<GroupActivity>;
   getGroupActivitySummary?: Maybe<GroupActivitySummary>;
   getLecturerViewLiveQuiz?: Maybe<LiveQuiz>;
-  getLiveQuizSummary?: Maybe<RunningLiveQuizSummary>;
+  getLiveQuizSummary?: Maybe<LiveQuizSummary>;
   getLoginToken?: Maybe<User>;
   getMicroLearningEvaluation?: Maybe<ActivityEvaluation>;
   getMicroLearningSummary?: Maybe<ActivitySummary>;
@@ -2511,14 +2519,6 @@ export enum ResponseCorrectnessType {
 export type ResponseInput = {
   choices?: InputMaybe<Array<Scalars['Int']['input']>>;
   value?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type RunningLiveQuizSummary = {
-  __typename?: 'RunningLiveQuizSummary';
-  numOfConfusionFeedbacks: Scalars['Int']['output'];
-  numOfFeedbacks: Scalars['Int']['output'];
-  numOfLeaderboardEntries: Scalars['Int']['output'];
-  numOfResponses: Scalars['Int']['output'];
 };
 
 export type SingleChoiceResponse = {
@@ -3892,7 +3892,7 @@ export type GetLiveQuizSummaryQueryVariables = Exact<{
 }>;
 
 
-export type GetLiveQuizSummaryQuery = { __typename?: 'Query', getLiveQuizSummary?: { __typename?: 'RunningLiveQuizSummary', numOfResponses: number, numOfFeedbacks: number, numOfConfusionFeedbacks: number, numOfLeaderboardEntries: number } | null };
+export type GetLiveQuizSummaryQuery = { __typename?: 'Query', getLiveQuizSummary?: { __typename?: 'LiveQuizSummary', numOfResponses: number, numOfFeedbacks: number, numOfConfusionFeedbacks: number, numOfLeaderboardEntries: number } | null };
 
 export type GetLoginTokenQueryVariables = Exact<{ [key: string]: never; }>;
 
