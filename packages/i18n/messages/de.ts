@@ -943,9 +943,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     tags: {
       deleteTag: 'Tag löschen',
       confirmTagDeletion:
-        'Sind Sie sich sicher, dass Sie den folgenden Tag löschen möchten?',
-      tagDeletionHint:
-        'Gelöschte Tags können nicht wieder hergestellt werden. Alle Fragen mit diesem Tag bleiben bestehen, der Tag wird jedoch entfernt.',
+        'Bitte bestätigen Sie, dass Sie den Tag <b>{name}</b> löschen möchten. Fragen mit diesem Tag bleiben erhalten, der Tag wird jedoch entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
       validName: 'Geben Sie einen gültigen Namen für Ihren Tag ein.',
     },
     questionForms: {

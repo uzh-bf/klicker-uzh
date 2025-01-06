@@ -944,9 +944,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     tags: {
       deleteTag: 'Delete tag',
-      confirmTagDeletion: 'Are you sure you want to delete the following tag?',
-      tagDeletionHint:
-        'Deleted tags cannot be restored. All questions with this tag will remain, but the tag will be removed.',
+      confirmTagDeletion:
+        'Please confirm that you want to delete the tag <b>{name}</b>. Questions with this tag will remain, but the tag will be removed. This action cannot be undone.',
       validName: 'Please enter a valid name for your tag.',
     },
     questionForms: {
