@@ -8,6 +8,7 @@ module.exports = {
       'tutorials/supported_element_types',
       'tutorials/element_management',
       'tutorials/course_management',
+      'tutorials/element_stacks',
       'tutorials/live_quiz',
       'tutorials/live_qa',
       'tutorials/microlearning',
