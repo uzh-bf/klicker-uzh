@@ -109,10 +109,10 @@ const Development = () => {
           <H1>Get Involved - P-8 "Digital Skills"</H1>
           <div className="hidden h-full flex-row gap-4 md:flex">
             <img
-              src="/img/logos/logo-swissuniversities.png"
+              src="/img/logos/logo_swissuniversities.png"
               className="mr-8 h-full"
             />
-            <img src="/img/logos/logo-uzh.jpeg" className="h-full" />
+            <img src="/img/logos/logo_uzh.jpeg" className="h-full" />
           </div>
         </div>
 
@@ -132,10 +132,10 @@ const Development = () => {
           .
           <div className="mt-4 block md:hidden">
             <img
-              src="/img/logos/logo-swissuniversities.png"
+              src="/img/logos/logo_swissuniversities.png"
               className="mr-2 h-12"
             />
-            <img src="/img/logos/logo-uzh.jpeg" className="h-12" />
+            <img src="/img/logos/logo_uzh.jpeg" className="h-12" />
           </div>
         </div>
         <div className="mb-16 grid w-full grid-cols-1 justify-between gap-4 md:grid-cols-2 lg:gap-4 xl:grid-cols-4">
