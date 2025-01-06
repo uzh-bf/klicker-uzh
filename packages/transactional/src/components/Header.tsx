@@ -8,7 +8,7 @@ function Header() {
         <Row>
           <Column className="pr-4">
             <Img
-              src="https://www.klicker.uzh.ch/img_v3/uzhlogo_email.png"
+              src="https://www.klicker.uzh.ch/img/uzhlogo_email.png"
               className="w-40"
             />
           </Column>

@@ -32,7 +32,7 @@ export function TitleImage() {
                   </div>
                 </div>
 
-                <img className="-ml-2 w-80" src="/img/KlickerLogo.png" />
+                <img className="-ml-2 w-80" src="/img/logos/KlickerLogo.png" />
                 <p className="mt-6 text-2xl leading-8 text-gray-600">
                   Enhance your classroom experience.
                 </p>
@@ -71,7 +71,7 @@ export function TitleImage() {
         <div className="hidden bg-gray-50 md:block lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <img
             className="aspect-[3/2] object-cover lg:aspect-auto lg:h-full lg:w-full"
-            src="/img_v3/hero.jpg"
+            src="/img/landing/hero.jpg"
             alt=""
           />
         </div>
