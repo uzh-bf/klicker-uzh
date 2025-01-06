@@ -3,11 +3,12 @@ import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Feedback,
+  FeedbackPinnedDocument,
   GetLecturerViewLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import Head from 'next/head'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import ConfusionCharts from '../../../components/interaction/confusion/ConfusionCharts'
 
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -20,14 +21,16 @@ function LecturerView() {
   const t = useTranslations()
   const router = useRouter()
 
-  // TODO: implement subscription logic instead of polling on this lecturer view
-  const { data, loading, error } = useQuery(GetLecturerViewLiveQuizDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    pollInterval: 5000,
-    skip: !router.query.id,
-  })
+  const { data, loading, error, subscribeToMore } = useQuery(
+    GetLecturerViewLiveQuizDocument,
+    {
+      variables: {
+        id: router.query.id as string,
+      },
+      pollInterval: 10000, // polling only required for confusion feedbacks (lower priority)
+      skip: !router.query.id,
+    }
+  )
 
   const aggregateConfusion = useMemo(() => {
     const quiz = data?.getLecturerViewLiveQuiz
@@ -56,6 +59,40 @@ function LecturerView() {
 
     return 'border-green-300'
   }, [aggregateConfusion])
+
+  useEffect(() => {
+    const quizId = data?.getLecturerViewLiveQuiz?.id
+    if (!quizId) return
+
+    const feedbackPinned = subscribeToMore({
+      document: FeedbackPinnedDocument,
+      variables: { quizId },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data || !prev.getLecturerViewLiveQuiz) return prev
+        const prevQuiz = prev.getLecturerViewLiveQuiz
+        const updatedFeedback = subscriptionData.data.feedbackPinned
+        const feedbackShown = !!prevQuiz?.feedbacks?.find(
+          (f) => f.id === updatedFeedback.id
+        )
+
+        return {
+          getLecturerViewLiveQuiz: {
+            ...prevQuiz,
+            feedbacks: updatedFeedback.isPinned
+              ? [
+                  ...(prevQuiz?.feedbacks ?? []),
+                  ...(feedbackShown ? [] : [updatedFeedback]),
+                ]
+              : prevQuiz?.feedbacks?.filter((f) => f.id !== updatedFeedback.id),
+          },
+        }
+      },
+    })
+
+    return () => {
+      feedbackPinned && feedbackPinned()
+    }
+  }, [subscribeToMore, data?.getLecturerViewLiveQuiz?.id])
 
   if (loading) {
     return <Loader />
@@ -90,7 +127,7 @@ function LecturerView() {
   return (
     <div
       className={twMerge(
-        'border-t-only flex flex-row gap-8 border-t-[30px] border-solid p-4',
+        'border-t-only flex flex-col gap-8 border-t-[30px] border-solid p-4 md:flex-row',
         borderColor
       )}
     >
@@ -141,7 +178,7 @@ function LecturerView() {
 
       {isConfusionFeedbackEnabled && (
         <div className="mt-4 flex-initial">
-          <div className="border-primary-100 w-[300px] flex-initial rounded border border-solid p-4 shadow print:hidden">
+          <div className="border-primary-100 w-full flex-initial rounded border border-solid p-4 shadow md:w-[300px] print:hidden">
             <ConfusionCharts confusionValues={confusionSummary ?? undefined} />
           </div>
         </div>

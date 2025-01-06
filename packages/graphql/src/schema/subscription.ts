@@ -49,6 +49,19 @@ export const Subscription = builder.subscriptionType({
         resolve: (payload) => payload,
       }),
 
+      feedbackPinned: t.field({
+        type: FeedbackRef,
+        args: {
+          quizId: t.arg.string({ required: true }),
+        },
+        subscribe: (_, args, ctx) =>
+          pipe(
+            ctx.pubSub.subscribe('feedbackPinned'),
+            filter((data) => data.liveQuizId === args.quizId)
+          ),
+        resolve: (payload) => payload,
+      }),
+
       feedbackAdded: t.field({
         type: FeedbackRef,
         args: {
