@@ -77,8 +77,8 @@ function LiveQuizDeletionModal({
         <ConfirmationItem
           label={
             summary.numOfResponses === 0
-              ? t('manage.course.noResponsesToDelete')
-              : t('manage.course.deleteResponses', {
+              ? t('manage.liveQuizzes.noResponsesToDelete')
+              : t('manage.liveQuizzes.deleteResponses', {
                   number: summary.numOfResponses,
                 })
           }

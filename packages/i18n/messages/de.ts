@@ -1355,6 +1355,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteLiveQuiz: 'Live Quiz löschen',
       deleteLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Live Quiz verbundenen Resultate und Feedbacks. Durch die Teilnehmenden gesammelte Punkte werden durch die Löschung nicht beeinflusst.',
+      noResponsesToDelete:
+        'Für dieses Live-Quiz wurden noch keine Antworten abgegeben.',
+      deleteResponses:
+        '{number} Antwort(en) von Studierenden in diesem Live-Quiz werden gelöscht.',
       noFeedbacksToDelete:
         'Für dieses Live-Quiz wurden noch keine Fragen im Q&A-Kanal abgegeben.',
       deleteFeedbacks:

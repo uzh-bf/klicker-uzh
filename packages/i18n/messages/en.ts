@@ -1345,6 +1345,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deleteLiveQuiz: 'Delete live quiz',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
+      noResponsesToDelete:
+        'For this live quiz no responses have been collected yet.',
+      deleteResponses:
+        '{number} response(s) in this live quiz submitted by students will be deleted.',
       noFeedbacksToDelete:
         'For this live quiz no questions have been submitted in the Q&A channel yet.',
       deleteFeedbacks:
