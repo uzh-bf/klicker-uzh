@@ -124,6 +124,19 @@ function useElementFormInitialValues({
           solutions: options.solutions,
         },
       }
+    } else if (question.__typename === 'SelectionElement') {
+      const options = question.options
+
+      return {
+        ...sharedAttributes,
+        type: ElementType.Selection,
+        options: {
+          hasSampleSolution: options.hasSampleSolution ?? false,
+          numberOfInputs: String(options.numberOfInputs),
+          answerCollection: String(options.answerCollectionId),
+          correctAnswers: options.answerCollectionSolutionIds ?? undefined,
+        },
+      }
     } else if (question.__typename === 'FlashcardElement') {
       return {
         ...sharedAttributes,
@@ -138,7 +151,7 @@ function useElementFormInitialValues({
     }
 
     return undefined
-  }, [question, mode])
+  }, [mode, question, isDuplication])
 }
 
 export default useElementFormInitialValues

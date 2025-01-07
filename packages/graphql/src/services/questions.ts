@@ -52,6 +52,13 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
       }
     }
 
+    case DB.ElementType.SELECTION: {
+      return {
+        hasSampleSolution: options?.hasSampleSolution ?? false,
+        numberOfInputs: options?.numberOfInputs ?? undefined,
+      }
+    }
+
     default: {
       return {}
     }
@@ -102,10 +109,24 @@ export async function getSingleQuestion(
           order: 'asc',
         },
       },
+      answerCollectionSolutions: true,
     },
   })
 
-  return question
+  if (!question) {
+    return null
+  }
+
+  return {
+    ...question,
+    options: {
+      ...question.options,
+      answerCollectionId: question.answerCollectionId,
+      answerCollectionSolutionIds: question.answerCollectionSolutions.map(
+        (sol) => sol.id
+      ),
+    },
+  }
 }
 
 export async function getArtificialElementInstance(
@@ -151,32 +172,35 @@ export async function getArtificialElementInstance(
 }
 
 interface QuestionOptionsArgs {
-  unit?: string | null
-  accuracy?: number | null
-  placeholder?: string | null
+  unit?: string | null // FT only
+  accuracy?: number | null // FT only
+  placeholder?: string | null // FT only
   restrictions?: {
-    maxLength?: number | null
-    minLength?: number | null
-    pattern?: string | null
-    min?: number | null
-    max?: number | null
+    maxLength?: number | null // FT only
+    minLength?: number | null // unused
+    pattern?: string | null // unused
+    min?: number | null // NR only
+    max?: number | null // NR only
   } | null
-  feedback?: string | null
-  solutionRanges?: { min?: number | null; max?: number | null }[] | null
-  exactSolutions?: number[] | null
-  solutions?: string[] | null
-  choices?:
-    | {
+  feedback?: string | null // unused
+  solutionRanges?: { min?: number | null; max?: number | null }[] | null // NR only
+  exactSolutions?: number[] | null // NR only
+  solutions?: string[] | null // FT only
+  choices?: // SC, MC, KPRIM only
+  | {
         ix: number
         value: string
         correct?: boolean | null
         feedback?: string | null
       }[]
     | null
-  displayMode?: DisplayMode | null
-  hasSampleSolution?: boolean | null
-  hasAnswerFeedbacks?: boolean | null
-  pointsMultiplier?: number | null
+  displayMode?: DisplayMode | null // SC, MC, KPRIM only
+  numberOfInputs?: number | null // SE only
+  answerCollection?: number | null // SE only
+  correctAnswers?: number[] | null // SE only
+  hasSampleSolution?: boolean | null // Questions only
+  hasAnswerFeedbacks?: boolean | null // SC, MC, KPRIM only
+  pointsMultiplier?: number | null // all
 }
 
 interface ManipulateQuestionArgs {
@@ -205,7 +229,8 @@ export async function manipulateQuestion(
   }: ManipulateQuestionArgs,
   ctx: ContextWithUser
 ) {
-  let tagsToDelete: string[] = []
+  let tagsToDisconnect: string[] = []
+  let collectionAnswersToDisconnect: number[] = []
 
   const questionPrev =
     typeof id !== 'undefined' && id !== null
@@ -220,14 +245,29 @@ export async function manipulateQuestion(
                 order: 'asc',
               },
             },
+            answerCollectionSolutions: true,
           },
         })
       : undefined
 
+  // determine which tags have been deconnected
   if (questionPrev?.tags) {
-    tagsToDelete = questionPrev.tags
+    tagsToDisconnect = questionPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
+  }
+
+  // determine which answer options are no longer considered to be correct
+  if (
+    type === DB.ElementType.SELECTION &&
+    questionPrev?.answerCollectionSolutions
+  ) {
+    const prevSolutionsIds = questionPrev.answerCollectionSolutions.map(
+      (sol) => sol.id
+    )
+    collectionAnswersToDisconnect = options?.hasSampleSolution
+      ? prevSolutionsIds.filter((sol) => !options.correctAnswers?.includes(sol))
+      : prevSolutionsIds
   }
 
   const question = await ctx.prisma.element.upsert({
@@ -261,6 +301,22 @@ export async function manipulateQuestion(
           }
         }),
       },
+      // connect the selection question to the corresponding answer collection
+      answerCollection:
+        type === DB.ElementType.SELECTION
+          ? {
+              connect: {
+                id: options!.answerCollection!,
+              },
+            }
+          : undefined,
+      // connect the answer collection options to the selection question if sample solution is enabled
+      answerCollectionSolutions:
+        type === DB.ElementType.SELECTION && options?.hasSampleSolution
+          ? {
+              connect: options.correctAnswers!.map((id) => ({ id })),
+            }
+          : undefined,
     },
     update: {
       status: status ?? undefined,
@@ -272,6 +328,7 @@ export async function manipulateQuestion(
         increment: 1,
       },
       options: options ? processElementOptions(type, options) : undefined,
+      // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')
@@ -286,7 +343,7 @@ export async function manipulateQuestion(
               create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
             }
           }),
-        disconnect: tagsToDelete.map((tag) => {
+        disconnect: tagsToDisconnect.map((tag) => {
           return {
             ownerId_name: {
               ownerId: ctx.user.sub,
@@ -295,6 +352,25 @@ export async function manipulateQuestion(
           }
         }),
       },
+      // connect new answer collection and disconnect previous one if they are not the same
+      answerCollection:
+        type === DB.ElementType.SELECTION
+          ? {
+              connect: {
+                id: options!.answerCollection!,
+              },
+            }
+          : undefined,
+      // connect or disconnect the answer collection options if sample solution is enabled
+      answerCollectionSolutions:
+        type === DB.ElementType.SELECTION
+          ? {
+              connect: options?.hasSampleSolution
+                ? options.correctAnswers!.map((id) => ({ id }))
+                : undefined,
+              disconnect: collectionAnswersToDisconnect.map((id) => ({ id })),
+            }
+          : undefined,
     },
     include: {
       tags: {
@@ -302,6 +378,7 @@ export async function manipulateQuestion(
           order: 'asc',
         },
       },
+      answerCollectionSolutions: true,
     },
   })
 
@@ -310,7 +387,16 @@ export async function manipulateQuestion(
     id: question.id,
   })
 
-  return question
+  return {
+    ...question,
+    options: {
+      ...question.options,
+      answerCollectionId: question.answerCollectionId,
+      answerCollectionSolutionIds: question.answerCollectionSolutions.map(
+        (sol) => sol.id
+      ),
+    },
+  }
 }
 
 export async function deleteQuestion(

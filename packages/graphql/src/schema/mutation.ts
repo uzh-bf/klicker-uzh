@@ -57,6 +57,7 @@ import {
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
+  OptionsSelectionInput,
   Tag,
 } from './question.js'
 import {
@@ -980,6 +981,29 @@ export const Mutation = builder.mutationType({
         resolve(_, args, ctx) {
           return QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.FREE_TEXT },
+            ctx
+          )
+        },
+      }),
+
+      manipulateSelectionQuestion: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Element,
+        args: {
+          id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+          options: t.arg({
+            type: OptionsSelectionInput,
+          }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.manipulateQuestion(
+            { ...args, type: DB.ElementType.SELECTION },
             ctx
           )
         },

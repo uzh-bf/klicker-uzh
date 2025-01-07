@@ -146,6 +146,30 @@ export const FreeTextQuestionOptions = builder
       solutions: t.exposeStringList('solutions', { nullable: true }),
     }),
   })
+
+export interface ISelectionQuestionOptions {
+  hasSampleSolution?: boolean
+  numberOfInputs?: number | null
+  answerCollectionId?: number | null
+  answerCollectionSolutionIds?: number[] | null
+}
+export const SelectionQuestionOptions = builder
+  .objectRef<ISelectionQuestionOptions>('SelectionQuestionOptions')
+  .implement({
+    fields: (t) => ({
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
+      numberOfInputs: t.exposeInt('numberOfInputs', { nullable: true }),
+      answerCollectionId: t.exposeInt('answerCollectionId', { nullable: true }),
+      answerCollectionSolutionIds: t.exposeIntList(
+        'answerCollectionSolutionIds',
+        {
+          nullable: true,
+        }
+      ),
+    }),
+  })
 // #endregion
 
 // ----- ELEMENT DATA INTERFACE -----

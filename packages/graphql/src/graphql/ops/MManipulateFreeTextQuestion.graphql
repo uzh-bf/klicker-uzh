@@ -34,7 +34,6 @@ mutation ManipulateFreeTextQuestion(
         }
         solutions
       }
-
       tags {
         id
         name

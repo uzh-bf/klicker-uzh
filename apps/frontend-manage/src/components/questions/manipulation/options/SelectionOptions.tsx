@@ -9,7 +9,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import Select from 'react-select'
 import { ElementFormTypesSelection } from '../types'
 
@@ -22,6 +22,7 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
   const [field, _, helpers] = useField<number[]>('options.correctAnswers')
   const { data, loading } = useQuery(GetAnswerCollectionsDocument)
 
+  // combine all collections that are accessible to the user
   const collections = useMemo(
     () => [
       ...(data?.getAnswerCollections?.answerCollections ?? []),
@@ -33,16 +34,13 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
     ]
   )
 
-  const selectedCollection = useMemo(
-    () =>
-      collections.find(
-        (collection) =>
-          collection.id === parseInt(values.options.answerCollection)
-      ),
-    [collections, values.options.answerCollection]
-  )
-
+  // get all answer options from the selected collections
   const collectionAnswers = useMemo(() => {
+    const selectedCollection = collections.find(
+      (collection) =>
+        collection.id === parseInt(values.options.answerCollection)
+    )
+
     if (!selectedCollection || !selectedCollection.entries) {
       return []
     }
@@ -52,8 +50,9 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
       value: entry.id,
       data: { cy: `select-answer-${entry.value}` },
     }))
-  }, [selectedCollection])
+  }, [collections, values.options.answerCollection])
 
+  // filter the available answer options for the ones included in the current form state
   const selectedAnswers = useMemo(() => {
     if (!field.value) {
       return []
@@ -63,6 +62,21 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
       field.value.includes(entry.value)
     )
   }, [collectionAnswers, field.value])
+
+  // udpate the selected correct answers if the answer collection changes
+  useEffect(() => {
+    if (!field.value) {
+      return
+    }
+
+    const newFieldValues = field.value.filter((id) =>
+      collectionAnswers.map((entry) => entry.value).includes(id)
+    )
+
+    helpers.setValue(newFieldValues)
+    // do not add value as a dependency --> rendering loo! - updates only on collection change desired
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionAnswers])
 
   if (loading) {
     return <Loader />
@@ -93,6 +107,7 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
         />
         <FormikNumberField
           required
+          min={1}
           name="options.numberOfInputs"
           label={t('manage.questionForms.numberOfInputs')}
           labelType="small"

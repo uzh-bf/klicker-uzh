@@ -10,6 +10,7 @@ import {
   ManipulateFlashcardElementDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
@@ -30,6 +31,7 @@ import {
   prepareFlashcardArgs,
   prepareFreeTextArgs,
   prepareNumericalArgs,
+  prepareSelectionArgs,
 } from './helpers'
 import AnswerFeedbackSetting from './options/AnswerFeedbackSetting'
 import ChoicesOptions from './options/ChoicesOptions'
@@ -51,14 +53,14 @@ export enum ElementEditMode {
 interface ElementEditModalProps {
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
-  questionId?: number
+  elementId?: number
   mode: ElementEditMode
 }
 
 function ElementEditModal({
   isOpen,
   handleSetIsOpen,
-  questionId,
+  elementId,
   mode,
 }: ElementEditModalProps): React.ReactElement {
   const t = useTranslations()
@@ -72,8 +74,8 @@ function ElementEditModal({
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
     {
-      variables: { id: questionId! },
-      skip: typeof questionId === 'undefined',
+      variables: { id: elementId! },
+      skip: typeof elementId === 'undefined',
     }
   )
 
@@ -91,6 +93,9 @@ function ElementEditModal({
   )
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
+  )
+  const [manipulateSelectionQuestion] = useMutation(
+    ManipulateSelectionQuestionDocument
   )
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
 
@@ -116,7 +121,7 @@ function ElementEditModal({
         switch (values.type) {
           case ElementType.Content: {
             const args = prepareContentArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -136,7 +141,7 @@ function ElementEditModal({
 
           case ElementType.Flashcard: {
             const args = prepareFlashcardArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -158,7 +163,7 @@ function ElementEditModal({
           case ElementType.Mc:
           case ElementType.Kprim: {
             const args = prepareChoicesArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -177,7 +182,7 @@ function ElementEditModal({
           }
           case ElementType.Numerical: {
             const args = prepareNumericalArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -196,7 +201,7 @@ function ElementEditModal({
           }
           case ElementType.FreeText: {
             const args = prepareFreeTextArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -213,15 +218,34 @@ function ElementEditModal({
             if (data?.__typename !== 'FreeTextElement' || !data.id) return
             break
           }
+          case ElementType.Selection: {
+            const args = prepareSelectionArgs({
+              elementId,
+              isDuplication,
+              values,
+            })
+
+            const result = await manipulateSelectionQuestion({
+              variables: args,
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
+            })
+
+            const data = result.data?.manipulateSelectionQuestion
+            if (data?.__typename !== 'SelectionElement' || !data.id) return
+            break
+          }
 
           default:
             break
         }
 
         if (mode === ElementEditMode.EDIT && updateInstances) {
-          if (questionId !== null && typeof questionId !== 'undefined') {
+          if (elementId !== null && typeof elementId !== 'undefined') {
             await updateElementInstances({
-              variables: { elementId: questionId },
+              variables: { elementId: elementId },
             })
           }
         }

@@ -69,7 +69,7 @@ export interface ElementFormTypesSelection extends SharedQuestionFormProps {
   explanation?: string | null
   options: {
     hasSampleSolution: boolean
-    numberOfInputs: number
+    numberOfInputs: string
     answerCollection: string
     correctAnswers?: number[] | null
   }

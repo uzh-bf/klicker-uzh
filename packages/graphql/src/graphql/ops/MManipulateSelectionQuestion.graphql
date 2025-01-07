@@ -1,27 +1,38 @@
-mutation ManipulateContentElement(
+mutation ManipulateSelectionQuestion(
   $id: Int
   $status: ElementStatus
   $name: String
   $content: String
+  $explanation: String
+  $options: OptionsSelectionInput
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
-  manipulateContentElement(
+  manipulateSelectionQuestion(
     id: $id
     status: $status
     name: $name
     content: $content
+    explanation: $explanation
+    options: $options
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
     __typename
-    ... on ContentElement {
+    ... on SelectionElement {
       id
       name
       status
       type
       content
+      explanation
       pointsMultiplier
+      options {
+        hasSampleSolution
+        numberOfInputs
+        answerCollectionId
+        answerCollectionSolutionIds
+      }
       tags {
         id
         name

@@ -25,8 +25,10 @@ import {
   ElementStatus,
   ElementType,
   FreeTextQuestionOptions,
+  ISelectionQuestionOptions,
   NumericalQuestionOptions,
   NumericalSolutionRange,
+  SelectionQuestionOptions,
   type IChoiceQuestionOptions,
   type IFreeTextQuestionOptions,
   type INumericalQuestionOptions,
@@ -127,6 +129,18 @@ export const ResponseInput = builder.inputType('ResponseInput', {
     value: t.string({ required: false }),
   }),
 })
+
+export const OptionsSelectionInput = builder.inputType(
+  'OptionsSelectionInput',
+  {
+    fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      answerCollection: t.int({ required: false }),
+      numberOfInputs: t.int({ required: false }),
+      correctAnswers: t.intList({ required: false }),
+    }),
+  }
+)
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
 // #region
@@ -403,6 +417,18 @@ export const FreeTextElement = builder
     }),
   })
 
+export interface ISelectionElement extends IBaseElementProps {
+  options: ISelectionQuestionOptions
+}
+export const SelectionElement = builder
+  .objectRef<ISelectionElement>('SelectionElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      options: t.expose('options', { type: SelectionQuestionOptions }),
+    }),
+  })
+
 export interface IFlashcardElement extends IBaseElementProps {}
 export const FlashcardElement = builder
   .objectRef<IFlashcardElement>('FlashcardElement')
@@ -428,6 +454,7 @@ export const Element = builder.unionType('Element', {
     FreeTextElement,
     FlashcardElement,
     ContentElement,
+    SelectionElement,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -443,6 +470,8 @@ export const Element = builder.unionType('Element', {
         return FlashcardElement
       case DB.ElementType.CONTENT:
         return ContentElement
+      case DB.ElementType.SELECTION:
+        return SelectionElement
     }
   },
 })
