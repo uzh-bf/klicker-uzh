@@ -1143,7 +1143,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
-        'Live quizzes can only contain single choice, multiple choice, kprim, numerical and free text questions.',
+        'Live quizzes can only contain single choice, multiple choice, kprim, numerical, free-text, and selection questions.',
       liveQuizTimeRestriction: 'Please enter a valid time restriction.',
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
@@ -1268,7 +1268,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityMissingCourse:
         'Group activities must be assigned to a course.',
       groupActivityTypes:
-        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical, and free-text questions.',
+        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical, free-text, and selection questions.',
       groupActivityCreated:
         'Your group activity <b>{name}</b> has been created successfully.',
       groupActivityEdited:

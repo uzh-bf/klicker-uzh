@@ -52,6 +52,7 @@ const acceptedTypes = [
   ElementType.Numerical,
   ElementType.FreeText,
   ElementType.Content,
+  ElementType.Selection,
 ]
 
 interface GroupActivityWizardProps {
