@@ -59,6 +59,12 @@ export default {
       short: 'FC',
       typeLabel: 'Flashcard (FC)',
     },
+    SELECTION: {
+      short: 'SE',
+      typeLabel: 'Selection (SE)',
+      text: 'Please select the correct answer from the list.',
+      richtext: 'Please select the <b>correct answer</b> from the list.',
+    },
     login: {
       installButton: 'Install Now',
     },
@@ -238,6 +244,7 @@ export default {
       decline: 'Decline',
       user: 'User',
       correctness: 'Correctness',
+      answerCollection: 'Answer Collection',
     },
     contentInput: {
       boldStyle:
@@ -986,7 +993,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter optional settings for the open question here. Note that the answer to open questions is graded without checking for upper and lower case.',
       NUMERICALOptionsTooltip:
         'Enter optional settings for the numerical question here. Please note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
-
+      SELECTIONOptionsTooltip:
+        'Please select the answer collection from which the students should select the correct answers.',
+      selectCollection: 'Select collection...',
+      numberOfInputs: 'Number of inputs',
+      correctAnswerOptions: 'Correct answer options',
+      correctAnswerOptionsTooltip:
+        'Please select the correct answer options from the list of answer options. The number of correct answer options must correspond to the number of input fields.',
+      selectAnswerOptions: 'Select answer options...',
+      noMatchingOptionFound: 'No matching option found',
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',

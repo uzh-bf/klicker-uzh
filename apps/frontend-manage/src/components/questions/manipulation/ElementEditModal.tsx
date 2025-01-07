@@ -38,6 +38,7 @@ import FreeTextOptions from './options/FreeTextOptions'
 import NumericalOptions from './options/NumericalOptions'
 import OptionsLabel from './options/OptionsLabel'
 import SampleSolutionSetting from './options/SampleSolutionSetting'
+import SelectionOptions from './options/SelectionOptions'
 import useElementFormInitialValues from './useElementFormInitialValues'
 import useValidationSchema from './useValidationSchema'
 
@@ -60,7 +61,6 @@ function ElementEditModal({
   questionId,
   mode,
 }: ElementEditModalProps): React.ReactElement {
-  // TODO: styling of tooltips - some are too wide
   const t = useTranslations()
   const questionManipulationSchema = useValidationSchema()
 
@@ -317,6 +317,10 @@ function ElementEditModal({
 
                   {values.type === ElementType.FreeText && (
                     <FreeTextOptions values={values} />
+                  )}
+
+                  {values.type === ElementType.Selection && (
+                    <SelectionOptions values={values} />
                   )}
                 </Form>
 

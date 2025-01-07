@@ -59,6 +59,13 @@ export default {
       short: 'FC',
       typeLabel: 'Lernkarte (FC)',
     },
+    SELECTION: {
+      short: 'SE',
+      typeLabel: 'Auswahl (SE)',
+      text: 'Bitte wählen Sie die richtigen Antworten aus der Liste.',
+      richtext:
+        'Bitte wählen Sie die <b>richtigen Antworten</b> aus der Liste.',
+    },
     login: {
       installButton: 'Jetzt installieren',
     },
@@ -238,6 +245,7 @@ export default {
       decline: 'Ablehnen',
       user: 'Nutzer',
       correctness: 'Korrektheit',
+      answerCollection: 'Antwort-Sammlung',
     },
     contentInput: {
       boldStyle:
@@ -979,12 +987,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerOption: 'Antwortmöglichkeit',
       answerOptionsTooltip:
         'Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.',
+      answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
       FTOptionsTooltip:
         'Nehmen Sie hier optionale Einstellungen für die Freitext-Frage vor. Bitte beachten Sie, dass die Antwort auf Freitext-Fragen nicht auf Gross- und Kleinschreibung geprüft wird.',
       NUMERICALOptionsTooltip:
         'Nehmen Sie hier optionale Einstellungen für die numerische Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
-
-      answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
+      SELECTIONOptionsTooltip:
+        'Wählen Sie hier die Antwort-Sammlung aus welcher die Studierenden die korrekten Antworten auswählen sollen.',
+      selectCollection: 'Sammlung auswählen...',
+      numberOfInputs: 'Anzahl Eingabefelder',
+      correctAnswerOptions: 'Korrekte Antwortoptionen',
+      correctAnswerOptionsTooltip:
+        'Bitte wählen Sie die korrekten Antwortoptionen aus der Liste der Antwortmöglichkeiten aus. Die Anzahl der korrekten Antwortoptionen muss mindestens der Anzahl Eingabefelder entsprechen',
+      selectAnswerOptions: 'Antwortmöglichkeiten auswählen...',
+      noMatchingOptionFound: 'Keine passende Option gefunden',
       LISTDisplay: 'Anzeige als Liste',
       GRIDDisplay: 'Anzeige als Raster',
       feedbackPlaceholder: 'Feedback eingeben…',

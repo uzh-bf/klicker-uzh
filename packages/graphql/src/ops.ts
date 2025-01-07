@@ -555,7 +555,8 @@ export enum ElementType {
   Kprim = 'KPRIM',
   Mc = 'MC',
   Numerical = 'NUMERICAL',
-  Sc = 'SC'
+  Sc = 'SC',
+  Selection = 'SELECTION'
 }
 
 export type Feedback = {

@@ -503,6 +503,7 @@ enum ElementType {
   MC
   NUMERICAL
   SC
+  SELECTION
 }
 
 type Feedback {

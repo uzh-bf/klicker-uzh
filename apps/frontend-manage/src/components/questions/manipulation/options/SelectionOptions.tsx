@@ -1,0 +1,146 @@
+import { useQuery } from '@apollo/client'
+import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import {
+  FormikNumberField,
+  FormikSelectField,
+  FormikSwitchField,
+  FormLabel,
+} from '@uzh-bf/design-system'
+import { useField } from 'formik'
+import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
+import Select from 'react-select'
+import { ElementFormTypesSelection } from '../types'
+
+interface SelectionOptionsProps {
+  values: ElementFormTypesSelection
+}
+
+function SelectionOptions({ values }: SelectionOptionsProps) {
+  const t = useTranslations()
+  const [field, _, helpers] = useField<number[]>('options.correctAnswers')
+  const { data, loading } = useQuery(GetAnswerCollectionsDocument)
+
+  const collections = useMemo(
+    () => [
+      ...(data?.getAnswerCollections?.answerCollections ?? []),
+      ...(data?.getAnswerCollections?.sharedCollections ?? []),
+    ],
+    [
+      data?.getAnswerCollections?.answerCollections,
+      data?.getAnswerCollections?.sharedCollections,
+    ]
+  )
+
+  const selectedCollection = useMemo(
+    () =>
+      collections.find(
+        (collection) =>
+          collection.id === parseInt(values.options.answerCollection)
+      ),
+    [collections, values.options.answerCollection]
+  )
+
+  const collectionAnswers = useMemo(() => {
+    if (!selectedCollection || !selectedCollection.entries) {
+      return []
+    }
+
+    return selectedCollection.entries.map((entry) => ({
+      label: entry.value,
+      value: entry.id,
+      data: { cy: `select-answer-${entry.value}` },
+    }))
+  }, [selectedCollection])
+
+  const selectedAnswers = useMemo(() => {
+    if (!field.value) {
+      return []
+    }
+
+    return collectionAnswers.filter((entry) =>
+      field.value.includes(entry.value)
+    )
+  }, [collectionAnswers, field.value])
+
+  if (loading) {
+    return <Loader />
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1 lg:flex-row lg:items-start lg:gap-3">
+        <FormikSelectField
+          required
+          name="options.answerCollection"
+          label={t('shared.generic.answerCollection')}
+          labelType="small"
+          tooltip={t('manage.questionForms.SELECTIONOptionsTooltip')}
+          placeholder={t('manage.questionForms.selectCollection')}
+          items={collections.map((collection) => ({
+            label: collection.name,
+            value: String(collection.id),
+            data: {
+              cy: `select-answer-collection-${collection.id}`,
+            },
+          }))}
+          data={{ cy: 'select-answer-collection' }}
+          className={{
+            select: { trigger: 'h-9 w-80' },
+            root: 'order-2 lg:order-1',
+          }}
+        />
+        <FormikNumberField
+          required
+          name="numberOfInputs"
+          label={t('manage.questionForms.numberOfInputs')}
+          labelType="small"
+          data={{ cy: 'configure-number-of-inputs' }}
+          className={{
+            field: 'w-40',
+            root: 'order-3 lg:order-2',
+          }}
+        />
+        <FormikSwitchField
+          name="options.hasSampleSolution"
+          label={t('shared.generic.sampleSolution')}
+          data={{ cy: 'configure-sample-solution' }}
+          className={{
+            label: 'text-gray-600',
+            root: 'order-1 mt-2 self-end lg:order-3 lg:self-start',
+          }}
+        />
+      </div>
+      {values.options.hasSampleSolution ? (
+        <div>
+          <FormLabel
+            required
+            label={t('manage.questionForms.correctAnswerOptions')}
+            tooltip={t('manage.questionForms.correctAnswerOptionsTooltip')}
+            labelType="small"
+          />
+          <Select
+            isClearable
+            isMulti
+            value={selectedAnswers}
+            options={collectionAnswers}
+            classNames={{
+              container: () => 'w-full',
+            }}
+            onChange={(newValue) =>
+              helpers.setValue(newValue.map((tag) => tag.value))
+            }
+            placeholder={t('manage.questionForms.selectAnswerOptions')}
+            noOptionsMessage={() =>
+              t('manage.questionForms.noMatchingOptionFound')
+            }
+            data-cy="select-correct-answers"
+          />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export default SelectionOptions
