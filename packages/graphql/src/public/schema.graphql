@@ -392,7 +392,7 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar Date
 
-union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement
+union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
 
 type ElementBlock {
   elements: [ElementInstance!]
@@ -503,6 +503,7 @@ enum ElementType {
   MC
   NUMERICAL
   SC
+  SELECTION
 }
 
 type Feedback {
@@ -1088,6 +1089,7 @@ type Mutation {
   manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateSelectionQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
   modifyAnswerCollection(access: CollectionAccess, description: String, id: Int!, name: String): AnswerCollection
@@ -1262,6 +1264,13 @@ input OptionsNumericalInput {
   restrictions: NumericalRestrictionsInput
   solutionRanges: [SolutionRangeInput!]
   unit: String
+}
+
+input OptionsSelectionInput {
+  answerCollection: Int
+  correctAnswers: [Int!]
+  hasSampleSolution: Boolean
+  numberOfInputs: Int
 }
 
 enum ParameterType {
@@ -1526,6 +1535,30 @@ enum ResponseCorrectnessType {
 input ResponseInput {
   choices: [Int!]
   value: String
+}
+
+type SelectionElement {
+  content: String!
+  createdAt: Date
+  explanation: String
+  id: Int!
+  isArchived: Boolean
+  isDeleted: Boolean
+  name: String!
+  options: SelectionQuestionOptions!
+  pointsMultiplier: Int!
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date
+  version: Int!
+}
+
+type SelectionQuestionOptions {
+  answerCollectionId: Int
+  answerCollectionSolutionIds: [Int!]
+  hasSampleSolution: Boolean
+  numberOfInputs: Int
 }
 
 type SharingRequestResponse {

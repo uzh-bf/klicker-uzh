@@ -1,9 +1,4 @@
-import {
-  faComment as faCommentRegular,
-  faRectangleList as faListRegular,
-  faCircleQuestion as faQuestionRegular,
-} from '@fortawesome/free-regular-svg-icons'
-import { IconDefinition, faArchive } from '@fortawesome/free-solid-svg-icons'
+import { faArchive } from '@fortawesome/free-solid-svg-icons'
 import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
 import { Badge } from '@uzh-bf/design-system/dist/future'
 import React, { useState } from 'react'
@@ -36,16 +31,6 @@ const StatusColors: Record<ElementStatus, string> = {
   [ElementStatus.Draft]: 'bg-slate-400',
   [ElementStatus.Review]: 'bg-violet-400',
   [ElementStatus.Ready]: 'bg-green-400',
-}
-
-const ElementIcons: Record<ElementType, IconDefinition> = {
-  FLASHCARD: faListRegular,
-  CONTENT: faCommentRegular,
-  SC: faQuestionRegular,
-  MC: faQuestionRegular,
-  KPRIM: faQuestionRegular,
-  FREE_TEXT: faQuestionRegular,
-  NUMERICAL: faQuestionRegular,
 }
 
 export interface QuestionDragDropTypes {
@@ -207,7 +192,7 @@ function Question({
               <ElementEditModal
                 handleSetIsOpen={setIsModificationModalOpen}
                 isOpen={isModificationModalOpen}
-                questionId={id}
+                elementId={id}
                 mode={ElementEditMode.EDIT}
               />
             )}
@@ -227,7 +212,7 @@ function Question({
               <ElementEditModal
                 handleSetIsOpen={setIsDuplicationModalOpen}
                 isOpen={isDuplicationModalOpen}
-                questionId={id}
+                elementId={id}
                 mode={ElementEditMode.DUPLICATE}
               />
             )}

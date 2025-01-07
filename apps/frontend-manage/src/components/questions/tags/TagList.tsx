@@ -7,6 +7,7 @@ import {
   faRectangleList as faListRegular,
   faPenToSquare as faPenRegular,
   faCircleQuestion as faQuestionRegular,
+  faSquareCheck as faSquareCheckRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import {
   IconDefinition,
@@ -17,6 +18,7 @@ import {
   faRectangleList as faListSolid,
   faPenToSquare as faPenSolid,
   faCircleQuestion as faQuestionSolid,
+  faSquareCheck as faSquareCheckSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementStatus, ElementType } from '@klicker-uzh/graphql/dist/ops'
@@ -36,6 +38,7 @@ const elementTypeFilters: Record<ElementType, IconDefinition[]> = {
   KPRIM: [faQuestionRegular, faQuestionSolid],
   FREE_TEXT: [faQuestionRegular, faQuestionSolid],
   NUMERICAL: [faQuestionRegular, faQuestionSolid],
+  SELECTION: [faSquareCheckRegular, faSquareCheckSolid],
 }
 
 const elementStatusFilters: Record<ElementStatus, IconDefinition[]> = {

@@ -90,6 +90,30 @@ query GetSingleQuestion($id: Int!) {
       }
     }
 
+    ... on SelectionElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      options {
+        hasSampleSolution
+        numberOfInputs
+        answerCollectionId
+        answerCollectionSolutionIds
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
     ... on FlashcardElement {
       id
       version

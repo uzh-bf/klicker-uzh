@@ -112,6 +112,34 @@ query GetUserQuestions {
       }
     }
 
+    ... on SelectionElement {
+      id
+      name
+      status
+      type
+      content
+
+      pointsMultiplier
+      version
+
+      isArchived
+      isDeleted
+      createdAt
+      updatedAt
+
+      options {
+        __typename
+        hasSampleSolution
+        numberOfInputs
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
     ... on FlashcardElement {
       id
       name

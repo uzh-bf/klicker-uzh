@@ -49,10 +49,10 @@ function QuestionList({
     <div className="bg-uzh-blue-400 space-y-1 md:space-y-2">
       {questions.map((question) => (
         <Question
+          key={`question-list-element-${question.id}`}
           checked={!!selectedQuestions[question.id]}
           id={question.id}
           isArchived={question.isArchived ?? false}
-          key={question.id}
           tags={question.tags || []}
           handleTagClick={handleTagClick}
           title={question.name}
@@ -60,7 +60,7 @@ function QuestionList({
           type={question.type}
           content={question.content}
           hasAnswerFeedbacks={
-            'options' in question
+            'options' in question && 'hasAnswerFeedbacks' in question.options
               ? (question.options.hasAnswerFeedbacks ?? false)
               : true
           }

@@ -64,6 +64,17 @@ export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
   }
 }
 
+export interface ElementFormTypesSelection extends SharedQuestionFormProps {
+  type: ElementType.Selection
+  explanation?: string | null
+  options: {
+    hasSampleSolution: boolean
+    numberOfInputs: string
+    answerCollection: string
+    correctAnswers?: number[] | null
+  }
+}
+
 export interface ElementFormTypesFlashcard extends SharedQuestionFormProps {
   type: ElementType.Flashcard
   explanation: string
@@ -79,3 +90,4 @@ export type ElementFormTypes =
   | ElementFormTypesFreeText
   | ElementFormTypesFlashcard
   | ElementFormTypesContent
+  | ElementFormTypesSelection

@@ -4,20 +4,21 @@ import {
   ElementFormTypesFlashcard,
   ElementFormTypesFreeText,
   ElementFormTypesNumerical,
+  ElementFormTypesSelection,
 } from './types'
 
 interface PrepareContentArgsProps {
-  questionId?: number
+  elementId?: number
   isDuplication: boolean
   values: ElementFormTypesContent
 }
 export function prepareContentArgs({
-  questionId,
+  elementId,
   isDuplication,
   values,
 }: PrepareContentArgsProps) {
   return {
-    id: isDuplication ? undefined : questionId,
+    id: isDuplication ? undefined : elementId,
     name: values.name,
     status: values.status,
     content: values.content,
@@ -27,17 +28,17 @@ export function prepareContentArgs({
 }
 
 interface PrepareFlashcardArgsProps {
-  questionId?: number
+  elementId?: number
   isDuplication: boolean
   values: ElementFormTypesFlashcard
 }
 export function prepareFlashcardArgs({
-  questionId,
+  elementId,
   isDuplication,
   values,
 }: PrepareFlashcardArgsProps) {
   return {
-    id: isDuplication ? undefined : questionId,
+    id: isDuplication ? undefined : elementId,
     name: values.name,
     status: values.status,
     content: values.content,
@@ -48,17 +49,17 @@ export function prepareFlashcardArgs({
 }
 
 interface PrepareChoicesArgsProps {
-  questionId?: number
+  elementId?: number
   isDuplication: boolean
   values: ElementFormTypesChoices
 }
 export function prepareChoicesArgs({
-  questionId,
+  elementId,
   isDuplication,
   values,
 }: PrepareChoicesArgsProps) {
   return {
-    id: isDuplication ? undefined : questionId,
+    id: isDuplication ? undefined : elementId,
     name: values.name,
     type: values.type,
     status: values.status,
@@ -87,17 +88,17 @@ export function prepareChoicesArgs({
 }
 
 interface PrepareNumericalArgsProps {
-  questionId?: number
+  elementId?: number
   isDuplication: boolean
   values: ElementFormTypesNumerical
 }
 export function prepareNumericalArgs({
-  questionId,
+  elementId,
   isDuplication,
   values,
 }: PrepareNumericalArgsProps) {
   return {
-    id: isDuplication ? undefined : questionId,
+    id: isDuplication ? undefined : elementId,
     name: values.name,
     status: values.status,
     content: values.content,
@@ -155,17 +156,17 @@ export function prepareNumericalArgs({
 }
 
 interface PrepareFreeTextArgsProps {
-  questionId?: number
+  elementId?: number
   isDuplication: boolean
   values: ElementFormTypesFreeText
 }
 export function prepareFreeTextArgs({
-  questionId,
+  elementId,
   isDuplication,
   values,
 }: PrepareFreeTextArgsProps) {
   return {
-    id: isDuplication ? undefined : questionId,
+    id: isDuplication ? undefined : elementId,
     name: values.name,
     status: values.status,
     content: values.content,
@@ -187,6 +188,37 @@ export function prepareFreeTextArgs({
             : parseInt(String(values.options.restrictions.maxLength)),
       },
       solutions: values.options.solutions,
+    },
+    tags: values.tags,
+  }
+}
+
+interface PrepareSelectionArgsProps {
+  elementId?: number
+  isDuplication: boolean
+  values: ElementFormTypesSelection
+}
+export function prepareSelectionArgs({
+  elementId,
+  isDuplication,
+  values,
+}: PrepareSelectionArgsProps) {
+  return {
+    id: isDuplication ? undefined : elementId,
+    name: values.name,
+    status: values.status,
+    content: values.content,
+    explanation:
+      !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
+        ? values.explanation
+        : null,
+    pointsMultiplier: parseInt(values.pointsMultiplier),
+
+    options: {
+      hasSampleSolution: values.options.hasSampleSolution,
+      answerCollection: parseInt(values.options.answerCollection),
+      numberOfInputs: parseInt(values.options.numberOfInputs),
+      correctAnswers: values.options.correctAnswers,
     },
     tags: values.tags,
   }

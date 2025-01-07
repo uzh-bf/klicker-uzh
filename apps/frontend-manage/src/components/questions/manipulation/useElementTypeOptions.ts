@@ -6,24 +6,6 @@ function useElementTypeOptions() {
 
   return [
     {
-      value: ElementType.Content,
-      label: t(`shared.${ElementType.Content}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Content}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.Flashcard,
-      label: t(`shared.${ElementType.Flashcard}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Flashcard}.typeLabel`
-        )}`,
-      },
-    },
-    {
       value: ElementType.Sc,
       label: t(`shared.${ElementType.Sc}.typeLabel`),
       data: {
@@ -61,6 +43,33 @@ function useElementTypeOptions() {
       data: {
         cy: `select-question-type-${t(
           `shared.${ElementType.FreeText}.typeLabel`
+        )}`,
+      },
+    },
+    {
+      value: ElementType.Content,
+      label: t(`shared.${ElementType.Content}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Content}.typeLabel`
+        )}`,
+      },
+    },
+    {
+      value: ElementType.Flashcard,
+      label: t(`shared.${ElementType.Flashcard}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Flashcard}.typeLabel`
+        )}`,
+      },
+    },
+    {
+      value: ElementType.Selection,
+      label: t(`shared.${ElementType.Selection}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Selection}.typeLabel`
         )}`,
       },
     },

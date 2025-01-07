@@ -182,6 +182,28 @@ function ElementFormErrors({
               'manage.questionForms.possibleSolutions'
             )}: ${errors.options.solutions}`}</li>
           )}
+
+        {/* error messages specific to NR questions */}
+        {'options' in errors &&
+          errors.options &&
+          'answerCollection' in errors.options &&
+          errors.options.answerCollection && (
+            <li>{`${t('manage.questionForms.answerCollection')}: ${errors.options.answerCollection}`}</li>
+          )}
+
+        {'options' in errors &&
+          errors.options &&
+          'numberOfInputs' in errors.options &&
+          errors.options.numberOfInputs && (
+            <li>{`${t('manage.questionForms.numberOfInputs')}: ${errors.options.numberOfInputs}`}</li>
+          )}
+
+        {'options' in errors &&
+          errors.options &&
+          'correctAnswers' in errors.options &&
+          errors.options.correctAnswers && (
+            <li>{`${t('manage.questionForms.correctAnswerOptions')}: ${errors.options.correctAnswers}`}</li>
+          )}
       </ul>
     </UserNotification>
   )
