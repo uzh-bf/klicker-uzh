@@ -1193,7 +1193,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click()
   })
 
-  it.only('Verify that the edited state of the selection question persists', () => {
+  it('Verify that the edited state of the selection question persists', () => {
     cy.get(`[data-cy="edit-question-${SETitleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',

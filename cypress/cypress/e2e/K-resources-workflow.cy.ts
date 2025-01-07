@@ -216,7 +216,23 @@ describe('Create, edit and share answer collections', () => {
     })
   })
 
-  // TODO: verify that all three answer collections are available when creating a new selection question
+  it('Verify that all three answer collections can be used in selection questions by owner', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(`[data-cy="select-answer-collection-${publicName}"]`).should('exist')
+    cy.get(`[data-cy="select-answer-collection-${restrictedName}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="select-answer-collection-${privateNameNew}"]`).should(
+      'exist'
+    )
+  })
 
   it('Request access to the restricted answer catalogue for user pro1', () => {
     cy.loginIndividualCatalyst()
@@ -375,7 +391,25 @@ describe('Create, edit and share answer collections', () => {
       })
   })
 
-  // TODO: check that the restricted answer catalogue can be used in selection questions for user pro1
+  it('Verify that only the shared and restricted answer catalogue is available during question creation for user pro1', () => {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(`[data-cy="select-answer-collection-${publicName}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="select-answer-collection-${restrictedName}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="select-answer-collection-${privateNameNew}"]`).should(
+      'not.exist'
+    )
+  })
 
   it('Verify that user pro2 does not have access to the restricted answer catalogue', () => {
     cy.loginInstitutionalCatalyst()
@@ -385,7 +419,17 @@ describe('Create, edit and share answer collections', () => {
     )
   })
 
-  // TODO: check that the no answer catalogue is available user pro2 and that the corresponding message is shown
+  it('Verify that no answer catalogue is available for user pro2', () => {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+
+    cy.get('[data-cy="select-answer-collection"]').should('not.exist')
+    cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
+  })
 
   it('Import the public answer catalogue for user pro1 and verify access to it', () => {
     cy.loginIndividualCatalyst()
@@ -434,6 +478,24 @@ describe('Create, edit and share answer collections', () => {
         cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
       })
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
+  })
+
+  it('Verify that imported public answer collection is also available for during question creation user pro1', () => {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(`[data-cy="select-answer-collection-${publicName}"]`).should('exist')
+    cy.get(`[data-cy="select-answer-collection-${restrictedName}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="select-answer-collection-${privateNameNew}"]`).should(
+      'not.exist'
+    )
   })
 
   it('Login again as user pro1 and verify that the answer catalogues are still visible', () => {
