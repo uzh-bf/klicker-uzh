@@ -190,6 +190,9 @@ export async function modifyAnswerCollection(
       name: name ?? undefined,
       access: access ?? undefined,
       description: description ?? undefined,
+      version: {
+        increment: 1,
+      },
     },
     include: {
       entries: true,
@@ -202,6 +205,24 @@ export async function modifyAnswerCollection(
   }
 }
 
+export async function incrementCollectionVersion(
+  { collectionId }: { collectionId: number },
+  ctx: ContextWithUser
+) {
+  const collection = await ctx.prisma.answerCollection.update({
+    where: {
+      id: collectionId,
+    },
+    data: {
+      version: {
+        increment: 1,
+      },
+    },
+  })
+
+  return collection
+}
+
 export async function editAnswerCollectionEntry(
   {
     id,
@@ -212,6 +233,7 @@ export async function editAnswerCollectionEntry(
   },
   ctx: ContextWithUser
 ) {
+  // update entry in the database
   const updatedEntry = await ctx.prisma.answerCollectionEntry.update({
     where: {
       id,
@@ -221,6 +243,12 @@ export async function editAnswerCollectionEntry(
     },
   })
 
+  // increment version of the collection to keep track of changes
+  await incrementCollectionVersion(
+    { collectionId: updatedEntry.collectionId },
+    ctx
+  )
+
   return updatedEntry
 }
 
@@ -228,11 +256,18 @@ export async function deleteAnswerCollectionEntry(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
+  // delete answer option from the database
   const updatedEntry = await ctx.prisma.answerCollectionEntry.delete({
     where: {
       id,
     },
   })
+
+  // increment version of the collection to keep track of changes
+  await incrementCollectionVersion(
+    { collectionId: updatedEntry.collectionId },
+    ctx
+  )
 
   return updatedEntry.id
 }
@@ -247,6 +282,7 @@ export async function addAnswerCollectionOption(
   },
   ctx: ContextWithUser
 ) {
+  // add new answer option to the database
   const newEntry = await ctx.prisma.answerCollectionEntry.create({
     data: {
       value,
@@ -257,6 +293,9 @@ export async function addAnswerCollectionOption(
       },
     },
   })
+
+  // increment version of the collection to keep track of changes
+  await incrementCollectionVersion({ collectionId: newEntry.collectionId }, ctx)
 
   return newEntry
 }
