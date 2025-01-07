@@ -1,4 +1,6 @@
 import {
+  type AnswerCollection,
+  type AnswerCollectionEntry,
   type Element,
   ElementInstanceType as PrismaElementInstanceType,
   ElementType as PrismaElementType,
@@ -35,7 +37,14 @@ const QUESTION_KEYS: ElementKeys[] = [
   'options',
 ]
 
-export function processElementData(element: Element): AllElementTypeData {
+// TODO: include answer collection and solutions in fetch where this function is called
+export function processElementData(
+  element: Element & {
+    answerCollection?: AnswerCollection | null
+    answerCollectionSolutions?: AnswerCollectionEntry[] | null
+  }
+): AllElementTypeData {
+  // TODO: handle case where selection question is passed
   if (element.type === PrismaElementType.FLASHCARD) {
     return {
       ...pick(element, FLASHCARD_KEYS),

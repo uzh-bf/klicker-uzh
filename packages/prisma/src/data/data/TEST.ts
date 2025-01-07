@@ -2,6 +2,84 @@ import Prisma from '../../../dist/index.js'
 import { AchievementType } from '../../prisma/client/index.js'
 const { ElementType, PublicationStatus } = Prisma
 
+export const ANSWER_COLLECTIONS = [
+  {
+    name: 'Public Collection (Fruits)',
+    description:
+      'This collection contains questions about fruits. The description supports markdown syntax such as **bold** and *italic*.',
+    access: Prisma.CollectionAccess.PUBLIC,
+    entries: [
+      {
+        value: 'Apple',
+      },
+      {
+        value: 'Banana',
+      },
+      {
+        value: 'Cherry',
+      },
+      {
+        value: 'Date',
+      },
+      {
+        value: 'Elderberry',
+      },
+    ],
+  },
+  {
+    name: 'Private Collection (Vegetables)',
+    description:
+      'This collection contains questions about vegetables. The description supports markdown syntax such as **bold** and *italic*.',
+    access: Prisma.CollectionAccess.PRIVATE,
+    entries: [
+      {
+        value: 'Artichoke',
+      },
+      {
+        value: 'Broccoli',
+      },
+      {
+        value: 'Cabbage',
+      },
+      {
+        value: 'Dill',
+      },
+      {
+        value: 'Cucumber',
+      },
+      {
+        value: 'Carrot',
+      },
+    ],
+  },
+  {
+    name: 'Restricted Collection (Animals)',
+    description:
+      'This collection contains questions about animals. The description supports markdown syntax such as **bold** and *italic*.',
+    access: Prisma.CollectionAccess.RESTRICTED,
+    entries: [
+      {
+        value: 'Antelope',
+      },
+      {
+        value: 'Bear',
+      },
+      {
+        value: 'Cat',
+      },
+      {
+        value: 'Dog',
+      },
+      {
+        value: 'Elephant',
+      },
+      {
+        value: 'Fox',
+      },
+    ],
+  },
+]
+
 export const QUESTIONS = [
   {
     originalId: '0',
@@ -172,10 +250,11 @@ export const QUESTIONS = [
     ],
   },
   {
-    originalId: '2',
-    name: 'Testfrage NUMERICAL',
-    content: 'Wie viel würdest du in Aktien anlegen? Beni mag 17%.',
-    explanation: 'NR generische Erklärung, warum diese Frage richtig ist.',
+    originalId: '5',
+    name: 'Testfrage NUMERICAL (Exact Solution)',
+    content:
+      'Wie viel würdest du in Aktien anlegen? Beni mag 0%, 20% oder 100%.',
+    explanation: 'Die korrekten Antworten sind 0%, 20% oder 100%.',
     type: ElementType.NUMERICAL,
     options: {
       hasSampleSolution: true,
@@ -188,6 +267,19 @@ export const QUESTIONS = [
       },
       exactSolutions: ['0', '20', '100'],
     },
+  },
+  {
+    originalId: '6',
+    name: 'Testfrage SELECTION',
+    content: 'Welche der folgenden Früchte passen in einen Fruchtsalat?',
+    explanation: 'Apples, Bananas, and Cherries are the correct answers.',
+    type: ElementType.SELECTION,
+    options: {
+      hasSampleSolution: true,
+      numberOfInputs: 2,
+    },
+    collectionName: 'Public Collection (Fruits)',
+    answerCollectionSolutions: ['Apple', 'Banana', 'Cherry'],
   },
 ]
 
@@ -494,83 +586,5 @@ export const Achievements: {
     descriptionEN: '',
     icon: '/achievements/Speedy.svg',
     type: 'PARTICIPANT',
-  },
-]
-
-export const ANSWER_COLLECTIONS = [
-  {
-    name: 'Public Collection (Fruits)',
-    description:
-      'This collection contains questions about fruits. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.CollectionAccess.PUBLIC,
-    entries: [
-      {
-        value: 'Apple',
-      },
-      {
-        value: 'Banana',
-      },
-      {
-        value: 'Cherry',
-      },
-      {
-        value: 'Date',
-      },
-      {
-        value: 'Elderberry',
-      },
-    ],
-  },
-  {
-    name: 'Private Collection (Vegetables)',
-    description:
-      'This collection contains questions about vegetables. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.CollectionAccess.PRIVATE,
-    entries: [
-      {
-        value: 'Artichoke',
-      },
-      {
-        value: 'Broccoli',
-      },
-      {
-        value: 'Cabbage',
-      },
-      {
-        value: 'Dill',
-      },
-      {
-        value: 'Cucumber',
-      },
-      {
-        value: 'Carrot',
-      },
-    ],
-  },
-  {
-    name: 'Restricted Collection (Animals)',
-    description:
-      'This collection contains questions about animals. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.CollectionAccess.RESTRICTED,
-    entries: [
-      {
-        value: 'Antelope',
-      },
-      {
-        value: 'Bear',
-      },
-      {
-        value: 'Cat',
-      },
-      {
-        value: 'Dog',
-      },
-      {
-        value: 'Elephant',
-      },
-      {
-        value: 'Fox',
-      },
-    ],
   },
 ]

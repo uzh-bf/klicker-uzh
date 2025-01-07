@@ -134,6 +134,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           },
         },
         update: {},
+        include: {
+          entries: true,
+        },
       })
     })
   )
@@ -199,9 +202,46 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   const questionsTest = (await Promise.all(
-    DATA_TEST.QUESTIONS.map((data) =>
-      prisma.element.upsert(prepareQuestion({ ownerId: USER_ID_TEST, ...data }))
-    )
+    DATA_TEST.QUESTIONS.map((data) => {
+      let collectionId: number | undefined = undefined
+      let correctOptionIds: number[] = []
+
+      if (data.collectionName && data.answerCollectionSolutions) {
+        const collection = answerCollections.find(
+          (ac) => ac.name === data.collectionName
+        )
+
+        if (!collection) {
+          throw new Error(
+            `Answer collection with name ${data.collectionName} not found`
+          )
+        }
+
+        collectionId = collection.id
+        correctOptionIds = data.answerCollectionSolutions.map((solValue) => {
+          const entry = collection.entries.find(
+            (entry) => entry.value === solValue
+          )
+
+          if (typeof entry === 'undefined') {
+            throw new Error(
+              `Option with value ${solValue} not found in answer collection ${collection.name}`
+            )
+          }
+
+          return entry.id
+        })
+      }
+
+      return prisma.element.upsert(
+        prepareQuestion({
+          ownerId: USER_ID_TEST,
+          ...data,
+          collectionId,
+          correctOptionIds,
+        })
+      )
+    })
   )) as Element[]
 
   await Promise.all(
