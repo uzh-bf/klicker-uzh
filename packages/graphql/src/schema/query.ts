@@ -36,7 +36,7 @@ import {
   Feedback,
   LiveQuiz,
   LiveQuizInfo,
-  RunningLiveQuizSummary,
+  LiveQuizSummary,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
@@ -265,7 +265,7 @@ export const Query = builder.queryType({
 
       getLiveQuizSummary: asUser.field({
         nullable: true,
-        type: RunningLiveQuizSummary,
+        type: LiveQuizSummary,
         args: {
           quizId: t.arg.string({ required: true }),
         },

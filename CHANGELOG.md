@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.17...v3.3.0-alpha.18) (2025-01-06)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** resolve issue with wrong updates when voting on feedback responses ([#4431](https://github.com/uzh-bf/klicker-uzh/issues/4431)) ([c350ca5](https://github.com/uzh-bf/klicker-uzh/commit/c350ca569ff53d7918c753c677b2a9a6bae99b90))
+
+
+### Enhancements
+
+* **apps/docs:** extend documentation and restructure static folder ([#4436](https://github.com/uzh-bf/klicker-uzh/issues/4436)) ([c399e25](https://github.com/uzh-bf/klicker-uzh/commit/c399e258d1eb361957a287a860023302da2e28eb))
+* **apps/frontend-manage:** implement subscription for pinned feedbacks on live quiz lecturer view ([#4434](https://github.com/uzh-bf/klicker-uzh/issues/4434)) ([ca0fe30](https://github.com/uzh-bf/klicker-uzh/commit/ca0fe30aa8e5174f75712c6eee4e8aa741ff095b))
+* **apps/frontend-manage:** make sure that live quiz deletion workflow is consistent with other deletions ([#4433](https://github.com/uzh-bf/klicker-uzh/issues/4433)) ([60c0768](https://github.com/uzh-bf/klicker-uzh/commit/60c076819df9e8e611880dce825a447bdfe53332))
+* change published microlearning state to ended after end date and time ([#4435](https://github.com/uzh-bf/klicker-uzh/issues/4435)) ([e1612d6](https://github.com/uzh-bf/klicker-uzh/commit/e1612d65d87929edf00362e856c092f5e48eac0e))
+
 ## [3.3.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.16...v3.3.0-alpha.17) (2025-01-03)
 
 

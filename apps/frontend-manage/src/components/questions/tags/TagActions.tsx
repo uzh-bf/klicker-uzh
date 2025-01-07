@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import {
   faArrowDown,
   faArrowUp,
@@ -6,15 +5,10 @@ import {
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  DeleteTagDocument,
-  GetUserQuestionsDocument,
-  GetUserTagsDocument,
-  Tag,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import DeletionModal from '../../courses/modals/DeletionModal'
+import TagDeletionModal from '../../courses/modals/TagDeletionModal'
 
 interface TagActionsProps {
   tag: Tag
@@ -36,25 +30,6 @@ function TagActions({
   onMoveDown,
 }: TagActionsProps) {
   const t = useTranslations()
-  const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
-    variables: {
-      id: tag.id,
-    },
-    refetchQueries: [
-      {
-        query: GetUserTagsDocument,
-      },
-      {
-        query: GetUserQuestionsDocument,
-      },
-    ],
-    optimisticResponse: {
-      deleteTag: {
-        id: tag.id,
-        __typename: 'Tag',
-      },
-    },
-  })
 
   return (
     <div className="hidden flex-row text-black group-hover:flex">
@@ -111,16 +86,11 @@ function TagActions({
         </Button>
       )}
       {setIsDeletionModalOpen && (
-        <DeletionModal
-          title={t('manage.tags.deleteTag')}
-          description={t('manage.tags.confirmTagDeletion')}
-          elementName={tag.name}
-          message={t('manage.tags.tagDeletionHint')}
-          deleteElement={deleteTag}
+        <TagDeletionModal
+          id={tag.id}
+          name={tag.name}
           open={isDeletionModalOpen ?? false}
           setOpen={setIsDeletionModalOpen}
-          primaryData={{ cy: 'confirm-delete-tag' }}
-          secondaryData={{ cy: 'cancel-delete-tag' }}
         />
       )}
     </div>

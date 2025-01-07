@@ -202,15 +202,15 @@ export const ElementBlock = ElementBlockRef.implement({
   }),
 })
 
-export interface IRunningLiveQuizSummary {
+export interface ILiveQuizSummary {
   numOfResponses: number
   numOfFeedbacks: number
   numOfConfusionFeedbacks: number
   numOfLeaderboardEntries: number
 }
-export const RunningLiveQuizSummaryRef =
-  builder.objectRef<IRunningLiveQuizSummary>('RunningLiveQuizSummary')
-export const RunningLiveQuizSummary = RunningLiveQuizSummaryRef.implement({
+export const LiveQuizSummaryRef =
+  builder.objectRef<ILiveQuizSummary>('LiveQuizSummary')
+export const LiveQuizSummary = LiveQuizSummaryRef.implement({
   fields: (t) => ({
     numOfResponses: t.exposeInt('numOfResponses'),
     numOfFeedbacks: t.exposeInt('numOfFeedbacks'),

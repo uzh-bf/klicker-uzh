@@ -80,10 +80,13 @@ function PublicFeedback({
     await onUpvoteFeedback(feedbackId, previousValue ? -1 : 1)
   }
 
-  const onResponseUpvote = async (
-    previousValue: number,
+  const onResponseUpvote = async ({
+    previousValue,
+    responseId,
+  }: {
+    previousValue?: number
     responseId: number
-  ) => {
+  }) => {
     const newUpvotes = {
       ...upvotes,
       [String(responseId)]: previousValue === 1 ? 0 : 1,
@@ -97,17 +100,20 @@ function PublicFeedback({
     // send upvote change to parent component
     if (previousValue === 1) {
       await onReactToFeedbackResponse(responseId, -1, 0)
-    } else if (previousValue === 0) {
+    } else if (previousValue === 0 || typeof previousValue === 'undefined') {
       await onReactToFeedbackResponse(responseId, 1, 0)
-    } else {
+    } else if (previousValue === -1) {
       await onReactToFeedbackResponse(responseId, 1, -1)
     }
   }
 
-  const onResponseDownvote = async (
-    previousValue: number,
+  const onResponseDownvote = async ({
+    previousValue,
+    responseId,
+  }: {
+    previousValue?: number
     responseId: number
-  ) => {
+  }) => {
     const newUpvotes = {
       ...upvotes,
       [String(responseId)]: previousValue === -1 ? 0 : -1,
@@ -121,10 +127,12 @@ function PublicFeedback({
     // send upvote change to parent component
     if (previousValue === -1) {
       await onReactToFeedbackResponse(responseId, 0, -1)
-    } else if (previousValue === 0) {
+    } else if (previousValue === 0 || typeof previousValue === 'undefined') {
       await onReactToFeedbackResponse(responseId, 0, 1)
-    } else {
+    } else if (previousValue === 1) {
       await onReactToFeedbackResponse(responseId, -1, 1)
+    } else {
+      console.log('Error: previousValue is not -1, 0 or 1:', previousValue)
     }
   }
 
@@ -146,13 +154,11 @@ function PublicFeedback({
         <Button
           onClick={() => onUpvote(upvotes.upvote)}
           active={upvotes.upvote}
-          className={{ root: 'h-10 w-10' }}
+          className={{ root: 'h-10 w-10 items-center justify-center' }}
           disabled={feedback.resolvedAt}
           data={{ cy: `feedback-upvote-${feedback.content}` }}
         >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faThumbsUp} size="lg" />
-          </Button.Icon>
+          <FontAwesomeIcon icon={faThumbsUp} size="lg" />
         </Button>
       </div>
       {feedback.responses &&
@@ -168,32 +174,33 @@ function PublicFeedback({
                 <div>
                   <Button
                     onClick={async () =>
-                      await onResponseUpvote(upvotes[response.id], response.id)
+                      await onResponseUpvote({
+                        previousValue: upvotes[response.id],
+                        responseId: response.id,
+                      })
                     }
                     active={upvotes[response.id] === 1}
-                    className={{ root: 'mr-1 h-9 w-9' }}
+                    className={{
+                      root: 'mr-1 h-9 w-9 items-center justify-center',
+                    }}
                     data={{
                       cy: `feedback-response-upvote-${response.content}`,
                     }}
                   >
-                    <Button.Icon>
-                      <FontAwesomeIcon icon={faThumbsUp} size="lg" />
-                    </Button.Icon>
+                    <FontAwesomeIcon icon={faThumbsUp} size="lg" />
                   </Button>
                   <Button
                     onClick={async () =>
-                      await onResponseDownvote(
-                        upvotes[response.id],
-                        response.id
-                      )
+                      await onResponseDownvote({
+                        previousValue: upvotes[response.id],
+                        responseId: response.id,
+                      })
                     }
                     active={upvotes[response.id] === -1}
-                    className={{ root: 'h-9 w-9' }}
+                    className={{ root: 'h-9 w-9 items-center justify-center' }}
                     data={{ cy: 'feedback-response-downvote' }}
                   >
-                    <Button.Icon>
-                      <FontAwesomeIcon icon={faQuestion} size="lg" />
-                    </Button.Icon>
+                    <FontAwesomeIcon icon={faQuestion} size="lg" />
                   </Button>
                 </div>
               </div>

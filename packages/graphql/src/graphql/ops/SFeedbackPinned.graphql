@@ -1,0 +1,11 @@
+subscription FeedbackPinned($quizId: String!) {
+  feedbackPinned(quizId: $quizId) {
+    id
+    isPublished
+    isPinned
+    isResolved
+    content
+    votes
+    createdAt
+  }
+}

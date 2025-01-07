@@ -1,4 +1,4 @@
-import { RunningLiveQuizSummary } from '@klicker-uzh/graphql/dist/ops'
+import { LiveQuizSummary } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
@@ -6,7 +6,7 @@ import ConfirmationItem from '../../common/ConfirmationItem'
 import { LiveQuizAbortionConfirmationType } from './CancelLiveQuizModal'
 
 interface LiveQuizAbortionConfirmationsProps {
-  summary: RunningLiveQuizSummary
+  summary: LiveQuizSummary
   confirmations: LiveQuizAbortionConfirmationType
   setConfirmations: Dispatch<SetStateAction<LiveQuizAbortionConfirmationType>>
 }

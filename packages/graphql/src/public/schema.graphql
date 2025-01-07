@@ -974,6 +974,13 @@ type LiveQuizMeta {
   status: PublicationStatus!
 }
 
+type LiveQuizSummary {
+  numOfConfusionFeedbacks: Int!
+  numOfFeedbacks: Int!
+  numOfLeaderboardEntries: Int!
+  numOfResponses: Int!
+}
+
 enum LocaleType {
   de
   en
@@ -1050,6 +1057,7 @@ type Mutation {
   editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
+  endExpiredActivities: Boolean!
   endGroupActivity(id: String!): GroupActivity
   endLiveQuiz(id: String!): LiveQuiz
   endMicroLearning(id: String!): MicroLearning
@@ -1450,7 +1458,7 @@ type Query {
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
-  getLiveQuizSummary(quizId: String!): RunningLiveQuizSummary
+  getLiveQuizSummary(quizId: String!): LiveQuizSummary
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
@@ -1518,13 +1526,6 @@ enum ResponseCorrectnessType {
 input ResponseInput {
   choices: [Int!]
   value: String
-}
-
-type RunningLiveQuizSummary {
-  numOfConfusionFeedbacks: Int!
-  numOfFeedbacks: Int!
-  numOfLeaderboardEntries: Int!
-  numOfResponses: Int!
 }
 
 type SharingRequestResponse {
@@ -1623,6 +1624,7 @@ type StudentCourse {
 type Subscription {
   feedbackAdded(quizId: String!): Feedback!
   feedbackCreated(quizId: String!): Feedback!
+  feedbackPinned(quizId: String!): Feedback!
   feedbackRemoved(quizId: String!): String!
   feedbackUpdated(quizId: String!): Feedback!
   groupActivityEnded(courseId: String!): GroupActivity!
