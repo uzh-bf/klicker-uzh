@@ -55,7 +55,7 @@ function AnswerCollectionOption({
           ),
         }}
         disabled={deletionNotAllowed}
-        data={{ cy: `delete-answer-option-${index}` }}
+        data={{ cy: `delete-answer-option-${entry.value}` }}
         onClick={async () => {
           await deleteAnswerCollectionEntry({
             variables: { id: entry.id },
@@ -109,14 +109,14 @@ function AnswerCollectionOption({
             setEditDisabled(true)
           }}
           disabled={editDisabled}
-          data={{ cy: `edit-answer-option-${index}` }}
+          data={{ cy: `edit-answer-option-${entry.value}` }}
         >
           <FontAwesomeIcon icon={faPencil} />
         </Button>
       ) : null}
       <div
         className={twMerge('w-full', !editMode && 'ml-2')}
-        data-cy={`answer-option-${index}`}
+        data-cy={`answer-option-${entry.value}`}
       >
         {editMode ? (
           <Formik

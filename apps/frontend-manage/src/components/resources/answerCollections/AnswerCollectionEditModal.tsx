@@ -27,6 +27,7 @@ function AnswerCollectionEditModal({
         onClose()
       }}
       title={t('manage.resources.answerCollection', { name: collection.name })}
+      dataCloseButton={{ cy: 'close-answer-collection-edit-modal' }}
       escapeDisabled
     >
       <AnswerCollectionMetaForm
