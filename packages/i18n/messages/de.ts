@@ -995,6 +995,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       SELECTIONOptionsTooltip:
         'Wählen Sie hier die Antwort-Sammlung aus welcher die Studierenden die korrekten Antworten auswählen sollen.',
       selectCollection: 'Sammlung auswählen...',
+      answerCollection: 'Antwort-Sammlung',
       numberOfInputs: 'Anzahl Eingabefelder',
       correctAnswerOptions: 'Korrekte Antwortoptionen',
       correctAnswerOptionsTooltip:

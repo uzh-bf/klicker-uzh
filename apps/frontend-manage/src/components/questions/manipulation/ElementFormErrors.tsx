@@ -188,21 +188,21 @@ function ElementFormErrors({
           errors.options &&
           'answerCollection' in errors.options &&
           errors.options.answerCollection && (
-            <li>{errors.options.answerCollection}</li>
+            <li>{`${t('manage.questionForms.answerCollection')}: ${errors.options.answerCollection}`}</li>
           )}
 
         {'options' in errors &&
           errors.options &&
           'numberOfInputs' in errors.options &&
           errors.options.numberOfInputs && (
-            <li>{errors.options.numberOfInputs}</li>
+            <li>{`${t('manage.questionForms.numberOfInputs')}: ${errors.options.numberOfInputs}`}</li>
           )}
 
         {'options' in errors &&
           errors.options &&
           'correctAnswers' in errors.options &&
           errors.options.correctAnswers && (
-            <li>{errors.options.correctAnswers}</li>
+            <li>{`${t('manage.questionForms.correctAnswerOptions')}: ${errors.options.correctAnswers}`}</li>
           )}
       </ul>
     </UserNotification>

@@ -88,7 +88,7 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
         <FormikSelectField
           required
           name="options.answerCollection"
-          label={t('shared.generic.answerCollection')}
+          label={t('manage.questionForms.answerCollection')}
           labelType="small"
           tooltip={t('manage.questionForms.SELECTIONOptionsTooltip')}
           placeholder={t('manage.questionForms.selectCollection')}

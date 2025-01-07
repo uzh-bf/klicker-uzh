@@ -995,6 +995,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter optional settings for the numerical question here. Please note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
       SELECTIONOptionsTooltip:
         'Please select the answer collection from which the students should select the correct answers.',
+      answerCollection: 'Answer collection',
       selectCollection: 'Select collection...',
       numberOfInputs: 'Number of inputs',
       correctAnswerOptions: 'Correct answer options',
