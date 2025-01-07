@@ -994,6 +994,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nehmen Sie hier optionale Einstellungen für die numerische Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
       SELECTIONOptionsTooltip:
         'Wählen Sie hier die Antwort-Sammlung aus welcher die Studierenden die korrekten Antworten auswählen sollen.',
+      SEAnswerCollectionRequired:
+        "Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung!. Sie können diese entweder unter dem Reiter 'Ressourcen' selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer importieren.",
       selectCollection: 'Sammlung auswählen...',
       answerCollection: 'Antwort-Sammlung',
       numberOfInputs: 'Anzahl Eingabefelder',
