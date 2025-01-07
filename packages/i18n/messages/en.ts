@@ -1365,6 +1365,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The solution ranges must lie within the specified restrictions.',
       NRExactSolutionsWithinRestrictions:
         'The exact solutions must lie within the specified restrictions.',
+      SEnumberOfInputsRequired: 'Please specify the number of input fields.',
+      SEnumberOfInputsMin: 'The number of inputs must be at least 1.',
+      SEanswerCollectionRequired: 'Please select an answer collection.',
+      SEcorrectAnswersRequired:
+        'Please select the correct answer options from your collection.',
+      SEcorrectAnswersMatchInputs:
+        'The number of correct answers must be larger or equal to the number of input fields.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',

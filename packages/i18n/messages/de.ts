@@ -1377,6 +1377,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Lösungsbereiche müssen innerhalb der angegebenen Einschränkungen liegen.',
       NRExactSolutionsWithinRestrictions:
         'Die exakten Lösungen müssen innerhalb der angegebenen Einschränkungen liegen.',
+      SEnumberOfInputsRequired:
+        'Bitte geben Sie die Anzahl der Eingabefelder an.',
+      SEnumberOfInputsMin:
+        'Die Anzahl der Eingabefelder muss mindestens 1 sein.',
+      SEanswerCollectionRequired: 'Bitte wählen Sie eine Antwort-Sammlung aus.',
+      SEcorrectAnswersRequired:
+        'Bitte wählen Sie die korrekten Antwortmöglichkeiten aus Ihrer Sammlung aus.',
+      SEcorrectAnswersMatchInputs:
+        'Die Anzahl der korrekten Antworten muss mindestens der Anzahl der Eingabefelder entsprechen.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Live Quizzes',

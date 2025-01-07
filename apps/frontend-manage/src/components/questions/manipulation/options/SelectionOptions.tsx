@@ -93,7 +93,7 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
         />
         <FormikNumberField
           required
-          name="numberOfInputs"
+          name="options.numberOfInputs"
           label={t('manage.questionForms.numberOfInputs')}
           labelType="small"
           data={{ cy: 'configure-number-of-inputs' }}
