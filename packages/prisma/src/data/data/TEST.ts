@@ -539,6 +539,12 @@ export const ANSWER_COLLECTIONS = [
       {
         value: 'Dill',
       },
+      {
+        value: 'Cucumber',
+      },
+      {
+        value: 'Carrot',
+      },
     ],
   },
   {

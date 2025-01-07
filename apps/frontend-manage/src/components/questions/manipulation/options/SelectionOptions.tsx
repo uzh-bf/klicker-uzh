@@ -6,6 +6,7 @@ import {
   FormikSelectField,
   FormikSwitchField,
   FormLabel,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -65,7 +66,7 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
 
   // udpate the selected correct answers if the answer collection changes
   useEffect(() => {
-    if (!field.value) {
+    if (!field.value || !collectionAnswers || collectionAnswers.length === 0) {
       return
     }
 
@@ -82,6 +83,16 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
     return <Loader />
   }
 
+  if (collections.length === 0) {
+    return (
+      <UserNotification
+        type="warning"
+        message={t('manage.questionForms.SEAnswerCollectionRequired')}
+        className={{ root: 'text-base' }}
+      />
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1 lg:flex-row lg:items-start lg:gap-3">
@@ -96,7 +107,7 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
             label: collection.name,
             value: String(collection.id),
             data: {
-              cy: `select-answer-collection-${collection.id}`,
+              cy: `select-answer-collection-${collection.name}`,
             },
           }))}
           data={{ cy: 'select-answer-collection' }}
@@ -135,23 +146,24 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
             tooltip={t('manage.questionForms.correctAnswerOptionsTooltip')}
             labelType="small"
           />
-          <Select
-            isClearable
-            isMulti
-            value={selectedAnswers}
-            options={collectionAnswers}
-            classNames={{
-              container: () => 'w-full',
-            }}
-            onChange={(newValue) =>
-              helpers.setValue(newValue.map((tag) => tag.value))
-            }
-            placeholder={t('manage.questionForms.selectAnswerOptions')}
-            noOptionsMessage={() =>
-              t('manage.questionForms.noMatchingOptionFound')
-            }
-            data-cy="select-correct-answers"
-          />
+          <div data-cy="choose-correct-answer-options">
+            <Select
+              isClearable
+              isMulti
+              value={selectedAnswers}
+              options={collectionAnswers}
+              classNames={{
+                container: () => 'w-full',
+              }}
+              onChange={(newValue) =>
+                helpers.setValue(newValue.map((tag) => tag.value))
+              }
+              placeholder={t('manage.questionForms.selectAnswerOptions')}
+              noOptionsMessage={() =>
+                t('manage.questionForms.noMatchingOptionFound')
+              }
+            />
+          </div>
         </div>
       ) : null}
     </div>

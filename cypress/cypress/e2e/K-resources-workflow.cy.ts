@@ -216,6 +216,8 @@ describe('Create, edit and share answer collections', () => {
     })
   })
 
+  // TODO: verify that all three answer collections are available when creating a new selection question
+
   it('Request access to the restricted answer catalogue for user pro1', () => {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
@@ -373,6 +375,8 @@ describe('Create, edit and share answer collections', () => {
       })
   })
 
+  // TODO: check that the restricted answer catalogue can be used in selection questions for user pro1
+
   it('Verify that user pro2 does not have access to the restricted answer catalogue', () => {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
@@ -380,6 +384,8 @@ describe('Create, edit and share answer collections', () => {
       'not.exist'
     )
   })
+
+  // TODO: check that the no answer catalogue is available user pro2 and that the corresponding message is shown
 
   it('Import the public answer catalogue for user pro1 and verify access to it', () => {
     cy.loginIndividualCatalyst()

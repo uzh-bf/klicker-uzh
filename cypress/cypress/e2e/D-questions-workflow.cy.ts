@@ -65,6 +65,19 @@ const FTSampleSolution = [
   'Sample Solution 3',
 ]
 
+const SETitle = 'Selection Question Title'
+const SEContent = 'Selection Question Text'
+const SEExplanation = 'Selection Question Explanation'
+const SECollection = 'Private Collection (Vegetables)' // from seed (access otherwise is tested in resources workflow)
+const SEInputs = 2
+const SESolutions = ['Cabbage', 'Cucumber']
+const SETitleEdited = 'Selection Question Title Edited'
+const SEContentEdited = 'Selection Question Text Edited'
+const SEExplanationEdited = 'Selection Question Explanation Edited'
+const SECollectionEdited = 'Public Collection (Fruits)' // from seed
+const SEInputsEdited = 1
+const SESolutionsEdited = ['Apple', 'Banana']
+
 describe('Create different types of elements (with and without sample solution) and edit them', () => {
   beforeEach(() => {
     cy.loginLecturer()
@@ -1052,6 +1065,154 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="set-solution-ix-${ix}"]`).should('have.value', solution)
     })
     cy.get('[data-cy="close-question-modal"]').click()
+  })
+
+  it('Create a Selection question', () => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SC.typeLabel)
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SELECTION.typeLabel)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    cy.get('[data-cy="insert-question-title"]').click().type(SETitle)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-text"]').realClick().type(SEContent)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .type(SEExplanation)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      messages.manage.questionForms.selectCollection
+    )
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(`[data-cy="select-answer-collection-${SECollection}"]`).click()
+    cy.get('[data-cy="select-answer-collection"]').contains(SECollection)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .type(String(SEInputs))
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+
+    cy.get(`[data-cy="element-item-${SETitle}"]`).contains(SEContent)
+    cy.get(`[data-cy="element-item-${SETitle}"]`).contains(SETitle)
+    cy.get(`[data-cy="element-item-${SETitle}"]`).contains(
+      messages.shared.READY.statusLabel
+    )
+
+    cy.get(`[data-cy="edit-question-${SETitle}"]`).click()
+    // TODO: check that preview of selection question is visible and correct
+  })
+
+  it('Verify that the correct content has been saved', () => {
+    cy.get(`[data-cy="edit-question-${SETitle}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should('have.value', SETitle)
+    cy.get('[data-cy="select-question-status"]').contains(
+      messages.shared.READY.statusLabel
+    )
+    cy.get('[data-cy="insert-question-text"]').realClick().contains(SEContent)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .contains(SEExplanation)
+    cy.get('[data-cy="select-answer-collection"]').contains(SECollection)
+    cy.get('[data-cy="configure-number-of-inputs"]').should(
+      'have.value',
+      SEInputs
+    )
+    cy.get('[data-cy="close-question-modal"]').click()
+  })
+
+  it('Add a sample solution to the created selection question', () => {
+    cy.get(`[data-cy="edit-question-${SETitle}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should('have.value', SETitle)
+
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
+    cy.get('[data-cy="choose-correct-answer-options"]').click()
+    cy.findByText(SESolutions[0]).realClick()
+    cy.get('[data-cy="choose-correct-answer-options"]').contains(SESolutions[0])
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // number of solutions needs to be >= number of inputs
+    SESolutions.slice(1).forEach((solution) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').click()
+      cy.findByText(solution).realClick()
+      cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+    })
+    cy.get('[data-cy="save-new-question"]').click()
+  })
+
+  it('Verify that the sample solution has been stored correctly for the modified selection question', () => {
+    cy.get(`[data-cy="edit-question-${SETitle}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should('have.value', SETitle)
+
+    SESolutions.forEach((solution) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+    })
+    cy.get('[data-cy="close-question-modal"]').click()
+  })
+
+  it('Edit the selection question and change the answer collection (including new sample solutions)', () => {
+    cy.get(`[data-cy="edit-question-${SETitle}"]`).click()
+    cy.get('[data-cy="insert-question-title"]')
+      .click()
+      .clear()
+      .type(SETitleEdited)
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(SEContentEdited)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .clear()
+      .type(SEExplanationEdited)
+
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(`[data-cy="select-answer-collection-${SECollectionEdited}"]`).click()
+    cy.get('[data-cy="select-answer-collection"]').contains(SECollectionEdited)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // answer options are cleared on collection change
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .clear()
+      .type(String(SEInputsEdited))
+    SESolutionsEdited.forEach((solution) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').click()
+      cy.findByText(solution).realClick()
+    })
+
+    cy.get('[data-cy="save-new-question"]').click()
+  })
+
+  it.only('Verify that the edited state of the selection question persists', () => {
+    cy.get(`[data-cy="edit-question-${SETitleEdited}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      SETitleEdited
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .contains(SEContentEdited)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .contains(SEExplanationEdited)
+    cy.get('[data-cy="select-answer-collection"]').contains(SECollectionEdited)
+    cy.get('[data-cy="configure-number-of-inputs"]').should(
+      'have.value',
+      SEInputsEdited
+    )
+    SESolutionsEdited.forEach((solution) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+    })
   })
 
   it('Create a new question, duplicates it and then deletes the duplicate again', () => {
