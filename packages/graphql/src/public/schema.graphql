@@ -94,6 +94,7 @@ type AnswerCollection {
 
 type AnswerCollectionEntry {
   id: Int!
+  numSolutionUsages: Int
   value: String!
 }
 
