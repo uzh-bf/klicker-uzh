@@ -171,32 +171,28 @@ describe('Create, edit and share answer collections', () => {
       .contains(privateDescriptionNew)
     cy.get('[data-cy="save-changes-answer-collection"]').click()
 
-    privateItems.forEach((value, ix) => {
-      cy.get(`[data-cy="answer-option-${ix}"]`).contains(value)
+    privateItems.forEach((value) => {
+      cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
     privateItems.forEach((value, ix) => {
-      cy.get(`[data-cy="edit-answer-option-${ix}"]`).click()
+      cy.get(`[data-cy="edit-answer-option-${value}"]`).click()
       cy.get(`[data-cy="edit-answer-option-input"]`).should('have.value', value)
       cy.get(`[data-cy="edit-answer-option-input"]`)
         .clear()
         .type(privateItemsNew[ix])
       cy.get(`[data-cy="save-edit-answer-option"]`).click()
-      cy.get(`[data-cy="answer-option-${ix}"]`).contains(privateItemsNew[ix])
+      cy.get(`[data-cy="answer-option-${privateItemsNew[ix]}"]`).contains(
+        privateItemsNew[ix]
+      )
     })
-    cy.get(
-      `[data-cy="delete-answer-option-${privateItemsNew.length - 1}"]`
-    ).click()
-    cy.get(`[data-cy="answer-option-${privateItemsNew.length - 1}"]`).should(
-      'not.exist'
-    )
+
+    const lastElement = privateItemsNew[privateItemsNew.length - 1]
+    cy.get(`[data-cy="delete-answer-option-${lastElement}"]`).click()
+    cy.get(`[data-cy="answer-option-${lastElement}"]`).should('not.exist')
     cy.get(`[data-cy="add-answer-option"]`).click()
-    cy.get(`[data-cy="input-new-answer-option"]`).type(
-      privateItemsNew[privateItemsNew.length - 1]
-    )
+    cy.get(`[data-cy="input-new-answer-option"]`).type(lastElement)
     cy.get(`[data-cy="save-new-answer-option"]`).click()
-    cy.get(`[data-cy="answer-option-${privateItemsNew.length - 1}"]`).contains(
-      privateItemsNew[privateItemsNew.length - 1]
-    )
+    cy.get(`[data-cy="answer-option-${lastElement}"]`).contains(lastElement)
   })
 
   it('Verify that the changes to the private answer catalogue persist', () => {
@@ -212,7 +208,7 @@ describe('Create, edit and share answer collections', () => {
       .realClick()
       .contains(privateDescriptionNew)
     privateItemsNew.forEach((value, ix) => {
-      cy.get(`[data-cy="answer-option-${ix}"]`).contains(value)
+      cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
   })
 

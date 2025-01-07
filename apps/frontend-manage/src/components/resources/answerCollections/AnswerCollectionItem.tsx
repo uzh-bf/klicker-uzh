@@ -1,4 +1,5 @@
 import { faClock, faHandPointer } from '@fortawesome/free-regular-svg-icons'
+import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
@@ -91,9 +92,17 @@ function AnswerCollectionItem({
           ) : null}
         </div>
         {editable ? (
-          <div className="flex flex-row items-center gap-1.5 self-end text-sm">
-            <FontAwesomeIcon icon={faHandPointer} />
-            <div>{t('manage.resources.clickToViewEdit')}</div>
+          <div className="flex h-full flex-col items-end gap-0.5 self-end text-sm">
+            {(collection.numSharedUsers ?? 0) > 0 ? (
+              <div className="flex flex-row items-center gap-1.5">
+                {collection.numSharedUsers ?? 0}
+                <FontAwesomeIcon icon={faUserGroup} />
+              </div>
+            ) : null}
+            <div className="flex flex-row items-center gap-1.5">
+              <FontAwesomeIcon icon={faHandPointer} />
+              <div>{t('manage.resources.clickToViewEdit')}</div>
+            </div>
           </div>
         ) : accessGranted ? (
           <div className="text-primary-100 flex flex-row items-center gap-2">

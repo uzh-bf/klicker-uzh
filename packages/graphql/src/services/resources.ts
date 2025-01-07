@@ -68,6 +68,13 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       answerCollections: {
         include: {
           entries: {
+            include: {
+              _count: {
+                select: {
+                  solutionUsages: true,
+                },
+              },
+            },
             orderBy: {
               value: 'asc',
             },
@@ -121,6 +128,10 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
   return {
     answerCollections: user.answerCollections.map((collection) => ({
       ...collection,
+      entries: collection.entries.map((entry) => ({
+        ...entry,
+        numSolutionUsages: entry._count?.solutionUsages,
+      })),
       numSharedUsers: collection._count?.accessGranted,
     })),
     sharedCollections: user.sharedCollections.map((collection) => ({

@@ -1,8 +1,9 @@
 import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { faPencil, faSave } from '@fortawesome/free-solid-svg-icons'
+import { faPencil, faSave, faWarning } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  AnswerCollectionEntry,
   DeleteAnswerCollectionEntryDocument,
   EditAnswerCollectionEntryDocument,
   GetAnswerCollectionsDocument,
@@ -13,17 +14,17 @@ import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function AnswerCollectionOption({
-  id,
-  value,
+  entry,
   index,
+  last,
   collectionId,
   deletionDisabled,
   editDisabled,
   setEditDisabled,
 }: {
-  id: number
-  value: string
+  entry: AnswerCollectionEntry
   index: number
+  last: boolean
   collectionId: number
   deletionDisabled?: boolean
   editDisabled: boolean
@@ -36,21 +37,28 @@ function AnswerCollectionOption({
   const [deleteAnswerCollectionEntry] = useMutation(
     DeleteAnswerCollectionEntryDocument
   )
+  const deletionNotAllowed =
+    deletionDisabled || (entry.numSolutionUsages ?? 0) > 0
 
   return (
-    <div className="flex w-full flex-row items-center gap-1">
+    <div
+      className={twMerge(
+        'flex w-full flex-row items-center gap-1 border-b pb-1',
+        last && '!border-b-0'
+      )}
+    >
       <Button
         className={{
           root: twMerge(
             'h-8 w-8 items-center justify-center border border-red-600',
-            !deletionDisabled && 'hover:border-red-600 hover:text-red-600'
+            !deletionNotAllowed && 'hover:border-red-600 hover:text-red-600'
           ),
         }}
-        disabled={deletionDisabled}
-        data={{ cy: `delete-answer-option-${index}` }}
+        disabled={deletionNotAllowed}
+        data={{ cy: `delete-answer-option-${entry.value}` }}
         onClick={async () => {
           await deleteAnswerCollectionEntry({
-            variables: { id },
+            variables: { id: entry.id },
             update: (cache, { data }) => {
               if (!data?.deleteAnswerCollectionEntry) return
 
@@ -75,7 +83,7 @@ function AnswerCollectionOption({
                         return {
                           ...collection,
                           entries: collection.entries?.filter(
-                            (entry) => entry.id !== id
+                            (e) => e.id !== entry.id
                           ),
                         }
                       }
@@ -101,24 +109,24 @@ function AnswerCollectionOption({
             setEditDisabled(true)
           }}
           disabled={editDisabled}
-          data={{ cy: `edit-answer-option-${index}` }}
+          data={{ cy: `edit-answer-option-${entry.value}` }}
         >
           <FontAwesomeIcon icon={faPencil} />
         </Button>
       ) : null}
       <div
         className={twMerge('w-full', !editMode && 'ml-2')}
-        data-cy={`answer-option-${index}`}
+        data-cy={`answer-option-${entry.value}`}
       >
         {editMode ? (
           <Formik
-            initialValues={{ value }}
+            initialValues={{ value: entry.value }}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitting(true)
 
-              if (value !== values.value) {
+              if (entry.value !== values.value) {
                 await editAnswerCollectionEntry({
-                  variables: { id, value: values.value },
+                  variables: { id: entry.id, value: values.value },
                   update: (cache, { data }) => {
                     if (!data?.editAnswerCollectionEntry) return
 
@@ -144,12 +152,12 @@ function AnswerCollectionOption({
                               if (collection.id === collectionId) {
                                 return {
                                   ...collection,
-                                  entries: collection.entries?.map((entry) => {
-                                    if (entry.id === id) {
-                                      return { ...entry, value: values.value }
+                                  entries: collection.entries?.map((e) => {
+                                    if (e.id === entry.id) {
+                                      return { ...e, value: values.value }
                                     }
 
-                                    return entry
+                                    return e
                                   }),
                                 }
                               }
@@ -193,9 +201,12 @@ function AnswerCollectionOption({
             )}
           </Formik>
         ) : (
-          value
+          entry.value
         )}
       </div>
+      {(entry.numSolutionUsages ?? 0) > 0 ? (
+        <FontAwesomeIcon icon={faWarning} className="text-orange-500" />
+      ) : null}
     </div>
   )
 }

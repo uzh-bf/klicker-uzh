@@ -246,6 +246,7 @@ export default {
       user: 'Nutzer',
       correctness: 'Korrektheit',
       answerCollection: 'Antwort-Sammlung',
+      users: 'Nutzer',
     },
     contentInput: {
       boldStyle:
@@ -1855,6 +1856,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Zusätzlich können Sie hier öffentliche Antwort-Sammlungen anderer Nutzer importieren bzw. Zugriff auf diese anfragen.',
       newAnswerCollection: 'Neue Antwort-Sammlung',
       addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
+      answerOptionUsedAsSolution:
+        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits in einer Frage als korrekte Lösung verwendet, beachten Sie dies bitte beim Bearbeiten der Antwort. Die Option kann nicht mehr gelöscht werden.',
       name: 'Name',
       nameTooltip:
         'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',

@@ -71,12 +71,14 @@ const SEExplanation = 'Selection Question Explanation'
 const SECollection = 'Private Collection (Vegetables)' // from seed (access otherwise is tested in resources workflow)
 const SEInputs = 2
 const SESolutions = ['Cabbage', 'Cucumber']
+const SESolutionsNotChosen = ['Artichoke', 'Broccoli', 'Dill', 'Carrot']
 const SETitleEdited = 'Selection Question Title Edited'
 const SEContentEdited = 'Selection Question Text Edited'
 const SEExplanationEdited = 'Selection Question Explanation Edited'
 const SECollectionEdited = 'Public Collection (Fruits)' // from seed
 const SEInputsEdited = 1
 const SESolutionsEdited = ['Apple', 'Banana']
+const SESolutionsNotChosenEdited = ['Cherry', 'Date', 'Elderberry']
 
 describe('Create different types of elements (with and without sample solution) and edit them', () => {
   beforeEach(() => {
@@ -1134,6 +1136,26 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
+  it('Check that all options of the answer collection can be edited', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+
+    SESolutions.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    SESolutionsNotChosen.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
   it('Add a sample solution to the created selection question', () => {
     cy.get(`[data-cy="edit-question-${SETitle}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should('have.value', SETitle)
@@ -1160,6 +1182,27 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
     })
     cy.get('[data-cy="close-question-modal"]').click()
+  })
+
+  it('Check that the options that are used as a solution cannot be deleted anymore', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+    cy.findByText(messages.manage.resources.answerOptionUsedAsSolution).should(
+      'exist'
+    )
+
+    SESolutions.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    SESolutionsNotChosen.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
 
   it('Edit the selection question and change the answer collection (including new sample solutions)', () => {
@@ -1213,6 +1256,39 @@ describe('Create different types of elements (with and without sample solution) 
     SESolutionsEdited.forEach((solution) => {
       cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
     })
+  })
+
+  it('Check that only answer options not used as solutions can be deleted', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+
+    SESolutions.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    SESolutionsNotChosen.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    cy.get(`[data-cy="answer-collection-${SECollectionEdited}"]`).click()
+    SESolutionsEdited.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    SESolutionsNotChosenEdited.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
 
   it('Create a new question, duplicates it and then deletes the duplicate again', () => {

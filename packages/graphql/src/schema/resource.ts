@@ -8,12 +8,17 @@ export const CollectionAccess = builder.enumType('CollectionAccess', {
 
 // ----- ANSWER COLLECTIONS -----
 // #region
+interface IAnswerCollectionEntry extends DB.AnswerCollectionEntry {
+  numSolutionUsages?: number
+}
+
 export const AnswerCollectionEntryRef =
-  builder.objectRef<DB.AnswerCollectionEntry>('AnswerCollectionEntry')
+  builder.objectRef<IAnswerCollectionEntry>('AnswerCollectionEntry')
 export const AnswerCollectionEntry = AnswerCollectionEntryRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     value: t.exposeString('value'),
+    numSolutionUsages: t.exposeInt('numSolutionUsages', { nullable: true }),
   }),
 })
 
