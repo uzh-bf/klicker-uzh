@@ -12,10 +12,9 @@ enum ElementType {
   KPRIM
   FREE_TEXT
   NUMERICAL
-
-  // new types
   CONTENT
   FLASHCARD
+  SELECTION
 }
 
 model Element {
@@ -46,6 +45,10 @@ model Element {
   instances        QuestionInstance[]
   elementInstances ElementInstance[]
   feedbacks        ElementFeedback[]
+
+  answerCollectionSolutions AnswerCollectionEntry[] @relation("ElementAnswerCollectionSolutions")
+  answerCollection          AnswerCollection?       @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  answerCollectionId        Int?
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -296,15 +299,18 @@ enum CollectionAccess {
 }
 
 model AnswerCollection {
-  id          Int                     @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
   description String
-  version     Int                     @default(1)
-  entries     AnswerCollectionEntry[]
+  version     Int     @default(1)
+  isDeleted   Boolean @default(false)
+
+  entries AnswerCollectionEntry[]
 
   access          CollectionAccess @default(PRIVATE)
   accessRequested User[]           @relation("AnswerCollectionAccessRequested")
   accessGranted   User[]           @relation("AnswerCollectionShared")
+  linkedElements  Element[] // elements that use this answer collection
 
   owner   User?   @relation(name: "UserAnswerCollections", fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   ownerId String? @db.Uuid
@@ -321,6 +327,12 @@ model AnswerCollectionEntry {
 
   collection   AnswerCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   collectionId Int
+
+  // elements where this entry is used as a sample solution -> deletion not allowed
+  solutionUsages Element[] @relation("ElementAnswerCollectionSolutions")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([collectionId, value])
 }
