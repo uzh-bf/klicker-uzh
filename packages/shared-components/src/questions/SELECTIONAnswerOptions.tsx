@@ -29,12 +29,14 @@ function SELECTIONAnswerOptions({
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
       {Object.entries(responses).map(([inputIndex, selectedValue]) => {
         const selectItems = useMemo(() => {
-          return options.answerCollection!.entries!.map((entry) => ({
-            label: entry.value,
-            value: String(entry.id),
-            disabled:
-              selectedValues.includes(entry.id) && selectedValue !== entry.id,
-          }))
+          return (
+            options.answerCollection?.entries?.map((entry) => ({
+              label: entry.value,
+              value: String(entry.id),
+              disabled:
+                selectedValues.includes(entry.id) && selectedValue !== entry.id,
+            })) ?? []
+          )
         }, [responses])
 
         return (

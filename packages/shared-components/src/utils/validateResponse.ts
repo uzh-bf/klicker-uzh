@@ -89,9 +89,11 @@ export function validateSelectionResponse({
 }: {
   response?: Record<number, number | undefined>
 }) {
+  // ensure that all select components contain a submission value and that all values are unique
   if (
     !response ||
-    Object.values(response).some((value) => typeof value === 'undefined')
+    Object.values(response).some((value) => typeof value === 'undefined') ||
+    new Set(Object.values(response)).size !== Object.values(response).length
   ) {
     return false
   }

@@ -275,8 +275,8 @@ export const QUESTIONS = [
       hasSampleSolution: true,
       numberOfInputs: 2,
     },
-    collectionName: 'Public Collection (Fruits)',
-    answerCollectionSolutions: ['Apple', 'Banana', 'Cherry'],
+    collectionName: 'Restricted Collection (Animals)',
+    answerCollectionSolutions: ['Bear', 'Cat', 'Dog'],
   },
 ]
 
