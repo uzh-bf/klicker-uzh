@@ -151,13 +151,15 @@ export function gradeQuestionSelection({
   response,
   correctAnswers,
 }: GradeQuestionSelectionArgs): number | null {
-  if (!correctAnswers || correctAnswers.length === 0) return null
+  if (!correctAnswers || correctAnswers.length === 0 || numberOfInputs === 0)
+    return null
 
-  const correctResponses = response.filter((ix) =>
-    correctAnswers.includes(ix)
-  ).length
+  // remove duplicates and validate responses
+  const validResponses = [...new Set(response)].filter((answerId) =>
+    correctAnswers.includes(answerId)
+  )
 
-  return correctResponses / numberOfInputs
+  return validResponses.length / numberOfInputs
 }
 
 interface ComputeAwardedPointsArgs {
