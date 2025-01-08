@@ -90,7 +90,6 @@ export const QUESTIONS = [
     type: ElementType.FREE_TEXT,
     options: {
       hasSampleSolution: true,
-      hasAnswerFeedbacks: false,
       restrictions: {
         maxLength: 100,
       },
@@ -150,7 +149,6 @@ export const QUESTIONS = [
     type: ElementType.NUMERICAL,
     options: {
       hasSampleSolution: true,
-      hasAnswerFeedbacks: false,
       accuracy: 2,
       unit: '%',
       restrictions: {
@@ -258,7 +256,6 @@ export const QUESTIONS = [
     type: ElementType.NUMERICAL,
     options: {
       hasSampleSolution: true,
-      hasAnswerFeedbacks: false,
       accuracy: 2,
       unit: '%',
       restrictions: {
