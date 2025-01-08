@@ -121,7 +121,7 @@ export async function getSingleQuestion(
     ...question,
     options: {
       ...question.options,
-      answerCollectionId: question.answerCollectionId,
+      answerCollection: { id: question.answerCollectionId, entries: [] },
       answerCollectionSolutionIds: question.answerCollectionSolutions.map(
         (sol) => sol.id
       ),
@@ -399,7 +399,7 @@ export async function manipulateQuestion(
     ...question,
     options: {
       ...question.options,
-      answerCollectionId: question.answerCollectionId,
+      answerCollection: { id: question.answerCollectionId, entries: [] },
       answerCollectionSolutionIds: question.answerCollectionSolutions.map(
         (sol) => sol.id
       ),

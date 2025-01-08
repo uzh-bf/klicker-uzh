@@ -42,13 +42,15 @@ function LiveQuizList() {
       .sort((a, b) => (dayjs(b.finishedAt) > dayjs(a.finishedAt) ? 1 : -1))
   }, [data])
 
-  if (!data || loading) {
+  if (loading) {
     return (
       <Layout displayName={t('shared.generic.liveQuizzes')}>
         <Loader />
       </Layout>
     )
   }
+
+  console.log(data)
 
   return (
     <Layout displayName={t('shared.generic.liveQuizzes')}>

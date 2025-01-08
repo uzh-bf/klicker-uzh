@@ -103,7 +103,9 @@ query GetSingleQuestion($id: Int!) {
       options {
         hasSampleSolution
         numberOfInputs
-        answerCollectionId
+        answerCollection {
+          id
+        }
         answerCollectionSolutionIds
       }
 

@@ -33,6 +33,17 @@ fragment ElementDataInfo on ElementInstance {
       pointsMultiplier
     }
 
+    ... on SelectionElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
+
     ... on FlashcardElementData {
       __typename
       id

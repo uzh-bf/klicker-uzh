@@ -65,6 +65,29 @@ fragment ElementData on ElementInstance {
       }
     }
 
+    ... on SelectionElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+      options {
+        hasSampleSolution
+        numberOfInputs
+        answerCollection {
+          id
+          entries {
+            id
+            value
+          }
+        }
+        answerCollectionSolutionIds
+      }
+    }
+
     ... on FlashcardElementData {
       __typename
       id
