@@ -201,8 +201,8 @@ export interface SelectionAnswerCollection {
 }
 
 export interface ElementOptionsSelection extends BaseQuestionOptions {
-  numberOfInputs: number
-  answerCollection: SelectionAnswerCollection
+  numberOfInputs?: number
+  answerCollection?: SelectionAnswerCollection
   answerCollectionSolutionIds?: number[] | null
 }
 

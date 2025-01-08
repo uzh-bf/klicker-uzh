@@ -171,15 +171,10 @@ export function getInitialElementResults(
     element.answerCollection &&
     'entries' in element.answerCollection
   ) {
-    const selections = element.answerCollection.entries.reduce<
-      Record<number, number>
-    >(
-      (acc, entry) => ({
-        ...acc,
-        [entry.id]: 0,
-      }),
-      {}
-    )
+    const selections: Record<number, number> = {}
+    for (const entry of element.answerCollection.entries) {
+      selections[entry.id] = 0
+    }
 
     return {
       selections,
