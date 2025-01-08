@@ -182,7 +182,7 @@ function Index({ id }: { id: string }) {
       <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row">
         <div
           className={twMerge(
-            'hidden flex-1 border-r border-gray-300 bg-white md:pr-5',
+            'hidden flex-1 border-gray-300 bg-white md:border-r md:pr-5',
             isLiveQAEnabled && 'md:w-1/2',
             activeMobilePage === 'questions' && 'block',
             (activeMobilePage === 'feedbacks' ||

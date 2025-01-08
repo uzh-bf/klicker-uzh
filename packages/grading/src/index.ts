@@ -140,6 +140,28 @@ export function gradeQuestionFreeText({
   return 0
 }
 
+interface GradeQuestionSelectionArgs {
+  numberOfInputs: number
+  response: number[]
+  correctAnswers: number[] | undefined | null
+}
+
+export function gradeQuestionSelection({
+  numberOfInputs,
+  response,
+  correctAnswers,
+}: GradeQuestionSelectionArgs): number | null {
+  if (!correctAnswers || correctAnswers.length === 0 || numberOfInputs === 0)
+    return null
+
+  // remove duplicates and validate responses
+  const validResponses = [...new Set(response)].filter((answerId) =>
+    correctAnswers.includes(answerId)
+  )
+
+  return validResponses.length / numberOfInputs
+}
+
 interface ComputeAwardedPointsArgs {
   firstResponseReceivedAt: string | null
   responseTimestamp: number

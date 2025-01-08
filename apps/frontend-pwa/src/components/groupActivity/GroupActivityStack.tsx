@@ -143,7 +143,7 @@ function GroupActivityStack({
 
   return (
     <>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-12 md:gap-8">
         {stack.elements &&
           stack.elements.length > 0 &&
           stack.elements.map((element, elementIx) => {
