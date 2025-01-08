@@ -140,6 +140,26 @@ export function gradeQuestionFreeText({
   return 0
 }
 
+interface GradeQuestionSelectionArgs {
+  numberOfInputs: number
+  response: number[]
+  correctAnswers: number[] | undefined | null
+}
+
+export function gradeQuestionSelection({
+  numberOfInputs,
+  response,
+  correctAnswers,
+}: GradeQuestionSelectionArgs): number | null {
+  if (!correctAnswers || correctAnswers.length === 0) return null
+
+  const correctResponses = response.filter((ix) =>
+    correctAnswers.includes(ix)
+  ).length
+
+  return correctResponses / numberOfInputs
+}
+
 interface ComputeAwardedPointsArgs {
   firstResponseReceivedAt: string | null
   responseTimestamp: number
