@@ -224,6 +224,18 @@ function ElementStack({
                   response: evaluation.lastResponse.value,
                 },
               }
+            } else if (
+              elementType === ElementType.Selection &&
+              evaluation.__typename === 'SelectionInstanceEvaluation'
+            ) {
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.selection,
+                },
+              }
             }
 
             return acc
