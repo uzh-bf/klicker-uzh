@@ -1,7 +1,7 @@
 import type { SelectionQuestionOptions } from '@klicker-uzh/graphql/dist/ops'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useMemo } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface SELECTIONAnswerOptionsProps {
@@ -43,19 +43,6 @@ function SELECTIONAnswerOptions({
         )}
       >
         {Object.entries(responses).map(([inputIndex, selectedValue]) => {
-          const selectItems = useMemo(() => {
-            return (
-              options.answerCollection?.entries?.map((entry) => ({
-                label: entry.value,
-                value: String(entry.id),
-                data: { cy: `select-answer-${entry.value}` },
-                disabled:
-                  selectedValues.includes(entry.id) &&
-                  selectedValue !== entry.id,
-              })) ?? []
-            )
-          }, [responses])
-
           return (
             <div key={inputIndex} className="flex flex-col">
               <SelectField
@@ -64,7 +51,16 @@ function SELECTIONAnswerOptions({
                 onChange={(newValue) => {
                   onChange({ ...responses, [inputIndex]: parseInt(newValue) })
                 }}
-                items={selectItems}
+                items={
+                  options.answerCollection?.entries?.map((entry) => ({
+                    label: entry.value,
+                    value: String(entry.id),
+                    data: { cy: `select-answer-${entry.value}` },
+                    disabled:
+                      selectedValues.includes(entry.id) &&
+                      selectedValue !== entry.id,
+                  })) ?? []
+                }
                 label={t('shared.questions.seCorrectAnswerN', {
                   number: Number(inputIndex) + 1,
                 })}

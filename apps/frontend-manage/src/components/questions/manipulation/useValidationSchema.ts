@@ -369,7 +369,11 @@ function useOptionsSchemaFreeText() {
   }
 }
 
-function useOptionsSchemaSelection() {
+function useOptionsSchemaSelection({
+  numberOfAnswerOptions,
+}: {
+  numberOfAnswerOptions?: number
+}) {
   const t = useTranslations()
 
   return {
@@ -377,7 +381,11 @@ function useOptionsSchemaSelection() {
     numberOfInputs: yup
       .number()
       .required(t('manage.formErrors.SEnumberOfInputsRequired'))
-      .min(1, t('manage.formErrors.SEnumberOfInputsMin')),
+      .min(1, t('manage.formErrors.SEnumberOfInputsMin'))
+      .max(
+        numberOfAnswerOptions ? numberOfAnswerOptions - 1 : 100,
+        t('manage.formErrors.SEnumberOfInputsMax')
+      ),
     answerCollection: yup
       .string()
       .required(t('manage.formErrors.SEanswerCollectionRequired')),
@@ -402,14 +410,20 @@ function useOptionsSchemaSelection() {
   }
 }
 
-function useValidationSchema() {
+function useValidationSchema({
+  numberOfAnswerOptions,
+}: {
+  numberOfAnswerOptions?: number
+}) {
   const t = useTranslations()
   const optionsSchemaSC = useOptionsSchemaSC()
   const optionsSchemaMC = useOptionsSchemaMC()
   const optionsSchemaKPRIM = useOptionsSchemaKPRIM()
   const optionsSchemaNumerical = useOptionsSchemaNumerical()
   const optionsSchemaFreeText = useOptionsSchemaFreeText()
-  const optionsSchemaSelection = useOptionsSchemaSelection()
+  const optionsSchemaSelection = useOptionsSchemaSelection({
+    numberOfAnswerOptions,
+  })
 
   return yup.object().shape({
     ...useSharedValidationSchema(),

@@ -1376,6 +1376,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The exact solutions must lie within the specified restrictions.',
       SEnumberOfInputsRequired: 'Please specify the number of input fields.',
       SEnumberOfInputsMin: 'The number of inputs must be at least 1.',
+      SEnumberOfInputsMax:
+        'The number of input fields must be at most the number of options in the answer collection - 1.',
       SEanswerCollectionRequired: 'Please select an answer collection.',
       SEcorrectAnswersRequired:
         'Please select the correct answer options from your collection.',

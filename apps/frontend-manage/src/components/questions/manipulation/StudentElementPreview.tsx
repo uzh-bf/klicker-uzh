@@ -106,9 +106,10 @@ function StudentElementPreview({
                               : undefined,
                         },
                         numberOfInputs:
-                          'numberOfInputs' in values.options
+                          'numberOfInputs' in values.options &&
+                          values.options.numberOfInputs
                             ? values.options.numberOfInputs
-                            : undefined,
+                            : 1,
                         answerCollection:
                           typeof answerCollectionEntries !== 'undefined' &&
                           answerCollectionEntries.length > 0

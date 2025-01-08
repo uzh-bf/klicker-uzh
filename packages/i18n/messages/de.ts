@@ -1390,6 +1390,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie die Anzahl der Eingabefelder an.',
       SEnumberOfInputsMin:
         'Die Anzahl der Eingabefelder muss mindestens 1 sein.',
+      SEnumberOfInputsMax:
+        'Die Anzahl der Eingabefelder darf maximal der Anzahl Optionen in der Antwort-Sammlung - 1 entsprechen.',
       SEanswerCollectionRequired: 'Bitte wählen Sie eine Antwort-Sammlung aus.',
       SEcorrectAnswersRequired:
         'Bitte wählen Sie die korrekten Antwortmöglichkeiten aus Ihrer Sammlung aus.',

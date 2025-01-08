@@ -64,7 +64,6 @@ function ElementEditModal({
   mode,
 }: ElementEditModalProps): React.ReactElement {
   const t = useTranslations()
-  const questionManipulationSchema = useValidationSchema()
 
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
@@ -73,6 +72,10 @@ function ElementEditModal({
   >([])
   const [elementDataTypename, setElementDataTypename] =
     useState<ElementData['__typename']>('ChoicesElementData')
+
+  const questionManipulationSchema = useValidationSchema({
+    numberOfAnswerOptions: answerCollectionEntries.length,
+  })
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
