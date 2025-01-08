@@ -68,6 +68,9 @@ function ElementEditModal({
 
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
+  const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
+    { id: number; value: string }[]
+  >([])
   const [elementDataTypename, setElementDataTypename] =
     useState<ElementData['__typename']>('ChoicesElementData')
 
@@ -344,7 +347,10 @@ function ElementEditModal({
                   )}
 
                   {values.type === ElementType.Selection && (
-                    <SelectionOptions values={values} />
+                    <SelectionOptions
+                      values={values}
+                      setAnswerCollectionEntries={setAnswerCollectionEntries}
+                    />
                   )}
                 </Form>
 
@@ -356,6 +362,7 @@ function ElementEditModal({
               <StudentElementPreview
                 values={values}
                 elementDataTypename={elementDataTypename}
+                answerCollectionEntries={answerCollectionEntries}
               />
             </div>
 

@@ -16,11 +16,13 @@ import { ElementFormTypes } from './types'
 interface StudentElementPreviewProps {
   values: ElementFormTypes
   elementDataTypename: ElementData['__typename']
+  answerCollectionEntries?: { id: number; value: string }[]
 }
 
 function StudentElementPreview({
   values,
   elementDataTypename,
+  answerCollectionEntries,
 }: StudentElementPreviewProps): React.ReactElement {
   const t = useTranslations()
   const [studentResponse, setStudentResponse] =
@@ -31,6 +33,7 @@ function StudentElementPreview({
       <H3>{t('shared.generic.preview')}</H3>
       <div className="rounded border p-4">
         <StudentElement
+          preview
           element={
             {
               id: 0,
@@ -102,6 +105,15 @@ function StudentElementPreview({
                                 )
                               : undefined,
                         },
+                        numberOfInputs:
+                          'numberOfInputs' in values.options
+                            ? values.options.numberOfInputs
+                            : undefined,
+                        answerCollection:
+                          typeof answerCollectionEntries !== 'undefined' &&
+                          answerCollectionEntries.length > 0
+                            ? { entries: answerCollectionEntries }
+                            : undefined,
                       }
                     : undefined,
               },

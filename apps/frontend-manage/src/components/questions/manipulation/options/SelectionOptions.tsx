@@ -10,15 +10,21 @@ import {
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo } from 'react'
+import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
 import Select from 'react-select'
 import { ElementFormTypesSelection } from '../types'
 
 interface SelectionOptionsProps {
   values: ElementFormTypesSelection
+  setAnswerCollectionEntries: Dispatch<
+    SetStateAction<{ id: number; value: string }[]>
+  >
 }
 
-function SelectionOptions({ values }: SelectionOptionsProps) {
+function SelectionOptions({
+  values,
+  setAnswerCollectionEntries,
+}: SelectionOptionsProps) {
   const t = useTranslations()
   const [field, _, helpers] = useField<number[]>('options.correctAnswers')
   const { data, loading } = useQuery(GetAnswerCollectionsDocument)
@@ -46,11 +52,15 @@ function SelectionOptions({ values }: SelectionOptionsProps) {
       return []
     }
 
+    // set answer collection for question preview
+    setAnswerCollectionEntries(selectedCollection.entries)
+
     return selectedCollection.entries.map((entry) => ({
       label: entry.value,
       value: entry.id,
       data: { cy: `select-answer-${entry.value}` },
     }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collections, values.options.answerCollection])
 
   // filter the available answer options for the ones included in the current form state

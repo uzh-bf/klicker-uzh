@@ -66,6 +66,7 @@ interface StudentElementBaseProps {
   elementIx: number
   hideReadButton?: boolean
   disabledInput?: boolean
+  preview?: boolean
 }
 
 interface StudentElementStackProps extends StudentElementBaseProps {
@@ -96,6 +97,7 @@ function StudentElement({
   setSingleStudentResponse,
   hideReadButton = false,
   disabledInput = false,
+  preview = false,
 }: StudentElementStackProps | StudentElementSingleProps) {
   const evaluation = stackStorage?.[element.id]?.evaluation
 
@@ -330,6 +332,7 @@ function StudentElement({
         evaluation={''} // TODO
         elementIx={elementIx}
         disabled={disabledInput}
+        preview={preview}
       />
     )
   } else if (element.elementData.__typename === 'ContentElementData') {

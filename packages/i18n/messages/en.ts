@@ -12,6 +12,8 @@ export default {
         'The entered value is not a number or is not in the specified range.',
       ftPlaceholder: 'Your answer...',
       seSelectOption: 'Select an answer option...',
+      seSelectNCorrectOptions:
+        'Please choose <b>{number} correct answer options</b> from the provided selection.',
       seCorrectAnswerN: 'Correct answer {number}',
     },
     DRAFT: {
@@ -809,6 +811,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sortBy: 'Sort by...',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
+      questionPreview: 'Question Preview: {question}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

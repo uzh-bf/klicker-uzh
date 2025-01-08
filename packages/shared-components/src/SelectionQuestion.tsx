@@ -19,6 +19,7 @@ interface SelectionQuestionProps {
   elementIx: number
   evaluation?: any // TODO: update to type: SelectionInstanceEvaluation
   disabled?: boolean
+  preview: boolean
 }
 
 function SelectionQuestion({
@@ -31,6 +32,7 @@ function SelectionQuestion({
   elementIx,
   evaluation,
   disabled,
+  preview,
 }: SelectionQuestionProps) {
   const emptyResponses = useMemo(() => {
     const initResponses: Record<number, number | undefined> = {}
@@ -66,6 +68,7 @@ function SelectionQuestion({
           options={options}
           disabled={disabled || !!existingResponse}
           elementIx={elementIx}
+          preview={preview}
         />
       </div>
 

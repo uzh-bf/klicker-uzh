@@ -12,6 +12,8 @@ export default {
         'Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.',
       ftPlaceholder: 'Ihre Antwort...',
       seSelectOption: 'Antwort-Option auswählen...',
+      seSelectNCorrectOptions:
+        'Bitte wählen Sie <b>{number} korrekte Antwort-Optionen</b> aus der vorgegebenen Liste.',
       seCorrectAnswerN: 'Richtige Antwort {number}',
     },
     DRAFT: {
@@ -808,6 +810,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sortBy: 'Sortieren nach..',
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
+      questionPreview: 'Fragevorschau: {question}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
