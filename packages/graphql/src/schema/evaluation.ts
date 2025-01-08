@@ -403,7 +403,6 @@ export const ContentElementResults = ContentElementResultsRef.implement({
   }),
 })
 
-// TODO: add selection instance results - potentially update the function computeSelectionEvaluation - required for activity evaluation
 // ----- ELEMENT EVALUATION INTERFACE -----
 export const ElementInstanceEvaluation = builder.unionType(
   'ElementInstanceEvaluation',
