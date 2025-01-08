@@ -268,8 +268,8 @@ export const QUESTIONS = [
   {
     originalId: '6',
     name: 'Testfrage SELECTION',
-    content: 'Welche der folgenden Früchte passen in einen Fruchtsalat?',
-    explanation: 'Apples, Bananas, and Cherries are the correct answers.',
+    content: 'Which of the following animals are suited for a pet?',
+    explanation: 'Bears, cats and dogs make sweet pets.',
     type: ElementType.SELECTION,
     options: {
       hasSampleSolution: true,
