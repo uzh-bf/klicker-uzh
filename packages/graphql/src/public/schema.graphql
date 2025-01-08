@@ -850,7 +850,7 @@ type GroupMessage {
   updatedAt: Date!
 }
 
-union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
+union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
 
 type InstanceFeedback {
   activityType: ActivityType!
@@ -1567,6 +1567,26 @@ type SelectionElementData {
   type: ElementType!
 }
 
+type SelectionInstanceEvaluation {
+  answerSolutionIds: [Int!]
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseSelection
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  selectionResponses: [SingleSelectionResponse!]
+  xp: Int
+  xpAwarded: Int
+}
+
 type SelectionQuestionOptions {
   answerCollection: SelectionQuestionOptionsCollection
   answerCollectionSolutionIds: [Int!]
@@ -1617,7 +1637,17 @@ type SingleQuestionResponseFlashcard {
   correctness: FlashcardCorrectness!
 }
 
+type SingleQuestionResponseSelection {
+  selection: [Int!]!
+}
+
 type SingleQuestionResponseValue {
+  value: String!
+}
+
+type SingleSelectionResponse {
+  answerId: Int!
+  count: Int!
   value: String!
 }
 

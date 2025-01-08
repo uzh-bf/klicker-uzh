@@ -109,14 +109,6 @@ export type AnswerCollectionSharingRequest = {
 
 // ----- ELEMENT DATA AND INSTANCES -----
 // #region
-export type SingleQuestionResponseChoices = {
-  choices: number[]
-}
-
-export type SingleQuestionResponseValue = {
-  value: string
-}
-
 export enum FlashcardCorrectness {
   INCORRECT = 'INCORRECT',
   PARTIAL = 'PARTIAL',
@@ -137,6 +129,18 @@ export enum StackFeedbackStatus {
   PARTIAL = 'partial',
 }
 
+export type SingleQuestionResponseChoices = {
+  choices: number[]
+}
+
+export type SingleQuestionResponseValue = {
+  value: string
+}
+
+export type SingleQuestionResponseSelection = {
+  selection: number[]
+}
+
 export type SingleQuestionResponseFlashcard = {
   correctness: FlashcardCorrectness
 }
@@ -150,6 +154,7 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseValue
   | SingleQuestionResponseFlashcard
   | SingleQuestionResponseContent
+  | SingleQuestionResponseSelection
 
 export type Choice = {
   ix: number
@@ -389,6 +394,18 @@ export interface IInstanceEvaluationFreeText extends IBaseInstanceEvaluation {
 }
 export type InstanceEvaluationFreeText = IInstanceEvaluationFreeText
 
+export type SingleSelectionResponse = {
+  answerId: number
+  value: string
+  count: number
+}
+export interface IInstanceEvaluationSelection extends IBaseInstanceEvaluation {
+  selectionResponses?: SingleSelectionResponse[]
+  answerSolutionIds?: number[]
+  lastResponse?: SingleQuestionResponseSelection | null
+}
+export type InstanceEvaluationSelection = IInstanceEvaluationSelection
+
 export interface IInstanceEvaluationFlashcard extends IBaseInstanceEvaluation {
   lastResponse?: SingleQuestionResponseFlashcard | null
 }
@@ -405,6 +422,7 @@ export type InstanceEvaluation =
   | IInstanceEvaluationFreeText
   | IInstanceEvaluationFlashcard
   | IInstanceEvaluationContent
+  | IInstanceEvaluationSelection
 // #endregion
 
 // ----- LEARNING ANALYTICS -----
