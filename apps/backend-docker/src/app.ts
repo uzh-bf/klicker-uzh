@@ -23,6 +23,9 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     maxDepth: {
       enabled: false,
     },
+    costLimit: {
+      enabled: false,
+    },
   })
   const enhancements = armor.protect()
 

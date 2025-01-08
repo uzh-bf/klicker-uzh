@@ -133,7 +133,9 @@ function useElementFormInitialValues({
         options: {
           hasSampleSolution: options.hasSampleSolution ?? false,
           numberOfInputs: String(options.numberOfInputs),
-          answerCollection: String(options.answerCollectionId),
+          answerCollection: options.answerCollection
+            ? String(options.answerCollection?.id)
+            : '',
           correctAnswers: options.answerCollectionSolutionIds ?? undefined,
         },
       }

@@ -23,6 +23,8 @@ function ElementTypeMonitor({
       setElementDataTypename('FreeTextElementData')
     } else if (elementType === ElementType.Flashcard) {
       setElementDataTypename('FlashcardElementData')
+    } else if (elementType === ElementType.Selection) {
+      setElementDataTypename('SelectionElementData')
     } else {
       setElementDataTypename('ContentElementData')
     }

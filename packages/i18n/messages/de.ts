@@ -11,6 +11,8 @@ export default {
       numInvalidValue:
         'Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.',
       ftPlaceholder: 'Ihre Antwort...',
+      seSelectOption: 'Antwort-Option auswählen...',
+      seCorrectAnswerN: 'Richtige Antwort {number}',
     },
     DRAFT: {
       statusLabel: 'Entwurf',
@@ -1145,7 +1147,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveQuizTypes:
-        'Live Quizzes können nur Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
+        'Live Quizzes können nur Single-Choice, Multiple-Choice, Kprim, Numerische, Freitext, und Auswahl-Fragen enthalten.',
       liveQuizTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
       liveQuizMinQuestions:
@@ -1275,7 +1277,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityMissingCourse:
         'Gruppenaktivitäten müssen einem Kurs zugewiesen werden.',
       groupActivityTypes:
-        'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
+        'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische, Freitext, und Auswahl-Fragen enthalten.',
       groupActivityCreated:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich erstellt.',
       groupActivityEdited:

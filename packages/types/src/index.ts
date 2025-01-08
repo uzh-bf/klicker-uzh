@@ -192,6 +192,20 @@ export interface ElementOptionsFreeText extends BaseQuestionOptions {
   }
 }
 
+export interface SelectionAnswerCollection {
+  id: number
+  entries: {
+    id: number
+    value: string
+  }[]
+}
+
+export interface ElementOptionsSelection extends BaseQuestionOptions {
+  numberOfInputs?: number
+  answerCollection?: SelectionAnswerCollection
+  answerCollectionSolutionIds?: number[] | null
+}
+
 export interface ElementOptionsFlashcard {}
 export interface ElementOptionsContent {}
 
@@ -201,6 +215,7 @@ export type ElementOptions =
   | ElementOptionsFreeText
   | ElementOptionsFlashcard
   | ElementOptionsContent
+  | ElementOptionsSelection
 
 export interface BaseElementData {
   id: string
@@ -238,6 +253,10 @@ export type FlashcardElementData = IElementData<
   ElementOptionsFlashcard
 >
 export type ContentElementData = IElementData<'CONTENT', ElementOptionsContent>
+export type SelectionElementData = IElementData<
+  'SELECTION',
+  ElementOptionsSelection
+>
 
 export type AllElementTypeData =
   | ChoicesElementData
@@ -245,6 +264,7 @@ export type AllElementTypeData =
   | NumericalElementData
   | FlashcardElementData
   | ContentElementData
+  | SelectionElementData
 
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
@@ -280,11 +300,17 @@ export type ElementResultsContent = {
   total: number
 }
 
+export type ElementResultsSelection = {
+  selections: Record<number, number>
+  total: number
+}
+
 export type ElementInstanceResults =
   | ElementResultsChoices
   | ElementResultsOpen
   | ElementResultsFlashcard
   | ElementResultsContent
+  | ElementResultsSelection
 
 export type GroupActivityDecision = {
   instanceId: number
@@ -293,6 +319,7 @@ export type GroupActivityDecision = {
   choicesResponse?: number[] | null
   numericalResponse?: number | null
   contentResponse?: boolean | null
+  selectionResponse?: number[] | null
 }
 export type GroupActivityDecisions = GroupActivityDecision[]
 

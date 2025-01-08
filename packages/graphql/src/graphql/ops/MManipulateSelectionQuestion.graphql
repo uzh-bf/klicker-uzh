@@ -30,7 +30,9 @@ mutation ManipulateSelectionQuestion(
       options {
         hasSampleSolution
         numberOfInputs
-        answerCollectionId
+        answerCollection {
+          id
+        }
         answerCollectionSolutionIds
       }
       tags {

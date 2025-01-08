@@ -419,7 +419,7 @@ enum ElementBlockStatus {
   SCHEDULED
 }
 
-union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
+union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | SelectionElementData
 
 enum ElementDisplayMode {
   GRID
@@ -1555,11 +1555,33 @@ type SelectionElement {
   version: Int!
 }
 
+type SelectionElementData {
+  content: String!
+  elementId: Int!
+  explanation: String
+  id: ID!
+  name: String!
+  options: SelectionQuestionOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 type SelectionQuestionOptions {
-  answerCollectionId: Int
+  answerCollection: SelectionQuestionOptionsCollection
   answerCollectionSolutionIds: [Int!]
+  hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
   numberOfInputs: Int
+}
+
+type SelectionQuestionOptionsCollection {
+  entries: [SelectionQuestionOptionsCollectionEntry!]
+  id: Int!
+}
+
+type SelectionQuestionOptionsCollectionEntry {
+  id: Int!
+  value: String!
 }
 
 type SharingRequestResponse {

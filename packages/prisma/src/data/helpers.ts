@@ -140,10 +140,15 @@ export async function prepareParticipant({
 }
 
 export function prepareQuestion({
-  choices,
+  originalId,
+  name,
+  type,
+  ownerId,
   content,
+  choices,
   options,
-  ...args
+  collectionId,
+  correctOptionIds,
 }: {
   originalId: string
   name: string
@@ -156,7 +161,20 @@ export function prepareQuestion({
     correct?: boolean
   }[]
   options?: any
+  collectionId?: number
+  correctOptionIds?: number[]
 }) {
+  const args = {
+    originalId,
+    name,
+    type,
+    owner: {
+      connect: {
+        id: ownerId,
+      },
+    },
+  }
+
   if (choices) {
     const preparedChoices = choices.map((choice, ix) => ({
       ix,
@@ -177,8 +195,40 @@ export function prepareQuestion({
     return {
       where: {
         ownerId_originalId: {
-          ownerId: args.ownerId,
-          originalId: args.originalId,
+          ownerId: ownerId,
+          originalId: originalId,
+        },
+      },
+      create: data,
+      update: data,
+    }
+  }
+
+  if (
+    typeof collectionId !== 'undefined' &&
+    typeof correctOptionIds !== 'undefined'
+  ) {
+    const data = {
+      ...args,
+      content,
+      options,
+      answerCollection: {
+        connect: {
+          id: collectionId,
+        },
+      },
+      answerCollectionSolutions: {
+        connect: correctOptionIds.map((id) => ({
+          id,
+        })),
+      },
+    }
+
+    return {
+      where: {
+        ownerId_originalId: {
+          ownerId: ownerId,
+          originalId: originalId,
         },
       },
       create: data,
@@ -195,8 +245,8 @@ export function prepareQuestion({
   return {
     where: {
       ownerId_originalId: {
-        ownerId: args.ownerId,
-        originalId: args.originalId,
+        ownerId: ownerId,
+        originalId: originalId,
       },
     },
     create: data,

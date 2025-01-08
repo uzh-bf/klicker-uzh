@@ -49,6 +49,7 @@ const acceptedTypes = [
   ElementType.FreeText,
   ElementType.Flashcard,
   ElementType.Content,
+  ElementType.Selection,
 ]
 
 interface MicroLearningWizardProps {

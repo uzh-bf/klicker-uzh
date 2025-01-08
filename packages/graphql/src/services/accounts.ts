@@ -1142,7 +1142,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
         'Estimate the length of the **longest** river in the world (answer in kilometres).',
       options: {
         hasSampleSolution: true,
-        hasAnswerFeedbacks: false,
         unit: 'km',
         accuracy: 0,
         restrictions: { max: 10000, min: 0 },
@@ -1176,7 +1175,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       options: {
         displayMode: DisplayMode.LIST,
         hasSampleSolution: true,
-        hasAnswerFeedbacks: false,
         solutions: ['fair competition', 'private companies', 'balance'],
         restrictions: { maxLength: 150 },
       },

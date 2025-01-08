@@ -121,7 +121,7 @@ export async function getSingleQuestion(
     ...question,
     options: {
       ...question.options,
-      answerCollectionId: question.answerCollectionId,
+      answerCollection: { id: question.answerCollectionId, entries: [] },
       answerCollectionSolutionIds: question.answerCollectionSolutions.map(
         (sol) => sol.id
       ),
@@ -141,6 +141,14 @@ export async function getArtificialElementInstance(
     where: {
       id: elementId,
       ownerId: ctx.user.sub,
+    },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
     },
   })
 
@@ -391,7 +399,7 @@ export async function manipulateQuestion(
     ...question,
     options: {
       ...question.options,
-      answerCollectionId: question.answerCollectionId,
+      answerCollection: { id: question.answerCollectionId, entries: [] },
       answerCollectionSolutionIds: question.answerCollectionSolutions.map(
         (sol) => sol.id
       ),
@@ -628,6 +636,12 @@ export async function updateElementInstances(
           },
         },
       },
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
     },
   })
 
