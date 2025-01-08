@@ -164,7 +164,7 @@ export const SelectionQuestionOptionsCollectionEntry = builder
 
 export interface ISelectionQuestionOptionsCollection {
   id: number
-  entries: ISelectionQuestionOptionsCollectionEntry[]
+  entries?: ISelectionQuestionOptionsCollectionEntry[] | null
 }
 export const SelectionQuestionOptionsCollection = builder
   .objectRef<ISelectionQuestionOptionsCollection>(
@@ -175,12 +175,14 @@ export const SelectionQuestionOptionsCollection = builder
       id: t.exposeInt('id'),
       entries: t.expose('entries', {
         type: [SelectionQuestionOptionsCollectionEntry],
+        nullable: true,
       }),
     }),
   })
 
 export interface ISelectionQuestionOptions {
   hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
   numberOfInputs?: number | null
   answerCollection?: ISelectionQuestionOptionsCollection | null
   answerCollectionSolutionIds?: number[] | null
@@ -190,6 +192,9 @@ export const SelectionQuestionOptions = builder
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
         nullable: true,
       }),
       numberOfInputs: t.exposeInt('numberOfInputs', { nullable: true }),
