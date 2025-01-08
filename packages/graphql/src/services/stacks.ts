@@ -6,6 +6,7 @@ import {
   gradeQuestionMC,
   gradeQuestionNumerical,
   gradeQuestionSC,
+  gradeQuestionSelection,
 } from '@klicker-uzh/grading'
 import {
   type Element,
@@ -36,6 +37,7 @@ import type {
   ElementResultsContent,
   ElementResultsFlashcard,
   ElementResultsOpen,
+  ElementResultsSelection,
   FlashcardElementData,
   FreeTextElementData,
   InstanceEvaluation,
@@ -43,6 +45,7 @@ import type {
   InstanceEvaluationFreeText,
   InstanceEvaluationNumerical,
   NumericalElementData,
+  SelectionElementData,
   SingleQuestionResponse,
   SingleQuestionResponseChoices,
   SingleQuestionResponseContent,
@@ -1341,6 +1344,18 @@ function computeQuestionEvaluation({
       correctness,
       multiplier,
     })
+  } else if (
+    elementData.type === ElementType.SELECTION &&
+    'selections' in results &&
+    'selections' in anonymousResults
+  ) {
+    return evaluateSelectionElementResponse({
+      elementData,
+      results,
+      anonymousResults,
+      correctness,
+      multiplier,
+    })
   } else {
     return null
   }
@@ -1439,6 +1454,33 @@ export function evaluateFreeTextAnswerCorrectness({
   const correctness = gradeQuestionFreeText({
     response: response.value,
     solutions: elementData.options.solutions ?? [],
+  })
+  return correctness
+}
+
+export function evaluateSelectionAnswerCorrectness({
+  elementData,
+  response,
+}: {
+  elementData: SelectionElementData
+  response: ResponseInput
+}) {
+  if (!elementData.options.hasSampleSolution) {
+    return 1
+  }
+
+  if (
+    !('selection' in response) ||
+    !response.selection ||
+    response.selection.length === 0
+  ) {
+    return null
+  }
+
+  const correctness = gradeQuestionSelection({
+    numberOfInputs: elementData.options.numberOfInputs!,
+    response: response.selection,
+    correctAnswers: elementData.options.answerCollectionSolutionIds,
   })
   return correctness
 }
@@ -1598,6 +1640,36 @@ export function updateFreeTextResults({
   return { results: updatedResults, modified: true }
 }
 
+export function updateSelectionResults({
+  previousResults,
+  response,
+}: {
+  previousResults: ElementResultsSelection
+  response: ResponseInput
+}) {
+  if (
+    !('selection' in response) ||
+    !response.selection ||
+    response.selection.length === 0
+  ) {
+    return { results: previousResults, modified: false }
+  }
+
+  const updatedSelections = previousResults.selections
+  const updatedResults = previousResults
+
+  // increment all values in updatedSelections that are contained in response.selection
+  response.selection.forEach((ix) => {
+    if (ix in updatedSelections && updatedSelections[ix]) {
+      updatedSelections[ix] = updatedSelections[ix] + 1
+    }
+  })
+
+  updatedResults.selections = updatedSelections
+  updatedResults.total = updatedResults.total + 1
+  return { results: updatedResults, modified: true }
+}
+
 function updateQuestionResults({
   existingInstance,
   participation,
@@ -1668,6 +1740,23 @@ function updateQuestionResults({
       elementData,
       response,
       correct: correctness === 1,
+    })
+
+    return {
+      ...res,
+      correctness,
+    }
+  } else if (
+    elementData.type === ElementType.SELECTION &&
+    'selections' in previousResults
+  ) {
+    correctness = elementData.options.hasSampleSolution
+      ? evaluateSelectionAnswerCorrectness({ elementData, response })
+      : 1
+
+    const res = updateSelectionResults({
+      previousResults: previousResults,
+      response,
     })
 
     return {
@@ -1863,6 +1952,30 @@ function computeAggregatedResponsesOpen({
   return newAggResponses
 }
 
+function computeAggregatedResponsesSelection({
+  instance,
+  existingResponse,
+  responseSelection,
+}: {
+  instance: ElementInstance
+  existingResponse: PrismaQuestionResponse | null
+  responseSelection: number[]
+}) {
+  const newAggResponses = (existingResponse?.aggregatedResponses ??
+    getInitialElementResults({
+      type: instance.elementType,
+    } as Element)) as ElementResultsSelection
+
+  // increment all entries that are in response selection
+  responseSelection.forEach((ix) => {
+    if (ix in newAggResponses.selections && newAggResponses.selections[ix]) {
+      newAggResponses.selections[ix] = newAggResponses.selections[ix] + 1
+    }
+  })
+  newAggResponses.total = newAggResponses.total + 1
+  return newAggResponses
+}
+
 function computeAggregatedResponsesQuestion({
   instance,
   existingResponse,
@@ -1894,6 +2007,12 @@ function computeAggregatedResponsesQuestion({
           ? String(parseFloat(response.value!))
           : toLowerCase(response.value!.trim()),
       correctness: 1,
+    })
+  } else if (instance.elementType === ElementType.SELECTION) {
+    return computeAggregatedResponsesSelection({
+      instance,
+      existingResponse,
+      responseSelection: response.selection!,
     })
   }
 
@@ -2249,7 +2368,6 @@ export async function respondToQuestion(
       : existingInstance
 
     // compute question evaluation
-    // TODO: call computeChoicesEvaluation, computeNumericalEvaluation and computeFreeTextEvaluation for consistent feedback
     const questionEval = computeQuestionEvaluation({
       elementData: existingInstance.elementData,
       results: updatedInstance.results,
@@ -2417,6 +2535,7 @@ interface ElementResponseInput {
   choicesResponse?: number[] | null
   numericalResponse?: number | null
   freeTextResponse?: string | null
+  selectionResponse?: number[] | null
 }
 
 async function respondToElement({
@@ -2584,6 +2703,35 @@ async function respondToElement({
         courseId: courseId,
         id: response.instanceId,
         response: { value: response.freeTextResponse },
+        answerTime,
+        participation,
+        skipTracking,
+      },
+      ctx
+    )
+
+    if (result) {
+      return {
+        grading: result.status,
+        score: result.evaluation?.score ?? 0,
+        evaluation: {
+          instanceId: response.instanceId,
+          ...result.evaluation,
+        } as InstanceEvaluation,
+      }
+    } else {
+      return {
+        grading: null,
+        score: null,
+        evaluation: null,
+      }
+    }
+  } else if (response.type === ElementType.SELECTION) {
+    const result = await respondToQuestion(
+      {
+        courseId: courseId,
+        id: response.instanceId,
+        response: { selection: response.selectionResponse },
         answerTime,
         participation,
         skipTracking,

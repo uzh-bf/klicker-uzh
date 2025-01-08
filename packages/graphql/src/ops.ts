@@ -2644,6 +2644,7 @@ export enum ResponseCorrectnessType {
 
 export type ResponseInput = {
   choices?: InputMaybe<Array<Scalars['Int']['input']>>;
+  selection?: InputMaybe<Array<Scalars['Int']['input']>>;
   value?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -2779,6 +2780,7 @@ export type StackResponseInput = {
   freeTextResponse?: InputMaybe<Scalars['String']['input']>;
   instanceId: Scalars['Int']['input'];
   numericalResponse?: InputMaybe<Scalars['Float']['input']>;
+  selectionResponse?: InputMaybe<Array<Scalars['Int']['input']>>;
   type: ElementType;
 };
 
