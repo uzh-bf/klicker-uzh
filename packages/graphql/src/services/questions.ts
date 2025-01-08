@@ -142,6 +142,14 @@ export async function getArtificialElementInstance(
       id: elementId,
       ownerId: ctx.user.sub,
     },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
+    },
   })
 
   if (!element) return null
@@ -628,6 +636,12 @@ export async function updateElementInstances(
           },
         },
       },
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
     },
   })
 

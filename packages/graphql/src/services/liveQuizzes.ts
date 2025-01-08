@@ -321,6 +321,14 @@ export async function manipulateLiveQuiz(
       id: { in: elements },
       ownerId: ctx.user.sub,
     },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
+    },
   })
 
   const uniqueElements = new Set(dbElements.map((q) => q.id))
@@ -1604,7 +1612,15 @@ export async function cancelLiveQuiz(
       activeBlock: true,
       blocks: {
         include: {
-          elements: { include: { element: true } },
+          elements: {
+            include: {
+              element: {
+                include: {
+                  answerCollection: { include: { entries: true } },
+                },
+              },
+            },
+          },
           activeInLiveQuiz: true,
         },
       },
@@ -1668,17 +1684,19 @@ export async function cancelLiveQuiz(
         },
       }),
 
-      ...instances.map((instance) =>
-        ctx.prisma.elementInstance.update({
+      ...instances.map((instance) => {
+        const initialResults = getInitialElementResults(instance.element)
+
+        return ctx.prisma.elementInstance.update({
           where: {
             id: instance.id,
           },
           data: {
-            results: getInitialElementResults(instance.element),
-            anonymousResults: getInitialElementResults(instance.element),
+            results: initialResults,
+            anonymousResults: initialResults,
           },
         })
-      ),
+      }),
     ])
 
     const keys = await ctx.redisExec.keys(`lq:${id}:*`)

@@ -1000,6 +1000,14 @@ export async function manipulateGroupActivity(
       id: { in: elements },
       ownerId: ctx.user.sub,
     },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
+    },
   })
 
   const uniqueElements = new Set(dbElements.map((q) => q.id))

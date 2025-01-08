@@ -201,7 +201,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const questionsTest = (await Promise.all(
+  const questionsTest = await Promise.all(
     DATA_TEST.QUESTIONS.map((data) => {
       let collectionId: number | undefined = undefined
       let correctOptionIds: number[] = []
@@ -233,16 +233,24 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         })
       }
 
-      return prisma.element.upsert(
-        prepareQuestion({
+      return prisma.element.upsert({
+        ...prepareQuestion({
           ownerId: USER_ID_TEST,
           ...data,
           collectionId,
           correctOptionIds,
-        })
-      )
+        }),
+        include: {
+          answerCollection: {
+            include: {
+              entries: true,
+            },
+          },
+          answerCollectionSolutions: true,
+        },
+      })
     })
-  )) as Element[]
+  )
 
   await Promise.all(
     DATA_TEST.LIVE_QUIZZES.map(
@@ -895,6 +903,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
   })
 
+  // extract the ids of the correct answer options to the selection question
+  const selectionQuestion = questionsTest.find(
+    (q) => q.type === Prisma.ElementType.SELECTION
+  )
+  const selectionResponse =
+    selectionQuestion?.answerCollectionSolutions.map((sol) => sol.id) ?? []
+
   const groupActivityDecisions = groupActivityCompleted.stacks[0]!.elements.map(
     (element) => {
       const baseDecisions = {
@@ -931,6 +946,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         return {
           ...baseDecisions,
           numericalResponse: 10,
+        }
+      } else if (element.elementType === Prisma.ElementType.SELECTION) {
+        return {
+          ...baseDecisions,
+          selectionResponse,
         }
       }
     }
@@ -973,6 +993,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...baseDecisions,
           numericalResponse: 97,
         }
+      } else if (element.elementType === Prisma.ElementType.SELECTION) {
+        return {
+          ...baseDecisions,
+          selectionResponse,
+        }
       }
     })
 
@@ -1012,6 +1037,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         return {
           ...baseDecisions,
           numericalResponse: 10,
+        }
+      } else if (element.elementType === Prisma.ElementType.SELECTION) {
+        return {
+          ...baseDecisions,
+          selectionResponse,
         }
       }
     })
