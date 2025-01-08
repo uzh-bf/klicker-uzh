@@ -50,8 +50,6 @@ function LiveQuizList() {
     )
   }
 
-  console.log(data)
-
   return (
     <Layout displayName={t('shared.generic.liveQuizzes')}>
       <div className="flex flex-col gap-5">

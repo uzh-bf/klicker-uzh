@@ -114,7 +114,6 @@ export function processElementData(
       ...pick(element, NO_OPTIONS_KEYS),
       options: {
         hasSampleSolution: element.options.hasSampleSolution,
-        hasAnswerFeedbacks: element.options.hasAnswerFeedbacks,
         numberOfInputs: element.options.numberOfInputs,
         answerCollection: selectionOptions,
       },
