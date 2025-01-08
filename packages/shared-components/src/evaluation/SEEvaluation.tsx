@@ -79,7 +79,7 @@ function SEEValuation({
         </div>
         <div className="flex flex-col gap-1">
           {sortedResponses.map((response, ix) => (
-            <div>
+            <div key={`top-response-${response.answerId}`}>
               <div className="-mb-0.5 text-sm">{`${ix + 1}. ${response.value}`}</div>
               <Progress
                 value={response.count}

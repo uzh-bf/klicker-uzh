@@ -1706,7 +1706,7 @@ export function updateSelectionResults({
   }
 
   // increment all values in updatedSelections that are contained in response.selection
-  let updatedSelections = previousResults.selections
+  let updatedSelections = { ...previousResults.selections }
   response.selection.forEach((ix) => {
     if (ix in updatedSelections && typeof updatedSelections[ix] === 'number') {
       updatedSelections[ix] = updatedSelections[ix] + 1
@@ -2024,14 +2024,14 @@ function computeAggregatedResponsesSelection({
     } as ElementWithAnswerCollection)) as ElementResultsSelection
 
   // increment all entries that are in response selection
+  const updatedSelections = { ...newAggResponses.selections }
   responseSelection.forEach((ix) => {
-    if (
-      ix in newAggResponses.selections &&
-      typeof newAggResponses.selections[ix] === 'number'
-    ) {
-      newAggResponses.selections[ix] = newAggResponses.selections[ix] + 1
+    if (ix in updatedSelections && typeof updatedSelections[ix] === 'number') {
+      updatedSelections[ix] = updatedSelections[ix] + 1
     }
   })
+
+  newAggResponses.selections = updatedSelections
   newAggResponses.total = newAggResponses.total + 1
   return newAggResponses
 }
