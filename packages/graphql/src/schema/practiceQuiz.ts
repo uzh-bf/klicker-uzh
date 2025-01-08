@@ -68,6 +68,7 @@ export const StackResponseInput = builder.inputType('StackResponseInput', {
     choicesResponse: t.intList({ required: false }),
     numericalResponse: t.float({ required: false }),
     freeTextResponse: t.string({ required: false }),
+    selectionResponse: t.intList({ required: false }),
   }),
 })
 

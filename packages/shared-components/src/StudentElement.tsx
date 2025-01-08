@@ -329,7 +329,11 @@ function StudentElement({
         existingResponse={
           stackStorage?.[element.id]?.response as Record<number, number>
         }
-        evaluation={''} // TODO
+        evaluation={
+          evaluation && evaluation.__typename === 'SelectionInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
         elementIx={elementIx}
         disabled={disabledInput}
         preview={preview}

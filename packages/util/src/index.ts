@@ -1,5 +1,4 @@
 import {
-  type AnswerCollection,
   type AnswerCollectionEntry,
   type Element,
   ElementInstanceType as PrismaElementInstanceType,
@@ -37,10 +36,8 @@ const QUESTION_KEYS: ElementKeys[] = [
   'options',
 ]
 
-type ElementWithAnswerCollection = Element & {
-  answerCollection?:
-    | (AnswerCollection & { entries: AnswerCollectionEntry[] })
-    | null
+export type ElementWithAnswerCollection = Element & {
+  answerCollection?: { id: number; entries: AnswerCollectionEntry[] } | null
   answerCollectionSolutions?: AnswerCollectionEntry[] | null
 }
 
@@ -103,23 +100,27 @@ export function processElementData(
       )
     }
 
-    const selectionOptions = {
+    // formulate answer collection in the format as it will be required in the element data options
+    const answerCollectionOptions = {
       id: element.answerCollection.id,
       entries: element.answerCollection.entries.map((entry) => ({
         id: entry.id,
         value: entry.value,
       })),
-      answerCollectionSolutionIds: element.options.hasSampleSolution
-        ? element.answerCollectionSolutions!.map((entry) => entry.id)
-        : [],
     }
+
+    // extract the ids of the correct solution options
+    const answerCollectionSolutionIds = element.options.hasSampleSolution
+      ? element.answerCollectionSolutions!.map((entry) => entry.id)
+      : []
 
     return {
       ...pick(element, NO_OPTIONS_KEYS),
       options: {
         hasSampleSolution: element.options.hasSampleSolution,
         numberOfInputs: element.options.numberOfInputs,
-        answerCollection: selectionOptions,
+        answerCollection: answerCollectionOptions,
+        answerCollectionSolutionIds,
       },
       type: element.type,
       id: `${element.id}-v${element.version}`,

@@ -1,8 +1,13 @@
-import type { SelectionQuestionOptions } from '@klicker-uzh/graphql/dist/ops'
+import type {
+  SelectionInstanceEvaluation,
+  SelectionQuestionOptions,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
+import SEEValuation from './evaluation/SEEvaluation'
 import SELECTIONAnswerOptions from './questions/SELECTIONAnswerOptions'
 import { validateSelectionResponse } from './utils/validateResponse'
 
@@ -17,7 +22,7 @@ interface SelectionQuestionProps {
   ) => void
   existingResponse?: Record<number, number | undefined>
   elementIx: number
-  evaluation?: any // TODO: update to type: SelectionInstanceEvaluation
+  evaluation?: SelectionInstanceEvaluation
   disabled?: boolean
   preview: boolean
 }
@@ -72,8 +77,19 @@ function SelectionQuestion({
         />
       </div>
 
-      {/* // TODO: implement evaluation view for asynchronous applications */}
-      {evaluation && evaluation.solutions && <div>EVALUATION</div>}
+      {evaluation && evaluation.answerSolutionIds && (
+        <div
+          className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
+          key={`evaluation-${elementIx}`}
+        >
+          <div className="flex flex-col gap-4 md:px-4">
+            <div className="flex flex-row justify-between">
+              <PracticeQuizPoints evaluation={evaluation} />
+            </div>
+            <SEEValuation evaluation={evaluation} options={options} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

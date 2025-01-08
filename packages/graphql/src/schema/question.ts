@@ -5,6 +5,7 @@ import type {
   IInstanceEvaluationFlashcard,
   IInstanceEvaluationFreeText,
   IInstanceEvaluationNumerical,
+  IInstanceEvaluationSelection,
   IQuestionFeedback,
   SingleChoiceResponse as SingleChoiceResponseType,
   SingleFreeTextResponse as SingleFreeTextResponseType,
@@ -12,7 +13,9 @@ import type {
   SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
   SingleQuestionResponseContent as SingleQuestionResponseContentType,
   SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
+  SingleQuestionResponseSelection as SingleQuestionResponseSelectionType,
   SingleQuestionResponseValue as SingleQuestionResponseValueType,
+  SingleSelectionResponse as SingleSelectionResponseType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
@@ -127,6 +130,7 @@ export const ResponseInput = builder.inputType('ResponseInput', {
   fields: (t) => ({
     choices: t.intList({ required: false }),
     value: t.string({ required: false }),
+    selection: t.intList({ required: false }),
   }),
 })
 
@@ -157,6 +161,16 @@ export const SingleQuestionResponseValue = builder
   .implement({
     fields: (t) => ({
       value: t.exposeString('value'),
+    }),
+  })
+
+export const SingleQuestionResponseSelection = builder
+  .objectRef<SingleQuestionResponseSelectionType>(
+    'SingleQuestionResponseSelection'
+  )
+  .implement({
+    fields: (t) => ({
+      selection: t.exposeIntList('selection'),
     }),
   })
 
@@ -285,6 +299,16 @@ export const SingleFreeTextResponse = builder
     }),
   })
 
+export const SingleSelectionResponse = builder
+  .objectRef<SingleSelectionResponseType>('SingleSelectionResponse')
+  .implement({
+    fields: (t) => ({
+      answerId: t.exposeInt('answerId'),
+      value: t.exposeString('value'),
+      count: t.exposeInt('count'),
+    }),
+  })
+
 export const FreeTextInstanceEvaluation = builder
   .objectRef<IInstanceEvaluationFreeText>('FreeTextInstanceEvaluation')
   .implement({
@@ -297,6 +321,25 @@ export const FreeTextInstanceEvaluation = builder
       solutions: t.exposeStringList('solutions', { nullable: true }),
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseValue,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const SelectionInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationSelection>('SelectionInstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      ...sharedEvaluationProps(t),
+      selectionResponses: t.expose('selectionResponses', {
+        type: [SingleSelectionResponse],
+        nullable: true,
+      }),
+      answerSolutionIds: t.exposeIntList('answerSolutionIds', {
+        nullable: true,
+      }),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseSelection,
         nullable: true,
       }),
     }),
@@ -331,6 +374,7 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
     ChoicesInstanceEvaluation,
     NumericalInstanceEvaluation,
     FreeTextInstanceEvaluation,
+    SelectionInstanceEvaluation,
     FlashcardInstanceEvaluation,
     ContentInstanceEvaluation,
   ],
@@ -348,6 +392,8 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
         return FlashcardInstanceEvaluation
       case DB.ElementType.CONTENT:
         return ContentInstanceEvaluation
+      case DB.ElementType.SELECTION:
+        return SelectionInstanceEvaluation
     }
   },
 })

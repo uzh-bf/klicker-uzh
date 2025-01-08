@@ -101,6 +101,39 @@ fragment StackFeedbackEvaluations on StackFeedback {
       correctness
     }
 
+    ... on SelectionInstanceEvaluation {
+      instanceId
+      elementType
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      numAnswers
+      selectionResponses {
+        __typename
+        answerId
+        value
+        count
+      }
+      score
+      xp
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      answerSolutionIds
+      lastResponse {
+        __typename
+        selection
+      }
+      correctness
+    }
+
     ... on FlashcardInstanceEvaluation {
       instanceId
       elementType
