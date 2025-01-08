@@ -83,3 +83,18 @@ export function validateFreeTextResponse({
 
   return true
 }
+
+export function validateSelectionResponse({
+  response,
+}: {
+  response?: Record<number, number | undefined>
+}) {
+  if (
+    !response ||
+    Object.values(response).some((value) => typeof value === 'undefined')
+  ) {
+    return false
+  }
+
+  return true
+}

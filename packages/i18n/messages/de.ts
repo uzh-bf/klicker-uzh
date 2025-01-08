@@ -11,6 +11,8 @@ export default {
       numInvalidValue:
         'Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.',
       ftPlaceholder: 'Ihre Antwort...',
+      seSelectOption: 'Antwort-Option auswählen...',
+      seCorrectAnswerN: 'Richtige Antwort {number}',
     },
     DRAFT: {
       statusLabel: 'Entwurf',

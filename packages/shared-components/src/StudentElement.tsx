@@ -11,6 +11,7 @@ import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
 import FreeTextQuestion from './FreeTextQuestion'
 import NumericalQuestion from './NumericalQuestion'
+import SelectionQuestion from './SelectionQuestion'
 
 export type ElementChoicesType =
   | ElementType.Sc
@@ -45,6 +46,12 @@ export type InstanceStackStudentResponseType =
   | {
       type: ElementType.FreeText
       response?: string
+      valid?: boolean
+      evaluation?: InstanceEvaluation
+    }
+  | {
+      type: ElementType.Selection
+      response?: Record<number, number | undefined>
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
@@ -269,6 +276,58 @@ function StudentElement({
             ? evaluation
             : undefined
         }
+        elementIx={elementIx}
+        disabled={disabledInput}
+      />
+    )
+  } else if (element.elementData.__typename === 'SelectionElementData') {
+    return (
+      <SelectionQuestion
+        key={element.id}
+        content={element.elementData.content}
+        options={element.elementData.options}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as Record<
+                number,
+                number | undefined
+              >)
+            : (singleStudentResponse.response as Record<
+                number,
+                number | undefined
+              >)
+        }
+        valid={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.valid as boolean)
+            : (singleStudentResponse.valid as boolean)
+        }
+        setResponse={(newValue, valid) => {
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: ElementType.Selection,
+                    response: newValue,
+                    valid: valid,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: ElementType.Selection,
+                  response: newValue,
+                  valid: valid,
+                }
+              })
+        }}
+        existingResponse={
+          stackStorage?.[element.id]?.response as Record<number, number>
+        }
+        evaluation={''} // TODO
         elementIx={elementIx}
         disabled={disabledInput}
       />
