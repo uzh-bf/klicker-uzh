@@ -89,7 +89,11 @@ export function processElementData(
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
-  } else if (element.type === PrismaElementType.SELECTION) {
+  } else if (
+    element.type === PrismaElementType.SELECTION &&
+    'hasSampleSolution' in element.options &&
+    'numberOfInputs' in element.options
+  ) {
     if (
       !element.answerCollection?.entries ||
       (element.options.hasSampleSolution && !element.answerCollectionSolutions)
