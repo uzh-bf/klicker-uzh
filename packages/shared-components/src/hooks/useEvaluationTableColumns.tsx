@@ -156,7 +156,7 @@ function useEvaluationTableColumns({
           ]
         : []),
     ],
-    [showSolution, numericValues, textSize, t]
+    [showSolution, numericValues, selection, textSize, t]
   )
 
   return columns
