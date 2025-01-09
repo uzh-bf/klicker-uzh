@@ -1,3 +1,4 @@
+import { ActivityType } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -289,7 +290,6 @@ export function prepareGroupActivityStack({
             elementData: processElementData(el),
             options: {
               pointsMultiplier: ix / 3 > 0.9 ? 1 : 2, // first three questions get multiplier 2, the rest 1
-              resetTimeDays: 5,
             },
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
@@ -338,6 +338,7 @@ export function prepareStackVariety({
   elementInstanceType,
   courseId,
   connectToCourse = false,
+  activityType,
   migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
@@ -347,6 +348,7 @@ export function prepareStackVariety({
   elementInstanceType: Prisma.ElementInstanceType
   courseId: string
   connectToCourse?: boolean
+  activityType: ActivityType
   migrationIdOffset: number
 }) {
   return [
@@ -364,7 +366,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: el.type,
             elementData: processElementData(el),
-            options: { resetTimeDays: 7 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { resetTimeDays: 7 }
+                : {},
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
             instanceStatistics: {
@@ -396,7 +401,10 @@ export function prepareStackVariety({
           type: elementInstanceType,
           elementType: el.type,
           elementData: processElementData(el),
-          options: { resetTimeDays: 6 },
+          options:
+            activityType === ActivityType.PRACTICE_QUIZ
+              ? { resetTimeDays: 6 }
+              : {},
           results: getInitialElementResults(el),
           anonymousResults: getInitialElementResults(el),
           instanceStatistics: {
@@ -428,7 +436,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: el.type,
             elementData: processElementData(el),
-            options: { pointsMultiplier: 1, resetTimeDays: 5 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { pointsMultiplier: 1, resetTimeDays: 5 }
+                : { pointsMultiplier: 1 },
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
             instanceStatistics: {
@@ -462,7 +473,10 @@ export function prepareStackVariety({
           type: elementInstanceType,
           elementType: el.type,
           elementData: processElementData(el),
-          options: { pointsMultiplier: 4, resetTimeDays: 8 },
+          options:
+            activityType === ActivityType.PRACTICE_QUIZ
+              ? { pointsMultiplier: 4, resetTimeDays: 8 }
+              : { pointsMultiplier: 4 },
           results: getInitialElementResults(el),
           anonymousResults: getInitialElementResults(el),
           instanceStatistics: {
@@ -499,7 +513,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: el.type,
             elementData: processElementData(el),
-            options: { pointsMultiplier: 4, resetTimeDays: 7 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { resetTimeDays: 7 }
+                : {},
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
             instanceStatistics: {
@@ -543,7 +560,10 @@ export function prepareStackVariety({
           type: elementInstanceType,
           elementType: el.type,
           elementData: processElementData(el),
-          options: { pointsMultiplier: 2, resetTimeDays: 6 },
+          options:
+            activityType === ActivityType.PRACTICE_QUIZ
+              ? { resetTimeDays: 6 }
+              : {},
           results: getInitialElementResults(el),
           anonymousResults: getInitialElementResults(el),
           instanceStatistics: {
@@ -583,7 +603,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: flashcards[0]!.type,
             elementData: processElementData(flashcards[0]!),
-            options: { resetTimeDays: 5 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { resetTimeDays: 5 }
+                : {},
             results: getInitialElementResults(flashcards[0]!),
             anonymousResults: getInitialElementResults(flashcards[0]!),
             instanceStatistics: {
@@ -605,7 +628,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: questions[0]!.type,
             elementData: processElementData(questions[0]!),
-            options: { pointsMultiplier: 3, resetTimeDays: 6 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { pointsMultiplier: 3, resetTimeDays: 6 }
+                : { pointsMultiplier: 3 },
             results: getInitialElementResults(questions[0]!),
             anonymousResults: getInitialElementResults(questions[0]!),
             instanceStatistics: {

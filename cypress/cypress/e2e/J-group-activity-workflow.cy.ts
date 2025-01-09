@@ -13,6 +13,19 @@ const FTQuestionTitle = uuid()
 const FTQuestion = 'FT Question Group Activity'
 const CTQuestionTitle = uuid()
 const CTQuestion = 'CT Question Group Activity'
+const SEQuestion = 'SE Question Group Activity'
+const SEQuestionTitle = 'SE ' + uuid()
+const SEQuestionInputs = 3
+const SECollection = 'SE Collection Group Activity'
+const SECollectionDescription = 'SE Collection Group Activity Description'
+const SECollectionOptions = [
+  'SE Group Activity Option 1',
+  'SE Group Activity Option 2',
+  'SE Group Activity Option 3',
+  'SE Group Activity Option 4',
+  'SE Group Activity Option 5',
+]
+const SECollectionSolutions = [0, 1, 2, 4]
 
 const currentYear = new Date().getFullYear()
 const testCourse = 'Testkurs'
@@ -57,21 +70,23 @@ const flaggingTextNew = 'This is a NEW test flagging message'
 const freeTextAnswer = 'Testanswer to Free-Text Question'
 const numericalAnswer = '100'
 
-const maxPoints = ['200', '100', '100', '300', '100', '200']
-const scores1 = ['100', '100', '50', '200', '80', '200']
-const scores2 = ['50', '25', '25', '75', '25', '50']
+const maxPoints = ['200', '100', '100', '300', '100', '100', '200']
+const scores1 = ['100', '100', '50', '200', '80', '100', '200']
+const scores2 = ['50', '25', '25', '75', '25', '30', '50']
 const comments1 = [
   'Great job at question 1!',
   undefined,
   undefined,
   'Great job at question 4!',
   'Good job at question 5!',
+  'Great job with the seleciton question!',
   undefined,
 ]
 const comments2 = [
   'This is not correct for question 1...',
   undefined,
   'This is not correct for question 3...',
+  undefined,
   undefined,
   undefined,
   'This is not correct for question 6...',
@@ -176,6 +191,28 @@ describe('Create and solve a group activity', () => {
     cy.createContent({
       title: CTQuestionTitle,
       content: CTQuestion,
+    })
+
+    // create answer collection
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: SECollection,
+      description: SECollectionDescription,
+      entries: SECollectionOptions,
+      access: messages.manage.resources.accessPRIVATE,
+      accessCy: 'private',
+    })
+
+    // create selection question
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: SEQuestionTitle,
+      content: SEQuestion,
+      numberOfInputs: SEQuestionInputs,
+      collectionName: SECollection,
+      correctAnswers: SECollectionOptions.filter((_, i) =>
+        SECollectionSolutions.includes(i)
+      ),
     })
   })
 
@@ -293,6 +330,7 @@ describe('Create and solve a group activity', () => {
             KPRIMQuestionTitle,
             NRQuestionTitle,
             FTQuestionTitle,
+            SEQuestionTitle,
           ],
         },
       ],
@@ -484,8 +522,11 @@ describe('Create and solve a group activity', () => {
       .should('contain', FTQuestionTitle.substring(0, 20))
     cy.get(`[data-cy="element-5-stack-0"]`)
       .should('exist')
-      .should('contain', SCQuestionTitle.substring(0, 20))
+      .should('contain', SEQuestionTitle.substring(0, 20))
     cy.get(`[data-cy="element-6-stack-0"]`)
+      .should('exist')
+      .should('contain', SCQuestionTitle.substring(0, 20))
+    cy.get(`[data-cy="element-7-stack-0"]`)
       .should('exist')
       .should('contain', CTQuestionTitle.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
@@ -507,7 +548,13 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
     cy.get('[data-cy="input-numerical-4"]').type(numericalAnswer)
     cy.get('[data-cy="free-text-input-5"]').click().type(freeTextAnswer)
-    cy.get('[data-cy="sc-6-answer-option-1"]').click()
+    cy.get('[data-cy="selection-6-field-1"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[0]}"]`).click()
+    cy.get('[data-cy="selection-6-field-2"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[1]}"]`).click()
+    cy.get('[data-cy="selection-6-field-3"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[4]}"]`).click()
+    cy.get('[data-cy="sc-7-answer-option-1"]').click()
     cy.get('[data-cy="submit-group-activity"]').click()
   }
 
@@ -521,7 +568,10 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-4"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-5"]').should('be.disabled')
-    cy.get('[data-cy="sc-6-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-1"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-2"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
   }
 
   function checkPersistentAnswers() {
@@ -551,8 +601,18 @@ describe('Create and solve a group activity', () => {
       .should('be.disabled')
       .contains(freeTextAnswer)
 
-    cy.get('[data-cy="sc-6-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-6-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-1"]')
+      .should('be.disabled')
+      .contains(SECollectionOptions[0])
+    cy.get('[data-cy="selection-6-field-2"]')
+      .should('be.disabled')
+      .contains(SECollectionOptions[1])
+    cy.get('[data-cy="selection-6-field-3"]')
+      .should('be.disabled')
+      .contains(SECollectionOptions[4])
+
+    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-2"]').should('be.disabled')
   }
 
   function checkGradingVisualization(
@@ -966,6 +1026,9 @@ describe('Create and solve a group activity', () => {
     cy.findByText(messages.pwa.groupActivity.groupActivityPassed).should(
       'exist'
     )
+
+    // check that the answers are persistent and the fields disabled
+    checkPersistentAnswers()
 
     // check grading
     checkGradingVisualization(scores1, comments1, gradingComment1)

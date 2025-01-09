@@ -756,6 +756,7 @@ type GroupActivityDecision {
   freeTextResponse: String
   instanceId: Int!
   numericalResponse: Float
+  selectionResponse: [Int!]
   type: ElementType!
 }
 

@@ -122,6 +122,15 @@ function GroupActivityStack({
               valid: true,
             },
           }
+        } else if (decision.type === ElementType.Selection) {
+          return {
+            ...acc,
+            [decision.instanceId]: {
+              type: decision.type,
+              response: decision.selectionResponse ?? undefined,
+              valid: true,
+            },
+          }
         } else if (decision.type === ElementType.Content) {
           return {
             ...acc,
@@ -271,6 +280,14 @@ function GroupActivityStack({
                         instanceId: parseInt(instanceId),
                         type: ElementType.Content,
                         contentReponse: value.response,
+                      }
+                    } else if (value.type === ElementType.Selection) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Selection,
+                        selectionResponse: Object.values(
+                          value.response!
+                        ).filter((entry) => typeof entry !== 'undefined'),
                       }
                     } else {
                       return {

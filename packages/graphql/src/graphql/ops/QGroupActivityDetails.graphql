@@ -69,6 +69,7 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
         choicesResponse
         numericalResponse
         contentResponse
+        selectionResponse
       }
 
       resultsComputedAt

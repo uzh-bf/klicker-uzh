@@ -99,6 +99,7 @@ export const GroupActivityDecision = GroupActivityDecisionRef.implement({
     choicesResponse: t.exposeIntList('choicesResponse', { nullable: true }),
     numericalResponse: t.exposeFloat('numericalResponse', { nullable: true }),
     contentResponse: t.exposeBoolean('contentResponse', { nullable: true }),
+    selectionResponse: t.exposeIntList('selectionResponse', { nullable: true }),
   }),
 })
 
