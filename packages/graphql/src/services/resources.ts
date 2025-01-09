@@ -196,6 +196,7 @@ export async function modifyAnswerCollection(
           accessGranted: true,
         },
       },
+      accessRequested: true,
     },
   })
 
@@ -218,6 +219,9 @@ export async function modifyAnswerCollection(
   }
 
   // update changes in the database
+  const restrictedToPublic =
+    collection.access === DB.CollectionAccess.RESTRICTED &&
+    access === DB.CollectionAccess.PUBLIC
   const updatedCollection = await ctx.prisma.answerCollection.update({
     where: {
       id,
@@ -229,6 +233,17 @@ export async function modifyAnswerCollection(
       description: description ?? undefined,
       version: {
         increment: 1,
+      },
+      // if access is changed from restricted to public, accept all pending requests
+      accessGranted: {
+        connect: restrictedToPublic
+          ? collection.accessRequested.map((request) => ({
+              id: request.id,
+            }))
+          : undefined,
+      },
+      accessRequested: {
+        set: restrictedToPublic ? [] : undefined,
       },
     },
     include: {
@@ -342,7 +357,7 @@ export async function removeAnswerCollection(
 
   // if no other users have access to this collection and the owner is already disconnected, delete it
   let updatedCollection: DB.AnswerCollection
-  if (collection._count.accessGranted === 0 && collection.ownerId === null) {
+  if (collection._count.accessGranted === 1 && collection.ownerId === null) {
     updatedCollection = await ctx.prisma.answerCollection.delete({
       where: {
         id: collectionId,

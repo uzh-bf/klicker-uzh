@@ -602,7 +602,7 @@ describe('Create, edit and share answer collections', () => {
   })
   // #endregion
 
-  // ! Answer Collection Deletion Workflows
+  // ! Answer collection deletion workflows
   // #region
   it('Request access to the restricted answer collection for user pro2', () => {
     requestAccessPro2()
