@@ -61,6 +61,8 @@ const privateItemsNew = [
 ]
 
 describe('Create, edit and share answer collections', () => {
+  // ! Creation and editing of answer catalogues
+  // #region
   it('Create a public answer catalogue', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
@@ -230,6 +232,51 @@ describe('Create, edit and share answer collections', () => {
     )
   })
 
+  it('Verify that the public answer catalogue can be switched to private if no other users have access', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get('[data-cy="answer-collection-access"]').contains(
+      messages.manage.resources.accessPUBLIC
+    )
+    cy.get('[data-cy="answer-collection-access"]').click()
+    cy.get('[data-cy="answer-collection-access-restricted"]').should(
+      'not.have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-private"]').should(
+      'not.have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-public"]').click()
+  })
+
+  it('Verify that the restricted answer catalogue can be switched to private if no other users have access', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="answer-collection-access"]').contains(
+      messages.manage.resources.accessRESTRICTED
+    )
+    cy.get('[data-cy="answer-collection-access"]').click()
+    cy.get('[data-cy="answer-collection-access-public"]').should(
+      'not.have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-private"]').should(
+      'not.have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-restricted"]').click()
+  })
+  // #endregion
+
+  // ! Sharing of answer catalogues
+  // #region
   it('Request access to the restricted answer catalogue for user pro1', () => {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
@@ -535,7 +582,7 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
   })
 
-  it('Verify that the public answer catalogue cannot be switched back to private or restricted anymore', () => {
+  it('Verify that the public answer catalogue cannot be switched back to private or restricted anymore once other users use it', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
@@ -556,7 +603,7 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="answer-collection-access-public"]').click()
   })
 
-  it('Verify that the restricted answer catalogue cannot be switched to private', () => {
+  it('Verify that the restricted answer catalogue cannot be switched to private once other users use it', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
@@ -593,6 +640,36 @@ describe('Create, edit and share answer collections', () => {
     )
     cy.get('[data-cy="answer-collection-access-public"]').click()
   })
+  // #endregion
 
-  // TODO: add workflows for the deletion of the answer catalogues
+  // ! Answer Collection Deletion Workflows
+  // #region
+  it('Verify that shared restricted and public collections can be soft deleted, delete restricted collection', () => {
+    // TODO: implement
+  })
+
+  it('Verify that the restricted and shared collection can still be accessed', () => {
+    // TODO: verify that answer collection is still accessible (pro1?)
+  })
+
+  it('Add a question to a shared answer collection', () => {
+    // TODO - user pro1
+  })
+
+  it('Verify that the shared answer collection cannot be deleted due to the linked question', () => {
+    // TODO - user pro1
+  })
+
+  it('Unused shared answer collections can be removed', () => {
+    // TODO - user pro2 - remove all answer collections
+  })
+
+  it('After deletion of the question, the shared answer collection can be removed', () => {
+    // TODO - user pro1 - remove all answer collections
+  })
+
+  it('Cleanup: Delete all remaining answer collections', () => {
+    // TODO - user lecturer - remove all answer collections
+  })
+  // #endregion
 })

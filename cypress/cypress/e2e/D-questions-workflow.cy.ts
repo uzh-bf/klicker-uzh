@@ -1216,7 +1216,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
-  it('Check that the options that are used as a solution cannot be deleted anymore', () => {
+  it('Verify that the options that are used as a solution cannot be deleted anymore', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
@@ -1235,6 +1235,14 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Verify that the answer collection cannot be deleted anymore', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+
+    // TODO: verify that the collection cannot be deleted and that corresponding message is shown
   })
 
   it('Edit the selection question and change the answer collection (including new sample solutions)', () => {
@@ -1399,5 +1407,29 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="delete-question-${SETitleEdited}"]`).click()
     cy.get('[data-cy="confirm-question-deletion"]').click()
     cy.get(`[data-cy="element-item-${SETitleEdited}"]`).should('not.exist')
+  })
+
+  it('Verify that after the deletion of the linked question, all solution options can be deleted again', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+
+    SESolutions.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    SESolutionsNotChosen.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Cleanup: Delete the shared answer collection', () => {
+    // TODO: delete answer collection
   })
 })

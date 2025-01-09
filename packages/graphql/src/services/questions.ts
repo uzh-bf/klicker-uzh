@@ -411,6 +411,7 @@ export async function deleteQuestion(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
+  // soft delete question and disconnect linked answer collection and sample solutions
   const question = await ctx.prisma.element.update({
     where: {
       id: id,
@@ -418,6 +419,12 @@ export async function deleteQuestion(
     },
     data: {
       isDeleted: true,
+      answerCollection: {
+        disconnect: true,
+      },
+      answerCollectionSolutions: {
+        set: [],
+      },
     },
   })
 
@@ -433,6 +440,11 @@ export async function deleteQuestion(
   //   typename: 'Element',
   //   id: question.id,
   // })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id: question.id,
+  })
 
   return question
 }
