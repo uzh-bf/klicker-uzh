@@ -123,6 +123,15 @@ function Index({ id }: { id: string }) {
           response: { value: answer },
         }),
       }
+    } else if (type === ElementType.Selection) {
+      requestOptions = {
+        ...requestOptions,
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { selection: answer },
+        }),
+      }
     } else {
       return null
     }

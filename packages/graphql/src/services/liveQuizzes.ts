@@ -20,6 +20,7 @@ import type {
   ElementResultsContent,
   ElementResultsFlashcard,
   ElementResultsOpen,
+  ElementResultsSelection,
 } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
@@ -81,6 +82,7 @@ async function getCachedBlockResults({
         | ElementResultsOpen
         | ElementResultsFlashcard
         | ElementResultsContent
+        | ElementResultsSelection
     }
   > = {}
 
@@ -110,6 +112,7 @@ async function getCachedBlockResults({
       | ElementResultsOpen
       | ElementResultsFlashcard
       | ElementResultsContent
+      | ElementResultsSelection
       | undefined
 
     if (
@@ -197,6 +200,22 @@ async function getCachedBlockResults({
         responses,
         total: parseInt(results.participants),
       } as ElementResultsOpen
+    }
+    if (instance.elementType === ElementType.SELECTION) {
+      const selections = Object.entries(
+        omitBy(results, (_, key) => key === 'participants')
+      ).reduce<Record<string, number>>(
+        (acc, [answerId, count]) => {
+          acc[answerId] = (acc[answerId] ?? 0) + parseInt(count)
+          return acc
+        },
+        { ...(instance.anonymousResults as ElementResultsSelection).selections }
+      )
+
+      anonymousResults = {
+        selections,
+        total: parseInt(results.participants),
+      } as ElementResultsSelection
     }
 
     instanceResults[instance.id] = {
@@ -987,6 +1006,21 @@ export async function activateLiveQuizBlock(
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
+        })
+        break
+      }
+
+      case ElementType.SELECTION: {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: JSON.stringify(
+            elementData.options.answerCollectionSolutionIds
+          ),
+          numberOfInputs: elementData.options.numberOfInputs,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+          ...(instance.results as ElementResultsSelection).selections,
         })
         break
       }

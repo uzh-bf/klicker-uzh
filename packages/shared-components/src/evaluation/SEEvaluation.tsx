@@ -76,7 +76,11 @@ function SEEValuation({
         <div className="font-bold">
           {t('pwa.practiceQuiz.correctAnswerOptions')}
         </div>
-        {`[${correctOptions.join(', ')}]`}
+        <ul className="list-disc pl-4">
+          {correctOptions.map((option, index) => (
+            <li key={`correct-answer-${index}`}>{option}</li>
+          ))}
+        </ul>
       </div>
       <div>
         <div className="font-bold">
