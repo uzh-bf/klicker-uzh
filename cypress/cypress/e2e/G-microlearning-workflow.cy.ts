@@ -20,6 +20,19 @@ const FCQuestion = 'FC Question Micro'
 const FCAnswer = 'FC Answer Micro'
 const CTQuestionTitle = 'CT ' + uuid()
 const CTQuestion = 'CT Question Micro'
+const SEQuestion = 'SE Question ML'
+const SEQuestionTitle = 'SE ' + uuid()
+const SEQuestionInputs = 3
+const SECollection = 'SE Collection ML'
+const SECollectionDescription = 'SE Collection ML Description'
+const SECollectionOptions = [
+  'SE ML Option 1',
+  'SE ML Option 2',
+  'SE ML Option 3',
+  'SE ML Option 4',
+  'SE ML Option 5',
+]
+const SECollectionSolutions = [0, 1, 3]
 
 const runningMLNameOLD = 'Running microlearning OLD'
 const runningMLDisplayNameOLD = runningMLNameOLD + ' (Display)'
@@ -131,6 +144,28 @@ describe('Different microlearning workflows', () => {
       title: CTQuestionTitle,
       content: CTQuestion,
     })
+
+    // create answer collection
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: SECollection,
+      description: SECollectionDescription,
+      entries: SECollectionOptions,
+      access: messages.manage.resources.accessPRIVATE,
+      accessCy: 'private',
+    })
+
+    // create selection question
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: SEQuestionTitle,
+      content: SEQuestion,
+      numberOfInputs: SEQuestionInputs,
+      collectionName: SECollection,
+      correctAnswers: SECollectionOptions.filter((_, i) =>
+        SECollectionSolutions.includes(i)
+      ),
+    })
   })
 
   // ! Part 1: Microlearning Creation
@@ -207,7 +242,6 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add displayname and description to stacks
-
     cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').click().type(stackTitle1OLD)
     cy.get('[data-cy="stack-0-displayname"]').should(
@@ -526,6 +560,7 @@ describe('Different microlearning workflows', () => {
             KPRIMQuestionTitle,
             NRQuestionTitle,
             FTQuestionTitle,
+            SEQuestionTitle,
             FCQuestionTitle,
             CTQuestionTitle,
           ],
@@ -887,10 +922,19 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
     cy.get('[data-cy="input-numerical-4"]').clear().type('0.55')
     cy.get('[data-cy="free-text-input-5"]').type('Testinput')
-    cy.get('[data-cy="flashcard-front-6"]').click()
-    cy.get('[data-cy="flashcard-response-6-No"]').click()
-    cy.get('[data-cy="flashcard-response-6-Yes"]').click()
-    cy.get('[data-cy="read-content-element-7"]').click()
+    cy.get('[data-cy="selection-6-field-1"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[0]}"]`).click()
+    cy.get('[data-cy="selection-6-field-1"]').contains(SECollectionOptions[0])
+    cy.get('[data-cy="selection-6-field-2"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[1]}"]`).click()
+    cy.get('[data-cy="selection-6-field-2"]').contains(SECollectionOptions[1])
+    cy.get('[data-cy="selection-6-field-3"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[2]}"]`).click()
+    cy.get('[data-cy="selection-6-field-3"]').contains(SECollectionOptions[2])
+    cy.get('[data-cy="flashcard-front-7"]').click()
+    cy.get('[data-cy="flashcard-response-7-No"]').click()
+    cy.get('[data-cy="flashcard-response-7-Yes"]').click()
+    cy.get('[data-cy="read-content-element-8"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
 
     // test inputs to MC question (2)
