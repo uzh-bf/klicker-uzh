@@ -1,20 +1,24 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
+import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import TableSortingButton from '../TableSortingButton'
 
 interface UseEvaluationTableColumnsProps {
   showSolution: boolean
   textSize: string
   numericValues?: boolean
+  selection?: boolean
 }
 
 function useEvaluationTableColumns({
   showSolution,
   textSize,
   numericValues = false,
+  selection = false,
 }: UseEvaluationTableColumnsProps) {
   const t = useTranslations()
 
@@ -78,6 +82,49 @@ function useEvaluationTableColumns({
         displayName: '%',
         className: 'w-20',
       },
+      ...(selection
+        ? [
+            {
+              header: ({ column }: any) => {
+                return (
+                  <TableSortingButton
+                    column={column}
+                    buttonTextSize={textSize}
+                    title={t('manage.evaluation.selection')}
+                  />
+                )
+              },
+              accessorKey: 'selectionRate',
+              cell: ({ row }: any) => {
+                const value = row.getValue('selectionRate')
+                const correctness = showSolution
+                  ? row.original['correct']
+                  : undefined
+
+                return (
+                  <Progress
+                    value={value}
+                    max={100}
+                    formatter={() => null}
+                    className={{
+                      root: 'h-4 rounded-lg',
+                      background: 'rounded-lg',
+                      indicator: twMerge(
+                        'min-w-0 rounded-lg px-0',
+                        typeof correctness === 'boolean' && 'bg-red-600',
+                        typeof correctness === 'boolean' &&
+                          correctness === true &&
+                          'bg-green-600'
+                      ),
+                    }}
+                  />
+                )
+              },
+              displayName: t('shared.generic.correctness'),
+              className: 'w-80',
+            },
+          ]
+        : []),
       ...(showSolution
         ? [
             {

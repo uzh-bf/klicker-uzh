@@ -8,6 +8,7 @@ import FCEvaluation from './elements/FCEvaluation'
 import FTEvaluation from './elements/FTEvaluation'
 import NREvaluation from './elements/NREvaluation'
 import QuestionCollapsible from './elements/QuestionCollapsible'
+import SEEvaluation from './elements/SEEvaluation'
 import { TextSizeType } from './textSizes'
 
 interface ElementEvaluationProps {
@@ -65,6 +66,15 @@ function ElementEvaluation({
             chartType={chartType}
             showSolution={showSolution}
             type={type}
+          />
+        )}
+        {currentInstance.__typename ===
+          'SelectionElementInstanceEvaluation' && (
+          <SEEvaluation
+            instanceEvaluation={currentInstance}
+            textSize={textSize}
+            chartType={chartType}
+            showSolution={showSolution}
           />
         )}
         {currentInstance.__typename ===

@@ -94,22 +94,24 @@ function EvaluationFooter({
                 onCheckedChange={(newValue) => setShowSolution(newValue)}
               />
             )}
-            <Select
-              contentPosition="popper"
-              className={{
-                trigger: 'w-36 border-slate-400',
-              }}
-              items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => {
-                return {
-                  label: t(item.label),
-                  value: item.value,
-                  data: { cy: `change-chart-type-${item.label}` },
-                }
-              })}
-              value={chartType}
-              onChange={(newValue) => setChartType(newValue as ChartType)}
-              data={{ cy: 'change-chart-type' }}
-            />
+            {ACTIVE_CHART_TYPES[currentInstance.type].length > 1 ? (
+              <Select
+                contentPosition="popper"
+                className={{
+                  trigger: 'w-36 border-slate-400',
+                }}
+                items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => {
+                  return {
+                    label: t(item.label),
+                    value: item.value,
+                    data: { cy: `change-chart-type-${item.label}` },
+                  }
+                })}
+                value={chartType}
+                onChange={(newValue) => setChartType(newValue as ChartType)}
+                data={{ cy: 'change-chart-type' }}
+              />
+            ) : null}
           </div>
         </div>
       )}
