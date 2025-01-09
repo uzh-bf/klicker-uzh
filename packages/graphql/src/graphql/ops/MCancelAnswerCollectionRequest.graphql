@@ -1,0 +1,3 @@
+mutation CancelAnswerCollectionRequest($collectionId: Int!) {
+  cancelAnswerCollectionRequest(collectionId: $collectionId)
+}

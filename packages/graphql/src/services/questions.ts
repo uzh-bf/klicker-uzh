@@ -395,6 +395,16 @@ export async function manipulateQuestion(
     id: question.id,
   })
 
+  if (
+    type === DB.ElementType.SELECTION &&
+    typeof options?.answerCollection !== 'undefined'
+  ) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'AnswerCollection',
+      id: options.answerCollection,
+    })
+  }
+
   return {
     ...question,
     options: {

@@ -40,6 +40,7 @@ function CollectionSharingRequests() {
           </Badge>
         </div>
       }
+      className={{ root: 'mb-4' }}
     >
       <div className="mt-2 flex flex-col gap-2">
         {requests.map((request) => {

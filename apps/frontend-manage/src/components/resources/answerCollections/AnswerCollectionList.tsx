@@ -17,6 +17,7 @@ function AnswerCollectionList({
   return (
     <AnswerCollectionCollapsible
       title={t('manage.resources.createdAnswerCollections')}
+      className={{ root: 'mb-4' }}
     >
       {loading ? <Loader /> : null}
       {collections && collections.length === 0 ? (
@@ -24,7 +25,7 @@ function AnswerCollectionList({
           {t('manage.resources.noAnswerCollections')}
         </UserNotification>
       ) : (
-        <div className="mb-6 mt-2 flex flex-col gap-2">
+        <div className="mt-2 flex flex-col">
           {collections?.map((collection) => (
             <AnswerCollectionItem
               editable

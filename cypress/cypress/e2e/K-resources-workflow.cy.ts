@@ -1,13 +1,13 @@
 import messages from '../../../packages/i18n/messages/en'
 
-const publicName = 'Public Answer Catalogue'
-const publicDescription = 'This is a public answer catalogue'
-const restrictedName = 'Restricted Answer Catalogue'
-const restrictedDescription = 'This is a restricted answer catalogue'
-const privateName = 'Private Answer Catalogue'
-const privateDescription = 'This is a private answer catalogue'
-const privateNameNew = 'Private Answer Catalogue New'
-const privateDescriptionNew = 'This is a new private answer catalogue'
+const publicName = 'Public Answer Collection'
+const publicDescription = 'This is a public answer collection'
+const restrictedName = 'Restricted Answer Collection'
+const restrictedDescription = 'This is a restricted answer collection'
+const privateName = 'Private Answer Collection'
+const privateDescription = 'This is a private answer collection'
+const privateNameNew = 'Private Answer Collection New'
+const privateDescriptionNew = 'This is a new private answer collection'
 
 const publicItems = [
   'Red',
@@ -61,9 +61,9 @@ const privateItemsNew = [
 ]
 
 describe('Create, edit and share answer collections', () => {
-  // ! Creation and editing of answer catalogues
+  // ! Creation and editing of answer collections
   // #region
-  it('Create a public answer catalogue', () => {
+  it('Create a public answer collection', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
@@ -120,7 +120,7 @@ describe('Create, edit and share answer collections', () => {
     )
   })
 
-  it('Create a restricted answer catalogue', () => {
+  it('Create a restricted answer collection', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
@@ -133,7 +133,7 @@ describe('Create, edit and share answer collections', () => {
     })
   })
 
-  it('Create a private answer catalogue', () => {
+  it('Create a private answer collection', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
@@ -146,7 +146,7 @@ describe('Create, edit and share answer collections', () => {
     })
   })
 
-  it('Edit the private answer catalogue', () => {
+  it('Edit the private answer collection', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${privateName}"]`).click()
@@ -197,7 +197,7 @@ describe('Create, edit and share answer collections', () => {
     cy.get(`[data-cy="answer-option-${lastElement}"]`).contains(lastElement)
   })
 
-  it('Verify that the changes to the private answer catalogue persist', () => {
+  it('Verify that the changes to the private answer collection persist', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${privateNameNew}"]`).click()
@@ -232,7 +232,7 @@ describe('Create, edit and share answer collections', () => {
     )
   })
 
-  it('Verify that the public answer catalogue can be switched to private if no other users have access', () => {
+  it('Verify that the public answer collection can be switched to private if no other users have access', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
@@ -253,7 +253,7 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="answer-collection-access-public"]').click()
   })
 
-  it('Verify that the restricted answer catalogue can be switched to private if no other users have access', () => {
+  it('Verify that the restricted answer collection can be switched to private if no other users have access', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
@@ -275,9 +275,9 @@ describe('Create, edit and share answer collections', () => {
   })
   // #endregion
 
-  // ! Sharing of answer catalogues
+  // ! Sharing of answer collections
   // #region
-  it('Request access to the restricted answer catalogue for user pro1', () => {
+  it('Request access to the restricted answer collection for user pro1', () => {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
@@ -348,7 +348,7 @@ describe('Create, edit and share answer collections', () => {
     )
   })
 
-  it('Request access to the restricted answer catalogue for user pro2', () => {
+  function requestAccessPro2() {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
 
@@ -374,9 +374,21 @@ describe('Create, edit and share answer collections', () => {
     // content should not be accessible
     cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
     cy.get('[data-cy="viewing-collection-title"]').should('not.exist')
+  }
+
+  it('Request access to the restricted answer collection for user pro2', () => {
+    requestAccessPro2()
   })
 
-  it('Approve (pro1) and deny (pro2) the access requests to the restricted answer catalogue', () => {
+  it('Cancel request to the restricted answer collection for user pro2', () => {
+    // TODO: implement
+  })
+
+  it('Request access to the restricted answer collection again (pro2)', () => {
+    requestAccessPro2()
+  })
+
+  it('Approve (pro1) and deny (pro2) the access requests to the restricted answer collection', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
@@ -409,7 +421,7 @@ describe('Create, edit and share answer collections', () => {
     ).should('not.exist')
   })
 
-  it('Verify that user pro1 has access to the restricted answer catalogue', () => {
+  it('Verify that user pro1 has access to the restricted answer collection', () => {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
@@ -434,7 +446,7 @@ describe('Create, edit and share answer collections', () => {
       })
   })
 
-  it('Verify that only the shared and restricted answer catalogue is available during question creation for user pro1', () => {
+  it('Verify that only the shared and restricted answer collection is available during question creation for user pro1', () => {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -454,7 +466,7 @@ describe('Create, edit and share answer collections', () => {
     )
   })
 
-  it('Verify that user pro2 does not have access to the restricted answer catalogue', () => {
+  it('Verify that user pro2 does not have access to the restricted answer collection', () => {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
@@ -462,7 +474,7 @@ describe('Create, edit and share answer collections', () => {
     )
   })
 
-  it('Verify that no answer catalogue is available for user pro2', () => {
+  it('Verify that no answer collection is available for user pro2', () => {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -474,7 +486,7 @@ describe('Create, edit and share answer collections', () => {
     cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
   })
 
-  it('Import the public answer catalogue for user pro1 and verify access to it', () => {
+  it('Import the public answer collection for user pro1 and verify access to it', () => {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
@@ -541,7 +553,7 @@ describe('Create, edit and share answer collections', () => {
     )
   })
 
-  it('Login again as user pro1 and verify that the answer catalogues are still visible', () => {
+  it('Login again as user pro1 and verify that the answer collections are still visible', () => {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
@@ -582,7 +594,7 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
   })
 
-  it('Verify that the public answer catalogue cannot be switched back to private or restricted anymore once other users use it', () => {
+  it('Verify that the public answer collection cannot be switched back to private or restricted anymore once other users use it', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
@@ -603,7 +615,7 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="answer-collection-access-public"]').click()
   })
 
-  it('Verify that the restricted answer catalogue cannot be switched to private once other users use it', () => {
+  it('Verify that the restricted answer collection cannot be switched to private once other users use it', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
@@ -644,12 +656,16 @@ describe('Create, edit and share answer collections', () => {
 
   // ! Answer Collection Deletion Workflows
   // #region
-  it('Verify that shared restricted and public collections can be soft deleted, delete restricted collection', () => {
+  it('Verify that shared restricted and public collections can be soft deleted, soft delete restricted collection', () => {
     // TODO: implement
   })
 
   it('Verify that the restricted and shared collection can still be accessed', () => {
     // TODO: verify that answer collection is still accessible (pro1?)
+  })
+
+  it('Verify that the restricted collection cannot be requested anymore', () => {
+    // TODO: login as user pro2 (no access) and verify that collection not requestable anymore
   })
 
   it('Add a question to a shared answer collection', () => {

@@ -1867,7 +1867,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newAnswerCollection: 'Neue Antwort-Sammlung',
       addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
       answerOptionUsedAsSolution:
-        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits in einer Frage als korrekte Lösung verwendet, beachten Sie dies bitte beim Bearbeiten der Antwort. Die Option kann nicht mehr gelöscht werden.',
+        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage als korrekte Lösung verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
       name: 'Name',
       nameTooltip:
         'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
@@ -1905,6 +1905,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       numOfAnswers: '{number} Antworten',
       byOwner: 'von {owner}',
       clickToViewEdit: 'Ansehen / Editieren',
+      clickToCancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
       saveChanges: 'Änderungen speichern',
       infoAccessChangeLimited:
@@ -1939,6 +1940,34 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestedAccess: 'Zugriff beantragt',
       sharingRequests: 'Zugriffs-Anfragen',
       unresolved: 'Unbearbeitet',
+      deleteCollection: 'Sammlung löschen',
+      deletionDisabledInUse:
+        'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht löschen. Um die Sammlung zu löschen, entfernen Sie sie bitte zuerst aus allen Fragen, die sie verwenden.',
+      removeCollection: 'Sammlung entfernen',
+      removalDisabledInUse:
+        'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht entfernen.',
+      deleteAnswerCollection: 'Antwort-Sammlung löschen',
+      confirmCollectionDeletion:
+        'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil löschen möchten? Bei geteilten Antwort-Sammlungen bleibt der Zugriff für andere Nutzer bestehen, solange diese die Sammlung verwenden.',
+      confirmDeletion: 'Löschung bestätigen',
+      deletionSuccessful: 'Die Antwort-Sammlung wurde erfolgreich gelöscht.',
+      deletionFailed:
+        'Beim Löschen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      removeAnswerCollection: 'Antwort-Sammlung entfernen',
+      confirmCollectionRemoval:
+        'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil entfernen möchten?',
+      confirmRemoval: 'Entfernung bestätigen',
+      removalSuccessful: 'Die Antwort-Sammlung wurde erfolgreich entfernt.',
+      removalFailed:
+        'Beim Entfernen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
+      confirmCancelRequest:
+        'Bitte bestätigen Sie, dass Sie die Zugriffs-Anfrage für die Antwort-Sammlung "{name}" zurückziehen möchten. Sie können später erneut Zugriff auf die Antwort-Sammlung beantragen.',
+      confirmCancellation: 'Rückzug bestätigen',
+      cancellationSuccessful:
+        'Die Zugriffs-Anfrage wurde erfolgreich zurückgezogen.',
+      cancellationFailed:
+        'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

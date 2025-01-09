@@ -1083,6 +1083,7 @@ describe('Create different types of elements (with and without sample solution) 
       .contains(messages.shared.SELECTION.typeLabel)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
+    // enter question data
     cy.get('[data-cy="insert-question-title"]').click().type(SETitle)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="select-question-status"]').click()
@@ -1095,6 +1096,7 @@ describe('Create different types of elements (with and without sample solution) 
       .type(SEExplanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
+    // select an answer collection
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.questionForms.selectCollection
     )
@@ -1102,6 +1104,8 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="select-answer-collection-${SECollection}"]`).click()
     cy.get('[data-cy="select-answer-collection"]').contains(SECollection)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // configure number of inputs and test min & max restrictions
     cy.get('[data-cy="configure-number-of-inputs"]')
       .click()
       .type(String(SEInputs))
@@ -1120,6 +1124,11 @@ describe('Create different types of elements (with and without sample solution) 
       .click()
       .clear()
       .type(String(SEInputs))
+
+    // test that enabling sample solution works correctly
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="configure-sample-solution"]').click()
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 

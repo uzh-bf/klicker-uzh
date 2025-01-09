@@ -27,6 +27,7 @@ function SharedAnswerCollectionList({
     return (
       <AnswerCollectionCollapsible
         title={t('manage.resources.sharedAnswerCollections')}
+        className={{ root: 'mb-4' }}
       >
         <UserNotification
           type="info"
@@ -40,8 +41,9 @@ function SharedAnswerCollectionList({
   return (
     <AnswerCollectionCollapsible
       title={t('manage.resources.sharedAnswerCollections')}
+      className={{ root: 'mb-4' }}
     >
-      <div className="mt-2 flex flex-col gap-2">
+      <div className="mt-2 flex flex-col">
         {sharedCollections?.map((collection) => (
           <AnswerCollectionItem
             key={`shared-collection-item-${collection.id}`}

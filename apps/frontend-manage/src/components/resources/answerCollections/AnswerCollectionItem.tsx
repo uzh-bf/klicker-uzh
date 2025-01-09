@@ -12,6 +12,15 @@ import { twMerge } from 'tailwind-merge'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionAccessLabel from './CollectionAccessLabel'
+import CollectionDeletionErrorToast from './CollectionDeletionErrorToast'
+import CollectionDeletionModal from './CollectionDeletionModal'
+import CollectionDeletionSuccessToast from './CollectionDeletionSuccessToast'
+import CollectionRemovalErrorToast from './CollectionRemovalErrorToast'
+import CollectionRemovalModal from './CollectionRemovalModal'
+import CollectionRemovalSuccessToast from './CollectionRemovalSuccessToast'
+import RequestCancellationErrorToast from './RequestCancellationErrroToast'
+import RequestCancellationModal from './RequestCancellationModal'
+import RequestCancellationSuccessToast from './RequestCancellationSuccessToast'
 
 function AnswerCollectionItem({
   collection,
@@ -23,8 +32,22 @@ function AnswerCollectionItem({
   accessGranted?: boolean
 }) {
   const t = useTranslations()
+
+  // modal states
   const [editModal, setEditModal] = useState(false)
+  const [deletionModal, setDeletionModal] = useState(false)
   const [viewingModal, setViewingModal] = useState(false)
+  const [removalModal, setRemovalModal] = useState(false)
+  const [cancellationModal, setCancellationModal] = useState(false)
+
+  // toast states
+  const [deletionSuccess, setDeletionSuccess] = useState(false)
+  const [deletionFailure, setDeletionFailure] = useState(false)
+  const [removalSuccess, setRemovalSuccess] = useState(false)
+  const [removalFailure, setRemovalFailure] = useState(false)
+  const [cancellationSuccess, setCancellationSuccess] = useState(false)
+  const [cancellationFailure, setCancellationFailure] = useState(false)
+
   const collectionAccessMap: Record<CollectionAccess, React.ReactNode> = {
     [CollectionAccess.Private]: (
       <CollectionAccessLabel
@@ -55,17 +78,17 @@ function AnswerCollectionItem({
           if (editable) {
             setEditModal(true)
           }
-
           // allow viewing of shared collections (not for requested ones)
-          if (accessGranted) {
+          else if (accessGranted) {
             setViewingModal(true)
+          }
+          // allow cancelling a pending request
+          else {
+            setCancellationModal(true)
           }
         }}
         className={{
-          root: twMerge(
-            'flex flex-row justify-between rounded border border-solid px-2 py-0.5 shadow-sm',
-            !editable && !accessGranted && 'cursor-default'
-          ),
+          root: 'mb-2 flex flex-row justify-between rounded border border-solid px-2 py-0.5 shadow-sm',
         }}
         data={{ cy: `answer-collection-${collection.name}` }}
       >
@@ -110,26 +133,86 @@ function AnswerCollectionItem({
             <div>{t('manage.resources.viewCollection')}</div>
           </div>
         ) : (
-          <div className="text-primary-100 flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faClock} />
-            <div>{t('manage.resources.requestedAccess')}</div>
+          <div className="flex flex-col items-end gap-0.5 py-0.5">
+            <div className="text-primary-100 flex flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faClock} />
+              <div>{t('manage.resources.requestedAccess')}</div>
+            </div>
+            <div className="flex flex-row items-center gap-1.5 text-sm">
+              <FontAwesomeIcon icon={faHandPointer} />
+              <div>{t('manage.resources.clickToCancelRequest')}</div>
+            </div>
           </div>
         )}
       </Button>
       {editable ? (
-        <AnswerCollectionEditModal
-          collection={collection}
-          open={editModal}
-          onClose={() => setEditModal(false)}
-        />
+        <>
+          <AnswerCollectionEditModal
+            collection={collection}
+            open={editModal}
+            onClose={() => setEditModal(false)}
+            onDelete={() => setDeletionModal(true)}
+          />
+          <CollectionDeletionModal
+            collection={collection}
+            deletionModal={deletionModal}
+            setDeletionModal={setDeletionModal}
+            setDeletionSuccess={setDeletionSuccess}
+            setDeletionFailure={setDeletionFailure}
+          />
+          <CollectionDeletionSuccessToast
+            open={deletionSuccess}
+            onClose={() => setDeletionSuccess(false)}
+          />
+          <CollectionDeletionErrorToast
+            open={deletionFailure}
+            onClose={() => setDeletionFailure(false)}
+          />
+        </>
       ) : null}
       {accessGranted ? (
-        <AnswerCollectionViewingModal
-          collection={collection}
-          open={viewingModal}
-          onClose={() => setViewingModal(false)}
-        />
-      ) : null}
+        <>
+          <AnswerCollectionViewingModal
+            collection={collection}
+            open={viewingModal}
+            onClose={() => setViewingModal(false)}
+            onRemove={() => setRemovalModal(true)}
+          />
+          <CollectionRemovalModal
+            collection={collection}
+            removalModal={removalModal}
+            setRemovalModal={setRemovalModal}
+            setRemovalSuccess={setRemovalSuccess}
+            setRemovalFailure={setRemovalFailure}
+          />
+          <CollectionRemovalSuccessToast
+            open={removalSuccess}
+            onClose={() => setRemovalSuccess(false)}
+          />
+          <CollectionRemovalErrorToast
+            open={removalFailure}
+            onClose={() => setRemovalFailure(false)}
+          />
+        </>
+      ) : (
+        <>
+          <RequestCancellationModal
+            collection={collection}
+            cancellationModal={cancellationModal}
+            setCancellationModal={setCancellationModal}
+            setCancellationSuccess={setCancellationSuccess}
+            setCancellationFailure={setCancellationFailure}
+          />
+          <RequestCancellationSuccessToast
+            open={cancellationSuccess}
+            onClose={() => setCancellationSuccess(false)}
+          />
+          <RequestCancellationErrorToast
+            open={cancellationFailure}
+            onClose={() => setCancellationFailure(false)}
+          />
+        </>
+      )}
     </>
   )
 }
