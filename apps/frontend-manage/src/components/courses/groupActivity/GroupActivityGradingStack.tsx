@@ -75,15 +75,7 @@ function GroupActivityGradingStack({
         return
       }
 
-      if (type === ElementType.FreeText) {
-        return {
-          [elementId]: {
-            type: type,
-            response: decision?.freeTextResponse,
-            valid: true,
-          },
-        }
-      } else if (type === ElementType.Sc || type === ElementType.Mc) {
+      if (type === ElementType.Sc || type === ElementType.Mc) {
         return {
           [elementId]: {
             type: type,
@@ -120,6 +112,22 @@ function GroupActivityGradingStack({
           [elementId]: {
             type: type,
             response: decision?.numericalResponse,
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.FreeText) {
+        return {
+          [elementId]: {
+            type: type,
+            response: decision?.freeTextResponse,
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.Selection) {
+        return {
+          [elementId]: {
+            type: type,
+            response: decision?.selectionResponse,
             valid: true,
           },
         }
@@ -222,6 +230,7 @@ function GroupActivityGradingStack({
                     {element.elementData.name}
                   </H3>
                   <StudentElement
+                    preview
                     element={element}
                     elementIx={ix}
                     studentResponse={
