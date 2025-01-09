@@ -1128,9 +1128,6 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="element-item-${SETitle}"]`).contains(
       messages.shared.READY.statusLabel
     )
-
-    cy.get(`[data-cy="edit-question-${SETitle}"]`).click()
-    // TODO: check that preview of selection question is visible and correct
   })
 
   it('Verify that the correct content has been saved', () => {
@@ -1149,6 +1146,26 @@ describe('Create different types of elements (with and without sample solution) 
       SEInputs
     )
     cy.get('[data-cy="close-question-modal"]').click()
+  })
+
+  it('Verify that creation was successful and that preview is visible and correct', () => {
+    cy.get(`[data-cy="edit-question-${SETitle}"]`).click()
+    cy.get(`[data-cy="element-item-${SETitle}"]`).contains(SETitle)
+    cy.get(`[data-cy="element-item-${SETitle}"]`).contains(SEContent)
+
+    // check that inputs are available
+    for (let i = 1; i < SEInputs; i++) {
+      cy.get(`[data-cy="selection-1-field-${i + 1}"]`).should('exist')
+    }
+
+    // check that all options are available
+    cy.get('[data-cy="selection-1-field-1"]').click()
+    SESolutions.forEach((value) => {
+      cy.get(`[data-cy="select-answer-${value}"]`).contains(value)
+    })
+    SESolutionsNotChosen.forEach((value) => {
+      cy.get(`[data-cy="select-answer-${value}"]`).contains(value)
+    })
   })
 
   it('Check that all options of the answer collection can be edited', () => {

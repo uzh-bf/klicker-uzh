@@ -68,7 +68,7 @@ function SELECTIONAnswerOptions({
                 placeholder={t('shared.questions.seSelectOption')}
                 disabled={disabled}
                 data={{
-                  cy: `selection-${elementIx + 1}-field-${inputIndex + 1}`,
+                  cy: `selection-${elementIx + 1}-field-${Number(inputIndex) + 1}`,
                 }}
                 className={{
                   root: 'w-full',
