@@ -300,6 +300,10 @@
   cursor: pointer
 }
 
+.list-disc {
+  list-style-type: disc
+}
+
 .grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr))
 }
@@ -701,6 +705,10 @@
 
 .pb-2 {
   padding-bottom: 0.5rem
+}
+
+.pl-4 {
+  padding-left: 1rem
 }
 
 .pt-2 {

@@ -25,7 +25,6 @@ const SECollectionOptions = [
   'SE Group Activity Option 4',
   'SE Group Activity Option 5',
 ]
-const SECollectionSolutions = [0, 1, 2, 4]
 
 const currentYear = new Date().getFullYear()
 const testCourse = 'Testkurs'
@@ -210,9 +209,6 @@ describe('Create and solve a group activity', () => {
       content: SEQuestion,
       numberOfInputs: SEQuestionInputs,
       collectionName: SECollection,
-      correctAnswers: SECollectionOptions.filter((_, i) =>
-        SECollectionSolutions.includes(i)
-      ),
     })
   })
 
