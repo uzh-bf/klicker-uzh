@@ -59,6 +59,7 @@ function RequestCancellationModal({
       title={t('manage.resources.cancelSharingRequest')}
       open={cancellationModal}
       onClose={() => setCancellationModal(false)}
+      dataCloseButton={{ cy: 'close-cancel-sharing-request' }}
     >
       <div>
         {t('manage.resources.confirmCancelRequest', {

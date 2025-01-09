@@ -4,6 +4,7 @@ import {
   USER_ID_TEST2,
   USER_ID_TEST3,
   USER_ID_TEST4,
+  USER_ID_TEST5,
 } from './constants.js'
 import { prepareUser } from './helpers.js'
 
@@ -48,6 +49,17 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       name: 'Institutional Pro User',
       email: 'pro2@df.uzh.ch',
       shortname: 'pro2',
+      password: 'abcd',
+      catalystInstitutional: true,
+    })
+  )
+
+  const institutionalProUser2 = await prisma.user.upsert(
+    await prepareUser({
+      id: USER_ID_TEST5,
+      name: 'Institutional Pro User 2',
+      email: 'pro3@df.uzh.ch',
+      shortname: 'pro3',
       password: 'abcd',
       catalystInstitutional: true,
     })

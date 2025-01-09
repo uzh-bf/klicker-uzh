@@ -97,6 +97,18 @@ Cypress.Commands.add(
   })
 )
 
+Cypress.Commands.add(
+  'loginInstitutionalCatalyst2',
+  loginFactory({
+    email: 'pro3@df.uzh.ch',
+    sub: '76047345-3801-4628-ae7b-adbebcfe8825',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: true,
+    catalystIndividual: false,
+  })
+)
+
 Cypress.Commands.add('loginStudent', () => {
   cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
 })
@@ -900,6 +912,7 @@ declare global {
       loginFreeUser(): Chainable<void>
       loginIndividualCatalyst(): Chainable<void>
       loginInstitutionalCatalyst(): Chainable<void>
+      loginInstitutionalCatalyst2(): Chainable<void>
       loginStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       loginControlApp(): Chainable<void>

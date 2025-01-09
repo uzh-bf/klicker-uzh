@@ -1178,7 +1178,6 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Check that all options of the answer collection can be edited', () => {
-    cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
 
@@ -1250,8 +1249,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
-
-    // TODO: verify that the collection cannot be deleted and that corresponding message is shown
+    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
   })
 
   it('Edit the selection question and change the answer collection (including new sample solutions)', () => {
@@ -1305,6 +1303,16 @@ describe('Create different types of elements (with and without sample solution) 
     SESolutionsEdited.forEach((solution) => {
       cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
     })
+  })
+
+  it('Verify that the previous answer collection could be deleted again, the current one not', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
+    cy.get('[data-cy="close-answer-collection-edit-modal"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollectionEdited}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
   })
 
   it('Check that only answer options not used as solutions can be deleted', () => {
@@ -1439,6 +1447,10 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Cleanup: Delete the shared answer collection', () => {
-    // TODO: delete answer collection
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollectionEdited}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').click()
+    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
   })
 })

@@ -14,6 +14,7 @@ export default defineConfig({
     LECTURER_SHORTNAME: 'lecturer',
     LECTURER_IND_SHORTNAME: 'pro1',
     LECTURER_INST_SHORTNAME: 'pro2',
+    LECTURER_INST2_SHORTNAME: 'pro3',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
     STUDENT_USERNAME2: 'testuser2',

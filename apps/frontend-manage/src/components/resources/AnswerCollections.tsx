@@ -10,7 +10,7 @@ import CollectionRemovalErrorToast from './answerCollections/CollectionRemovalEr
 import CollectionRemovalSuccessToast from './answerCollections/CollectionRemovalSuccessToast'
 import CollectionSharingRequests from './answerCollections/CollectionSharingRequests'
 import CreateAddCollection from './answerCollections/CreateAddCollection'
-import RequestCancellationErrorToast from './answerCollections/RequestCancellationErrroToast'
+import RequestCancellationErrorToast from './answerCollections/RequestCancellationErrorToast'
 import RequestCancellationSuccessToast from './answerCollections/RequestCancellationSuccessToast'
 import SharedAnswerCollectionList from './SharedAnswerCollectionList'
 

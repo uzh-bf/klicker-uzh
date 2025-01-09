@@ -267,7 +267,6 @@ export async function deleteAnswerCollection(
           accessGranted: true,
         },
       },
-      accessRequested: true,
     },
   })
 
@@ -276,7 +275,7 @@ export async function deleteAnswerCollection(
     return null
   }
 
-  // if other users have access to it, only disconnect it from its owner
+  // if other users have access to it, only disconnect it from its owner and decline all requests automatically
   let updatedCollection: DB.AnswerCollection
   if (collection._count.accessGranted > 0) {
     updatedCollection = await ctx.prisma.answerCollection.update({
@@ -286,6 +285,9 @@ export async function deleteAnswerCollection(
       data: {
         owner: {
           disconnect: true,
+        },
+        accessRequested: {
+          set: [],
         },
       },
     })

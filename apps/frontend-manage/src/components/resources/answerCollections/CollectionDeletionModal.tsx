@@ -54,6 +54,7 @@ function CollectionDeletionModal({
       title={t('manage.resources.deleteAnswerCollection')}
       open={deletionModal}
       onClose={() => setDeletionModal(false)}
+      dataCloseButton={{ cy: 'close-delete-answer-collection' }}
     >
       <div>
         {t('manage.resources.confirmCollectionDeletion', {
