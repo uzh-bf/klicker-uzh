@@ -122,6 +122,15 @@ function GroupActivityStack({
               valid: true,
             },
           }
+        } else if (decision.type === ElementType.Selection) {
+          return {
+            ...acc,
+            [decision.instanceId]: {
+              type: decision.type,
+              response: decision.selectionResponse ?? undefined,
+              valid: true,
+            },
+          }
         } else if (decision.type === ElementType.Content) {
           return {
             ...acc,
