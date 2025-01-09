@@ -7,29 +7,35 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionAccessLabel from './CollectionAccessLabel'
-import CollectionDeletionErrorToast from './CollectionDeletionErrorToast'
 import CollectionDeletionModal from './CollectionDeletionModal'
-import CollectionDeletionSuccessToast from './CollectionDeletionSuccessToast'
-import CollectionRemovalErrorToast from './CollectionRemovalErrorToast'
 import CollectionRemovalModal from './CollectionRemovalModal'
-import CollectionRemovalSuccessToast from './CollectionRemovalSuccessToast'
-import RequestCancellationErrorToast from './RequestCancellationErrroToast'
 import RequestCancellationModal from './RequestCancellationModal'
-import RequestCancellationSuccessToast from './RequestCancellationSuccessToast'
 
 function AnswerCollectionItem({
   collection,
   editable = false,
   accessGranted = false,
+  setDeletionSuccess,
+  setDeletionFailure,
+  setRemovalSuccess,
+  setRemovalFailure,
+  setCancellationSuccess,
+  setCancellationFailure,
 }: {
   collection: AnswerCollection
   editable?: boolean
   accessGranted?: boolean
+  setDeletionSuccess: Dispatch<SetStateAction<boolean>>
+  setDeletionFailure: Dispatch<SetStateAction<boolean>>
+  setRemovalSuccess: Dispatch<SetStateAction<boolean>>
+  setRemovalFailure: Dispatch<SetStateAction<boolean>>
+  setCancellationSuccess: Dispatch<SetStateAction<boolean>>
+  setCancellationFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
@@ -39,14 +45,6 @@ function AnswerCollectionItem({
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [cancellationModal, setCancellationModal] = useState(false)
-
-  // toast states
-  const [deletionSuccess, setDeletionSuccess] = useState(false)
-  const [deletionFailure, setDeletionFailure] = useState(false)
-  const [removalSuccess, setRemovalSuccess] = useState(false)
-  const [removalFailure, setRemovalFailure] = useState(false)
-  const [cancellationSuccess, setCancellationSuccess] = useState(false)
-  const [cancellationFailure, setCancellationFailure] = useState(false)
 
   const collectionAccessMap: Record<CollectionAccess, React.ReactNode> = {
     [CollectionAccess.Private]: (
@@ -160,14 +158,6 @@ function AnswerCollectionItem({
             setDeletionSuccess={setDeletionSuccess}
             setDeletionFailure={setDeletionFailure}
           />
-          <CollectionDeletionSuccessToast
-            open={deletionSuccess}
-            onClose={() => setDeletionSuccess(false)}
-          />
-          <CollectionDeletionErrorToast
-            open={deletionFailure}
-            onClose={() => setDeletionFailure(false)}
-          />
         </>
       ) : null}
       {accessGranted ? (
@@ -185,14 +175,6 @@ function AnswerCollectionItem({
             setRemovalSuccess={setRemovalSuccess}
             setRemovalFailure={setRemovalFailure}
           />
-          <CollectionRemovalSuccessToast
-            open={removalSuccess}
-            onClose={() => setRemovalSuccess(false)}
-          />
-          <CollectionRemovalErrorToast
-            open={removalFailure}
-            onClose={() => setRemovalFailure(false)}
-          />
         </>
       ) : (
         <>
@@ -202,14 +184,6 @@ function AnswerCollectionItem({
             setCancellationModal={setCancellationModal}
             setCancellationSuccess={setCancellationSuccess}
             setCancellationFailure={setCancellationFailure}
-          />
-          <RequestCancellationSuccessToast
-            open={cancellationSuccess}
-            onClose={() => setCancellationSuccess(false)}
-          />
-          <RequestCancellationErrorToast
-            open={cancellationFailure}
-            onClose={() => setCancellationFailure(false)}
           />
         </>
       )}
