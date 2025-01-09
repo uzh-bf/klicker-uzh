@@ -250,6 +250,7 @@ export default {
       correctness: 'Correctness',
       answerCollection: 'Answer Collection',
       users: 'Users',
+      unknown: 'Unknown',
     },
     contentInput: {
       boldStyle:

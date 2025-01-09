@@ -68,8 +68,6 @@ function CollectionRemovalModal({
         onClick={async () => {
           const { data, errors } = await removeAnswerCollection()
 
-          console.log(data, errors)
-
           if (
             typeof data?.removeAnswerCollection !== 'undefined' &&
             data?.removeAnswerCollection !== null &&

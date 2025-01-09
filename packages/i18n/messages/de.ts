@@ -251,6 +251,7 @@ export default {
       correctness: 'Korrektheit',
       answerCollection: 'Antwort-Sammlung',
       users: 'Nutzer',
+      unknown: 'Unbekannt',
     },
     contentInput: {
       boldStyle:

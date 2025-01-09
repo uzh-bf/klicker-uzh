@@ -98,7 +98,8 @@ function AnswerCollectionItem({
             ) : (
               <div className="mb-[0.1rem] self-end text-sm text-gray-500">
                 {t('manage.resources.byOwner', {
-                  owner: collection.ownerShortname,
+                  owner:
+                    collection.ownerShortname ?? t('shared.generic.unknown'),
                 })}
               </div>
             )}
