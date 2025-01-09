@@ -761,9 +761,21 @@ describe('Create, edit and share answer collections', () => {
   // #endregion
 
   // ! Access rule modifications and automatic accepts
-  // TODO: create separate test cases where we create a restricted and public collection, add a user to both, request access to restricted for another user
-  // TODO check that both cannot be changed to lower level access, change state to public for restricted one and observe that user automatically gets access
-  // TODO: clenup - remove from two new users and delete collections
+  // TODO: create restricted and public collection
+  // TODO: give pro1 access to both
+  // TODO: request access to restricted for pro2
+  // TODO: verify that pro2 cannot access restricted collection
+  // TODO: change restricted collection to public
+  // TODO: verify that pro2 can now access restricted collection
+  // TODO: cleanup - remove restricted collection (now public) from pro2 and verify that not visible anymore
+  // TODO: cleanup - remove both restricted and public collections from pro1 and verify that not visible anymore
+  // TODO: cleanup - delete both collections from lecturer view and verify that not visible anymore
+  // TODO: create new restricted collection
+  // TODO: give pro1 access to it
+  // TODO: give pro2 access to it
+  // TODO: remove it from pro2 and verify that it is gone
+  // TODO: verify that collection is still accessible to user pro1 and remove it, verify that it is gone
+  // TODO: verify that collection is still accessible to owner and delete it, verify that it is gone
   // it('Verify that the public answer collection cannot be switched back to private or restricted anymore once other users use it', () => {
   //   cy.loginLecturer()
   //   cy.get('[data-cy="resources"]').click()

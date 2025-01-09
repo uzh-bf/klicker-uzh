@@ -329,6 +329,7 @@ export async function removeAnswerCollection(
               ownerId: ctx.user.sub,
             },
           },
+          accessGranted: true,
         },
       },
     },
@@ -339,19 +340,29 @@ export async function removeAnswerCollection(
     return null
   }
 
-  // otherwise, disconnect the collection from the user
-  const updatedCollection = await ctx.prisma.answerCollection.update({
-    where: {
-      id: collectionId,
-    },
-    data: {
-      accessGranted: {
-        disconnect: {
-          id: ctx.user.sub,
+  // if no other users have access to this collection and the owner is already disconnected, delete it
+  let updatedCollection: DB.AnswerCollection
+  if (collection._count.accessGranted === 0 && collection.ownerId === null) {
+    updatedCollection = await ctx.prisma.answerCollection.delete({
+      where: {
+        id: collectionId,
+      },
+    })
+  } else {
+    // otherwise, disconnect the collection from the user
+    updatedCollection = await ctx.prisma.answerCollection.update({
+      where: {
+        id: collectionId,
+      },
+      data: {
+        accessGranted: {
+          disconnect: {
+            id: ctx.user.sub,
+          },
         },
       },
-    },
-  })
+    })
+  }
 
   ctx.emitter.emit('invalidate', {
     typename: 'AnswerCollection',
