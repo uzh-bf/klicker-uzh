@@ -43,6 +43,7 @@ import {
   updateChoicesResults,
   updateFreeTextResults,
   updateNumericalResults,
+  updateSelectionResults,
 } from './stacks.js'
 
 const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
@@ -1542,6 +1543,14 @@ export async function submitGroupActivityDecisions(
             previousResults: instance.results,
             elementData: instance.elementData,
             response: response,
+          })
+        } else if (
+          inputResponse.type === ElementType.SELECTION &&
+          'selections' in instance.results
+        ) {
+          updatedResults = updateSelectionResults({
+            previousResults: instance.results,
+            response: { selection: inputResponse.selectionResponse },
           })
         } else {
           console.log('Element type not supported for group activity')

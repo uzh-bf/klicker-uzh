@@ -272,6 +272,14 @@ function GroupActivityStack({
                         type: ElementType.Content,
                         contentReponse: value.response,
                       }
+                    } else if (value.type === ElementType.Selection) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Selection,
+                        selectionResponse: Object.values(
+                          value.response!
+                        ).filter((entry) => typeof entry !== 'undefined'),
+                      }
                     } else {
                       return {
                         instanceId: parseInt(instanceId),
