@@ -29,30 +29,6 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
-      ... on FreeElementInstanceEvaluation {
-        __typename
-        id
-        type
-        name
-        content
-        explanation
-
-        hasSampleSolution
-        hasAnswerFeedbacks
-
-        results {
-          totalAnswers
-          anonymousAnswers
-          maxLength
-          solutions
-          responses {
-            value
-            correct
-            count
-          }
-        }
-      }
-
       ... on NumericalElementInstanceEvaluation {
         __typename
         id
@@ -89,6 +65,54 @@ fragment EvaluationResults on ActivityEvaluation {
           q1
           q3
           sd
+        }
+      }
+
+      ... on FreeElementInstanceEvaluation {
+        __typename
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
+        results {
+          totalAnswers
+          anonymousAnswers
+          maxLength
+          solutions
+          responses {
+            value
+            correct
+            count
+          }
+        }
+      }
+
+      ... on SelectionElementInstanceEvaluation {
+        __typename
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
+        results {
+          totalAnswers
+          anonymousAnswers
+          numberOfInputs
+          answerSolutionIds
+          selectionResponses {
+            answerId
+            value
+            count
+          }
         }
       }
 
