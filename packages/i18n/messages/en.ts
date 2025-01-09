@@ -1515,6 +1515,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noChartsAvailable: 'There exists no chart for this question type yet',
       count: 'Count',
       value: 'Value',
+      selection: 'Selection',
       histogramRange: 'Range',
       histogramBins: 'Bins',
       correctLabel: 'Correct',

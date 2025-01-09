@@ -43,6 +43,23 @@ function useEvaluationTableData({
           results.totalAnswers > 0 ? response.count / results.totalAnswers : 0,
       }
     })
+  } else if (instance.__typename === 'SelectionElementInstanceEvaluation') {
+    const results = instance.results
+    const solutionIds = instance.results.answerSolutionIds
+
+    return results.selectionResponses.map((response) => {
+      return {
+        count: response.count,
+        value: response.value,
+        correct: solutionIds?.includes(response.answerId) ?? false,
+        percentage:
+          results.totalAnswers > 0 ? response.count / results.totalAnswers : 0,
+        selectionRate:
+          results.totalAnswers > 0
+            ? (response.count / results.totalAnswers) * 100
+            : 0,
+      }
+    })
   }
 
   return []

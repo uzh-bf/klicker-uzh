@@ -49,6 +49,7 @@ export type InstanceEvaluationResults =
   | IChoicesElementEvaluationResults
   | INumericalElementEvaluationResults
   | IFreeElementEvaluationResults
+  | ISelectionElementEvaluationResults
   | IFlashcardElementEvaluationResults
   | IContentElementEvaluationResults
 
@@ -118,6 +119,23 @@ export interface IFreeElementEvaluationResults {
 export interface IFreeElementInstanceEvaluation
   extends IElementInstanceEvaluation {
   results: IFreeElementEvaluationResults
+}
+
+export interface ISelectionElementEvaluationResults {
+  totalAnswers: number
+  anonymousAnswers: number
+  numberOfInputs?: number | null
+  answerSolutionIds?: number[] | null
+  selectionResponses: {
+    answerId: number
+    value: string
+    count: number
+  }[]
+}
+
+export interface ISelectionElementInstanceEvaluation
+  extends IElementInstanceEvaluation {
+  results: ISelectionElementEvaluationResults
 }
 
 export interface IFlashcardElementEvaluationResults {
@@ -350,6 +368,48 @@ export const FreeElementResult = FreeElementResultRef.implement({
   }),
 })
 
+// ----- SELECTION ELEMENT EVALUATION INTERFACE -----
+export const SelectionElementInstanceEvaluationRef =
+  builder.objectRef<ISelectionElementInstanceEvaluation>(
+    'SelectionElementInstanceEvaluation'
+  )
+export const SelectionElementInstanceEvaluation =
+  SelectionElementInstanceEvaluationRef.implement({
+    fields: (t) => ({
+      ...sharedElementEvaluation(t),
+      results: t.expose('results', {
+        type: SelectionElementResults,
+      }),
+    }),
+  })
+
+export const SelectionElementResultsRef =
+  builder.objectRef<ISelectionElementEvaluationResults>(
+    'SelectionElementResults'
+  )
+export const SelectionElementResults = SelectionElementResultsRef.implement({
+  fields: (t) => ({
+    totalAnswers: t.exposeInt('totalAnswers'),
+    anonymousAnswers: t.exposeInt('anonymousAnswers'),
+    numberOfInputs: t.exposeInt('numberOfInputs', { nullable: true }),
+    answerSolutionIds: t.exposeIntList('answerSolutionIds', { nullable: true }),
+    selectionResponses: t.expose('selectionResponses', {
+      type: [SelectionElementResult],
+    }),
+  }),
+})
+
+export const SelectionElementResultRef = builder.objectRef<
+  ISelectionElementEvaluationResults['selectionResponses'][0]
+>('SelectionElementResult')
+export const SelectionElementResult = SelectionElementResultRef.implement({
+  fields: (t) => ({
+    answerId: t.exposeInt('answerId'),
+    value: t.exposeString('value'),
+    count: t.exposeInt('count'),
+  }),
+})
+
 // ----- FLASHCARD ELEMENT EVALUATION INTERFACE -----
 export const FlashcardElementInstanceEvaluationRef =
   builder.objectRef<IFlashcardElementInstanceEvaluation>(
@@ -413,6 +473,7 @@ export const ElementInstanceEvaluation = builder.unionType(
       FreeElementInstanceEvaluation,
       FlashcardElementInstanceEvaluation,
       ContentElementInstanceEvaluation,
+      SelectionElementInstanceEvaluation,
     ],
     resolveType: (element) => {
       switch (element.type) {
@@ -428,6 +489,8 @@ export const ElementInstanceEvaluation = builder.unionType(
           return FlashcardElementInstanceEvaluation
         case DB.ElementType.CONTENT:
           return ContentElementInstanceEvaluation
+        case DB.ElementType.SELECTION:
+          return SelectionElementInstanceEvaluation
       }
     },
   }

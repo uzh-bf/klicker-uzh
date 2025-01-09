@@ -1530,6 +1530,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noChartsAvailable: 'There exists no chart for this question type yet',
       count: 'Anzahl',
       value: 'Wert',
+      selection: 'Auswahl',
       histogramRange: 'Bereich',
       histogramBins: 'Unterteilungen',
       correctLabel: 'Korrekt',

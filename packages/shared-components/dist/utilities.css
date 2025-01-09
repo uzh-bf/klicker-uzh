@@ -160,6 +160,10 @@
   height: 0.875rem
 }
 
+.h-4 {
+  height: 1rem
+}
+
 .h-40 {
   height: 10rem
 }
@@ -230,6 +234,10 @@
 
 .w-8 {
   width: 2rem
+}
+
+.w-80 {
+  width: 20rem
 }
 
 .w-\[30px\] {

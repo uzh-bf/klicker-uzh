@@ -443,7 +443,7 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
-union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation
+union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation | SelectionElementInstanceEvaluation
 
 input ElementInstanceInput {
   elementId: Int!
@@ -1565,6 +1565,31 @@ type SelectionElementData {
   options: SelectionQuestionOptions!
   pointsMultiplier: Int!
   type: ElementType!
+}
+
+type SelectionElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: SelectionElementResults!
+  type: ElementType!
+}
+
+type SelectionElementResult {
+  answerId: Int!
+  count: Int!
+  value: String!
+}
+
+type SelectionElementResults {
+  anonymousAnswers: Int!
+  answerSolutionIds: [Int!]
+  numberOfInputs: Int
+  selectionResponses: [SelectionElementResult!]!
+  totalAnswers: Int!
 }
 
 type SelectionInstanceEvaluation {
