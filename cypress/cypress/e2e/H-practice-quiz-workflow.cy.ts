@@ -20,6 +20,19 @@ const FCQuestion = 'FC Question PQ'
 const FCAnswer = 'FC Answer PQ'
 const CTQuestionTitle = 'CT ' + uuid()
 const CTQuestion = 'CT Question PQ'
+const SEQuestion = 'SE Question PQ'
+const SEQuestionTitle = 'SE ' + uuid()
+const SEQuestionInputs = 3
+const SECollection = 'SE Collection PQ'
+const SECollectionDescription = 'SE Collection PQ Description'
+const SECollectionOptions = [
+  'SE PQ Option 1',
+  'SE PQ Option 2',
+  'SE PQ Option 3',
+  'SE PQ Option 4',
+  'SE PQ Option 5',
+]
+const SECollectionSolutions = [0, 1, 2, 4]
 
 const runningNameOLD = 'Running Practice Quiz OLD'
 const runningDisplayNameOLD = 'Running Practice Quiz OLD (Display)'
@@ -117,6 +130,28 @@ describe('Different practice quiz workflows', () => {
       title: CTQuestionTitle,
       content: CTQuestion,
     })
+
+    // create answer collection
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: SECollection,
+      description: SECollectionDescription,
+      entries: SECollectionOptions,
+      access: messages.manage.resources.accessPRIVATE,
+      accessCy: 'private',
+    })
+
+    // create selection question
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: SEQuestionTitle,
+      content: SEQuestion,
+      numberOfInputs: SEQuestionInputs,
+      collectionName: SECollection,
+      correctAnswers: SECollectionOptions.filter((_, i) =>
+        SECollectionSolutions.includes(i)
+      ),
+    })
   })
 
   // ! Part 1: Practice Quiz Creation
@@ -190,6 +225,7 @@ describe('Different practice quiz workflows', () => {
         { elements: [KPRIMQuestionTitle] },
         { elements: [NRQuestionTitle] },
         { elements: [FTQuestionTitle] },
+        { elements: [SEQuestionTitle] },
         { elements: [FCQuestionTitle] },
         { elements: [CTQuestionTitle] },
       ],
@@ -296,9 +332,12 @@ describe('Different practice quiz workflows', () => {
       FTQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      FCQuestionTitle.substring(0, 20)
+      SEQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
+      FCQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-7"]').contains(
       CTQuestionTitle.substring(0, 20)
     )
 
@@ -309,10 +348,10 @@ describe('Different practice quiz workflows', () => {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-stack-7"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-8"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="element-0-stack-7"]').contains(
+    cy.get('[data-cy="element-0-stack-8"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -380,12 +419,15 @@ describe('Different practice quiz workflows', () => {
       FTQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      FCQuestionTitle.substring(0, 20)
+      SEQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      CTQuestionTitle.substring(0, 20)
+      FCQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
+      CTQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-8"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -459,12 +501,15 @@ describe('Different practice quiz workflows', () => {
       FTQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      FCQuestionTitle.substring(0, 20)
+      SEQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      CTQuestionTitle.substring(0, 20)
+      FCQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
+      CTQuestionTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-8"]').contains(
       SCQuestionTitle.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -490,6 +535,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="start-practice-quiz"]').click()
 
     // SC question
+    cy.findByText(SCQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
@@ -499,6 +545,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // MC question
+    cy.findByText(MCQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
@@ -510,6 +557,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // KPRIM question
+    cy.findByText(KPRIMQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -523,6 +571,7 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // NR question
+    cy.findByText(NRQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-1"]').clear().type('-20')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -536,12 +585,27 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // FT question
+    cy.findByText(FTQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-1"]').type('Testinput')
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="free-text-input-1"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-1"]').type('correct')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // SE QUESTION
+    cy.findByText(SEQuestion).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="selection-1-field-1"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[0]}"]`).click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="selection-1-field-2"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[1]}"]`).click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="selection-1-field-3"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[3]}"]`).click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
 
@@ -559,14 +623,17 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="student-stack-continue"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
 
     // Flashcard
+    cy.findByText(FCQuestion).should('exist')
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-No"]').click()
     cy.get('[data-cy="flashcard-response-1-Yes"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
 
     // Content
+    cy.findByText(CTQuestion).should('exist')
     cy.get('[data-cy="read-content-element-1"]').should('exist')
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
       .contains(messages.pwa.practiceQuiz.markAllAsRead)
@@ -576,6 +643,7 @@ describe('Different practice quiz workflows', () => {
       .click()
 
     // SC question
+    cy.findByText(SCQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')

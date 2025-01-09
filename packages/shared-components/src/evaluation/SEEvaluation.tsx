@@ -17,6 +17,13 @@ function SEEValuation({
   options: SelectionQuestionOptions
 }) {
   const t = useTranslations()
+
+  // the number of answer options for which statistics are shown
+  const numberOfShownResponses = Math.max(
+    options.numberOfInputs! + 1,
+    evaluation.answerSolutionIds?.length ?? 0
+  )
+
   const sortedResponses = useMemo<
     (SingleSelectionResponse & { correct?: boolean })[]
   >(() => {
@@ -32,7 +39,7 @@ function SEEValuation({
     const sorted = sortBy(evaluation.selectionResponses, [
       prop('count'),
       'desc',
-    ]).slice(0, options.numberOfInputs + 1)
+    ]).slice(0, numberOfShownResponses)
 
     if (
       evaluation?.answerSolutionIds === null ||
@@ -74,7 +81,7 @@ function SEEValuation({
       <div>
         <div className="font-bold">
           {t('pwa.practiceQuiz.topNAnswers', {
-            number: options.numberOfInputs! + 1,
+            number: numberOfShownResponses,
           })}
         </div>
         <div className="flex flex-col gap-1">

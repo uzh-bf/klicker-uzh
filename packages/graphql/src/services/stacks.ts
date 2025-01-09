@@ -1331,7 +1331,7 @@ function evaluateSelectionElementResponse({
       answerOptions: elementData.options.answerCollection!,
     }),
     score: correctness
-      ? correctness * POINTS_PER_INSTANCE * (multiplier ?? 1)
+      ? Math.round(correctness * POINTS_PER_INSTANCE * (multiplier ?? 1))
       : 0,
     xp: computeAwardedXp({
       pointsPercentage: correctness,
