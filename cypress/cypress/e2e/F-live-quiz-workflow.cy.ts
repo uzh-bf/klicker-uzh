@@ -75,6 +75,23 @@ const FTQuestion2Options = {
 const FTAnswer1 = 'Solution 1'
 const FTAnswer2 = 'Answer 2'
 
+const SECollection = 'SE Collection LQ'
+const SECollectionDescription = 'SE Collection LQ Description'
+const SECollectionOptions = [
+  'SE LQ Option 1',
+  'SE LQ Option 2',
+  'SE LQ Option 3',
+  'SE LQ Option 4',
+  'SE LQ Option 5',
+]
+const SEQuestion1Title = 'SE Title LQ Test 1'
+const SEQuestion1Content = 'SE Question Content 1'
+const SEQuestion1Inputs = 2
+const SEQuestion2Title = 'SE Title LQ Test 2'
+const SEQuestion2Content = 'SE Question Content 2'
+const SEQuestion2Inputs = 3
+const SECollectionSolutions2 = [0, 1, 2, 4]
+
 // global variables to change live quiz settings
 const quizName1 = 'Live Quiz 1'
 const quizDisplayName1 = 'Live Quiz 1 (Display)'
@@ -153,6 +170,31 @@ describe('Different live-quiz workflows', () => {
       title: FTQuestion2Title,
       content: FTQuestion2Content,
       ...FTQuestion2Options,
+    })
+
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: SECollection,
+      description: SECollectionDescription,
+      entries: SECollectionOptions,
+      access: messages.manage.resources.accessPRIVATE,
+      accessCy: 'private',
+    })
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: SEQuestion1Title,
+      content: SEQuestion1Content,
+      numberOfInputs: SEQuestion1Inputs,
+      collectionName: SECollection,
+    })
+    cy.createQuestionSE({
+      title: SEQuestion2Title,
+      content: SEQuestion2Content,
+      numberOfInputs: SEQuestion2Inputs,
+      collectionName: SECollection,
+      correctAnswers: SECollectionOptions.filter((_, i) =>
+        SECollectionSolutions2.includes(i)
+      ),
     })
   })
 
@@ -742,6 +784,7 @@ describe('Different live-quiz workflows', () => {
             KPRIMQuestion1Title,
             NRQuestion1Title,
             FTQuestion1Title,
+            SEQuestion1Title,
           ],
         },
         {
@@ -751,6 +794,7 @@ describe('Different live-quiz workflows', () => {
             KPRIMQuestion2Title,
             NRQuestion2Title,
             FTQuestion2Title,
+            SEQuestion2Title,
           ],
         },
       ],
@@ -834,6 +878,14 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="free-text-input-5"]').type(FTAnswer1)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-1"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[1]}"]`).click()
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-2"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[3]}"]`).click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
 
     // provide feedback while moderation is enabled
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
@@ -900,6 +952,17 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="free-text-input-5"]').type(FTAnswer2)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-1"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[2]}"]`).click()
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-2"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[4]}"]`).click()
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="selection-6-field-3"]').click()
+    cy.get(`[data-cy="select-answer-${SECollectionOptions[1]}"]`).click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
   })
@@ -976,7 +1039,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('@publicLinkQuestion7').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(KPRIMQuestion2Content).should('exist')
+    cy.findByText(MCQuestion2Content).should('exist')
 
     // check out leaderboard
     cy.get('@publicLinkLeaderboard').then((link) => {
@@ -1026,6 +1089,8 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(FTQuestion1Content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(SEQuestion1Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(SCQuestion2Content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(MCQuestion2Content).should('exist')
@@ -1035,12 +1100,17 @@ describe('Different live-quiz workflows', () => {
     cy.findByText(NRQuestion2Content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(FTQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(SEQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(NRQuestion2Content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(SCQuestion2Content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(SEQuestion1Content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(FTQuestion1Content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
@@ -1126,11 +1196,13 @@ describe('Different live-quiz workflows', () => {
       KPRIMQuestion1Title,
       NRQuestion1Title,
       FTQuestion1Title,
+      SEQuestion1Title,
       SCQuestion2Title,
       MCQuestion2Title,
       KPRIMQuestion2Title,
       NRQuestion2Title,
       FTQuestion2Title,
+      SEQuestion2Title,
     ]
     questions.forEach((question) => {
       cy.get(`[data-cy="element-item-${question}"]`).should('exist')

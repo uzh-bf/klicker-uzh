@@ -206,12 +206,10 @@ async function getCachedBlockResults({
         omitBy(results, (_, key) => key === 'participants')
       ).reduce<Record<string, number>>(
         (acc, [answerId, count]) => {
-          return {
-            ...acc,
-            [answerId]: (acc[answerId] ?? 0) + parseInt(count),
-          }
+          acc[answerId] = (acc[answerId] ?? 0) + parseInt(count)
+          return acc
         },
-        (instance.anonymousResults as ElementResultsSelection).selections
+        { ...(instance.anonymousResults as ElementResultsSelection).selections }
       )
 
       anonymousResults = {
