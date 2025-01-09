@@ -20,6 +20,19 @@ const FCQuestion = 'FC Question PQ'
 const FCAnswer = 'FC Answer PQ'
 const CTQuestionTitle = 'CT ' + uuid()
 const CTQuestion = 'CT Question PQ'
+const SEQuestion = 'SE Question PQ'
+const SEQuestionTitle = 'SE ' + uuid()
+const SEQuestionInputs = 3
+const SECollection = 'SE Collection PQ'
+const SECollectionDescription = 'SE Collection PQ Description'
+const SECollectionOptions = [
+  'SE PQ Option 1',
+  'SE PQ Option 2',
+  'SE PQ Option 3',
+  'SE PQ Option 4',
+  'SE PQ Option 5',
+]
+const SECollectionSolutions = [0, 1, 2]
 
 const runningNameOLD = 'Running Practice Quiz OLD'
 const runningDisplayNameOLD = 'Running Practice Quiz OLD (Display)'
@@ -117,6 +130,28 @@ describe('Different practice quiz workflows', () => {
       title: CTQuestionTitle,
       content: CTQuestion,
     })
+
+    // create answer collection
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: SECollection,
+      description: SECollectionDescription,
+      entries: SECollectionOptions,
+      access: messages.manage.resources.accessPRIVATE,
+      accessCy: 'private',
+    })
+
+    // create selection question
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: SEQuestionTitle,
+      content: SEQuestion,
+      numberOfInputs: SEQuestionInputs,
+      collectionName: SECollection,
+      correctAnswers: SECollectionOptions.filter((_, i) =>
+        SECollectionSolutions.includes(i)
+      ),
+    })
   })
 
   // ! Part 1: Practice Quiz Creation
@@ -190,6 +225,7 @@ describe('Different practice quiz workflows', () => {
         { elements: [KPRIMQuestionTitle] },
         { elements: [NRQuestionTitle] },
         { elements: [FTQuestionTitle] },
+        { elements: [SEQuestionTitle] },
         { elements: [FCQuestionTitle] },
         { elements: [CTQuestionTitle] },
       ],

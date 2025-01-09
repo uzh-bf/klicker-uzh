@@ -488,6 +488,67 @@ Cypress.Commands.add(
   }
 )
 
+interface CreateSelectionArgs {
+  title: string
+  content: string
+  explanation?: string
+  collectionName: string
+  numberOfInputs: number
+  correctAnswers?: string[]
+}
+
+Cypress.Commands.add(
+  'createQuestionSE',
+  ({
+    title,
+    content,
+    explanation,
+    collectionName,
+    numberOfInputs,
+    correctAnswers,
+  }: CreateSelectionArgs) => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SELECTION.typeLabel)
+
+    cy.get('[data-cy="insert-question-title"]').click().type(title)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+
+    if (explanation) {
+      cy.get('[data-cy="insert-question-explanation"]')
+        .realClick()
+        .type(explanation)
+    }
+
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      messages.manage.questionForms.selectCollection
+    )
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(`[data-cy="select-answer-collection-${collectionName}"]`).click()
+    cy.get('[data-cy="select-answer-collection"]').contains(collectionName)
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .type(String(numberOfInputs))
+
+    if (correctAnswers && correctAnswers.length > 0) {
+      cy.get('[data-cy="configure-sample-solution"]').click()
+      correctAnswers.forEach((solution) => {
+        cy.get('[data-cy="choose-correct-answer-options"]').click()
+        cy.findByText(solution).realClick()
+        cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+      })
+    }
+
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+  }
+)
+
 interface CreateFlashcardArgs {
   title: string
   content: string
@@ -884,6 +945,14 @@ declare global {
         solutions,
         multiplier,
       }: CreateQuestionFTArgs): Chainable<void>
+      createQuestionSE({
+        title,
+        content,
+        explanation,
+        collectionName,
+        numberOfInputs,
+        correctAnswers,
+      }: CreateSelectionArgs): Chainable<void>
       createFlashcard({
         title,
         content,
