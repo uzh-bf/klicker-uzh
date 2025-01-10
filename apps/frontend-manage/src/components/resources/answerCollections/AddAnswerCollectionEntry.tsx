@@ -4,25 +4,33 @@ import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AddAnswerCollectionOptionDocument,
+  AnswerCollectionEntry,
   GetAnswerCollectionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import * as Yup from 'yup'
 
 function AddAnswerCollectionEntry({
   collectionId,
+  entries,
   setOptionsEditingDisabled,
 }: {
   collectionId: number
+  entries: AnswerCollectionEntry[]
   setOptionsEditingDisabled: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
   const [fieldOpen, setFieldOpen] = useState(false)
   const [addAnswerCollectionOption] = useMutation(
     AddAnswerCollectionOptionDocument
+  )
+
+  const entryValues = useMemo(
+    () => entries.map((entry) => entry.value),
+    [entries]
   )
 
   if (!fieldOpen) {
@@ -43,11 +51,15 @@ function AddAnswerCollectionEntry({
 
   return (
     <Formik
+      validateOnMount
       initialValues={{
         newValue: undefined,
       }}
+      initialTouched={{ newValue: true }}
       validationSchema={Yup.object({
-        newValue: Yup.string().required(t('manage.resources.valueRequired')),
+        newValue: Yup.string()
+          .required(t('manage.resources.valueRequired'))
+          .notOneOf(entryValues, t('manage.resources.uniqueValuesRequired')),
       })}
       onSubmit={async (values) => {
         await addAnswerCollectionOption({
@@ -94,7 +106,6 @@ function AddAnswerCollectionEntry({
         setFieldOpen(false)
         setOptionsEditingDisabled(false)
       }}
-      validateOnMount
     >
       {({ isValid, isSubmitting }) => (
         <Form className="flex flex-row gap-1">

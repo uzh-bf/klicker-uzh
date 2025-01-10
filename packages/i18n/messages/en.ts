@@ -1876,6 +1876,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       valueRequired: 'Please enter a value for the answer entry.',
       minTwoEntriesRequired:
         'At least two answer entries are required to create an answer collection.',
+      uniqueValuesRequired:
+        'All options in an answer collection need to have a unique value. Please make sure that no two answers options coincide.',
       infoAccessPUBLIC:
         'Public answer collections can be viewed and imported by all users.',
       infoAccessPRIVATE:
