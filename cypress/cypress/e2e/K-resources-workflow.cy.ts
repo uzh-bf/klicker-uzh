@@ -105,6 +105,7 @@ describe('Create, edit and share answer collections', () => {
       cy.get(`[data-cy="response-entry-${ix + 2}"]`).should('have.value', value)
     })
 
+    // test deletion of answer option
     cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).should(
       'exist'
     )
@@ -113,6 +114,16 @@ describe('Create, edit and share answer collections', () => {
       'not.exist'
     )
     cy.get(`[data-cy="response-entry-3"]`).should('have.value', publicItems[4])
+    cy.get('[data-cy="submit-create-answer-collection"]').should(
+      'not.be.disabled'
+    )
+
+    // verify that duplicated answer options are not accepted
+    cy.get('[data-cy="add-response-entry"]').click()
+    cy.get(`[data-cy="response-entry-4"]`).type(publicItems[0])
+    cy.get(`[data-cy="response-entry-4"]`).should('have.value', publicItems[0])
+    cy.get('[data-cy="remove-response-entry-4"]').click()
+    cy.get(`[data-cy="response-entry-4"]`).should('not.exist')
 
     cy.get('[data-cy="submit-create-answer-collection"]').click()
     cy.get(`[data-cy="answer-collection-${publicName}"]`).should('exist')

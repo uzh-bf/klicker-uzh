@@ -1890,6 +1890,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       valueRequired: 'Bitte geben Sie einen Wert für den Eintrag an.',
       minTwoEntriesRequired:
         'Bitte fügen Sie mindestens zwei Einträge zu Ihrer Sammlung hinzu.',
+      uniqueValuesRequired:
+        'Alle Optionen in einer Antwort-Sammlung müssen einen einzigartigen Wert haben. Bitte stellen Sie sicher, dass keine zwei Antwortoptionen übereinstimmen.',
       infoAccessPUBLIC:
         'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und importiert werden.',
       infoAccessPRIVATE:

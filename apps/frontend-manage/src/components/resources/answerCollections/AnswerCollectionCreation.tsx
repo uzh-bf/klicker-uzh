@@ -53,7 +53,17 @@ function AnswerCollectionCreation({
           value: Yup.string().required(t('manage.resources.valueRequired')),
         })
       )
-      .min(2, t('manage.resources.minTwoEntriesRequired')),
+      .min(2, t('manage.resources.minTwoEntriesRequired'))
+      .test(
+        'unique',
+        t('manage.resources.uniqueValuesRequired'),
+        function (arr) {
+          if (!arr) return true
+          const values = arr.map((item) => item.value)
+          const uniqueValues = new Set(values)
+          return values.length === uniqueValues.size
+        }
+      ),
   })
 
   return (
