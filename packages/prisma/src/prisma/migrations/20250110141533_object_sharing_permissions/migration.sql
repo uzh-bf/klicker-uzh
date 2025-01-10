@@ -59,7 +59,7 @@ CREATE TABLE "Permissions" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Permissions_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "UserOrGroupRequired" CHECK ((("userId" IS NOT NULL) AND ("userGroupId" IS NULL)) OR (("userId" IS NULL) AND ("userGroupId" IS NOT NULL)))
+    CONSTRAINT "UserOrGroupRequired" CHECK ((("userId" IS NOT NULL) AND ("userGroupId" IS NULL)) OR (("userId" IS NULL) AND ("userGroupId" IS NOT NULL))),
     CONSTRAINT "ObjectRequired" CHECK (("answerCollectionId" IS NOT NULL) OR ("elementId" IS NOT NULL) OR ("courseId" IS NOT NULL) OR ("liveQuizId" IS NOT NULL) OR ("practiceQuizId" IS NOT NULL) OR ("microLearningId" IS NOT NULL) OR ("groupActivityId" IS NOT NULL))
 );
 
