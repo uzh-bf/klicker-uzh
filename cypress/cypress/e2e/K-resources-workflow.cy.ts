@@ -200,11 +200,17 @@ describe('Create, edit and share answer collections', () => {
       )
     })
 
+    const existingElement = privateItemsNew[0]
     const lastElement = privateItemsNew[privateItemsNew.length - 1]
     cy.get(`[data-cy="delete-answer-option-${lastElement}"]`).click()
     cy.get(`[data-cy="answer-option-${lastElement}"]`).should('not.exist')
     cy.get(`[data-cy="add-answer-option"]`).click()
+    cy.get(`[data-cy="save-new-answer-option"]`).should('be.disabled')
     cy.get(`[data-cy="input-new-answer-option"]`).type(lastElement)
+    cy.get(`[data-cy="save-new-answer-option"]`).should('not.be.disabled')
+    cy.get(`[data-cy="input-new-answer-option"]`).clear().type(existingElement)
+    cy.get(`[data-cy="save-new-answer-option"]`).should('be.disabled')
+    cy.get(`[data-cy="input-new-answer-option"]`).clear().type(lastElement)
     cy.get(`[data-cy="save-new-answer-option"]`).click()
     cy.get(`[data-cy="answer-option-${lastElement}"]`).contains(lastElement)
   })

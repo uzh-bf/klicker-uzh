@@ -67,6 +67,7 @@ function AnswerCollectionEditModal({
         ))}
         <AddAnswerCollectionEntry
           collectionId={collection.id}
+          entries={collection.entries ?? []}
           setOptionsEditingDisabled={setOptionsEditingDisabled}
         />
       </div>
