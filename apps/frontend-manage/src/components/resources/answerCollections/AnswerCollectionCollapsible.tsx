@@ -5,15 +5,17 @@ import { useState } from 'react'
 
 function AnswerCollectionCollapsible({
   title,
+  className,
   children,
 }: {
   title: string | React.ReactNode
+  className?: { root?: string }
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(true)
 
   return (
-    <div className="mb-4">
+    <div className={className?.root}>
       <Button
         basic
         onClick={() => setOpen((prev) => !prev)}

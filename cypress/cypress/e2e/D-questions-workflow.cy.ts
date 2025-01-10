@@ -1083,6 +1083,7 @@ describe('Create different types of elements (with and without sample solution) 
       .contains(messages.shared.SELECTION.typeLabel)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
+    // enter question data
     cy.get('[data-cy="insert-question-title"]').click().type(SETitle)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="select-question-status"]').click()
@@ -1095,6 +1096,7 @@ describe('Create different types of elements (with and without sample solution) 
       .type(SEExplanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
+    // select an answer collection
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.questionForms.selectCollection
     )
@@ -1102,6 +1104,8 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="select-answer-collection-${SECollection}"]`).click()
     cy.get('[data-cy="select-answer-collection"]').contains(SECollection)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // configure number of inputs and test min & max restrictions
     cy.get('[data-cy="configure-number-of-inputs"]')
       .click()
       .type(String(SEInputs))
@@ -1120,6 +1124,11 @@ describe('Create different types of elements (with and without sample solution) 
       .click()
       .clear()
       .type(String(SEInputs))
+
+    // test that enabling sample solution works correctly
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="configure-sample-solution"]').click()
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
@@ -1169,7 +1178,6 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Check that all options of the answer collection can be edited', () => {
-    cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
 
@@ -1216,7 +1224,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
-  it('Check that the options that are used as a solution cannot be deleted anymore', () => {
+  it('Verify that the options that are used as a solution cannot be deleted anymore', () => {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
@@ -1235,6 +1243,13 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Verify that the answer collection cannot be deleted anymore', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
   })
 
   it('Edit the selection question and change the answer collection (including new sample solutions)', () => {
@@ -1288,6 +1303,16 @@ describe('Create different types of elements (with and without sample solution) 
     SESolutionsEdited.forEach((solution) => {
       cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
     })
+  })
+
+  it('Verify that the previous answer collection could be deleted again, the current one not', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
+    cy.get('[data-cy="close-answer-collection-edit-modal"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollectionEdited}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
   })
 
   it('Check that only answer options not used as solutions can be deleted', () => {
@@ -1399,5 +1424,33 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="delete-question-${SETitleEdited}"]`).click()
     cy.get('[data-cy="confirm-question-deletion"]').click()
     cy.get(`[data-cy="element-item-${SETitleEdited}"]`).should('not.exist')
+  })
+
+  it('Verify that after the deletion of the linked question, all solution options can be deleted again', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
+
+    SESolutions.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    SESolutionsNotChosen.forEach((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Cleanup: Delete the shared answer collection', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${SECollectionEdited}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').click()
+    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
   })
 })

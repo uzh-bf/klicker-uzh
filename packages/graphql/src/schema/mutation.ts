@@ -1260,6 +1260,39 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      cancelAnswerCollectionRequest: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Int',
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.cancelAnswerCollectionRequest(args, ctx)
+        },
+      }),
+
+      removeAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Int',
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.removeAnswerCollection(args, ctx)
+        },
+      }),
+
+      deleteAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Int',
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.deleteAnswerCollection(args, ctx)
+        },
+      }),
+
       approveCollectionSharingRequest: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: SharingRequestResponse,

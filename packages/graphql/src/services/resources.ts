@@ -82,6 +82,11 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
           _count: {
             select: {
               accessGranted: true,
+              linkedElements: {
+                where: {
+                  ownerId: ctx.user.sub,
+                },
+              },
             },
           },
         },
@@ -101,6 +106,15 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
               shortname: true,
             },
           },
+          _count: {
+            select: {
+              linkedElements: {
+                where: {
+                  ownerId: ctx.user.sub,
+                },
+              },
+            },
+          },
         },
         orderBy: {
           name: 'asc',
@@ -111,6 +125,15 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
           owner: {
             select: {
               shortname: true,
+            },
+          },
+          _count: {
+            select: {
+              linkedElements: {
+                where: {
+                  ownerId: ctx.user.sub,
+                },
+              },
             },
           },
         },
@@ -133,14 +156,17 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
         numSolutionUsages: entry._count?.solutionUsages,
       })),
       numSharedUsers: collection._count?.accessGranted,
+      isRemovable: collection._count?.linkedElements === 0,
     })),
     sharedCollections: user.sharedCollections.map((collection) => ({
       ...collection,
       ownerShortname: collection.owner?.shortname,
+      isRemovable: collection._count?.linkedElements === 0,
     })),
     requestedCollections: user.requestedCollections.map((collection) => ({
       ...collection,
       ownerShortname: collection.owner?.shortname,
+      isRemovable: collection._count?.linkedElements === 0,
     })),
   }
 }
@@ -170,6 +196,7 @@ export async function modifyAnswerCollection(
           accessGranted: true,
         },
       },
+      accessRequested: true,
     },
   })
 
@@ -192,6 +219,9 @@ export async function modifyAnswerCollection(
   }
 
   // update changes in the database
+  const restrictedToPublic =
+    collection.access === DB.CollectionAccess.RESTRICTED &&
+    access === DB.CollectionAccess.PUBLIC
   const updatedCollection = await ctx.prisma.answerCollection.update({
     where: {
       id,
@@ -204,6 +234,17 @@ export async function modifyAnswerCollection(
       version: {
         increment: 1,
       },
+      // if access is changed from restricted to public, accept all pending requests
+      accessGranted: {
+        connect: restrictedToPublic
+          ? collection.accessRequested.map((request) => ({
+              id: request.id,
+            }))
+          : undefined,
+      },
+      accessRequested: {
+        set: restrictedToPublic ? [] : undefined,
+      },
     },
     include: {
       entries: true,
@@ -214,6 +255,140 @@ export async function modifyAnswerCollection(
     ...updatedCollection,
     numSharedUsers,
   }
+}
+
+export async function deleteAnswerCollection(
+  {
+    collectionId,
+  }: {
+    collectionId: number
+  },
+  ctx: ContextWithUser
+) {
+  // fetch answer collection as owner
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      _count: {
+        select: {
+          linkedElements: {
+            where: {
+              ownerId: ctx.user.sub,
+            },
+          },
+          accessGranted: true,
+        },
+      },
+    },
+  })
+
+  // if collection does not exist or is still linked to own elements, do not allow deletion
+  if (!collection || collection._count.linkedElements > 0) {
+    return null
+  }
+
+  // if other users have access to it, only disconnect it from its owner and decline all requests automatically
+  let updatedCollection: DB.AnswerCollection
+  if (collection._count.accessGranted > 0) {
+    updatedCollection = await ctx.prisma.answerCollection.update({
+      where: {
+        id: collectionId,
+      },
+      data: {
+        owner: {
+          disconnect: true,
+        },
+        accessRequested: {
+          set: [],
+        },
+      },
+    })
+  } else {
+    // otherwise delete the collection
+    updatedCollection = await ctx.prisma.answerCollection.delete({
+      where: {
+        id: collectionId,
+      },
+    })
+  }
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: collectionId,
+  })
+
+  return updatedCollection.id
+}
+
+export async function removeAnswerCollection(
+  {
+    collectionId,
+  }: {
+    collectionId: number
+  },
+  ctx: ContextWithUser
+) {
+  // fetch answer collection as user
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+    },
+    include: {
+      _count: {
+        select: {
+          linkedElements: {
+            where: {
+              ownerId: ctx.user.sub,
+            },
+          },
+          accessGranted: true,
+        },
+      },
+    },
+  })
+
+  // if collection does not exist, is linked to own elements, or does belong to the user, do not allow removal
+  if (
+    !collection ||
+    collection._count.linkedElements > 0 ||
+    collection.ownerId === ctx.user.sub
+  ) {
+    return null
+  }
+
+  // if no other users have access to this collection and the owner is already disconnected, delete it
+  let updatedCollection: DB.AnswerCollection
+  if (collection._count.accessGranted === 1 && collection.ownerId === null) {
+    updatedCollection = await ctx.prisma.answerCollection.delete({
+      where: {
+        id: collectionId,
+      },
+    })
+  } else {
+    // otherwise, disconnect the collection from the user
+    updatedCollection = await ctx.prisma.answerCollection.update({
+      where: {
+        id: collectionId,
+      },
+      data: {
+        accessGranted: {
+          disconnect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+    })
+  }
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: collectionId,
+  })
+
+  return updatedCollection.id
 }
 
 export async function incrementCollectionVersion(
@@ -350,7 +525,8 @@ export async function getAnswerCollectionSelection(ctx: ContextWithUser) {
       (collection) =>
         // do not show collections that the user already has access to / requested
         collection.accessGranted.length === 0 &&
-        collection.accessRequested.length === 0
+        collection.accessRequested.length === 0 &&
+        collection.ownerId !== null // do not show collections where no user can give access anymore
     )
     .map((collection) => ({
       ...collection,
@@ -417,6 +593,9 @@ export async function requestAnswerCollection(
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
+      ownerId: {
+        not: null,
+      },
     },
     include: {
       accessGranted: {
@@ -467,6 +646,61 @@ export async function requestAnswerCollection(
     ...updatedCollection,
     ownerShortname: updatedCollection.owner?.shortname,
   }
+}
+
+export async function cancelAnswerCollectionRequest(
+  {
+    collectionId,
+  }: {
+    collectionId: number
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the user has requested access to the collection
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+    },
+    include: {
+      accessRequested: {
+        where: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+  })
+
+  if (!collection || collection.accessRequested.length === 0) {
+    return null
+  }
+
+  // remove the user from the access requested list
+  const updatedCollection = await ctx.prisma.answerCollection.update({
+    where: {
+      id: collectionId,
+    },
+    data: {
+      accessRequested: {
+        disconnect: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+    include: {
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: collectionId,
+  })
+
+  return updatedCollection.id
 }
 
 export async function getCollectionSharingRequests(ctx: ContextWithUser) {

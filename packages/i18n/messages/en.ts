@@ -250,6 +250,7 @@ export default {
       correctness: 'Correctness',
       answerCollection: 'Answer Collection',
       users: 'Users',
+      unknown: 'Unknown',
     },
     contentInput: {
       boldStyle:
@@ -1853,7 +1854,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newAnswerCollection: 'New Answer Collection',
       addSharedAnswerCollection: 'Add Shared Answer Collection',
       answerOptionUsedAsSolution:
-        'Answer options marked with the warning symbol are already used as correct solutions in a question, please keep this in mind when editing the answer. The option cannot be deleted anymore.',
+        'Answer options marked with the warning symbol are already used as correct solutions in a question by you or other users (in case of a shared collection). Please keep this in mind when editing the answer. The option cannot be deleted.',
       name: 'Name',
       nameTooltip:
         'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',
@@ -1891,6 +1892,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
       clickToViewEdit: 'Click to view / edit',
+      clickToCancelRequest: 'Click to cancel request',
       answerCollection: 'Answer Collection: {name}',
       saveChanges: 'Save changes',
       infoAccessChangeLimited:
@@ -1925,6 +1927,33 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestedAccess: 'Requested Access',
       sharingRequests: 'Sharing Requests',
       unresolved: 'Unresolved',
+      deleteCollection: 'Delete collection',
+      deletionDisabledInUse:
+        'This collection is used by at least one of your questions. Therefore, you cannot delete the collection. To delete the collection, please first remove it from all questions that use it.',
+      removeCollection: 'Remove collection',
+      removalDisabledInUse:
+        'This collection is used by at least one of your questions. Therefore, you cannot remove the collection.',
+      deleteAnswerCollection: 'Delete Answer Collection',
+      confirmCollectionDeletion:
+        'Are you sure you want to delete the answer collection "{name}" from your profile? For shared answer collections, access for other users remains as long as they use the collection.',
+      confirmDeletion: 'Confirm deletion',
+      deletionSuccessful: 'The answer collection was successfully deleted.',
+      deletionFailed:
+        'An error occurred while deleting the answer collection. Please try again or contact the support.',
+      removeAnswerCollection: 'Remove Answer Collection',
+      confirmCollectionRemoval:
+        'Are you sure you want to remove the answer collection "{name}" from your profile?',
+      confirmRemoval: 'Confirm removal',
+      removalSuccessful: 'The answer collection was successfully removed.',
+      removalFailed:
+        'An error occurred while removing the answer collection. Please try again or contact the support.',
+      cancelSharingRequest: 'Cancel Sharing Request',
+      confirmCancelRequest:
+        'Please confirm that you want to cancel the sharing request for the answer collection "{name}". You can request access to the answer collection again later.',
+      confirmCancellation: 'Confirm cancellation',
+      cancellationSuccessful: 'The access request was successfully withdrawn.',
+      cancellationFailed:
+        'An error occurred while withdrawing the access request. Please try again or contact the support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

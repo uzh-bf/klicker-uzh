@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
+import { faInfoCircle, faTrashCan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
@@ -9,11 +10,13 @@ import {
 import {
   Button,
   FormikTextField,
+  Tooltip,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
+import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
 import AnswerCollectionAccessSelection from './AnswerCollectionAccessSelection'
@@ -21,9 +24,11 @@ import AnswerCollectionAccessSelection from './AnswerCollectionAccessSelection'
 function AnswerCollectionMetaForm({
   collection,
   setSuccessToast,
+  onDelete,
 }: {
   collection: AnswerCollection
   setSuccessToast: Dispatch<SetStateAction<boolean>>
+  onDelete: () => void
 }) {
   const t = useTranslations()
   const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument)
@@ -101,16 +106,51 @@ function AnswerCollectionMetaForm({
             }
             className={{ root: 'mb-2' }}
           />
-          <Button
-            type="submit"
-            className={{ root: 'self-end border-green-600' }}
-            disabled={!isValid}
-            loading={isSubmitting}
-            data={{ cy: 'save-changes-answer-collection' }}
-          >
-            <FontAwesomeIcon icon={faSave} className="mr-1" />
-            <div>{t('manage.resources.saveChanges')}</div>
-          </Button>
+          <div className="flex flex-row justify-between">
+            <div className="flex flex-row items-center gap-3">
+              <Button
+                type="button"
+                onClick={onDelete}
+                disabled={!collection.isRemovable}
+                loading={isSubmitting}
+                className={{
+                  root: twMerge(
+                    'border-red-600',
+                    collection.isRemovable &&
+                      'hover:border-red-600 hover:text-red-600'
+                  ),
+                }}
+                data={{ cy: 'delete-answer-collection' }}
+              >
+                <FontAwesomeIcon icon={faTrashCan} className="mr-1" />
+                <div>{t('manage.resources.deleteCollection')}</div>
+              </Button>
+              {!collection.isRemovable ? (
+                <Tooltip
+                  tooltip={t('manage.resources.deletionDisabledInUse')}
+                  className={{ tooltip: 'max-w-[30rem] text-sm' }}
+                >
+                  <FontAwesomeIcon
+                    icon={faInfoCircle}
+                    className="text-primary-100"
+                    size="lg"
+                  />
+                </Tooltip>
+              ) : null}
+            </div>
+            <Button
+              type="submit"
+              disabled={!isValid}
+              loading={isSubmitting}
+              className={{
+                root: 'border-green-600 hover:border-green-600',
+              }}
+              data={{ cy: 'save-changes-answer-collection' }}
+            >
+              <FontAwesomeIcon icon={faSave} className="mr-1" />
+              <div>{t('manage.resources.saveChanges')}</div>
+            </Button>
+          </div>
         </Form>
       )}
     </Formik>

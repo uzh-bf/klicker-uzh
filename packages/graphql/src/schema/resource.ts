@@ -26,6 +26,7 @@ interface IAnswerCollection extends DB.AnswerCollection {
   entries?: DB.AnswerCollectionEntry[]
   ownerShortname?: string
   numSharedUsers?: number
+  isRemovable?: boolean
 }
 
 export const AnswerCollectionRef =
@@ -42,6 +43,7 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
+    isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
   }),
 })
 

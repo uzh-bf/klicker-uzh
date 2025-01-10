@@ -10,10 +10,12 @@ function AnswerCollectionEditModal({
   collection,
   open,
   onClose,
+  onDelete,
 }: {
   collection: AnswerCollection
   open: boolean
   onClose: () => void
+  onDelete: () => void
 }) {
   const t = useTranslations()
   const [successToast, setSuccessToast] = useState(false)
@@ -33,6 +35,10 @@ function AnswerCollectionEditModal({
       <AnswerCollectionMetaForm
         collection={collection}
         setSuccessToast={setSuccessToast}
+        onDelete={() => {
+          onDelete()
+          onClose()
+        }}
       />
       <div className="mt-3 flex flex-col gap-1">
         <H3 className={{ root: 'mb-0' }}>
