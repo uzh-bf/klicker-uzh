@@ -140,13 +140,20 @@ model Permissions {
     updatedAt DateTime @updatedAt
 
     // only one permission per object and user / user group
-    @@unique([answerCollectionId, userId, userGroupId])
-    @@unique([elementId, userId, userGroupId])
-    @@unique([courseId, userId, userGroupId])
-    @@unique([liveQuizId, userId, userGroupId])
-    @@unique([practiceQuizId, userId, userGroupId])
-    @@unique([microLearningId, userId, userGroupId])
-    @@unique([groupActivityId, userId, userGroupId])
+    @@unique([answerCollectionId, userId])
+    @@unique([elementId, userId])
+    @@unique([courseId, userId])
+    @@unique([liveQuizId, userId])
+    @@unique([practiceQuizId, userId])
+    @@unique([microLearningId, userId])
+    @@unique([groupActivityId, userId])
+    @@unique([answerCollectionId, userGroupId])
+    @@unique([elementId, userGroupId])
+    @@unique([courseId, userGroupId])
+    @@unique([liveQuizId, userGroupId])
+    @@unique([practiceQuizId, userGroupId])
+    @@unique([microLearningId, userGroupId])
+    @@unique([groupActivityId, userGroupId])
 }
 
 // #endregion
