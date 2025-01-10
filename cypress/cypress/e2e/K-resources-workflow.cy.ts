@@ -761,77 +761,310 @@ describe('Create, edit and share answer collections', () => {
   // #endregion
 
   // ! Access rule modifications and automatic accepts
-  // TODO: create restricted and public collection
-  // TODO: give pro1 access to both
-  // TODO: request access to restricted for pro2
-  // TODO: verify that pro2 cannot access restricted collection
-  // TODO: change restricted collection to public
-  // TODO: verify that pro2 can now access restricted collection
-  // TODO: cleanup - remove restricted collection (now public) from pro2 and verify that not visible anymore
-  // TODO: cleanup - remove both restricted and public collections from pro1 and verify that not visible anymore
-  // TODO: cleanup - delete both collections from lecturer view and verify that not visible anymore
-  // TODO: create new restricted collection
-  // TODO: give pro1 access to it
-  // TODO: give pro2 access to it
-  // TODO: remove it from pro2 and verify that it is gone
-  // TODO: verify that collection is still accessible to user pro1 and remove it, verify that it is gone
-  // TODO: verify that collection is still accessible to owner and delete it, verify that it is gone
-  // it('Verify that the public answer collection cannot be switched back to private or restricted anymore once other users use it', () => {
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="resources"]').click()
-  //   cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
-  //   cy.get('[data-cy="answer-collection-access"]').contains(
-  //     messages.manage.resources.accessPUBLIC
-  //   )
-  //   cy.get('[data-cy="answer-collection-access"]').click()
-  //   cy.get('[data-cy="answer-collection-access-restricted"]').should(
-  //     'have.css',
-  //     'pointer-events',
-  //     'none'
-  //   )
-  //   cy.get('[data-cy="answer-collection-access-private"]').should(
-  //     'have.css',
-  //     'pointer-events',
-  //     'none'
-  //   )
-  //   cy.get('[data-cy="answer-collection-access-public"]').click()
-  // })
+  // #region
+  it('Create a new restricted and public collection', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
 
-  // it('Verify that the restricted answer collection cannot be switched to private once other users use it', () => {
-  //   cy.loginLecturer()
-  //   cy.get('[data-cy="resources"]').click()
-  //   cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
-  //   cy.get('[data-cy="answer-collection-access"]').contains(
-  //     messages.manage.resources.accessRESTRICTED
-  //   )
-  //   cy.get('[data-cy="answer-collection-access"]').click()
-  //   cy.get('[data-cy="answer-collection-access-private"]').should(
-  //     'have.css',
-  //     'pointer-events',
-  //     'none'
-  //   )
-  //   cy.get('[data-cy="answer-collection-access-public"]').click()
-  //   cy.get('[data-cy="answer-collection-access"]').contains(
-  //     messages.manage.resources.accessPUBLIC
-  //   )
-  //   cy.get('[data-cy="save-changes-answer-collection"]').click()
+    cy.createAnswerCollection({
+      name: publicName,
+      accessCy: 'public',
+      access: messages.manage.resources.accessPUBLIC,
+      description: publicDescription,
+      entries: publicItems,
+    })
 
-  //   cy.reload()
-  //   cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
-  //   cy.get('[data-cy="answer-collection-access"]').contains(
-  //     messages.manage.resources.accessPUBLIC
-  //   )
-  //   cy.get('[data-cy="answer-collection-access"]').click()
-  //   cy.get('[data-cy="answer-collection-access-restricted"]').should(
-  //     'have.css',
-  //     'pointer-events',
-  //     'none'
-  //   )
-  //   cy.get('[data-cy="answer-collection-access-private"]').should(
-  //     'have.css',
-  //     'pointer-events',
-  //     'none'
-  //   )
-  //   cy.get('[data-cy="answer-collection-access-public"]').click()
-  // })
+    cy.createAnswerCollection({
+      name: restrictedName,
+      accessCy: 'restricted',
+      access: messages.manage.resources.accessRESTRICTED,
+      description: restrictedDescription,
+      entries: restrictedItems,
+    })
+  })
+
+  it('Request access to restricted collection for user pro1', () => {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="add-shared-answer-collection"]').click()
+    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="import-modal-confirm"]').click()
+
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessRESTRICTED)
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
+      messages.manage.resources.requestedAccess
+    )
+  })
+
+  it('Give access to restricted collection to user pro1', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(
+      `[data-cy="approve-sharing-request-${restrictedName}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).click()
+  })
+
+  it('Import public collection and verify access to restricted collection for user pro1', () => {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+
+    // verify that restricted collection is accessible
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should('exist')
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
+      Cypress.env('LECTURER_SHORTNAME')
+    )
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(restrictedName)
+    cy.get('[data-cy="viewing-collection-description"]').contains(
+      restrictedDescription
+    )
+    cy.get('[data-cy="viewing-collection-access"]').contains(
+      messages.manage.resources.accessRESTRICTED
+    )
+    restrictedItems
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+      .forEach((value, ix) => {
+        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+      })
+    cy.get('[data-cy="close-viewing-collection-modal"]').click()
+
+    //  import public collection and verify access
+    cy.get('[data-cy="add-shared-answer-collection"]').click()
+    cy.get(`[data-cy="import-list-collection-${publicName}"]`).click()
+    cy.get('[data-cy="import-modal-confirm"]').click()
+    cy.get(`[data-cy="answer-collection-${publicName}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessPUBLIC)
+    cy.get(`[data-cy="answer-collection-${publicName}"]`).contains(
+      messages.manage.resources.viewCollection
+    )
+    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(publicName)
+  })
+
+  it('Request access to restricted collection for user pro2', () => {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="add-shared-answer-collection"]').click()
+    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="import-modal-confirm"]').click()
+
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessRESTRICTED)
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
+      messages.manage.resources.requestedAccess
+    )
+  })
+
+  it("Verify that user pro2 doesn't have access to restricted collection", () => {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').should('not.exist')
+  })
+
+  it('Verify that the public answer collection cannot be switched back to private or restricted anymore once other users use it', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get('[data-cy="answer-collection-access"]').contains(
+      messages.manage.resources.accessPUBLIC
+    )
+    cy.get('[data-cy="answer-collection-access"]').click()
+    cy.get('[data-cy="answer-collection-access-restricted"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-private"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-public"]').click()
+  })
+
+  it('Verify that the restricted answer collection cannot be switched to private once other users use it and switch it to public', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="answer-collection-access"]').contains(
+      messages.manage.resources.accessRESTRICTED
+    )
+    cy.get('[data-cy="answer-collection-access"]').click()
+    cy.get('[data-cy="answer-collection-access-private"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-public"]').click()
+    cy.get('[data-cy="answer-collection-access"]').contains(
+      messages.manage.resources.accessPUBLIC
+    )
+    cy.get('[data-cy="save-changes-answer-collection"]').click()
+
+    cy.reload()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="answer-collection-access"]').contains(
+      messages.manage.resources.accessPUBLIC
+    )
+    cy.get('[data-cy="answer-collection-access"]').click()
+    cy.get('[data-cy="answer-collection-access-restricted"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-private"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[data-cy="answer-collection-access-public"]').click()
+  })
+
+  it('Verify that user pro2 now automatically also has access to the previously restricted collection', () => {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should('exist')
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
+      Cypress.env('LECTURER_SHORTNAME')
+    )
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(restrictedName)
+    cy.get('[data-cy="viewing-collection-description"]').contains(
+      restrictedDescription
+    )
+    cy.get('[data-cy="viewing-collection-access"]').contains(
+      messages.manage.resources.accessPUBLIC
+    )
+    restrictedItems
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+      .forEach((value, ix) => {
+        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+      })
+  })
+
+  it('Cleanup: Remove the previously restricted answer collection from user pro2', () => {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Cleanup: Remove the public and previously restricted answer collection from user pro1', () => {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+
+    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get('[data-cy="remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${publicName}"]`).should('not.exist')
+
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Cleanup: Delete the public and previously restricted answer collection from lecturer', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+
+    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').click()
+    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${publicName}"]`).should('not.exist')
+
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').click()
+    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Create a new restricted collection', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+
+    cy.createAnswerCollection({
+      name: restrictedName,
+      accessCy: 'restricted',
+      access: messages.manage.resources.accessRESTRICTED,
+      description: restrictedDescription,
+      entries: restrictedItems,
+    })
+  })
+
+  it('Request access to restricted collection for user pro1', () => {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="add-shared-answer-collection"]').click()
+    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="import-modal-confirm"]').click()
+  })
+
+  it('Request access to restricted collection for user pro2', () => {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="add-shared-answer-collection"]').click()
+    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="import-modal-confirm"]').click()
+  })
+
+  it('Approve both access requests to the restricted collection', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+
+    cy.get(
+      `[data-cy="approve-sharing-request-${restrictedName}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).click()
+    cy.get(
+      `[data-cy="approve-sharing-request-${restrictedName}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).click()
+  })
+
+  it('Remove the restricted answer collection from user pro2', () => {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Remove the restricted answer collection from user pro1', () => {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Verify that restricted collection is still available to owner and delete it', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').click()
+    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+      'not.exist'
+    )
+  })
+  // #endregion
 })
