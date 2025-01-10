@@ -14,7 +14,7 @@ export default {
       seSelectOption: 'Select an answer option...',
       seSelectNCorrectOptions:
         'Please choose <b>{number} correct answer options</b> from the provided selection.',
-      seCorrectAnswerN: 'Correct answer {number}',
+      seCorrectAnswerN: 'Answer {number}',
     },
     DRAFT: {
       statusLabel: 'Draft',

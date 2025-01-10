@@ -35,6 +35,8 @@ model PracticeQuiz {
   performance             ActivityPerformance?
   progress                ActivityProgress?
 
+  permissions Permissions[]
+
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
   completedCount Int @default(0) // >= repeatedCount (every instance answered at least once)
   repeatedCount  Int @default(0) // (every instance answered at least twice)
@@ -179,9 +181,10 @@ model LiveQuiz {
   blocks      ElementBlock[]
   leaderboard LeaderboardEntry[]
 
-  feedbacks Feedback[]
-
+  feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]
+
+  permissions Permissions[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -219,6 +222,8 @@ model MicroLearning {
   participantPerformances ParticipantActivityPerformance[]
   performance             ActivityPerformance?
   progress                ActivityProgress?
+
+  permissions Permissions[]
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
   completedCount Int @default(0) // (every instance answered at least once)
@@ -320,6 +325,8 @@ model GroupActivity {
   parameters        GroupActivityParameter[]
   clues             GroupActivityClue[]
   activityInstances GroupActivityInstance[]
+
+  permissions Permissions[]
 
   owner    User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId  String @db.Uuid

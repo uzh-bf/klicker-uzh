@@ -1,0 +1,152 @@
+// ----- ANSWER COLLECTIONS -----
+// #region
+enum CollectionAccess {
+    PUBLIC
+    PRIVATE
+    RESTRICTED
+}
+
+model AnswerCollection {
+    id          Int              @id @default(autoincrement())
+    name        String
+    description String
+    version     Int              @default(1)
+    isDeleted   Boolean          @default(false)
+    access      CollectionAccess @default(PRIVATE)
+
+    entries AnswerCollectionEntry[]
+
+    linkedElements Element[] // elements that use this answer collection
+
+    owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: SetNull)
+    ownerId String? @db.Uuid
+
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    Permissions Permissions[]
+
+    @@unique([ownerId, name])
+}
+
+model AnswerCollectionEntry {
+    id    Int    @id @default(autoincrement())
+    value String
+
+    collection   AnswerCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    collectionId Int
+
+    // elements where this entry is used as a sample solution -> deletion not allowed
+    solutionUsages Element[] @relation("ElementAnswerCollectionSolutions")
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([collectionId, value])
+}
+
+// #endregion
+
+// ----- MEDIA LIBRARY -----
+// #region
+model MediaFile {
+    id String @id @default(uuid()) @db.Uuid
+
+    href        String  @unique
+    name        String
+    type        String
+    description String?
+
+    originalId String?
+
+    owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    ownerId String @db.Uuid
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([ownerId, originalId])
+}
+
+// #endregion
+
+// ----- SHARING & PERMISSIONS -----
+// #region
+enum AccessLevel {
+    READ
+    WRITE
+}
+
+enum PermissionStatus {
+    REQUESTED
+    GRANTED
+}
+
+model UserGroup {
+    id   Int    @id @default(autoincrement())
+    name String
+
+    members User[] @relation("UserGroupMembers")
+
+    owner   User   @relation(name: "UserGroupOwner", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    ownerId String @db.Uuid
+
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    Permissions Permissions[]
+
+    @@unique([ownerId, name])
+}
+
+model Permissions {
+    id Int @id @default(autoincrement())
+
+    accessLevel AccessLevel
+    status      PermissionStatus
+
+    // user or user group requesting access
+    user   User?   @relation("SharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    userId String? @db.Uuid
+
+    userGroup   UserGroup? @relation(fields: [userGroupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    userGroupId Int?
+
+    // owner of the object to which access is requested
+    objectOwner   User?   @relation("ObjectPermissions", fields: [objectOwnerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    objectOwnerId String? @db.Uuid
+
+    // shared objects
+    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    answerCollectionId Int?
+
+    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    elementId Int?
+
+    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    courseId String?
+
+    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    liveQuizId String?
+
+    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    practiceQuizId String?
+
+    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    microLearningId String?
+
+    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    groupActivityId String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // only one permission per object and user / user group
+    @@unique([answerCollectionId, userId, userGroupId])
+    @@unique([elementId, userId, userGroupId])
+    @@unique([courseId, userId, userGroupId])
+    @@unique([liveQuizId, userId, userGroupId])
+    @@unique([practiceQuizId, userId, userGroupId])
+    @@unique([microLearningId, userId, userGroupId])
+    @@unique([groupActivityId, userId, userGroupId])
+}
+
+// #endregion
