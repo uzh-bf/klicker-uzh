@@ -116,8 +116,8 @@ model User {
   userGroups        UserGroup[] @relation("UserGroupMembers")
   managedUserGroups UserGroup[] @relation("UserGroupOwner")
 
-  sharedObjects     Permissions[] @relation("SharedObjects")
-  objectPermissions Permissions[] @relation("ObjectPermissions")
+  sharedObjects     Permission[] @relation("SharedObjects")
+  objectPermissions Permission[] @relation("ObjectPermissions")
 
   firstLogin Boolean @default(true)
 

@@ -21,9 +21,9 @@ model AnswerCollection {
     owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: SetNull)
     ownerId String? @db.Uuid
 
-    createdAt   DateTime      @default(now())
-    updatedAt   DateTime      @updatedAt
-    Permissions Permissions[]
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    permissions Permission[]
 
     @@unique([ownerId, name])
 }
@@ -87,21 +87,22 @@ model UserGroup {
 
     members User[] @relation("UserGroupMembers")
 
+    permissions Permission[]
+
     owner   User   @relation(name: "UserGroupOwner", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     ownerId String @db.Uuid
 
-    createdAt   DateTime      @default(now())
-    updatedAt   DateTime      @updatedAt
-    Permissions Permissions[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
     @@unique([ownerId, name])
 }
 
-model Permissions {
+model Permission {
     id Int @id @default(autoincrement())
 
-    accessLevel AccessLevel
-    status      PermissionStatus
+    accessLevel      AccessLevel
+    permissionStatus PermissionStatus
 
     // user or user group requesting access
     user   User?   @relation("SharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)

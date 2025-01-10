@@ -50,7 +50,7 @@ model Element {
   answerCollection          AnswerCollection?       @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   answerCollectionId        Int?
 
-  permissions Permissions[]
+  permissions Permission[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
