@@ -57,7 +57,9 @@ function AnswerCollectionEditModal({
           <AnswerCollectionOption
             key={`collection-entry-${entry.id}`}
             entry={entry}
-            index={ix}
+            otherEntries={collection
+              .entries!.filter((e) => e.id !== entry.id)
+              .map((e) => e.value)}
             last={ix === collection.entries!.length - 1}
             collectionId={collection.id}
             deletionDisabled={collection.entries!.length <= 2}

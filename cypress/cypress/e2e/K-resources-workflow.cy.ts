@@ -120,10 +120,19 @@ describe('Create, edit and share answer collections', () => {
 
     // verify that duplicated answer options are not accepted
     cy.get('[data-cy="add-response-entry"]').click()
-    cy.get(`[data-cy="response-entry-4"]`).type(publicItems[0])
-    cy.get(`[data-cy="response-entry-4"]`).should('have.value', publicItems[0])
-    cy.get('[data-cy="remove-response-entry-4"]').click()
-    cy.get(`[data-cy="response-entry-4"]`).should('not.exist')
+    cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).type(
+      publicItems[0]
+    )
+    cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).should(
+      'have.value',
+      publicItems[0]
+    )
+    cy.get(
+      `[data-cy="remove-response-entry-${publicItems.length - 1}"]`
+    ).click()
+    cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).should(
+      'not.exist'
+    )
 
     cy.get('[data-cy="submit-create-answer-collection"]').click()
     cy.get(`[data-cy="answer-collection-${publicName}"]`).should('exist')
@@ -185,9 +194,29 @@ describe('Create, edit and share answer collections', () => {
       .contains(privateDescriptionNew)
     cy.get('[data-cy="save-changes-answer-collection"]').click()
 
+    // check that current values are correct
     privateItems.forEach((value) => {
       cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
+
+    // verify validation for editing answer options
+    cy.get(`[data-cy="edit-answer-option-${privateItems[0]}"]`).click()
+    cy.get(`[data-cy="edit-answer-option-input"]`).should(
+      'have.value',
+      privateItems[0]
+    )
+
+    cy.get(`[data-cy="save-edit-answer-option"]`).should('not.be.disabled')
+    cy.get(`[data-cy="edit-answer-option-input"]`).clear().type(privateItems[1]) // duplicate answer options not allowed
+    cy.get(`[data-cy="save-edit-answer-option"]`).should('be.disabled')
+    cy.get(`[data-cy="edit-answer-option-input"]`).clear().type(privateItems[0])
+    cy.get(`[data-cy="save-edit-answer-option"]`).should('not.be.disabled')
+    cy.get(`[data-cy="edit-answer-option-input"]`).clear() // empty options are not allowed
+    cy.get(`[data-cy="save-edit-answer-option"]`).should('be.disabled')
+    cy.get(`[data-cy="edit-answer-option-input"]`).clear().type(privateItems[0])
+    cy.get(`[data-cy="save-edit-answer-option"]`).click()
+
+    // change all answer option values
     privateItems.forEach((value, ix) => {
       cy.get(`[data-cy="edit-answer-option-${value}"]`).click()
       cy.get(`[data-cy="edit-answer-option-input"]`).should('have.value', value)
@@ -200,6 +229,7 @@ describe('Create, edit and share answer collections', () => {
       )
     })
 
+    // verify validation for newly added answer options and add new answer option
     const existingElement = privateItemsNew[0]
     const lastElement = privateItemsNew[privateItemsNew.length - 1]
     cy.get(`[data-cy="delete-answer-option-${lastElement}"]`).click()
@@ -208,9 +238,13 @@ describe('Create, edit and share answer collections', () => {
     cy.get(`[data-cy="save-new-answer-option"]`).should('be.disabled')
     cy.get(`[data-cy="input-new-answer-option"]`).type(lastElement)
     cy.get(`[data-cy="save-new-answer-option"]`).should('not.be.disabled')
-    cy.get(`[data-cy="input-new-answer-option"]`).clear().type(existingElement)
+    cy.get(`[data-cy="input-new-answer-option"]`).clear().type(existingElement) // duplicate answer options not allowed
     cy.get(`[data-cy="save-new-answer-option"]`).should('be.disabled')
-    cy.get(`[data-cy="input-new-answer-option"]`).clear().type(lastElement)
+    cy.get(`[data-cy="input-new-answer-option"]`).type(lastElement)
+    cy.get(`[data-cy="save-new-answer-option"]`).should('not.be.disabled')
+    cy.get(`[data-cy="input-new-answer-option"]`).clear() // empty answers not allowed
+    cy.get(`[data-cy="save-new-answer-option"]`).should('be.disabled')
+    cy.get(`[data-cy="input-new-answer-option"]`).type(lastElement)
     cy.get(`[data-cy="save-new-answer-option"]`).click()
     cy.get(`[data-cy="answer-option-${lastElement}"]`).contains(lastElement)
   })
