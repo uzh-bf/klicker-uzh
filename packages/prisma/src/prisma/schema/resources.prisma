@@ -122,19 +122,19 @@ model Permissions {
     elementId Int?
 
     course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    courseId String?
+    courseId String? @db.Uuid
 
     liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    liveQuizId String?
+    liveQuizId String?   @db.Uuid
 
     practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    practiceQuizId String?
+    practiceQuizId String?       @db.Uuid
 
     microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    microLearningId String?
+    microLearningId String?        @db.Uuid
 
     groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    groupActivityId String?
+    groupActivityId String?        @db.Uuid
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
