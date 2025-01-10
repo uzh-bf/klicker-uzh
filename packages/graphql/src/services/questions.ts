@@ -456,6 +456,14 @@ export async function deleteQuestion(
     id: question.id,
   })
 
+  // if answer collection was connected, invalidate it
+  if (question.answerCollectionId) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'AnswerCollection',
+      id: question.answerCollectionId,
+    })
+  }
+
   return question
 }
 

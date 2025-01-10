@@ -350,8 +350,12 @@ export async function removeAnswerCollection(
     },
   })
 
-  // if collection does not exist or is not linked to own elements, do not allow removal
-  if (!collection || collection._count.linkedElements > 0) {
+  // if collection does not exist, is linked to own elements, or does belong to the user, do not allow removal
+  if (
+    !collection ||
+    collection._count.linkedElements > 0 ||
+    collection.ownerId === ctx.user.sub
+  ) {
     return null
   }
 
@@ -652,6 +656,25 @@ export async function cancelAnswerCollectionRequest(
   },
   ctx: ContextWithUser
 ) {
+  // verify that the user has requested access to the collection
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+    },
+    include: {
+      accessRequested: {
+        where: {
+          id: ctx.user.sub,
+        },
+      },
+    },
+  })
+
+  if (!collection || collection.accessRequested.length === 0) {
+    return null
+  }
+
+  // remove the user from the access requested list
   const updatedCollection = await ctx.prisma.answerCollection.update({
     where: {
       id: collectionId,
