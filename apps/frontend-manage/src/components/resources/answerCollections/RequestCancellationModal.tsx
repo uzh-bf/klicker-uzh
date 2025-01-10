@@ -27,6 +27,9 @@ function RequestCancellationModal({
     CancelAnswerCollectionRequestDocument,
     {
       variables: { collectionId: collection.id },
+      optimisticResponse: {
+        cancelAnswerCollectionRequest: collection.id,
+      },
       update: (cache, { data }) => {
         const res = data?.cancelAnswerCollectionRequest
         if (res === null || typeof res === 'undefined') return

@@ -26,6 +26,9 @@ function CollectionDeletionModal({
   const t = useTranslations()
   const [deleteAnswerCollection] = useMutation(DeleteAnswerCollectionDocument, {
     variables: { collectionId: collection.id },
+    optimisticResponse: {
+      deleteAnswerCollection: collection.id,
+    },
     update: (cache, { data }) => {
       const res = data?.deleteAnswerCollection
       if (res === null || typeof res === 'undefined') return
