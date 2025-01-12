@@ -54,12 +54,12 @@ function AnswerCollections() {
       <SharedAnswerCollectionList
         sharedCollections={(data?.getAnswerCollections ?? []).filter(
           (collection) =>
-            collection.accessType === AccessType.Owner &&
+            collection.accessType === AccessType.Shared &&
             collection.sharingStatus === PermissionStatus.Granted
         )}
         requestedCollections={(data?.getAnswerCollections ?? []).filter(
           (collection) =>
-            collection.accessType === AccessType.Owner &&
+            collection.accessType === AccessType.Shared &&
             collection.sharingStatus === PermissionStatus.Requested
         )}
         loading={loading}

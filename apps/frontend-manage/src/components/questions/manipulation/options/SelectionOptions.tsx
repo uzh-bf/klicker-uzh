@@ -38,7 +38,7 @@ function SelectionOptions({
     () =>
       (data?.getAnswerCollections ?? []).filter(
         (collection) =>
-          (collection.accessType === AccessType.Owner &&
+          (collection.accessType === AccessType.Shared &&
             collection.sharingStatus === PermissionStatus.Granted) ||
           collection.accessType === AccessType.Owner
       ),
