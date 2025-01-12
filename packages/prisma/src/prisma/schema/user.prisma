@@ -111,10 +111,13 @@ model User {
   microLearnings    MicroLearning[]
   liveQuizzes       LiveQuiz[]
   competencyTrees   CompetencyTree[]
+  answerCollections AnswerCollection[]
 
-  answerCollections    AnswerCollection[] @relation("UserAnswerCollections")
-  requestedCollections AnswerCollection[] @relation("AnswerCollectionAccessRequested")
-  sharedCollections    AnswerCollection[] @relation("AnswerCollectionShared")
+  userGroups        UserGroup[] @relation("UserGroupMembers")
+  managedUserGroups UserGroup[] @relation("UserGroupOwner")
+
+  sharedObjects     Permission[] @relation("SharedObjects")
+  objectPermissions Permission[] @relation("ObjectPermissions")
 
   firstLogin Boolean @default(true)
 
