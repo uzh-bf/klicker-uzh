@@ -112,7 +112,6 @@ function AnswerCollectionMetaForm({
                 type="button"
                 onClick={onDelete}
                 disabled={!collection.isRemovable}
-                loading={isSubmitting}
                 className={{
                   root: twMerge(
                     'border-red-600',

@@ -12,6 +12,11 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
+export enum AccessType {
+  OWNER = 'OWNER',
+  SHARED = 'SHARED',
+}
+
 export enum ActivityType {
   LIVE_QUIZ = 'LIVE_QUIZ',
   PRACTICE_QUIZ = 'PRACTICE_QUIZ',

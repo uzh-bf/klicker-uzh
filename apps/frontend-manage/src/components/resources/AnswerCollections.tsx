@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  AccessType,
+  GetAnswerCollectionsDocument,
+  PermissionStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -26,6 +30,7 @@ function AnswerCollections() {
   const [cancellationSuccess, setCancellationSuccess] = useState(false)
   const [cancellationFailure, setCancellationFailure] = useState(false)
 
+  // TODO: combine answer collections into one list (requested / shared / own)
   return (
     <div className="h-full w-full">
       <H2>{t('manage.resources.answerCollections')}</H2>
@@ -35,7 +40,9 @@ function AnswerCollections() {
       <CreateAddCollection />
       <CollectionSharingRequests />
       <AnswerCollectionList
-        collections={data?.getAnswerCollections?.answerCollections}
+        collections={(data?.getAnswerCollections ?? []).filter(
+          (collection) => collection.accessType === AccessType.Owner
+        )}
         loading={loading}
         setDeletionSuccess={setDeletionSuccess}
         setDeletionFailure={setDeletionFailure}
@@ -45,8 +52,16 @@ function AnswerCollections() {
         setCancellationFailure={setCancellationFailure}
       />
       <SharedAnswerCollectionList
-        sharedCollections={data?.getAnswerCollections?.sharedCollections}
-        requestedCollections={data?.getAnswerCollections?.requestedCollections}
+        sharedCollections={(data?.getAnswerCollections ?? []).filter(
+          (collection) =>
+            collection.accessType === AccessType.Owner &&
+            collection.sharingStatus === PermissionStatus.Granted
+        )}
+        requestedCollections={(data?.getAnswerCollections ?? []).filter(
+          (collection) =>
+            collection.accessType === AccessType.Owner &&
+            collection.sharingStatus === PermissionStatus.Requested
+        )}
         loading={loading}
         setDeletionSuccess={setDeletionSuccess}
         setDeletionFailure={setDeletionFailure}

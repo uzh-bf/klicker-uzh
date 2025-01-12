@@ -1,37 +1,19 @@
 query GetAnswerCollections {
   getAnswerCollections {
-    answerCollections {
+    id
+    name
+    access
+    accessType
+    sharingStatus
+    sharingLevel
+    description
+    ownerShortname
+    numSharedUsers
+    isRemovable
+    entries {
       id
-      name
-      access
-      description
-      numSharedUsers
-      isRemovable
-      entries {
-        id
-        value
-        numSolutionUsages
-      }
-    }
-    sharedCollections {
-      id
-      name
-      access
-      description
-      ownerShortname
-      isRemovable
-      entries {
-        id
-        value
-      }
-    }
-    requestedCollections {
-      id
-      name
-      access
-      description
-      ownerShortname
-      isRemovable
+      value
+      numSolutionUsages
     }
   }
 }
