@@ -64,7 +64,6 @@ import {
   AnswerCollection,
   AnswerCollectionEntry,
   CollectionAccess,
-  SharingRequestResponse,
 } from './resource.js'
 import {
   FileUploadSAS,
@@ -1294,8 +1293,7 @@ export const Mutation = builder.mutationType({
       }),
 
       approveCollectionSharingRequest: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: SharingRequestResponse,
+        type: 'Boolean',
         args: {
           collectionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
@@ -1309,8 +1307,7 @@ export const Mutation = builder.mutationType({
       }),
 
       declineCollectionSharingRequest: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: SharingRequestResponse,
+        type: 'Boolean',
         args: {
           collectionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),

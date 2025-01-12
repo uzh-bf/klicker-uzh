@@ -56,7 +56,11 @@ export async function createAnswerCollection(
     },
   })
 
-  return { ...newCollection, ownerShortname: newCollection.owner?.shortname }
+  return {
+    ...newCollection,
+    ownerShortname: newCollection.owner?.shortname,
+    accessType: AccessType.OWNER,
+  }
 }
 
 // TODO: split up to only fetch entries on modal opening
@@ -282,6 +286,7 @@ export async function modifyAnswerCollection(
     return {
       ...updateResult,
       numSharedUsers,
+      accessType: AccessType.OWNER,
     }
   })
 
@@ -805,9 +810,25 @@ export async function getCollectionSharingRequests(ctx: ContextWithUser) {
       id: ctx.user.sub,
     },
     include: {
-      answerCollections: {
+      objectPermissions: {
+        where: {
+          permissionStatus: DB.PermissionStatus.REQUESTED,
+          answerCollectionId: {
+            not: null,
+          },
+        },
         include: {
-          accessRequested: true,
+          user: {
+            select: {
+              shortname: true,
+              email: true,
+            },
+          },
+          answerCollection: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },
@@ -817,18 +838,24 @@ export async function getCollectionSharingRequests(ctx: ContextWithUser) {
     return null
   }
 
-  const requestedCollections = user.answerCollections.reduce<
+  const requestedCollections = user.objectPermissions.reduce<
     AnswerCollectionSharingRequest[]
-  >((acc, collection) => {
-    const innerRequests = collection.accessRequested.map((request) => ({
-      collectionId: collection.id,
-      collectionName: collection.name,
-      userId: request.id,
-      userShortname: request.shortname,
-      userEmail: request.email,
-    }))
+  >((acc, request) => {
+    if (
+      typeof request.answerCollection === 'undefined' ||
+      request.answerCollection === null ||
+      !request.user
+    ) {
+      return acc
+    }
 
-    acc.push(...innerRequests)
+    acc.push({
+      collectionId: request.answerCollectionId!,
+      collectionName: request.answerCollection.name,
+      userId: request.userId!,
+      userShortname: request.user.shortname,
+      userEmail: request.user.email,
+    })
     return acc
   }, [])
 
@@ -847,40 +874,41 @@ export async function resolveCollectionSharingRequest(
   },
   ctx: ContextWithUser
 ) {
-  const collection = await ctx.prisma.answerCollection.findUnique({
+  // check that the access request exists and that the user is the owner of the collection
+  const accessRequest = await ctx.prisma.permission.findUnique({
     where: {
-      id: collectionId,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      accessRequested: {
-        where: {
-          id: userId,
-        },
+      answerCollectionId_userId: {
+        answerCollectionId: collectionId,
+        userId,
       },
+      permissionStatus: DB.PermissionStatus.REQUESTED,
+      objectOwnerId: ctx.user.sub,
     },
   })
 
-  // check that the collection exists and that the user has requested access
-  if (!collection || collection.accessRequested.length === 0) {
-    return null
+  if (!accessRequest) {
+    return false
   }
 
   // update the collection with the new access rights
-  const updatedCollection = await ctx.prisma.answerCollection.update({
-    where: {
-      id: collectionId,
-    },
-    data: {
-      accessRequested: { disconnect: { id: userId } },
-      accessGranted: approved ? { connect: { id: userId } } : undefined,
-    },
-  })
+  if (approved) {
+    await ctx.prisma.permission.update({
+      where: {
+        id: accessRequest.id,
+      },
+      data: {
+        permissionStatus: DB.PermissionStatus.GRANTED,
+      },
+    })
+  } else {
+    await ctx.prisma.permission.delete({
+      where: {
+        id: accessRequest.id,
+      },
+    })
+  }
 
   // TODO: send email to user that requested access about the approval / (and denial?)
 
-  return {
-    collectionId: updatedCollection.id,
-    userId,
-  }
+  return true
 }
