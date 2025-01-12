@@ -172,13 +172,7 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       sharingLevel: object.accessLevel,
       entries:
         object.permissionStatus === DB.PermissionStatus.GRANTED
-          ? collection.entries.map((entry) => ({
-              ...entry,
-              numSolutionUsages:
-                object.accessLevel === DB.AccessLevel.WRITE
-                  ? entry._count?.solutionUsages
-                  : null,
-            }))
+          ? collection.entries
           : undefined,
       ownerShortname: collection.owner?.shortname,
       isRemovable: collection._count?.linkedElements === 0,
@@ -354,6 +348,17 @@ export async function deleteAnswerCollection(
         },
       })
 
+      // disconnect granted permissions from user
+      await tx.permission.updateMany({
+        where: {
+          answerCollectionId: collectionId,
+          permissionStatus: DB.PermissionStatus.GRANTED,
+        },
+        data: {
+          objectOwnerId: null,
+        },
+      })
+
       return mutationResult
     })
   } else {
@@ -381,64 +386,71 @@ export async function removeAnswerCollection(
   },
   ctx: ContextWithUser
 ) {
-  // fetch answer collection as user
-  const collection = await ctx.prisma.answerCollection.findUnique({
+  // fetch existing permission and collection
+  const permission = await ctx.prisma.permission.findUnique({
     where: {
-      id: collectionId,
+      answerCollectionId_userId: {
+        answerCollectionId: collectionId,
+        userId: ctx.user.sub,
+      },
+      permissionStatus: DB.PermissionStatus.GRANTED,
     },
     include: {
-      _count: {
-        select: {
-          linkedElements: {
-            where: {
-              ownerId: ctx.user.sub,
+      answerCollection: {
+        include: {
+          _count: {
+            select: {
+              linkedElements: {
+                where: {
+                  ownerId: ctx.user.sub,
+                },
+              },
+              permissions: {
+                where: {
+                  permissionStatus: DB.PermissionStatus.GRANTED,
+                },
+              },
             },
           },
-          accessGranted: true,
         },
       },
     },
   })
 
   // if collection does not exist, is linked to own elements, or does belong to the user, do not allow removal
+  const collection = permission?.answerCollection
   if (
+    !permission ||
     !collection ||
     collection._count.linkedElements > 0 ||
-    collection.ownerId === ctx.user.sub
+    permission.objectOwnerId === ctx.user.sub
   ) {
     return null
   }
 
   // if no other users have access to this collection and the owner is already disconnected, delete it
   let updatedCollection: DB.AnswerCollection
-  if (collection._count.accessGranted === 1 && collection.ownerId === null) {
+  if (collection._count.permissions === 1 && collection.ownerId === null) {
     updatedCollection = await ctx.prisma.answerCollection.delete({
       where: {
         id: collectionId,
       },
     })
   } else {
-    // otherwise, disconnect the collection from the user
-    updatedCollection = await ctx.prisma.answerCollection.update({
+    // otherwise, delete the sharing permission
+    await ctx.prisma.permission.delete({
       where: {
-        id: collectionId,
-      },
-      data: {
-        accessGranted: {
-          disconnect: {
-            id: ctx.user.sub,
-          },
-        },
+        id: permission.id,
       },
     })
   }
 
   ctx.emitter.emit('invalidate', {
     typename: 'AnswerCollection',
-    id: collectionId,
+    id: collection.id,
   })
 
-  return updatedCollection.id
+  return collection.id
 }
 
 export async function incrementCollectionVersion(
@@ -557,14 +569,9 @@ export async function getAnswerCollectionSelection(ctx: ContextWithUser) {
           value: 'asc',
         },
       },
-      accessGranted: {
+      permissions: {
         where: {
-          id: ctx.user.sub,
-        },
-      },
-      accessRequested: {
-        where: {
-          id: ctx.user.sub,
+          userId: ctx.user.sub,
         },
       },
     },
@@ -574,9 +581,7 @@ export async function getAnswerCollectionSelection(ctx: ContextWithUser) {
     .filter(
       (collection) =>
         // do not show collections that the user already has access to / requested
-        collection.accessGranted.length === 0 &&
-        collection.accessRequested.length === 0 &&
-        collection.ownerId !== null // do not show collections where no user can give access anymore
+        collection.permissions.length === 0 && collection.ownerId !== null // do not show collections where no user can give access anymore
     )
     .map((collection) => ({
       ...collection,
@@ -584,6 +589,7 @@ export async function getAnswerCollectionSelection(ctx: ContextWithUser) {
         collection.access === DB.CollectionAccess.PUBLIC
           ? collection.entries
           : [],
+      accessType: AccessType.SHARED,
       ownerShortname: collection.owner?.shortname,
     }))
 }
@@ -592,46 +598,107 @@ export async function importAnswerCollection(
   { collectionId }: { collectionId: number },
   ctx: ContextWithUser
 ) {
-  // get answer collection and verify public access
+  // get answer collection, verify public access and check if access has already been granted
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
     },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+          permissionStatus: DB.PermissionStatus.GRANTED,
+        },
+      },
+    },
   })
 
-  if (!collection || collection.access !== DB.CollectionAccess.PUBLIC) {
+  if (
+    !collection ||
+    collection.ownerId === null ||
+    collection.access !== DB.CollectionAccess.PUBLIC ||
+    collection.permissions.length > 0
+  ) {
     return null
   }
 
-  // add user to the shared users of the collection
-  const updatedCollection = await ctx.prisma.answerCollection.update({
+  // create or update permission for the user
+  const updatedPermission = await ctx.prisma.permission.upsert({
     where: {
-      id: collectionId,
+      answerCollectionId_userId: {
+        answerCollectionId: collectionId,
+        userId: ctx.user.sub,
+      },
     },
-    data: {
-      accessGranted: {
+    create: {
+      permissionStatus: DB.PermissionStatus.GRANTED,
+      accessLevel: DB.AccessLevel.READ,
+      answerCollection: {
+        connect: {
+          id: collectionId,
+        },
+      },
+      user: {
         connect: {
           id: ctx.user.sub,
         },
       },
-    },
-    include: {
-      owner: {
-        select: {
-          shortname: true,
+      objectOwner: {
+        connect: {
+          id: collection.ownerId,
         },
       },
-      entries: {
-        orderBy: {
-          value: 'asc',
+    },
+    update: {
+      permissionStatus: DB.PermissionStatus.GRANTED,
+    },
+    include: {
+      answerCollection: {
+        include: {
+          owner: {
+            select: {
+              shortname: true,
+            },
+          },
+          entries: {
+            include: {
+              _count: {
+                select: {
+                  solutionUsages: true,
+                },
+              },
+            },
+            orderBy: {
+              value: 'asc',
+            },
+          },
+          _count: {
+            select: {
+              linkedElements: {
+                where: {
+                  ownerId: ctx.user.sub,
+                },
+              },
+            },
+          },
         },
       },
     },
   })
 
+  const updatedCollection = updatedPermission.answerCollection
+  if (!updatedCollection) {
+    return null
+  }
+
   return {
     ...updatedCollection,
+    accessType: AccessType.SHARED,
+    sharingStatus: updatedPermission.permissionStatus,
+    sharingLevel: updatedPermission.accessLevel,
+    entries: updatedCollection.entries,
     ownerShortname: updatedCollection.owner?.shortname,
+    isRemovable: updatedCollection._count?.linkedElements === 0,
   }
 }
 
@@ -639,7 +706,6 @@ export async function requestAnswerCollection(
   { collectionId }: { collectionId: number },
   ctx: ContextWithUser
 ) {
-  // verify that the answer collection is restricted and that the user does not already have access / requested it
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
@@ -648,43 +714,42 @@ export async function requestAnswerCollection(
       },
     },
     include: {
-      accessGranted: {
+      permissions: {
         where: {
-          id: ctx.user.sub,
-        },
-      },
-      accessRequested: {
-        where: {
-          id: ctx.user.sub,
+          userId: ctx.user.sub,
         },
       },
     },
   })
 
+  // check if sharing request or granted access already exist and if there is still an owner that can grant access
   if (
     !collection ||
+    collection.ownerId === null ||
     collection.access !== DB.CollectionAccess.RESTRICTED ||
-    collection.accessGranted.length > 0 ||
-    collection.accessRequested.length > 0
+    collection.permissions.length > 0
   ) {
-    return null
+    return false
   }
 
-  const updatedCollection = await ctx.prisma.answerCollection.update({
-    where: {
-      id: collectionId,
-    },
+  // create a new permission request
+  const permissionRequest = await ctx.prisma.permission.create({
     data: {
-      accessRequested: {
+      accessLevel: DB.AccessLevel.READ,
+      permissionStatus: DB.PermissionStatus.REQUESTED,
+      answerCollection: {
+        connect: {
+          id: collectionId,
+        },
+      },
+      user: {
         connect: {
           id: ctx.user.sub,
         },
       },
-    },
-    include: {
-      owner: {
-        select: {
-          shortname: true,
+      objectOwner: {
+        connect: {
+          id: collection.ownerId,
         },
       },
     },
@@ -692,10 +757,8 @@ export async function requestAnswerCollection(
 
   // TODO: notify owner of the collection by e-mail that there is a new access request
 
-  return {
-    ...updatedCollection,
-    ownerShortname: updatedCollection.owner?.shortname,
-  }
+  // return success of the request
+  return permissionRequest.permissionStatus === DB.PermissionStatus.REQUESTED
 }
 
 export async function cancelAnswerCollectionRequest(
@@ -707,50 +770,33 @@ export async function cancelAnswerCollectionRequest(
   ctx: ContextWithUser
 ) {
   // verify that the user has requested access to the collection
-  const collection = await ctx.prisma.answerCollection.findUnique({
+  const permission = await ctx.prisma.permission.findUnique({
     where: {
-      id: collectionId,
-    },
-    include: {
-      accessRequested: {
-        where: {
-          id: ctx.user.sub,
-        },
+      answerCollectionId_userId: {
+        answerCollectionId: collectionId,
+        userId: ctx.user.sub,
       },
+      permissionStatus: DB.PermissionStatus.REQUESTED,
     },
   })
 
-  if (!collection || collection.accessRequested.length === 0) {
-    return null
+  if (!permission) {
+    return false
   }
 
-  // remove the user from the access requested list
-  const updatedCollection = await ctx.prisma.answerCollection.update({
+  // remove the access request
+  const deletedPermission = await ctx.prisma.permission.delete({
     where: {
-      id: collectionId,
-    },
-    data: {
-      accessRequested: {
-        disconnect: {
-          id: ctx.user.sub,
-        },
-      },
-    },
-    include: {
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
+      id: permission.id,
     },
   })
 
   ctx.emitter.emit('invalidate', {
-    typename: 'AnswerCollection',
-    id: collectionId,
+    typename: 'Permission',
+    id: deletedPermission.id,
   })
 
-  return updatedCollection.id
+  return true
 }
 
 export async function getCollectionSharingRequests(ctx: ContextWithUser) {

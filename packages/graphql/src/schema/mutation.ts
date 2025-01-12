@@ -1250,8 +1250,8 @@ export const Mutation = builder.mutationType({
       }),
 
       requestAnswerCollection: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: AnswerCollection,
+        nullable: false,
+        type: 'Boolean',
         args: {
           collectionId: t.arg.int({ required: true }),
         },
@@ -1261,8 +1261,8 @@ export const Mutation = builder.mutationType({
       }),
 
       cancelAnswerCollectionRequest: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: 'Int',
+        nullable: false,
+        type: 'Boolean',
         args: {
           collectionId: t.arg.int({ required: true }),
         },

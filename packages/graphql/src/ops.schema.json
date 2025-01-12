@@ -16702,8 +16702,8 @@
               }
             ],
             "type": {
-              "kind": "OBJECT",
-              "name": "AnswerCollection",
+              "kind": "SCALAR",
+              "name": "Boolean",
               "ofType": null
             },
             "isDeprecated": false,

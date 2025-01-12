@@ -23,6 +23,8 @@ function RequestCancellationModal({
   setCancellationFailure: (value: boolean) => void
 }) {
   const t = useTranslations()
+
+  // TODO: mutation now only returns success of the corresponding mutation, if successful remove from list
   const [cancelAnswerCollectionRequest] = useMutation(
     CancelAnswerCollectionRequestDocument,
     {

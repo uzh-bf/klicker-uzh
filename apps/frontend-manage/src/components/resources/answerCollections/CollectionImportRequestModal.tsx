@@ -94,6 +94,7 @@ function CollectionImportRequestModal({
         if (!data?.requestAnswerCollection) return
         const reqCollection = data.requestAnswerCollection
 
+        // TODO: mutation now returns a success boolean - get the collection from the corresponding selections query cache instead and update the two query results
         // update lists of answer collections
         const collectionsListQuery = cache.readQuery({
           query: GetAnswerCollectionsDocument,
