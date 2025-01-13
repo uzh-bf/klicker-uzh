@@ -89,24 +89,16 @@ function AnswerCollectionCreation({
               const queryData = cache.readQuery({
                 query: GetAnswerCollectionsDocument,
               })
-              const previousCollections =
-                queryData?.getAnswerCollections?.answerCollections
+              const previousCollections = queryData?.getAnswerCollections
               if (!previousCollections) return
 
               cache.writeQuery({
                 query: GetAnswerCollectionsDocument,
                 data: {
-                  getAnswerCollections: {
-                    requestedCollections:
-                      queryData.getAnswerCollections?.requestedCollections ??
-                      [],
-                    sharedCollections:
-                      queryData.getAnswerCollections?.sharedCollections ?? [],
-                    answerCollections: [
-                      ...previousCollections,
-                      data.createAnswerCollection,
-                    ],
-                  },
+                  getAnswerCollections: [
+                    ...previousCollections,
+                    data.createAnswerCollection,
+                  ],
                 },
               })
             },

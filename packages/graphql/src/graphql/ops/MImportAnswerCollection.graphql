@@ -4,6 +4,7 @@ mutation ImportAnswerCollection($collectionId: Int!) {
     name
     access
     description
+    accessType
     ownerShortname
     entries {
       id

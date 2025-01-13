@@ -1249,8 +1249,8 @@ export const Mutation = builder.mutationType({
       }),
 
       requestAnswerCollection: t.withAuth(asUserFullAccess).field({
-        nullable: false,
-        type: 'Boolean',
+        nullable: true,
+        type: AnswerCollection,
         args: {
           collectionId: t.arg.int({ required: true }),
         },
@@ -1259,9 +1259,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      cancelAnswerCollectionRequest: t.withAuth(asUserFullAccess).field({
+      cancelAnswerCollectionRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
-        type: 'Boolean',
         args: {
           collectionId: t.arg.int({ required: true }),
         },
@@ -1292,8 +1291,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      approveCollectionSharingRequest: t.withAuth(asUserFullAccess).field({
-        type: 'Boolean',
+      approveCollectionSharingRequest: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
         args: {
           collectionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
@@ -1306,8 +1305,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      declineCollectionSharingRequest: t.withAuth(asUserFullAccess).field({
-        type: 'Boolean',
+      declineCollectionSharingRequest: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
         args: {
           collectionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),

@@ -73,32 +73,25 @@ function AddAnswerCollectionEntry({
             const queryData = cache.readQuery({
               query: GetAnswerCollectionsDocument,
             })
-            const previousCollections =
-              queryData?.getAnswerCollections?.answerCollections
+            const previousCollections = queryData?.getAnswerCollections
             if (!previousCollections) return
 
             cache.writeQuery({
               query: GetAnswerCollectionsDocument,
               data: {
-                getAnswerCollections: {
-                  requestedCollections:
-                    queryData.getAnswerCollections?.requestedCollections ?? [],
-                  sharedCollections:
-                    queryData.getAnswerCollections?.sharedCollections ?? [],
-                  answerCollections: previousCollections.map((collection) => {
-                    if (collection.id === collectionId) {
-                      return {
-                        ...collection,
-                        entries: [
-                          ...(collection.entries ?? []),
-                          data.addAnswerCollectionOption!,
-                        ],
-                      }
+                getAnswerCollections: previousCollections.map((collection) => {
+                  if (collection.id === collectionId) {
+                    return {
+                      ...collection,
+                      entries: [
+                        ...(collection.entries ?? []),
+                        data.addAnswerCollectionOption!,
+                      ],
                     }
+                  }
 
-                    return collection
-                  }),
-                },
+                  return collection
+                }),
               },
             })
           },

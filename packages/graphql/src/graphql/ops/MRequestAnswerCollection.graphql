@@ -1,3 +1,12 @@
 mutation RequestAnswerCollection($collectionId: Int!) {
-  requestAnswerCollection(collectionId: $collectionId)
+  requestAnswerCollection(collectionId: $collectionId) {
+    id
+    name
+    access
+    accessType
+    sharingStatus
+    description
+    ownerShortname
+    isRemovable
+  }
 }

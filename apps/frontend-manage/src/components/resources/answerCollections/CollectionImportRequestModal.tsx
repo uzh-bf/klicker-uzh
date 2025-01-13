@@ -44,25 +44,13 @@ function CollectionImportRequestModal({
         const collectionsListQuery = cache.readQuery({
           query: GetAnswerCollectionsDocument,
         })
-        const prevSharedCollections =
-          collectionsListQuery?.getAnswerCollections?.sharedCollections
-        if (prevSharedCollections) {
+        const collections = collectionsListQuery?.getAnswerCollections
+
+        if (collections) {
           cache.writeQuery({
             query: GetAnswerCollectionsDocument,
             data: {
-              getAnswerCollections: {
-                requestedCollections:
-                  collectionsListQuery.getAnswerCollections
-                    ?.requestedCollections ?? [],
-                sharedCollections: [
-                  ...(collectionsListQuery.getAnswerCollections
-                    ?.sharedCollections ?? []),
-                  newCollection,
-                ],
-                answerCollections:
-                  collectionsListQuery.getAnswerCollections
-                    ?.answerCollections ?? [],
-              },
+              getAnswerCollections: [...collections, newCollection],
             },
           })
         }
@@ -91,33 +79,21 @@ function CollectionImportRequestModal({
     {
       variables: { collectionId: collection.id },
       update: (cache, { data }) => {
-        if (!data?.requestAnswerCollection) return
-        const reqCollection = data.requestAnswerCollection
+        // check if request was successful
+        const requestedCollection = data?.requestAnswerCollection
+        if (!requestedCollection) return
 
-        // TODO: mutation now returns a success boolean - get the collection from the corresponding selections query cache instead and update the two query results
         // update lists of answer collections
-        const collectionsListQuery = cache.readQuery({
+        const queryResult = cache.readQuery({
           query: GetAnswerCollectionsDocument,
         })
-        const prevSharedCollections =
-          collectionsListQuery?.getAnswerCollections?.sharedCollections
-        if (prevSharedCollections) {
+
+        if (queryResult?.getAnswerCollections) {
+          const collections = queryResult?.getAnswerCollections
           cache.writeQuery({
             query: GetAnswerCollectionsDocument,
             data: {
-              getAnswerCollections: {
-                requestedCollections: [
-                  ...(collectionsListQuery.getAnswerCollections
-                    ?.requestedCollections ?? []),
-                  reqCollection,
-                ],
-                sharedCollections:
-                  collectionsListQuery.getAnswerCollections
-                    ?.sharedCollections ?? [],
-                answerCollections:
-                  collectionsListQuery.getAnswerCollections
-                    ?.answerCollections ?? [],
-              },
+              getAnswerCollections: [...collections, requestedCollection],
             },
           })
         }
@@ -236,7 +212,7 @@ function CollectionImportRequestModal({
               }
             } else {
               const res = await requestAnswerCollection()
-              if (res.data?.requestAnswerCollection?.id) {
+              if (res.data?.requestAnswerCollection) {
                 onSuccess()
               } else {
                 setShowRequestError(true)

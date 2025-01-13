@@ -696,6 +696,12 @@ export async function importAnswerCollection(
     return null
   }
 
+  // invalidate cache for the imported collection
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: collectionId,
+  })
+
   return {
     ...updatedCollection,
     accessType: AccessType.SHARED,
@@ -734,7 +740,7 @@ export async function requestAnswerCollection(
     collection.access !== DB.CollectionAccess.RESTRICTED ||
     collection.permissions.length > 0
   ) {
-    return false
+    return null
   }
 
   // create a new permission request
@@ -758,12 +764,36 @@ export async function requestAnswerCollection(
         },
       },
     },
+    include: {
+      answerCollection: true,
+      objectOwner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
   })
 
   // TODO: notify owner of the collection by e-mail that there is a new access request
 
+  // invalidate cache for the imported collection
+  const updatedCollection = permissionRequest.answerCollection
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: updatedCollection?.id,
+  })
+
   // return success of the request
-  return permissionRequest.permissionStatus === DB.PermissionStatus.REQUESTED
+  return updatedCollection
+    ? {
+        ...updatedCollection,
+        accessType: AccessType.SHARED,
+        sharingStatus: permissionRequest.permissionStatus,
+        sharingLevel: permissionRequest.accessLevel,
+        ownerShortname: permissionRequest.objectOwner?.shortname,
+        isRemovable: true, // requested collection cannot be used already
+      }
+    : null
 }
 
 export async function cancelAnswerCollectionRequest(
