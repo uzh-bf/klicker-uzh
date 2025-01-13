@@ -1210,7 +1210,7 @@ describe('Different live-quiz workflows', () => {
     cy.deleteAnswerCollection({ collectionName: SECollection })
   })
 
-  it.only('Cleanup: Verify that all answer collections have been deleted properly', () => {
+  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
     cy.task('verifyDeletionAnswerCollections').then((result) => {
       // check if the verification was successful
       if (result === null || result === false) {
