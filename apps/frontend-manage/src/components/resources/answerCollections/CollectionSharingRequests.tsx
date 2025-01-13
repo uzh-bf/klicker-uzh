@@ -88,8 +88,10 @@ function CollectionSharingRequests() {
                             getCollectionSharingRequests:
                               previousRequests.filter(
                                 (r) =>
-                                  r.collectionId !== request.collectionId ||
-                                  r.userId !== request.userId
+                                  !(
+                                    r.collectionId === request.collectionId &&
+                                    r.userId === request.userId
+                                  )
                               ),
                           },
                         })
@@ -132,8 +134,10 @@ function CollectionSharingRequests() {
                             getCollectionSharingRequests:
                               previousRequests.filter(
                                 (r) =>
-                                  r.collectionId !== request.collectionId ||
-                                  r.userId !== request.userId
+                                  !(
+                                    r.collectionId === request.collectionId &&
+                                    r.userId === request.userId
+                                  )
                               ),
                           },
                         })
