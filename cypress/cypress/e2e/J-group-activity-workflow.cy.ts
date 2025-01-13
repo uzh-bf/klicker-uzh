@@ -544,14 +544,17 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
     cy.get('[data-cy="input-numerical-4"]').type(numericalAnswer)
     cy.get('[data-cy="free-text-input-5"]').click().type(freeTextAnswer)
-    cy.get('[data-cy="selection-6-field-1"]').click()
-    cy.get(`[data-cy="select-answer-${SECollectionOptions[0]}"]`).click()
-    cy.get('[data-cy="selection-6-field-2"]').click()
-    cy.get(`[data-cy="select-answer-${SECollectionOptions[1]}"]`).click()
-    cy.get('[data-cy="selection-6-field-3"]').click()
-    cy.get(`[data-cy="select-answer-${SECollectionOptions[4]}"]`).click()
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
+    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
+    cy.get('[id="selection-6-field-2"]').click()
+    // option numbers smaller than ix since only available objects are shown in select component (0 removed here)
+    cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
+    cy.get('[id="selection-6-field-2"]').contains(SECollectionOptions[1])
+    cy.get('[id="selection-6-field-3"]').click()
+    cy.get('[id="react-select-selection-6-field-3-option-2"]').click()
+    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[4])
     cy.get('[data-cy="sc-7-answer-option-1"]').click()
-    cy.get('[data-cy="submit-group-activity"]').click()
   }
 
   function checkInputsDisabled() {
@@ -564,9 +567,21 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-4"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-5"]').should('be.disabled')
-    cy.get('[data-cy="selection-6-field-1"]').should('be.disabled')
-    cy.get('[data-cy="selection-6-field-2"]').should('be.disabled')
-    cy.get('[data-cy="selection-6-field-3"]').should('be.disabled')
+    cy.get('[id="selection-6-field-1"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[id="selection-6-field-2"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    )
+    cy.get('[id="selection-6-field-3"]').should(
+      'have.css',
+      'pointer-events',
+      'none'
+    )
     cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
   }
 
@@ -597,15 +612,9 @@ describe('Create and solve a group activity', () => {
       .should('be.disabled')
       .contains(freeTextAnswer)
 
-    cy.get('[data-cy="selection-6-field-1"]')
-      .should('be.disabled')
-      .contains(SECollectionOptions[0])
-    cy.get('[data-cy="selection-6-field-2"]')
-      .should('be.disabled')
-      .contains(SECollectionOptions[1])
-    cy.get('[data-cy="selection-6-field-3"]')
-      .should('be.disabled')
-      .contains(SECollectionOptions[4])
+    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
+    cy.get('[id="selection-6-field-2"]').contains(SECollectionOptions[1])
+    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[4])
 
     cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-7-answer-option-2"]').should('be.disabled')
@@ -707,6 +716,9 @@ describe('Create and solve a group activity', () => {
     ).click()
     cy.get('[data-cy="start-group-activity"]').click()
 
+    // answer the questions in the group activity
+    answerGroupActivity()
+
     // test rating and flagging of group activity instances
     cy.get('[data-cy="upvote-element-0-button"]').click()
     cy.wait(500)
@@ -739,14 +751,16 @@ describe('Create and solve a group activity', () => {
     )
     cy.get('[data-cy="cancel-flag-element"]').click()
 
-    // answer the questions in the group activity
-    answerGroupActivity()
+    // submit group activity
+    cy.get('[data-cy="submit-group-activity"]').click()
 
     // check that the answers are persistent and the fields disabled
+    checkInputsDisabled()
     checkPersistentAnswers()
 
     // check that the answers are persistent and the fields disabled after reload
     cy.reload()
+    checkInputsDisabled()
     checkPersistentAnswers()
   })
 
@@ -777,6 +791,7 @@ describe('Create and solve a group activity', () => {
 
     // answer the questions in the group activity
     answerGroupActivity()
+    cy.get('[data-cy="submit-group-activity"]').click()
 
     // check that the answers are persistent and the fields disabled
     checkPersistentAnswers()

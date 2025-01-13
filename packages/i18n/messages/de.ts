@@ -15,6 +15,7 @@ export default {
       seSelectNCorrectOptions:
         'Bitte wählen Sie <b>{number} korrekte Antwort-Optionen</b> aus der vorgegebenen Liste.',
       seCorrectAnswerN: 'Antwort {number}',
+      noMatchingOptionFound: 'Keine passende Option gefunden.',
     },
     DRAFT: {
       statusLabel: 'Entwurf',
