@@ -14,6 +14,7 @@ import AnswerCollectionCollapsible from './AnswerCollectionCollapsible'
 function CollectionSharingRequests() {
   const t = useTranslations()
   const { data, loading } = useQuery(GetCollectionSharingRequestsDocument)
+
   const [approveCollectionSharingRequest] = useMutation(
     ApproveCollectionSharingRequestDocument
   )
@@ -68,10 +69,11 @@ function CollectionSharingRequests() {
                         collectionId: request.collectionId,
                         userId: request.userId,
                       },
+                      optimisticResponse: {
+                        approveCollectionSharingRequest: true,
+                      },
                       update: (cache, { data }) => {
                         if (!data?.approveCollectionSharingRequest) return
-                        const resolvedRequest =
-                          data.approveCollectionSharingRequest
 
                         const queryData = cache.readQuery({
                           query: GetCollectionSharingRequestsDocument,
@@ -86,9 +88,10 @@ function CollectionSharingRequests() {
                             getCollectionSharingRequests:
                               previousRequests.filter(
                                 (r) =>
-                                  r.collectionId !==
-                                    resolvedRequest.collectionId ||
-                                  r.userId !== resolvedRequest.userId
+                                  !(
+                                    r.collectionId === request.collectionId &&
+                                    r.userId === request.userId
+                                  )
                               ),
                           },
                         })
@@ -112,10 +115,11 @@ function CollectionSharingRequests() {
                         collectionId: request.collectionId,
                         userId: request.userId,
                       },
+                      optimisticResponse: {
+                        declineCollectionSharingRequest: true,
+                      },
                       update: (cache, { data }) => {
                         if (!data?.declineCollectionSharingRequest) return
-                        const resolvedRequest =
-                          data.declineCollectionSharingRequest
 
                         const queryData = cache.readQuery({
                           query: GetCollectionSharingRequestsDocument,
@@ -130,9 +134,10 @@ function CollectionSharingRequests() {
                             getCollectionSharingRequests:
                               previousRequests.filter(
                                 (r) =>
-                                  r.collectionId !==
-                                    resolvedRequest.collectionId ||
-                                  r.userId !== resolvedRequest.userId
+                                  !(
+                                    r.collectionId === request.collectionId &&
+                                    r.userId === request.userId
+                                  )
                               ),
                           },
                         })

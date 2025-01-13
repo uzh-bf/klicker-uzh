@@ -3,7 +3,10 @@ mutation RequestAnswerCollection($collectionId: Int!) {
     id
     name
     access
+    accessType
+    sharingStatus
     description
     ownerShortname
+    isRemovable
   }
 }

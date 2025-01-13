@@ -4,6 +4,16 @@ schema {
   subscription: Subscription
 }
 
+enum AccessLevel {
+  READ
+  WRITE
+}
+
+enum AccessType {
+  OWNER
+  SHARED
+}
+
 type Achievement {
   descriptionDE: String
   descriptionEN: String
@@ -84,6 +94,7 @@ enum ActivityType {
 
 type AnswerCollection {
   access: CollectionAccess!
+  accessType: AccessType!
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
@@ -91,6 +102,8 @@ type AnswerCollection {
   name: String!
   numSharedUsers: Int
   ownerShortname: String
+  sharingLevel: AccessLevel
+  sharingStatus: PermissionStatus
 }
 
 type AnswerCollectionEntry {
@@ -1020,9 +1033,9 @@ type Mutation {
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
-  approveCollectionSharingRequest(collectionId: Int!, userId: String!): SharingRequestResponse
+  approveCollectionSharingRequest(collectionId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
-  cancelAnswerCollectionRequest(collectionId: Int!): Int
+  cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
@@ -1042,7 +1055,7 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
-  declineCollectionSharingRequest(collectionId: Int!, userId: String!): SharingRequestResponse
+  declineCollectionSharingRequest(collectionId: Int!, userId: String!): Boolean!
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(id: Int!): Int
   deleteCourse(id: String!): Course
@@ -1409,6 +1422,11 @@ type PerformanceRates {
   partialRate: Float!
 }
 
+enum PermissionStatus {
+  GRANTED
+  REQUESTED
+}
+
 type PracticeQuiz {
   availableFrom: Date
   course: Course
@@ -1458,7 +1476,7 @@ type Query {
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getAnswerCollectionSelection: [AnswerCollection!]
-  getAnswerCollections: UserAnswerCollections
+  getAnswerCollections: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCollectionSharingRequests: [AnswerCollectionSharingRequest!]
@@ -1786,12 +1804,6 @@ type User {
   mediaFiles: [MediaFile!]
   sendProjectUpdates: Boolean!
   shortname: String!
-}
-
-type UserAnswerCollections {
-  answerCollections: [AnswerCollection!]!
-  requestedCollections: [AnswerCollection!]!
-  sharedCollections: [AnswerCollection!]!
 }
 
 type UserLogin {

@@ -185,6 +185,19 @@ Cypress.Commands.add(
   }
 )
 
+interface DeleteCollectionArgs {
+  collectionName: string
+}
+
+Cypress.Commands.add(
+  'deleteAnswerCollection',
+  ({ collectionName }: DeleteCollectionArgs) => {
+    cy.get(`[data-cy="answer-collection-${collectionName}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').click()
+    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
+  }
+)
+
 interface CreateChoicesQuestionArgs {
   title: string
   content: string
@@ -613,6 +626,16 @@ Cypress.Commands.add(
   }
 )
 
+interface DeleteElementArgs {
+  elementName: string
+}
+
+Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
+  cy.get(`[data-cy="delete-question-${elementName}"]`).click()
+  cy.get('[data-cy="confirm-question-deletion"]').click()
+  cy.get(`[data-cy="element-item-${elementName}"]`).should('not.exist')
+})
+
 interface CreateLiveQuizArgs {
   name: string
   displayName: string
@@ -923,6 +946,9 @@ declare global {
         description,
         entries,
       }: AnswerCollectionArgs): Chainable<void>
+      deleteAnswerCollection({
+        collectionName,
+      }: DeleteCollectionArgs): Chainable<void>
       createQuestionSC({
         title,
         content,
@@ -972,6 +998,7 @@ declare global {
         explanation,
       }: CreateFlashcardArgs): Chainable<void>
       createContent({ title, content }: CreateContentArgs): Chainable<void>
+      deleteElement({ elementName }: DeleteElementArgs): Chainable<void>
       createLiveQuiz({
         name,
         displayName,

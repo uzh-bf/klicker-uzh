@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  AccessType,
+  GetAnswerCollectionsDocument,
+  PermissionStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormikNumberField,
@@ -31,14 +35,14 @@ function SelectionOptions({
 
   // combine all collections that are accessible to the user
   const collections = useMemo(
-    () => [
-      ...(data?.getAnswerCollections?.answerCollections ?? []),
-      ...(data?.getAnswerCollections?.sharedCollections ?? []),
-    ],
-    [
-      data?.getAnswerCollections?.answerCollections,
-      data?.getAnswerCollections?.sharedCollections,
-    ]
+    () =>
+      (data?.getAnswerCollections ?? []).filter(
+        (collection) =>
+          (collection.accessType === AccessType.Shared &&
+            collection.sharingStatus === PermissionStatus.Granted) ||
+          collection.accessType === AccessType.Owner
+      ),
+    [data?.getAnswerCollections]
   )
 
   // get all answer options from the selected collections

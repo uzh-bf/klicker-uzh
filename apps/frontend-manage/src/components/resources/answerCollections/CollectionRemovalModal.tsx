@@ -42,14 +42,7 @@ function CollectionRemovalModal({
       cache.writeQuery({
         query: GetAnswerCollectionsDocument,
         data: {
-          getAnswerCollections: {
-            ...collections,
-            answerCollections: collections.answerCollections ?? [],
-            requestedCollections: collections.requestedCollections ?? [],
-            sharedCollections: collections.sharedCollections?.filter(
-              (c) => c.id !== res
-            ),
-          },
+          getAnswerCollections: collections.filter((c) => c.id !== res),
         },
       })
     },

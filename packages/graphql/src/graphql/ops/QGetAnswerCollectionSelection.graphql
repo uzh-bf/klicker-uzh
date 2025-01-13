@@ -4,6 +4,7 @@ query GetAnswerCollectionSelection {
     name
     access
     description
+    accessType
     ownerShortname
     entries {
       id

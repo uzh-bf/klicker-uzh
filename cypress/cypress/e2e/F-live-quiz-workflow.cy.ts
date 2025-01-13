@@ -1190,25 +1190,37 @@ describe('Different live-quiz workflows', () => {
   it('Cleanup: Delete the created questions from the question pool for repeated test execution', () => {
     cy.loginLecturer()
 
-    const questions = [
-      SCQuestion1Title,
-      MCQuestion1Title,
-      KPRIMQuestion1Title,
-      NRQuestion1Title,
-      FTQuestion1Title,
-      SEQuestion1Title,
-      SCQuestion2Title,
-      MCQuestion2Title,
-      KPRIMQuestion2Title,
-      NRQuestion2Title,
-      FTQuestion2Title,
-      SEQuestion2Title,
-    ]
-    questions.forEach((question) => {
-      cy.get(`[data-cy="element-item-${question}"]`).should('exist')
-      cy.get(`[data-cy="delete-question-${question}"]`).click()
-      cy.get('[data-cy="confirm-question-deletion"]').click()
-      cy.get(`[data-cy="element-item-${question}"]`).should('not.exist')
+    cy.deleteElement({ elementName: SCQuestion1Title })
+    cy.deleteElement({ elementName: MCQuestion1Title })
+    cy.deleteElement({ elementName: KPRIMQuestion1Title })
+    cy.deleteElement({ elementName: NRQuestion1Title })
+    cy.deleteElement({ elementName: FTQuestion1Title })
+    cy.deleteElement({ elementName: SEQuestion1Title })
+    cy.deleteElement({ elementName: SCQuestion2Title })
+    cy.deleteElement({ elementName: MCQuestion2Title })
+    cy.deleteElement({ elementName: KPRIMQuestion2Title })
+    cy.deleteElement({ elementName: NRQuestion2Title })
+    cy.deleteElement({ elementName: FTQuestion2Title })
+    cy.deleteElement({ elementName: SEQuestion2Title })
+  })
+
+  it('Cleanup: Delete the created answer collection', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.deleteAnswerCollection({ collectionName: SECollection })
+  })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
 })

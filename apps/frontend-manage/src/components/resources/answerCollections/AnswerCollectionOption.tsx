@@ -68,20 +68,14 @@ function AnswerCollectionOption({
               const queryData = cache.readQuery({
                 query: GetAnswerCollectionsDocument,
               })
-              const previousCollections =
-                queryData?.getAnswerCollections?.answerCollections
+              const previousCollections = queryData?.getAnswerCollections
               if (!previousCollections) return
 
               cache.writeQuery({
                 query: GetAnswerCollectionsDocument,
                 data: {
-                  getAnswerCollections: {
-                    requestedCollections:
-                      queryData.getAnswerCollections?.requestedCollections ??
-                      [],
-                    sharedCollections:
-                      queryData.getAnswerCollections?.sharedCollections ?? [],
-                    answerCollections: previousCollections.map((collection) => {
+                  getAnswerCollections: previousCollections.map(
+                    (collection) => {
                       if (collection.id === collectionId) {
                         return {
                           ...collection,
@@ -92,8 +86,8 @@ function AnswerCollectionOption({
                       }
 
                       return collection
-                    }),
-                  },
+                    }
+                  ),
                 },
               })
             },
@@ -146,39 +140,30 @@ function AnswerCollectionOption({
                     const queryData = cache.readQuery({
                       query: GetAnswerCollectionsDocument,
                     })
-                    const previousCollections =
-                      queryData?.getAnswerCollections?.answerCollections
+                    const previousCollections = queryData?.getAnswerCollections
                     if (!previousCollections) return
 
                     cache.writeQuery({
                       query: GetAnswerCollectionsDocument,
                       data: {
-                        getAnswerCollections: {
-                          requestedCollections:
-                            queryData.getAnswerCollections
-                              ?.requestedCollections ?? [],
-                          sharedCollections:
-                            queryData.getAnswerCollections?.sharedCollections ??
-                            [],
-                          answerCollections: previousCollections.map(
-                            (collection) => {
-                              if (collection.id === collectionId) {
-                                return {
-                                  ...collection,
-                                  entries: collection.entries?.map((e) => {
-                                    if (e.id === entry.id) {
-                                      return { ...e, value: values.value }
-                                    }
+                        getAnswerCollections: previousCollections.map(
+                          (collection) => {
+                            if (collection.id === collectionId) {
+                              return {
+                                ...collection,
+                                entries: collection.entries?.map((e) => {
+                                  if (e.id === entry.id) {
+                                    return { ...e, value: values.value }
+                                  }
 
-                                    return e
-                                  }),
-                                }
+                                  return e
+                                }),
                               }
-
-                              return collection
                             }
-                          ),
-                        },
+
+                            return collection
+                          }
+                        ),
                       },
                     })
                   },

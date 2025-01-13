@@ -42,11 +42,7 @@ function CollectionDeletionModal({
       cache.writeQuery({
         query: GetAnswerCollectionsDocument,
         data: {
-          getAnswerCollections: {
-            ...collections,
-            answerCollections:
-              collections.answerCollections.filter((c) => c.id !== res) ?? [],
-          },
+          getAnswerCollections: collections.filter((c) => c.id !== res) ?? [],
         },
       })
     },

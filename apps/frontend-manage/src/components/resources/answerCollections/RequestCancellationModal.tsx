@@ -23,12 +23,13 @@ function RequestCancellationModal({
   setCancellationFailure: (value: boolean) => void
 }) {
   const t = useTranslations()
+
   const [cancelAnswerCollectionRequest] = useMutation(
     CancelAnswerCollectionRequestDocument,
     {
       variables: { collectionId: collection.id },
       optimisticResponse: {
-        cancelAnswerCollectionRequest: collection.id,
+        cancelAnswerCollectionRequest: true,
       },
       update: (cache, { data }) => {
         const res = data?.cancelAnswerCollectionRequest
@@ -43,14 +44,9 @@ function RequestCancellationModal({
         cache.writeQuery({
           query: GetAnswerCollectionsDocument,
           data: {
-            getAnswerCollections: {
-              ...collections,
-              answerCollections: collections.answerCollections ?? [],
-              sharedCollections: collections.sharedCollections ?? [],
-              requestedCollections: collections.requestedCollections?.filter(
-                (c) => c.id !== res
-              ),
-            },
+            getAnswerCollections: collections.filter(
+              (c) => c.id !== collection.id
+            ),
           },
         })
       },
