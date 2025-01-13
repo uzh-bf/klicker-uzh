@@ -10,6 +10,7 @@ const privateNameNew = 'Private Answer Collection New'
 const privateDescriptionNew = 'This is a new private answer collection'
 const SEQuestionTitle = 'New SE Question to block deletion'
 
+// TODO: at the end of every workflow where answer collections are created, ensure that the database only contains the seeded ones after the test run
 const publicItems = [
   'Red',
   'Green',
@@ -809,6 +810,20 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="confirm-delete-answer-collection"]').click()
     cy.get(`[data-cy="answer-collection-${publicName}"]`).should('not.exist')
   })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
   // #endregion
 
   // ! Access rule modifications and automatic accepts
@@ -1116,6 +1131,20 @@ describe('Create, edit and share answer collections', () => {
     cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
       'not.exist'
     )
+  })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
   // #endregion
 })

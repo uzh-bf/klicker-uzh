@@ -112,6 +112,26 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async verifyDeletionAnswerCollections() {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const count = await prisma.answerCollection.count()
+            return count === 3 // 3 seeded answer collections that should not be removed through workflows
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
       })
       return config
     },

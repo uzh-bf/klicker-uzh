@@ -1,20 +1,19 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
-const SCQuestionTitle = uuid()
+const SCQuestionTitle = 'SC 9e90edbe-6d54-4e88-b78d-c74a193c70f3'
 const SCQuestion = 'SC Question Group Activity'
-const MCQuestionTitle = uuid()
+const MCQuestionTitle = 'MC db1b950e-70f1-49b3-8a54-4472fe9ea32d'
 const MCQuestion = 'MC Question Group Activity'
-const KPRIMQuestionTitle = uuid()
+const KPRIMQuestionTitle = 'KPRIM 9c18843e-79b0-4675-a58b-d0e45f82f943'
 const KPRIMQuestion = 'KPRIM Question Group Activity'
-const NRQuestionTitle = uuid()
+const NRQuestionTitle = 'NR bd7250bf-6bdf-4171-8d91-6102c033211e'
 const NRQuestion = 'NR Question Group Activity'
-const FTQuestionTitle = uuid()
+const FTQuestionTitle = 'FT b60f22f0-c057-4bdd-a836-ea03bc406d7f'
 const FTQuestion = 'FT Question Group Activity'
-const CTQuestionTitle = uuid()
+const CTQuestionTitle = 'CT ff396f27-c2a5-43c0-b2e4-e1498767f372'
 const CTQuestion = 'CT Question Group Activity'
 const SEQuestion = 'SE Question Group Activity'
-const SEQuestionTitle = 'SE ' + uuid()
+const SEQuestionTitle = 'SE 7ca16bbb-9eac-44f2-94ff-c2c32c05f16d'
 const SEQuestionInputs = 3
 const SECollection = 'SE Collection Group Activity'
 const SECollectionDescription = 'SE Collection Group Activity Description'
@@ -28,8 +27,9 @@ const SECollectionOptions = [
 
 const currentYear = new Date().getFullYear()
 const testCourse = 'Testkurs'
-const groupMessage1 = 'Hello group! (initial message)' + uuid()
-const groupMessage2 = 'Hello! (response)' + uuid()
+const groupMessage1 =
+  'Hello group! (initial message) 8ac913aa-0957-4799-9541-6b20b23aa11d'
+const groupMessage2 = 'Hello! (response) 82931880-ea66-40ec-a144-36c17911b0f3'
 
 const activityName = 'Group Activity Running'
 const activityDisplayName = activityName + ' (Display)'
@@ -1314,5 +1314,36 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get('[data-cy="group-messages"]').should('contain', groupMessage1)
     cy.get('[data-cy="group-messages"]').should('contain', groupMessage2)
+  })
+
+  it('Cleanup: Delete all created questions', () => {
+    cy.loginLecturer()
+    cy.deleteElement({ elementName: SCQuestionTitle })
+    cy.deleteElement({ elementName: MCQuestionTitle })
+    cy.deleteElement({ elementName: KPRIMQuestionTitle })
+    cy.deleteElement({ elementName: NRQuestionTitle })
+    cy.deleteElement({ elementName: FTQuestionTitle })
+    cy.deleteElement({ elementName: SEQuestionTitle })
+    cy.deleteElement({ elementName: CTQuestionTitle })
+  })
+
+  it('Cleanup: Delete the created answer collection', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.deleteAnswerCollection({ collectionName: SECollection })
+  })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 })

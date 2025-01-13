@@ -15,7 +15,6 @@ function CollectionSharingRequests() {
   const t = useTranslations()
   const { data, loading } = useQuery(GetCollectionSharingRequestsDocument)
 
-  // TODO: udpate cache with collection sharing requests
   const [approveCollectionSharingRequest] = useMutation(
     ApproveCollectionSharingRequestDocument
   )

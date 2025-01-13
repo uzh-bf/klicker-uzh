@@ -1,11 +1,10 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
 const testCourse = 'Testkurs'
 const currentYear = new Date().getFullYear()
 
-const questionTitle1 = uuid()
-const questionTitle2 = uuid()
+const questionTitle1 = '546f592a-6810-4222-bb06-0e6983fc0e61'
+const questionTitle2 = '0979a7d2-2544-4192-94d1-d01925a71f7d'
 const questionContent1 = 'Question Content 1'
 const questionContent2 = 'Question Content 2'
 

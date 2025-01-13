@@ -1,27 +1,26 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
 const currentYear = new Date().getFullYear()
 const testCourse = 'Testkurs'
-const SCQuestionTitle = 'SC ' + uuid()
+const SCQuestionTitle = 'SC 6e6ce2fc-7200-4e57-8d9d-1f86ee9e0de2'
 const SCQuestion = 'SC Question PQ'
-const SCQuestionTitleNoSol = 'SC ' + uuid()
+const SCQuestionTitleNoSol = 'SC d4203194-0a58-4f10-8396-dc4f22d62367'
 const SCQuestionNoSol = 'SC Question PQ No Solution'
-const MCQuestionTitle = 'MC ' + uuid()
+const MCQuestionTitle = 'MC 945411a4-8c8c-4e4b-a2b9-8f306b3be436'
 const MCQuestion = 'MC Question PQ'
-const KPRIMQuestionTitle = 'KPRIM ' + uuid()
+const KPRIMQuestionTitle = 'KPRIM f52c7eab-c1cc-4bcc-be21-a786f703dd23'
 const KPRIMQuestion = 'KPRIM Question PQ'
-const NRQuestionTitle = 'NR ' + uuid()
+const NRQuestionTitle = 'NR 16eb3ea5-2de0-4b39-bed9-8b339973d45a'
 const NRQuestion = 'NR Question PQ'
-const FTQuestionTitle = 'FT ' + uuid()
+const FTQuestionTitle = 'FT 10dbfbae-4923-4410-b154-47636465babe'
 const FTQuestion = 'FT Question PQ'
-const FCQuestionTitle = 'FC ' + uuid()
+const FCQuestionTitle = 'FC a135d370-1706-452b-8806-deb9f4c4753e'
 const FCQuestion = 'FC Question PQ'
 const FCAnswer = 'FC Answer PQ'
-const CTQuestionTitle = 'CT ' + uuid()
+const CTQuestionTitle = 'CT 545a39b5-5efe-4b29-8e72-71b3b0fc7774'
 const CTQuestion = 'CT Question PQ'
 const SEQuestion = 'SE Question PQ'
-const SEQuestionTitle = 'SE ' + uuid()
+const SEQuestionTitle = 'SE 1f6bf5c9-13a0-4cbc-abb7-bb77fe7381f1'
 const SEQuestionInputs = 3
 const SECollection = 'SE Collection PQ'
 const SECollectionDescription = 'SE Collection PQ Description'
@@ -853,5 +852,39 @@ describe('Different practice quiz workflows', () => {
     cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
       'not.exist'
     )
+  })
+
+  it('Cleanup: Delete all created questions', () => {
+    cy.loginLecturer()
+
+    // delete all created questions
+    cy.deleteElement({ elementName: SCQuestionTitle })
+    cy.deleteElement({ elementName: MCQuestionTitle })
+    cy.deleteElement({ elementName: KPRIMQuestionTitle })
+    cy.deleteElement({ elementName: NRQuestionTitle })
+    cy.deleteElement({ elementName: FTQuestionTitle })
+    cy.deleteElement({ elementName: SEQuestionTitle })
+    cy.deleteElement({ elementName: FCQuestionTitle })
+    cy.deleteElement({ elementName: CTQuestionTitle })
+  })
+
+  it('Cleanup: Delete the created answer collection', () => {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.deleteAnswerCollection({ collectionName: SECollection })
+  })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 })

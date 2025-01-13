@@ -1,9 +1,7 @@
-import { v4 as uuid } from 'uuid'
-
-const questionTitle = uuid()
-const question = uuid()
-const quizTitle = uuid()
-const quiz = uuid()
+const questionTitle = '0c98edf3-6d99-4d73-9035-1c38c191091a'
+const question = '77dcd71e-0d3d-4907-a202-0cc9d4aad309'
+const quizTitle = '7a84ab48-0ff8-4d62-ba7d-a9fe939c1abe'
+const quiz = 'fecba90d-fae5-4bc9-a031-8e15632de491'
 
 describe('Test functionalities of frontend-control application', () => {
   it('Create a new SC question to use it in a live quiz', () => {
@@ -79,4 +77,6 @@ describe('Test functionalities of frontend-control application', () => {
   })
 
   // TODO (later): check if quiz is running correctly / add student answer
+
+  // TODO: delete questions and live quiz
 })

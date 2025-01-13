@@ -1,4 +1,3 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
 // global variable definitions for use across tests
@@ -8,7 +7,7 @@ const courseName2 = 'Course 33a79abc-debc-4374-9405-38e99f92fba8'
 const courseDisplayName = courseName + ' (Display)'
 const courseDisplayNameNew = courseNameNew + ' (Display)'
 const courseDisplayName2 = courseName2 + ' (Display)'
-const description = uuid()
+const description = 'b53cebc4-fb5e-498b-9826-c6e9f3ea91ed'
 const runningTestCourse = 'Testkurs'
 const pastTestcourse = 'Testkurs 2'
 const currentYear = new Date().getFullYear()
@@ -493,13 +492,14 @@ describe('Test course creation and editing functionalities', () => {
     cy.loginLecturer()
 
     // test-specific variables
-    const courseDelName = 'Course to be deleted ' + uuid()
+    const courseDelName =
+      'Course to be deleted 6195472e-0dc4-41f9-9205-3968e5a62d2a'
     const courseDelDisplayName = courseDelName + ' display'
-    const questionTitle = uuid()
-    const questionContent = uuid()
-    const liveQuizName = uuid()
-    const practiceQuizName = uuid()
-    const microLearningName = uuid()
+    const questionTitle = '67d45064-d792-426b-a9dd-cb70fc5a5f85'
+    const questionContent = 'b8e280e5-85d7-4793-9f13-b5dfc1c1f74e'
+    const liveQuizName = '790042bb-62bd-40c1-807c-b3ff7a628808'
+    const practiceQuizName = 'ed069dd4-6dcf-478b-8a72-23a1753cfd76'
+    const microLearningName = '90fc40ad-f438-4a68-a890-eac165e88f7c'
 
     // create a new course
     cy.get('[data-cy="courses"]').click()

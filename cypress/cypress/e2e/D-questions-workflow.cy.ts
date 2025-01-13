@@ -1,4 +1,3 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
 const CTTitle = 'Content Title'
@@ -1225,7 +1224,6 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Verify that the options that are used as a solution cannot be deleted anymore', () => {
-    cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
     cy.findByText(messages.manage.resources.answerOptionUsedAsSolution).should(
@@ -1246,7 +1244,6 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Verify that the answer collection cannot be deleted anymore', () => {
-    cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
@@ -1306,7 +1303,6 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Verify that the previous answer collection could be deleted again, the current one not', () => {
-    cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
@@ -1316,7 +1312,6 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Check that only answer options not used as solutions can be deleted', () => {
-    cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
 
@@ -1349,9 +1344,9 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Create a new question, duplicates it and then deletes the duplicate again', () => {
-    const randomNumber = uuid()
-    const questionTitle = 'A Single Choice ' + randomNumber
-    const question = 'Was ist die Wahrscheinlichkeit? ' + randomNumber
+    const questionTitle = 'A Single Choice a2cfa611-7d77-4741-8f0f-b2dd760219ad'
+    const question =
+      'Was ist die Wahrscheinlichkeit? 16f8fb4c-354c-4752-b710-78af8823c335'
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(questionTitle)
@@ -1393,41 +1388,17 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Cleanup: Delete all created questions', () => {
-    cy.get(`[data-cy="delete-question-${CTTitleEdited}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${CTTitleEdited}"]`).should('not.exist')
-
-    cy.get(`[data-cy="delete-question-${FCTitleEdited}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${FCTitleEdited}"]`).should('not.exist')
-
-    cy.get(`[data-cy="delete-question-${SCTitleEdited}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${SCTitleEdited}"]`).should('not.exist')
-
-    cy.get(`[data-cy="delete-question-${MCTitleEdited}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${MCTitleEdited}"]`).should('not.exist')
-
-    cy.get(`[data-cy="delete-question-${KPRIMTitleEdited}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${KPRIMTitleEdited}"]`).should('not.exist')
-
-    cy.get(`[data-cy="delete-question-${NRTitleEdited}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${NRTitleEdited}"]`).should('not.exist')
-
-    cy.get(`[data-cy="delete-question-${FTTitleEdited}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${FTTitleEdited}"]`).should('not.exist')
-
-    cy.get(`[data-cy="delete-question-${SETitleEdited}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${SETitleEdited}"]`).should('not.exist')
+    cy.deleteElement({ elementName: CTTitleEdited })
+    cy.deleteElement({ elementName: FCTitleEdited })
+    cy.deleteElement({ elementName: SCTitleEdited })
+    cy.deleteElement({ elementName: MCTitleEdited })
+    cy.deleteElement({ elementName: KPRIMTitleEdited })
+    cy.deleteElement({ elementName: NRTitleEdited })
+    cy.deleteElement({ elementName: FTTitleEdited })
+    cy.deleteElement({ elementName: SETitleEdited })
   })
 
   it('Verify that after the deletion of the linked question, all solution options can be deleted again', () => {
-    cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${SECollection}"]`).click()
 
@@ -1444,13 +1415,5 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
-  })
-
-  it('Cleanup: Delete the shared answer collection', () => {
-    cy.loginLecturer()
-    cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${SECollectionEdited}"]`).click()
-    cy.get('[data-cy="delete-answer-collection"]').click()
-    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
   })
 })
