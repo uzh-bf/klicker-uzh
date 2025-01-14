@@ -361,6 +361,11 @@ const serviceBusTrigger = async function (
       }
       case 'SELECTION': {
         response.selection.forEach((answerId: number) => {
+          // skipped input fields should not be considered
+          if (answerId === -1) {
+            return
+          }
+
           redisMulti.hincrby(`${instanceKey}:results`, String(answerId), 1)
         })
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
@@ -368,7 +373,7 @@ const serviceBusTrigger = async function (
         if (participantData) {
           const pointsPercentage = gradeQuestionSelection({
             numberOfInputs: parseInt(instanceInfo.numberOfInputs),
-            response: response.selection,
+            response: response.selection.filter((r: number) => r !== -1), // filter out skipped response fields
             correctAnswers: parsedSolutions,
           })
 
@@ -408,7 +413,7 @@ const serviceBusTrigger = async function (
           redisMulti.hset(
             `${instanceKey}:responses`,
             participantData.sub,
-            response.selection
+            response.selection.filter((r: number) => r !== -1) // filter out skipped response fields
           )
           redisMulti.hincrby(
             `${sessionKey}:b:${sessionBlockId}:lb`,

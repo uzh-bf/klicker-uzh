@@ -87,13 +87,14 @@ export function validateFreeTextResponse({
 export function validateSelectionResponse({
   response,
 }: {
-  response?: Record<number, number | undefined>
+  response?: Record<number, number>
 }) {
-  // ensure that all select components contain a submission value and that all values are unique
+  // ensure that at least one option is selected and that selected answer options are unique
   if (
     !response ||
-    Object.values(response).some((value) => typeof value === 'undefined') ||
-    new Set(Object.values(response)).size !== Object.values(response).length
+    Object.values(response).every((value) => value === -1) ||
+    new Set(Object.values(response).filter((r) => r !== -1)).size !==
+      Object.values(response).filter((r) => r !== -1).length
   ) {
     return false
   }

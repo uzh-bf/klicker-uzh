@@ -6,8 +6,8 @@ import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
 
 interface SELECTIONAnswerOptionsProps {
-  responses: Record<number, number | undefined>
-  onChange: (newValue: Record<number, number | undefined>) => void
+  responses: Record<number, number>
+  onChange: (newValue: Record<number, number>) => void
   options: SelectionQuestionOptions
   elementIx: number
   disabled: boolean
@@ -24,9 +24,9 @@ function SELECTIONAnswerOptions({
 }: SELECTIONAnswerOptionsProps) {
   const t = useTranslations()
 
-  // get the selected options, which are not undefined
+  // get the selected options, which are not unselected
   const selectedValues = Object.values(responses).filter(
-    (selectedValue) => selectedValue !== undefined
+    (selectedValue) => selectedValue !== -1
   )
 
   // compute selection options for the select field
@@ -82,7 +82,7 @@ function SELECTIONAnswerOptions({
                 instanceId={`selection-${elementIx + 1}-field-${Number(inputIndex) + 1}`}
                 isDisabled={disabled}
                 value={
-                  selectedValue
+                  typeof selectedValue !== 'undefined' && selectedValue !== -1
                     ? { label: selectedLabel, value: selectedValue }
                     : undefined
                 }

@@ -287,7 +287,10 @@ function GroupActivityStack({
                         type: ElementType.Selection,
                         selectionResponse: Object.values(
                           value.response!
-                        ).filter((entry) => typeof entry !== 'undefined'),
+                        ).filter(
+                          (entry) =>
+                            typeof entry !== 'undefined' && entry !== -1
+                        ),
                       }
                     } else {
                       return {
