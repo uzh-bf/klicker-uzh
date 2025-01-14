@@ -2,16 +2,19 @@ import { useMutation } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementData,
   ElementInstance,
   ElementType,
   GradeGroupActivitySubmissionDocument,
   GroupActivityDecision,
   GroupActivityGrading,
   GroupActivityInstance,
+  SelectionElementData,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
+import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
 import {
   Button,
   FormLabel,
@@ -66,7 +69,7 @@ function GroupActivityGradingStack({
 
   const results = submission?.results
   const findResponse = useCallback(
-    (elementId: number, type: ElementType) => {
+    (elementId: number, type: ElementType, elementData: ElementData) => {
       const decision = submission?.decisions?.find(
         (decision: GroupActivityDecision) => decision.instanceId === elementId
       )
@@ -79,7 +82,7 @@ function GroupActivityGradingStack({
         return {
           [elementId]: {
             type: type,
-            response: decision?.choicesResponse?.reduce(
+            response: decision.choicesResponse?.reduce(
               (acc: Record<number, boolean>, choice: any) => ({
                 ...acc,
                 [choice]: true,
@@ -111,7 +114,7 @@ function GroupActivityGradingStack({
         return {
           [elementId]: {
             type: type,
-            response: decision?.numericalResponse,
+            response: decision.numericalResponse,
             valid: true,
           },
         }
@@ -119,15 +122,25 @@ function GroupActivityGradingStack({
         return {
           [elementId]: {
             type: type,
-            response: decision?.freeTextResponse,
+            response: decision.freeTextResponse,
             valid: true,
           },
         }
       } else if (type === ElementType.Selection) {
+        const response = getEmptySelectionResponse({
+          numberOfInputs: (elementData as SelectionElementData).options
+            .numberOfInputs,
+        })
+        decision.selectionResponse
+          ? decision.selectionResponse.forEach((answerId, ix) => {
+              response[ix] = answerId
+            })
+          : undefined
+
         return {
           [elementId]: {
             type: type,
-            response: decision?.selectionResponse,
+            response,
             valid: true,
           },
         }
@@ -236,7 +249,8 @@ function GroupActivityGradingStack({
                     studentResponse={
                       (findResponse(
                         element.id,
-                        element.elementType
+                        element.elementType,
+                        element.elementData
                       ) as StackStudentResponseType) ?? []
                     }
                     setStudentResponse={() => null}

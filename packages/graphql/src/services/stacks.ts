@@ -2791,7 +2791,9 @@ async function respondToElement({
       {
         courseId: courseId,
         id: response.instanceId,
-        response: { selection: response.selectionResponse },
+        response: {
+          selection: response.selectionResponse?.filter((r) => r !== -1), // only forward valid responses
+        },
         answerTime,
         participation,
         skipTracking,

@@ -51,7 +51,7 @@ export type InstanceStackStudentResponseType =
     }
   | {
       type: ElementType.Selection
-      response?: Record<number, number | undefined>
+      response?: Record<number, number>
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
@@ -290,14 +290,8 @@ function StudentElement({
         options={element.elementData.options}
         response={
           typeof studentResponse !== 'undefined'
-            ? (studentResponse[element.id]?.response as Record<
-                number,
-                number | undefined
-              >)
-            : (singleStudentResponse.response as Record<
-                number,
-                number | undefined
-              >)
+            ? (studentResponse[element.id]?.response as Record<number, number>)
+            : (singleStudentResponse.response as Record<number, number>)
         }
         valid={
           typeof studentResponse !== 'undefined'

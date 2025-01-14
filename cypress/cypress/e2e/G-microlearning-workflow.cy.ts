@@ -12,6 +12,8 @@ const KPRIMQuestionTitle = 'KPRIM 185dcb86-3eda-4baa-8648-486d27d0ace9'
 const KPRIMQuestion = 'KPRIM Question Micro'
 const NRQuestionTitle = 'NR 17385009-e69b-4995-bcfc-a9ee289f40ea'
 const NRQuestion = 'NR Question Micro'
+const NRAnswer = '0.55'
+const FTAnswer = 'Answer FT Question'
 const FTQuestionTitle = 'FT 371393fa-e632-487c-a4bf-f2b2e032231b'
 const FTQuestion = 'FT Question Micro'
 const FCQuestionTitle = 'FC c1e004c0-6a86-42cb-a67d-614a48b8a8a1'
@@ -905,13 +907,7 @@ describe('Different microlearning workflows', () => {
     )
   })
 
-  it('Respond to all questions in the microlearning covering all element types', () => {
-    cy.loginStudent()
-
-    cy.get(`[data-cy="microlearning-${completeMLDisplayName}"]`).click()
-    cy.get('[data-cy="start-microlearning"]').click()
-
-    // enter valid response for all questions to check correct input validation afterwards
+  function enterValidCompleteInputs() {
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
@@ -919,8 +915,11 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
-    cy.get('[data-cy="input-numerical-4"]').clear().type('0.55')
-    cy.get('[data-cy="free-text-input-5"]').type('Testinput')
+    cy.get('[data-cy="input-numerical-4"]').clear().type(NRAnswer)
+    cy.get('[data-cy="free-text-input-5"]').type(FTAnswer)
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
+    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[2])
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
     cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
@@ -934,6 +933,58 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="flashcard-response-7-No"]').click()
     cy.get('[data-cy="flashcard-response-7-Yes"]').click()
     cy.get('[data-cy="read-content-element-8"]').click()
+  }
+
+  function verifyPersistentCompleteInputs() {
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+
+    cy.get('[data-cy="mc-2-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-5"]').should('be.disabled')
+
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+
+    cy.get('[data-cy="input-numerical-4"]')
+      .should('have.value', NRAnswer)
+      .should('be.disabled')
+
+    cy.get('[data-cy="free-text-input-5"]')
+      .should('have.value', FTAnswer)
+      .should('be.disabled')
+
+    cy.get('[id="selection-6-field-1"]')
+      .contains(SECollectionOptions[0])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-2"]')
+      .contains(SECollectionOptions[1])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-3"]')
+      .contains(SECollectionOptions[2])
+      .should('have.css', 'pointer-events', 'none')
+
+    cy.get('[data-cy="flashcard-response-7-No"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-7-Partially"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-7-Yes"]').should('be.disabled')
+  }
+
+  it('Respond to all questions in the microlearning covering all element types', () => {
+    cy.loginStudent()
+
+    cy.get(`[data-cy="microlearning-${completeMLDisplayName}"]`).click()
+    cy.get('[data-cy="start-microlearning"]').click()
+
+    // enter valid response for all questions to check correct input validation afterwards
+    enterValidCompleteInputs()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
 
     // test inputs to MC question (2)
@@ -947,18 +998,119 @@ describe('Different microlearning workflows', () => {
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-4"]').clear().type('10.45')
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="input-numerical-4"]').clear().type('100')
+    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="input-numerical-4"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-4"]').type('100')
+    cy.get('[data-cy="input-numerical-4"]').type(NRAnswer)
 
     // test inputs to FT question (5)
     cy.get('[data-cy="free-text-input-5"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-5"]').type('correct')
+    cy.get('[data-cy="free-text-input-5"]').type(FTAnswer)
 
     // submit responses
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.wait(500)
+
+    // verify that the entered answers persist and inputs are disabled
+    verifyPersistentCompleteInputs()
+
+    // verify that the results persist across a reload
+    cy.reload()
+    verifyPersistentCompleteInputs()
+
+    // verify that the entered answers are correctly refetched from the backend after a reload and cookie reset
+    cy.clearAllLocalStorage()
+    cy.clearAllSessionStorage()
+    cy.reload()
+    cy.wait(1000)
+    verifyPersistentCompleteInputs()
+
+    // finish the microlearning
+    cy.get('[data-cy="student-stack-continue"]')
+      .contains(messages.shared.generic.finish)
+      .click()
+  })
+
+  function enterValidPartialInputs() {
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
+    cy.get('[data-cy="input-numerical-4"]').clear().type(NRAnswer)
+    cy.get('[data-cy="free-text-input-5"]').type(FTAnswer)
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
+    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[2])
+    cy.get('[data-cy="flashcard-front-7"]').click()
+    cy.get('[data-cy="flashcard-response-7-No"]').click()
+    cy.get('[data-cy="flashcard-response-7-Yes"]').click()
+    cy.get('[data-cy="read-content-element-8"]').click()
+  }
+
+  function verifyPersistentPartialInputs() {
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+
+    cy.get('[data-cy="mc-2-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-5"]').should('be.disabled')
+
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+
+    cy.get('[data-cy="input-numerical-4"]')
+      .should('have.value', NRAnswer)
+      .should('be.disabled')
+
+    cy.get('[data-cy="free-text-input-5"]')
+      .should('have.value', FTAnswer)
+      .should('be.disabled')
+
+    cy.get('[id="selection-6-field-1"]')
+      .contains(SECollectionOptions[2])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-2"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-3"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+
+    cy.get('[data-cy="flashcard-response-7-No"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-7-Partially"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-7-Yes"]').should('be.disabled')
+  }
+
+  it('Answer to the microlearning with partial responses (where supported)', () => {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+
+    cy.get(`[data-cy="microlearning-${completeMLDisplayName}"]`).click()
+    cy.get('[data-cy="start-microlearning"]').click()
+
+    // enter responses for all questions (partial responses where supported)
+    enterValidPartialInputs()
+
+    // submit responses
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.wait(500)
+
+    // verify that the entered answers persist and inputs are disabled
+    verifyPersistentPartialInputs()
+
+    //
     cy.get('[data-cy="student-stack-continue"]')
       .contains(messages.shared.generic.finish)
       .click() // finish quiz

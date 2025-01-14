@@ -881,7 +881,7 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
-    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="student-submit-answer"]').should('not.be.disabled')
     cy.get('[id="selection-6-field-2"]').click()
     cy.get('[id="react-select-selection-6-field-2-option-2"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
@@ -932,37 +932,48 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="toggle-moderation"]').click()
   })
 
-  it('Student answers questions in second block', () => {
+  it('Student answers questions in second block with partial answers where supported', () => {
     cy.loginStudent()
     cy.findByText(quizDisplayName2).click()
+
+    // SC question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+
+    // MC question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-1"]').click()
-    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+
+    // KP question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="input-numerical-4"]').clear().type(NRAnswer2)
+
+    // NR question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-4"]').clear().type(NRAnswer1)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="free-text-input-5"]').type(FTAnswer2)
+
+    // FT question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-5"]').type(FTAnswer1)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+
+    // SE question - submit partial answer (only submit selection for one of two inputs)
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[id="selection-6-field-1"]').click()
-    cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
-    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[id="selection-6-field-2"]').click()
-    cy.get('[id="react-select-selection-6-field-2-option-3"]').click()
-    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[id="selection-6-field-3"]').click()
-    cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
   })
