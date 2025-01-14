@@ -6,6 +6,7 @@ import {
   GroupActivityDetailsDocument,
   GroupActivityResults,
   ResponseCorrectnessType,
+  SelectionElementData,
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
@@ -13,6 +14,7 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
+import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -123,11 +125,26 @@ function GroupActivityStack({
             },
           }
         } else if (decision.type === ElementType.Selection) {
+          const instance = stack.elements?.find(
+            (element) => element.id === decision.instanceId
+          )
+          const response = getEmptySelectionResponse({
+            numberOfInputs: instance
+              ? (instance.elementData as SelectionElementData).options
+                  .numberOfInputs
+              : 1,
+          })
+          decision.selectionResponse
+            ? decision.selectionResponse.forEach((answerId, ix) => {
+                response[ix] = answerId
+              })
+            : undefined
+
           return {
             ...acc,
             [decision.instanceId]: {
               type: decision.type,
-              response: decision.selectionResponse ?? undefined,
+              response,
               valid: true,
             },
           }
@@ -148,7 +165,7 @@ function GroupActivityStack({
     )
 
     setStudentResponse((prev) => loadedResponses || prev)
-  }, [decisions])
+  }, [decisions, stack.elements])
 
   return (
     <>

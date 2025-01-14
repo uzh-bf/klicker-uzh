@@ -1,6 +1,7 @@
-import type { ElementStack } from '@klicker-uzh/graphql/dist/ops'
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType, type ElementStack } from '@klicker-uzh/graphql/dist/ops'
+import type { SelectionElementData } from '@klicker-uzh/types'
 import React, { useEffect } from 'react'
+import getEmptySelectionResponse from 'src/utils/getEmptySelectionResponse'
 import type {
   ElementChoicesType,
   StackStudentResponseType,
@@ -47,6 +48,21 @@ function useStudentResponse({
               response: defaultRead ? true : undefined,
               correct: undefined,
               valid: true,
+            },
+          }
+        } else if (element.elementData.type === ElementType.Selection) {
+          const emptyResponses = getEmptySelectionResponse({
+            numberOfInputs: (element.elementData as SelectionElementData)
+              .options.numberOfInputs,
+          })
+
+          return {
+            ...acc,
+            [element.id]: {
+              type: element.elementData.type,
+              response: emptyResponses,
+              correct: undefined,
+              valid: false,
             },
           }
         }

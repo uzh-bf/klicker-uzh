@@ -9,18 +9,17 @@ import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
 import SEEValuation from './evaluation/SEEvaluation'
 import SELECTIONAnswerOptions from './questions/SELECTIONAnswerOptions'
+import completeSelectionResponse from './utils/completeSelectionResponse'
+import getEmptySelectionResponse from './utils/getEmptySelectionResponse'
 import { validateSelectionResponse } from './utils/validateResponse'
 
 interface SelectionQuestionProps {
   content: string
   options: SelectionQuestionOptions
-  response?: Record<number, number | undefined>
+  response?: Record<number, number>
   valid: boolean
-  setResponse: (
-    newValue: Record<number, number | undefined>,
-    valid: boolean
-  ) => void
-  existingResponse?: Record<number, number | undefined>
+  setResponse: (newValue: Record<number, number>, valid: boolean) => void
+  existingResponse?: Record<number, number>
   elementIx: number
   evaluation?: SelectionInstanceEvaluation
   disabled?: boolean
@@ -39,13 +38,23 @@ function SelectionQuestion({
   disabled,
   preview,
 }: SelectionQuestionProps) {
-  const emptyResponses = useMemo(() => {
-    const initResponses: Record<number, number | undefined> = {}
-    for (let i = 0; i < (options.numberOfInputs ?? 0); i++) {
-      initResponses[i] = undefined
-    }
-    return initResponses
-  }, [options.answerCollection?.entries, options.numberOfInputs])
+  const emptyResponses = useMemo(
+    () =>
+      getEmptySelectionResponse({
+        numberOfInputs: options.numberOfInputs,
+      }),
+    [options.numberOfInputs]
+  )
+
+  // complete the existing response with -1 for missing keys
+  const completedExistingResponse = useMemo(
+    () =>
+      completeSelectionResponse({
+        existingResponse,
+        emptyResponses,
+      }),
+    [existingResponse, emptyResponses]
+  )
 
   return (
     <div className="flex flex-col gap-4 md:flex-row">
@@ -65,7 +74,7 @@ function SelectionQuestion({
         )}
 
         <SELECTIONAnswerOptions
-          responses={existingResponse ?? response ?? emptyResponses}
+          responses={completedExistingResponse ?? response ?? emptyResponses}
           onChange={(newValue) => {
             const valid = validateSelectionResponse({ response: newValue })
             setResponse(newValue, valid)
