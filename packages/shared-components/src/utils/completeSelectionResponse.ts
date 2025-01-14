@@ -11,7 +11,7 @@ function completeSelectionResponse({
 
   const completedResponse = { ...emptyResponses }
   Object.keys(existingResponse).forEach((key) => {
-    emptyResponses[parseInt(key)] = existingResponse[parseInt(key)] ?? -1
+    completedResponse[parseInt(key)] = existingResponse[parseInt(key)] ?? -1
   })
 
   return completedResponse

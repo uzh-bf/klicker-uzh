@@ -24,61 +24,51 @@ function useStudentResponse({
 }: UseStudentResponseProps) {
   useEffect(() => {
     const newStudentResponse =
-      stack.elements?.reduce((acc, element) => {
+      stack.elements?.reduce<StackStudentResponseType>((acc, element) => {
         if (element.elementData.__typename === 'ChoicesElementData') {
-          return {
-            ...acc,
-            [element.id]: {
-              type: element.elementData.type as ElementChoicesType,
-              response: element.elementData.options.choices.reduce(
-                (acc, choice) => {
-                  return { ...acc, [choice.ix]: undefined }
-                },
-                {} as Record<number, boolean | undefined>
-              ),
-              correct: undefined,
-              valid: false,
-            },
+          acc[element.id] = {
+            type: element.elementData.type as ElementChoicesType,
+            response: element.elementData.options.choices.reduce<
+              Record<number, boolean | undefined>
+            >((acc, choice) => {
+              return { ...acc, [choice.ix]: undefined }
+            }, {}),
+            valid: false,
           }
-        } else if (element.elementData.type === ElementType.Content) {
-          return {
-            ...acc,
-            [element.id]: {
-              type: element.elementData.type,
-              response: defaultRead ? true : undefined,
-              correct: undefined,
-              valid: true,
-            },
+
+          return acc
+        } else if (element.elementData.__typename === 'ContentElementData') {
+          acc[element.id] = {
+            type: ElementType.Content,
+            response: defaultRead ? true : undefined,
+            valid: true,
           }
-        } else if (element.elementData.type === ElementType.Selection) {
+
+          return acc
+        } else if (element.elementData.__typename === 'SelectionElementData') {
           const emptyResponses = getEmptySelectionResponse({
             numberOfInputs: (element.elementData as SelectionElementData)
               .options.numberOfInputs,
           })
 
-          return {
-            ...acc,
-            [element.id]: {
-              type: element.elementData.type,
-              response: emptyResponses,
-              correct: undefined,
-              valid: false,
-            },
+          acc[element.id] = {
+            type: ElementType.Selection,
+            response: emptyResponses,
+            valid: false,
           }
+          return acc
         }
         // default case - valid for FREE_TEXT, NUMERICAL, FLASHCARD elements
         else {
-          return {
-            ...acc,
-            [element.id]: {
-              type: element.elementData.type,
-              response: undefined,
-              correct: undefined,
-              valid: false,
-            },
+          acc[element.id] = {
+            type: element.elementData.type,
+            response: undefined,
+            valid: false,
           }
+
+          return acc
         }
-      }, {} as StackStudentResponseType) || {}
+      }, {}) || {}
 
     setStudentResponse(newStudentResponse)
   }, [currentStep, stack.elements])

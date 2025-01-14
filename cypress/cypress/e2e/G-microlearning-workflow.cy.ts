@@ -1020,12 +1020,12 @@ describe('Different microlearning workflows', () => {
     cy.reload()
     verifyPersistentCompleteInputs()
 
-    // TODO: verify that the entered answers are correctly refetched from the backend after a reload and cookie reset
-    // cy.clearAllLocalStorage()
-    // cy.clearAllSessionStorage()
-    // cy.reload()
-    // cy.wait(1000)
-    // verifyPersistentCompleteInputs()
+    // verify that the entered answers are correctly refetched from the backend after a reload and cookie reset
+    cy.clearAllLocalStorage()
+    cy.clearAllSessionStorage()
+    cy.reload()
+    cy.wait(1000)
+    verifyPersistentCompleteInputs()
 
     // finish the microlearning
     cy.get('[data-cy="student-stack-continue"]')
