@@ -1,11 +1,11 @@
 import { ElementType, type ElementStack } from '@klicker-uzh/graphql/dist/ops'
 import type { SelectionElementData } from '@klicker-uzh/types'
 import React, { useEffect } from 'react'
-import getEmptySelectionResponse from 'src/utils/getEmptySelectionResponse'
 import type {
   ElementChoicesType,
   StackStudentResponseType,
 } from '../StudentElement'
+import getEmptySelectionResponse from '../utils/getEmptySelectionResponse'
 
 interface UseStudentResponseProps {
   stack: ElementStack

@@ -529,6 +529,7 @@ describe('Different practice quiz workflows', () => {
   })
 
   // ! Part 2: Running Practice Quiz
+  // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
   function answerRunningPracticeQuiz() {
     cy.findByText(runningDescription).should('exist')
     cy.get('[data-cy="start-practice-quiz"]').click()
@@ -541,6 +542,10 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="sc-1-answer-option-3"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-4"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // MC question
@@ -553,6 +558,11 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="mc-1-answer-option-3"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-5"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // KPRIM question
@@ -565,11 +575,19 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').click()
-    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-incorrect"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // NR question
+    const NRinputFinal = '0.55'
     cy.findByText(NRQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-1"]').clear().type('-20')
@@ -578,34 +596,50 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="input-numerical-1"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-1"]').type('100')
+    cy.get('[data-cy="input-numerical-1"]').type(NRinputFinal)
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="input-numerical-1"]')
+      .should('have.value', NRinputFinal)
+      .should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // FT question
+    const FTinputFinal = 'correct'
     cy.findByText(FTQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-1"]').type('Testinput')
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="free-text-input-1"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-1"]').type('correct')
+    cy.get('[data-cy="free-text-input-1"]').type(FTinputFinal)
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="free-text-input-1"]')
+      .should('have.value', FTinputFinal)
+      .should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // SE QUESTION
     cy.findByText(SEQuestion).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[id="selection-1-field-1"]').click()
-    cy.get('[id="react-select-selection-1-field-1-option-0"]').click()
-    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[id="selection-1-field-2"]').click()
     cy.get('[id="react-select-selection-1-field-2-option-0"]').click()
-    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
+    cy.get('[id="selection-1-field-1"]').click()
+    cy.get('[id="react-select-selection-1-field-1-option-0"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[id="selection-1-field-3"]').click()
     cy.get('[id="react-select-selection-1-field-3-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[id="selection-1-field-1"]')
+      .contains(SECollectionOptions[1])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-1-field-2"]')
+      .contains(SECollectionOptions[0])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-1-field-3"]')
+      .contains(SECollectionOptions[3])
+      .should('have.css', 'pointer-events', 'none')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // skip back and forth
@@ -649,6 +683,131 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="sc-1-answer-option-3"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-4"]').should('be.disabled')
+
+    // finish the practice quiz
+    cy.get('[data-cy="student-stack-continue"]')
+      .contains(messages.shared.generic.finish)
+      .click()
+  }
+
+  // only provide partial answers for all question types that support this
+  function answerRunningPracticeQuizPartial() {
+    cy.findByText(runningDescription).should('exist')
+    cy.get('[data-cy="start-practice-quiz"]').click()
+
+    // SC question - no partial submissions possible
+    cy.findByText(SCQuestion).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // MC question - no partial submissions possible
+    cy.findByText(MCQuestion).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-5"]').should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // KPRIM question - no partial submissions possible
+    cy.findByText(KPRIMQuestion).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-incorrect"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // NR question - no partial submissions possible
+    const NRinputFinal = '0.55'
+    cy.findByText(NRQuestion).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-1"]').clear().type(NRinputFinal)
+    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="input-numerical-1"]')
+      .should('have.value', NRinputFinal)
+      .should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // FT question - no partial submissions possible
+    const FTinputFinal = 'Testinput'
+    cy.findByText(FTQuestion).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-1"]').type(FTinputFinal)
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="free-text-input-1"]')
+      .should('have.value', FTinputFinal)
+      .should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // SE QUESTION - partial submissions possible
+    cy.findByText(SEQuestion).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[id="selection-1-field-1"]').click()
+    cy.get('[id="react-select-selection-1-field-1-option-0"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[id="selection-1-field-1"]')
+      .contains(SECollectionOptions[0])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-1-field-2"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-1-field-3"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // Flashcard - no partial submissions possible
+    cy.findByText(FCQuestion).should('exist')
+    cy.get('[data-cy="flashcard-front-1"]').click()
+    cy.get('[data-cy="flashcard-response-1-No"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+
+    // Content - no partial submissions possible
+    cy.findByText(CTQuestion).should('exist')
+    cy.get('[data-cy="read-content-element-1"]').should('exist')
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
+      .contains(messages.pwa.practiceQuiz.markAllAsRead)
+      .click()
+    cy.get('[data-cy="student-stack-submit"]')
+      .contains(messages.shared.generic.submit)
+      .click()
+
+    // SC question (required to complete activity)
+    cy.findByText(SCQuestion).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-4"]').should('be.disabled')
 
     // finish the practice quiz
     cy.get('[data-cy="student-stack-continue"]')
@@ -694,6 +853,13 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${runningDisplayName}"]`).click()
     answerRunningPracticeQuiz()
+  })
+
+  it('Solve the practice quiz with partial answers (where supported)', () => {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${runningDisplayName}"]`).click()
+    answerRunningPracticeQuizPartial()
   })
 
   it('Check that published practice quizzes can still be accessed as a preview', () => {

@@ -535,6 +535,37 @@ describe('Create and solve a group activity', () => {
 
   // ! Part 2: Running Group Activity & Participation
   function answerGroupActivity() {
+    // answer all questions in the group activity with full inputs
+    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
+    cy.get('[data-cy="input-numerical-4"]').type(numericalAnswer)
+    cy.get('[data-cy="free-text-input-5"]').click().type(freeTextAnswer)
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
+    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
+    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[2])
+    cy.get('[id="selection-6-field-2"]').click()
+    // option numbers smaller than ix since only available objects are shown in select component (0 removed here)
+    cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
+    cy.get('[id="selection-6-field-2"]').contains(SECollectionOptions[0])
+    cy.get('[id="selection-6-field-3"]').click()
+    cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
+    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[3])
+    cy.get('[id="selection-6-field-3"]').click()
+    cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
+    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[4])
+    cy.get('[data-cy="sc-7-answer-option-1"]').click()
+  }
+
+  function answerGroupActivityPartial() {
+    // answer all questions in the group activity with partial inputs (where supported)
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-3"]').click()
@@ -548,12 +579,6 @@ describe('Create and solve a group activity', () => {
     cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
     cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
     cy.get('[id="selection-6-field-2"]').click()
-    // option numbers smaller than ix since only available objects are shown in select component (0 removed here)
-    cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
-    cy.get('[id="selection-6-field-2"]').contains(SECollectionOptions[1])
-    cy.get('[id="selection-6-field-3"]').click()
-    cy.get('[id="react-select-selection-6-field-3-option-2"]').click()
-    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[4])
     cy.get('[data-cy="sc-7-answer-option-1"]').click()
   }
 
@@ -612,10 +637,51 @@ describe('Create and solve a group activity', () => {
       .should('be.disabled')
       .contains(freeTextAnswer)
 
-    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
-    cy.get('[id="selection-6-field-2"]').contains(SECollectionOptions[1])
-    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[4])
+    cy.get('[id="selection-6-field-1"]')
+      .contains(SECollectionOptions[2])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-2"]')
+      .contains(SECollectionOptions[0])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-3"]')
+      .contains(SECollectionOptions[4])
+      .should('have.css', 'pointer-events', 'none')
 
+    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-2"]').should('be.disabled')
+  }
+
+  function checkPersistentAnswersPartial() {
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-5"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-4"]')
+      .should('be.disabled')
+      .should('have.value', numericalAnswer)
+    cy.get('[data-cy="free-text-input-5"]')
+      .should('be.disabled')
+      .contains(freeTextAnswer)
+    cy.get('[id="selection-6-field-1"]')
+      .contains(SECollectionOptions[0])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-2"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-3"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
     cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-7-answer-option-2"]').should('be.disabled')
   }
@@ -778,7 +844,7 @@ describe('Create and solve a group activity', () => {
     checkPersistentAnswers()
   })
 
-  it('Solve the group activity as a second student', function () {
+  it('Solve the group activity as a second student with partial answers (where available)', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME5') })
 
     // start the group activity
@@ -790,18 +856,18 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="start-group-activity"]').click()
 
     // answer the questions in the group activity
-    answerGroupActivity()
+    answerGroupActivityPartial()
     cy.get('[data-cy="submit-group-activity"]').click()
 
     // check that the answers are persistent and the fields disabled
-    checkPersistentAnswers()
+    checkPersistentAnswersPartial()
 
     // check that the answers are persistent and the fields disabled after reload
     cy.reload()
-    checkPersistentAnswers()
+    checkPersistentAnswersPartial()
   })
 
-  it('Login as a student in a second group and start the group activity', () => {
+  it('Login as a student in a third group and start the group activity', () => {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
 
     // open the group activity
