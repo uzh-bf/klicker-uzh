@@ -70,8 +70,6 @@ function GroupActivityGrading() {
     [groupActivity?.activityInstances]
   )
 
-  console.log(submissions)
-
   if (loading)
     return (
       <Layout>

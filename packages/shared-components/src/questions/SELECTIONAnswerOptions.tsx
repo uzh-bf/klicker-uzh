@@ -1,7 +1,8 @@
 import type { SelectionQuestionOptions } from '@klicker-uzh/graphql/dist/ops'
-import { SelectField } from '@uzh-bf/design-system'
+import { FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React from 'react'
+import React, { useMemo } from 'react'
+import Select from 'react-select'
 import { twMerge } from 'tailwind-merge'
 
 interface SELECTIONAnswerOptionsProps {
@@ -28,6 +29,26 @@ function SELECTIONAnswerOptions({
     (selectedValue) => selectedValue !== undefined
   )
 
+  // compute selection options for the select field
+  const selectionOptions = useMemo(() => {
+    if (
+      !options.answerCollection?.entries ||
+      options.answerCollection.entries.length === 0
+    ) {
+      return []
+    }
+
+    return (
+      options.answerCollection?.entries
+        ?.filter((entry) => !selectedValues.includes(entry.id))
+        .map((entry) => ({
+          label: entry.value,
+          value: entry.id,
+          data: { cy: `select-answer-${entry.value}` },
+        })) ?? []
+    )
+  }, [options.answerCollection?.entries, selectedValues])
+
   return (
     <div>
       <div className="mb-3">
@@ -43,37 +64,39 @@ function SELECTIONAnswerOptions({
         )}
       >
         {Object.entries(responses).map(([inputIndex, selectedValue]) => {
+          const selectedLabel = options.answerCollection?.entries?.find(
+            (entry) => entry.id === selectedValue
+          )?.value
+
           return (
             <div key={inputIndex} className="flex flex-col">
-              <SelectField
+              <FormLabel
                 required
-                value={selectedValue ? String(selectedValue) : undefined}
-                onChange={(newValue) => {
-                  onChange({ ...responses, [inputIndex]: parseInt(newValue) })
-                }}
-                items={
-                  options.answerCollection?.entries?.map((entry) => ({
-                    label: entry.value,
-                    value: String(entry.id),
-                    data: { cy: `select-answer-${entry.value}` },
-                    disabled:
-                      selectedValues.includes(entry.id) &&
-                      selectedValue !== entry.id,
-                  })) ?? []
-                }
                 label={t('shared.questions.seCorrectAnswerN', {
                   number: Number(inputIndex) + 1,
                 })}
                 labelType="small"
+              />
+              <Select
+                id={`selection-${elementIx + 1}-field-${Number(inputIndex) + 1}`}
+                instanceId={`selection-${elementIx + 1}-field-${Number(inputIndex) + 1}`}
+                isDisabled={disabled}
+                value={
+                  selectedValue
+                    ? { label: selectedLabel, value: selectedValue }
+                    : undefined
+                }
+                options={selectionOptions}
+                classNames={{
+                  container: () => 'w-full',
+                }}
+                onChange={(newValue) => {
+                  onChange({ ...responses, [inputIndex]: newValue?.value })
+                }}
                 placeholder={t('shared.questions.seSelectOption')}
-                disabled={disabled}
-                data={{
-                  cy: `selection-${elementIx + 1}-field-${Number(inputIndex) + 1}`,
-                }}
-                className={{
-                  root: 'w-full',
-                  select: { root: 'w-full', trigger: 'w-full' },
-                }}
+                noOptionsMessage={() =>
+                  t('shared.questions.noMatchingOptionFound')
+                }
               />
             </div>
           )

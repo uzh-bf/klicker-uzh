@@ -1163,16 +1163,16 @@ describe('Create different types of elements (with and without sample solution) 
 
     // check that inputs are available
     for (let i = 1; i < SEInputs; i++) {
-      cy.get(`[data-cy="selection-1-field-${i + 1}"]`).should('exist')
+      cy.get(`[id="selection-1-field-${i + 1}"]`).should('exist')
     }
 
     // check that all options are available
-    cy.get('[data-cy="selection-1-field-1"]').click()
+    cy.get('[id="selection-1-field-1"]').click()
     SESolutions.forEach((value) => {
-      cy.get(`[data-cy="select-answer-${value}"]`).contains(value)
+      cy.findByText(value).should('exist')
     })
     SESolutionsNotChosen.forEach((value) => {
-      cy.get(`[data-cy="select-answer-${value}"]`).contains(value)
+      cy.findByText(value).should('exist')
     })
   })
 
