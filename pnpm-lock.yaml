@@ -104,6 +104,9 @@ importers:
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
+      react-select:
+        specifier: 5.8.1
+        version: 5.8.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       sharp:
         specifier: 0.33.5
         version: 0.33.5
@@ -544,6 +547,9 @@ importers:
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
+      react-select:
+        specifier: 5.8.1
+        version: 5.8.1(@types/react@18.3.18)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       remeda:
         specifier: 2.15.0
         version: 2.15.0
