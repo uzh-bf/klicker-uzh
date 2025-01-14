@@ -77,7 +77,7 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
               src="assets/embed-modal.png"
               alt="Embed Modal"
               className="rounded border"
-            ></img>
+            />
           </div>
         </div>
         <URLForm slideID={slideID} />
