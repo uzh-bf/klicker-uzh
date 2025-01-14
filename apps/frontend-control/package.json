@@ -32,6 +32,7 @@
     "next-intl": "3.21.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "react-select": "5.8.1",
     "remeda": "2.15.0",
     "sharp": "0.33.5",
     "tailwind-merge": "2.5.4",
