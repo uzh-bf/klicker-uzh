@@ -107,6 +107,8 @@ export const LiveQuiz = LiveQuizRef.implement({
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
+    defaultPoints: t.exposeInt('defaultPoints'),
+    defaultCorrectPoints: t.exposeInt('defaultCorrectPoints'),
     maxBonusPoints: t.exposeInt('maxBonusPoints', { nullable: true }),
     timeToZeroBonus: t.exposeInt('timeToZeroBonus', { nullable: true }),
 

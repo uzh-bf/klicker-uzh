@@ -551,8 +551,6 @@ export async function updateElementInstances(
   const instanceData: {
     instanceId: number
     multiplier: number
-    maxBonusPoints: number | undefined
-    timeToZeroBonus: number | undefined
     liveQuizId: string | undefined
     practiceQuizId: string | undefined
     microLearningId: string | undefined
@@ -560,8 +558,6 @@ export async function updateElementInstances(
     {
       instanceId: number
       multiplier: number
-      maxBonusPoints: number | undefined
-      timeToZeroBonus: number | undefined
       liveQuizId: string | undefined
       practiceQuizId: string | undefined
       microLearningId: string | undefined
@@ -576,9 +572,7 @@ export async function updateElementInstances(
         {
           instanceId: instance.id,
           multiplier: instance.elementBlock.liveQuiz.pointsMultiplier,
-          maxBonusPoints: undefined,
-          timeToZeroBonus: undefined,
-          liveQuizId: instance.elementBlock.liveQuiz.id,
+          liveQuizId: instance.elementBlock.liveQuizId,
           practiceQuizId: undefined,
           microLearningId: undefined,
         },
@@ -594,8 +588,6 @@ export async function updateElementInstances(
         {
           instanceId: instance.id,
           multiplier: instance.elementStack.microLearning.pointsMultiplier,
-          maxBonusPoints: undefined,
-          timeToZeroBonus: undefined,
           liveQuizId: undefined,
           practiceQuizId: undefined,
           microLearningId: instance.elementStack.microLearning.id,
@@ -612,8 +604,6 @@ export async function updateElementInstances(
         {
           instanceId: instance.id,
           multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
-          maxBonusPoints: undefined,
-          timeToZeroBonus: undefined,
           liveQuizId: undefined,
           practiceQuizId: instance.elementStack.practiceQuiz.id,
           microLearningId: undefined,
@@ -630,8 +620,6 @@ export async function updateElementInstances(
         async ({
           instanceId,
           multiplier,
-          maxBonusPoints,
-          timeToZeroBonus,
           liveQuizId,
           practiceQuizId,
           microLearningId,
@@ -654,6 +642,7 @@ export async function updateElementInstances(
               elementData: newElementData,
               results: newResults,
               anonymousResults: newResults,
+              // keep previous options where possible and update them only where required
               options: {
                 ...oldInstance.options,
                 pointsMultiplier: multiplier * element.pointsMultiplier,

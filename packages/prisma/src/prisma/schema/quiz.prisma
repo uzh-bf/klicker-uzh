@@ -159,16 +159,18 @@ model LiveQuiz {
   isGamificationEnabled      Boolean @default(false)
   isDeleted                  Boolean @default(false)
 
-  namespace        String    @default(uuid()) @db.Uuid
-  pinCode          Int?
-  name             String
-  displayName      String
-  description      String?
-  startedAt        DateTime?
-  finishedAt       DateTime?
-  pointsMultiplier Int       @default(1)
-  maxBonusPoints   Int       @default(45)
-  timeToZeroBonus  Int       @default(20)
+  namespace            String    @default(uuid()) @db.Uuid
+  pinCode              Int?
+  name                 String
+  displayName          String
+  description          String?
+  startedAt            DateTime?
+  finishedAt           DateTime?
+  pointsMultiplier     Int       @default(1)
+  defaultPoints        Int       @default(10)
+  defaultCorrectPoints Int       @default(5)
+  maxBonusPoints       Int       @default(45)
+  timeToZeroBonus      Int       @default(20)
 
   accessMode AccessMode        @default(PUBLIC)
   status     PublicationStatus @default(DRAFT)

@@ -93,6 +93,8 @@ const feedbackDesktop = 'Feedback Desktop'
 const feedbackDesktop2 = 'Feedback Desktop 2'
 const feedbackMobile = 'Feedback Mobile'
 const feedbackResponse = 'Response to Feedback'
+const defaultPoints = 50
+const defaultCorrectPoints = 100
 const maxBonusPoints = 200
 const timeToZeroBonus = 100
 
@@ -210,10 +212,48 @@ describe('Different live-quiz workflows', () => {
     cy.get('[data-cy="select-course"]').contains(courseGamified)
 
     cy.get('[data-cy="live-quiz-advanced-settings"]').should('exist').click()
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').should('exist')
+    cy.get('[data-cy="live-quiz-default-points"]').click().clear()
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').should('not.exist')
+    cy.get('[data-cy="live-quiz-default-points"]').click().type('-10') // negative values should not be accepted
+    cy.get('[data-cy="live-quiz-default-points"]').should('have.value', '10')
+    cy.get('[data-cy="live-quiz-default-points"]')
+      .click()
+      .clear()
+      .type(String(defaultPoints))
+    cy.get('[data-cy="live-quiz-default-points"]').should(
+      'have.value',
+      String(defaultPoints)
+    )
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').should('exist')
+    cy.get('[data-cy="live-quiz-default-correct-points"]').click().clear()
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').should('not.exist')
+    cy.get('[data-cy="live-quiz-default-correct-points"]').click().type('-20') // negative values should not be accepted
+    cy.get('[data-cy="live-quiz-default-correct-points"]').should(
+      'have.value',
+      '20'
+    )
+    cy.get('[data-cy="live-quiz-default-correct-points"]')
+      .click()
+      .clear()
+      .type(String(defaultCorrectPoints))
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').should('exist')
+    cy.get('[data-cy="live-quiz-max-bonus-points"]').click().clear()
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').should('not.exist')
+    cy.get('[data-cy="live-quiz-max-bonus-points"]').click().type('-30') // negative values should not be accepted
+    cy.get('[data-cy="live-quiz-max-bonus-points"]').should('have.value', '30')
     cy.get('[data-cy="live-quiz-max-bonus-points"]')
       .click()
       .clear()
       .type(String(maxBonusPoints))
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').should('exist')
+    cy.get('[data-cy="live-quiz-time-to-zero-bonus"]').click().clear()
+    cy.get('[data-cy="live-quiz-advanced-settings-close"]').should('not.exist')
+    cy.get('[data-cy="live-quiz-time-to-zero-bonus"]').click().type('-40') // negative values should not be accepted
+    cy.get('[data-cy="live-quiz-time-to-zero-bonus"]').should(
+      'have.value',
+      '40'
+    )
     cy.get('[data-cy="live-quiz-time-to-zero-bonus"]')
       .click()
       .clear()
@@ -398,6 +438,14 @@ describe('Different live-quiz workflows', () => {
     // check settings and modify them
     cy.get('[data-cy="select-course"]').contains(courseGamified)
     cy.get('[data-cy="live-quiz-advanced-settings"]').should('exist').click()
+    cy.get('[data-cy="live-quiz-default-points"]').should(
+      'have.value',
+      defaultPoints
+    )
+    cy.get('[data-cy="live-quiz-default-correct-points"]').should(
+      'have.value',
+      defaultCorrectPoints
+    )
     cy.get('[data-cy="live-quiz-max-bonus-points"]').should(
       'have.value',
       maxBonusPoints

@@ -833,6 +833,8 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
 
+          defaultPoints: t.arg.int({ required: false }),
+          defaultCorrectPoints: t.arg.int({ required: false }),
           maxBonusPoints: t.arg.int({ required: false }),
           timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
@@ -860,6 +862,8 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: false }),
           multiplier: t.arg.int({ required: true }),
 
+          defaultPoints: t.arg.int({ required: false }),
+          defaultCorrectPoints: t.arg.int({ required: false }),
           maxBonusPoints: t.arg.int({ required: false }),
           timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),

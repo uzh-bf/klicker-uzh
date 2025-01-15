@@ -6,6 +6,8 @@ mutation EditLiveQuiz(
   $blocks: [ElementBlockInput!]!
   $courseId: String
   $multiplier: Int!
+  $defaultPoints: Int!
+  $defaultCorrectPoints: Int!
   $maxBonusPoints: Int!
   $timeToZeroBonus: Int!
   $isGamificationEnabled: Boolean!
@@ -21,6 +23,8 @@ mutation EditLiveQuiz(
     blocks: $blocks
     courseId: $courseId
     multiplier: $multiplier
+    defaultPoints: $defaultPoints
+    defaultCorrectPoints: $defaultCorrectPoints
     maxBonusPoints: $maxBonusPoints
     timeToZeroBonus: $timeToZeroBonus
     isGamificationEnabled: $isGamificationEnabled
