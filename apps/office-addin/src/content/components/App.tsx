@@ -56,7 +56,7 @@ export default function App({ isOfficeInitialized, newlyInserted }: AppProps) {
             <ol className="list-inside list-decimal">
               <li>Go to https://manage.klicker.uzh.ch/quizzes</li>
               <li>
-                For the quiz you want to embed, open the &ldquo;Embed
+                For the live quiz you want to embed, open the &ldquo;Embed
                 Evaluation&rdquo; dialog
               </li>
               <li>
