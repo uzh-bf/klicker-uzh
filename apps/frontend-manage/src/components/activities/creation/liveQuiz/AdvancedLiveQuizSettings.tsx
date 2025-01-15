@@ -1,4 +1,4 @@
-import { faGears } from '@fortawesome/free-solid-svg-icons'
+import { faBook, faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
@@ -70,7 +70,19 @@ function AdvancedLiveQuizSettings({
       escapeDisabled={showError}
     >
       <div className="mb-3">
-        {t('manage.activityWizard.liveQuizPointsExplanation')}
+        {t.rich('manage.activityWizard.liveQuizPointsExplanation', {
+          link: (text) => (
+            <a
+              href="https://www.klicker.uzh.ch/gamification/grading_logic/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary-100 hover:underline"
+            >
+              <FontAwesomeIcon icon={faBook} className="ml-1 mr-1.5" />
+              {text}
+            </a>
+          ),
+        })}
       </div>
       <div className="flex flex-col gap-6 md:flex-row md:gap-0">
         <div className="w-full md:mr-8 md:w-1/2">
