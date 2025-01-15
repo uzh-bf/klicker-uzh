@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.18...v3.3.0-alpha.19) (2025-01-15)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that correctness attribute is set correctly in aggregated responses for open questions ([#4457](https://github.com/uzh-bf/klicker-uzh/issues/4457)) ([bf44e23](https://github.com/uzh-bf/klicker-uzh/commit/bf44e23d3cfa33bb3b1da2ca416c0d8b1a2ae0a3))
+
+
+### Enhancements
+
+* add possibility to change points awarded by default and for correct answers in live quizzes ([#4459](https://github.com/uzh-bf/klicker-uzh/issues/4459)) ([532024b](https://github.com/uzh-bf/klicker-uzh/commit/532024b5c8a0e83a22da50b3f621e07a02e870e6))
+* **apps/docs:** extend documentation with new customizable live quiz grading functionalities ([#4460](https://github.com/uzh-bf/klicker-uzh/issues/4460)) ([7215369](https://github.com/uzh-bf/klicker-uzh/commit/7215369c4f4f948da2db9eccbc18183188012854))
+
 ## [3.3.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.17...v3.3.0-alpha.18) (2025-01-06)
 
 
