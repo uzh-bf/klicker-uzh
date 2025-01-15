@@ -79,6 +79,7 @@ function LiveQuizSettingsStep({
                   </div>
                   {values.isGamificationEnabled && (
                     <AdvancedLiveQuizSettings
+                      multiplier={values.multiplier}
                       defaultPointsValue={String(values.defaultPoints)}
                       correctPointsValue={String(values.defaultCorrectPoints)}
                       maxBonusValue={String(values.maxBonusPoints)}

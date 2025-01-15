@@ -23,12 +23,14 @@ import {
 import { twMerge } from 'tailwind-merge'
 
 function AdvancedLiveQuizSettings({
+  multiplier,
   defaultPointsValue,
   correctPointsValue,
   maxBonusValue,
   timeToZeroValue,
   showError,
 }: {
+  multiplier: string
   defaultPointsValue: string
   correctPointsValue: string
   maxBonusValue: string
@@ -37,10 +39,10 @@ function AdvancedLiveQuizSettings({
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
+  const multiplierValue = parseInt(multiplier, 10)
   const defaultPoints = parseInt(defaultPointsValue, 10) ?? LQ_DEFAULT_POINTS
   const defaultCorrectPoints =
     parseInt(correctPointsValue, 10) ?? LQ_DEFAULT_CORRECT_POINTS
-  const correctAnswerPoints = defaultPoints + defaultCorrectPoints
 
   return (
     <Modal
@@ -67,6 +69,9 @@ function AdvancedLiveQuizSettings({
       hideCloseButton={showError}
       escapeDisabled={showError}
     >
+      <div className="mb-3">
+        {t('manage.activityWizard.liveQuizPointsExplanation')}
+      </div>
       <div className="flex flex-col gap-6 md:flex-row md:gap-0">
         <div className="w-full md:mr-8 md:w-1/2">
           <FormikNumberField
@@ -132,17 +137,22 @@ function AdvancedLiveQuizSettings({
                 {
                   time: 0,
                   correctPoints:
-                    correctAnswerPoints + (parseInt(maxBonusValue, 10) ?? 0),
+                    defaultPoints +
+                    multiplierValue *
+                      (defaultCorrectPoints +
+                        (parseInt(maxBonusValue, 10) ?? 0)),
                   wrongPoints: defaultPoints,
                 },
                 {
                   time: parseInt(timeToZeroValue, 10) ?? 0,
-                  correctPoints: correctAnswerPoints,
+                  correctPoints:
+                    defaultPoints + multiplierValue * defaultCorrectPoints,
                   wrongPoints: defaultPoints,
                 },
                 {
                   time: 2 * (parseInt(timeToZeroValue, 10) ?? 0),
-                  correctPoints: correctAnswerPoints,
+                  correctPoints:
+                    defaultPoints + multiplierValue * defaultCorrectPoints,
                   wrongPoints: defaultPoints,
                 },
               ]}
@@ -163,7 +173,13 @@ function AdvancedLiveQuizSettings({
               </XAxis>
               <YAxis
                 dataKey="points"
-                domain={[0, parseInt(maxBonusValue) + correctAnswerPoints + 10]}
+                domain={[
+                  0,
+                  defaultPoints +
+                    multiplierValue *
+                      (defaultCorrectPoints + parseInt(maxBonusValue)) +
+                    10,
+                ]}
                 type="number"
               />
               <Line

@@ -1160,6 +1160,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       liveQuizStartNow: 'Jetzt starten',
       liveQuizAdvancedSettings: 'Erweiterte Einstellungen',
+      liveQuizPointsExplanation:
+        'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte bachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplier von 1x beziehen. Höhere Multiplier werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplier wird in der Illustration bereits mit einbezogen.',
       liveQuizDefaultPoints: 'Standardpunkte',
       liveQuizDefaultPointsTooltip:
         'Teilnehmende in einem Live-Quiz erhalten diese Anzahl Punkte für das Teilnehmen an einer Frage. Wenn keine Musterlösung definiert ist, werden nur Standardpunkte vergeben. Der Standardwert beträgt {defaultValue}.',
