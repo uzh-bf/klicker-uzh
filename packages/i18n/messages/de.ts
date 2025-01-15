@@ -158,7 +158,7 @@ export default {
       liveQA: 'Live-Q&A',
       moderation: 'Moderation',
       feedbackChannel: 'Feedback-Channel',
-      multiplier: 'Multiplier',
+      multiplier: 'Multiplikator',
       options: 'Optionen',
       correct: 'Richtig',
       delete: 'Löschen',
@@ -882,7 +882,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shortnameAlphanumeric:
         'Der Kurzname darf nur aus Buchstaben und Zahlen bestehen.',
       shortnameTaken: 'Dieser Kurzname ist bereits vergeben.',
-      emailUpdates: 'Project-Updates per E-Mail',
+      emailUpdates: 'Projekt-Updates per E-Mail',
       emailUpdatesTooltip:
         'Diese Einstellung beeinflusst die E-Mails, die Sie in Verbindung mit KlickerUZH erhalten. E-Mails zu wichtigen Releases werden immer an Ihre Edu-ID E-Mail-Adresse gesendet (ca. 2x pro Jahr), häufigere Projekt-Updates (z.B. zu Beta-Tests oder Umfragen) können hier aktiviert oder deaktiviert werden.',
     },
@@ -963,7 +963,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       tagFormatting:
         'Zwischenzeitlich erforderliche Formattierung: Geben Sie Tags durch Kommas getrennt ein, z.B.: Tag1,Tag2,Tag3',
       multiplierTooltip:
-        'Wählen Sie einen Multiplier, mit welchem die Punkte für diese Frage multipliziert werden sollen. Der Multiplier kann nur zwischen 1 und 4 liegen.',
+        'Wählen Sie einen Multiplikator, mit welchem die Punkte für diese Frage multipliziert werden sollen. Der Multiplikator kann nur zwischen 1 und 4 liegen.',
       questionTooltip:
         'Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen.',
       questionPlaceholder: 'Fragetext hier eingeben…',
@@ -1005,7 +1005,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
       updateInstances: 'Frage-Instanzen in KlickerUZH-Elementen aktualisieren',
       updateInstancesExplanation:
-        'Nutzen sie diese Einstellung, um die Frage in allen geplanten Quizzes, Übungs-Quizzes und Microlearnings anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplier werden auch auf die erstellten Instanzen angewendet.',
+        'Nutzen sie diese Einstellung, um die Frage in allen geplanten Quizzes, Übungs-Quizzes und Microlearnings anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplikatoren werden auch auf die erstellten Instanzen angewendet.',
     },
     activityWizard: {
       activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',
@@ -1103,7 +1103,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microlearningEndBeforeCourseEnd:
         'Das Enddatum des Microlearnings muss vor dem Enddatum des Kurses liegen.',
       microlearningMultiplier:
-        'Der Multiplier ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
+        'Der Multiplikator ist ein Faktor, mit welchem die Punkte der Teilnehmenden bei einem gamifizierten Microlearning multipliziert werden.',
       microlearningUseCase:
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
       minOneElementPerStack:
@@ -1141,7 +1141,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizEnableGamification:
         'Wählen Sie einen gamifizierten Kurs aus, um Gamifizierung zu aktivieren.',
       liveQuizMultiplier:
-        'Beim Multiplier handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
+        'Beim Multiplikator handelt es sich um einen Faktor, mit welchem die Punkte bei einer beantworteten Frage multipliziert werden. Der Faktor findet nur Verwendung, wenn Gamification aktiviert ist.',
       liveQuizGamification:
         'Das Quiz übernimmt automatisch die Gamifizierungseinstellung des Kurses. Wird das Quiz keinem Kurs zugeordnet, kann die Gamifizierung nicht aktiviert werden.',
       liveQuizLiveQA:
@@ -1161,7 +1161,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizStartNow: 'Jetzt starten',
       liveQuizAdvancedSettings: 'Erweiterte Einstellungen',
       liveQuizPointsExplanation:
-        'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte bachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplier von 1x beziehen. Höhere Multiplier werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplier wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
+        'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte bachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplikator von 1x beziehen. Höhere Multiplikatoren werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplikator wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
       liveQuizDefaultPoints: 'Standardpunkte',
       liveQuizDefaultPointsTooltip:
         'Teilnehmende in einem Live-Quiz erhalten diese Anzahl Punkte für das Teilnehmen an einer Frage. Wenn keine Musterlösung definiert ist, werden nur Standardpunkte vergeben. Der Standardwert beträgt {defaultValue}.',
@@ -1245,7 +1245,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSelectCourse:
         'Für die Erstellung eines Übungs-Quizzes ist die Auswahl des zugehörigen Kurses erforderlich.',
       practiceQuizMultiplier:
-        'Wählen Sie einen Multiplier aus. Alle Punkte, welche Studierenden in diesem Übungs-Quiz sammeln, werden mit dem Multiplier multipliziert.',
+        'Wählen Sie einen Multiplikator aus. Alle Punkte, welche Studierenden in diesem Übungs-Quiz sammeln, werden mit dem Multiplikator multipliziert.',
       practiceQuizRepetition:
         'Wählen Sie einen Zeitraum nach welchem die Studierenden das Übungs-Quiz wiederholen können.',
       practiceQuizOrder:
@@ -1832,7 +1832,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nPoints: '{number} Punkte',
       achievedScore: 'Erreichte Punktzahl',
       maxScoreTooltip:
-        'Die maximale Punktzahl für eine Frage setzt sich aus den Multipliern der Frage und der Gruppenaktivität zusammen.',
+        'Die maximale Punktzahl für eine Frage setzt sich aus den Multiplikatoren der Frage und der Gruppenaktivität zusammen.',
       passedMissingError:
         'Bitte geben Sie an, ob die Gruppenaktivität bestanden wurde oder nicht.',
       scoreMissingError:
