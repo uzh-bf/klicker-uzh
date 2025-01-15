@@ -245,6 +245,8 @@ interface ManipulateLiveQuizArgs {
   blocks: BlockInput[]
   courseId?: string | null
   multiplier: number
+  defaultPoints?: number | null
+  defaultCorrectPoints?: number | null
   maxBonusPoints?: number | null
   timeToZeroBonus?: number | null
   isGamificationEnabled: boolean
@@ -262,6 +264,8 @@ export async function manipulateLiveQuiz(
     blocks,
     courseId,
     multiplier,
+    defaultPoints,
+    defaultCorrectPoints,
     maxBonusPoints,
     timeToZeroBonus,
     isGamificationEnabled,
@@ -334,6 +338,8 @@ export async function manipulateLiveQuiz(
     displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
+    defaultPoints: defaultPoints ?? undefined,
+    defaultCorrectPoints: defaultCorrectPoints ?? undefined,
     maxBonusPoints: maxBonusPoints ?? undefined,
     timeToZeroBonus: timeToZeroBonus ?? undefined,
     isGamificationEnabled,
@@ -928,6 +934,8 @@ export async function activateLiveQuizBlock(
       sessionBlockId: blockId,
       type: elementData.type,
       pointsMultiplier: instance.options.pointsMultiplier,
+      defaultPoints: updatedQuiz.defaultPoints,
+      defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
     }

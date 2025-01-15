@@ -16,6 +16,7 @@ import { verify } from 'jsonwebtoken'
 import { toLowerCase } from 'remeda'
 import getRedis from './redis'
 
+// TODO: check if these values can also be fetched from shared components?!
 const MAX_BONUS_POINTS = 45 // maximum 45 bonus points for fastest answer
 const TIME_TO_ZERO_BONUS = 20 // seconds until the bonus points are zero
 const DEFAULT_POINTS = 10 // points a participant gets for participating in a poll
@@ -188,8 +189,14 @@ const serviceBusTrigger = async function (
             timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
               ? TIME_TO_ZERO_BONUS
               : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: DEFAULT_POINTS,
-            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
+              ? DEFAULT_POINTS
+              : parseInt(instanceInfo.defaultPoints, 10),
+            defaultCorrectPoints: isNaN(
+              parseInt(instanceInfo.defaultCorrectPoints, 10)
+            )
+              ? DEFAULT_CORRECT_POINTS
+              : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsPercentage,
             pointsMultiplier,
           })
@@ -254,8 +261,11 @@ const serviceBusTrigger = async function (
             maxBonus: parseInt(instanceInfo.maxBonusPoints) ?? MAX_BONUS_POINTS,
             timeToZeroBonus:
               parseInt(instanceInfo.timeToZeroBonus) ?? TIME_TO_ZERO_BONUS,
-            defaultPoints: DEFAULT_POINTS,
-            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            defaultPoints:
+              parseInt(instanceInfo.defaultPoints) ?? DEFAULT_POINTS,
+            defaultCorrectPoints:
+              parseInt(instanceInfo.defaultCorrectPoints) ??
+              DEFAULT_CORRECT_POINTS,
             pointsMultiplier,
           })
           xpAwarded = computeAwardedXp({

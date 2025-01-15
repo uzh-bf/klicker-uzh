@@ -46,7 +46,7 @@ function LiveQuizSettingsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, isValid, isSubmitting, setFieldValue }) => (
+      {({ values, errors, isValid, isSubmitting, setFieldValue }) => (
         <Form className="h-full w-full">
           <CreationFormValidator
             isValid={isValid}
@@ -79,8 +79,16 @@ function LiveQuizSettingsStep({
                   </div>
                   {values.isGamificationEnabled && (
                     <AdvancedLiveQuizSettings
+                      defaultPointsValue={String(values.defaultPoints)}
+                      correctPointsValue={String(values.defaultCorrectPoints)}
                       maxBonusValue={String(values.maxBonusPoints)}
                       timeToZeroValue={String(values.timeToZeroBonus)}
+                      showError={
+                        !!errors.defaultPoints ||
+                        !!errors.defaultCorrectPoints ||
+                        !!errors.maxBonusPoints ||
+                        !!errors.timeToZeroBonus
+                      }
                     />
                   )}
                 </div>

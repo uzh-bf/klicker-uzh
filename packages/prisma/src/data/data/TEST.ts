@@ -201,6 +201,8 @@ export const LIVE_QUIZZES = [
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
     status: PublicationStatus.DRAFT,
+    defaultPoints: 50,
+    defaultCorrectPoints: 100,
     maxBonusPoints: 100,
     timeToZeroBonus: 200,
     blocks: [

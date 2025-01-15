@@ -1160,15 +1160,34 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       liveQuizStartNow: 'Jetzt starten',
       liveQuizAdvancedSettings: 'Erweiterte Einstellungen',
+      liveQuizDefaultPoints: 'Standardpunkte',
+      liveQuizDefaultPointsTooltip:
+        'Teilnehmende in einem Live-Quiz erhalten diese Anzahl Punkte für das Teilnehmen an einer Frage. Wenn keine Musterlösung definiert ist, werden nur Standardpunkte vergeben. Der Standardwert beträgt {defaultValue}.',
+      liveQuizDefaultCorrectPoints: 'Punkte für korrekte Antwort',
+      liveQuizDefaultCorrectPointsTooltip:
+        'Teilnehmende in einem Live-Quiz erhalten diese Anzahl Punkte für eine korrekte Antwort auf eine Frage mit Musterlösung. Der Standardwert beträgt {defaultValue}.',
       liveQuizMaxBonusPoints: 'Maximale Bonuspunkte',
       liveQuizMaxBonusPointsTooltip:
         'Dies ist die maximale Anzahl von Bonuspunkten, die ein Teilnehmer während eines gamifizierten Live-Quiz für eine korrekte Antwort auf eine Frage mit Musterlösung erhalten wird. Der Standardwert beträgt {defaultValue}.',
       liveQuizTimeToZeroBonus: 'Zeit bis zum Ende von Bonuspunkten',
       liveQuizTimeToZeroBonusTooltip:
         'Dies ist die Zeit in Sekunden nach der ersten korrekten Antwort, nach der ein Teilnehmer keine Bonuspunkte mehr für eine korrekte Antwort erhält. Der Standardwert beträgt {defaultValue}.',
-      liveQuizTotalPointsCorrect: 'Gesamtpunkte für korrekte Antwort über Zeit',
-      liveQuizAnswerTime: 'Zeitpunkt: {answerTime}',
-      liveQuizTotalAwardedPoints: 'Gesamtpunkte: {totalPoints}',
+      liveQuizAnswerTime: 'Zeitpunkt: {answerTime} s',
+      liveQuizCorrectAnswersPoints: 'Punkte für korrekte Antwort',
+      liveQuizIncorrectAnswersPoints:
+        'Punkte für inkorrekte Antwort / keine Musterlösung',
+      liveQuizTotalAwardedPointsCorrect:
+        'Gesamtpunkte (korrekt): {totalPoints}',
+      liveQuizTotalAwardedPointsIncorrect:
+        'Gesamtpunkte (inkorrekt): {totalPoints}',
+      liveQuizDefaultPointsReq:
+        'Bitte geben Sie eine gültige Anzahl Standardpunkte ein, welche für jede Antwort vergeben werden.',
+      liveQuizDefaultPointsMin:
+        'Die Standardpunkte müssen mindestens 0 betragen.',
+      liveQuizDefaultCorrectPointsReq:
+        'Bitte geben Sie eine gültige Anzahl Punkte ein, welche für jede korrekte Antwort vergeben werden.',
+      liveQuizDefaultCorrectPointsMin:
+        'Die Punkte für korrekte Antworten müssen mindestens 0 betragen.',
       liveQuizMaxBonusPointsReq:
         'Bitte geben Sie eine gültige Anzahl von maximalen Bonuspunkten ein.',
       liveQuizMaxBonusPointsMin:
