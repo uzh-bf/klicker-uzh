@@ -45,11 +45,7 @@ function CancelLiveQuizModal({
     })
 
   // fetch course information
-  const {
-    data,
-    loading: queryLoading,
-    refetch,
-  } = useQuery(GetLiveQuizSummaryDocument, {
+  const { data, loading: queryLoading } = useQuery(GetLiveQuizSummaryDocument, {
     variables: { quizId },
     skip: !open,
   })
@@ -75,13 +71,6 @@ function CancelLiveQuizModal({
       refetchQueries: [{ query: GetUserLiveQuizzesDocument }],
     }
   )
-
-  // manually re-trigger the query when the modal is opened
-  useEffect(() => {
-    if (open) {
-      refetch()
-    }
-  }, [open])
 
   useEffect(() => {
     if (!data?.getLiveQuizSummary) {

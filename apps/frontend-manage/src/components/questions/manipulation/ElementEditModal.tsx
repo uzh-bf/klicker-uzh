@@ -81,7 +81,7 @@ function ElementEditModal({
     GetSingleQuestionDocument,
     {
       variables: { id: elementId! },
-      skip: typeof elementId === 'undefined',
+      skip: typeof elementId === 'undefined' || !isOpen,
     }
   )
 

@@ -1612,18 +1612,45 @@ export async function getLiveQuizSummary(
           elements: true,
         },
       },
+      activeBlock: {
+        include: {
+          elements: true,
+        },
+      },
     },
   })
 
   if (!liveQuiz) return null
 
-  const storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
+  // get responses for completed blocks
+  let storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
     acc_b += block.elements.reduce((acc_i, instance) => {
       acc_i += instance.results.total + instance.anonymousResults.total
       return acc_i
     }, 0)
     return acc_b
   }, 0)
+
+  // get results for active blocks
+  if (liveQuiz.activeBlock) {
+    const cachedResults = await getCachedBlockResults({
+      ctx,
+      activeBlock: liveQuiz.activeBlock,
+    })
+
+    if (cachedResults) {
+      const { instanceResults } = cachedResults
+      const cachedResponses = liveQuiz.activeBlock.elements.reduce(
+        (acc, instance) => {
+          acc += instanceResults[instance.id]?.anonymousResults.total ?? 0
+          return acc
+        },
+        0
+      )
+
+      storedResponses += cachedResponses
+    }
+  }
 
   return {
     numOfResponses: storedResponses,

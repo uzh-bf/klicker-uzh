@@ -23,14 +23,13 @@ function PracticeQuizDeletionModal({
   courseId,
 }: PracticeQuizDeletionModalProps) {
   const t = useTranslations()
-  const {
-    data: summaryData,
-    loading: summaryLoading,
-    refetch,
-  } = useQuery(GetPracticeQuizSummaryDocument, {
-    variables: { id: activityId },
-    skip: !open,
-  })
+  const { data: summaryData, loading: summaryLoading } = useQuery(
+    GetPracticeQuizSummaryDocument,
+    {
+      variables: { id: activityId },
+      skip: !open,
+    }
+  )
 
   const [deletePracticeQuiz, { loading: deletingPracticeQuiz }] = useMutation(
     DeletePracticeQuizDocument,
@@ -53,13 +52,6 @@ function PracticeQuizDeletionModal({
     deleteResponses: false,
     deleteAnonymousResponses: false,
   })
-
-  // manually re-trigger the query when the modal is opened
-  useEffect(() => {
-    if (open) {
-      refetch()
-    }
-  }, [open])
 
   useEffect(() => {
     if (summaryData?.getPracticeQuizSummary) {

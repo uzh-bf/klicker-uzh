@@ -21,14 +21,13 @@ function LiveQuizDeletionModal({
   deleting,
 }: LiveQuizDeletionModalProps) {
   const t = useTranslations()
-  const {
-    data: summaryData,
-    loading: summaryLoading,
-    refetch,
-  } = useQuery(GetLiveQuizSummaryDocument, {
-    variables: { quizId },
-    skip: !open,
-  })
+  const { data: summaryData, loading: summaryLoading } = useQuery(
+    GetLiveQuizSummaryDocument,
+    {
+      variables: { quizId },
+      skip: !open,
+    }
+  )
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -36,13 +35,6 @@ function LiveQuizDeletionModal({
     deleteFeedbacks: false, // Q&A channel
     deleteConfusionFeedbacks: false, // Confusion channel
   })
-
-  // manually re-trigger the query when the modal is opened
-  useEffect(() => {
-    if (open) {
-      refetch()
-    }
-  }, [open])
 
   useEffect(() => {
     if (summaryData?.getLiveQuizSummary) {

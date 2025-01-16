@@ -14,15 +14,18 @@ function LazyHMACLink({
   quizId,
   params,
   identifier,
+  skipQuery = false,
 }: {
   quizId: string
   params: string
   identifier: string
+  skipQuery?: boolean
 }) {
   const quizHMAC = useQuery(GetLiveQuizHmacDocument, {
     variables: {
       id: quizId,
     },
+    skip: skipQuery,
   })
 
   if (quizHMAC.loading || !quizHMAC.data?.liveQuizHMAC) {
@@ -106,6 +109,7 @@ function EmbeddingModal({
           quizId={quizId}
           params={``}
           identifier="generic-evaluation"
+          skipQuery={!open}
         />
       </div>
       <div className="flex flex-col gap-2">
