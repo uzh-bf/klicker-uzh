@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.19...v3.3.0-alpha.20) (2025-01-16)
+
+
+### Bug Fixes
+
+* ensure that sample solutions and answer feedbacks are only stored in questions where the corresponding option is activated ([#4461](https://github.com/uzh-bf/klicker-uzh/issues/4461)) ([87cfc79](https://github.com/uzh-bf/klicker-uzh/commit/87cfc79099ccfd834af1f13a805e6fb12759e983))
+
 ## [3.3.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.18...v3.3.0-alpha.19) (2025-01-15)
 
 
