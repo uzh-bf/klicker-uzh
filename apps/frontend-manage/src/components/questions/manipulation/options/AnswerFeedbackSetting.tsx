@@ -18,6 +18,7 @@ function AnswerFeedbackSetting({ values }: AnswerFeedbackSettingProps) {
       name="options.hasAnswerFeedbacks"
       label={t('manage.questionPool.answerFeedbacks')}
       disabled={!values.options.hasSampleSolution}
+      data={{ cy: 'configure-answer-feedbacks' }}
       className={{
         root: twMerge(!values.options.hasSampleSolution && 'opacity-50'),
         label: 'text-gray-600',

@@ -110,18 +110,18 @@ async function run() {
           ) {
             // ! UPDATE (detected in current prod DB)
             // answer feedbacks are defined, but not needed -> remove answer feedbacks
-            // await prisma.element.update({
-            //   where: { id: element.id },
-            //   data: {
-            //     options: {
-            //       ...element.options,
-            //       choices: element.options.choices.map((choice) => ({
-            //         ...choice,
-            //         feedback: undefined,
-            //       })),
-            //     },
-            //   },
-            // })
+            await prisma.element.update({
+              where: { id: element.id },
+              data: {
+                options: {
+                  ...element.options,
+                  choices: element.options.choices.map((choice) => ({
+                    ...choice,
+                    feedback: undefined,
+                  })),
+                },
+              },
+            })
 
             // increment the corresponding count
             surplusChoicesAnswerFeedbacksSampleSolutionEnabled++
@@ -135,16 +135,16 @@ async function run() {
           ) {
             // ! UPDATE (detected in current prod DB)
             // sample solution is missing -> deactivate setting
-            // await prisma.element.update({
-            //   where: { id: element.id },
-            //   data: {
-            //     options: {
-            //       ...element.options,
-            //       hasSampleSolution: false,
-            //       solutionRanges: undefined,
-            //     },
-            //   },
-            // })
+            await prisma.element.update({
+              where: { id: element.id },
+              data: {
+                options: {
+                  ...element.options,
+                  hasSampleSolution: false,
+                  solutionRanges: undefined,
+                },
+              },
+            })
 
             missingNumericalSampleSolution++
           }
@@ -157,16 +157,16 @@ async function run() {
           ) {
             // ! UPDATE (detected in current prod DB)
             // sample solution is missing -> deactivate setting
-            // await prisma.element.update({
-            //   where: { id: element.id },
-            //   data: {
-            //     options: {
-            //       ...element.options,
-            //       hasSampleSolution: false,
-            //       solutions: undefined,
-            //     },
-            //   },
-            // })
+            await prisma.element.update({
+              where: { id: element.id },
+              data: {
+                options: {
+                  ...element.options,
+                  hasSampleSolution: false,
+                  solutions: undefined,
+                },
+              },
+            })
 
             missingFreeTextSampleSolution++
           }
@@ -200,21 +200,21 @@ async function run() {
           if (hasSolutionDefined || hasFeedbacksDefined) {
             // ! UPDATE (detected in current prod DB)
             // sample solution or answer feedback are defiend on some choice, even though setting is disabled --> remove sample solutions and answer feedbacks
-            // await prisma.element.update({
-            //   where: { id: element.id },
-            //   data: {
-            //     options: {
-            //       ...element.options,
-            //       hasSampleSolution: false,
-            //       hasAnswerFeedbacks: false,
-            //       choices: element.options.choices.map((choice) => ({
-            //         ...choice,
-            //         correct: undefined,
-            //         feedback: undefined,
-            //       })),
-            //     },
-            //   },
-            // })
+            await prisma.element.update({
+              where: { id: element.id },
+              data: {
+                options: {
+                  ...element.options,
+                  hasSampleSolution: false,
+                  hasAnswerFeedbacks: false,
+                  choices: element.options.choices.map((choice) => ({
+                    ...choice,
+                    correct: undefined,
+                    feedback: undefined,
+                  })),
+                },
+              },
+            })
 
             // increment the corresponding count
             if (hasSolutionDefined) {
@@ -229,16 +229,16 @@ async function run() {
           if ('solutionRanges' in element.options) {
             // ! UPDATE (detected in current prod DB)
             // sample solution is defined, but not needed -> remove solution
-            // await prisma.element.update({
-            //   where: { id: element.id },
-            //   data: {
-            //     options: {
-            //       ...element.options,
-            //       solutionRanges: undefined,
-            //       solutions: undefined,
-            //     },
-            //   },
-            // })
+            await prisma.element.update({
+              where: { id: element.id },
+              data: {
+                options: {
+                  ...element.options,
+                  solutionRanges: undefined,
+                  solutions: undefined,
+                },
+              },
+            })
 
             // ? caution: empty or null solutions are not considered in counts, but still removed as part of the cleanup
             // only count the cases where the solutions are not empty or null
@@ -254,16 +254,16 @@ async function run() {
           if ('solutions' in element.options) {
             // ! UPDATE (detected in current prod DB)
             // sample solution is defined, but not needed -> remove solution
-            // await prisma.element.update({
-            //   where: { id: element.id },
-            //   data: {
-            //     options: {
-            //       ...element.options,
-            //       solutionRanges: undefined,
-            //       solutions: undefined,
-            //     },
-            //   },
-            // })
+            await prisma.element.update({
+              where: { id: element.id },
+              data: {
+                options: {
+                  ...element.options,
+                  solutionRanges: undefined,
+                  solutions: undefined,
+                },
+              },
+            })
 
             // ? caution: empty or null solutions are not considered in counts, but still removed as part of the cleanup
             // only count the cases where the solutions are not empty or null
