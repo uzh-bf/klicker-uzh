@@ -202,10 +202,22 @@ describe('@klicker-uzh/grading', () => {
     expect(points14).toEqual(1)
 
     const points15 = gradeQuestionNumerical({
+      exactSolutions: [0.1],
+      response: 0.1,
+    })
+    expect(points15).toEqual(1)
+
+    const points16 = gradeQuestionNumerical({
+      exactSolutions: [0.1],
+      response: 0.5,
+    })
+    expect(points16).toEqual(0)
+
+    const points17 = gradeQuestionNumerical({
       exactSolutions: [],
       response: 0.1,
     })
-    expect(points15).toEqual(null)
+    expect(points17).toEqual(null)
   })
 
   it('should grade FREE_TEXT questions correctly', () => {

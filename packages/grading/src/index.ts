@@ -108,9 +108,12 @@ export function gradeQuestionNumerical({
     if (withinRanges.some((match) => match === true)) return 1
   } else if (exactSolutions && exactSolutions.length > 0) {
     const solutionMatches = exactSolutions.map((solution) => {
+      const numericalSolution =
+        typeof solution === 'number' ? solution : parseFloat(solution)
+
       return (
-        solution - Number.EPSILON <= response &&
-        response <= solution + Number.EPSILON
+        numericalSolution - Number.EPSILON <= response &&
+        response <= numericalSolution + Number.EPSILON
       )
     })
 

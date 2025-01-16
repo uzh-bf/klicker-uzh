@@ -262,7 +262,7 @@ export const QUESTIONS = [
         min: -10,
         max: 100,
       },
-      exactSolutions: ['0', '20', '100'],
+      exactSolutions: [0, 20, 100],
     },
   },
   {
