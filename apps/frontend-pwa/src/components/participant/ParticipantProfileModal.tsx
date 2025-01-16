@@ -26,6 +26,7 @@ function ParticipantProfileModal({
   )
   const { data, loading } = useQuery(GetPublicParticipantProfileDocument, {
     variables: { id: selectedParticipant },
+    skip: !isProfileModalOpen,
   })
 
   const participant = data?.publicParticipantProfile
