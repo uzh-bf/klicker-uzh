@@ -257,7 +257,11 @@ async function run() {
             // await prisma.element.update({
             //   where: { id: element.id },
             //   data: {
-            //     options: { ...element.options, solutions: undefined },
+            //     options: {
+            //       ...element.options,
+            //       solutionRanges: undefined,
+            //       solutions: undefined,
+            //     },
             //   },
             // })
 
