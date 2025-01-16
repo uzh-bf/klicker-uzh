@@ -927,7 +927,7 @@ describe('Create and solve a group activity', function () {
     // check grading
     checkGradingVisualization(
       this.data.running.grading.scores1,
-      this.data.running.answers.grading.maxPoints,
+      this.data.running.grading.maxPoints,
       this.data.running.grading.comments1,
       this.data.running.grading.gradingComment1
     )
@@ -951,7 +951,7 @@ describe('Create and solve a group activity', function () {
     // check grading
     checkGradingVisualization(
       this.data.running.grading.scores1,
-      this.data.running.answers.grading.maxPoints,
+      this.data.running.grading.maxPoints,
       this.data.running.grading.comments1,
       this.data.running.grading.gradingComment1
     )
@@ -975,7 +975,7 @@ describe('Create and solve a group activity', function () {
     // check grading
     checkGradingVisualization(
       this.data.running.grading.scores2,
-      this.data.running.answers.grading.maxPoints,
+      this.data.running.grading.maxPoints,
       this.data.running.grading.comments2,
       this.data.running.grading.gradingComment2
     )
