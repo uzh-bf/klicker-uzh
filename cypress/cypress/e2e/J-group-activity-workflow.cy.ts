@@ -476,6 +476,7 @@ describe('Create and solve a group activity', function () {
 
   function checkGradingVisualization(
     scores: string[],
+    maxPoints: string[],
     comments: string[],
     gradingComment?: string
   ) {
@@ -483,7 +484,7 @@ describe('Create and solve a group activity', function () {
       (acc: number, value: string) => acc + parseInt(value),
       0
     )
-    const maxScore = this.data.running.answers.grading.maxPoints.reduce(
+    const maxScore = maxPoints.reduce(
       (acc: number, value: string) => acc + parseInt(value),
       0
     )
@@ -492,7 +493,7 @@ describe('Create and solve a group activity', function () {
     scores.forEach((score, ix) => {
       cy.get(`[data-cy="group-activity-grading-feedback-${ix}"]`).should(
         'contain',
-        `${score}/${this.data.running.answers.grading.maxPoints[ix]} Points`
+        `${score}/${maxPoints[ix]} Points`
       )
 
       if (comments[ix]) {
@@ -926,6 +927,7 @@ describe('Create and solve a group activity', function () {
     // check grading
     checkGradingVisualization(
       this.data.running.grading.scores1,
+      this.data.running.answers.grading.maxPoints,
       this.data.running.grading.comments1,
       this.data.running.grading.gradingComment1
     )
@@ -949,6 +951,7 @@ describe('Create and solve a group activity', function () {
     // check grading
     checkGradingVisualization(
       this.data.running.grading.scores1,
+      this.data.running.answers.grading.maxPoints,
       this.data.running.grading.comments1,
       this.data.running.grading.gradingComment1
     )
@@ -972,6 +975,7 @@ describe('Create and solve a group activity', function () {
     // check grading
     checkGradingVisualization(
       this.data.running.grading.scores2,
+      this.data.running.answers.grading.maxPoints,
       this.data.running.grading.comments2,
       this.data.running.grading.gradingComment2
     )
