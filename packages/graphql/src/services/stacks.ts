@@ -2040,10 +2040,12 @@ function computeAggregatedResponsesQuestion({
   instance,
   existingResponse,
   response,
+  correctness,
 }: {
   instance: ElementInstance
   existingResponse: PrismaQuestionResponse | null
   response: ResponseInput
+  correctness?: number | null
 }): ElementInstanceResults | null {
   if (
     instance.elementType === ElementType.SC ||
@@ -2066,7 +2068,7 @@ function computeAggregatedResponsesQuestion({
         instance.elementType === ElementType.NUMERICAL
           ? String(parseFloat(response.value!))
           : toLowerCase(response.value!.trim()),
-      correctness: 1,
+      correctness: correctness ?? 0,
     })
   } else if (instance.elementType === ElementType.SELECTION) {
     return computeAggregatedResponsesSelection({
@@ -2490,6 +2492,7 @@ export async function respondToQuestion(
         instance: updatedInstance,
         existingResponse,
         response,
+        correctness,
       })
 
       if (!newAggResponses) {

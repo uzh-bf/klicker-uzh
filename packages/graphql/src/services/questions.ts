@@ -5,7 +5,7 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { DisplayMode } from '@klicker-uzh/types'
+import { Choice, DisplayMode } from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
@@ -20,8 +20,16 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
       return {
         displayMode: options.displayMode ?? DisplayMode.LIST,
         hasSampleSolution: options.hasSampleSolution ?? false,
-        hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? false,
-        choices: options.choices,
+        hasAnswerFeedbacks:
+          (options.hasSampleSolution && options.hasAnswerFeedbacks) ?? false,
+        choices: options.choices.map((choice: Choice) => ({
+          ...choice,
+          correct: options.hasSampleSolution ? choice.correct : undefined,
+          feedback:
+            options.hasSampleSolution && options.hasAnswerFeedbacks
+              ? choice.feedback
+              : undefined,
+        })),
       }
     }
 
@@ -36,15 +44,21 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
           min: options?.restrictions?.min ?? undefined,
           max: options?.restrictions?.max ?? undefined,
         },
-        solutionRanges: options?.solutionRanges ?? undefined,
-        exactSolutions: options?.exactSolutions ?? undefined,
+        solutionRanges: options?.hasSampleSolution
+          ? (options?.solutionRanges ?? undefined)
+          : undefined,
+        exactSolutions: options?.hasSampleSolution
+          ? (options?.exactSolutions ?? undefined)
+          : undefined,
       }
     }
 
     case DB.ElementType.FREE_TEXT: {
       return {
         hasSampleSolution: options?.hasSampleSolution ?? false,
-        solutions: options?.solutions ?? undefined,
+        solutions: options?.hasSampleSolution
+          ? (options?.solutions ?? undefined)
+          : undefined,
         restrictions: {
           ...options?.restrictions,
           maxLength: options?.restrictions?.maxLength ?? undefined,
@@ -683,8 +697,6 @@ export async function updateElementInstances(
   const instanceData: {
     instanceId: number
     multiplier: number
-    maxBonusPoints: number | undefined
-    timeToZeroBonus: number | undefined
     liveQuizId: string | undefined
     practiceQuizId: string | undefined
     microLearningId: string | undefined
@@ -692,8 +704,6 @@ export async function updateElementInstances(
     {
       instanceId: number
       multiplier: number
-      maxBonusPoints: number | undefined
-      timeToZeroBonus: number | undefined
       liveQuizId: string | undefined
       practiceQuizId: string | undefined
       microLearningId: string | undefined
@@ -708,9 +718,7 @@ export async function updateElementInstances(
         {
           instanceId: instance.id,
           multiplier: instance.elementBlock.liveQuiz.pointsMultiplier,
-          maxBonusPoints: undefined,
-          timeToZeroBonus: undefined,
-          liveQuizId: instance.elementBlock.liveQuiz.id,
+          liveQuizId: instance.elementBlock.liveQuizId,
           practiceQuizId: undefined,
           microLearningId: undefined,
         },
@@ -726,8 +734,6 @@ export async function updateElementInstances(
         {
           instanceId: instance.id,
           multiplier: instance.elementStack.microLearning.pointsMultiplier,
-          maxBonusPoints: undefined,
-          timeToZeroBonus: undefined,
           liveQuizId: undefined,
           practiceQuizId: undefined,
           microLearningId: instance.elementStack.microLearning.id,
@@ -744,8 +750,6 @@ export async function updateElementInstances(
         {
           instanceId: instance.id,
           multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
-          maxBonusPoints: undefined,
-          timeToZeroBonus: undefined,
           liveQuizId: undefined,
           practiceQuizId: instance.elementStack.practiceQuiz.id,
           microLearningId: undefined,
@@ -762,8 +766,6 @@ export async function updateElementInstances(
         async ({
           instanceId,
           multiplier,
-          maxBonusPoints,
-          timeToZeroBonus,
           liveQuizId,
           practiceQuizId,
           microLearningId,
@@ -786,6 +788,7 @@ export async function updateElementInstances(
               elementData: newElementData,
               results: newResults,
               anonymousResults: newResults,
+              // keep previous options where possible and update them only where required
               options: {
                 ...oldInstance.options,
                 pointsMultiplier: multiplier * element.pointsMultiplier,

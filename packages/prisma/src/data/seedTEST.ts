@@ -271,6 +271,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             isGamificationEnabled: data.isGamificationEnabled,
             status: data.status ?? Prisma.PublicationStatus.DRAFT,
             pointsMultiplier: data.pointsMultiplier,
+            defaultPoints: data.defaultPoints,
+            defaultCorrectPoints: data.defaultCorrectPoints,
             maxBonusPoints: data.maxBonusPoints,
             timeToZeroBonus: data.timeToZeroBonus,
             blocks: {

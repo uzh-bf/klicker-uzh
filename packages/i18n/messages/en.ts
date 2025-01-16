@@ -1197,15 +1197,35 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       liveQuizStartNow: 'Start now',
       liveQuizAdvancedSettings: 'Advanced Settings',
+      liveQuizPointsExplanation:
+        'These advanced settings allow you to change the point allocation in a live quiz. Please note that all point settings and the illustrations of the point allocation refer to elements with a multiplier of 1x. Larger multipliers are applied to all components except from the standard points. The multiplier set on the activity is already included in the illustration. The answer time starts running as soon as the first participant has answered the question completely correctly. For more information, please consult our <link>documentation</link>.',
+      liveQuizDefaultPoints: 'Standard points',
+      liveQuizDefaultPointsTooltip:
+        'Participants in a live quiz receive this number of points for participating in a question. If no sample solution is defined, only standard points are awarded. The default value is {defaultValue}.',
+      liveQuizDefaultCorrectPoints: 'Points for correct answer',
+      liveQuizDefaultCorrectPointsTooltip:
+        'Participants in a live quiz receive this number of points for a correct answer to a question with a sample solution. The default value is {defaultValue}.',
       liveQuizMaxBonusPoints: 'Maximum bonus points',
       liveQuizMaxBonusPointsTooltip:
         'This is the maximum number of points a participant will receive during a gamified live quiz for a correct answer to a question with sample solution. The default value is {defaultValue}.',
       liveQuizTimeToZeroBonus: 'Time to zero bonus points',
       liveQuizTimeToZeroBonusTooltip:
         'This is the time in seconds after the first correct answer at which a participant will receive zero bonus points for a correct answer. The default value is {defaultValue}.',
-      liveQuizTotalPointsCorrect: 'Total points for correct answer over time',
-      liveQuizAnswerTime: 'Answer time: {answerTime}',
-      liveQuizTotalAwardedPoints: 'Total points: {totalPoints}',
+      liveQuizAnswerTime: 'Answer time: {answerTime} s',
+      liveQuizCorrectAnswersPoints: 'Points for correct answer',
+      liveQuizIncorrectAnswersPoints:
+        'Points for incorrect answer / no sample solution',
+      liveQuizTotalAwardedPointsCorrect:
+        'Total points (correct): {totalPoints}',
+      liveQuizTotalAwardedPointsIncorrect:
+        'Total points (incorrect): {totalPoints}',
+      liveQuizDefaultPointsReq:
+        'Please enter a valid number of default points that are awarded for every answer.',
+      liveQuizDefaultPointsMin: 'The default points must be at least 0.',
+      liveQuizDefaultCorrectPointsReq:
+        'Please enter a valid number of points that are awarded for every correct answer.',
+      liveQuizDefaultCorrectPointsMin:
+        'The points for correct answers must be at least 0.',
       liveQuizMaxBonusPointsReq:
         'Please enter a valid number of maximum bonus points.',
       liveQuizMaxBonusPointsMin: 'The maximum bonus points must be at least 0.',

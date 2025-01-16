@@ -48,6 +48,8 @@ async function submitLiveQuizForm({
           blocks: blockSubmission,
           courseId: values.courseId,
           multiplier: values.courseId !== '' ? parseInt(values.multiplier) : 1,
+          defaultPoints: parseInt(String(values.defaultPoints)),
+          defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
           maxBonusPoints: parseInt(String(values.maxBonusPoints)),
           timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
           isGamificationEnabled:
@@ -82,6 +84,8 @@ async function submitLiveQuizForm({
           blocks: blockSubmission,
           courseId: values.courseId,
           multiplier: parseInt(values.multiplier),
+          defaultPoints: parseInt(String(values.defaultPoints)),
+          defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
           maxBonusPoints: parseInt(String(values.maxBonusPoints)),
           timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
           isGamificationEnabled:
