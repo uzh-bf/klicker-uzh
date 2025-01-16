@@ -1,4 +1,10 @@
 describe('Tests the avilability of certain functionalities to catalyst users only', () => {
+  beforeEach('Load fixture for this test case', function () {
+    cy.fixture('B-catalyst.json').then((data) => {
+      this.data = data
+    })
+  })
+
   it('Test login for catalyst users and non-catalyst users', () => {
     cy.loginLecturer()
     cy.wait(1000)

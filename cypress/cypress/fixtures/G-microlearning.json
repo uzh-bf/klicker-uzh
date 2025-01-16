@@ -1,0 +1,98 @@
+{
+  "course": "Testkurs",
+  "questions": {
+    "SC1": {
+      "title": "SC Question Micro",
+      "content": "SC Question Micro Content",
+      "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+    },
+    "SC2": {
+      "title": "SC Question Micro No Solution",
+      "content": "SC Question Micro No Solution Content",
+      "choices": [{ "content": "50%" }, { "content": "100%" }]
+    },
+    "MC": {
+      "title": "MC Question Micro",
+      "content": "MC Question Micro Content",
+      "choices": [
+        { "content": "25%" },
+        { "content": "50%", "correct": true },
+        { "content": "75%" },
+        { "content": "100%", "correct": true },
+        { "content": "200%" }
+      ]
+    },
+    "KP": {
+      "title": "KPRIM Question Micro",
+      "content": "KP Question Micro Content",
+      "choices": [
+        { "content": "25%" },
+        { "content": "50%", "correct": true },
+        { "content": "75%" },
+        { "content": "100%", "correct": true }
+      ]
+    },
+    "NR": {
+      "title": "NR Question Micro",
+      "content": "NR Question Micro Content",
+      "options": {
+        "min": "0",
+        "max": "100",
+        "unit": "%",
+        "accuracy": "2",
+        "solutionRanges": [
+          { "min": "0", "max": "25" },
+          { "min": "75", "max": "100" }
+        ]
+      }
+    },
+    "FT": {
+      "title": "FT Question Micro",
+      "content": "FT Question Micro Content",
+      "options": {
+        "maxLength": "100"
+      }
+    },
+    "FC": {
+      "title": "FC Question Micro",
+      "content": "FC Question Micro Content",
+      "explanation": "FC Answer Micro"
+    },
+    "CT": {
+      "title": "CT Question Micro",
+      "content": "CT Question Micro Content"
+    }
+  },
+  "running": {
+    "name": "Running microlearning OLD",
+    "displayName": "Running microlearning OLD (Display)",
+    "description": "Running microlearning OLD description",
+    "nameNew": "Running microlearning",
+    "displayNameNew": "Running microlearning (Display)",
+    "descriptionNew": "Running microlearning description"
+  },
+  "stack": {
+    "title1": "Stack 1 Description Title OLD",
+    "title2": "Stack 2 Description Title OLD",
+    "title1New": "Stack 1 Description Title",
+    "title2New": "Stack 2 Description Title"
+  },
+  "future": {
+    "name": "Future microlearning",
+    "displayName": "Future microlearning (Display)",
+    "description": "Future microlearning description"
+  },
+  "completed": {
+    "name": "Complete microlearning",
+    "displayName": "Complete microlearning (Display)"
+  },
+  "conversion": {
+    "pastML": "Test Microlearning Past No FT",
+    "pqName": "Practice Quiz Converted",
+    "pqDisplayName": "Practice Quiz Converted Displayname"
+  },
+  "duplication": {
+    "name": "Running microlearning (Copy)",
+    "displayName": "Running microlearning (Display) (NEW!)"
+  }
+}

@@ -1,42 +1,41 @@
-import { v4 as uuid } from 'uuid'
+describe('Test functionalities of frontend-control applicati functionon', function () {
+  beforeEach('Load fixture for this test case', function () {
+    cy.fixture('C-control.json').then((data) => {
+      this.data = data
+    })
+  })
 
-const questionTitle = uuid()
-const question = uuid()
-const quizTitle = uuid()
-const quiz = uuid()
-
-describe('Test functionalities of frontend-control application', () => {
-  it('Create a new SC question to use it in a live quiz', () => {
+  it('Create a new SC question to use it in a live quiz', function () {
     cy.loginLecturer()
 
     // create single choice question for use in test live quiz
     cy.createQuestionSC({
-      title: questionTitle,
-      content: question,
+      title: this.data.questionTitle,
+      content: this.data.questionContent,
       choices: [{ content: '50%' }, { content: '100%' }],
     })
   })
 
-  it('Create a new live quiz with the SC question', () => {
+  it('Create a new live quiz with the SC question', function () {
     cy.loginLecturer()
 
     // create live quiz with single choice question
     cy.createLiveQuiz({
-      name: quizTitle,
-      displayName: quiz,
+      name: this.data.quizName,
+      displayName: this.data.quizDisplayName,
       blocks: [
         {
-          elements: [questionTitle],
+          elements: [this.data.questionTitle],
         },
       ],
     })
 
     // check if the creation was successful
     cy.get('[data-cy="load-live-quiz-list"]').click()
-    cy.contains('[data-cy="live-quiz-block"]', quizTitle)
+    cy.contains('[data-cy="live-quiz-block"]', this.data.quizName)
   })
 
-  it('Generate a token to log into the control-frontend application, execute quiz', () => {
+  it('Generate a token to log into the control-frontend application, execute quiz', function () {
     cy.loginLecturer()
 
     cy.get('[data-cy="user-menu"]').click()
@@ -55,9 +54,9 @@ describe('Test functionalities of frontend-control application', () => {
 
     // check ppt links and start the quiz
     cy.get('[data-cy="unassigned-live-quizzes"]').click()
-    cy.get(`[data-cy="ppt-link-${quizTitle}"]`).should('exist').click()
+    cy.get(`[data-cy="ppt-link-${this.data.quizName}"]`).should('exist').click()
     cy.get('[data-cy="close-embedding-modal"]').click()
-    cy.findByText(quizTitle).click()
+    cy.findByText(this.data.quizName).click()
     cy.get('[data-cy="confirm-start-live-quiz"]').click()
 
     // test the mobile menu of the control app
@@ -66,16 +65,16 @@ describe('Test functionalities of frontend-control application', () => {
     cy.get('[data-cy="close-embedding-modal"]').click()
     cy.get('[data-cy="home-button"]').click()
     cy.get('[data-cy="unassigned-live-quizzes"]').click()
-    cy.findByText(quizTitle).click()
+    cy.findByText(this.data.quizName).click()
     cy.get('[data-cy="back-button"]').click()
-    cy.findByText(quizTitle).click()
+    cy.findByText(this.data.quizName).click()
     cy.viewport('macbook-16')
 
     // open and close block, end the quiz
     cy.get('[data-cy="activate-next-block"]').click()
     cy.get('[data-cy="deactivate-block"]').click()
     cy.get('[data-cy="end-live-quiz"]').click()
-    cy.findByText(quizTitle).should('not.exist')
+    cy.findByText(this.data.quizName).should('not.exist')
   })
 
   // TODO (later): check if quiz is running correctly / add student answer

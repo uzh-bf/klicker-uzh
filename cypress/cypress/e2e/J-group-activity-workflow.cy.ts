@@ -1,191 +1,80 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
-const SCQuestionTitle = uuid()
-const SCQuestion = 'SC Question Group Activity'
-const MCQuestionTitle = uuid()
-const MCQuestion = 'MC Question Group Activity'
-const KPRIMQuestionTitle = uuid()
-const KPRIMQuestion = 'KPRIM Question Group Activity'
-const NRQuestionTitle = uuid()
-const NRQuestion = 'NR Question Group Activity'
-const FTQuestionTitle = uuid()
-const FTQuestion = 'FT Question Group Activity'
-const CTQuestionTitle = uuid()
-const CTQuestion = 'CT Question Group Activity'
-
+// set dates dynamically to ensure continued functionality
 const currentYear = new Date().getFullYear()
-const testCourse = 'Testkurs'
-const groupMessage1 = 'Hello group! (initial message)' + uuid()
-const groupMessage2 = 'Hello! (response)' + uuid()
-
-const activityName = 'Group Activity Running'
-const activityDisplayName = activityName + ' (Display)'
-const activityTask = 'Group Activity Task Description'
 const activityStart = `${currentYear + 1}-01-01T02:00`
 const activityEnd = `${currentYear + 1}-12-31T18:00`
-
-const clueName1 = 'Test Clue 1'
-const clueDisplayName1 = 'Test Clue Display Name 1'
-const clueContent1 = 'Test Clue Content 1'
-const clueName2 = 'Test Clue 2'
-const clueDisplayName2 = 'Test Clue Display Name 2'
-const clueContent2 = 42
-const clueUnit2 = 'kg'
-const clueName3 = 'Test Clue 3'
-const clueDisplayName3 = 'Test Clue Display Name 3'
-const clueContent3 = 60
-
-const runningActivityName = 'Group Activity Running'
-const runningActivityDisplayName = runningActivityName + ' (Display)'
-const runningActivityTask = 'Group Activity Task Description'
 const runningActivityStart = `${currentYear - 1}-01-01T02:00`
 const runningActivityEnd = `${currentYear + 1}-12-31T18:00`
 const extendedActivityEnd = `${currentYear + 2}-12-31T18:00`
 const extendedActivityEndText = `31.12.${currentYear + 2}, 18:00`
-
-const clueName4 = 'Test Clue 4'
-const clueDisplayName4 = 'Test Clue Display Name 4'
-const clueContent4 = 'Test Clue Content 4'
-const clueName5 = 'Test Clue 5'
-const clueDisplayName5 = 'Test Clue Display Name 5'
-const clueContent5 = 50
-const clueUnit5 = 'kg'
-
-const flaggingText = 'This is a test flagging message'
-const flaggingTextNew = 'This is a NEW test flagging message'
-const freeTextAnswer = 'Testanswer to Free-Text Question'
-const numericalAnswer = '100'
-
-const maxPoints = ['200', '100', '100', '300', '100', '200']
-const scores1 = ['100', '100', '50', '200', '80', '200']
-const scores2 = ['50', '25', '25', '75', '25', '50']
-const comments1 = [
-  'Great job at question 1!',
-  undefined,
-  undefined,
-  'Great job at question 4!',
-  'Good job at question 5!',
-  undefined,
-]
-const comments2 = [
-  'This is not correct for question 1...',
-  undefined,
-  'This is not correct for question 3...',
-  undefined,
-  undefined,
-  'This is not correct for question 6...',
-]
-const gradingComment1 = 'This is a test grading comment'
-const gradingComment2 = undefined
-
-const synchronousActivityName = 'Synchronous Group Activity'
-const synchronousActivityDisplayName = synchronousActivityName + ' (Display)'
-const synchronousActivityTask = 'Synchronous Group Activity Task Description'
 const synchronousActivityStart = `${currentYear + 1}-01-01T02:00`
 const synchronousActivityEnd = `${currentYear + 1}-12-31T18:00`
-const synchronousActivityClues: {
-  type: 'text' | 'number'
-  name: string
-  displayName: string
-  content: string
-  unit?: string
-}[] = [
-  {
-    type: 'text',
-    name: 'Test Clue 1',
-    displayName: 'Test Clue Display Name 1',
-    content: 'Test Clue Content 1',
-  },
-  {
-    type: 'number',
-    name: 'Test Clue 2',
-    displayName: 'Test Clue Display Name 2',
-    content: '42',
-    unit: 'kg',
-  },
-  {
-    type: 'text',
-    name: 'Test Clue 3',
-    displayName: 'Test Clue Display Name 3',
-    content: 'Content 3',
-  },
-]
 
-describe('Create and solve a group activity', () => {
+describe('Create and solve a group activity', function () {
+  beforeEach('Load fixture for this test case', function () {
+    cy.fixture('J-group-activity.json').then((data) => {
+      this.data = data
+    })
+  })
+
   // ! Part 0: Preparation - Question Creation
-  it('Create questions required for microlearning creation', () => {
+  it('Create questions required for microlearning creation', function () {
     cy.loginLecturer()
 
     // SC question with solution
     cy.createQuestionSC({
-      title: SCQuestionTitle,
-      content: SCQuestion,
-      choices: [{ content: '50%', correct: true }, { content: '100%' }],
+      title: this.data.questions.SC.title,
+      content: this.data.questions.SC.content,
+      choices: this.data.questions.SC.choices,
       multiplier: messages.manage.activityWizard.multiplier2,
     })
 
     // MC question
     cy.createQuestionMC({
-      title: MCQuestionTitle,
-      content: MCQuestion,
-      choices: [
-        { content: '25%' },
-        { content: '50%', correct: true },
-        { content: '75%' },
-        { content: '100%', correct: true },
-        { content: '200%' },
-      ],
+      title: this.data.questions.MC.title,
+      content: this.data.questions.MC.content,
+      choices: this.data.questions.MC.choices,
     })
 
     // KPRIM question
     cy.createQuestionKPRIM({
-      title: KPRIMQuestionTitle,
-      content: KPRIMQuestion,
-      choices: [
-        { content: '25%' },
-        { content: '50%', correct: true },
-        { content: '75%' },
-        { content: '100%', correct: true },
-      ],
+      title: this.data.questions.KP.title,
+      content: this.data.questions.KP.content,
+      choices: this.data.questions.KP.choices,
     })
 
     // NR question
     cy.createQuestionNR({
-      title: NRQuestionTitle,
-      content: NRQuestion,
-      min: '0',
-      max: '100',
-      unit: '%',
-      accuracy: '2',
-      solutionRanges: [
-        { min: '0', max: '25' },
-        { min: '75', max: '100' },
-      ],
+      title: this.data.questions.NR.title,
+      content: this.data.questions.NR.content,
+      ...this.data.questions.NR.options,
       multiplier: messages.manage.activityWizard.multiplier3,
     })
 
     // FT question
     cy.createQuestionFT({
-      title: FTQuestionTitle,
-      content: FTQuestion,
-      maxLength: '100',
+      title: this.data.questions.FT.title,
+      content: this.data.questions.FT.content,
+      ...this.data.questions.FT.options,
     })
 
     // CT question
     cy.createContent({
-      title: CTQuestionTitle,
-      content: CTQuestion,
+      title: this.data.questions.CT.title,
+      content: this.data.questions.CT.content,
     })
   })
 
   // ! Part 1: Group Activity Creation
-  it('Create a group activity with the created questions', () => {
+  it('Create a group activity with the created questions', function () {
     cy.loginLecturer()
 
     // Step 1: Name
     cy.get('[data-cy="create-group-activity"]').click()
-    cy.get('[data-cy="insert-groupactivity-name"]').click().type(activityName)
+    cy.get('[data-cy="insert-groupactivity-name"]')
+      .click()
+      .type(this.data.activity.name)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
@@ -193,18 +82,20 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
-      .type(activityDisplayName)
+      .type(this.data.activity.displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
       .realClick()
-      .type(activityTask)
+      .type(this.data.activity.task)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${testCourse}"]`).click()
-    cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).click()
+    cy.get('[data-cy="select-course"]')
+      .should('exist')
+      .contains(this.data.course)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
@@ -227,16 +118,18 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName1)
+    cy.get('[data-cy="group-activity-clue-name"]')
+      .click()
+      .type(this.data.activity.clues[0].name)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
-      .type(clueDisplayName1)
+      .type(this.data.activity.clues[0].displayName)
     cy.get('[data-cy="group-activity-string-clue-value"]')
       .click()
-      .type(clueContent1)
+      .type(this.data.activity.clues[0].content)
     cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.findByText(clueName1).should('exist')
-    cy.findByText(clueContent1).should('exist')
+    cy.findByText(this.data.activity.clues[0].name).should('exist')
+    cy.findByText(this.data.activity.clues[0].content).should('exist')
 
     // 2) Numerical clue
     cy.get('[data-cy="add-group-activity-clue"]').click()
@@ -248,19 +141,25 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
-    cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName2)
+    cy.get('[data-cy="group-activity-clue-name"]')
+      .click()
+      .type(this.data.activity.clues[1].name)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
-      .type(clueDisplayName2)
+      .type(this.data.activity.clues[1].displayName)
     cy.get('[data-cy="group-activity-number-clue-value"]').type(
-      String(clueContent2)
+      String(this.data.activity.clues[1].content)
     )
     cy.get('[data-cy="group-activity-number-clue-unit"]')
       .click()
-      .type(clueUnit2)
+      .type(this.data.activity.clues[1].unit)
     cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.findByText(clueName2).should('exist')
-    cy.findByText(clueContent2 + ' ' + clueUnit2).should('exist')
+    cy.findByText(this.data.activity.clues[1].name).should('exist')
+    cy.findByText(
+      this.data.activity.clues[1].content +
+        ' ' +
+        this.data.activity.clues[1].unit
+    ).should('exist')
 
     // 3) Numerical clue without unit
     cy.get('[data-cy="add-group-activity-clue"]').click()
@@ -272,27 +171,29 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
-    cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName3)
+    cy.get('[data-cy="group-activity-clue-name"]')
+      .click()
+      .type(this.data.activity.clues[2].name)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
-      .type(clueDisplayName3)
+      .type(this.data.activity.clues[2].displayName)
     cy.get('[data-cy="group-activity-number-clue-value"]').type(
-      String(clueContent3)
+      String(this.data.activity.clues[2].content)
     )
     cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.findByText(clueName3).should('exist')
-    cy.findByText(clueContent3).should('exist')
+    cy.findByText(this.data.activity.clues[2].name).should('exist')
+    cy.findByText(this.data.activity.clues[2].content).should('exist')
 
     // Step 4: Questions / Elements
     cy.createStacks({
       stacks: [
         {
           elements: [
-            SCQuestionTitle,
-            MCQuestionTitle,
-            KPRIMQuestionTitle,
-            NRQuestionTitle,
-            FTQuestionTitle,
+            this.data.questions.SC.title,
+            this.data.questions.MC.title,
+            this.data.questions.KP.title,
+            this.data.questions.NR.title,
+            this.data.questions.FT.title,
           ],
         },
       ],
@@ -305,74 +206,86 @@ describe('Create and solve a group activity', () => {
     // check if the created group activity exists
     cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.findByText(activityName).should('exist')
+    cy.findByText(this.data.activity.name).should('exist')
   })
 
-  it('Creates a group activity that starts and ends in the future', () => {
+  it('Creates a group activity that starts and ends in the future', function () {
     cy.loginLecturer()
     cy.createGroupActivity({
-      name: synchronousActivityName,
-      displayName: synchronousActivityDisplayName,
-      task: synchronousActivityTask,
-      courseName: testCourse,
+      name: this.data.synchronous.name,
+      displayName: this.data.synchronous.displayName,
+      task: this.data.synchronous.task,
+      courseName: this.data.course,
       scheduledStartDate: synchronousActivityStart,
       scheduledEndDate: synchronousActivityEnd,
-      clues: synchronousActivityClues,
+      clues: this.data.synchronous.clues,
       stack: {
-        elements: [SCQuestionTitle, MCQuestionTitle, KPRIMQuestionTitle],
+        elements: [
+          this.data.questions.SC.title,
+          this.data.questions.MC.title,
+          this.data.questions.KP.title,
+        ],
       },
     })
   })
 
-  it('Publish and unpublish the future group activity', () => {
+  it('Publish and unpublish the future group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
 
-    cy.get(`[data-cy="groupActivity-${activityName}"]`)
+    cy.get(`[data-cy="groupActivity-${this.data.activity.name}"]`)
       .findByText(messages.shared.generic.draft)
       .should('exist')
-    cy.get(`[data-cy="publish-groupActivity-${activityName}"]`).click()
+    cy.get(
+      `[data-cy="publish-groupActivity-${this.data.activity.name}"]`
+    ).click()
     cy.get('[data-cy="cancel-publish-action"]').click()
-    cy.get(`[data-cy="publish-groupActivity-${activityName}"]`).click()
+    cy.get(
+      `[data-cy="publish-groupActivity-${this.data.activity.name}"]`
+    ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="groupActivity-${activityName}"]`)
+    cy.get(`[data-cy="groupActivity-${this.data.activity.name}"]`)
       .findByText(messages.shared.generic.scheduled)
       .should('exist')
-    cy.get(`[data-cy="unpublish-groupActivity-${activityName}"]`).click()
-    cy.get(`[data-cy="groupActivity-${activityName}"]`)
+    cy.get(
+      `[data-cy="unpublish-groupActivity-${this.data.activity.name}"]`
+    ).click()
+    cy.get(`[data-cy="groupActivity-${this.data.activity.name}"]`)
       .findByText(messages.shared.generic.draft)
       .should('exist')
   })
 
-  it('Edit the group activity', () => {
+  it('Edit the group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="groupActivity-actions-${activityName}"]`).click()
-    cy.get(`[data-cy="edit-groupActivity-${activityName}"]`).click()
+    cy.get(
+      `[data-cy="groupActivity-actions-${this.data.activity.name}"]`
+    ).click()
+    cy.get(`[data-cy="edit-groupActivity-${this.data.activity.name}"]`).click()
 
     // check the name, display name and task description and update them
     cy.get('[data-cy="insert-groupactivity-name"]')
       .click()
-      .should('have.value', activityName)
+      .should('have.value', this.data.activity.name)
       .clear()
-      .type(runningActivityName)
+      .type(this.data.running.name)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-groupactivity-display-name"]')
       .click()
-      .should('have.value', activityDisplayName)
+      .should('have.value', this.data.activity.displayName)
       .clear()
-      .type(runningActivityDisplayName)
+      .type(this.data.running.displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
       .realClick()
-      .contains(activityTask)
+      .contains(this.data.activity.task)
     cy.get('[data-cy="insert-groupactivity-description"]')
       .realClick()
       .clear()
-      .type(runningActivityTask)
+      .type(this.data.running.task)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // fill out the settings of the group activity
@@ -391,35 +304,35 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check that clues exist and add a new one
-    cy.findByText(clueName1).should('exist')
-    cy.findByText(clueName2).should('exist')
-    cy.findByText(clueName3).should('exist')
+    cy.findByText(this.data.activity.clues[0].name).should('exist')
+    cy.findByText(this.data.activity.clues[1].name).should('exist')
+    cy.findByText(this.data.activity.clues[2].name).should('exist')
 
     // edit existing clue
-    cy.get(`[data-cy="edit-clue-${clueName1}"]`).click()
+    cy.get(`[data-cy="edit-clue-${this.data.activity.clues[0].name}"]`).click()
     cy.get('[data-cy="group-activity-clue-name"]')
       .click()
-      .should('have.value', clueName1)
+      .should('have.value', this.data.activity.clues[0].name)
       .clear()
-      .type(clueName4)
+      .type(this.data.running.clues[0].name)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
-      .should('have.value', clueDisplayName1)
+      .should('have.value', this.data.activity.clues[0].displayName)
       .clear()
-      .type(clueDisplayName4)
+      .type(this.data.running.clues[0].displayName)
     cy.get('[data-cy="group-activity-string-clue-value"]')
       .click()
-      .should('have.value', clueContent1)
+      .should('have.value', this.data.activity.clues[0].content)
       .clear()
-      .type(clueContent4)
+      .type(this.data.running.clues[0].content)
     cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.findByText(clueName4).should('exist')
-    cy.findByText(clueContent4).should('exist')
+    cy.findByText(this.data.running.clues[0].name).should('exist')
+    cy.findByText(this.data.running.clues[0].content).should('exist')
 
     // delete existing clue
-    cy.get(`[data-cy="remove-clue-${clueName4}"]`).click()
-    cy.findByText(clueName4).should('not.exist')
-    cy.findByText(clueContent4).should('not.exist')
+    cy.get(`[data-cy="remove-clue-${this.data.running.clues[0].name}"]`).click()
+    cy.findByText(this.data.running.clues[0].name).should('not.exist')
+    cy.findByText(this.data.running.clues[0].content).should('not.exist')
 
     // create a new clue
     cy.get('[data-cy="add-group-activity-clue"]').click()
@@ -431,24 +344,30 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
-    cy.get('[data-cy="group-activity-clue-name"]').click().type(clueName5)
+    cy.get('[data-cy="group-activity-clue-name"]')
+      .click()
+      .type(this.data.running.clues[1].name)
     cy.get('[data-cy="group-activity-clue-display-name"]')
       .click()
-      .type(clueDisplayName5)
+      .type(this.data.running.clues[1].displayName)
     cy.get('[data-cy="group-activity-number-clue-value"]').type(
-      String(clueContent5)
+      String(this.data.running.clues[1].content)
     )
     cy.get('[data-cy="group-activity-number-clue-unit"]')
       .click()
-      .type(clueUnit5)
+      .type(this.data.running.clues[1].unit)
     cy.get('[data-cy="group-activity-clue-save"]').click()
-    cy.get(`[data-cy="groupActivity-clue-${clueName5}"]`).should('exist')
-    cy.findByText(clueContent5 + ' ' + clueUnit5).should('exist')
+    cy.get(
+      `[data-cy="groupActivity-clue-${this.data.running.clues[1].name}"]`
+    ).should('exist')
+    cy.findByText(
+      this.data.running.clues[1].content + ' ' + this.data.running.clues[1].unit
+    ).should('exist')
 
     // add another question to the group activity
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${SCQuestionTitle}"]`)
-      .contains(SCQuestionTitle)
+    cy.get(`[data-cy="element-item-${this.data.questions.SC.title}"]`)
+      .contains(this.data.questions.SC.title)
       .trigger('dragstart', {
         dataTransfer,
       })
@@ -457,8 +376,8 @@ describe('Create and solve a group activity', () => {
     })
 
     const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="element-item-${CTQuestionTitle}"]`)
-      .contains(CTQuestionTitle)
+    cy.get(`[data-cy="element-item-${this.data.questions.CT.title}"]`)
+      .contains(this.data.questions.CT.title)
       .trigger('dragstart', {
         dataTransfer2,
       })
@@ -469,35 +388,35 @@ describe('Create and solve a group activity', () => {
     // verify that the contained questions are correct
     cy.get(`[data-cy="element-0-stack-0"]`)
       .should('exist')
-      .should('contain', SCQuestionTitle.substring(0, 20))
+      .should('contain', this.data.questions.SC.title.substring(0, 20))
     cy.get(`[data-cy="element-1-stack-0"]`)
       .should('exist')
-      .should('contain', MCQuestionTitle.substring(0, 20))
+      .should('contain', this.data.questions.MC.title.substring(0, 20))
     cy.get(`[data-cy="element-2-stack-0"]`)
       .should('exist')
-      .should('contain', KPRIMQuestionTitle.substring(0, 20))
+      .should('contain', this.data.questions.KP.title.substring(0, 20))
     cy.get(`[data-cy="element-3-stack-0"]`)
       .should('exist')
-      .should('contain', NRQuestionTitle.substring(0, 20))
+      .should('contain', this.data.questions.NR.title.substring(0, 20))
     cy.get(`[data-cy="element-4-stack-0"]`)
       .should('exist')
-      .should('contain', FTQuestionTitle.substring(0, 20))
+      .should('contain', this.data.questions.FT.title.substring(0, 20))
     cy.get(`[data-cy="element-5-stack-0"]`)
       .should('exist')
-      .should('contain', SCQuestionTitle.substring(0, 20))
+      .should('contain', this.data.questions.SC.title.substring(0, 20))
     cy.get(`[data-cy="element-6-stack-0"]`)
       .should('exist')
-      .should('contain', CTQuestionTitle.substring(0, 20))
+      .should('contain', this.data.questions.CT.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
     cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.findByText(runningActivityName).should('exist')
+    cy.findByText(this.data.running.name).should('exist')
   })
 
   // ! Part 2: Running Group Activity & Participation
-  function answerGroupActivity() {
+  function answerGroupActivity({ NRAnswer, FTAnswer }) {
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-3"]').click()
@@ -505,8 +424,8 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
-    cy.get('[data-cy="input-numerical-4"]').type(numericalAnswer)
-    cy.get('[data-cy="free-text-input-5"]').click().type(freeTextAnswer)
+    cy.get('[data-cy="input-numerical-4"]').type(NRAnswer)
+    cy.get('[data-cy="free-text-input-5"]').click().type(FTAnswer)
     cy.get('[data-cy="sc-6-answer-option-1"]').click()
     cy.get('[data-cy="submit-group-activity"]').click()
   }
@@ -524,7 +443,7 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="sc-6-answer-option-1"]').should('be.disabled')
   }
 
-  function checkPersistentAnswers() {
+  function checkPersistentAnswers({ NRAnswer, FTAnswer }) {
     cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
 
@@ -545,11 +464,11 @@ describe('Create and solve a group activity', () => {
 
     cy.get('[data-cy="input-numerical-4"]')
       .should('be.disabled')
-      .should('have.value', numericalAnswer)
+      .should('have.value', NRAnswer)
 
     cy.get('[data-cy="free-text-input-5"]')
       .should('be.disabled')
-      .contains(freeTextAnswer)
+      .contains(FTAnswer)
 
     cy.get('[data-cy="sc-6-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-6-answer-option-2"]').should('be.disabled')
@@ -557,6 +476,7 @@ describe('Create and solve a group activity', () => {
 
   function checkGradingVisualization(
     scores: string[],
+    maxPoints: string[],
     comments: string[],
     gradingComment?: string
   ) {
@@ -570,7 +490,7 @@ describe('Create and solve a group activity', () => {
     )
 
     cy.findByText(`${totalScore}/${maxScore} Points`).should('exist')
-    scores.forEach((score, ix) => {
+    cy.wrap(scores).each((score: string, ix) => {
       cy.get(`[data-cy="group-activity-grading-feedback-${ix}"]`).should(
         'contain',
         `${score}/${maxPoints[ix]} Points`
@@ -584,7 +504,7 @@ describe('Create and solve a group activity', () => {
       }
     })
 
-    if (typeof gradingComment !== 'undefined') {
+    if (gradingComment !== null) {
       cy.get('[data-cy="group-activity-results-comment"]').should(
         'contain',
         gradingComment
@@ -592,50 +512,52 @@ describe('Create and solve a group activity', () => {
     }
   }
 
-  it('Publish the group activity and check its status', () => {
+  it('Publish the group activity and check its status', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
 
-    cy.get(`[data-cy="groupActivity-${runningActivityName}"]`)
+    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`)
       .findByText(messages.shared.generic.draft)
       .should('exist')
-    cy.get(`[data-cy="publish-groupActivity-${runningActivityName}"]`).click()
+    cy.get(
+      `[data-cy="publish-groupActivity-${this.data.running.name}"]`
+    ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="groupActivity-${runningActivityName}"]`)
+    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`)
       .findByText(messages.shared.generic.running)
       .should('exist')
   })
 
-  it('Extend the running group activity', () => {
+  it('Extend the running group activity', function () {
     // navigate to course overview
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(testCourse).click()
+    cy.findByText(this.data.course).click()
 
     // open extension modal
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="extend-groupActivity-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="extend-groupActivity-${this.data.running.name}"]`).click()
     cy.get('[data-cy="extend-activity-cancel"]').click()
-    cy.get(`[data-cy="extend-groupActivity-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="extend-groupActivity-${this.data.running.name}"]`).click()
 
     // change the end date and check if the changes are saved
     cy.get('[data-cy="extend-activity-date"]').click().type(extendedActivityEnd)
     cy.get('[data-cy="extend-activity-confirm"]').click()
-    cy.get(`[data-cy="groupActivity-${runningActivityName}"]`).contains(
+    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`).contains(
       extendedActivityEndText
     )
 
     // check that changing the date to the past does not work
-    cy.get(`[data-cy="extend-groupActivity-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="extend-groupActivity-${this.data.running.name}"]`).click()
     cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
     cy.get('[data-cy="extend-activity-date"]')
       .click()
       .type(`${currentYear - 1}-01-01T12:00`)
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()
-    cy.get(`[data-cy="groupActivity-${runningActivityName}"]`).contains(
+    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`).contains(
       extendedActivityEndText
     )
   })
@@ -644,10 +566,10 @@ describe('Create and solve a group activity', () => {
     cy.loginStudent()
 
     // start the group activity
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.running.displayName}"]`
     ).click()
     cy.get('[data-cy="start-group-activity"]').click()
 
@@ -660,140 +582,176 @@ describe('Create and solve a group activity', () => {
     cy.wait(500)
     cy.get('[data-cy="flag-element-1-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"]').type(flaggingText)
+    cy.get('[data-cy="flag-element-textarea"]').type(
+      this.data.running.flagging.text
+    )
     cy.get('[data-cy="cancel-flag-element"]').click()
     cy.get('[data-cy="flag-element-1-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('be.disabled')
-    cy.get('[data-cy="flag-element-textarea"]').type(flaggingText)
+    cy.get('[data-cy="flag-element-textarea"]').type(
+      this.data.running.flagging.text
+    )
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled').click()
     cy.get('[data-cy="flag-element-1-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
     cy.get('[data-cy="flag-element-textarea"]').should(
       'have.value',
-      flaggingText
+      this.data.running.flagging.text
     )
-    cy.get('[data-cy="flag-element-textarea"]').clear().type(flaggingTextNew)
+    cy.get('[data-cy="flag-element-textarea"]')
+      .clear()
+      .type(this.data.running.flagging.textNew)
     cy.get('[data-cy="submit-flag-element"]').click()
     cy.wait(500)
     cy.get('[data-cy="flag-element-1-button"]').click()
     cy.get('[data-cy="submit-flag-element"]').should('not.be.disabled')
     cy.get('[data-cy="flag-element-textarea"]').should(
       'have.value',
-      flaggingTextNew
+      this.data.running.flagging.textNew
     )
     cy.get('[data-cy="cancel-flag-element"]').click()
 
     // answer the questions in the group activity
-    answerGroupActivity()
+    answerGroupActivity({
+      NRAnswer: this.data.running.answers.numerical,
+      FTAnswer: this.data.running.answers.freeText,
+    })
 
     // check that the answers are persistent and the fields disabled
-    checkPersistentAnswers()
+    checkPersistentAnswers({
+      NRAnswer: this.data.running.answers.numerical,
+      FTAnswer: this.data.running.answers.freeText,
+    })
 
     // check that the answers are persistent and the fields disabled after reload
     cy.reload()
-    checkPersistentAnswers()
+    checkPersistentAnswers({
+      NRAnswer: this.data.running.answers.numerical,
+      FTAnswer: this.data.running.answers.freeText,
+    })
   })
 
-  it('Login as the second group member and verify that submission was successful', () => {
+  it('Login as the second group member and verify that submission was successful', function () {
     cy.loginStudent()
 
     // open the group activity
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.running.displayName}"]`
     ).click()
 
     // check that the same answers are visible to the second student
-    checkPersistentAnswers()
+    checkPersistentAnswers({
+      NRAnswer: this.data.running.answers.numerical,
+      FTAnswer: this.data.running.answers.freeText,
+    })
   })
 
   it('Solve the group activity as a second student', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME5') })
 
     // start the group activity
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.running.displayName}"]`
     ).click()
     cy.get('[data-cy="start-group-activity"]').click()
 
     // answer the questions in the group activity
-    answerGroupActivity()
+    answerGroupActivity({
+      NRAnswer: this.data.running.answers.numerical,
+      FTAnswer: this.data.running.answers.freeText,
+    })
 
     // check that the answers are persistent and the fields disabled
-    checkPersistentAnswers()
+    checkPersistentAnswers({
+      NRAnswer: this.data.running.answers.numerical,
+      FTAnswer: this.data.running.answers.freeText,
+    })
 
     // check that the answers are persistent and the fields disabled after reload
     cy.reload()
-    checkPersistentAnswers()
+    checkPersistentAnswers({
+      NRAnswer: this.data.running.answers.numerical,
+      FTAnswer: this.data.running.answers.freeText,
+    })
   })
 
-  it('Login as a student in a second group and start the group activity', () => {
+  it('Login as a student in a second group and start the group activity', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
 
     // open the group activity
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.running.displayName}"]`
     ).click()
     cy.get('[data-cy="start-group-activity"]').click()
   })
 
   // ! Part 3: Group Activity Ending and Grading
-  it('End the running group activity through the corresponding action on the lecturer interface', () => {
+  it('End the running group activity through the corresponding action on the lecturer interface', function () {
     // navigate to course overview
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(testCourse).click()
+    cy.findByText(this.data.course).click()
 
     // end the group activity
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
-    cy.get(`[data-cy="end-group-activity-${runningActivityName}"]`).click()
+    cy.get(
+      `[data-cy="groupActivity-actions-${this.data.running.name}"]`
+    ).click()
+    cy.get(`[data-cy="end-group-activity-${this.data.running.name}"]`).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
     cy.get('[data-cy="activity-confirmation-modal-cancel"]').click()
-    cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
-    cy.get(`[data-cy="end-group-activity-${runningActivityName}"]`).click()
+    cy.get(
+      `[data-cy="groupActivity-actions-${this.data.running.name}"]`
+    ).click()
+    cy.get(`[data-cy="end-group-activity-${this.data.running.name}"]`).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
     cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
 
     // check that the group activity is now in the grading state
-    cy.get(`[data-cy="groupActivity-${runningActivityName}"]`).findByText(
+    cy.get(`[data-cy="groupActivity-${this.data.running.name}"]`).findByText(
       messages.shared.generic.grading
     )
   })
 
-  it('Verify that a valid submission is still visible after the group activity ended', () => {
+  it('Verify that a valid submission is still visible after the group activity ended', function () {
     cy.loginStudent()
 
     // open the group activity
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).contains(
-      messages.pwa.groupActivity.submitted
-    )
-    cy.get(`[data-cy="open-submission-${runningActivityDisplayName}"]`).click()
+    cy.get(
+      `[data-cy="group-activity-${this.data.running.displayName}"]`
+    ).contains(messages.pwa.groupActivity.submitted)
+    cy.get(
+      `[data-cy="open-submission-${this.data.running.displayName}"]`
+    ).click()
 
     // check that the same answers are visible to the student
     checkInputsDisabled()
-    checkPersistentAnswers()
+    checkPersistentAnswers({
+      NRAnswer: this.data.running.answers.numerical,
+      FTAnswer: this.data.running.answers.freeText,
+    })
     cy.get('[data-cy="submit-group-activity"]').should('not.exist')
   })
 
-  it("Verify that a started group activity can still be seen, but not submitted after it's ended", () => {
+  it("Verify that a started group activity can still be seen, but not submitted after it's ended", function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
 
     // open the group activity
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).contains(
-      messages.pwa.groupActivity.past
-    )
     cy.get(
-      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+      `[data-cy="group-activity-${this.data.running.displayName}"]`
+    ).contains(messages.pwa.groupActivity.past)
+    cy.get(
+      `[data-cy="open-group-activity-${this.data.running.displayName}"]`
     ).click()
 
     // submission should not be possible and inputs should be disabled
@@ -801,26 +759,26 @@ describe('Create and solve a group activity', () => {
     cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 
-  it("Verify that a group activity can't be started after it's ended", () => {
+  it("Verify that a group activity can't be started after it's ended", function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME3') })
 
     // open the group activity
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.running.displayName}"]`
     ).click()
     cy.get('[data-cy="start-group-activity"]').should('not.exist')
     cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 
   // ! Part 4: Grading the Group Activity
-  it('Grade the submissions to the group activity', () => {
+  it('Grade the submissions to the group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="grade-groupActivity-${runningActivityName}"]`).click()
+    cy.get(`[data-cy="grade-groupActivity-${this.data.running.name}"]`).click()
 
     // grade the responses for the first submission
     cy.get('[data-cy="group-activity-submission-0"]').click()
@@ -828,14 +786,14 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
       'be.disabled'
     )
-    scores1.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores1).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`)
         .click()
         .type(score)
-      if (comments1[ix]) {
+      if (this.data.running.grading.comments1[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
           .realClick()
-          .type(comments1[ix])
+          .type(this.data.running.grading.comments1[ix])
       }
 
       cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
@@ -843,10 +801,10 @@ describe('Create and solve a group activity', () => {
       )
     })
 
-    if (typeof gradingComment1 !== 'undefined') {
+    if (this.data.running.grading.gradingComment1 !== null) {
       cy.get('[data-cy="groupActivity-general-grading-comment"]')
         .realClick()
-        .type(gradingComment1)
+        .type(this.data.running.grading.gradingComment1)
     }
 
     // test submission switch and warning that should be visible
@@ -865,15 +823,15 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="group-activity-submission-0"]').click()
     // cy.wait(500)
     // cy.get('[data-cy="confirm-submission-switch"]').click()
-    scores1.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores1).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`).should(
         'have.value',
         score
       )
-      if (comments1[ix]) {
+      if (this.data.running.grading.comments1[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
           .realClick()
-          .contains(comments1[ix])
+          .contains(this.data.running.grading.comments1[ix])
       }
     })
 
@@ -885,24 +843,24 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
       'be.disabled'
     )
-    scores2.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores2).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`)
         .click()
         .type(score)
-      if (comments2[ix]) {
+      if (this.data.running.grading.comments2[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
           .realClick()
-          .type(comments2[ix])
+          .type(this.data.running.grading.comments2[ix])
       }
       cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
         'be.disabled'
       )
     })
 
-    if (typeof gradingComment2 !== 'undefined') {
+    if (this.data.running.grading.gradingComment2 !== null) {
       cy.get('[data-cy="groupActivity-general-grading-comment"]')
         .realClick()
-        .type(gradingComment2)
+        .type(this.data.running.grading.gradingComment2)
     }
     cy.get('[data-cy="groupActivity-failed"]').click()
     cy.get('[data-cy="finalize-grading"]').should('be.disabled')
@@ -921,7 +879,7 @@ describe('Create and solve a group activity', () => {
 
     // check that the inputs to the different submissions are disabled after finalization of grading
     cy.get('[data-cy="group-activity-submission-0"]').click()
-    scores1.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores1).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`).should(
         'have.value',
         score
@@ -936,7 +894,7 @@ describe('Create and solve a group activity', () => {
     )
 
     cy.get('[data-cy="group-activity-submission-1"]').click()
-    scores2.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores2).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`).should(
         'have.value',
         score
@@ -951,174 +909,187 @@ describe('Create and solve a group activity', () => {
     )
   })
 
-  it('Verify that the student of the group with passing results can see the evaluation', () => {
+  it('Verify that the student of the group with passing results can see the evaluation', function () {
     cy.loginStudent()
 
     // check if results are correctly marked as passed
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).should(
-      'contain',
-      messages.shared.generic.passed
-    )
+    cy.get(
+      `[data-cy="group-activity-${this.data.running.displayName}"]`
+    ).should('contain', messages.shared.generic.passed)
 
-    cy.get(`[data-cy="open-feedback-${runningActivityDisplayName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${this.data.running.displayName}"]`).click()
     cy.findByText(messages.pwa.groupActivity.groupActivityPassed).should(
       'exist'
     )
 
     // check grading
-    checkGradingVisualization(scores1, comments1, gradingComment1)
+    checkGradingVisualization(
+      this.data.running.grading.scores1,
+      this.data.running.grading.maxPoints,
+      this.data.running.grading.comments1,
+      this.data.running.grading.gradingComment1
+    )
   })
 
-  it('Verify that the second student of the first group can see the same results', () => {
+  it('Verify that the second student of the first group can see the same results', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME15') })
 
     // check if results are correctly marked as passed
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).should(
-      'contain',
-      messages.shared.generic.passed
-    )
+    cy.get(
+      `[data-cy="group-activity-${this.data.running.displayName}"]`
+    ).should('contain', messages.shared.generic.passed)
 
-    cy.get(`[data-cy="open-feedback-${runningActivityDisplayName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${this.data.running.displayName}"]`).click()
     cy.findByText(messages.pwa.groupActivity.groupActivityPassed).should(
       'exist'
     )
 
     // check grading
-    checkGradingVisualization(scores1, comments1, gradingComment1)
+    checkGradingVisualization(
+      this.data.running.grading.scores1,
+      this.data.running.grading.maxPoints,
+      this.data.running.grading.comments1,
+      this.data.running.grading.gradingComment1
+    )
   })
 
-  it('Verify that the student of the group with failing results can see the evaluation', () => {
+  it('Verify that the student of the group with failing results can see the evaluation', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME5') })
 
     // check if results are correctly marked as passed
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).should(
-      'contain',
-      messages.shared.generic.failed
-    )
+    cy.get(
+      `[data-cy="group-activity-${this.data.running.displayName}"]`
+    ).should('contain', messages.shared.generic.failed)
 
-    cy.get(`[data-cy="open-feedback-${runningActivityDisplayName}"]`).click()
+    cy.get(`[data-cy="open-feedback-${this.data.running.displayName}"]`).click()
     cy.findByText(messages.pwa.groupActivity.groupActivityFailed).should(
       'exist'
     )
 
     // check grading
-    checkGradingVisualization(scores2, comments2, gradingComment2)
+    checkGradingVisualization(
+      this.data.running.grading.scores2,
+      this.data.running.grading.maxPoints,
+      this.data.running.grading.comments2,
+      this.data.running.grading.gradingComment2
+    )
   })
 
-  it("Verify that groups that have not attempted to submit anything to the group activity can't see any results", () => {
+  it("Verify that groups that have not attempted to submit anything to the group activity can't see any results", function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
 
     // check if results are correctly marked as passed
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).should(
-      'contain',
-      messages.pwa.groupActivity.past
-    )
+    cy.get(
+      `[data-cy="group-activity-${this.data.running.displayName}"]`
+    ).should('contain', messages.pwa.groupActivity.past)
 
     cy.get(
-      `[data-cy="open-group-activity-${runningActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.running.displayName}"]`
     ).click()
     cy.get('[data-cy="start-group-activity"]').should('not.exist')
     cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 
-  it('Cleanup: Delete the running and solved group activity', () => {
+  it('Cleanup: Delete the running and solved group activity', function () {
     cy.loginLecturer()
 
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
-    cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).click()
-    cy.get(`[data-cy="delete-groupActivity-${runningActivityName}"]`).click()
+    cy.get(
+      `[data-cy="groupActivity-actions-${this.data.running.name}"]`
+    ).click()
+    cy.get(`[data-cy="delete-groupActivity-${this.data.running.name}"]`).click()
     cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
     cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="groupActivity-actions-${runningActivityName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="groupActivity-actions-${this.data.running.name}"]`
+    ).should('not.exist')
   })
 
-  it('Verify that the group activity is not visible to students anymore', () => {
+  it('Verify that the group activity is not visible to students anymore', function () {
     cy.loginStudent()
 
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get(`[data-cy="group-activity-${runningActivityDisplayName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="group-activity-${this.data.running.displayName}"]`
+    ).should('not.exist')
   })
 
   // ! Part 5: Synchronous Group Activity
-  it('Publish the synchronous group activity', () => {
+  it('Publish the synchronous group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
 
-    cy.get(`[data-cy="groupActivity-${synchronousActivityName}"]`)
+    cy.get(`[data-cy="groupActivity-${this.data.synchronous.name}"]`)
       .findByText(messages.shared.generic.draft)
       .should('exist')
     cy.get(
-      `[data-cy="publish-groupActivity-${synchronousActivityName}"]`
+      `[data-cy="publish-groupActivity-${this.data.synchronous.name}"]`
     ).click()
     cy.get('[data-cy="confirm-publish-action"]').click()
-    cy.get(`[data-cy="groupActivity-${synchronousActivityName}"]`)
+    cy.get(`[data-cy="groupActivity-${this.data.synchronous.name}"]`)
       .findByText(messages.shared.generic.scheduled)
       .should('exist')
   })
 
-  it('Login as a student and check that the group activity is not visible', () => {
+  it('Login as a student and check that the group activity is not visible', function () {
     cy.loginStudent()
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get(`[data-cy="group-activity-${synchronousActivityDisplayName}"]`)
+    cy.get(`[data-cy="group-activity-${this.data.synchronous.displayName}"]`)
       .should('exist')
       .contains(messages.shared.generic.scheduled)
     cy.get(
-      `[data-cy="open-group-activity-${synchronousActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.synchronous.displayName}"]`
     ).should('not.exist')
   })
 
-  it('Start the synchronous group activity', () => {
+  it('Start the synchronous group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
     ).click()
     cy.get(
-      `[data-cy="start-group-activity-${synchronousActivityName}-now"]`
+      `[data-cy="start-group-activity-${this.data.synchronous.name}-now"]`
     ).click()
     cy.get('[data-cy="confirm-groups-getting-access"]').click()
     cy.get('[data-cy="confirm-activity-available-until"]').click()
     cy.get('[data-cy="activity-confirmation-modal-cancel"]').click()
     cy.get(
-      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
     ).click()
     cy.get(
-      `[data-cy="start-group-activity-${synchronousActivityName}-now"]`
+      `[data-cy="start-group-activity-${this.data.synchronous.name}-now"]`
     ).click()
     cy.get('[data-cy="confirm-groups-getting-access"]').click()
     cy.get('[data-cy="confirm-activity-available-until"]').click()
     cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
   })
 
-  it('Login as a student and solve the group activity', () => {
+  it('Login as a student and solve the group activity', function () {
     cy.loginStudent()
 
     // start the group activity
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-group-activity-${synchronousActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.synchronous.displayName}"]`
     ).click()
     cy.get('[data-cy="start-group-activity"]').click()
 
@@ -1137,43 +1108,45 @@ describe('Create and solve a group activity', () => {
     cy.wait(2000)
   })
 
-  it('Login as a student and start the synchronous group activity', () => {
+  it('Login as a student and start the synchronous group activity', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-group-activity-${synchronousActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.synchronous.displayName}"]`
     ).click()
     cy.get('[data-cy="start-group-activity"]').click()
   })
 
-  it('End the synchronous group activity', () => {
+  it('End the synchronous group activity', function () {
     // navigate to course overview
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(testCourse).click()
+    cy.findByText(this.data.course).click()
 
     // end the group activity
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
     ).click()
-    cy.get(`[data-cy="end-group-activity-${synchronousActivityName}"]`).click()
+    cy.get(
+      `[data-cy="end-group-activity-${this.data.synchronous.name}"]`
+    ).click()
     cy.get('[data-cy="confirm-instances-loosing-access"]').click()
     cy.get('[data-cy="activity-confirmation-modal-confirm"]').click()
 
     // check that the group activity is now in the grading state
-    cy.get(`[data-cy="groupActivity-${synchronousActivityName}"]`).findByText(
-      messages.shared.generic.grading
-    )
+    cy.get(
+      `[data-cy="groupActivity-${this.data.synchronous.name}"]`
+    ).findByText(messages.shared.generic.grading)
   })
 
-  it('Login as a student with a valid submission', () => {
+  it('Login as a student with a valid submission', function () {
     cy.loginStudent()
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-submission-${synchronousActivityDisplayName}"]`
+      `[data-cy="open-submission-${this.data.synchronous.displayName}"]`
     ).click()
 
     // check that the inputs are disabled
@@ -1186,74 +1159,108 @@ describe('Create and solve a group activity', () => {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
   })
 
-  it('Login as a second student and check that the group activity cannot be started anymore', () => {
+  it('Login as a second student and check that the group activity cannot be started anymore', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="open-group-activity-${synchronousActivityDisplayName}"]`
+      `[data-cy="open-group-activity-${this.data.synchronous.displayName}"]`
     ).click()
     cy.get('[data-cy="start-group-activity"]').should('not.exist')
   })
 
-  it('Cleanup: Delete the synchronous group activity', () => {
+  it('Cleanup: Delete the synchronous group activity', function () {
     cy.loginLecturer()
 
     // delete the created group activities
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
-      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
     ).click()
     cy.get(
-      `[data-cy="delete-groupActivity-${synchronousActivityName}"]`
+      `[data-cy="delete-groupActivity-${this.data.synchronous.name}"]`
     ).click()
     cy.get(`[data-cy="confirm-deletion-started-instances"]`).click()
     cy.get(`[data-cy="confirm-deletion-submissions"]`).click()
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.get(
-      `[data-cy="groupActivity-actions-${synchronousActivityName}"]`
+      `[data-cy="groupActivity-actions-${this.data.synchronous.name}"]`
     ).should('not.exist')
   })
 
-  it("Verify that the synchronous group activity isn't visible to students anymore", () => {
+  it("Verify that the synchronous group activity isn't visible to students anymore", function () {
     cy.loginStudent()
 
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
     cy.get(
-      `[data-cy="group-activity-${synchronousActivityDisplayName}"]`
+      `[data-cy="group-activity-${this.data.synchronous.displayName}"]`
     ).should('not.exist')
+  })
+
+  it('Cleanup: Delete all created questions', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="library"]').click()
+    const questions = [
+      this.data.questions.SC.title,
+      this.data.questions.MC.title,
+      this.data.questions.KP.title,
+      this.data.questions.NR.title,
+      this.data.questions.FT.title,
+      this.data.questions.CT.title,
+    ]
+
+    cy.wrap(questions).each((title: string) => {
+      cy.get(`[data-cy="delete-question-${title}"]`).click()
+      cy.get('[data-cy="confirm-question-deletion"]').click()
+      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    })
   })
 
   // ! Part 6: Miscellaneous
   it('Check if group messages can be sent', function () {
     cy.loginStudent()
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get('[data-cy="group-message-textarea"]').type(groupMessage1)
+    cy.get('[data-cy="group-message-textarea"]').type(this.data.group.message1)
     cy.get('[data-cy="group-message-submit"]').click()
     cy.wait(500)
     cy.get('[data-cy="group-message-textarea"]').should('have.value', '')
-    cy.get('[data-cy="group-messages"]').should('contain', groupMessage1)
+    cy.get('[data-cy="group-messages"]').should(
+      'contain',
+      this.data.group.message1
+    )
 
     // log into other student in the group and check for the message
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME15') })
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get('[data-cy="group-messages"]').should('contain', groupMessage1)
-    cy.get('[data-cy="group-message-textarea"]').type(groupMessage2)
+    cy.get('[data-cy="group-messages"]').should(
+      'contain',
+      this.data.group.message1
+    )
+    cy.get('[data-cy="group-message-textarea"]').type(this.data.group.message2)
     cy.get('[data-cy="group-message-submit"]').click()
     cy.wait(500)
     cy.get('[data-cy="group-message-textarea"]').should('have.value', '')
-    cy.get('[data-cy="group-messages"]').should('contain', groupMessage2)
+    cy.get('[data-cy="group-messages"]').should(
+      'contain',
+      this.data.group.message2
+    )
 
     // log back into the first account and check if both messages are visible
     cy.loginStudent()
-    cy.get(`[data-cy="course-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
-    cy.get('[data-cy="group-messages"]').should('contain', groupMessage1)
-    cy.get('[data-cy="group-messages"]').should('contain', groupMessage2)
+    cy.get('[data-cy="group-messages"]').should(
+      'contain',
+      this.data.group.message1
+    )
+    cy.get('[data-cy="group-messages"]').should(
+      'contain',
+      this.data.group.message2
+    )
   })
 })

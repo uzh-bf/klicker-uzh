@@ -1,126 +1,78 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
+// timestamps need to be dynamic to ensure full continued functionality
 const currentYear = new Date().getFullYear()
-const testCourse = 'Testkurs'
-const SCQuestionTitle = 'SC ' + uuid()
-const SCQuestion = 'SC Question PQ'
-const SCQuestionTitleNoSol = 'SC ' + uuid()
-const SCQuestionNoSol = 'SC Question PQ No Solution'
-const MCQuestionTitle = 'MC ' + uuid()
-const MCQuestion = 'MC Question PQ'
-const KPRIMQuestionTitle = 'KPRIM ' + uuid()
-const KPRIMQuestion = 'KPRIM Question PQ'
-const NRQuestionTitle = 'NR ' + uuid()
-const NRQuestion = 'NR Question PQ'
-const FTQuestionTitle = 'FT ' + uuid()
-const FTQuestion = 'FT Question PQ'
-const FCQuestionTitle = 'FC ' + uuid()
-const FCQuestion = 'FC Question PQ'
-const FCAnswer = 'FC Answer PQ'
-const CTQuestionTitle = 'CT ' + uuid()
-const CTQuestion = 'CT Question PQ'
-
-const runningNameOLD = 'Running Practice Quiz OLD'
-const runningDisplayNameOLD = 'Running Practice Quiz OLD (Display)'
-const runningDescriptionOLD =
-  'This is the OLD description of the running practice quiz'
-const runningName = 'Running Practice Quiz'
-const runningDisplayName = 'Running Practice Quiz'
-const runningDescription =
-  'This is the description of the running practice quiz'
-const runningNameDupl = runningName + ' (Copy)'
-
-const scheduledName = 'Scheduled Practice Quiz'
-const scheduledDisplayName = 'Scheduled Practice Quiz'
 
 // ? For consistency, all creation / editing / duplication workflows are run before checking the student views
-describe('Different practice quiz workflows', () => {
+describe('Different practice quiz workflows', function () {
+  beforeEach('Load fixture for this test case', function () {
+    cy.fixture('H-practice-quiz.json').then((data) => {
+      this.data = data
+    })
+  })
+
   // ! Part 0: Preparation - Question Creation
-  it('Create questions required for practice quiz creation', () => {
+  it('Create questions required for practice quiz creation', function () {
     cy.loginLecturer()
 
     // SC question with solution
     cy.createQuestionSC({
-      title: SCQuestionTitle,
-      content: SCQuestion,
-      choices: [
-        { content: '50%', correct: true },
-        { content: '100%' },
-        { content: '200%' },
-        { content: '300%' },
-      ],
+      title: this.data.questions.SC1.title,
+      content: this.data.questions.SC1.content,
+      choices: this.data.questions.SC1.choices,
     })
 
     // SC question without solution
     cy.createQuestionSC({
-      title: SCQuestionTitleNoSol,
-      content: SCQuestionNoSol,
-      choices: [{ content: '50%' }, { content: '100%' }],
+      title: this.data.questions.SC2.title,
+      content: this.data.questions.SC2.content,
+      choices: this.data.questions.SC2.choices,
     })
 
     // MC question
     cy.createQuestionMC({
-      title: MCQuestionTitle,
-      content: MCQuestion,
-      choices: [
-        { content: '25%' },
-        { content: '50%', correct: true },
-        { content: '75%' },
-        { content: '100%', correct: true },
-        { content: '200%' },
-      ],
+      title: this.data.questions.MC.title,
+      content: this.data.questions.MC.content,
+      choices: this.data.questions.MC.choices,
     })
 
     // KPRIM question
     cy.createQuestionKPRIM({
-      title: KPRIMQuestionTitle,
-      content: KPRIMQuestion,
-      choices: [
-        { content: '25%' },
-        { content: '50%', correct: true },
-        { content: '75%' },
-        { content: '100%', correct: true },
-      ],
+      title: this.data.questions.KP.title,
+      content: this.data.questions.KP.content,
+      choices: this.data.questions.KP.choices,
     })
 
     // NR question
     cy.createQuestionNR({
-      title: NRQuestionTitle,
-      content: NRQuestion,
-      min: '0',
-      max: '100',
-      unit: '%',
-      accuracy: '2',
-      solutionRanges: [
-        { min: '0', max: '25' },
-        { min: '75', max: '100' },
-      ],
+      title: this.data.questions.NR.title,
+      content: this.data.questions.NR.content,
+      ...this.data.questions.NR.options,
     })
 
     // FT question
     cy.createQuestionFT({
-      title: FTQuestionTitle,
-      content: FTQuestion,
-      maxLength: '100',
+      title: this.data.questions.FT.title,
+      content: this.data.questions.FT.content,
+      ...this.data.questions.FT.options,
     })
 
     // FC question
     cy.createFlashcard({
-      title: FCQuestionTitle,
-      content: FCQuestion,
-      explanation: FCAnswer,
+      title: this.data.questions.FC.title,
+      content: this.data.questions.FC.content,
+      explanation: this.data.questions.FC.explanation,
     })
 
     // CT question
     cy.createContent({
-      title: CTQuestionTitle,
-      content: CTQuestion,
+      title: this.data.questions.CT.title,
+      content: this.data.questions.CT.content,
     })
   })
 
   // ! Part 1: Practice Quiz Creation
-  it('Test the creation of a practice quiz', () => {
+  it('Test the creation of a practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
 
@@ -130,7 +82,9 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="create-practice-quiz"]').click()
 
     // Step 1: Name
-    cy.get('[data-cy="insert-practice-quiz-name"]').click().type(runningNameOLD)
+    cy.get('[data-cy="insert-practice-quiz-name"]')
+      .click()
+      .type(this.data.running.name)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
@@ -138,18 +92,22 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
-      .type(runningDisplayNameOLD)
+      .type(this.data.running.displayName)
     cy.get('[data-cy="insert-practice-quiz-description"]')
       .realClick()
-      .type(runningDescriptionOLD)
+      .type(this.data.running.description)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
     cy.get('[data-cy="select-course"]').click()
-    cy.get(`[data-cy="select-course-${testCourse}"]`).click({ force: true })
-    cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
+    cy.get(`[data-cy="select-course-${this.data.course}"]`).click({
+      force: true,
+    })
+    cy.get('[data-cy="select-course"]')
+      .should('exist')
+      .contains(this.data.course)
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
@@ -185,27 +143,29 @@ describe('Different practice quiz workflows', () => {
     // Step 4: Create stacks
     cy.createStacks({
       stacks: [
-        { elements: [SCQuestionTitle] },
-        { elements: [MCQuestionTitle] },
-        { elements: [KPRIMQuestionTitle] },
-        { elements: [NRQuestionTitle] },
-        { elements: [FTQuestionTitle] },
-        { elements: [FCQuestionTitle] },
-        { elements: [CTQuestionTitle] },
+        { elements: [this.data.questions.SC1.title] },
+        { elements: [this.data.questions.MC.title] },
+        { elements: [this.data.questions.KP.title] },
+        { elements: [this.data.questions.NR.title] },
+        { elements: [this.data.questions.FT.title] },
+        { elements: [this.data.questions.FC.title] },
+        { elements: [this.data.questions.CT.title] },
       ],
     })
 
     // SC question without sample solution should be rejected
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${SCQuestionTitleNoSol}"]`)
-      .contains(SCQuestionTitleNoSol)
+    cy.get(`[data-cy="element-item-${this.data.questions.SC2.title}"]`)
+      .contains(this.data.questions.SC2.title)
       .trigger('dragstart', {
         dataTransfer,
       })
     cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="element-1-stack-1"]').contains(SCQuestionTitleNoSol)
+    cy.get('[data-cy="element-1-stack-1"]').contains(
+      this.data.questions.SC2.title
+    )
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
     cy.get('[data-cy="remove-element-1-stack-1"]').click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
@@ -216,18 +176,20 @@ describe('Different practice quiz workflows', () => {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${runningNameOLD}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${this.data.running.name}"]`).contains(
       messages.shared.generic.draft
     )
   })
 
-  it('Edit the first created practice quiz', () => {
+  it('Edit the first created practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-actions-${runningNameOLD}"]`).click()
-    cy.get(`[data-cy="edit-practice-quiz-${runningNameOLD}"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.running.name}"]`
+    ).click()
+    cy.get(`[data-cy="edit-practice-quiz-${this.data.running.name}"]`).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
     )
@@ -235,34 +197,36 @@ describe('Different practice quiz workflows', () => {
     // Step 1: Name
     cy.get('[data-cy="insert-practice-quiz-name"]').should(
       'have.value',
-      runningNameOLD
+      this.data.running.name
     )
     cy.get('[data-cy="insert-practice-quiz-name"]')
       .click()
       .clear()
-      .type(runningName)
+      .type(this.data.running.nameNew)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
     cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
       'have.value',
-      runningDisplayNameOLD
+      this.data.running.displayName
     )
     cy.get('[data-cy="insert-practice-quiz-display-name"]')
       .click()
       .clear()
-      .type(runningDisplayName)
+      .type(this.data.running.displayNameNew)
     cy.get('[data-cy="insert-practice-quiz-description"]').contains(
-      runningDescriptionOLD
+      this.data.running.description
     )
     cy.get('[data-cy="insert-practice-quiz-description"]')
       .realClick()
       .clear()
-      .type(runningDescription)
+      .type(this.data.running.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
+    cy.get('[data-cy="select-course"]')
+      .should('exist')
+      .contains(this.data.course)
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -281,31 +245,31 @@ describe('Different practice quiz workflows', () => {
 
     // Step 4: Check content of stacks and add another question
     cy.get('[data-cy="element-0-stack-0"]').contains(
-      SCQuestionTitle.substring(0, 20)
+      this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-1"]').contains(
-      MCQuestionTitle.substring(0, 20)
+      this.data.questions.MC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-2"]').contains(
-      KPRIMQuestionTitle.substring(0, 20)
+      this.data.questions.KP.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-3"]').contains(
-      NRQuestionTitle.substring(0, 20)
+      this.data.questions.NR.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-4"]').contains(
-      FTQuestionTitle.substring(0, 20)
+      this.data.questions.FT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      FCQuestionTitle.substring(0, 20)
+      this.data.questions.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      CTQuestionTitle.substring(0, 20)
+      this.data.questions.CT.title.substring(0, 20)
     )
 
     cy.get('[data-cy="drop-elements-add-stack"]').click()
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${SCQuestionTitle}"]`)
-      .contains(SCQuestionTitle)
+    cy.get(`[data-cy="element-item-${this.data.questions.SC1.title}"]`)
+      .contains(this.data.questions.SC1.title)
       .trigger('dragstart', {
         dataTransfer,
       })
@@ -313,25 +277,29 @@ describe('Different practice quiz workflows', () => {
       dataTransfer,
     })
     cy.get('[data-cy="element-0-stack-7"]').contains(
-      SCQuestionTitle.substring(0, 20)
+      this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check on the course overview if the updated practice quiz is visible
     cy.get('[data-cy="load-live-quiz-list"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${runningName}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${this.data.running.nameNew}"]`).contains(
       messages.shared.generic.draft
     )
   })
 
-  it('Verify that the changes from editing went into effect', () => {
+  it('Verify that the changes from editing went into effect', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).click()
-    cy.get(`[data-cy="edit-practice-quiz-${runningName}"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-practice-quiz-${this.data.running.nameNew}"]`
+    ).click()
     cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
       'exist'
     )
@@ -339,22 +307,24 @@ describe('Different practice quiz workflows', () => {
     // Step 1: Name
     cy.get('[data-cy="insert-practice-quiz-name"]').should(
       'have.value',
-      runningName
+      this.data.running.nameNew
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
     cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
       'have.value',
-      runningDisplayName
+      this.data.running.displayNameNew
     )
     cy.get('[data-cy="insert-practice-quiz-description"]').contains(
-      runningDescription
+      this.data.running.descriptionNew
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
+    cy.get('[data-cy="select-course"]')
+      .should('exist')
+      .contains(this.data.course)
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -365,52 +335,56 @@ describe('Different practice quiz workflows', () => {
 
     // Step 4: Check content of stacks and add another question
     cy.get('[data-cy="element-0-stack-0"]').contains(
-      SCQuestionTitle.substring(0, 20)
+      this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-1"]').contains(
-      MCQuestionTitle.substring(0, 20)
+      this.data.questions.MC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-2"]').contains(
-      KPRIMQuestionTitle.substring(0, 20)
+      this.data.questions.KP.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-3"]').contains(
-      NRQuestionTitle.substring(0, 20)
+      this.data.questions.NR.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-4"]').contains(
-      FTQuestionTitle.substring(0, 20)
+      this.data.questions.FT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      FCQuestionTitle.substring(0, 20)
+      this.data.questions.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      CTQuestionTitle.substring(0, 20)
+      this.data.questions.CT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
-      SCQuestionTitle.substring(0, 20)
+      this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
   })
 
-  it('Create a practice quiz that will be scheduled', () => {
+  it('Create a practice quiz that will be scheduled', function () {
     cy.loginLecturer()
     cy.createPracticeQuiz({
-      name: scheduledName,
-      displayName: scheduledDisplayName,
-      courseName: testCourse,
+      name: this.data.scheduled.name,
+      displayName: this.data.scheduled.displayName,
+      courseName: this.data.course,
       stacks: [
-        { elements: [SCQuestionTitle] },
-        { elements: [MCQuestionTitle] },
+        { elements: [this.data.questions.SC1.title] },
+        { elements: [this.data.questions.MC.title] },
       ],
     })
   })
 
-  it('Duplicate a practice quiz and validate its content', () => {
+  it('Duplicate a practice quiz and validate its content', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).click()
-    cy.get(`[data-cy="duplicate-practice-quiz-${runningName}"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
+    ).click()
+    cy.get(
+      `[data-cy="duplicate-practice-quiz-${this.data.running.nameNew}"]`
+    ).click()
     cy.findByText('Create ' + messages.shared.generic.practiceQuiz).should(
       'exist'
     )
@@ -418,22 +392,24 @@ describe('Different practice quiz workflows', () => {
     // Step 1: Name
     cy.get('[data-cy="insert-practice-quiz-name"]').should(
       'have.value',
-      runningNameDupl
+      this.data.running.nameDupl
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 2: Display name and description
     cy.get('[data-cy="insert-practice-quiz-display-name"]').should(
       'have.value',
-      runningDisplayName
+      this.data.running.displayNameNew
     )
     cy.get('[data-cy="insert-practice-quiz-description"]').contains(
-      runningDescription
+      this.data.running.descriptionNew
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 3: Settings
-    cy.get('[data-cy="select-course"]').should('exist').contains(testCourse)
+    cy.get('[data-cy="select-course"]')
+      .should('exist')
+      .contains(this.data.course)
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -444,51 +420,52 @@ describe('Different practice quiz workflows', () => {
 
     // Step 4: Check content of stacks and add another question
     cy.get('[data-cy="element-0-stack-0"]').contains(
-      SCQuestionTitle.substring(0, 20)
+      this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-1"]').contains(
-      MCQuestionTitle.substring(0, 20)
+      this.data.questions.MC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-2"]').contains(
-      KPRIMQuestionTitle.substring(0, 20)
+      this.data.questions.KP.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-3"]').contains(
-      NRQuestionTitle.substring(0, 20)
+      this.data.questions.NR.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-4"]').contains(
-      FTQuestionTitle.substring(0, 20)
+      this.data.questions.FT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      FCQuestionTitle.substring(0, 20)
+      this.data.questions.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      CTQuestionTitle.substring(0, 20)
+      this.data.questions.CT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
-      SCQuestionTitle.substring(0, 20)
+      this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
   })
 
-  it('Cleanup: Delete the duplicated practice quiz', () => {
+  it('Cleanup: Delete the duplicated practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
-    cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).click()
-    cy.get(`[data-cy="delete-practice-quiz-${runningNameDupl}"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.running.nameDupl}"]`
+    ).click()
+    cy.get(
+      `[data-cy="delete-practice-quiz-${this.data.running.nameDupl}"]`
+    ).click()
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="practice-quiz-actions-${runningNameDupl}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.running.nameDupl}"]`
+    ).should('not.exist')
   })
 
   // ! Part 2: Running Practice Quiz
   function answerRunningPracticeQuiz() {
-    cy.findByText(runningDescription).should('exist')
-    cy.get('[data-cy="start-practice-quiz"]').click()
-
     // SC question
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
@@ -589,98 +566,116 @@ describe('Different practice quiz workflows', () => {
       .click()
   }
 
-  it('Check out the preview of the draft practice quiz and validate its content', () => {
+  it('Check out the preview of the draft practice quiz and validate its content', function () {
     cy.loginLecturer()
     cy.wait(2000)
-    cy.task('getPracticeQuizInfo', { quizName: runningName }).then(
-      (quiz: { id: string; courseId: string }) => {
-        // check if the query was successful
-        if (quiz === null) {
-          throw new Error('Practice quiz not found')
-        }
-
-        // visit the activity preview with the manager cookie being active
-        cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
-        )
-
-        // respond to the questions in the draft practice quiz (same functionality as for students when it's running)
-        answerRunningPracticeQuiz()
+    cy.task('getPracticeQuizInfo', {
+      quizName: this.data.running.nameNew,
+    }).then((quiz: { id: string; courseId: string }) => {
+      // check if the query was successful
+      if (quiz === null) {
+        throw new Error('Practice quiz not found')
       }
-    )
+
+      // visit the activity preview with the manager cookie being active
+      cy.visit(
+        `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
+      )
+
+      // respond to the questions in the draft practice quiz (same functionality as for students when it's running)
+      cy.findByText(this.data.running.descriptionNew).should('exist')
+      cy.get('[data-cy="start-practice-quiz"]').click()
+      answerRunningPracticeQuiz()
+    })
   })
 
-  it('Publish the practice quiz around the current time', () => {
+  it('Publish the practice quiz around the current time', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="publish-practice-quiz-${runningName}"]`).click()
+    cy.get(
+      `[data-cy="publish-practice-quiz-${this.data.running.nameNew}"]`
+    ).click()
     cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
-    cy.get(`[data-cy="practice-quiz-${runningName}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${this.data.running.nameNew}"]`).contains(
       messages.shared.generic.published
     )
   })
 
-  it('Solve the practice quiz and test the student view accordingly', () => {
+  it('Solve the practice quiz and test the student view accordingly', function () {
     cy.loginStudent()
     cy.get('[data-cy="quizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${runningDisplayName}"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.running.displayNameNew}"]`
+    ).click()
+    cy.findByText(this.data.running.descriptionNew).should('exist')
+    cy.get('[data-cy="start-practice-quiz"]').click()
     answerRunningPracticeQuiz()
   })
 
-  it('Check that published practice quizzes can still be accessed as a preview', () => {
+  it('Check that published practice quizzes can still be accessed as a preview', function () {
     cy.loginLecturer()
     cy.wait(2000)
-    cy.task('getPracticeQuizInfo', { quizName: runningName }).then(
-      (quiz: { id: string; courseId: string }) => {
-        // check if the query was successful
-        if (quiz === null) {
-          throw new Error('Practice quiz not found')
-        }
-
-        // visit the activity preview with the manager cookie being active
-        cy.visit(
-          `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
-        )
-
-        // respond to the questions in the running practice quiz, previous answers should not persist
-        answerRunningPracticeQuiz()
+    cy.task('getPracticeQuizInfo', {
+      quizName: this.data.running.nameNew,
+    }).then((quiz: { id: string; courseId: string }) => {
+      // check if the query was successful
+      if (quiz === null) {
+        throw new Error('Practice quiz not found')
       }
-    )
+
+      // visit the activity preview with the manager cookie being active
+      cy.visit(
+        `${Cypress.env('URL_STUDENT')}/course/${quiz.courseId}/quiz/${quiz.id}`
+      )
+
+      // respond to the questions in the running practice quiz, previous answers should not persist
+      cy.findByText(this.data.running.descriptionNew).should('exist')
+      cy.get('[data-cy="start-practice-quiz"]').click()
+      answerRunningPracticeQuiz()
+    })
   })
 
-  it('Cleanup: Delete the running practice quiz', () => {
+  it('Cleanup: Delete the running practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
-    cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).click()
-    cy.get(`[data-cy="delete-practice-quiz-${runningName}"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
+    ).click()
+    cy.get(
+      `[data-cy="delete-practice-quiz-${this.data.running.nameNew}"]`
+    ).click()
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).should(
       'be.disabled'
     )
     cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="practice-quiz-actions-${runningName}"]`).should(
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.running.nameNew}"]`
+    ).should('not.exist')
+  })
+
+  it('Verify that the running practice quiz is no longer visible to students', function () {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${this.data.running.nameNew}"]`).should(
       'not.exist'
     )
   })
 
-  it('Verify that the running practice quiz is no longer visible to students', () => {
-    cy.loginStudent()
-    cy.get('[data-cy="quizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${runningName}"]`).should('not.exist')
-  })
-
   // ! Part 3: Future Practice Quiz
-  it('Publish the future practice quiz and verify scheduled state', () => {
+  it('Publish the future practice quiz and verify scheduled state', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
+    cy.get(
+      `[data-cy="publish-practice-quiz-${this.data.scheduled.name}"]`
+    ).click()
 
     // check that if publication date is before course start date, submission is disabled
     cy.get('[data-cy="schedule-practice-quiz-publication"]').should(
@@ -698,23 +693,23 @@ describe('Different practice quiz workflows', () => {
       .click()
       .type(`${currentYear + 5}-01-01T02:00`)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
-    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${this.data.scheduled.name}"]`).contains(
       messages.shared.generic.scheduled
     )
   })
 
-  it('Verify that scheduled practice quizzes are not visible to students', () => {
+  it('Verify that scheduled practice quizzes are not visible to students', function () {
     cy.loginStudent()
     cy.get('[data-cy="quizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.scheduled.displayName}"]`
+    ).should('not.exist')
   })
 
-  it('Check that scheduled practice quizzes can be accessed as a preview', () => {
+  it('Check that scheduled practice quizzes can be accessed as a preview', function () {
     cy.loginLecturer()
     cy.wait(2000)
-    cy.task('getPracticeQuizInfo', { quizName: scheduledName }).then(
+    cy.task('getPracticeQuizInfo', { quizName: this.data.scheduled.name }).then(
       (quiz: { id: string; courseId: string }) => {
         // check if the query was successful
         if (quiz === null) {
@@ -732,58 +727,91 @@ describe('Different practice quiz workflows', () => {
     )
   })
 
-  it('Unpublish the practice quiz again on the lecturer view', () => {
+  it('Unpublish the practice quiz again on the lecturer view', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
-    cy.get(`[data-cy="unpublish-practiceQuiz-${scheduledName}"]`).click()
-    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.scheduled.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="unpublish-practiceQuiz-${this.data.scheduled.name}"]`
+    ).click()
+    cy.get(`[data-cy="practice-quiz-${this.data.scheduled.name}"]`).contains(
       messages.shared.generic.draft
     )
   })
 
-  it('Check that immediate publication works for practice quizzes with past start dates', () => {
+  it('Check that immediate publication works for practice quizzes with past start dates', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
-    cy.get(`[data-cy="publish-practice-quiz-${scheduledName}"]`).click()
+    cy.get(
+      `[data-cy="publish-practice-quiz-${this.data.scheduled.name}"]`
+    ).click()
     cy.get('[data-cy="practice-quiz-available-from"]')
       .click()
       .type(`${currentYear - 1}-01-01T02:00`)
     cy.get('[data-cy="schedule-practice-quiz-publication"]').click()
-    cy.get(`[data-cy="practice-quiz-${scheduledName}"]`).contains(
+    cy.get(`[data-cy="practice-quiz-${this.data.scheduled.name}"]`).contains(
       messages.shared.generic.published
     )
   })
 
-  it('Verify that the modified and published practice quiz is available to students', () => {
+  it('Verify that the modified and published practice quiz is available to students', function () {
     cy.loginStudent()
     cy.get('[data-cy="quizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should('exist')
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.scheduled.displayName}"]`
+    ).should('exist')
   })
 
-  it('Cleanup: Delete the scheduled practice quiz', () => {
+  it('Cleanup: Delete the scheduled practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${testCourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
 
-    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).click()
-    cy.get(`[data-cy="delete-practice-quiz-${scheduledName}"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.scheduled.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="delete-practice-quiz-${this.data.scheduled.name}"]`
+    ).click()
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
-    cy.get(`[data-cy="practice-quiz-actions-${scheduledName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.scheduled.name}"]`
+    ).should('not.exist')
   })
 
-  it('Verify that the scheduled practice quiz is not visible to students', () => {
+  it('Cleanup: Delete all created questions', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="library"]').click()
+    const questions = [
+      this.data.questions.SC1.title,
+      this.data.questions.SC2.title,
+      this.data.questions.MC.title,
+      this.data.questions.KP.title,
+      this.data.questions.NR.title,
+      this.data.questions.FT.title,
+      this.data.questions.FC.title,
+      this.data.questions.CT.title,
+    ]
+
+    cy.wrap(questions).each((title) => {
+      cy.get(`[data-cy="delete-question-${title}"]`).click()
+      cy.get('[data-cy="confirm-question-deletion"]').click()
+      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    })
+  })
+
+  it('Verify that the scheduled practice quiz is not visible to students', function () {
     cy.loginStudent()
     cy.get('[data-cy="quizzes"]').click()
-    cy.get(`[data-cy="practice-quiz-${scheduledDisplayName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.scheduled.displayName}"]`
+    ).should('not.exist')
   })
 })
