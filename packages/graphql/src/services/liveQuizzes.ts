@@ -947,12 +947,14 @@ export async function activateLiveQuizBlock(
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           choiceCount: elementData.options.choices.length,
-          solutions: JSON.stringify(
-            elementData.options.choices
-              .map((choice, ix) => ({ ix, correct: choice.correct }))
-              .filter((choice) => choice.correct)
-              .map((choice) => choice.ix)
-          ),
+          solutions: elementData.options.hasSampleSolution
+            ? JSON.stringify(
+                elementData.options.choices
+                  .map((choice, ix) => ({ ix, correct: choice.correct }))
+                  .filter((choice) => choice.correct)
+                  .map((choice) => choice.ix)
+              )
+            : undefined,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -964,7 +966,9 @@ export async function activateLiveQuizBlock(
       case ElementType.NUMERICAL: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          solutions: JSON.stringify(elementData.options.solutionRanges),
+          solutions: elementData.options.hasSampleSolution
+            ? JSON.stringify(elementData.options.solutionRanges)
+            : undefined,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -975,7 +979,9 @@ export async function activateLiveQuizBlock(
       case ElementType.FREE_TEXT: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          solutions: JSON.stringify(elementData.options.solutions),
+          solutions: elementData.options.hasSampleSolution
+            ? JSON.stringify(elementData.options.solutions)
+            : undefined,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,

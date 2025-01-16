@@ -5,7 +5,7 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { DisplayMode } from '@klicker-uzh/types'
+import { Choice, DisplayMode } from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
@@ -20,8 +20,16 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
       return {
         displayMode: options.displayMode ?? DisplayMode.LIST,
         hasSampleSolution: options.hasSampleSolution ?? false,
-        hasAnswerFeedbacks: options.hasAnswerFeedbacks ?? false,
-        choices: options.choices,
+        hasAnswerFeedbacks:
+          (options.hasSampleSolution && options.hasAnswerFeedbacks) ?? false,
+        choices: options.choices.map((choice: Choice) => ({
+          ...choice,
+          correct: options.hasSampleSolution ? choice.correct : undefined,
+          feedback:
+            options.hasSampleSolution && options.hasAnswerFeedbacks
+              ? choice.feedback
+              : undefined,
+        })),
       }
     }
 
@@ -36,14 +44,18 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
           min: options?.restrictions?.min ?? undefined,
           max: options?.restrictions?.max ?? undefined,
         },
-        solutionRanges: options?.solutionRanges ?? undefined,
+        solutionRanges: options?.hasSampleSolution
+          ? (options?.solutionRanges ?? undefined)
+          : undefined,
       }
     }
 
     case DB.ElementType.FREE_TEXT: {
       return {
         hasSampleSolution: options?.hasSampleSolution ?? false,
-        solutions: options?.solutions ?? undefined,
+        solutions: options?.hasSampleSolution
+          ? (options?.solutions ?? undefined)
+          : undefined,
         restrictions: {
           ...options?.restrictions,
           maxLength: options?.restrictions?.maxLength ?? undefined,
