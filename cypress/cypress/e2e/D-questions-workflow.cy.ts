@@ -19,6 +19,7 @@ const SCChoices = ['50%', '100%']
 const SCTitleEdited = 'Single Choice Title Edited'
 const SCContentEdited = 'Single Choice Text Edited'
 const SCChoicesEdited = ['25%', '50%', '100%']
+const SCChoicesFeedbacks = ['Feedback 1', 'Feedback 2', 'Feedback 3']
 
 const MCTitle = 'Multiple Choice Title'
 const MCContent = 'Multiple Choice Text'
@@ -26,6 +27,15 @@ const MCChoices = ['25%', '50%', '75%', '100%']
 const MCTitleEdited = 'Multiple Choice Title Edited'
 const MCContentEdited = 'Multiple Choice Text Edited'
 const MCChoicesEdited = ['10%', '20%', '30%', '40%', '50%', '60%', '70%']
+const MCChoicesFeedbacks = [
+  'Feedback 1',
+  'Feedback 2',
+  'Feedback 3',
+  'Feedback 4',
+  'Feedback 5',
+  'Feedback 6',
+  'Feedback 7',
+]
 
 const KPRIMTitle = 'KPRIM Title'
 const KPRIMContent = 'KPRIM Text'
@@ -33,6 +43,12 @@ const KPRIMChoices = ['25%', '50%', '75%', '100%']
 const KPRIMTitleEdited = 'KPRIM Title Edited'
 const KPRIMContentEdited = 'KPRIM Text Edited'
 const KPRIMChoicesEdited = ['10%', '20%', '30%', '40%']
+const KPRIMChoicesFeedbacks = [
+  'Feedback 1',
+  'Feedback 2',
+  'Feedback 3',
+  'Feedback 4',
+]
 
 const NRTitle = 'Numerical Range Title'
 const NRContent = 'Numerical Range Text'
@@ -241,6 +257,7 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Create a single choice question', () => {
+    // fill in minimal information for SC question
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(SCTitle)
     cy.get('[data-cy="select-question-status"]').click()
@@ -260,6 +277,15 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
+    // make sure that if the answer option fields are cleared, submission is blocked
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type(SCChoices[1])
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(SCChoices[1])
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // try moving around the answer options and make sure that UI updates accordingly
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
       .should('not.be.disabled')
@@ -276,6 +302,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
+    // verify that the item immediately appears in the question pool after saving it
     cy.get(`[data-cy="element-item-${SCTitle}"]`).contains(SCContent)
     cy.get(`[data-cy="element-item-${SCTitle}"]`).contains(SCTitle)
     cy.get(`[data-cy="element-item-${SCTitle}"]`).contains(
@@ -303,6 +330,7 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Edit a single choice question and add a sample solution', () => {
+    // update contents of SC question
     cy.get(`[data-cy="edit-question-${SCTitle}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-title"]').clear().type(SCTitleEdited)
@@ -329,8 +357,14 @@ describe('Create different types of elements (with and without sample solution) 
       .clear()
       .type(SCChoicesEdited[2])
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // add a sample solution and check that exactly one correct answer is required
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
+    cy.get(`[data-cy="set-correctness-0"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get(`[data-cy="set-correctness-0"]`).click() // trigger to disable solution again
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get(`[data-cy="set-correctness-0"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get(`[data-cy="set-correctness-2"]`).click()
@@ -340,13 +374,106 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
+    // verify that the updated element immediately appears in the question pool after saving it
     cy.get(`[data-cy="element-item-${SCTitleEdited}"]`).contains(SCTitleEdited)
     cy.get(`[data-cy="element-item-${SCTitleEdited}"]`).contains(
       SCContentEdited
     )
   })
 
+  it('Edit the SC question again and add answer feedbacks', () => {
+    cy.get(`[data-cy="edit-question-${SCTitleEdited}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // enable answer feedbacks and add valid ones for all options
+    cy.get('[data-cy="configure-answer-feedbacks"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // feedbacks for all answer options are required
+    SCChoicesFeedbacks.forEach((feedback, ix) => {
+      cy.get('[data-cy="save-new-question"]').should('be.disabled')
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+        .realClick()
+        .type(feedback)
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(feedback)
+    })
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // clearing an answer feedback field is correctly detected and leads to invalidation
+    cy.get('[data-cy="insert-answer-feedback-1"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-feedback-0"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-feedback-0"]')
+      .realClick()
+      .type(SCChoicesFeedbacks[0])
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-feedback-1"]')
+      .realClick()
+      .type(SCChoicesFeedbacks[1])
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // verify that reordering answer options also reorders the corresponding feedbacks
+    SCChoicesEdited.forEach((choice, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .contains(choice)
+    })
+    SCChoicesFeedbacks.forEach((feedback, ix) => {
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+        .realClick()
+        .contains(feedback)
+    })
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="move-answer-option-ix-1-down"]').realClick()
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .contains(SCChoicesEdited[0])
+    cy.get('[data-cy="insert-answer-feedback-0"]')
+      .realClick()
+      .contains(SCChoicesFeedbacks[0])
+    cy.get('[data-cy="insert-answer-field-1"]')
+      .realClick()
+      .contains(SCChoicesEdited[2])
+    cy.get('[data-cy="insert-answer-feedback-1"]')
+      .realClick()
+      .contains(SCChoicesFeedbacks[2])
+    cy.get('[data-cy="insert-answer-field-2"]')
+      .realClick()
+      .contains(SCChoicesEdited[1])
+    cy.get('[data-cy="insert-answer-feedback-2"]')
+      .realClick()
+      .contains(SCChoicesFeedbacks[1])
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="move-answer-option-ix-2-up"]').realClick()
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .contains(SCChoicesEdited[0])
+    cy.get('[data-cy="insert-answer-feedback-0"]')
+      .realClick()
+      .contains(SCChoicesFeedbacks[0])
+    cy.get('[data-cy="insert-answer-field-1"]')
+      .realClick()
+      .contains(SCChoicesEdited[1])
+    cy.get('[data-cy="insert-answer-feedback-1"]')
+      .realClick()
+      .contains(SCChoicesFeedbacks[1])
+    cy.get('[data-cy="insert-answer-field-2"]')
+      .realClick()
+      .contains(SCChoicesEdited[2])
+    cy.get('[data-cy="insert-answer-feedback-2"]')
+      .realClick()
+      .contains(SCChoicesFeedbacks[2])
+
+    // save modified question
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(1000)
+  })
+
   it('Check that edited single choice question is stored and loaded correctly', () => {
+    // check general question information
     cy.get(`[data-cy="edit-question-${SCTitleEdited}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
@@ -355,19 +482,26 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .contains(SCContentEdited)
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .contains(SCChoicesEdited[0])
-    cy.get('[data-cy="insert-answer-field-1"]')
-      .realClick()
-      .contains(SCChoicesEdited[1])
-    cy.get('[data-cy="insert-answer-field-2"]')
-      .realClick()
-      .contains(SCChoicesEdited[2])
+
+    // check choices content
+    SCChoicesEdited.forEach((choice, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .contains(choice)
+    })
+
+    // check answer feedbacks
+    SCChoicesFeedbacks.forEach((feedback, ix) => {
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+        .realClick()
+        .contains(feedback)
+    })
+
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
   it('Create a multiple choice question', () => {
+    // insert general information for MC question
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
@@ -385,6 +519,8 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
     cy.get('[data-cy="insert-question-text"]').realClick().type(MCContent)
+
+    // insert answer options for MC question
     cy.get('[data-cy="insert-answer-field-0"]').realClick().type(MCChoices[0])
     cy.get('[data-cy="insert-answer-field-0"]').findByText(MCChoices[0])
     cy.get('[data-cy="add-new-answer"]').click()
@@ -400,13 +536,25 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-answer-field-3"]').realClick().type(MCChoices[3])
     cy.get('[data-cy="insert-answer-field-3"]').findByText(MCChoices[3])
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
+    // verify that clearing an answer option is correctly recognized
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().type(MCChoices[1])
+    cy.get('[data-cy="insert-answer-field-1"]').findByText(MCChoices[1])
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // test moving around answer options
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
       .should('not.be.disabled')
       .click()
     cy.get('[data-cy="insert-answer-field-0"]').findByText(MCChoices[1])
     cy.get('[data-cy="insert-answer-field-1"]').findByText(MCChoices[0])
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     cy.get('[data-cy="move-answer-option-ix-1-up"]')
       .should('not.be.disabled')
@@ -418,6 +566,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
+    // verify that question is correctly created
     cy.get(`[data-cy="element-item-${MCTitle}"]`).contains(MCContent)
     cy.get(`[data-cy="element-item-${MCTitle}"]`).contains(MCTitle)
     cy.get(`[data-cy="element-item-${MCTitle}"]`).contains(
@@ -435,22 +584,17 @@ describe('Create different types of elements (with and without sample solution) 
       .should('exist')
       .contains(messages.shared.READY.statusLabel)
     cy.get('[data-cy="insert-question-text"]').realClick().contains(MCContent)
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .contains(MCChoices[0])
-    cy.get('[data-cy="insert-answer-field-1"]')
-      .realClick()
-      .contains(MCChoices[1])
-    cy.get('[data-cy="insert-answer-field-2"]')
-      .realClick()
-      .contains(MCChoices[2])
-    cy.get('[data-cy="insert-answer-field-3"]')
-      .realClick()
-      .contains(MCChoices[3])
+
+    MCChoices.forEach((choice, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .contains(choice)
+    })
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
   it('Edit a multiple choice question and add a sample solution', () => {
+    // modify minimal content of MC question
     cy.get(`[data-cy="edit-question-${MCTitle}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-title"]').clear().type(MCTitleEdited)
@@ -470,7 +614,7 @@ describe('Create different types of elements (with and without sample solution) 
       .realClick()
       .clear()
       .type(MCChoicesEdited[2])
-    cy.get('[data-cy="delete-answer-option-ix-3"]').click()
+    cy.get('[data-cy="delete-answer-option-ix-3"]').click() // test deleting answer options
     cy.get('[data-cy="insert-answer-field-3"]').should('not.exist')
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
@@ -497,8 +641,14 @@ describe('Create different types of elements (with and without sample solution) 
       .clear()
       .type(MCChoicesEdited[6])
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // enable sample solution and check that at least one correct answer is required
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
+    cy.get(`[data-cy="set-correctness-0"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get(`[data-cy="set-correctness-0"]`).click() // verify that sample solution can also be deactivated again
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get(`[data-cy="set-correctness-0"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get(`[data-cy="set-correctness-2"]`).click()
@@ -507,10 +657,75 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
+    // verify that the updated content of the MC question is correctly displayed
     cy.get(`[data-cy="element-item-${MCTitleEdited}"]`).contains(MCTitleEdited)
     cy.get(`[data-cy="element-item-${MCTitleEdited}"]`).contains(
       MCContentEdited
     )
+  })
+
+  it('Edit the MC question again and add answer feedbacks', () => {
+    cy.get(`[data-cy="edit-question-${MCTitleEdited}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // enable answer feedbacks and add valid ones for all options
+    cy.get('[data-cy="configure-answer-feedbacks"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // feedbacks for all answer options are required
+    MCChoicesFeedbacks.forEach((feedback, ix) => {
+      cy.get('[data-cy="save-new-question"]').should('be.disabled')
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+        .realClick()
+        .type(feedback)
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(feedback)
+    })
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // clearing an answer feedback field is correctly detected and leads to invalidation
+    cy.get('[data-cy="insert-answer-feedback-1"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-feedback-1"]')
+      .realClick()
+      .type(MCChoicesFeedbacks[1])
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // verify that reordering answer options also reorders the corresponding feedbacks
+    cy.get('[data-cy="move-answer-option-ix-1-down"]').click()
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .contains(MCChoicesEdited[0])
+    cy.get('[data-cy="insert-answer-feedback-0"]')
+      .realClick()
+      .contains(MCChoicesFeedbacks[0])
+    cy.get('[data-cy="insert-answer-field-1"]')
+      .realClick()
+      .contains(MCChoicesEdited[2])
+    cy.get('[data-cy="insert-answer-feedback-1"]')
+      .realClick()
+      .contains(MCChoicesFeedbacks[2])
+    cy.get('[data-cy="insert-answer-field-2"]')
+      .realClick()
+      .contains(MCChoicesEdited[1])
+    cy.get('[data-cy="insert-answer-feedback-2"]')
+      .realClick()
+      .contains(MCChoicesFeedbacks[1])
+
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="move-answer-option-ix-2-up"]').click()
+    MCChoicesEdited.forEach((choice, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .contains(choice)
+    })
+    MCChoicesFeedbacks.forEach((feedback, ix) => {
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+        .realClick()
+        .contains(feedback)
+    })
+
+    // save modified question
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(1000)
   })
 
   it('Check that edited multiple choice question is stored and loaded correctly', () => {
@@ -522,31 +737,26 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .contains(MCContentEdited)
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .contains(MCChoicesEdited[0])
-    cy.get('[data-cy="insert-answer-field-1"]')
-      .realClick()
-      .contains(MCChoicesEdited[1])
-    cy.get('[data-cy="insert-answer-field-2"]')
-      .realClick()
-      .contains(MCChoicesEdited[2])
-    cy.get('[data-cy="insert-answer-field-3"]')
-      .realClick()
-      .contains(MCChoicesEdited[3])
-    cy.get('[data-cy="insert-answer-field-4"]')
-      .realClick()
-      .contains(MCChoicesEdited[4])
-    cy.get('[data-cy="insert-answer-field-5"]')
-      .realClick()
-      .contains(MCChoicesEdited[5])
-    cy.get('[data-cy="insert-answer-field-6"]')
-      .realClick()
-      .contains(MCChoicesEdited[6])
+
+    // check content of existing choices
+    MCChoicesEdited.forEach((choice, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .contains(choice)
+    })
+
+    // check content of answer feedbacks
+    MCChoicesFeedbacks.forEach((feedback, ix) => {
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+        .realClick()
+        .contains(feedback)
+    })
+
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
   it('Create a KPRIM question', () => {
+    // create KPRIM question with minimal information
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
@@ -587,7 +797,19 @@ describe('Create different types of elements (with and without sample solution) 
       .type(KPRIMChoices[3])
     cy.get('[data-cy="insert-answer-field-3"]').findByText(KPRIMChoices[3])
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
+    // check if clearing an answer option correctly disables submission of the question
+    cy.get('[data-cy="insert-answer-field-2"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-field-2"]')
+      .realClick()
+      .type(KPRIMChoices[2])
+    cy.get('[data-cy="insert-answer-field-2"]').findByText(KPRIMChoices[2])
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // test reordering answer options
     cy.get('[data-cy="move-answer-option-ix-0-up"]').should('be.disabled')
     cy.get('[data-cy="move-answer-option-ix-0-down"]')
       .should('not.be.disabled')
@@ -624,6 +846,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
+    // verify that the created KPRIM question is correctly displayed in the question pool
     cy.get(`[data-cy="element-item-${KPRIMTitle}"]`).contains(KPRIMContent)
     cy.get(`[data-cy="element-item-${KPRIMTitle}"]`).contains(KPRIMTitle)
     cy.get(`[data-cy="element-item-${KPRIMTitle}"]`).contains(
@@ -661,6 +884,7 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Edit a KPRIM question and add a sample solution', () => {
+    // modify the question and test removing answer options and the corresponding validation
     cy.get(`[data-cy="edit-question-${KPRIMTitle}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-title"]').clear().type(KPRIMTitleEdited)
@@ -690,6 +914,8 @@ describe('Create different types of elements (with and without sample solution) 
       .type(KPRIMChoicesEdited[3])
     cy.get('[data-cy="add-new-answer"]').should('be.disabled')
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // add a sample solution to the KPRIM question
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled') // no correct solution required for KPRIM questions
     cy.get(`[data-cy="set-correctness-0"]`).click()
@@ -699,6 +925,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
+    // verify that the updated KPRIM question is correctly displayed in the question pool
     cy.get(`[data-cy="element-item-${KPRIMTitleEdited}"]`).contains(
       KPRIMTitleEdited
     )
@@ -716,19 +943,104 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .contains(KPRIMContentEdited)
+
+    KPRIMChoicesEdited.forEach((choice, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .contains(choice)
+    })
+    cy.get('[data-cy="close-question-modal"]').click()
+  })
+
+  it('Edit the KPRIM question again and add answer feedbacks', () => {
+    cy.get(`[data-cy="edit-question-${KPRIMTitleEdited}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // enable answer feedbacks and add valid ones for all options
+    cy.get('[data-cy="configure-answer-feedbacks"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // feedbacks for all answer options are required
+    KPRIMChoicesFeedbacks.forEach((feedback, ix) => {
+      cy.get('[data-cy="save-new-question"]').should('be.disabled')
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+        .realClick()
+        .type(feedback)
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(feedback)
+    })
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // clearing an answer feedback field is correctly detected and leads to invalidation
+    cy.get('[data-cy="insert-answer-feedback-1"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-feedback-0"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-feedback-0"]')
+      .realClick()
+      .type(KPRIMChoicesFeedbacks[0])
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-answer-feedback-1"]')
+      .realClick()
+      .type(KPRIMChoicesFeedbacks[1])
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // verify that reordering answer options also reorders the corresponding feedbacks
+    KPRIMChoicesEdited.forEach((choice, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .contains(choice)
+    })
+    KPRIMChoicesFeedbacks.forEach((feedback, ix) => {
+      cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+        .realClick()
+        .contains(feedback)
+    })
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="move-answer-option-ix-1-down"]').realClick()
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .contains(KPRIMChoicesEdited[0])
+    cy.get('[data-cy="insert-answer-feedback-0"]')
+      .realClick()
+      .contains(KPRIMChoicesFeedbacks[0])
+    cy.get('[data-cy="insert-answer-field-1"]')
+      .realClick()
+      .contains(KPRIMChoicesEdited[2])
+    cy.get('[data-cy="insert-answer-feedback-1"]')
+      .realClick()
+      .contains(KPRIMChoicesFeedbacks[2])
+    cy.get('[data-cy="insert-answer-field-2"]')
+      .realClick()
+      .contains(KPRIMChoicesEdited[1])
+    cy.get('[data-cy="insert-answer-feedback-2"]')
+      .realClick()
+      .contains(KPRIMChoicesFeedbacks[1])
+    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="move-answer-option-ix-2-up"]').realClick()
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .contains(KPRIMChoicesEdited[0])
+    cy.get('[data-cy="insert-answer-feedback-0"]')
+      .realClick()
+      .contains(KPRIMChoicesFeedbacks[0])
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
       .contains(KPRIMChoicesEdited[1])
+    cy.get('[data-cy="insert-answer-feedback-1"]')
+      .realClick()
+      .contains(KPRIMChoicesFeedbacks[1])
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
       .contains(KPRIMChoicesEdited[2])
-    cy.get('[data-cy="insert-answer-field-3"]')
+    cy.get('[data-cy="insert-answer-feedback-2"]')
       .realClick()
-      .contains(KPRIMChoicesEdited[3])
-    cy.get('[data-cy="close-question-modal"]').click()
+      .contains(KPRIMChoicesFeedbacks[2])
+
+    // save modified question
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(1000)
   })
 
   it('Create a Numerical question', () => {
