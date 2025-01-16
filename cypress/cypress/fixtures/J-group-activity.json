@@ -1,0 +1,158 @@
+{
+  "course": "Testkurs",
+  "questions": {
+    "SC": {
+      "title": "Single Choice Question Title",
+      "content": "SC Question Group Activity",
+      "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+    },
+    "MC": {
+      "title": "Multiple Choice Question Title",
+      "content": "MC Question Group Activity",
+      "choices": [
+        { "content": "25%" },
+        { "content": "50%", "correct": true },
+        { "content": "75%" },
+        { "content": "100%", "correct": true },
+        { "content": "200%" }
+      ]
+    },
+    "KP": {
+      "title": "KPRIM Question Title",
+      "content": "KPRIM Question Group Activity",
+      "choices": [
+        { "content": "25%" },
+        { "content": "50%", "correct": true },
+        { "content": "75%" },
+        { "content": "100%", "correct": true }
+      ]
+    },
+    "NR": {
+      "title": "Numerical Question Title",
+      "content": "NR Question Group Activity",
+      "options": {
+        "min": "0",
+        "max": "100",
+        "unit": "%",
+        "accuracy": "2",
+        "solutionRanges": [
+          { "min": "0", "max": "25" },
+          { "min": "75", "max": "100" }
+        ]
+      }
+    },
+    "FT": {
+      "title": "Free Text Question Title",
+      "content": "FT Question Group Activity",
+      "options": {
+        "maxLength": "100"
+      }
+    },
+    "CT": {
+      "title": "Content Question Title",
+      "content": "CT Question Group Activity"
+    }
+  },
+  "group": {
+    "message1": "Hello group! (initial message) from Alice",
+    "message2": "Hello! (response) from Bob"
+  },
+  "activity": {
+    "name": "Group Activity Running",
+    "displayName": "Group Activity Running (Display)",
+    "task": "Group Activity Task Description",
+    "clues": [
+      {
+        "name": "Test Clue 1",
+        "displayName": "Test Clue Display Name 1",
+        "content": "Test Clue Content 1"
+      },
+      {
+        "name": "Test Clue 2",
+        "displayName": "Test Clue Display Name 2",
+        "content": 42,
+        "unit": "kg"
+      },
+      {
+        "name": "Test Clue 3",
+        "displayName": "Test Clue Display Name 3",
+        "content": 60
+      }
+    ]
+  },
+  "running": {
+    "name": "Group Activity Running",
+    "displayName": "Group Activity Running (Display)",
+    "task": "Group Activity Task Description",
+    "clues": [
+      {
+        "name": "Test Clue 4",
+        "displayName": "Test Clue Display Name 4",
+        "content": "Test Clue Content 4"
+      },
+      {
+        "name": "Test Clue 5",
+        "displayName": "Test Clue Display Name 5",
+        "content": 50,
+        "unit": "kg"
+      }
+    ],
+    "flagging": {
+      "text": "This is a test flagging message",
+      "textNew": "This is a NEW test flagging message"
+    },
+    "answers": {
+      "freeText": "Testanswer to Free-Text Question",
+      "numerical": "100"
+    },
+    "grading": {
+      "maxPoints": ["200", "100", "100", "300", "100", "200"],
+      "scores1": ["100", "100", "50", "200", "80", "200"],
+      "scores2": ["50", "25", "25", "75", "25", "50"],
+      "comments1": [
+        "Great job at question 1!",
+        null,
+        null,
+        "Great job at question 4!",
+        "Good job at question 5!",
+        null
+      ],
+      "comments2": [
+        "This is not correct for question 1...",
+        null,
+        "This is not correct for question 3...",
+        null,
+        null,
+        "This is not correct for question 6..."
+      ],
+      "gradingComment1": "This is a test grading comment",
+      "gradingComment2": null
+    }
+  },
+  "synchronous": {
+    "name": "Synchronous Group Activity",
+    "displayName": "Synchronous Group Activity (Display)",
+    "task": "Synchronous Group Activity Task Description",
+    "clues": [
+      {
+        "type": "text",
+        "name": "Test Clue 1",
+        "displayName": "Test Clue Display Name 1",
+        "content": "Test Clue Content 1"
+      },
+      {
+        "type": "number",
+        "name": "Test Clue 2",
+        "displayName": "Test Clue Display Name 2",
+        "content": "42",
+        "unit": "kg"
+      },
+      {
+        "type": "text",
+        "name": "Test Clue 3",
+        "displayName": "Test Clue Display Name 3",
+        "content": "Content 3"
+      }
+    ]
+  }
+}

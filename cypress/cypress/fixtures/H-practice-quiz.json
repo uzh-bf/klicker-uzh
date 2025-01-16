@@ -1,0 +1,84 @@
+{
+  "course": "Testkurs",
+  "questions": {
+    "SC1": {
+      "title": "SC q9f8w3h2",
+      "content": "SC Question PQ",
+      "choices": [
+        { "content": "50%", "correct": true },
+        { "content": "100%" },
+        { "content": "200%" },
+        { "content": "300%" }
+      ]
+    },
+    "SC2": {
+      "title": "SC x7d5k9m4",
+      "content": "SC Question PQ No Solution",
+      "choices": [{ "content": "50%" }, { "content": "100%" }]
+    },
+    "MC": {
+      "title": "MC p2n6v8j1",
+      "content": "MC Question PQ",
+      "choices": [
+        { "content": "25%" },
+        { "content": "50%", "correct": true },
+        { "content": "75%" },
+        { "content": "100%", "correct": true },
+        { "content": "200%" }
+      ]
+    },
+    "KP": {
+      "title": "KPRIM h4t7r3s9",
+      "content": "KPRIM Question PQ",
+      "choices": [
+        { "content": "25%" },
+        { "content": "50%", "correct": true },
+        { "content": "75%" },
+        { "content": "100%", "correct": true }
+      ]
+    },
+    "NR": {
+      "title": "NR b5m1c8w6",
+      "content": "NR Question PQ",
+      "options": {
+        "min": "0",
+        "max": "100",
+        "unit": "%",
+        "accuracy": "2",
+        "solutionRanges": [
+          { "min": "0", "max": "25" },
+          { "min": "75", "max": "100" }
+        ]
+      }
+    },
+    "FT": {
+      "title": "FT l3k7g4d9",
+      "content": "FT Question PQ",
+      "options": {
+        "maxLength": "100"
+      }
+    },
+    "FC": {
+      "title": "FC y6x2z8n5",
+      "content": "FC Question PQ",
+      "explanation": "FC Answer PQ"
+    },
+    "CT": {
+      "title": "CT a1f5j9h3",
+      "content": "CT Question PQ"
+    }
+  },
+  "running": {
+    "name": "Running Practice Quiz OLD",
+    "displayName": "Running Practice Quiz OLD (Display)",
+    "description": "This is the OLD description of the running practice quiz",
+    "nameNew": "Running Practice Quiz",
+    "displayNameNew": "Running Practice Quiz",
+    "descriptionNew": "This is the description of the running practice quiz",
+    "nameDupl": "Running Practice Quiz (Copy)"
+  },
+  "scheduled": {
+    "name": "Scheduled Practice Quiz",
+    "displayName": "Scheduled Practice Quiz"
+  }
+}
