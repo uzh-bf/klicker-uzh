@@ -376,7 +376,7 @@ describe('Create different types of elements (with and without sample solution) 
     // enable answer feedbacks and add valid ones for all options
     cy.get('[data-cy="configure-answer-feedbacks"]').click()
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // feedbacks for all answer options are required
-    this.data.SC.choicesFeedbacks.forEach((feedback, ix) => {
+    cy.wrap(this.data.SC.choicesFeedbacks).each((feedback: string, ix) => {
       cy.get('[data-cy="save-new-question"]').should('be.disabled')
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
@@ -400,12 +400,12 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // verify that reordering answer options also reorders the corresponding feedbacks
-    this.data.SC.choicesEdited.forEach((choice, ix) => {
+    cy.wrap(this.data.SC.choicesEdited).each((choice: string, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .contains(choice)
     })
-    this.data.SC.choicesFeedbacks.forEach((feedback, ix) => {
+    cy.wrap(this.data.SC.choicesFeedbacks).each((feedback: string, ix) => {
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
         .contains(feedback)
@@ -472,14 +472,14 @@ describe('Create different types of elements (with and without sample solution) 
       .contains(this.data.SC.contentEdited)
 
     // check choices content
-    this.data.SC.choicesEdited.forEach((choice, ix) => {
+    cy.wrap(this.data.SC.choicesEdited).each((choice: string, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .contains(choice)
     })
 
     // check answer feedbacks
-    this.data.SC.choicesFeedbacks.forEach((feedback, ix) => {
+    cy.wrap(this.data.SC.choicesFeedbacks).each((feedback: string, ix) => {
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
         .contains(feedback)
@@ -612,7 +612,7 @@ describe('Create different types of elements (with and without sample solution) 
       .realClick()
       .contains(this.data.MC.content)
 
-    this.data.MC.choices.forEach((choice, ix) => {
+    cy.wrap(this.data.MC.choices).each((choice: string, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .contains(choice)
@@ -702,7 +702,7 @@ describe('Create different types of elements (with and without sample solution) 
     // enable answer feedbacks and add valid ones for all options
     cy.get('[data-cy="configure-answer-feedbacks"]').click()
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // feedbacks for all answer options are required
-    this.data.MC.choicesFeedbacks.forEach((feedback, ix) => {
+    cy.wrap(this.data.MC.choicesFeedbacks).each((feedback: string, ix) => {
       cy.get('[data-cy="save-new-question"]').should('be.disabled')
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
@@ -743,12 +743,12 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="move-answer-option-ix-2-up"]').click()
-    this.data.MC.choicesEdited.forEach((choice, ix) => {
+    cy.wrap(this.data.MC.choicesEdited).each((choice: string, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .contains(choice)
     })
-    this.data.MC.choicesFeedbacks.forEach((feedback, ix) => {
+    cy.wrap(this.data.MC.choicesFeedbacks).each((feedback: string, ix) => {
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
         .contains(feedback)
@@ -770,14 +770,14 @@ describe('Create different types of elements (with and without sample solution) 
       .contains(this.data.MC.contentEdited)
 
     // check content of existing choices
-    this.data.MC.choicesEdited.forEach((choice, ix) => {
+    cy.wrap(this.data.MC.choicesEdited).each((choice: string, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .contains(choice)
     })
 
     // check content of answer feedbacks
-    this.data.MC.choicesFeedbacks.forEach((feedback, ix) => {
+    cy.wrap(this.data.MC.choicesFeedbacks).each((feedback: string, ix) => {
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
         .contains(feedback)
@@ -1028,7 +1028,7 @@ describe('Create different types of elements (with and without sample solution) 
       .realClick()
       .contains(this.data.KP.contentEdited)
 
-    this.data.KP.choicesEdited.forEach((choice, ix) => {
+    cy.wrap(this.data.KP.choicesEdited).each((choice: string, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .contains(choice)
@@ -1043,7 +1043,7 @@ describe('Create different types of elements (with and without sample solution) 
     // enable answer feedbacks and add valid ones for all options
     cy.get('[data-cy="configure-answer-feedbacks"]').click()
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // feedbacks for all answer options are required
-    this.data.KP.choicesFeedbacks.forEach((feedback, ix) => {
+    cy.wrap(this.data.KP.choicesFeedbacks).each((feedback: string, ix) => {
       cy.get('[data-cy="save-new-question"]').should('be.disabled')
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
@@ -1067,12 +1067,12 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // verify that reordering answer options also reorders the corresponding feedbacks
-    this.data.KP.choicesEdited.forEach((choice, ix) => {
+    cy.wrap(this.data.KP.choicesEdited).each((choice: string, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .contains(choice)
     })
-    this.data.KP.choicesFeedbacks.forEach((feedback, ix) => {
+    cy.wrap(this.data.KP.choicesFeedbacks).each((feedback: string, ix) => {
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
         .contains(feedback)
@@ -1247,20 +1247,22 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one solution range is required
     cy.wait(500)
 
-    this.data.NR.solutionRanges.forEach((range, ix) => {
-      cy.get('[data-cy="add-solution-range"]').click()
-      if (range.min !== null) {
-        cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
-          .click()
-          .type(String(range.min))
+    cy.wrap(this.data.NR.solutionRanges).each(
+      (range: { min: number | null; max: number | null }, ix) => {
+        cy.get('[data-cy="add-solution-range"]').click()
+        if (range.min !== null) {
+          cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
+            .click()
+            .type(String(range.min))
+        }
+        if (range.max !== null) {
+          cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
+            .click()
+            .type(String(range.max))
+        }
+        cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
       }
-      if (range.max !== null) {
-        cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
-          .click()
-          .type(String(range.max))
-      }
-      cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
-    })
+    )
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
@@ -1298,20 +1300,22 @@ describe('Create different types of elements (with and without sample solution) 
       String(this.data.NR.accuracyEdited)
     )
 
-    this.data.NR.solutionRanges.forEach((range, ix) => {
-      if (range.min !== null) {
-        cy.get(`[data-cy="set-solution-range-min-${ix}"]`).should(
-          'have.value',
-          String(range.min)
-        )
+    cy.wrap(this.data.NR.solutionRanges).each(
+      (range: { min: number | null; max: number | null }, ix) => {
+        if (range.min !== null) {
+          cy.get(`[data-cy="set-solution-range-min-${ix}"]`).should(
+            'have.value',
+            String(range.min)
+          )
+        }
+        if (range.max !== null) {
+          cy.get(`[data-cy="set-solution-range-max-${ix}"]`).should(
+            'have.value',
+            String(range.max)
+          )
+        }
       }
-      if (range.max !== null) {
-        cy.get(`[data-cy="set-solution-range-max-${ix}"]`).should(
-          'have.value',
-          String(range.max)
-        )
-      }
-    })
+    )
 
     cy.get('[data-cy="close-question-modal"]').click()
   })
@@ -1392,7 +1396,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
-    this.data.FT.sampleSolution.forEach((solution, ix) => {
+    cy.wrap(this.data.FT.sampleSolution).each((solution: string, ix) => {
       cy.get(`[data-cy="add-solution-value"]`).click()
       cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
       cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
@@ -1421,7 +1425,7 @@ describe('Create different types of elements (with and without sample solution) 
       'have.value',
       this.data.FT.maxLengthEdited
     )
-    this.data.FT.sampleSolution.forEach((solution, ix) => {
+    cy.wrap(this.data.FT.sampleSolution).each((solution: string, ix) => {
       cy.get(`[data-cy="set-solution-ix-${ix}"]`).should('have.value', solution)
     })
     cy.get('[data-cy="close-question-modal"]').click()
@@ -1490,7 +1494,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.FT.titleEdited,
     ]
 
-    questions.forEach((title) => {
+    cy.wrap(questions).each((title: string) => {
       cy.get(`[data-cy="delete-question-${title}"]`).click()
       cy.get('[data-cy="confirm-question-deletion"]').click()
       cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')

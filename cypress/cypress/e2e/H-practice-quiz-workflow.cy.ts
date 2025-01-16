@@ -800,7 +800,7 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.CT.title,
     ]
 
-    questions.forEach((title) => {
+    cy.wrap(questions).each((title) => {
       cy.get(`[data-cy="delete-question-${title}"]`).click()
       cy.get('[data-cy="confirm-question-deletion"]').click()
       cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')

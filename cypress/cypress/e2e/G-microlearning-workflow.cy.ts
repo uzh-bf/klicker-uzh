@@ -336,7 +336,7 @@ describe('Different microlearning workflows', function () {
       this.data.questions.FT.title,
     ]
     cy.get('[data-cy="drop-elements-add-stack"]').click()
-    addQuestions.forEach((element, ix) => {
+    cy.wrap(addQuestions).each((element: string, ix) => {
       const dataTransfer = new DataTransfer()
       cy.get(`[data-cy="element-item-${element}"]`)
         .contains(element)
@@ -1120,7 +1120,7 @@ describe('Different microlearning workflows', function () {
       this.data.questions.CT.title,
     ]
 
-    questions.forEach((title) => {
+    cy.wrap(questions).each((title: string) => {
       cy.get(`[data-cy="delete-question-${title}"]`).click()
       cy.get('[data-cy="confirm-question-deletion"]').click()
       cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')

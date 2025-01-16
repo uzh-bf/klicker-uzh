@@ -1179,7 +1179,7 @@ describe('Different live-quiz workflows', function () {
       this.data.NR2.title,
       this.data.FT2.title,
     ]
-    questions.forEach((question) => {
+    cy.wrap(questions).each((question: string) => {
       cy.get(`[data-cy="element-item-${question}"]`).should('exist')
       cy.get(`[data-cy="delete-question-${question}"]`).click()
       cy.get('[data-cy="confirm-question-deletion"]').click()

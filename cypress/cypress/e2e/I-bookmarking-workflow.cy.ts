@@ -242,7 +242,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="library"]').click()
     const questions = [this.data.question1.title, this.data.question2.title]
 
-    questions.forEach((title) => {
+    cy.wrap(questions).each((title: string) => {
       cy.get(`[data-cy="delete-question-${title}"]`).click()
       cy.get('[data-cy="confirm-question-deletion"]').click()
       cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')

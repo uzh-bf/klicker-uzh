@@ -490,7 +490,7 @@ describe('Create and solve a group activity', function () {
     )
 
     cy.findByText(`${totalScore}/${maxScore} Points`).should('exist')
-    scores.forEach((score, ix) => {
+    cy.wrap(scores).each((score: string, ix) => {
       cy.get(`[data-cy="group-activity-grading-feedback-${ix}"]`).should(
         'contain',
         `${score}/${maxPoints[ix]} Points`
@@ -786,7 +786,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
       'be.disabled'
     )
-    this.data.running.grading.scores1.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores1).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`)
         .click()
         .type(score)
@@ -823,7 +823,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-submission-0"]').click()
     // cy.wait(500)
     // cy.get('[data-cy="confirm-submission-switch"]').click()
-    this.data.running.grading.scores1.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores1).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`).should(
         'have.value',
         score
@@ -843,7 +843,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
       'be.disabled'
     )
-    this.data.running.grading.scores2.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores2).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`)
         .click()
         .type(score)
@@ -879,7 +879,7 @@ describe('Create and solve a group activity', function () {
 
     // check that the inputs to the different submissions are disabled after finalization of grading
     cy.get('[data-cy="group-activity-submission-0"]').click()
-    this.data.running.grading.scores1.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores1).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`).should(
         'have.value',
         score
@@ -894,7 +894,7 @@ describe('Create and solve a group activity', function () {
     )
 
     cy.get('[data-cy="group-activity-submission-1"]').click()
-    this.data.running.grading.scores2.forEach((score, ix) => {
+    cy.wrap(this.data.running.grading.scores2).each((score: string, ix) => {
       cy.get(`[data-cy="groupActivity-grading-score-${ix}"]`).should(
         'have.value',
         score
@@ -1212,7 +1212,7 @@ describe('Create and solve a group activity', function () {
       this.data.questions.CT.title,
     ]
 
-    questions.forEach((title) => {
+    cy.wrap(questions).each((title: string) => {
       cy.get(`[data-cy="delete-question-${title}"]`).click()
       cy.get('[data-cy="confirm-question-deletion"]').click()
       cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
