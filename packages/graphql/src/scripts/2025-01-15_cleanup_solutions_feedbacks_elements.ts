@@ -85,7 +85,9 @@ async function run() {
             element.options.hasAnswerFeedbacks &&
             !everyHasFeedbacksDefined
           ) {
-            // ! UPDATE (detected in current prod DB)
+            throw new Error('Unexpected update (2) - investigate further')
+
+            // ! (not detected in current prod DB)
             // answer feedbacks are missing -> deactivate setting and remove all answer feedbacks
             // await prisma.element.update({
             //   where: { id: element.id },
@@ -136,22 +138,6 @@ async function run() {
             // await prisma.element.update({
             //   where: { id: element.id },
             //   data: {
-            //     options: { ...element.options, hasSampleSolution: false },
-            //   },
-            // })
-
-            missingNumericalSampleSolution++
-          } else if (
-            'solutionRanges' in element.options &&
-            element.options.solutionRanges.length === 0
-          ) {
-            throw new Error('Unexpected update (2) - investigate further')
-
-            // ! (not detected in current prod DB)
-            // sample solution is empty -> deactivate setting and remove empty sample solution
-            // await prisma.element.update({
-            //   where: { id: element.id },
-            //   data: {
             //     options: {
             //       ...element.options,
             //       hasSampleSolution: false,
@@ -171,22 +157,6 @@ async function run() {
           ) {
             // ! UPDATE (detected in current prod DB)
             // sample solution is missing -> deactivate setting
-            // await prisma.element.update({
-            //   where: { id: element.id },
-            //   data: {
-            //     options: { ...element.options, hasSampleSolution: false },
-            //   },
-            // })
-
-            missingFreeTextSampleSolution++
-          } else if (
-            'solutions' in element.options &&
-            element.options.solutions.length === 0
-          ) {
-            throw new Error('Unexpected update (3) - investigate further')
-
-            // ! (not detected in current prod DB)
-            // sample solution is empty -> deactivate setting and remove empty sample solution
             // await prisma.element.update({
             //   where: { id: element.id },
             //   data: {
@@ -262,7 +232,11 @@ async function run() {
             // await prisma.element.update({
             //   where: { id: element.id },
             //   data: {
-            //     options: { ...element.options, solutionRanges: undefined },
+            //     options: {
+            //       ...element.options,
+            //       solutionRanges: undefined,
+            //       solutions: undefined,
+            //     },
             //   },
             // })
 
