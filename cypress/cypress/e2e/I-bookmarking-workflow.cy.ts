@@ -107,7 +107,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="bookmark-element-stack"]').click()
   })
 
-  it('Verify that the bookmarking progress was successful', function () {
+  it('Verify that the bookmarking action was successful', function () {
     cy.loginStudent()
     cy.get('[data-cy="bookmarks"]').click()
     cy.wait(500)

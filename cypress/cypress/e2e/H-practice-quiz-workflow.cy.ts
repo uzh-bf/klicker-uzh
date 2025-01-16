@@ -659,6 +659,24 @@ describe('Different practice quiz workflows', function () {
     ).should('not.exist')
   })
 
+  it('Cleanup (DB): Hard delete soft-deleted practice quiz (with results) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedPracticeQuiz', {
+      quizName: this.data.running.nameNew,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted practice quiz with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+
   it('Verify that the running practice quiz is no longer visible to students', function () {
     cy.loginStudent()
     cy.get('[data-cy="quizzes"]').click()

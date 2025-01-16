@@ -77,6 +77,36 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async removeSoftDeletedPracticeQuiz({ quizName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const practiceQuizzes = await prisma.practiceQuiz.deleteMany({
+              where: {
+                name: quizName,
+                isDeleted: true,
+              },
+            })
+
+            if (!practiceQuizzes) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
         async getMicroLearningInfo({ mlName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
@@ -105,6 +135,36 @@ export default defineConfig({
               id: microLearnings[0].id,
               courseId: microLearnings[0].courseId,
             }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async removeSoftDeletedMicrolearning({ mlName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const microLearnings = await prisma.microLearning.deleteMany({
+              where: {
+                name: mlName,
+                isDeleted: true,
+              },
+            })
+
+            if (!microLearnings) {
+              return false
+            }
+
+            return true
           } finally {
             await prisma.$disconnect()
           }

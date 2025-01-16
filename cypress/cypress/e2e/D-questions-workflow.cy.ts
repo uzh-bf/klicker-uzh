@@ -8,6 +8,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
+  // ! Part 1: Content elements
   it('Create a content element', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -102,6 +103,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
+  // ! Part 2: Flashcards
   it('Create a flashcard element', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -209,6 +211,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
+  // ! Part 3: Single choice questions
   it('Create a single choice question', function () {
     // fill in minimal information for SC question
     cy.get('[data-cy="create-question"]').click()
@@ -369,7 +372,7 @@ describe('Create different types of elements (with and without sample solution) 
     )
   })
 
-  it('Edit the SC question again and add answer feedbacks', function () {
+  it('Edit the single choice question again and add answer feedbacks', function () {
     cy.get(`[data-cy="edit-question-${this.data.SC.titleEdited}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
@@ -488,6 +491,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
+  // ! Part 4: Multiple choice questions
   it('Create a multiple choice question', function () {
     // insert general information for MC question
     cy.get('[data-cy="create-question"]').click()
@@ -695,7 +699,7 @@ describe('Create different types of elements (with and without sample solution) 
     )
   })
 
-  it('Edit the MC question again and add answer feedbacks', function () {
+  it('Edit the multiple choice question again and add answer feedbacks', function () {
     cy.get(`[data-cy="edit-question-${this.data.MC.titleEdited}"]`).click()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
@@ -786,6 +790,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
+  // ! Part 5: KPRIM questions
   it('Create a KPRIM question', function () {
     // create KPRIM question with minimal information
     cy.get('[data-cy="create-question"]').click()
@@ -1127,6 +1132,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.wait(1000)
   })
 
+  // ! Part 6: Numerical questions
   it('Create a Numerical question', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -1320,6 +1326,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
+  // ! Part 7: Free Text questions
   it('Create a Free Text question', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -1431,7 +1438,8 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
-  it('Create a new question, duplicates it and then deletes the duplicate again', function () {
+  // ! Part 8: Question duplication
+  it('Create a new question, duplicates it and then deletes them again', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(
       this.data.duplication.title
@@ -1470,7 +1478,7 @@ describe('Create different types of elements (with and without sample solution) 
       `[data-cy="element-item-${this.data.duplication.title + ' (Copy)'}"]`
     ).contains(messages.shared.DRAFT.statusLabel)
 
-    // delete the duplicated question
+    // delete the created and duplicated question
     cy.get(
       `[data-cy="delete-question-${this.data.duplication.title} (Copy)"]`
     ).click()
@@ -1481,8 +1489,14 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="element-item-${this.data.duplication.title + ' (Copy)'}"]`
     ).should('not.exist')
+    cy.get(`[data-cy="delete-question-${this.data.duplication.title}"]`).click()
+    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.get(`[data-cy="element-item-${this.data.duplication.title}"]`).should(
+      'not.exist'
+    )
   })
 
+  // ! Cleanup
   it('Cleanup: Delete all created questions', function () {
     const questions = [
       this.data.CT.titleEdited,

@@ -1,4 +1,4 @@
-describe('Test functionalities of frontend-control applicati functionon', function () {
+describe('Test functionalities of frontend-control application', function () {
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('C-control.json').then((data) => {
       this.data = data

@@ -608,7 +608,7 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! Part 2: Live Quiz Control
-  it('Start the created live quizzes, abort it, and restart & completes it', function () {
+  it('Start the created live quizzes, abort it, and restart & complete it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
     cy.contains('[data-cy="live-quiz-block"]', this.data.course1.quiz.nameNew)
@@ -783,7 +783,7 @@ describe('Different live-quiz workflows', function () {
     cy.wait(500)
   })
 
-  it('Responds to the first block of the running live quiz from the student view', function () {
+  it('Respond to the first block of the running live quiz from the student view', function () {
     // login student and answer first question
     cy.loginStudent()
     cy.findByText(this.data.course2.quiz.displayName).click()
@@ -899,7 +899,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="toggle-moderation"]').click()
   })
 
-  it('Student answers questions in second block', function () {
+  it('Answer questions in second block from student view', function () {
     cy.loginStudent()
     cy.findByText(this.data.course2.quiz.displayName).click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
@@ -923,7 +923,7 @@ describe('Different live-quiz workflows', function () {
     cy.wait(500)
   })
 
-  it('Verify that the feedbacks and the given feedback answer are visible to the student', function () {
+  it('Verify that the feedbacks and the given feedback response are visible to the student', function () {
     cy.loginStudent()
     cy.findByText(this.data.course2.quiz.displayName).click()
 
@@ -1133,6 +1133,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-block-timeline"]').click()
   })
 
+  // ! Cleanup
   it('Cleanup: Delete the live quiz used for the full cycle test', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="live-quizzes"]`).click()
