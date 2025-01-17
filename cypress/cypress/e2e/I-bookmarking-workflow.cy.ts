@@ -153,6 +153,24 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     )
   })
 
+  it('Cleanup (DB): Hard delete soft-deleted practice quiz (with results) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedPracticeQuiz', {
+      quizName: this.data.PQ.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted practice quiz with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+
   it("Verify that the practice quiz is no longer visible on the student's view", function () {
     cy.loginStudent()
     cy.get('[data-cy="quizzes"]').click()
@@ -235,6 +253,24 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get(`[data-cy="microlearning-actions-${this.data.ML.name}"]`).should(
       'not.exist'
     )
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted microlearning (with feedbacks) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedMicrolearning', {
+      mlName: this.data.ML.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted microlearning with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 
   it('Cleanup: Delete all created questions', function () {

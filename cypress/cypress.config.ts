@@ -169,6 +169,66 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async removeSoftDeletedLiveQuiz({ lqName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const liveQuizzes = await prisma.liveQuiz.deleteMany({
+              where: {
+                name: lqName,
+                isDeleted: true,
+              },
+            })
+
+            if (!liveQuizzes) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async removeSoftDeletedGroupActivity({ gaName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const groupActivities = await prisma.groupActivity.deleteMany({
+              where: {
+                name: gaName,
+                isDeleted: true,
+              },
+            })
+
+            if (!groupActivities) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
       })
       return config
     },

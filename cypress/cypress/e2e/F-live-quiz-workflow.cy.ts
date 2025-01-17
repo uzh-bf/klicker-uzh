@@ -664,6 +664,24 @@ describe('Different live-quiz workflows', function () {
     cy.findByText(this.data.course1.quiz.nameNew).should('not.exist')
   })
 
+  it('Cleanup (DB): Hard delete soft-deleted live quiz directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedLiveQuiz', {
+      lqName: this.data.course1.quiz.nameNew,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted live quiz with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+
   // ! Part 3: Full Live Quiz Execution Cycle
   it('Create and start a live quiz with all question types (with and without sample solution) to test the entire execution cycle', function () {
     cy.loginLecturer()
@@ -1163,6 +1181,24 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course2.quiz.name).should('not.exist')
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted live quiz directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedLiveQuiz', {
+      lqName: this.data.course2.quiz.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted live quiz with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 
   it('Cleanup: Delete the created questions from the question pool for repeated test execution', function () {

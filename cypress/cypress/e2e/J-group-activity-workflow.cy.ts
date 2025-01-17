@@ -1026,6 +1026,24 @@ describe('Create and solve a group activity', function () {
     ).should('not.exist')
   })
 
+  it('Cleanup (DB): Hard delete soft-deleted group activity (with results) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedGroupActivity', {
+      gaName: this.data.running.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted group activity with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+
   // ! Part 5: Synchronous Group Activity
   it('Publish the synchronous group activity', function () {
     cy.loginLecturer()
@@ -1198,6 +1216,24 @@ describe('Create and solve a group activity', function () {
     cy.get(
       `[data-cy="group-activity-${this.data.synchronous.displayName}"]`
     ).should('not.exist')
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted group activity (with results) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedGroupActivity', {
+      gaName: this.data.synchronous.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted group activity with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 
   it('Cleanup: Delete all created questions', function () {

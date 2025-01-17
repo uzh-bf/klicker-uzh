@@ -871,7 +871,7 @@ describe('Different microlearning workflows', function () {
     cy.loginLecturer()
     cy.wait(2000)
     cy.task('removeSoftDeletedMicrolearning', {
-      quizName: this.data.running.name,
+      mlName: this.data.running.name,
     }).then((result: boolean) => {
       // check if the query was successful
       if (result === false) {
@@ -1065,7 +1065,7 @@ describe('Different microlearning workflows', function () {
     cy.loginLecturer()
     cy.wait(2000)
     cy.task('removeSoftDeletedMicrolearning', {
-      quizName: this.data.completed.name,
+      mlName: this.data.completed.name,
     }).then((result: boolean) => {
       // check if the query was successful
       if (result === false) {
