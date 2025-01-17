@@ -56,18 +56,18 @@ function validateAndProcessElementOptions(
       }
 
       // if options are not valid, abort processing
-      if (!valid) return null
+      if (!valid || !options) return null
 
       return {
-        displayMode: options!.displayMode,
-        hasSampleSolution: options!.hasSampleSolution,
+        displayMode: options.displayMode,
+        hasSampleSolution: options.hasSampleSolution,
         hasAnswerFeedbacks:
-          options!.hasSampleSolution && options!.hasAnswerFeedbacks,
-        choices: options!.choices!.map((choice) => ({
+          options.hasSampleSolution && options.hasAnswerFeedbacks,
+        choices: options.choices!.map((choice) => ({
           ...choice,
-          correct: options!.hasSampleSolution ? choice.correct : undefined,
+          correct: options.hasSampleSolution ? choice.correct : undefined,
           feedback:
-            options!.hasSampleSolution && options!.hasAnswerFeedbacks
+            options.hasSampleSolution && options.hasAnswerFeedbacks
               ? choice.feedback
               : undefined,
         })),
@@ -77,24 +77,24 @@ function validateAndProcessElementOptions(
     case DB.ElementType.NUMERICAL: {
       // if options are not valid, abort processing
       const valid = validateNumericalOptions(options)
-      if (!valid) return null
+      if (!valid || !options) return null
 
       return {
-        hasSampleSolution: options!.hasSampleSolution,
-        unit: options!.unit ?? undefined,
-        accuracy: options!.accuracy ?? undefined,
-        placeholder: options!.placeholder ?? undefined,
+        hasSampleSolution: options.hasSampleSolution,
+        unit: options.unit ?? undefined,
+        accuracy: options.accuracy ?? undefined,
+        placeholder: options.placeholder ?? undefined,
         restrictions: {
-          min: options!.restrictions?.min ?? undefined,
-          max: options!.restrictions?.max ?? undefined,
+          min: options.restrictions?.min ?? undefined,
+          max: options.restrictions?.max ?? undefined,
         },
         solutionRanges:
-          options!.hasSampleSolution && options!.solutionRanges
-            ? options!.solutionRanges
+          options.hasSampleSolution && options.solutionRanges
+            ? options.solutionRanges
             : undefined,
         exactSolutions:
-          options!.hasSampleSolution && options!.exactSolutions
-            ? options!.exactSolutions
+          options.hasSampleSolution && options.exactSolutions
+            ? options.exactSolutions
             : undefined,
       }
     }
@@ -102,13 +102,13 @@ function validateAndProcessElementOptions(
     case DB.ElementType.FREE_TEXT: {
       // if options are not valid, abort processing
       const valid = validateFreeTextOptions(options)
-      if (!valid) return null
+      if (!valid || !options) return null
 
       return {
-        hasSampleSolution: options!.hasSampleSolution,
-        solutions: options!.hasSampleSolution ? options!.solutions : undefined,
+        hasSampleSolution: options.hasSampleSolution,
+        solutions: options.hasSampleSolution ? options.solutions : undefined,
         restrictions: {
-          maxLength: options!.restrictions?.maxLength ?? undefined,
+          maxLength: options.restrictions?.maxLength ?? undefined,
         },
       }
     }
@@ -116,11 +116,11 @@ function validateAndProcessElementOptions(
     case DB.ElementType.SELECTION: {
       // if options are not valid, abort processing
       const valid = validateSelectionOptions(options)
-      if (!valid) return null
+      if (!valid || !options) return null
 
       return {
-        hasSampleSolution: options!.hasSampleSolution,
-        numberOfInputs: options!.numberOfInputs,
+        hasSampleSolution: options.hasSampleSolution,
+        numberOfInputs: options.numberOfInputs,
       }
     }
 

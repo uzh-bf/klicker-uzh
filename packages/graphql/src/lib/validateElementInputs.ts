@@ -106,9 +106,9 @@ function validateElementInputs({
   // if pointsMultiplier is provided, it has to be a number
   if (
     typeof pointsMultiplier !== 'undefined' &&
-    typeof pointsMultiplier !== 'number'
+    (typeof pointsMultiplier !== 'number' || pointsMultiplier <= 0)
   ) {
-    console.error('Points multiplier must be a number')
+    console.error('Points multiplier must be a positive number')
     return false
   }
 
