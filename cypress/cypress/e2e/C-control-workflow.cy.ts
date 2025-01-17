@@ -106,5 +106,17 @@ describe('Test functionalities of frontend-control application', function () {
     })
   })
 
+  it('Cleanup: Delete the created questions', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="element-item-${this.data.questionTitle}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-question-${this.data.questionTitle}"]`).click()
+    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.get(`[data-cy="element-item-${this.data.questionTitle}"]`).should(
+      'not.exist'
+    )
+  })
+
   // TODO (later): check if quiz is running correctly / add student answer
 })

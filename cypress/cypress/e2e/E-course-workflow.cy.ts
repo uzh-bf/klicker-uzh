@@ -661,4 +661,16 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-deletion-modal-confirm"]').click()
     cy.findByText(this.data.course2.name).should('not.exist')
   })
+
+  it('Cleanup: Delete the created questions', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-question-${this.data.deletion.qTitle}"]`).click()
+    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
+      'not.exist'
+    )
+  })
 })
