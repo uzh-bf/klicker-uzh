@@ -11,6 +11,7 @@ import Question from './Question'
 interface QuestionListProps {
   setSelectedQuestions: (id: number, data: Element) => void
   selectedQuestions: Record<number, Element>
+  triggerSuccessToast: () => void
   questions?: Element[]
   tagfilter?: string[]
   handleTagClick: (tagName: string) => void
@@ -20,6 +21,7 @@ interface QuestionListProps {
 function QuestionList({
   setSelectedQuestions,
   selectedQuestions,
+  triggerSuccessToast,
   questions = [],
   tagfilter = [],
   handleTagClick,
@@ -70,6 +72,7 @@ function QuestionList({
               : true
           }
           onCheck={() => setSelectedQuestions(question.id, question)}
+          triggerSuccessToast={triggerSuccessToast}
           unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}
           createdAt={question.createdAt}

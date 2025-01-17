@@ -16,10 +16,17 @@ function validateFreeTextOptions(options?: QuestionOptionsArgs | null) {
   // if sample solution is enabled, at least one valid solution is required
   if (
     options.hasSampleSolution &&
-    (!options.solutions || options.solutions.length === 0)
+    (!options.solutions ||
+      options.solutions.length === 0 ||
+      options.solutions[0] === '')
   ) {
+    console.error(
+      'At least one solution is required for free text questions with sample solution'
+    )
     return false
   }
+
+  return true
 }
 
 export default validateFreeTextOptions

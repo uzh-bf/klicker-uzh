@@ -1,15 +1,6 @@
-import { faArchive } from '@fortawesome/free-solid-svg-icons'
-import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
-import { Badge } from '@uzh-bf/design-system/dist/future'
-import React, { useState } from 'react'
-import { useDrag } from 'react-dnd'
-import { twMerge } from 'tailwind-merge'
-// TODO: readd modals and tags
-// import QuestionDetailsModal from './QuestionDetailsModal'
-// import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faArchive, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
@@ -19,13 +10,17 @@ import {
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
+import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
+import { Badge } from '@uzh-bf/design-system/dist/future'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import React, { useState } from 'react'
+import { useDrag } from 'react-dnd'
+import { twMerge } from 'tailwind-merge'
 import ElementEditModal, {
   ElementEditMode,
 } from './manipulation/ElementEditModal'
 import QuestionTags from './QuestionTags'
-// import QuestionTags from './QuestionTags'
 
 const StatusColors: Record<ElementStatus, string> = {
   [ElementStatus.Draft]: 'bg-slate-400',
@@ -54,6 +49,7 @@ interface QuestionProps {
   type: ElementType
   content: string
   onCheck: () => void
+  triggerSuccessToast: () => void
   unsetDeletedQuestion: (questionId: number) => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
@@ -72,6 +68,7 @@ function Question({
   type,
   content,
   onCheck,
+  triggerSuccessToast,
   unsetDeletedQuestion,
   isArchived = false,
   hasAnswerFeedbacks,
@@ -191,6 +188,7 @@ function Question({
             {isModificationModalOpen && (
               <ElementEditModal
                 handleSetIsOpen={setIsModificationModalOpen}
+                triggerSuccessToast={triggerSuccessToast}
                 isOpen={isModificationModalOpen}
                 elementId={id}
                 mode={ElementEditMode.EDIT}
@@ -211,6 +209,7 @@ function Question({
             {isDuplicationModalOpen && (
               <ElementEditModal
                 handleSetIsOpen={setIsDuplicationModalOpen}
+                triggerSuccessToast={triggerSuccessToast}
                 isOpen={isDuplicationModalOpen}
                 elementId={id}
                 mode={ElementEditMode.DUPLICATE}

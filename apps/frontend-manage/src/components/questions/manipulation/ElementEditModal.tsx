@@ -20,6 +20,7 @@ import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ElementContentInput from './ElementContentInput'
 import ElementExplanationField from './ElementExplanationField'
+import ElementFailureToast from './ElementFailureToast'
 import ElementFormErrors from './ElementFormErrors'
 import ElementInformationFields from './ElementInformationFields'
 import ElementTypeMonitor from './ElementTypeMonitor'
@@ -53,6 +54,7 @@ export enum ElementEditMode {
 interface ElementEditModalProps {
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
+  triggerSuccessToast: () => void
   elementId?: number
   mode: ElementEditMode
 }
@@ -60,6 +62,7 @@ interface ElementEditModalProps {
 function ElementEditModal({
   isOpen,
   handleSetIsOpen,
+  triggerSuccessToast,
   elementId,
   mode,
 }: ElementEditModalProps): React.ReactElement {
@@ -67,6 +70,7 @@ function ElementEditModal({
 
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
+  const [failureToast, setFailureToast] = useState(false)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
@@ -141,7 +145,11 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateContentElement
-            if (data?.__typename !== 'ContentElement' || !data.id) return
+            if (data?.__typename !== 'ContentElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
 
@@ -161,7 +169,11 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateFlashcardElement
-            if (data?.__typename !== 'FlashcardElement' || !data.id) return
+            if (data?.__typename !== 'FlashcardElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
 
@@ -183,7 +195,11 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateChoicesQuestion
-            if (data?.__typename !== 'ChoicesElement' || !data.id) return
+            if (data?.__typename !== 'ChoicesElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
           case ElementType.Numerical: {
@@ -202,7 +218,11 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateNumericalQuestion
-            if (data?.__typename !== 'NumericalElement' || !data.id) return
+            if (data?.__typename !== 'NumericalElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
           case ElementType.FreeText: {
@@ -221,7 +241,11 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateFreeTextQuestion
-            if (data?.__typename !== 'FreeTextElement' || !data.id) return
+            if (data?.__typename !== 'FreeTextElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
           case ElementType.Selection: {
@@ -240,7 +264,11 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateSelectionQuestion
-            if (data?.__typename !== 'SelectionElement' || !data.id) return
+            if (data?.__typename !== 'SelectionElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
 
@@ -257,6 +285,7 @@ function ElementEditModal({
         }
 
         setSubmitting(false)
+        triggerSuccessToast()
         handleSetIsOpen(false)
       }}
     >
@@ -375,6 +404,10 @@ function ElementEditModal({
                 setUpdateInstances={setUpdateInstances}
               />
             )}
+            <ElementFailureToast
+              open={failureToast}
+              onClose={() => setFailureToast(false)}
+            />
           </Modal>
         )
       }}

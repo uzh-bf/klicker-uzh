@@ -156,7 +156,6 @@ export async function manipulateQuestion(
     explanation,
     pointsMultiplier,
   })
-
   const processedOptions = validateAndProcessElementOptions(type, options)
 
   // if the provided information is not valid for the element creation / editing, return null

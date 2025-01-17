@@ -17,6 +17,9 @@ function validateNumericalOptions(options?: QuestionOptionsArgs | null) {
   if (options.hasSampleSolution) {
     // either solution ranges or exact solutions need to be defined
     if (!options.solutionRanges && !options.exactSolutions) {
+      console.error(
+        'At least one of solution ranges or exact solutions needs to be defined'
+      )
       return false
     }
 
@@ -36,10 +39,15 @@ function validateNumericalOptions(options?: QuestionOptionsArgs | null) {
         options.exactSolutions[0] === null ||
         typeof options.exactSolutions[0] === 'undefined')
 
-    if (invalidSolutionRange && invalidExactSolutions) {
+    if (invalidSolutionRange || invalidExactSolutions) {
+      console.error(
+        'At least one of solution ranges or exact solutions needs to be defined and valid'
+      )
       return false
     }
   }
+
+  return true
 }
 
 export default validateNumericalOptions

@@ -32,19 +32,19 @@ function validateElementInputs({
       console.error('Type is required')
       return false
     }
-    if (!name || name !== '') {
+    if (!name || name === '') {
       console.error('Name is required')
       return false
     }
-    if (!content || !content.match(/^(<br>(\n)*)$/g) || content !== '') {
+    if (!content || content.match(/^(<br>(\n)*)$/g) || content === '') {
       console.error('Content is required')
       return false
     }
     if (
       type === DB.ElementType.FLASHCARD &&
       (!explanation ||
-        !explanation.match(/^(<br>(\n)*)$/g) ||
-        explanation !== '')
+        explanation.match(/^(<br>(\n)*)$/g) ||
+        explanation === '')
     ) {
       console.error('Explanation is required for flashcards')
       return false
@@ -71,20 +71,43 @@ function validateElementInputs({
     return false
   }
 
-  // validate types of inputs (if they are defined in edit mode and generally in creation mode)
-  if (name && typeof name !== 'string') {
+  // if name is provided, it has to be a non-empty string
+  if (
+    typeof name !== 'undefined' &&
+    (typeof name !== 'string' || name === '')
+  ) {
     console.error('Name must be a string')
     return false
   }
-  if (content && typeof content !== 'string') {
+
+  // if content is provided, it has to be a string and non-empty
+  if (
+    typeof content !== 'undefined' &&
+    (typeof content !== 'string' ||
+      content.match(/^(<br>(\n)*)$/g) ||
+      content === '')
+  ) {
     console.error('Content must be a string')
     return false
   }
-  if (explanation && typeof explanation !== 'string') {
+
+  // if explanation is provided, it has to be a string and non-empty
+  if (
+    typeof explanation !== 'undefined' &&
+    type === DB.ElementType.FLASHCARD &&
+    (typeof explanation !== 'string' ||
+      explanation.match(/^(<br>(\n)*)$/g) ||
+      explanation === '')
+  ) {
     console.error('Explanation must be a string')
     return false
   }
-  if (pointsMultiplier && typeof pointsMultiplier !== 'number') {
+
+  // if pointsMultiplier is provided, it has to be a number
+  if (
+    typeof pointsMultiplier !== 'undefined' &&
+    typeof pointsMultiplier !== 'number'
+  ) {
     console.error('Points multiplier must be a number')
     return false
   }

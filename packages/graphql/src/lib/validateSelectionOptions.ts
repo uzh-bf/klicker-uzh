@@ -40,8 +40,13 @@ function validateSelectionOptions(options?: QuestionOptionsArgs | null) {
     (!options.correctAnswers ||
       options.correctAnswers.length < options.numberOfInputs)
   ) {
+    console.error(
+      'Number of sample solutions needs to larger or equal to the number of inputs'
+    )
     return false
   }
+
+  return true
 }
 
 export default validateSelectionOptions

@@ -1048,6 +1048,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       updateInstances: 'Update question instances in KlickerUZH elements',
       updateInstancesExplanation:
         'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
+      questionSavedSuccessfully: 'The question has been saved successfully.',
+      questionSavedFailed:
+        'An error occurred while saving the question. Please check the error messages in the form and review the entries.',
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',
