@@ -1512,6 +1512,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-question-modal"]').click()
   })
 
+  // ! Part 8: Selection questions
   it('Create a Selection question', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -1836,7 +1837,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
 
-  // ! Part 8: Question duplication
+  // ! Part 9: Question duplication
   it('Create a new question, duplicates it and then deletes them again', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(

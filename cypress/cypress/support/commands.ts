@@ -439,6 +439,8 @@ Cypress.Commands.add(
       cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
     }
 
+    // TODO: add support for exact solutions in this function
+
     if (typeof solutionRanges !== 'undefined' && solutionRanges.length > 0) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       cy.get('[data-cy="set-solution-type-range"]').click()

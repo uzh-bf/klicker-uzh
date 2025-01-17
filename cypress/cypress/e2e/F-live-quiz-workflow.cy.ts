@@ -1,22 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
 
-const SECollection = 'SE Collection LQ'
-const SECollectionDescription = 'SE Collection LQ Description'
-const SECollectionOptions = [
-  'SE LQ Option 1',
-  'SE LQ Option 2',
-  'SE LQ Option 3',
-  'SE LQ Option 4',
-  'SE LQ Option 5',
-]
-const SEQuestion1Title = 'SE Title LQ Test 1'
-const SEQuestion1Content = 'SE Question Content 1'
-const SEQuestion1Inputs = 2
-const SEQuestion2Title = 'SE Title LQ Test 2'
-const SEQuestion2Content = 'SE Question Content 2'
-const SEQuestion2Inputs = 3
-const SECollectionSolutions2 = [0, 1, 2, 4]
-
 describe('Different live-quiz workflows', function () {
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('F-live-quiz.json').then((data) => {
@@ -84,26 +67,26 @@ describe('Different live-quiz workflows', function () {
 
     cy.get('[data-cy="resources"]').click()
     cy.createAnswerCollection({
-      name: SECollection,
-      description: SECollectionDescription,
-      entries: SECollectionOptions,
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
       access: messages.manage.resources.accessPRIVATE,
       accessCy: 'private',
     })
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: SEQuestion1Title,
-      content: SEQuestion1Content,
-      numberOfInputs: SEQuestion1Inputs,
-      collectionName: SECollection,
+      title: this.data.SE1.title,
+      content: this.data.SE1.content,
+      numberOfInputs: this.data.SE1.inputs,
+      collectionName: this.data.collection.name,
     })
     cy.createQuestionSE({
-      title: SEQuestion2Title,
-      content: SEQuestion2Content,
-      numberOfInputs: SEQuestion2Inputs,
-      collectionName: SECollection,
-      correctAnswers: SECollectionOptions.filter((_, i) =>
-        SECollectionSolutions2.includes(i)
+      title: this.data.SE2.title,
+      content: this.data.SE2.content,
+      numberOfInputs: this.data.SE2.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SE2.solutions.includes(i)
       ),
     })
   })
@@ -787,7 +770,7 @@ describe('Different live-quiz workflows', function () {
             this.data.KP1.title,
             this.data.NR1.title,
             this.data.FT1.title,
-            SEQuestion1Title,
+            this.data.SE1.title,
           ],
         },
         {
@@ -797,7 +780,7 @@ describe('Different live-quiz workflows', function () {
             this.data.KP2.title,
             this.data.NR2.title,
             this.data.FT2.title,
-            SEQuestion2Title,
+            this.data.SE2.title,
           ],
         },
       ],
@@ -1149,7 +1132,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.FT1.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(SEQuestion1Content).should('exist')
+    cy.findByText(this.data.SE1.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.SC2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
@@ -1161,7 +1144,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.FT2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(SEQuestion2Content).should('exist')
+    cy.findByText(this.data.SE2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.NR2.content).should('exist')
@@ -1170,7 +1153,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.SC2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(SEQuestion1Content).should('exist')
+    cy.findByText(this.data.SE1.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.FT1.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
@@ -1291,26 +1274,26 @@ describe('Different live-quiz workflows', function () {
       this.data.KP1.title,
       this.data.NR1.title,
       this.data.FT1.title,
-      SEQuestion1Title,
+      this.data.SE1.title,
       this.data.SC2.title,
       this.data.MC2.title,
       this.data.KP2.title,
       this.data.NR2.title,
       this.data.FT2.title,
-      SEQuestion2Title,
+      this.data.SE2.title,
     ]
     cy.wrap(questions).each((question: string) => {
       cy.deleteElement({ elementName: question })
     })
   })
 
-  it('Cleanup: Delete the created answer collection', () => {
+  it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.deleteAnswerCollection({ collectionName: SECollection })
+    cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
   })
 
-  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
     cy.task('verifyDeletionAnswerCollections').then((result) => {
       // check if the verification was successful
       if (result === null || result === false) {

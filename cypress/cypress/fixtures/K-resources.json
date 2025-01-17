@@ -1,0 +1,53 @@
+{
+  "public": {
+    "name": "Public Answer Collection",
+    "description": "This is a public answer collection",
+    "items": [
+      "Red",
+      "Green",
+      "Blue",
+      "Yellow",
+      "Purple",
+      "Orange",
+      "Pink",
+      "Black",
+      "White",
+      "Grey"
+    ],
+    "itemsAfterDeletion": [
+      "Red",
+      "Green",
+      "Blue",
+      "Purple",
+      "Orange",
+      "Pink",
+      "Black",
+      "White",
+      "Grey"
+    ]
+  },
+  "restricted": {
+    "name": "Restricted Answer Collection",
+    "description": "This is a restricted answer collection",
+    "items": ["Dog", "Cat", "Fish", "Bird", "Rabbit", "Turtle", "Hamster"]
+  },
+  "private": {
+    "name": "Private Answer Collection",
+    "description": "This is a private answer collection",
+    "nameNew": "Private Answer Collection New",
+    "descriptionNew": "This is a new private answer collection",
+    "items": ["Apple", "Banana", "Cherry", "Grape", "Lemon", "Melon", "Orange"],
+    "itemsNew": [
+      "Apple NEW",
+      "Banana NEW",
+      "Cherry NEW",
+      "Grape NEW",
+      "Lemon NEW",
+      "Melon NEW",
+      "Orange NEW"
+    ]
+  },
+  "question": {
+    "title": "New SE Question to block deletion"
+  }
+}

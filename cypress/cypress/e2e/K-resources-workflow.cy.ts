@@ -1,71 +1,15 @@
 import messages from '../../../packages/i18n/messages/en'
 
-const publicName = 'Public Answer Collection'
-const publicDescription = 'This is a public answer collection'
-const restrictedName = 'Restricted Answer Collection'
-const restrictedDescription = 'This is a restricted answer collection'
-const privateName = 'Private Answer Collection'
-const privateDescription = 'This is a private answer collection'
-const privateNameNew = 'Private Answer Collection New'
-const privateDescriptionNew = 'This is a new private answer collection'
-const SEQuestionTitle = 'New SE Question to block deletion'
+describe('Create, edit and share answer collections', function () {
+  beforeEach('Load fixture for this test case', function () {
+    cy.fixture('K-resources.json').then((data) => {
+      this.data = data
+    })
+  })
 
-// TODO: at the end of every workflow where answer collections are created, ensure that the database only contains the seeded ones after the test run
-const publicItems = [
-  'Red',
-  'Green',
-  'Blue',
-  'Yellow',
-  'Purple',
-  'Orange',
-  'Pink',
-  'Black',
-  'White',
-  'Grey',
-]
-const publicItemsAfterDeletion = [
-  'Red',
-  'Green',
-  'Blue',
-  'Purple',
-  'Orange',
-  'Pink',
-  'Black',
-  'White',
-  'Grey',
-]
-const restrictedItems = [
-  'Dog',
-  'Cat',
-  'Fish',
-  'Bird',
-  'Rabbit',
-  'Turtle',
-  'Hamster',
-]
-const privateItems = [
-  'Apple',
-  'Banana',
-  'Cherry',
-  'Grape',
-  'Lemon',
-  'Melon',
-  'Orange',
-]
-const privateItemsNew = [
-  'Apple NEW',
-  'Banana NEW',
-  'Cherry NEW',
-  'Grape NEW',
-  'Lemon NEW',
-  'Melon NEW',
-  'Orange NEW',
-]
-
-describe('Create, edit and share answer collections', () => {
   // ! Creation and editing of answer collections
   // #region
-  it('Create a public answer collection', () => {
+  it('Create a public answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
@@ -74,10 +18,10 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="cancel-create-answer-collection"]').click()
     cy.get('[data-cy="answer-collection-name"]').should('not.exist')
     cy.get('[data-cy="create-answer-collection"]').click()
-    cy.get('[data-cy="answer-collection-name"]').type(publicName)
+    cy.get('[data-cy="answer-collection-name"]').type(this.data.public.name)
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
-      publicName
+      this.data.public.name
     )
 
     cy.get('[data-cy="answer-collection-access"]').contains(
@@ -91,148 +35,169 @@ describe('Create, edit and share answer collections', () => {
 
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .type(publicDescription)
+      .type(this.data.public.description)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .contains(publicDescription)
+      .contains(this.data.public.description)
 
-    cy.get('[data-cy="response-entry-0"]').type(publicItems[0])
-    cy.get('[data-cy="response-entry-0"]').should('have.value', publicItems[0])
-    cy.get('[data-cy="response-entry-1"]').type(publicItems[1])
-    cy.get('[data-cy="response-entry-1"]').should('have.value', publicItems[1])
-    publicItems.slice(2).forEach((value, ix) => {
+    cy.get('[data-cy="response-entry-0"]').type(this.data.public.items[0])
+    cy.get('[data-cy="response-entry-0"]').should(
+      'have.value',
+      this.data.public.items[0]
+    )
+    cy.get('[data-cy="response-entry-1"]').type(this.data.public.items[1])
+    cy.get('[data-cy="response-entry-1"]').should(
+      'have.value',
+      this.data.public.items[1]
+    )
+    this.data.public.items.slice(2).forEach((value, ix) => {
       cy.get('[data-cy="add-response-entry"]').click()
       cy.get(`[data-cy="response-entry-${ix + 2}"]`).type(value)
       cy.get(`[data-cy="response-entry-${ix + 2}"]`).should('have.value', value)
     })
 
     // test deletion of answer option
-    cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="response-entry-${this.data.public.items.length - 1}"]`
+    ).should('exist')
     cy.get('[data-cy="remove-response-entry-3"]').click()
-    cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).should(
-      'not.exist'
+    cy.get(
+      `[data-cy="response-entry-${this.data.public.items.length - 1}"]`
+    ).should('not.exist')
+    cy.get(`[data-cy="response-entry-3"]`).should(
+      'have.value',
+      this.data.public.items[4]
     )
-    cy.get(`[data-cy="response-entry-3"]`).should('have.value', publicItems[4])
     cy.get('[data-cy="submit-create-answer-collection"]').should(
       'not.be.disabled'
     )
 
     // verify that duplicated answer options are not accepted
     cy.get('[data-cy="add-response-entry"]').click()
-    cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).type(
-      publicItems[0]
-    )
-    cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).should(
-      'have.value',
-      publicItems[0]
-    )
     cy.get(
-      `[data-cy="remove-response-entry-${publicItems.length - 1}"]`
+      `[data-cy="response-entry-${this.data.public.items.length - 1}"]`
+    ).type(this.data.public.items[0])
+    cy.get(
+      `[data-cy="response-entry-${this.data.public.items.length - 1}"]`
+    ).should('have.value', this.data.public.items[0])
+    cy.get(
+      `[data-cy="remove-response-entry-${this.data.public.items.length - 1}"]`
     ).click()
-    cy.get(`[data-cy="response-entry-${publicItems.length - 1}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="response-entry-${this.data.public.items.length - 1}"]`
+    ).should('not.exist')
 
     cy.get('[data-cy="submit-create-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).contains(
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).contains(
       messages.manage.resources.accessPUBLIC
     )
   })
 
-  it('Create a restricted answer collection', () => {
+  it('Create a restricted answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
     cy.createAnswerCollection({
-      name: restrictedName,
+      name: this.data.restricted.name,
       accessCy: 'restricted',
       access: messages.manage.resources.accessRESTRICTED,
-      description: restrictedDescription,
-      entries: restrictedItems,
+      description: this.data.restricted.description,
+      entries: this.data.restricted.items,
     })
   })
 
-  it('Create a private answer collection', () => {
+  it('Create a private answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
     cy.createAnswerCollection({
-      name: privateName,
+      name: this.data.private.name,
       accessCy: 'private',
       access: messages.manage.resources.accessPRIVATE,
-      description: privateDescription,
-      entries: privateItems,
+      description: this.data.private.description,
+      entries: this.data.private.items,
     })
   })
 
-  it('Edit the private answer collection', () => {
+  it('Edit the private answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${privateName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).click()
 
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
-      privateName
+      this.data.private.name
     )
-    cy.get('[data-cy="answer-collection-name"]').clear().type(privateNameNew)
+    cy.get('[data-cy="answer-collection-name"]')
+      .clear()
+      .type(this.data.private.nameNew)
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
-      privateNameNew
+      this.data.private.nameNew
     )
 
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .contains(privateDescription)
+      .contains(this.data.private.description)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .clear()
-      .type(privateDescriptionNew)
+      .type(this.data.private.descriptionNew)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .contains(privateDescriptionNew)
+      .contains(this.data.private.descriptionNew)
     cy.get('[data-cy="save-changes-answer-collection"]').click()
 
     // check that current values are correct
-    privateItems.forEach((value) => {
+    this.data.private.items.forEach((value) => {
       cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
 
     // verify validation for editing answer options
-    cy.get(`[data-cy="edit-answer-option-${privateItems[0]}"]`).click()
+    cy.get(
+      `[data-cy="edit-answer-option-${this.data.private.items[0]}"]`
+    ).click()
     cy.get(`[data-cy="edit-answer-option-input"]`).should(
       'have.value',
-      privateItems[0]
+      this.data.private.items[0]
     )
 
     cy.get(`[data-cy="save-edit-answer-option"]`).should('not.be.disabled')
-    cy.get(`[data-cy="edit-answer-option-input"]`).clear().type(privateItems[1]) // duplicate answer options not allowed
+    cy.get(`[data-cy="edit-answer-option-input"]`)
+      .clear()
+      .type(this.data.private.items[1]) // duplicate answer options not allowed
     cy.get(`[data-cy="save-edit-answer-option"]`).should('be.disabled')
-    cy.get(`[data-cy="edit-answer-option-input"]`).clear().type(privateItems[0])
+    cy.get(`[data-cy="edit-answer-option-input"]`)
+      .clear()
+      .type(this.data.private.items[0])
     cy.get(`[data-cy="save-edit-answer-option"]`).should('not.be.disabled')
     cy.get(`[data-cy="edit-answer-option-input"]`).clear() // empty options are not allowed
     cy.get(`[data-cy="save-edit-answer-option"]`).should('be.disabled')
-    cy.get(`[data-cy="edit-answer-option-input"]`).clear().type(privateItems[0])
+    cy.get(`[data-cy="edit-answer-option-input"]`)
+      .clear()
+      .type(this.data.private.items[0])
     cy.get(`[data-cy="save-edit-answer-option"]`).click()
 
     // change all answer option values
-    privateItems.forEach((value, ix) => {
+    this.data.private.items.forEach((value, ix) => {
       cy.get(`[data-cy="edit-answer-option-${value}"]`).click()
       cy.get(`[data-cy="edit-answer-option-input"]`).should('have.value', value)
       cy.get(`[data-cy="edit-answer-option-input"]`)
         .clear()
-        .type(privateItemsNew[ix])
+        .type(this.data.private.itemsNew[ix])
       cy.get(`[data-cy="save-edit-answer-option"]`).click()
-      cy.get(`[data-cy="answer-option-${privateItemsNew[ix]}"]`).contains(
-        privateItemsNew[ix]
-      )
+      cy.get(
+        `[data-cy="answer-option-${this.data.private.itemsNew[ix]}"]`
+      ).contains(this.data.private.itemsNew[ix])
     })
 
     // verify validation for newly added answer options and add new answer option
-    const existingElement = privateItemsNew[0]
-    const lastElement = privateItemsNew[privateItemsNew.length - 1]
+    const existingElement = this.data.private.itemsNew[0]
+    const lastElement =
+      this.data.private.itemsNew[this.data.private.itemsNew.length - 1]
     cy.get(`[data-cy="delete-answer-option-${lastElement}"]`).click()
     cy.get(`[data-cy="answer-option-${lastElement}"]`).should('not.exist')
     cy.get(`[data-cy="add-answer-option"]`).click()
@@ -250,24 +215,24 @@ describe('Create, edit and share answer collections', () => {
     cy.get(`[data-cy="answer-option-${lastElement}"]`).contains(lastElement)
   })
 
-  it('Verify that the changes to the private answer collection persist', () => {
+  it('Verify that the changes to the private answer collection persist', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${privateNameNew}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.private.nameNew}"]`).click()
 
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
-      privateNameNew
+      this.data.private.nameNew
     )
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .contains(privateDescriptionNew)
-    privateItemsNew.forEach((value, ix) => {
+      .contains(this.data.private.descriptionNew)
+    this.data.private.itemsNew.forEach((value, ix) => {
       cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
   })
 
-  it('Verify that all three answer collections can be used in selection questions by owner', () => {
+  it('Verify that all three answer collections can be used in selection questions by owner', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -276,19 +241,21 @@ describe('Create, edit and share answer collections', () => {
     ).click()
 
     cy.get('[data-cy="select-answer-collection"]').click()
-    cy.get(`[data-cy="select-answer-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="select-answer-collection-${restrictedName}"]`).should(
-      'exist'
-    )
-    cy.get(`[data-cy="select-answer-collection-${privateNameNew}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.public.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.restricted.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.private.nameNew}"]`
+    ).should('exist')
   })
 
-  it('Verify that the public answer collection can be switched to private if no other users have access', () => {
+  it('Verify that the public answer collection can be switched to private if no other users have access', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
@@ -306,10 +273,10 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="answer-collection-access-public"]').click()
   })
 
-  it('Verify that the restricted answer collection can be switched to private if no other users have access', () => {
+  it('Verify that the restricted answer collection can be switched to private if no other users have access', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
@@ -330,33 +297,39 @@ describe('Create, edit and share answer collections', () => {
 
   // ! Sharing of answer collections
   // #region
-  it('Request access to the restricted answer collection for user pro1', () => {
+  it('Request access to the restricted answer collection for user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
     // test filters and then request access
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).should('exist')
 
     // test search
-    cy.get('[data-cy="search-answer-collection"]').click().type(publicName)
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).should(
-      'not.exist'
-    )
+    cy.get('[data-cy="search-answer-collection"]')
+      .click()
+      .type(this.data.public.name)
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).should('not.exist')
     cy.get('[data-cy="search-answer-collection"]')
       .click()
       .clear()
-      .type(restrictedName)
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).should(
-      'exist'
-    )
+      .type(this.data.restricted.name)
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).should('exist')
     cy.get('[data-cy="search-answer-collection"]').click().clear()
 
     // test type filter
@@ -365,147 +338,165 @@ describe('Create, edit and share answer collections', () => {
     )
     cy.get('[data-cy="answer-collection-access-filter"]').click()
     cy.get('[data-cy="answer-collection-access-public"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).should('not.exist')
     cy.get('[data-cy="answer-collection-access-filter"]').click()
     cy.get('[data-cy="answer-collection-access-restricted"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).should('exist')
     cy.get('[data-cy="answer-collection-access-filter"]').click()
     cy.get('[data-cy="answer-collection-access-all"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).should(
-      'exist'
-    )
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).should('exist')
 
     // request access and make sure that it shows up as requested
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
-    cy.get('[data-cy="import-modal-collection-name"]').contains(restrictedName)
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="import-modal-collection-name"]').contains(
+      this.data.restricted.name
+    )
     cy.get('[data-cy="import-modal-collection-description"]').contains(
-      restrictedDescription
+      this.data.restricted.description
     )
     cy.get('[data-cy="import-modal-cancel"]').click()
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).click()
     cy.get('[data-cy="import-modal-confirm"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`)
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`)
       .should('exist')
       .contains(messages.manage.resources.accessRESTRICTED)
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
-      messages.manage.resources.requestedAccess
-    )
+    cy.get(
+      `[data-cy="answer-collection-${this.data.restricted.name}"]`
+    ).contains(messages.manage.resources.requestedAccess)
   })
 
-  function requestAccessPro2() {
+  function requestAccessPro2(data) {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
 
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="import-list-collection-${data.public.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="import-list-collection-${data.restricted.name}"]`).should(
       'exist'
     )
 
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
-    cy.get('[data-cy="import-modal-collection-name"]').contains(restrictedName)
+    cy.get(`[data-cy="import-list-collection-${data.restricted.name}"]`).click()
+    cy.get('[data-cy="import-modal-collection-name"]').contains(
+      data.restricted.name
+    )
     cy.get('[data-cy="import-modal-collection-description"]').contains(
-      restrictedDescription
+      data.restricted.description
     )
     cy.get('[data-cy="import-modal-confirm"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`)
+    cy.get(`[data-cy="answer-collection-${data.restricted.name}"]`)
       .should('exist')
       .contains(messages.manage.resources.accessRESTRICTED)
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
+    cy.get(`[data-cy="answer-collection-${data.restricted.name}"]`).contains(
       messages.manage.resources.requestedAccess
     )
 
     // content should not be accessible
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${data.restricted.name}"]`).click()
     cy.get('[data-cy="viewing-collection-title"]').should('not.exist')
   }
 
-  it('Request access to the restricted answer collection for user pro2', () => {
-    requestAccessPro2()
+  it('Request access to the restricted answer collection for user pro2', function () {
+    requestAccessPro2(this.data)
   })
 
-  it('Cancel request to the restricted answer collection for user pro2', () => {
+  it('Cancel request to the restricted answer collection for user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="confirm-cancel-sharing-request"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Request access to the restricted answer collection again (pro2)', () => {
-    requestAccessPro2()
+  it('Request access to the restricted answer collection again (pro2)', function () {
+    requestAccessPro2(this.data)
   })
 
-  it('Approve (pro1) and deny (pro2) the access requests to the restricted answer collection', () => {
+  it('Approve (pro1) and deny (pro2) the access requests to the restricted answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
     cy.get(
-      `[data-cy="sharing-request-${restrictedName}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      `[data-cy="sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('exist')
     cy.get(
-      `[data-cy="sharing-request-${restrictedName}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+      `[data-cy="sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).should('exist')
 
     cy.get(
-      `[data-cy="approve-sharing-request-${restrictedName}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      `[data-cy="approve-sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).click()
     cy.get(
-      `[data-cy="deny-sharing-request-${restrictedName}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+      `[data-cy="deny-sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).click()
 
     cy.get(
-      `[data-cy="sharing-request-${restrictedName}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      `[data-cy="sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
     cy.get(
-      `[data-cy="sharing-request-${restrictedName}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+      `[data-cy="sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).should('not.exist')
     cy.reload()
     cy.get(
-      `[data-cy="sharing-request-${restrictedName}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      `[data-cy="sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
     cy.get(
-      `[data-cy="sharing-request-${restrictedName}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+      `[data-cy="sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).should('not.exist')
   })
 
-  it('Verify that user pro1 has access to the restricted answer collection', () => {
+  it('Verify that user pro1 has access to the restricted answer collection', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should('exist')
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
-      Cypress.env('LECTURER_SHORTNAME')
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-${this.data.restricted.name}"]`
+    ).contains(Cypress.env('LECTURER_SHORTNAME'))
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
 
     // check that the entire content is visible
-    cy.get('[data-cy="viewing-collection-title"]').contains(restrictedName)
+    cy.get('[data-cy="viewing-collection-title"]').contains(
+      this.data.restricted.name
+    )
     cy.get('[data-cy="viewing-collection-description"]').contains(
-      restrictedDescription
+      this.data.restricted.description
     )
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
-    restrictedItems
+    this.data.restricted.items
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .forEach((value, ix) => {
         cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
       })
   })
 
-  it('Verify that only the shared and restricted answer collection is available during question creation for user pro1', () => {
+  it('Verify that only the shared and restricted answer collection is available during question creation for user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -514,26 +505,26 @@ describe('Create, edit and share answer collections', () => {
     ).click()
 
     cy.get('[data-cy="select-answer-collection"]').click()
-    cy.get(`[data-cy="select-answer-collection-${publicName}"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="select-answer-collection-${restrictedName}"]`).should(
-      'exist'
-    )
-    cy.get(`[data-cy="select-answer-collection-${privateNameNew}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.public.name}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.restricted.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.private.nameNew}"]`
+    ).should('not.exist')
   })
 
-  it('Verify that user pro2 does not have access to the restricted answer collection', () => {
+  it('Verify that user pro2 does not have access to the restricted answer collection', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Verify that no answer collection is available for user pro2', () => {
+  it('Verify that no answer collection is available for user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -545,19 +536,23 @@ describe('Create, edit and share answer collections', () => {
     cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
   })
 
-  it('Import the public answer collection for user pro1 and verify access to it', () => {
+  it('Import the public answer collection for user pro1 and verify access to it', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
     // import answer collection
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).click()
-    cy.get('[data-cy="import-modal-collection-name"]').contains(publicName)
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="import-modal-collection-name"]').contains(
+      this.data.public.name
+    )
     cy.get('[data-cy="import-modal-collection-description"]').contains(
-      publicDescription
+      this.data.public.description
     )
     cy.get('[data-cy="public-collection-show-answers"]').click()
-    publicItemsAfterDeletion
+    this.data.public.itemsAfterDeletion
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .forEach((value, ix) => {
         cy.get(`[data-cy="public-collection-answer-option-${ix}"]`).contains(
@@ -565,28 +560,32 @@ describe('Create, edit and share answer collections', () => {
         )
       })
     cy.get('[data-cy="import-modal-cancel"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).click()
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).click()
     cy.get('[data-cy="import-modal-confirm"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`)
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`)
       .should('exist')
       .contains(messages.manage.resources.accessPUBLIC)
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).contains(
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).contains(
       messages.manage.resources.viewCollection
     )
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).should('not.exist')
 
     // check that the imported collection is visible
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
-    cy.get('[data-cy="viewing-collection-title"]').contains(publicName)
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(
+      this.data.public.name
+    )
     cy.get('[data-cy="viewing-collection-description"]').contains(
-      publicDescription
+      this.data.public.description
     )
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
-    publicItemsAfterDeletion
+    this.data.public.itemsAfterDeletion
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .forEach((value, ix) => {
         cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
@@ -594,7 +593,7 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
   })
 
-  it('Verify that imported public answer collection is also available for during question creation user pro1', () => {
+  it('Verify that imported public answer collection is also available for during question creation user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -603,33 +602,39 @@ describe('Create, edit and share answer collections', () => {
     ).click()
 
     cy.get('[data-cy="select-answer-collection"]').click()
-    cy.get(`[data-cy="select-answer-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="select-answer-collection-${restrictedName}"]`).should(
-      'exist'
-    )
-    cy.get(`[data-cy="select-answer-collection-${privateNameNew}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.public.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.restricted.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.private.nameNew}"]`
+    ).should('not.exist')
   })
 
-  it('Login again as user pro1 and verify that the answer collections are still visible', () => {
+  it('Login again as user pro1 and verify that the answer collections are still visible', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
     // verify that restricted collection is accessbile
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should('exist')
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
-      Cypress.env('LECTURER_SHORTNAME')
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
-    cy.get('[data-cy="viewing-collection-title"]').contains(restrictedName)
+    cy.get(
+      `[data-cy="answer-collection-${this.data.restricted.name}"]`
+    ).contains(Cypress.env('LECTURER_SHORTNAME'))
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(
+      this.data.restricted.name
+    )
     cy.get('[data-cy="viewing-collection-description"]').contains(
-      restrictedDescription
+      this.data.restricted.description
     )
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
-    restrictedItems
+    this.data.restricted.items
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .forEach((value, ix) => {
         cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
@@ -637,15 +642,17 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
 
     // verify that public collection is still visible
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
-    cy.get('[data-cy="viewing-collection-title"]').contains(publicName)
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(
+      this.data.public.name
+    )
     cy.get('[data-cy="viewing-collection-description"]').contains(
-      publicDescription
+      this.data.public.description
     )
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
-    publicItemsAfterDeletion
+    this.data.public.itemsAfterDeletion
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .forEach((value, ix) => {
         cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
@@ -656,118 +663,124 @@ describe('Create, edit and share answer collections', () => {
 
   // ! Answer collection deletion workflows
   // #region
-  it('Request access to the restricted answer collection for user pro2', () => {
-    requestAccessPro2()
+  it('Request access to the restricted answer collection for user pro2', function () {
+    requestAccessPro2(this.data)
   })
 
-  it('Verify that shared restricted and public collections can be soft deleted, soft delete restricted collection', () => {
+  it('Verify that shared restricted and public collections can be soft deleted, soft delete restricted collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
 
     // soft delete restricted collection
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').click()
     cy.get('[data-cy="confirm-delete-answer-collection"]').click()
   })
 
-  it('Verify that the restricted and shared collection can still be accessed', () => {
+  it('Verify that the restricted and shared collection can still be accessed', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should('exist')
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
-      messages.shared.generic.unknown
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-${this.data.restricted.name}"]`
+    ).contains(messages.shared.generic.unknown)
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
 
     // check that the entire content is visible
-    cy.get('[data-cy="viewing-collection-title"]').contains(restrictedName)
+    cy.get('[data-cy="viewing-collection-title"]').contains(
+      this.data.restricted.name
+    )
     cy.get('[data-cy="viewing-collection-description"]').contains(
-      restrictedDescription
+      this.data.restricted.description
     )
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
-    restrictedItems
+    this.data.restricted.items
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .forEach((value, ix) => {
         cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
       })
   })
 
-  it('Verify that requested collections are automatically declined on soft deletion', () => {
+  it('Verify that requested collections are automatically declined on soft deletion', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Verify that the restricted collection cannot be requested anymore', () => {
+  it('Verify that the restricted collection cannot be requested anymore', function () {
     cy.loginInstitutionalCatalyst2()
     cy.get('[data-cy="resources"]').click()
 
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).should('exist')
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).should('not.exist')
   })
 
-  it('Add a question to the shared public answer collection', () => {
+  it('Add a question to the shared public answer collection', function () {
     cy.loginLecturer()
     cy.createQuestionSE({
-      title: SEQuestionTitle,
+      title: this.data.question.title,
       content:
         'This question fulfills its purpose by blocking the deletion of the public answer collection',
       numberOfInputs: 2,
-      collectionName: publicName,
+      collectionName: this.data.public.name,
     })
   })
 
-  it('Verify that the shared answer collection cannot be deleted due to the linked question', () => {
+  it('Verify that the shared answer collection cannot be deleted due to the linked question', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
 
-  it('After deletion of the question, the shared answer collection can be removed and is deleted', () => {
+  it('After deletion of the question, the shared answer collection can be removed and is deleted', function () {
     cy.loginLecturer()
-    cy.get(`[data-cy="delete-question-${SEQuestionTitle}"]`).click()
-    cy.get('[data-cy="confirm-question-deletion"]').click()
-    cy.get(`[data-cy="element-item-${SEQuestionTitle}"]`).should('not.exist')
+    cy.deleteElement({ elementName: this.data.question.title })
 
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
   })
 
-  it('Cleanup: Remove all remaining answer collections from user pro1 (restricted and public)', () => {
+  it('Cleanup: Remove all remaining answer collections from user pro1 (restricted and public)', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).should('not.exist')
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'not.exist'
+    )
 
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Cleanup: Verify that no answer collection is available for user pro2', () => {
+  it('Cleanup: Verify that no answer collection is available for user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -779,7 +792,7 @@ describe('Create, edit and share answer collections', () => {
     cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
   })
 
-  it('Cleanup: Verify that no answer collection is available for user pro3', () => {
+  it('Cleanup: Verify that no answer collection is available for user pro3', function () {
     cy.loginInstitutionalCatalyst2()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -791,27 +804,29 @@ describe('Create, edit and share answer collections', () => {
     cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
   })
 
-  it('Cleanup: Delete all remaining answer collections (public and private)', () => {
+  it('Cleanup: Delete all remaining answer collections (public and private)', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
 
-    cy.get(`[data-cy="answer-collection-${privateNameNew}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.private.nameNew}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').click()
     cy.get('[data-cy="confirm-delete-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${privateNameNew}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.private.nameNew}"]`).should(
       'not.exist'
     )
 
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').click()
     cy.get('[data-cy="confirm-delete-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).should('not.exist')
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'not.exist'
+    )
   })
 
-  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
     cy.task('verifyDeletionAnswerCollections').then((result) => {
       // check if the verification was successful
       if (result === null || result === false) {
@@ -828,68 +843,74 @@ describe('Create, edit and share answer collections', () => {
 
   // ! Access rule modifications and automatic accepts
   // #region
-  it('Create a new restricted and public collection', () => {
+  it('Create a new restricted and public collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
     cy.createAnswerCollection({
-      name: publicName,
+      name: this.data.public.name,
       accessCy: 'public',
       access: messages.manage.resources.accessPUBLIC,
-      description: publicDescription,
-      entries: publicItems,
+      description: this.data.public.description,
+      entries: this.data.public.items,
     })
 
     cy.createAnswerCollection({
-      name: restrictedName,
+      name: this.data.restricted.name,
       accessCy: 'restricted',
       access: messages.manage.resources.accessRESTRICTED,
-      description: restrictedDescription,
-      entries: restrictedItems,
+      description: this.data.restricted.description,
+      entries: this.data.restricted.items,
     })
   })
 
-  it('Request access to restricted collection for user pro1', () => {
+  it('Request access to restricted collection for user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).click()
     cy.get('[data-cy="import-modal-confirm"]').click()
 
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`)
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`)
       .should('exist')
       .contains(messages.manage.resources.accessRESTRICTED)
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
-      messages.manage.resources.requestedAccess
-    )
+    cy.get(
+      `[data-cy="answer-collection-${this.data.restricted.name}"]`
+    ).contains(messages.manage.resources.requestedAccess)
   })
 
-  it('Give access to restricted collection to user pro1', () => {
+  it('Give access to restricted collection to user pro1', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get(
-      `[data-cy="approve-sharing-request-${restrictedName}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      `[data-cy="approve-sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).click()
   })
 
-  it('Import public collection and verify access to restricted collection for user pro1', () => {
+  it('Import public collection and verify access to restricted collection for user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
     // verify that restricted collection is accessible
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should('exist')
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
-      Cypress.env('LECTURER_SHORTNAME')
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
-    cy.get('[data-cy="viewing-collection-title"]').contains(restrictedName)
+    cy.get(
+      `[data-cy="answer-collection-${this.data.restricted.name}"]`
+    ).contains(Cypress.env('LECTURER_SHORTNAME'))
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(
+      this.data.restricted.name
+    )
     cy.get('[data-cy="viewing-collection-description"]').contains(
-      restrictedDescription
+      this.data.restricted.description
     )
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
-    restrictedItems
+    this.data.restricted.items
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .forEach((value, ix) => {
         cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
@@ -898,44 +919,50 @@ describe('Create, edit and share answer collections', () => {
 
     //  import public collection and verify access
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${publicName}"]`).click()
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.public.name}"]`
+    ).click()
     cy.get('[data-cy="import-modal-confirm"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`)
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`)
       .should('exist')
       .contains(messages.manage.resources.accessPUBLIC)
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).contains(
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).contains(
       messages.manage.resources.viewCollection
     )
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
-    cy.get('[data-cy="viewing-collection-title"]').contains(publicName)
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(
+      this.data.public.name
+    )
   })
 
-  it('Request access to restricted collection for user pro2', () => {
+  it('Request access to restricted collection for user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).click()
     cy.get('[data-cy="import-modal-confirm"]').click()
 
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`)
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`)
       .should('exist')
       .contains(messages.manage.resources.accessRESTRICTED)
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
-      messages.manage.resources.requestedAccess
-    )
+    cy.get(
+      `[data-cy="answer-collection-${this.data.restricted.name}"]`
+    ).contains(messages.manage.resources.requestedAccess)
   })
 
-  it("Verify that user pro2 doesn't have access to restricted collection", () => {
+  it("Verify that user pro2 doesn't have access to restricted collection", function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="viewing-collection-title"]').should('not.exist')
   })
 
-  it('Verify that the public answer collection cannot be switched back to private or restricted anymore once other users use it', () => {
+  it('Verify that the public answer collection cannot be switched back to private or restricted anymore once other users use it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
@@ -953,10 +980,10 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="answer-collection-access-public"]').click()
   })
 
-  it('Verify that the restricted answer collection cannot be switched to private once other users use it and switch it to public', () => {
+  it('Verify that the restricted answer collection cannot be switched to private once other users use it and switch it to public', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
@@ -973,7 +1000,7 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="save-changes-answer-collection"]').click()
 
     cy.reload()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
@@ -991,149 +1018,161 @@ describe('Create, edit and share answer collections', () => {
     cy.get('[data-cy="answer-collection-access-public"]').click()
   })
 
-  it('Verify that user pro2 now automatically also has access to the previously restricted collection', () => {
+  it('Verify that user pro2 now automatically also has access to the previously restricted collection', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
 
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should('exist')
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).contains(
-      Cypress.env('LECTURER_SHORTNAME')
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
+      'exist'
     )
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
-    cy.get('[data-cy="viewing-collection-title"]').contains(restrictedName)
+    cy.get(
+      `[data-cy="answer-collection-${this.data.restricted.name}"]`
+    ).contains(Cypress.env('LECTURER_SHORTNAME'))
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
+    cy.get('[data-cy="viewing-collection-title"]').contains(
+      this.data.restricted.name
+    )
     cy.get('[data-cy="viewing-collection-description"]').contains(
-      restrictedDescription
+      this.data.restricted.description
     )
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
-    restrictedItems
+    this.data.restricted.items
       .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       .forEach((value, ix) => {
         cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
       })
   })
 
-  it('Cleanup: Remove the previously restricted answer collection from user pro2', () => {
+  it('Cleanup: Remove the previously restricted answer collection from user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Cleanup: Remove the public and previously restricted answer collection from user pro1', () => {
+  it('Cleanup: Remove the public and previously restricted answer collection from user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
 
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).should('not.exist')
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'not.exist'
+    )
 
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Cleanup: Delete the public and previously restricted answer collection from lecturer', () => {
+  it('Cleanup: Delete the public and previously restricted answer collection from lecturer', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').click()
     cy.get('[data-cy="confirm-delete-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${publicName}"]`).should('not.exist')
+    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+      'not.exist'
+    )
 
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').click()
     cy.get('[data-cy="confirm-delete-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Create a new restricted collection', () => {
+  it('Create a new restricted collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
     cy.createAnswerCollection({
-      name: restrictedName,
+      name: this.data.restricted.name,
       accessCy: 'restricted',
       access: messages.manage.resources.accessRESTRICTED,
-      description: restrictedDescription,
-      entries: restrictedItems,
+      description: this.data.restricted.description,
+      entries: this.data.restricted.items,
     })
   })
 
-  it('Request access to restricted collection for user pro1', () => {
+  it('Request access to restricted collection for user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).click()
     cy.get('[data-cy="import-modal-confirm"]').click()
   })
 
-  it('Request access to restricted collection for user pro2', () => {
+  it('Request access to restricted collection for user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="add-shared-answer-collection"]').click()
-    cy.get(`[data-cy="import-list-collection-${restrictedName}"]`).click()
+    cy.get(
+      `[data-cy="import-list-collection-${this.data.restricted.name}"]`
+    ).click()
     cy.get('[data-cy="import-modal-confirm"]').click()
   })
 
-  it('Approve both access requests to the restricted collection', () => {
+  it('Approve both access requests to the restricted collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
 
     cy.get(
-      `[data-cy="approve-sharing-request-${restrictedName}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      `[data-cy="approve-sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).click()
     cy.get(
-      `[data-cy="approve-sharing-request-${restrictedName}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+      `[data-cy="approve-sharing-request-${this.data.restricted.name}-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
     ).click()
   })
 
-  it('Remove the restricted answer collection from user pro2', () => {
+  it('Remove the restricted answer collection from user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Remove the restricted answer collection from user pro1', () => {
+  it('Remove the restricted answer collection from user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Verify that restricted collection is still available to owner and delete it', () => {
+  it('Verify that restricted collection is still available to owner and delete it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').click()
     cy.get('[data-cy="confirm-delete-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${restrictedName}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
   })
 
-  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
     cy.task('verifyDeletionAnswerCollections').then((result) => {
       // check if the verification was successful
       if (result === null || result === false) {

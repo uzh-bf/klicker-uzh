@@ -11,28 +11,6 @@ const extendedActivityEndText = `31.12.${currentYear + 2}, 18:00`
 const synchronousActivityStart = `${currentYear + 1}-01-01T02:00`
 const synchronousActivityEnd = `${currentYear + 1}-12-31T18:00`
 
-const SCQuestionTitle = 'SC 9e90edbe-6d54-4e88-b78d-c74a193c70f3'
-const MCQuestionTitle = 'MC db1b950e-70f1-49b3-8a54-4472fe9ea32d'
-const KPRIMQuestionTitle = 'KPRIM 9c18843e-79b0-4675-a58b-d0e45f82f943'
-const NRQuestionTitle = 'NR bd7250bf-6bdf-4171-8d91-6102c033211e'
-const FTQuestionTitle = 'FT b60f22f0-c057-4bdd-a836-ea03bc406d7f'
-const CTQuestionTitle = 'CT ff396f27-c2a5-43c0-b2e4-e1498767f372'
-const SEQuestion = 'SE Question Group Activity'
-const SEQuestionTitle = 'SE 7ca16bbb-9eac-44f2-94ff-c2c32c05f16d'
-const SEQuestionInputs = 3
-const SECollection = 'SE Collection Group Activity'
-const SECollectionDescription = 'SE Collection Group Activity Description'
-const SECollectionOptions = [
-  'SE Group Activity Option 1',
-  'SE Group Activity Option 2',
-  'SE Group Activity Option 3',
-  'SE Group Activity Option 4',
-  'SE Group Activity Option 5',
-]
-
-const freeTextAnswer = 'Testanswer to Free-Text Question'
-const numericalAnswer = '100'
-
 describe('Create and solve a group activity', function () {
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('J-group-activity.json').then((data) => {
@@ -90,9 +68,9 @@ describe('Create and solve a group activity', function () {
     // create answer collection
     cy.get('[data-cy="resources"]').click()
     cy.createAnswerCollection({
-      name: SECollection,
-      description: SECollectionDescription,
-      entries: SECollectionOptions,
+      name: this.data.questions.SE.collection.name,
+      description: this.data.questions.SE.collection.description,
+      entries: this.data.questions.SE.collection.options,
       access: messages.manage.resources.accessPRIVATE,
       accessCy: 'private',
     })
@@ -100,10 +78,10 @@ describe('Create and solve a group activity', function () {
     // create selection question
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: SEQuestionTitle,
-      content: SEQuestion,
-      numberOfInputs: SEQuestionInputs,
-      collectionName: SECollection,
+      title: this.data.questions.SE.title,
+      content: this.data.questions.SE.content,
+      numberOfInputs: this.data.questions.SE.inputs,
+      collectionName: this.data.questions.SE.collection.name,
     })
   })
 
@@ -235,7 +213,7 @@ describe('Create and solve a group activity', function () {
             this.data.questions.KP.title,
             this.data.questions.NR.title,
             this.data.questions.FT.title,
-            SEQuestionTitle,
+            this.data.questions.SE.title,
           ],
         },
       ],
@@ -445,7 +423,7 @@ describe('Create and solve a group activity', function () {
       .should('contain', this.data.questions.FT.title.substring(0, 20))
     cy.get(`[data-cy="element-5-stack-0"]`)
       .should('exist')
-      .should('contain', SEQuestionTitle.substring(0, 20))
+      .should('contain', this.data.questions.SE.title.substring(0, 20))
     cy.get(`[data-cy="element-6-stack-0"]`)
       .should('exist')
       .should('contain', this.data.questions.SC.title.substring(0, 20))
@@ -461,7 +439,7 @@ describe('Create and solve a group activity', function () {
   })
 
   // ! Part 2: Running Group Activity & Participation
-  function answerGroupActivity({ NRAnswer, FTAnswer }) {
+  function answerGroupActivity(data) {
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-3"]').click()
@@ -469,28 +447,40 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
-    cy.get('[data-cy="input-numerical-4"]').type(NRAnswer)
-    cy.get('[data-cy="free-text-input-5"]').click().type(FTAnswer)
+    cy.get('[data-cy="input-numerical-4"]').type(data.running.answers.numerical)
+    cy.get('[data-cy="free-text-input-5"]')
+      .click()
+      .type(data.running.answers.freeText)
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[0]
+    )
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[2])
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[2]
+    )
     cy.get('[id="selection-6-field-2"]').click()
     // option numbers smaller than ix since only available objects are shown in select component (0 removed here)
     cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
-    cy.get('[id="selection-6-field-2"]').contains(SECollectionOptions[0])
+    cy.get('[id="selection-6-field-2"]').contains(
+      data.questions.SE.collection.options[0]
+    )
     cy.get('[id="selection-6-field-3"]').click()
     cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
-    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[3])
+    cy.get('[id="selection-6-field-3"]').contains(
+      data.questions.SE.collection.options[3]
+    )
     cy.get('[id="selection-6-field-3"]').click()
     cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
-    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[4])
+    cy.get('[id="selection-6-field-3"]').contains(
+      data.questions.SE.collection.options[4]
+    )
     cy.get('[data-cy="sc-7-answer-option-1"]').click()
   }
 
-  function answerGroupActivityPartial() {
+  function answerGroupActivityPartial(data) {
     // answer all questions in the group activity with partial inputs (where supported)
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
@@ -499,11 +489,15 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
-    cy.get('[data-cy="input-numerical-4"]').type(numericalAnswer)
-    cy.get('[data-cy="free-text-input-5"]').click().type(freeTextAnswer)
+    cy.get('[data-cy="input-numerical-4"]').type(data.running.answers.numerical)
+    cy.get('[data-cy="free-text-input-5"]')
+      .click()
+      .type(data.running.answers.freeText)
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[0]
+    )
     cy.get('[id="selection-6-field-2"]').click()
     cy.get('[data-cy="sc-7-answer-option-1"]').click()
   }
@@ -536,7 +530,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
   }
 
-  function checkPersistentAnswers({ NRAnswer, FTAnswer }) {
+  function checkPersistentAnswers(data) {
     cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
 
@@ -557,27 +551,27 @@ describe('Create and solve a group activity', function () {
 
     cy.get('[data-cy="input-numerical-4"]')
       .should('be.disabled')
-      .should('have.value', NRAnswer)
+      .should('have.value', data.running.answers.numerical)
 
     cy.get('[data-cy="free-text-input-5"]')
       .should('be.disabled')
-      .contains(FTAnswer)
+      .contains(data.running.answers.freeText)
 
     cy.get('[id="selection-6-field-1"]')
-      .contains(SECollectionOptions[2])
+      .contains(data.questions.SE.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-2"]')
-      .contains(SECollectionOptions[0])
+      .contains(data.questions.SE.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-3"]')
-      .contains(SECollectionOptions[4])
+      .contains(data.questions.SE.collection.options[4])
       .should('have.css', 'pointer-events', 'none')
 
     cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-7-answer-option-2"]').should('be.disabled')
   }
 
-  function checkPersistentAnswersPartial() {
+  function checkPersistentAnswersPartial(data) {
     cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-1"]').should('be.disabled')
@@ -595,12 +589,12 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-4"]')
       .should('be.disabled')
-      .should('have.value', numericalAnswer)
+      .should('have.value', data.running.answers.numerical)
     cy.get('[data-cy="free-text-input-5"]')
       .should('be.disabled')
-      .contains(freeTextAnswer)
+      .contains(data.running.answers.freeText)
     cy.get('[id="selection-6-field-1"]')
-      .contains(SECollectionOptions[0])
+      .contains(data.questions.SE.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-2"]')
       .contains(messages.shared.questions.seSelectOption)
@@ -750,23 +744,15 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="cancel-flag-element"]').click()
 
     // answer the questions in the group activity
-    answerGroupActivity({
-      NRAnswer: this.data.running.answers.numerical,
-      FTAnswer: this.data.running.answers.freeText,
-    })
+    answerGroupActivity(this.data)
+    cy.get('[data-cy="submit-group-activity"]').click()
 
     // check that the answers are persistent and the fields disabled
-    checkPersistentAnswers({
-      NRAnswer: this.data.running.answers.numerical,
-      FTAnswer: this.data.running.answers.freeText,
-    })
+    checkPersistentAnswers(this.data)
 
     // check that the answers are persistent and the fields disabled after reload
     cy.reload()
-    checkPersistentAnswers({
-      NRAnswer: this.data.running.answers.numerical,
-      FTAnswer: this.data.running.answers.freeText,
-    })
+    checkPersistentAnswers(this.data)
   })
 
   it('Login as the second group member and verify that the submission was successful', function () {
@@ -780,10 +766,7 @@ describe('Create and solve a group activity', function () {
     ).click()
 
     // check that the same answers are visible to the second student
-    checkPersistentAnswers({
-      NRAnswer: this.data.running.answers.numerical,
-      FTAnswer: this.data.running.answers.freeText,
-    })
+    checkPersistentAnswers(this.data)
   })
 
   it('Solve the group activity as a second student with partial answers (where available)', function () {
@@ -798,15 +781,15 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="start-group-activity"]').click()
 
     // answer the questions in the group activity
-    answerGroupActivityPartial()
+    answerGroupActivityPartial(this.data)
     cy.get('[data-cy="submit-group-activity"]').click()
 
     // check that the answers are persistent and the fields disabled
-    checkPersistentAnswersPartial()
+    checkPersistentAnswersPartial(this.data)
 
     // check that the answers are persistent and the fields disabled after reload
     cy.reload()
-    checkPersistentAnswersPartial()
+    checkPersistentAnswersPartial(this.data)
   })
 
   it('Login as a student of another group and start the group activity', function () {
@@ -864,10 +847,7 @@ describe('Create and solve a group activity', function () {
 
     // check that the same answers are visible to the student
     checkInputsDisabled()
-    checkPersistentAnswers({
-      NRAnswer: this.data.running.answers.numerical,
-      FTAnswer: this.data.running.answers.freeText,
-    })
+    checkPersistentAnswers(this.data)
     cy.get('[data-cy="submit-group-activity"]').should('not.exist')
   })
 
@@ -1055,10 +1035,7 @@ describe('Create and solve a group activity', function () {
     )
 
     // check that the answers are persistent and the fields disabled
-    checkPersistentAnswers({
-      NRAnswer: this.data.running.answers.numerical,
-      FTAnswer: this.data.running.answers.freeText,
-    })
+    checkPersistentAnswers(this.data)
 
     // check grading
     checkGradingVisualization(
@@ -1381,7 +1358,7 @@ describe('Create and solve a group activity', function () {
       this.data.questions.KP.title,
       this.data.questions.NR.title,
       this.data.questions.FT.title,
-      SEQuestionTitle,
+      this.data.questions.SE.title,
       this.data.questions.CT.title,
     ]
 
@@ -1390,13 +1367,15 @@ describe('Create and solve a group activity', function () {
     })
   })
 
-  it('Cleanup: Delete the created answer collection', () => {
+  it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.deleteAnswerCollection({ collectionName: SECollection })
+    cy.deleteAnswerCollection({
+      collectionName: this.data.questions.SE.collection.name,
+    })
   })
 
-  it('Cleanup: Verify that all answer collections have been deleted properly', () => {
+  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
     cy.task('verifyDeletionAnswerCollections').then((result) => {
       // check if the verification was successful
       if (result === null || result === false) {

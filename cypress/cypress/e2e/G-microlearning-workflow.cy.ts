@@ -9,20 +9,6 @@ const runningEnd = `${currentYear + 1}-12-31T18:00`
 const runningEndExtended = `${currentYear + 5}-12-31T18:00`
 const runningExtendedText = `End: 31.12.${currentYear + 5}, 18:00`
 
-const SEQuestion = 'SE Question ML'
-const SEQuestionTitle = 'SE cb23e8ed-0499-4011-b1d4-cfcdaad0b25a'
-const SEQuestionInputs = 3
-const SECollection = 'SE Collection ML'
-const SECollectionDescription = 'SE Collection ML Description'
-const SECollectionOptions = [
-  'SE ML Option 1',
-  'SE ML Option 2',
-  'SE ML Option 3',
-  'SE ML Option 4',
-  'SE ML Option 5',
-]
-const SECollectionSolutions = [0, 1, 3]
-
 // ? All microlearning creation steps are bundled in the beginning of the test, since reloading the page
 // ? sometimes triggers a recomputation of the randomized question titles, not allowing for a comparison anymore
 describe('Different microlearning workflows', function () {
@@ -94,9 +80,9 @@ describe('Different microlearning workflows', function () {
     // create answer collection
     cy.get('[data-cy="resources"]').click()
     cy.createAnswerCollection({
-      name: SECollection,
-      description: SECollectionDescription,
-      entries: SECollectionOptions,
+      name: this.data.questions.SE.collection.name,
+      description: this.data.questions.SE.collection.description,
+      entries: this.data.questions.SE.collection.options,
       access: messages.manage.resources.accessPRIVATE,
       accessCy: 'private',
     })
@@ -104,12 +90,12 @@ describe('Different microlearning workflows', function () {
     // create selection question
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: SEQuestionTitle,
-      content: SEQuestion,
-      numberOfInputs: SEQuestionInputs,
-      collectionName: SECollection,
-      correctAnswers: SECollectionOptions.filter((_, i) =>
-        SECollectionSolutions.includes(i)
+      title: this.data.questions.SE.title,
+      content: this.data.questions.SE.content,
+      numberOfInputs: this.data.questions.SE.inputs,
+      collectionName: this.data.questions.SE.collection.name,
+      correctAnswers: this.data.questions.SE.collection.options.filter((_, i) =>
+        this.data.questions.SE.solutions.includes(i)
       ),
     })
   })
@@ -615,7 +601,7 @@ describe('Different microlearning workflows', function () {
             this.data.questions.KP.title,
             this.data.questions.NR.title,
             this.data.questions.FT.title,
-            SEQuestionTitle,
+            this.data.questions.SE.title,
             this.data.questions.FC.title,
             this.data.questions.CT.title,
           ],
@@ -625,11 +611,13 @@ describe('Different microlearning workflows', function () {
   })
 
   // ! Part 2: Running Microlearning and Answer Workflows / Student Frontend
-  function answerMicroLearningPreview() {
+  function answerMicroLearningPreview(data) {
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer')
+    cy.get('[data-cy="free-text-input-2"]')
+      .click()
+      .type(data.questions.FT.answerPreview1)
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
 
@@ -645,7 +633,9 @@ describe('Different microlearning workflows', function () {
 
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer 2')
+    cy.get('[data-cy="free-text-input-2"]')
+      .click()
+      .type(data.questions.FT.answerPreview2)
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
   }
@@ -666,7 +656,7 @@ describe('Different microlearning workflows', function () {
         )
 
         // verify that the microlearning can be answered through the activity preview
-        answerMicroLearningPreview()
+        answerMicroLearningPreview(this.data)
       }
     )
   })
@@ -702,7 +692,7 @@ describe('Different microlearning workflows', function () {
         )
 
         // verify that the microlearning can be answered through the activity preview
-        answerMicroLearningPreview()
+        answerMicroLearningPreview(this.data)
       }
     )
   })
@@ -1015,7 +1005,7 @@ describe('Different microlearning workflows', function () {
     )
   })
 
-  function enterValidCompleteInputs() {
+  function enterValidCompleteInputs(data) {
     // enter valid response for all questions to check correct input validation afterwards
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
@@ -1026,27 +1016,35 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
     cy.get('[data-cy="input-numerical-4"]')
       .clear()
-      .type(this.data.questions.NR.answer)
-    cy.get('[data-cy="free-text-input-5"]').type(this.data.questions.FT.answer)
+      .type(data.questions.NR.answer)
+    cy.get('[data-cy="free-text-input-5"]').type(data.questions.FT.answer)
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[2])
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[2]
+    )
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[0])
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[0]
+    )
     cy.get('[id="selection-6-field-2"]').click()
     cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
-    cy.get('[id="selection-6-field-2"]').contains(SECollectionOptions[1])
+    cy.get('[id="selection-6-field-2"]').contains(
+      data.questions.SE.collection.options[1]
+    )
     cy.get('[id="selection-6-field-3"]').click()
     cy.get('[id="react-select-selection-6-field-3-option-0"]').click()
-    cy.get('[id="selection-6-field-3"]').contains(SECollectionOptions[2])
+    cy.get('[id="selection-6-field-3"]').contains(
+      data.questions.SE.collection.options[2]
+    )
     cy.get('[data-cy="flashcard-front-7"]').click()
     cy.get('[data-cy="flashcard-response-7-No"]').click()
     cy.get('[data-cy="flashcard-response-7-Yes"]').click()
     cy.get('[data-cy="read-content-element-8"]').click()
   }
 
-  function verifyPersistentCompleteInputs() {
+  function verifyPersistentCompleteInputs(data) {
     cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
 
@@ -1066,21 +1064,21 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
 
     cy.get('[data-cy="input-numerical-4"]')
-      .should('have.value', this.data.questions.NR.answer)
+      .should('have.value', data.questions.NR.answer)
       .should('be.disabled')
 
     cy.get('[data-cy="free-text-input-5"]')
-      .should('have.value', this.data.questions.FT.answer)
+      .should('have.value', data.questions.FT.answer)
       .should('be.disabled')
 
     cy.get('[id="selection-6-field-1"]')
-      .contains(SECollectionOptions[0])
+      .contains(data.questions.SE.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-2"]')
-      .contains(SECollectionOptions[1])
+      .contains(data.questions.SE.collection.options[1])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-3"]')
-      .contains(SECollectionOptions[2])
+      .contains(data.questions.SE.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
 
     cy.get('[data-cy="flashcard-response-7-No"]').should('be.disabled')
@@ -1097,7 +1095,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="start-microlearning"]').click()
 
     // enter valid response for all questions to check correct input validation afterwards
-    enterValidCompleteInputs()
+    enterValidCompleteInputs(this.data)
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
 
     // test inputs to MC question (2)
@@ -1127,18 +1125,18 @@ describe('Different microlearning workflows', function () {
     cy.wait(500)
 
     // verify that the entered answers persist and inputs are disabled
-    verifyPersistentCompleteInputs()
+    verifyPersistentCompleteInputs(this.data)
 
     // verify that the results persist across a reload
     cy.reload()
-    verifyPersistentCompleteInputs()
+    verifyPersistentCompleteInputs(this.data)
 
     // verify that the entered answers are correctly refetched from the backend after a reload and cookie reset
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
     cy.reload()
     cy.wait(1000)
-    verifyPersistentCompleteInputs()
+    verifyPersistentCompleteInputs(this.data)
 
     // finish the microlearning
     cy.get('[data-cy="student-stack-continue"]')
@@ -1146,7 +1144,7 @@ describe('Different microlearning workflows', function () {
       .click()
   })
 
-  function enterValidPartialInputs() {
+  function enterValidPartialInputs(data) {
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
@@ -1156,18 +1154,20 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
     cy.get('[data-cy="input-numerical-4"]')
       .clear()
-      .type(this.data.questions.NR.answer)
-    cy.get('[data-cy="free-text-input-5"]').type(this.data.questions.FT.answer)
+      .type(data.questions.NR.answer)
+    cy.get('[data-cy="free-text-input-5"]').type(data.questions.FT.answer)
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(SECollectionOptions[2])
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[2]
+    )
     cy.get('[data-cy="flashcard-front-7"]').click()
     cy.get('[data-cy="flashcard-response-7-No"]').click()
     cy.get('[data-cy="flashcard-response-7-Yes"]').click()
     cy.get('[data-cy="read-content-element-8"]').click()
   }
 
-  function verifyPersistentPartialInputs() {
+  function verifyPersistentPartialInputs(data) {
     cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
 
@@ -1187,15 +1187,15 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
 
     cy.get('[data-cy="input-numerical-4"]')
-      .should('have.value', this.data.questions.NR.answer)
+      .should('have.value', data.questions.NR.answer)
       .should('be.disabled')
 
     cy.get('[data-cy="free-text-input-5"]')
-      .should('have.value', this.data.questions.FT.answer)
+      .should('have.value', data.questions.FT.answer)
       .should('be.disabled')
 
     cy.get('[id="selection-6-field-1"]')
-      .contains(SECollectionOptions[2])
+      .contains(data.questions.SE.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-2"]')
       .contains(messages.shared.questions.seSelectOption)
@@ -1218,14 +1218,14 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="start-microlearning"]').click()
 
     // enter responses for all questions (partial responses where supported)
-    enterValidPartialInputs()
+    enterValidPartialInputs(this.data)
 
     // submit responses
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.wait(500)
 
     // verify that the entered answers persist and inputs are disabled
-    verifyPersistentPartialInputs()
+    verifyPersistentPartialInputs(this.data)
 
     //
     cy.get('[data-cy="student-stack-continue"]')
@@ -1356,7 +1356,7 @@ describe('Different microlearning workflows', function () {
       this.data.questions.KP.title,
       this.data.questions.NR.title,
       this.data.questions.FT.title,
-      SEQuestionTitle,
+      this.data.questions.SE.title,
       this.data.questions.FC.title,
       this.data.questions.CT.title,
     ]
@@ -1390,7 +1390,9 @@ describe('Different microlearning workflows', function () {
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.deleteAnswerCollection({ collectionName: SECollection })
+    cy.deleteAnswerCollection({
+      collectionName: this.data.questions.SE.collection.name,
+    })
   })
 
   it('Cleanup: Verify that all answer collections have been deleted properly', function () {
