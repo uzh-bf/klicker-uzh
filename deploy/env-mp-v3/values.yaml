@@ -178,6 +178,9 @@ backendGraphql:
 lti:
   priorityClassName: staging-workload
 
+  autoscaling:
+    enabled: false
+
   ingress:
     hosts:
       - host: lti.klicker-mp.bf-app.ch
