@@ -77,5 +77,34 @@ describe('Test functionalities of frontend-control application', function () {
     cy.findByText(this.data.quizName).should('not.exist')
   })
 
+  // ! Cleanup
+  it('Cleanup: Delete the created and completed live quiz', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="live-quizzes"]`).click()
+
+    cy.findByText(this.data.quizName).should('exist')
+    cy.get(`[data-cy="delete-live-quiz-${this.data.quizName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.findByText(this.data.quizName).should('not.exist')
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted live quiz directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedLiveQuiz', {
+      lqName: this.data.quizName,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted live quiz with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+
   // TODO (later): check if quiz is running correctly / add student answer
 })
