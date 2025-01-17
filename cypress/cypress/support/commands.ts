@@ -389,7 +389,8 @@ interface CreateQuestionNRArgs {
   max?: string
   unit?: string
   accuracy?: string
-  solutionRanges?: { min: string; max: string }[]
+  solutionRanges?: { min: string; max: string }[] | null
+  exactSolutions?: string[] | null
   multiplier?: string
 }
 
@@ -403,6 +404,7 @@ Cypress.Commands.add(
     unit,
     accuracy,
     solutionRanges,
+    exactSolutions,
     multiplier,
   }: CreateQuestionNRArgs) => {
     cy.get('[data-cy="create-question"]').click()
@@ -439,7 +441,11 @@ Cypress.Commands.add(
       cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
     }
 
-    if (typeof solutionRanges !== 'undefined' && solutionRanges.length > 0) {
+    if (
+      typeof solutionRanges !== 'undefined' &&
+      solutionRanges !== null &&
+      solutionRanges.length > 0
+    ) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       cy.get('[data-cy="set-solution-type-range"]').click()
       cy.wrap(solutionRanges).each(
@@ -453,6 +459,21 @@ Cypress.Commands.add(
             .type(range.max)
         }
       )
+    }
+
+    if (
+      typeof exactSolutions !== 'undefined' &&
+      exactSolutions !== null &&
+      exactSolutions.length > 0
+    ) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      cy.get('[data-cy="set-solution-type-exact"]').click()
+      cy.wrap(exactSolutions).each((solution: string, ix) => {
+        cy.get(`[data-cy="add-exact-solution"]`).click()
+        cy.get(`[data-cy="set-exact-solution-${ix}"]`)
+          .click()
+          .type(String(solution))
+      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })

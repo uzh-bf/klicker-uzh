@@ -85,6 +85,28 @@
     },
     "answer": "Answer 2"
   },
+  "collection": {
+    "name": "SE Collection LQ",
+    "description": "SE Collection LQ Description",
+    "options": [
+      "SE LQ Option 1",
+      "SE LQ Option 2",
+      "SE LQ Option 3",
+      "SE LQ Option 4",
+      "SE LQ Option 5"
+    ]
+  },
+  "SE1": {
+    "title": "SE Title LQ Test 1",
+    "content": "SE Question Content 1",
+    "inputs": 2
+  },
+  "SE2": {
+    "title": "SE Title LQ Test 2",
+    "content": "SE Question Content 2",
+    "inputs": 3,
+    "solutions": [0, 1, 2, 4]
+  },
   "course1": {
     "name": "Testkurs",
     "quiz": {

@@ -119,6 +119,4 @@ describe('Test functionalities of frontend-control application', function () {
   })
 
   // TODO (later): check if quiz is running correctly / add student answer
-
-  // TODO: delete questions and live quiz
 })
