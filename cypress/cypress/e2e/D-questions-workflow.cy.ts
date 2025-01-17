@@ -1360,7 +1360,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="set-solution-type-exact"]').click()
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
 
-    this.data.NR.exactSolutions.forEach((solution, ix) => {
+    cy.wrap(this.data.NR.exactSolutions).each((solution: number, ix) => {
       cy.get(`[data-cy="add-exact-solution"]`).click()
       cy.get(`[data-cy="set-exact-solution-${ix}"]`)
         .click()
@@ -1391,7 +1391,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that the exact solutions of the numerical question are stored and loaded correctly', function () {
     cy.get(`[data-cy="edit-question-${this.data.NR.titleEdited}"]`).click()
-    this.data.NR.exactSolutions.forEach((solution, ix) => {
+    cy.wrap(this.data.NR.exactSolutions).each((solution: number, ix) => {
       cy.get(`[data-cy="set-exact-solution-${ix}"]`).should(
         'have.value',
         String(solution)
@@ -1644,10 +1644,10 @@ describe('Create different types of elements (with and without sample solution) 
 
     // check that all options are available
     cy.get('[id="selection-1-field-1"]').click()
-    this.data.SE.solutions.forEach((value) => {
+    cy.wrap(this.data.SE.solutions).each((value: string) => {
       cy.findByText(value).should('exist')
     })
-    this.data.SE.solutionsNotChosen.forEach((value) => {
+    cy.wrap(this.data.SE.solutionsNotChosen).each((value: string) => {
       cy.findByText(value).should('exist')
     })
   })
@@ -1656,13 +1656,13 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
 
-    this.data.SE.solutions.forEach((sol) => {
+    cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
       )
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
-    this.data.SE.solutionsNotChosen.forEach((sol) => {
+    cy.wrap(this.data.SE.solutionsNotChosen).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
       )
@@ -1686,7 +1686,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.SE.solutions[0]
     )
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // number of solutions needs to be >= number of inputs
-    this.data.SE.solutions.slice(1).forEach((solution) => {
+    cy.wrap(this.data.SE.solutions.slice(1)).each((solution: string) => {
       cy.get('[data-cy="choose-correct-answer-options"]').click()
       cy.findByText(solution).realClick()
       cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
@@ -1701,7 +1701,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.SE.title
     )
 
-    this.data.SE.solutions.forEach((solution) => {
+    cy.wrap(this.data.SE.solutions).each((solution: string) => {
       cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
     })
     cy.get('[data-cy="close-question-modal"]').click()
@@ -1714,11 +1714,11 @@ describe('Create different types of elements (with and without sample solution) 
       'exist'
     )
 
-    this.data.SE.solutions.forEach((sol) => {
+    cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
-    this.data.SE.solutionsNotChosen.forEach((sol) => {
+    cy.wrap(this.data.SE.solutionsNotChosen).each((sol) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
       )
@@ -1760,7 +1760,7 @@ describe('Create different types of elements (with and without sample solution) 
       .click()
       .clear()
       .type(String(this.data.SE.inputsEdited))
-    this.data.SE.solutionsEdited.forEach((solution) => {
+    cy.wrap(this.data.SE.solutionsEdited).each((solution: string) => {
       cy.get('[data-cy="choose-correct-answer-options"]').click()
       cy.findByText(solution).realClick()
     })
@@ -1787,7 +1787,7 @@ describe('Create different types of elements (with and without sample solution) 
       'have.value',
       this.data.SE.inputsEdited
     )
-    this.data.SE.solutionsEdited.forEach((solution) => {
+    cy.wrap(this.data.SE.solutionsEdited).each((solution: string) => {
       cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
     })
   })
@@ -1807,13 +1807,13 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
 
-    this.data.SE.solutions.forEach((sol) => {
+    cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
       )
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
-    this.data.SE.solutionsNotChosen.forEach((sol) => {
+    cy.wrap(this.data.SE.solutionsNotChosen).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
       )
@@ -1824,11 +1824,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="answer-collection-${this.data.SE.collectionEdited}"]`
     ).click()
-    this.data.SE.solutionsEdited.forEach((sol) => {
+    cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
-    this.data.SE.solutionsNotChosenEdited.forEach((sol) => {
+    cy.wrap(this.data.SE.solutionsNotChosenEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
       )
@@ -1919,13 +1919,13 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
 
-    this.data.SE.solutions.forEach((sol) => {
+    cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
       )
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
-    this.data.SE.solutionsNotChosen.forEach((sol) => {
+    cy.wrap(this.data.SE.solutionsNotChosen).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
       )

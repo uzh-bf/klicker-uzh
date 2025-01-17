@@ -50,7 +50,7 @@ describe('Create, edit and share answer collections', function () {
       'have.value',
       this.data.public.items[1]
     )
-    this.data.public.items.slice(2).forEach((value, ix) => {
+    cy.wrap(this.data.public.items.slice(2)).each((value: string, ix) => {
       cy.get('[data-cy="add-response-entry"]').click()
       cy.get(`[data-cy="response-entry-${ix + 2}"]`).type(value)
       cy.get(`[data-cy="response-entry-${ix + 2}"]`).should('have.value', value)
@@ -152,7 +152,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="save-changes-answer-collection"]').click()
 
     // check that current values are correct
-    this.data.private.items.forEach((value) => {
+    cy.wrap(this.data.private.items).each((value: string) => {
       cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
 
@@ -182,7 +182,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="save-edit-answer-option"]`).click()
 
     // change all answer option values
-    this.data.private.items.forEach((value, ix) => {
+    cy.wrap(this.data.private.items).each((value: string, ix) => {
       cy.get(`[data-cy="edit-answer-option-${value}"]`).click()
       cy.get(`[data-cy="edit-answer-option-input"]`).should('have.value', value)
       cy.get(`[data-cy="edit-answer-option-input"]`)
@@ -227,7 +227,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.private.descriptionNew)
-    this.data.private.itemsNew.forEach((value, ix) => {
+    cy.wrap(this.data.private.itemsNew).each((value: string) => {
       cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
   })
@@ -489,11 +489,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
-    this.data.restricted.items
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .forEach((value, ix) => {
-        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
-      })
+    cy.wrap(
+      this.data.restricted.items.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      )
+    ).each((value: string, ix) => {
+      cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+    })
   })
 
   it('Verify that only the shared and restricted answer collection is available during question creation for user pro1', function () {
@@ -552,13 +554,15 @@ describe('Create, edit and share answer collections', function () {
       this.data.public.description
     )
     cy.get('[data-cy="public-collection-show-answers"]').click()
-    this.data.public.itemsAfterDeletion
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .forEach((value, ix) => {
-        cy.get(`[data-cy="public-collection-answer-option-${ix}"]`).contains(
-          value
-        )
-      })
+    cy.wrap(
+      this.data.public.itemsAfterDeletion.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      )
+    ).each((value: string, ix) => {
+      cy.get(`[data-cy="public-collection-answer-option-${ix}"]`).contains(
+        value
+      )
+    })
     cy.get('[data-cy="import-modal-cancel"]').click()
     cy.get(
       `[data-cy="import-list-collection-${this.data.public.name}"]`
@@ -585,11 +589,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
-    this.data.public.itemsAfterDeletion
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .forEach((value, ix) => {
-        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
-      })
+    cy.wrap(
+      this.data.public.itemsAfterDeletion.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      )
+    ).each((value: string, ix) => {
+      cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+    })
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
   })
 
@@ -634,11 +640,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
-    this.data.restricted.items
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .forEach((value, ix) => {
-        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
-      })
+    cy.wrap(
+      this.data.restricted.items.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      )
+    ).each((value: string, ix) => {
+      cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+    })
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
 
     // verify that public collection is still visible
@@ -652,11 +660,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
-    this.data.public.itemsAfterDeletion
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .forEach((value, ix) => {
-        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
-      })
+    cy.wrap(
+      this.data.public.itemsAfterDeletion.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      )
+    ).each((value: string, ix) => {
+      cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+    })
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
   })
   // #endregion
@@ -705,11 +715,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
-    this.data.restricted.items
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .forEach((value, ix) => {
-        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
-      })
+    cy.wrap(
+      this.data.restricted.items.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      )
+    ).each((value: string, ix) => {
+      cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+    })
   })
 
   it('Verify that requested collections are automatically declined on soft deletion', function () {
@@ -910,11 +922,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
     )
-    this.data.restricted.items
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .forEach((value, ix) => {
-        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
-      })
+    cy.wrap(
+      this.data.restricted.items.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      )
+    ).each((value: string, ix) => {
+      cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+    })
     cy.get('[data-cy="close-viewing-collection-modal"]').click()
 
     //  import public collection and verify access
@@ -1038,11 +1052,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="viewing-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
     )
-    this.data.restricted.items
-      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-      .forEach((value, ix) => {
-        cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
-      })
+    cy.wrap(
+      this.data.restricted.items.sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      )
+    ).each((value: string, ix) => {
+      cy.get(`[data-cy="viewing-collection-answer-${ix}"]`).contains(value)
+    })
   })
 
   it('Cleanup: Remove the previously restricted answer collection from user pro2', function () {
