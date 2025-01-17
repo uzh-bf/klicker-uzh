@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.20...v3.3.0-alpha.21) (2025-01-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that answer feedbacks are properly validated and extend corresponding test suite ([#4464](https://github.com/uzh-bf/klicker-uzh/issues/4464)) ([eceb988](https://github.com/uzh-bf/klicker-uzh/commit/eceb9880def7a3e9774b56c6c23c78f4a66458c7))
+
+
+### Refactors
+
+* **cypress:** move hard-coded cypress test data to fixtures ([#4465](https://github.com/uzh-bf/klicker-uzh/issues/4465)) ([39e55ec](https://github.com/uzh-bf/klicker-uzh/commit/39e55ec4d2fd6a5b824b3b24ec996ca1b39258ae))
+
 ## [3.3.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.19...v3.3.0-alpha.20) (2025-01-16)
 
 
