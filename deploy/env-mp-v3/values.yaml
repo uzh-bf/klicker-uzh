@@ -14,7 +14,7 @@ aiGeneration:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-mp-frontend-auth-tls
+      - secretName: klicker-mp-frontend-ai-generation-tls
         hosts:
           - ai-generation.klicker-mp.bf-app.ch
 
