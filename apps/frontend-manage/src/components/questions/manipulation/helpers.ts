@@ -78,8 +78,10 @@ export function prepareChoicesArgs({
         return {
           ix: index,
           value: choice.value!,
-          correct: choice.correct,
-          feedback: choice.feedback,
+          correct: values.options.hasSampleSolution
+            ? (choice.correct ?? false)
+            : undefined,
+          feedback: choice.feedback ?? undefined,
         }
       }),
     },
