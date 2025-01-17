@@ -46,3 +46,4 @@ data:
   {{- if .Values.heartbeats.dailyGroupScores }}
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}
+  AI_GENERATE_URL: {{ .Values.aiGeneration.url | quote }}

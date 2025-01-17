@@ -46,6 +46,8 @@ cron:
   token: ""
 
 aiGeneration:
+  url: ''
+
   priorityClassName: production-workload
 
   replicaCount: 0
