@@ -5,28 +5,286 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { Choice, DisplayMode } from '@klicker-uzh/types'
+import { DisplayMode } from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type { ContextWithUser } from '../lib/context.js'
 
-function processElementOptions(elementType: DB.ElementType, options: any) {
+// TODO: extract validation and helper functions to separate file?!
+function validateSharedChoicesFields(options?: QuestionOptionsArgs | null) {
+  // options and choices therein need to be defined
+  if (!options || !options.choices) {
+    console.error('Options are required on choices questions')
+    return false
+  }
+
+  // at least one choice needs to be defined
+  if (options.choices.length === 0) {
+    console.error('At least one choice is required')
+    return false
+  }
+
+  // every choice needs to have a valid ix (number) and value (string) that is non-empty
+  if (
+    !options.choices.every(
+      (choice) =>
+        typeof choice.ix === 'number' &&
+        typeof choice.value === 'string' &&
+        !choice.value.match(/^(<br>(\n)*)$/g) &&
+        choice.value !== ''
+    )
+  ) {
+    console.error('Every choice needs to have a valid ix and value')
+    return false
+  }
+
+  // displaymode needs to be defined and valid
+  if (
+    typeof options.displayMode === 'undefined' ||
+    options.displayMode === null ||
+    !Object.values(DisplayMode).includes(options.displayMode)
+  ) {
+    console.error(
+      'Display mode is required for choices questions and needs to be valid'
+    )
+    return false
+  }
+
+  // sample solution and answer feedback flags need to be set
+  if (
+    typeof options.hasSampleSolution !== 'boolean' ||
+    options.hasSampleSolution === null ||
+    typeof options.hasAnswerFeedbacks !== 'boolean' ||
+    options.hasAnswerFeedbacks === null
+  ) {
+    console.error('Sample solution and answer feedback flags are required')
+    return false
+  }
+
+  // if sample solution is enabled, every option needs to be correct or incorrect
+  if (
+    options.hasSampleSolution &&
+    !options.choices.every((choice) => typeof choice.correct === 'boolean')
+  ) {
+    console.error(
+      'Every choice needs to have a correct flag if sample solution is enabled'
+    )
+    return false
+  }
+
+  // if sample solution and answer feedbacks are enabled, every option needs to have a valid answer feedback
+  if (
+    options.hasSampleSolution &&
+    options.hasAnswerFeedbacks &&
+    !options.choices.every(
+      (choice) =>
+        typeof choice.feedback === 'string' &&
+        choice.feedback !== '' &&
+        !choice.feedback.match(/^(<br>(\n)*)$/g)
+    )
+  ) {
+    console.error(
+      'Every choice needs to have a feedback specified if the corresponding flag is set'
+    )
+    return false
+  }
+
+  return true
+}
+
+function validateSCOptions(options?: QuestionOptionsArgs | null) {
+  let valid = validateSharedChoicesFields(options)
+  if (!valid) return false
+
+  // SC only: if sample solution is enabled, exactly one correct answer is allowed
+  if (options?.hasSampleSolution) {
+    const correctAnswers = options.choices!.filter(
+      (choice) => choice.correct === true
+    )
+    if (correctAnswers.length !== 1) {
+      console.error(
+        'Exactly one correct answer is required for SC questions with sample solution'
+      )
+      return false
+    }
+  }
+
+  return true
+}
+
+function validateMCOptions(options?: QuestionOptionsArgs | null) {
+  let valid = validateSharedChoicesFields(options)
+  if (!valid) return false
+
+  // MC only: if sample solution is enabled, at least one correct answer is required
+  if (options?.hasSampleSolution) {
+    const correctAnswers = options.choices!.filter(
+      (choice) => choice.correct === true
+    )
+    if (correctAnswers.length === 0) {
+      console.error(
+        'At least one correct answer is required for MC questions with sample solution'
+      )
+      return false
+    }
+  }
+
+  return true
+}
+
+function validateKPRIMOptions(options?: QuestionOptionsArgs | null) {
+  let valid = validateSharedChoicesFields(options)
+  if (!valid) return false
+
+  // KPRIM only: exactly four choice options are required
+  if (options!.choices!.length !== 4) {
+    console.error('Exactly four choices are required for KPRIM questions')
+    return false
+  }
+
+  return true
+}
+
+function validateNumericalOptions(options?: QuestionOptionsArgs | null) {
+  // options and hasSampleSolution need to be defined
+  if (
+    !options ||
+    typeof options.hasSampleSolution !== 'boolean' ||
+    options.hasSampleSolution === null
+  ) {
+    console.error(
+      'Options and sample solution flag are required for numerical questions'
+    )
+    return false
+  }
+
+  // if sample solution is enabled, check for solution ranges or exact solutions
+  if (options.hasSampleSolution) {
+    // either solution ranges or exact solutions need to be defined
+    if (!options.solutionRanges && !options.exactSolutions) {
+      return false
+    }
+
+    // if solution ranges are chosen, at least one needs to be defined and valid
+    const invalidSolutionRange =
+      options.solutionRanges &&
+      (options.solutionRanges.length === 0 ||
+        ((options.solutionRanges[0]?.min === null ||
+          typeof options.solutionRanges[0]?.min === 'undefined') &&
+          (options.solutionRanges[0]?.max === null ||
+            typeof options.solutionRanges[0]?.max === 'undefined')))
+
+    // if exact solutions are chosen, at least one needs to be defined
+    const invalidExactSolutions =
+      options.exactSolutions &&
+      (options.exactSolutions.length === 0 ||
+        options.exactSolutions[0] === null ||
+        typeof options.exactSolutions[0] === 'undefined')
+
+    if (invalidSolutionRange && invalidExactSolutions) {
+      return false
+    }
+  }
+}
+
+function validateFreeTextOptions(options?: QuestionOptionsArgs | null) {
+  // options and hasSampleSolution need to be defined
+  if (
+    !options ||
+    typeof options.hasSampleSolution !== 'boolean' ||
+    options.hasSampleSolution === null
+  ) {
+    console.error(
+      'Options and sample solution flag are required for free text questions'
+    )
+    return false
+  }
+
+  // if sample solution is enabled, at least one valid solution is required
+  if (
+    options.hasSampleSolution &&
+    (!options.solutions || options.solutions.length === 0)
+  ) {
+    return false
+  }
+}
+
+function validateSelectionOptions(options?: QuestionOptionsArgs | null) {
+  // options and hasSampleSolution need to be defined
+  if (
+    !options ||
+    typeof options.hasSampleSolution !== 'boolean' ||
+    options.hasSampleSolution === null
+  ) {
+    console.error(
+      'Options and sample solution flag are required for selection questions'
+    )
+    return false
+  }
+
+  // number of inputs needs to be specified and valid
+  if (
+    typeof options.numberOfInputs !== 'number' ||
+    options.numberOfInputs === null ||
+    options.numberOfInputs < 1
+  ) {
+    console.error('Number of inputs needs to be specified and valid')
+    return false
+  }
+
+  // answer collection needs to be defined for selection questions
+  if (
+    typeof options.answerCollection !== 'number' ||
+    options.answerCollection === null
+  ) {
+    console.error(
+      'Answer collection needs to be specified for selection questions'
+    )
+    return false
+  }
+
+  // if sample solution is activated, at the numberOfInputs sample solutions need to be defined
+  if (
+    options.hasSampleSolution &&
+    (!options.correctAnswers ||
+      options.correctAnswers.length < options.numberOfInputs)
+  ) {
+    return false
+  }
+}
+
+function validateAndProcessElementOptions(
+  elementType: DB.ElementType,
+  options?: QuestionOptionsArgs | null
+) {
   switch (elementType) {
     case DB.ElementType.SC:
     case DB.ElementType.MC:
     case DB.ElementType.KPRIM: {
+      let valid = false
+      if (elementType === DB.ElementType.SC) {
+        valid = validateSCOptions(options)
+      } else if (elementType === DB.ElementType.MC) {
+        valid = validateMCOptions(options)
+      } else {
+        valid = validateKPRIMOptions(options)
+      }
+
+      // if options are not valid, abort processing
+      if (!valid) return null
+
       return {
-        displayMode: options.displayMode ?? DisplayMode.LIST,
-        hasSampleSolution: options.hasSampleSolution ?? false,
+        displayMode: options!.displayMode,
+        hasSampleSolution: options!.hasSampleSolution,
         hasAnswerFeedbacks:
-          (options.hasSampleSolution && options.hasAnswerFeedbacks) ?? false,
-        choices: options.choices.map((choice: Choice) => ({
+          options!.hasSampleSolution && options!.hasAnswerFeedbacks,
+        choices: options!.choices!.map((choice) => ({
           ...choice,
-          correct: options.hasSampleSolution ? choice.correct : undefined,
+          correct: options!.hasSampleSolution ? choice.correct : undefined,
           feedback:
-            options.hasSampleSolution && options.hasAnswerFeedbacks
+            options!.hasSampleSolution && options!.hasAnswerFeedbacks
               ? choice.feedback
               : undefined,
         })),
@@ -34,42 +292,52 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
     }
 
     case DB.ElementType.NUMERICAL: {
+      // if options are not valid, abort processing
+      const valid = validateNumericalOptions(options)
+      if (!valid) return null
+
       return {
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        unit: options?.unit ?? undefined,
-        accuracy: options?.accuracy ?? undefined,
-        placeholder: options?.placeholder ?? undefined,
+        hasSampleSolution: options!.hasSampleSolution,
+        unit: options!.unit ?? undefined,
+        accuracy: options!.accuracy ?? undefined,
+        placeholder: options!.placeholder ?? undefined,
         restrictions: {
-          ...options?.restrictions,
-          min: options?.restrictions?.min ?? undefined,
-          max: options?.restrictions?.max ?? undefined,
+          min: options!.restrictions?.min ?? undefined,
+          max: options!.restrictions?.max ?? undefined,
         },
-        solutionRanges: options?.hasSampleSolution
-          ? (options?.solutionRanges ?? undefined)
-          : undefined,
-        exactSolutions: options?.hasSampleSolution
-          ? (options?.exactSolutions ?? undefined)
-          : undefined,
+        solutionRanges:
+          options!.hasSampleSolution && options!.solutionRanges
+            ? options!.solutionRanges
+            : undefined,
+        exactSolutions:
+          options!.hasSampleSolution && options!.exactSolutions
+            ? options!.exactSolutions
+            : undefined,
       }
     }
 
     case DB.ElementType.FREE_TEXT: {
+      // if options are not valid, abort processing
+      const valid = validateFreeTextOptions(options)
+      if (!valid) return null
+
       return {
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        solutions: options?.hasSampleSolution
-          ? (options?.solutions ?? undefined)
-          : undefined,
+        hasSampleSolution: options!.hasSampleSolution,
+        solutions: options!.hasSampleSolution ? options!.solutions : undefined,
         restrictions: {
-          ...options?.restrictions,
-          maxLength: options?.restrictions?.maxLength ?? undefined,
+          maxLength: options!.restrictions?.maxLength ?? undefined,
         },
       }
     }
 
     case DB.ElementType.SELECTION: {
+      // if options are not valid, abort processing
+      const valid = validateSelectionOptions(options)
+      if (!valid) return null
+
       return {
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        numberOfInputs: options?.numberOfInputs ?? undefined,
+        hasSampleSolution: options!.hasSampleSolution,
+        numberOfInputs: options!.numberOfInputs,
       }
     }
 
@@ -77,6 +345,85 @@ function processElementOptions(elementType: DB.ElementType, options: any) {
       return {}
     }
   }
+}
+
+function validateElementInputs({
+  id,
+  status,
+  type,
+  name,
+  content,
+  explanation,
+  pointsMultiplier,
+}: Omit<ManipulateQuestionArgs, 'tags' | 'options'>) {
+  // validate if required fields are present when creating a new element
+  if (typeof id === 'undefined' || id === null) {
+    if (!status) {
+      console.error('Status is required')
+      return false
+    }
+    if (!type) {
+      console.error('Type is required')
+      return false
+    }
+    if (!name || name !== '') {
+      console.error('Name is required')
+      return false
+    }
+    if (!content || !content.match(/^(<br>(\n)*)$/g) || content !== '') {
+      console.error('Content is required')
+      return false
+    }
+    if (
+      type === DB.ElementType.FLASHCARD &&
+      (!explanation ||
+        !explanation.match(/^(<br>(\n)*)$/g) ||
+        explanation !== '')
+    ) {
+      console.error('Explanation is required for flashcards')
+      return false
+    }
+    if (
+      !pointsMultiplier &&
+      type !== DB.ElementType.CONTENT &&
+      type !== DB.ElementType.FLASHCARD
+    ) {
+      console.error(
+        'Points multiplier is required (except for flashcard and content elements)'
+      )
+      return false
+    }
+  }
+
+  // validate enum values
+  if (status && !Object.values(DB.ElementStatus).includes(status)) {
+    console.error('Invalid status')
+    return false
+  }
+  if (!Object.values(DB.ElementType).includes(type)) {
+    console.error('Invalid type')
+    return false
+  }
+
+  // validate types of inputs (if they are defined in edit mode and generally in creation mode)
+  if (name && typeof name !== 'string') {
+    console.error('Name must be a string')
+    return false
+  }
+  if (content && typeof content !== 'string') {
+    console.error('Content must be a string')
+    return false
+  }
+  if (explanation && typeof explanation !== 'string') {
+    console.error('Explanation must be a string')
+    return false
+  }
+  if (pointsMultiplier && typeof pointsMultiplier !== 'number') {
+    console.error('Points multiplier must be a number')
+    return false
+  }
+
+  return true
 }
 
 export async function getUserQuestions(ctx: ContextWithUser) {
@@ -194,9 +541,9 @@ export async function getArtificialElementInstance(
 }
 
 interface QuestionOptionsArgs {
-  unit?: string | null // FT only
-  accuracy?: number | null // FT only
-  placeholder?: string | null // FT only
+  unit?: string | null // NR only
+  accuracy?: number | null // NR only
+  placeholder?: string | null // NR/FT only
   restrictions?: {
     maxLength?: number | null // FT only
     minLength?: number | null // unused
@@ -222,7 +569,6 @@ interface QuestionOptionsArgs {
   correctAnswers?: number[] | null // SE only
   hasSampleSolution?: boolean | null // Questions only
   hasAnswerFeedbacks?: boolean | null // SC, MC, KPRIM only
-  pointsMultiplier?: number | null // all
 }
 
 interface ManipulateQuestionArgs {
@@ -253,6 +599,24 @@ export async function manipulateQuestion(
 ) {
   let tagsToDisconnect: string[] = []
   let collectionAnswersToDisconnect: number[] = []
+
+  // validate if all required fields and options are specified
+  const validInputs = validateElementInputs({
+    id,
+    status,
+    type,
+    name,
+    content,
+    explanation,
+    pointsMultiplier,
+  })
+
+  const processedOptions = validateAndProcessElementOptions(type, options)
+
+  // if the provided information is not valid for the element creation / editing, return null
+  if (!validInputs || processedOptions === null) {
+    return null
+  }
 
   const questionPrev =
     typeof id !== 'undefined' && id !== null
@@ -297,13 +661,13 @@ export async function manipulateQuestion(
       id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
-      status: status ?? undefined,
+      status: status!,
       type,
-      name: name ?? 'Missing Question Title',
-      content: content ?? 'Missing Question Content',
+      name: name!,
+      content: content!,
       explanation: explanation ?? undefined,
-      pointsMultiplier: pointsMultiplier ?? 1,
-      options: processElementOptions(type, options),
+      pointsMultiplier: pointsMultiplier!,
+      options: processedOptions,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -349,7 +713,7 @@ export async function manipulateQuestion(
       version: {
         increment: 1,
       },
-      options: options ? processElementOptions(type, options) : undefined,
+      options: options ? processedOptions : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
         connectOrCreate: tags
