@@ -5,79 +5,15 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { Choice, DisplayMode } from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type { ContextWithUser } from '../lib/context.js'
-
-function processElementOptions(elementType: DB.ElementType, options: any) {
-  switch (elementType) {
-    case DB.ElementType.SC:
-    case DB.ElementType.MC:
-    case DB.ElementType.KPRIM: {
-      return {
-        displayMode: options.displayMode ?? DisplayMode.LIST,
-        hasSampleSolution: options.hasSampleSolution ?? false,
-        hasAnswerFeedbacks:
-          (options.hasSampleSolution && options.hasAnswerFeedbacks) ?? false,
-        choices: options.choices.map((choice: Choice) => ({
-          ...choice,
-          correct: options.hasSampleSolution ? choice.correct : undefined,
-          feedback:
-            options.hasSampleSolution && options.hasAnswerFeedbacks
-              ? choice.feedback
-              : undefined,
-        })),
-      }
-    }
-
-    case DB.ElementType.NUMERICAL: {
-      return {
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        unit: options?.unit ?? undefined,
-        accuracy: options?.accuracy ?? undefined,
-        placeholder: options?.placeholder ?? undefined,
-        restrictions: {
-          ...options?.restrictions,
-          min: options?.restrictions?.min ?? undefined,
-          max: options?.restrictions?.max ?? undefined,
-        },
-        solutionRanges: options?.hasSampleSolution
-          ? (options?.solutionRanges ?? undefined)
-          : undefined,
-        exactSolutions: options?.hasSampleSolution
-          ? (options?.exactSolutions ?? undefined)
-          : undefined,
-      }
-    }
-
-    case DB.ElementType.FREE_TEXT: {
-      return {
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        solutions: options?.hasSampleSolution
-          ? (options?.solutions ?? undefined)
-          : undefined,
-        restrictions: {
-          ...options?.restrictions,
-          maxLength: options?.restrictions?.maxLength ?? undefined,
-        },
-      }
-    }
-
-    case DB.ElementType.SELECTION: {
-      return {
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        numberOfInputs: options?.numberOfInputs ?? undefined,
-      }
-    }
-
-    default: {
-      return {}
-    }
-  }
-}
+import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
+import validateElementInputs, {
+  ManipulateQuestionArgs,
+} from '../lib/validateElementInputs.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -193,50 +129,6 @@ export async function getArtificialElementInstance(
   }
 }
 
-interface QuestionOptionsArgs {
-  unit?: string | null // FT only
-  accuracy?: number | null // FT only
-  placeholder?: string | null // FT only
-  restrictions?: {
-    maxLength?: number | null // FT only
-    minLength?: number | null // unused
-    pattern?: string | null // unused
-    min?: number | null // NR only
-    max?: number | null // NR only
-  } | null
-  feedback?: string | null // unused
-  solutionRanges?: { min?: number | null; max?: number | null }[] | null // NR only
-  exactSolutions?: number[] | null // NR only
-  solutions?: string[] | null // FT only
-  choices?: // SC, MC, KPRIM only
-  | {
-        ix: number
-        value: string
-        correct?: boolean | null
-        feedback?: string | null
-      }[]
-    | null
-  displayMode?: DisplayMode | null // SC, MC, KPRIM only
-  numberOfInputs?: number | null // SE only
-  answerCollection?: number | null // SE only
-  correctAnswers?: number[] | null // SE only
-  hasSampleSolution?: boolean | null // Questions only
-  hasAnswerFeedbacks?: boolean | null // SC, MC, KPRIM only
-  pointsMultiplier?: number | null // all
-}
-
-interface ManipulateQuestionArgs {
-  id?: number | null
-  status?: DB.ElementStatus | null
-  type: DB.ElementType
-  name?: string | null
-  content?: string | null
-  explanation?: string | null
-  options?: QuestionOptionsArgs | null
-  pointsMultiplier?: number | null
-  tags?: string[] | null
-}
-
 export async function manipulateQuestion(
   {
     id,
@@ -253,6 +145,23 @@ export async function manipulateQuestion(
 ) {
   let tagsToDisconnect: string[] = []
   let collectionAnswersToDisconnect: number[] = []
+
+  // validate if all required fields and options are specified
+  const validInputs = validateElementInputs({
+    id,
+    status,
+    type,
+    name,
+    content,
+    explanation,
+    pointsMultiplier,
+  })
+  const processedOptions = validateAndProcessElementOptions(type, options)
+
+  // if the provided information is not valid for the element creation / editing, return null
+  if (!validInputs || processedOptions === null) {
+    return null
+  }
 
   const questionPrev =
     typeof id !== 'undefined' && id !== null
@@ -297,13 +206,13 @@ export async function manipulateQuestion(
       id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
-      status: status ?? undefined,
+      status: status!,
       type,
-      name: name ?? 'Missing Question Title',
-      content: content ?? 'Missing Question Content',
+      name: name!,
+      content: content!,
       explanation: explanation ?? undefined,
-      pointsMultiplier: pointsMultiplier ?? 1,
-      options: processElementOptions(type, options),
+      pointsMultiplier: pointsMultiplier!,
+      options: processedOptions,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -349,7 +258,7 @@ export async function manipulateQuestion(
       version: {
         increment: 1,
       },
-      options: options ? processElementOptions(type, options) : undefined,
+      options: options ? processedOptions : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
         connectOrCreate: tags

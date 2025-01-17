@@ -1047,6 +1047,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       updateInstances: 'Frage-Instanzen in KlickerUZH-Elementen aktualisieren',
       updateInstancesExplanation:
         'Nutzen sie diese Einstellung, um die Frage in allen geplanten Quizzes, Übungs-Quizzes und Microlearnings anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplikatoren werden auch auf die erstellten Instanzen angewendet.',
+      questionSavedSuccessfully: 'Die Frage wurde erfolgreich gespeichert.',
+      questionSavedFailed:
+        'Beim Speichern der Frage ist ein Fehler aufgetreten. Bitte beachten Sie die Fehlermeldungen im Formular und überprüfen Sie die Eingaben.',
     },
     activityWizard: {
       activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',

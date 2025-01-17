@@ -27,6 +27,7 @@ import { useRouter } from 'next/router'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
+import ElementSuccessToast from '~/components/questions/manipulation/ElementSuccessToast'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementCreation, {
   WizardMode,
@@ -57,6 +58,7 @@ function Index() {
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
   const [sortBy, setSortBy] = useState('')
+  const [successToast, setSuccessToast] = useState(false)
 
   const [selectedQuestions, setSelectedQuestions] = useState<
     Record<number, Element | undefined>
@@ -404,6 +406,7 @@ function Index() {
                 <QuestionList
                   questions={processedQuestions}
                   selectedQuestions={selectedElementContent}
+                  triggerSuccessToast={() => setSuccessToast(true)}
                   setSelectedQuestions={(id: number, data: Element) => {
                     setSelectedQuestions((prev) => {
                       return { ...prev, [id]: prev[id] ? undefined : data }
@@ -438,6 +441,7 @@ function Index() {
       {isQuestionCreationModalOpen && (
         <ElementEditModal
           handleSetIsOpen={setIsQuestionCreationModalOpen}
+          triggerSuccessToast={() => setSuccessToast(true)}
           isOpen={isQuestionCreationModalOpen}
           mode={ElementEditMode.CREATE}
         />
@@ -445,6 +449,10 @@ function Index() {
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal />
       </Suspense>
+      <ElementSuccessToast
+        open={successToast}
+        onClose={() => setSuccessToast(false)}
+      />
     </Layout>
   )
 }
