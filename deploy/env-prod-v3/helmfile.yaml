@@ -39,7 +39,6 @@ releases:
           clientSecret: '{{ requiredEnv "EDUID_CLIENT_SECRET" }}'
 
         auth:
-          replicaCount: 1
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 
@@ -95,8 +94,6 @@ releases:
           sentryDSN: '{{ env "SENTRY_DSN" }}'
 
         lti:
-          replicaCount: 4
-
           image:
             tag: '{{ requiredEnv "APP_VERSION" }}'
 

@@ -29,7 +29,7 @@ releases:
           requireTLS: '{{ requiredEnv "EMAIL_STARTTLS" }}'
 
         eduId:
-          clientSecret: 'FAKE'
+          clientSecret: '{{ requiredEnv "EDUID_CLIENT_SECRET" }}'
 
         aiGeneration:
           replicaCount: 0
