@@ -1,0 +1,133 @@
+import * as DB from '@klicker-uzh/prisma'
+import { DisplayMode } from '@klicker-uzh/types'
+import validateFreeTextOptions from './validateFreeTextOptions.js'
+import validateKPRIMOptions from './validateKPRIMOptions.js'
+import validateMCOptions from './validateMCOptions.js'
+import validateNumericalOptions from './validateNumericalOptions.js'
+import validateSCOptions from './validateSCOptions.js'
+import validateSelectionOptions from './validateSelectionOptions.js'
+
+export interface QuestionOptionsArgs {
+  unit?: string | null // NR only
+  accuracy?: number | null // NR only
+  placeholder?: string | null // NR/FT only
+  restrictions?: {
+    maxLength?: number | null // FT only
+    minLength?: number | null // unused
+    pattern?: string | null // unused
+    min?: number | null // NR only
+    max?: number | null // NR only
+  } | null
+  feedback?: string | null // unused
+  solutionRanges?: { min?: number | null; max?: number | null }[] | null // NR only
+  exactSolutions?: number[] | null // NR only
+  solutions?: string[] | null // FT only
+  choices?: // SC, MC, KPRIM only
+  | {
+        ix: number
+        value: string
+        correct?: boolean | null
+        feedback?: string | null
+      }[]
+    | null
+  displayMode?: DisplayMode | null // SC, MC, KPRIM only
+  numberOfInputs?: number | null // SE only
+  answerCollection?: number | null // SE only
+  correctAnswers?: number[] | null // SE only
+  hasSampleSolution?: boolean | null // Questions only
+  hasAnswerFeedbacks?: boolean | null // SC, MC, KPRIM only
+}
+
+function validateAndProcessElementOptions(
+  elementType: DB.ElementType,
+  options?: QuestionOptionsArgs | null
+) {
+  switch (elementType) {
+    case DB.ElementType.SC:
+    case DB.ElementType.MC:
+    case DB.ElementType.KPRIM: {
+      let valid = false
+      if (elementType === DB.ElementType.SC) {
+        valid = validateSCOptions(options)
+      } else if (elementType === DB.ElementType.MC) {
+        valid = validateMCOptions(options)
+      } else {
+        valid = validateKPRIMOptions(options)
+      }
+
+      // if options are not valid, abort processing
+      if (!valid) return null
+
+      return {
+        displayMode: options!.displayMode,
+        hasSampleSolution: options!.hasSampleSolution,
+        hasAnswerFeedbacks:
+          options!.hasSampleSolution && options!.hasAnswerFeedbacks,
+        choices: options!.choices!.map((choice) => ({
+          ...choice,
+          correct: options!.hasSampleSolution ? choice.correct : undefined,
+          feedback:
+            options!.hasSampleSolution && options!.hasAnswerFeedbacks
+              ? choice.feedback
+              : undefined,
+        })),
+      }
+    }
+
+    case DB.ElementType.NUMERICAL: {
+      // if options are not valid, abort processing
+      const valid = validateNumericalOptions(options)
+      if (!valid) return null
+
+      return {
+        hasSampleSolution: options!.hasSampleSolution,
+        unit: options!.unit ?? undefined,
+        accuracy: options!.accuracy ?? undefined,
+        placeholder: options!.placeholder ?? undefined,
+        restrictions: {
+          min: options!.restrictions?.min ?? undefined,
+          max: options!.restrictions?.max ?? undefined,
+        },
+        solutionRanges:
+          options!.hasSampleSolution && options!.solutionRanges
+            ? options!.solutionRanges
+            : undefined,
+        exactSolutions:
+          options!.hasSampleSolution && options!.exactSolutions
+            ? options!.exactSolutions
+            : undefined,
+      }
+    }
+
+    case DB.ElementType.FREE_TEXT: {
+      // if options are not valid, abort processing
+      const valid = validateFreeTextOptions(options)
+      if (!valid) return null
+
+      return {
+        hasSampleSolution: options!.hasSampleSolution,
+        solutions: options!.hasSampleSolution ? options!.solutions : undefined,
+        restrictions: {
+          maxLength: options!.restrictions?.maxLength ?? undefined,
+        },
+      }
+    }
+
+    case DB.ElementType.SELECTION: {
+      // if options are not valid, abort processing
+      const valid = validateSelectionOptions(options)
+      if (!valid) return null
+
+      return {
+        hasSampleSolution: options!.hasSampleSolution,
+        numberOfInputs: options!.numberOfInputs,
+      }
+    }
+
+    default: {
+      return {}
+    }
+  }
+}
+
+export default validateAndProcessElementOptions
