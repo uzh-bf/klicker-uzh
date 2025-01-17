@@ -22,7 +22,7 @@ spec:
             - -H
             - "x-token: {{ .Values.cron.token }}"
             - -H
-            - "x-graphql-yoga-csrf: PublishScheduledActivities"
+            - "x-graphql-yoga-csrf: publishScheduledActivities"
             - -d
             - >
                 {

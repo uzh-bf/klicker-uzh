@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/docs",
-  "version": "3.3.0-alpha.17",
+  "version": "3.3.0-alpha.20",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@docusaurus/core": "~3.6.3",
@@ -22,7 +22,7 @@
     "@mdx-js/react": "~3.1.0",
     "@tailwindcss/typography": "~0.5.15",
     "@types/react": "^18.3.11",
-    "@uzh-bf/design-system": "3.0.0-alpha.36",
+    "@uzh-bf/design-system": "3.0.0-alpha.42",
     "autoprefixer": "~10.4.20",
     "cross-env": "~7.0.3",
     "docusaurus-plugin-matomo": "~0.0.8",

@@ -31,6 +31,7 @@ function useEvaluationTableColumns({
             />
           )
         },
+        displayName: t('manage.evaluation.count'),
         className: 'w-10',
       },
       {
@@ -57,6 +58,7 @@ function useEvaluationTableColumns({
 
           return row.getValue('value')
         },
+        displayName: t('manage.evaluation.value'),
       },
       {
         header: ({ column }: any) => {
@@ -73,6 +75,7 @@ function useEvaluationTableColumns({
           const amount = parseFloat(row.getValue('percentage')) * 100
           return `${String(amount.toFixed())} %`
         },
+        displayName: '%',
         className: 'w-20',
       },
       ...(showSolution
@@ -100,6 +103,7 @@ function useEvaluationTableColumns({
                   return <FontAwesomeIcon icon={faX} className="text-red-600" />
                 return <>--</>
               },
+              displayName: t('shared.generic.correctness'),
               className: 'w-14',
             },
           ]

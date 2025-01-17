@@ -1,0 +1,30 @@
+{
+  "course1": {
+    "name": "Course e265bead-e3a9-4aa9-b76b-eb8c6637d9f6",
+    "nameNew": "Course 326ff897-554e-4b37-af6f-4c6e47efb775 NEW",
+    "displayName": "Course e265bead-e3a9-4aa9-b76b-eb8c6637d9f6 (Display)",
+    "displayNameNew": "Course 326ff897-554e-4b37-af6f-4c6e47efb775 NEW (Display)",
+    "description": "This description summarises the course's content."
+  },
+  "course2": {
+    "name": "Course 33a79abc-debc-4374-9405-38e99f92fba8",
+    "displayName": "Course 33a79abc-debc-4374-9405-38e99f92fba8 (Display)",
+    "group1": "Group Student 11",
+    "group2": "Group Student 12"
+  },
+  "running": {
+    "name": "Testkurs"
+  },
+  "past": {
+    "name": "Testkurs 2"
+  },
+  "deletion": {
+    "courseName": "Course to be deleted",
+    "displayName": "Course to be deleted display",
+    "qTitle": "Question Title",
+    "qContent": "Question Content",
+    "lqName": "Live Quiz",
+    "pqName": "Practice Quiz",
+    "mlName": "Micro Learning"
+  }
+}

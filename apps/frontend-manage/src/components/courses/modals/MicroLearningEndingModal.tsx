@@ -3,6 +3,7 @@ import {
   EndMicroLearningDocument,
   GetMicroLearningSummaryDocument,
   GetSingleCourseDocument,
+  PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
@@ -40,6 +41,7 @@ function MicroLearningEndingModal({
         __typename: 'Mutation',
         endMicroLearning: {
           id: activityId,
+          status: PublicationStatus.Ended,
           scheduledEndAt: new Date(),
           __typename: 'MicroLearning',
         },
@@ -50,7 +52,8 @@ function MicroLearningEndingModal({
           variables: { courseId },
         })
 
-        if (!data?.course?.microLearnings || !res.data?.endMicroLearning) return
+        const endedMicro = res.data?.endMicroLearning
+        if (!data?.course?.microLearnings || !endedMicro) return
 
         cache.writeQuery({
           query: GetSingleCourseDocument,
@@ -62,8 +65,8 @@ function MicroLearningEndingModal({
                 micro.id === activityId
                   ? {
                       ...micro,
-                      scheduledEndAt:
-                        res.data?.endMicroLearning!.scheduledEndAt,
+                      scheduledEndAt: endedMicro.scheduledEndAt,
+                      status: endedMicro.status,
                     }
                   : micro
               ),

@@ -233,6 +233,7 @@ export default {
       activity: 'Activity',
       featurePreview: 'Feature Preview',
       new: 'New',
+      correctness: 'Correctness',
     },
     contentInput: {
       boldStyle:
@@ -374,7 +375,7 @@ KlickerUZH offers you as a course participant a significant amount of functional
 
 #### Polls and Live Quizzes
 
-![Live Quiz _on the left_](/img_v3/06_live_quiz.png)
+![Live Quiz _on the left_](/img/live_quiz/lq_student_view.png)
 
 During the lecture, you have the possibility to answer the questions asked by the lecturers on [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) or in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
 
@@ -382,7 +383,7 @@ No login is required to answer the questions. With a login you can participate i
 
 #### Live Q&A and Real-time Feedback
 
-![Live Q&A and Real-time Feedback _on the right_](/img_v3/06_live_quiz.png)
+![Live Q&A and Real-time Feedback _on the right_](/img/live_quiz/lq_student_view.png)
 
 Do you have a question or would you like to give direct feedback on the lecture? With the Live Q&A you can ask the lecturers or assistants a question directly during the lecture - even if you are participating in the lecture from home. In addition, with the KlickerUZH you have the possibility to give the lecturers direct feedback on the speed and difficulty of the lecture during the lecture.
 
@@ -390,7 +391,7 @@ Participation is possible at [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortn
 
 #### Practice Quizzes, Microlearning, and Flashcards
 
-![Practice Quiz in OLAT](/img_v3/07_practice_quiz.png)
+![Practice Quiz in OLAT](/img/practice_quiz/pq_olat_view.png)
 
 Practice quizzes, and microlearning and flashcards allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Practice quizzes and flashcards are always and arbitrarily often available, microlearning on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously). Flash cards are still being implemented and will be available after around 5 weeks of the fall term 2023.
 
@@ -404,7 +405,7 @@ Within a group, you can compare your points with those of your fellow students; 
 
 #### Challenge
 
-![Gamification](/img_v3/08_gamification.png)
+![Gamification](/img/leaderboard/course_leaderboard.png)
 
 All activities in the KlickerUZH are, if activated by the lecturers, part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
 
@@ -427,7 +428,7 @@ Depending on the technical set up of your course, you can proceed as follows:
 
 Open the KlickerUZH module in the OLAT course of your lecture. To manage your KlickerUZH account or create a new one, click on "Manage account" within the KlickerUZH module.
 
-![](/img_v3/01_create_account.png)
+![](/img/account/create_account.png)
 
 If you already possess a KlickerUZH account, simply visit any of the KlickerUZH activities in the LMS course and you should be logged in automatically. In case you are not logged in automatically, you can log in using the button on the top right.
 
@@ -437,7 +438,7 @@ If no KlickerUZH account exists for you yet, you will be greeted by a welcome pa
 
 If you already have a KlickerUZH account (e.g., from other courses), open the KlickerUZH app and click "Join course" below the course overview. Enter the 9-digit PIN you received from your lecturers. You are now part of the course and can participate in all activities.
 
-![](/img_v3/05_join_course.png)
+![](/img/account/join_course.png)
 
 If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g., _{pwa_url}/course/XYZ/join?pin=111111111_). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
 
@@ -927,9 +928,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     tags: {
       deleteTag: 'Delete tag',
-      confirmTagDeletion: 'Are you sure you want to delete the following tag?',
-      tagDeletionHint:
-        'Deleted tags cannot be restored. All questions with this tag will remain, but the tag will be removed.',
+      confirmTagDeletion:
+        'Please confirm that you want to delete the tag <b>{name}</b>. Questions with this tag will remain, but the tag will be removed. This action cannot be undone.',
       validName: 'Please enter a valid name for your tag.',
     },
     questionForms: {
@@ -1140,15 +1140,35 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       liveQuizStartNow: 'Start now',
       liveQuizAdvancedSettings: 'Advanced Settings',
+      liveQuizPointsExplanation:
+        'These advanced settings allow you to change the point allocation in a live quiz. Please note that all point settings and the illustrations of the point allocation refer to elements with a multiplier of 1x. Larger multipliers are applied to all components except from the standard points. The multiplier set on the activity is already included in the illustration. The answer time starts running as soon as the first participant has answered the question completely correctly. For more information, please consult our <link>documentation</link>.',
+      liveQuizDefaultPoints: 'Standard points',
+      liveQuizDefaultPointsTooltip:
+        'Participants in a live quiz receive this number of points for participating in a question. If no sample solution is defined, only standard points are awarded. The default value is {defaultValue}.',
+      liveQuizDefaultCorrectPoints: 'Points for correct answer',
+      liveQuizDefaultCorrectPointsTooltip:
+        'Participants in a live quiz receive this number of points for a correct answer to a question with a sample solution. The default value is {defaultValue}.',
       liveQuizMaxBonusPoints: 'Maximum bonus points',
       liveQuizMaxBonusPointsTooltip:
         'This is the maximum number of points a participant will receive during a gamified live quiz for a correct answer to a question with sample solution. The default value is {defaultValue}.',
       liveQuizTimeToZeroBonus: 'Time to zero bonus points',
       liveQuizTimeToZeroBonusTooltip:
         'This is the time in seconds after the first correct answer at which a participant will receive zero bonus points for a correct answer. The default value is {defaultValue}.',
-      liveQuizTotalPointsCorrect: 'Total points for correct answer over time',
-      liveQuizAnswerTime: 'Answer time: {answerTime}',
-      liveQuizTotalAwardedPoints: 'Total points: {totalPoints}',
+      liveQuizAnswerTime: 'Answer time: {answerTime} s',
+      liveQuizCorrectAnswersPoints: 'Points for correct answer',
+      liveQuizIncorrectAnswersPoints:
+        'Points for incorrect answer / no sample solution',
+      liveQuizTotalAwardedPointsCorrect:
+        'Total points (correct): {totalPoints}',
+      liveQuizTotalAwardedPointsIncorrect:
+        'Total points (incorrect): {totalPoints}',
+      liveQuizDefaultPointsReq:
+        'Please enter a valid number of default points that are awarded for every answer.',
+      liveQuizDefaultPointsMin: 'The default points must be at least 0.',
+      liveQuizDefaultCorrectPointsReq:
+        'Please enter a valid number of points that are awarded for every correct answer.',
+      liveQuizDefaultCorrectPointsMin:
+        'The points for correct answers must be at least 0.',
       liveQuizMaxBonusPointsReq:
         'Please enter a valid number of maximum bonus points.',
       liveQuizMaxBonusPointsMin: 'The maximum bonus points must be at least 0.',
@@ -1287,7 +1307,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       questionName: 'Please enter a name for the question.',
       questionContent: 'Please add some content to your question.',
       answerContent: 'Please add some content to your answer option.',
-      feedbackContent: 'Please add some content to your answer feedback.',
+      feedbackContent: 'Please add some content to all your answer feedbacks.',
       SCAnswersCorrect:
         'For SC questions exactly one answer has to be marked as correct.',
       MCAnswersCorrect:
@@ -1326,13 +1346,21 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       duplicateLiveQuiz: 'Duplicate Quiz',
       nBlocksQuestions: '{blocks} blocks, {questions} questions',
       blockXQuestions: 'Block {block} ({questions} question(s))',
-      deleteLiveQuiz: 'Delete Quiz',
-      confirmLiveQuizDeletion:
-        'Are you sure you want to delete the following live quiz?',
-      liveQuizDeletionHint:
-        'Deleting a live quiz is only possible as long as it has not been started. Deleted live quizzes cannot be restored at a later date.',
-      pastLiveQuizDeletionHint:
-        'Deleting a completed live quiz removes it from your lecturer view. Collected points and answers of the participants remain, and any public evaluation links stay valid. Deleted live quizzes cannot be restored at a later date.',
+      deleteLiveQuiz: 'Delete live quiz',
+      deleteLiveQuizMessage:
+        'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
+      noResponsesToDelete:
+        'For this live quiz no responses have been collected yet.',
+      deleteResponses:
+        '{number} response(s) in this live quiz submitted by students will be deleted.',
+      noFeedbacksToDelete:
+        'For this live quiz no questions have been submitted in the Q&A channel yet.',
+      deleteFeedbacks:
+        '{number} questions(s) in the live Q&A channel and their answers will be irreversibly deleted.',
+      noConfusionFeedbacksToDelete:
+        'For this live quiz no confusion feedbacks have been submitted yet.',
+      deleteConfusionFeedbacks:
+        '{number} confusion feedback(s) will be irreversibly deleted.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
@@ -1616,6 +1644,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupLeaderboard: 'Group Leaderboard',
       groups: 'Groups',
       assignRandomGroups: 'Assign random groups',
+      emailsInLeaderboardExport:
+        'To see the email addresses of the students in addition to the usernames, please export the table below using the CSV export function.',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
       runningLiveQuiz: 'Running live quiz',

@@ -104,7 +104,7 @@ export const USE_CASES = {
   live_quiz: {
     acknowledgements: ACK_STANDARD,
     title: '(Gamified) Live Quizzes',
-    headerImgSrc: '/img_v3/towfiqu-barbhuiya-oZuBNC-6E2s-unsplash.jpg',
+    headerImgSrc: '/img/use_cases/towfiqu-barbhuiya-oZuBNC-6E2s-unsplash.jpg',
     tags: [
       'Interactive lecture',
       'Student engagement',
@@ -359,7 +359,7 @@ export const USE_CASES = {
   flipped_classroom: {
     acknowledgements: ACK_STANDARD,
     title: 'Flipped Classroom',
-    headerImgSrc: '/img_v3/icons8-team-yTwXpLO5HAA-unsplash.jpg',
+    headerImgSrc: '/img/use_cases/icons8-team-yTwXpLO5HAA-unsplash.jpg',
     tags: [
       'Interactive lecture',
       'Self-paced learning',
@@ -542,7 +542,7 @@ export const USE_CASES = {
   microlearning: {
     acknowledgements: ACK_STANDARD,
     title: 'Microlearning',
-    headerImgSrc: '/img_v3/markus-winkler-afW1hht0NSs-unsplash.jpg',
+    headerImgSrc: '/img/use_cases/markus-winkler-afW1hht0NSs-unsplash.jpg',
     tags: [
       'Mobile learning',
       'Repetition opportunity',
@@ -737,7 +737,7 @@ export const USE_CASES = {
   practice_quiz: {
     acknowledgements: ACK_STANDARD,
     title: 'Practice Quiz, Flashcards, and Spaced Repetition',
-    headerImgSrc: '/img_v3/dan-freeman-WHPsxhB4mWQ-unsplash.jpg',
+    headerImgSrc: '/img/use_cases/dan-freeman-WHPsxhB4mWQ-unsplash.jpg',
     tags: [
       'Repeated learning',
       'Sustained memoriation',
@@ -924,7 +924,7 @@ export const USE_CASES = {
   group_activity: {
     acknowledgements: ACK_STANDARD,
     title: 'Group Activities',
-    headerImgSrc: '/img_v3/marvin-meyer-SYTO3xs06fU-unsplash.jpg',
+    headerImgSrc: '/img/use_cases/marvin-meyer-SYTO3xs06fU-unsplash.jpg',
     tags: [
       'Group collaborations',
       'Teamwork skills',
@@ -1117,7 +1117,8 @@ export const USE_CASES = {
   live_qa: {
     acknowledgements: ACK_STANDARD,
     title: 'Live Q&A',
-    headerImgSrc: '/img_v3/volodymyr-hryshchenko-V5vqWC9gyEU-unsplash.jpg',
+    headerImgSrc:
+      '/img/use_cases/volodymyr-hryshchenko-V5vqWC9gyEU-unsplash.jpg',
     tags: [
       'Large class',
       'Interactive lecture',
@@ -1320,7 +1321,7 @@ export const USE_CASES = {
     acknowledgements:
       'We sincerely thank our collaborators and sponsors on this use case: Swissuniversities for funding the development of this use case as part of the P-8/DISK4U project; the University of Zurich (ULF) and the Department of Finance / Teaching Center for sponsoring the development of KlickerUZH and functionalities related to this use case; Sarah Rasonyi for the contribution as part of her bachelor thesis "Fostering Engagement with Learning Contents Using Gamification and Microlearning (2023)".',
     title: 'Gamification',
-    headerImgSrc: '/img_v3/brands-people-ZdqSuxl3Lak-unsplash.jpg',
+    headerImgSrc: '/img/use_cases/brands-people-ZdqSuxl3Lak-unsplash.jpg',
     tags: [
       'Engagement and motivation',
       'Active participation',
@@ -1640,7 +1641,7 @@ export const USE_CASES = {
     acknowledgements:
       'We sincerely thank our collaborators and sponsors on this use case: Swissuniversities for funding the development of this use case as part of the P-8/DISK4U project; the University of Zurich (ULF) and the Department of Finance / Teaching Center for sponsoring the development of KlickerUZH and functionalities related to this use case; Alessio D\'Andrea for the contribution as part of his bachelor thesis on "Einsatz von Learning Analytics in der Hochschullehre (2024)"; Lisa Fang for the contribution as part of her bachelor thesis on "Learning analytics for students in Banking and Finance (2024)".',
     title: 'Learning Analytics',
-    headerImgSrc: '/img_v3/dawid-zawila-OCMcTCu97EE-unsplash.jpg',
+    headerImgSrc: '/img/use_cases/dawid-zawila-OCMcTCu97EE-unsplash.jpg',
     tags: [
       'Educational engagement',
       'Data-driven pedagogy',
@@ -1821,7 +1822,7 @@ export const USE_CASES = {
             accordingly. They display the activity of students across the
             semester and highlight the changes from week to week.
             <Figure
-              imgSrc="/img_v3/la_activity_dashboard_example.png"
+              imgSrc="/img/learning_analytics/la_activity_dashboard_example.png"
               caption="Example illustration from the KlickerUZH activity dashboard"
               width={900}
             />
@@ -1834,7 +1835,7 @@ export const USE_CASES = {
             identifying areas where students excel or may need additional
             support, facilitating targeted interventions.
             <Figure
-              imgSrc="/img_v3/la_performance_dashboard_example.png"
+              imgSrc="/img/learning_analytics/la_performance_dashboard_example.png"
               caption="Example illustration of the KlickerUZH performance dashboard"
               width={700}
             />
@@ -1848,7 +1849,7 @@ export const USE_CASES = {
             gain a deeper understanding of student performance and refine their
             assessment strategies.
             <Figure
-              imgSrc="/img_v3/la_quiz_dashboard_example.png"
+              imgSrc="/img/learning_analytics/la_quiz_dashboard_example.png"
               caption="Example illustration of the KlickerUZH quiz dashboard"
               width={500}
             />
@@ -1945,7 +1946,8 @@ export const USE_CASES = {
   ai_formative_feedback: {
     acknowledgements: ACK_STANDARD,
     title: 'AI-assisted Formative Feedback',
-    headerImgSrc: '/img_v3/glenn-carstens-peters-RLw-UC03Gwc-unsplash.jpg',
+    headerImgSrc:
+      '/img/use_cases/glenn-carstens-peters-RLw-UC03Gwc-unsplash.jpg',
     tags: [
       'Formative feedback',
       'AI-assisted grading',
@@ -2228,7 +2230,7 @@ export const USE_CASES = {
     acknowledgements:
       'We sincerely thank our collaborators and sponsors on this use case: Swissuniversities for funding the development of this use case as part of the P-8/DISK4U project; the University of Zurich (ULF) and the Department of Finance / Teaching Center for sponsoring the development of KlickerUZH and functionalities related to this use case; Xinyu Gong, Qingyu Jiang, Chu Jia, Hailan Yang, Qingxuan Chen for the contribution as part of their master project (UZH IFI) on "AI-assisted Content Generation in KlickerUZH"; Prof. Thomas Fritz and Roy Rutishauser for the collaboration on supervising the aforementioned.',
     title: 'AI-generated Practice Content',
-    headerImgSrc: '/img_v3/simon-kadula-8gr6bObQLOI-unsplash.jpg',
+    headerImgSrc: '/img/use_cases/simon-kadula-8gr6bObQLOI-unsplash.jpg',
     tags: ['Content generation', 'Bloom’s taxonomy', 'Constructive alignment'],
     abstract:
       'Leverage artificial intelligence to automatically generate diverse practice questions tailored to your course content and student needs.',
@@ -2500,7 +2502,8 @@ export const USE_CASES = {
     acknowledgements:
       'We sincerely thank our collaborators and sponsors on this use case: Swissuniversities for funding the development of this use case as part of the P-8/DISK4U project; the University of Zurich (ULF) and the Department of Finance / Teaching Center for sponsoring the development of KlickerUZH and functionalities related to this use case; the Executive Education Finance (UZH WWF) for their startup funding and collaboration when developing the course chatbot for students and participants in executive education.',
     title: 'Chatbots for Individual Tutoring',
-    headerImgSrc: '/img_v3/possessed-photography-JjGXjESMxOY-unsplash.jpg',
+    headerImgSrc:
+      '/img/use_cases/possessed-photography-JjGXjESMxOY-unsplash.jpg',
     tags: [
       'Individual tutoring',
       'Self-directed learning',
@@ -2657,7 +2660,7 @@ export const USE_CASES = {
         </p>
 
         <Figure
-          imgSrc="/img_v3/chatbot_data.png"
+          imgSrc="/img/use_cases/chatbot_data.png"
           caption="Knowledge base for a course-specific chatbot as used in Banking
     and Finance I with 900 students"
         />
@@ -2674,7 +2677,7 @@ export const USE_CASES = {
         </p>
 
         <Figure
-          imgSrc="/img_v3/chatbot_example.png"
+          imgSrc="/img/use_cases/chatbot_example.png"
           caption="Example of a course-specific chatbot interface as used in Banking
     and Finance I with 900 students"
         />

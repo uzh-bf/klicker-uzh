@@ -1,0 +1,33 @@
+{
+  "course": "Testkurs",
+  "question1": {
+    "title": "Question 1 Title",
+    "content": "Question Content 1",
+    "choices": [
+      { "content": "50%", "correct": true },
+      { "content": "100%" },
+      { "content": "75%" }
+    ]
+  },
+  "question2": {
+    "title": "Question 2 Title",
+    "content": "Question Content 2",
+    "choices": [
+      { "content": "30%", "correct": true },
+      { "content": "60%" },
+      { "content": "90%", "correct": true }
+    ]
+  },
+  "PQ": {
+    "name": "Bookmarking practice quiz",
+    "displayName": "Bookmarking practice quiz (Display)",
+    "flag1": "Test flagging question on practice quiz Bookmarking practice quiz",
+    "flag2": "Test flagging question on practice quiz Bookmarking practice quiz new"
+  },
+  "ML": {
+    "name": "Bookmarking microlearning",
+    "displayName": "Bookmarking microlearning (Display)",
+    "flag1": "Test flagging question on microlearning Bookmarking microlearning",
+    "flag2": "Test flagging question on microlearning Bookmarking microlearning new"
+  }
+}

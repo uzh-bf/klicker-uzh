@@ -245,6 +245,8 @@ interface ManipulateLiveQuizArgs {
   blocks: BlockInput[]
   courseId?: string | null
   multiplier: number
+  defaultPoints?: number | null
+  defaultCorrectPoints?: number | null
   maxBonusPoints?: number | null
   timeToZeroBonus?: number | null
   isGamificationEnabled: boolean
@@ -262,6 +264,8 @@ export async function manipulateLiveQuiz(
     blocks,
     courseId,
     multiplier,
+    defaultPoints,
+    defaultCorrectPoints,
     maxBonusPoints,
     timeToZeroBonus,
     isGamificationEnabled,
@@ -334,6 +338,8 @@ export async function manipulateLiveQuiz(
     displayName: displayName.trim(),
     description,
     pointsMultiplier: multiplier,
+    defaultPoints: defaultPoints ?? undefined,
+    defaultCorrectPoints: defaultCorrectPoints ?? undefined,
     maxBonusPoints: maxBonusPoints ?? undefined,
     timeToZeroBonus: timeToZeroBonus ?? undefined,
     isGamificationEnabled,
@@ -927,6 +933,8 @@ export async function activateLiveQuizBlock(
       sessionBlockId: blockId,
       type: elementData.type,
       pointsMultiplier: instance.options.pointsMultiplier,
+      defaultPoints: updatedQuiz.defaultPoints,
+      defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
     }
@@ -938,12 +946,14 @@ export async function activateLiveQuizBlock(
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           choiceCount: elementData.options.choices.length,
-          solutions: JSON.stringify(
-            elementData.options.choices
-              .map((choice, ix) => ({ ix, correct: choice.correct }))
-              .filter((choice) => choice.correct)
-              .map((choice) => choice.ix)
-          ),
+          solutions: elementData.options.hasSampleSolution
+            ? JSON.stringify(
+                elementData.options.choices
+                  .map((choice, ix) => ({ ix, correct: choice.correct }))
+                  .filter((choice) => choice.correct)
+                  .map((choice) => choice.ix)
+              )
+            : undefined,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -955,7 +965,9 @@ export async function activateLiveQuizBlock(
       case ElementType.NUMERICAL: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          solutions: JSON.stringify(elementData.options.solutionRanges),
+          solutions: elementData.options.hasSampleSolution
+            ? JSON.stringify(elementData.options.solutionRanges)
+            : undefined,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -966,7 +978,9 @@ export async function activateLiveQuizBlock(
       case ElementType.FREE_TEXT: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          solutions: JSON.stringify(elementData.options.solutions),
+          solutions: elementData.options.hasSampleSolution
+            ? JSON.stringify(elementData.options.solutions)
+            : undefined,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,

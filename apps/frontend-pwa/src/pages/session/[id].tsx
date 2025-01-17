@@ -179,10 +179,10 @@ function Index({ id }: { id: string }) {
     >
       <Subscriber id={id} subscribeToMore={subscribeToMore} />
 
-      <div className="gap-4 md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row">
+      <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row">
         <div
           className={twMerge(
-            'hidden flex-1 bg-white md:rounded-lg md:border md:border-solid md:p-8 md:shadow',
+            'hidden flex-1 border-r border-gray-300 bg-white md:pr-5',
             isLiveQAEnabled && 'md:w-1/2',
             activeMobilePage === 'questions' && 'block',
             (activeMobilePage === 'feedbacks' ||
@@ -230,7 +230,7 @@ function Index({ id }: { id: string }) {
 
         <div
           className={twMerge(
-            'hidden flex-1 bg-white md:rounded-lg md:border md:border-solid md:p-8 md:shadow',
+            'hidden flex-1 bg-white md:pl-5',
             (isLiveQAEnabled || isConfusionFeedbackEnabled) && 'md:block',
             activeMobilePage === 'feedbacks' &&
               (isLiveQAEnabled || isConfusionFeedbackEnabled) &&

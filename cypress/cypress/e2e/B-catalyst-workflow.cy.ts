@@ -1,4 +1,10 @@
-describe('Tests the avilability of certain functionalities to catalyst users only', () => {
+describe('Tests the availability of certain functionalities to catalyst users only', () => {
+  beforeEach('Load fixture for this test case', function () {
+    cy.fixture('B-catalyst.json').then((data) => {
+      this.data = data
+    })
+  })
+
   it('Test login for catalyst users and non-catalyst users', () => {
     cy.loginLecturer()
     cy.wait(1000)
@@ -9,7 +15,7 @@ describe('Tests the avilability of certain functionalities to catalyst users onl
     cy.loginInstitutionalCatalyst()
   })
 
-  it('Test that the creation buttons for practice quizzes and micro learnings are only available to catalyst users', () => {
+  it('Test that the creation buttons for practice quizzes and microlearnings are only available to catalyst users', () => {
     cy.loginLecturer()
     cy.wait(1000)
     cy.get('[data-cy="create-practice-quiz"]').should('not.be.disabled')

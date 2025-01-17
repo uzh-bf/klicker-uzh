@@ -46,16 +46,7 @@ function useChoicesSchema() {
             !content?.match(/^(<br>(\n)*)$/g) && content !== '',
         }),
       correct: yup.boolean().nullable(),
-      feedback: yup.string().when('hasAnswerFeedbacks', {
-        is: true,
-        then: (schema) =>
-          schema.test({
-            message: t('manage.formErrors.feedbackContent'),
-            test: (content) =>
-              !content?.match(/^(<br>(\n)*)$/g) && content !== '',
-          }),
-        otherwise: (schema) => schema.nullable(),
-      }),
+      feedback: yup.string().nullable(),
     })
   )
 }
@@ -75,9 +66,23 @@ function useOptionsSchemaSC() {
         then: (schema) =>
           schema.test({
             message: t('manage.formErrors.SCAnswersCorrect'),
-            test: (choices) => {
-              return choices?.filter((choice) => choice.correct).length === 1
-            },
+            test: (choices) =>
+              choices?.filter((choice) => choice.correct).length === 1,
+          }),
+      })
+      .when('hasAnswerFeedbacks', {
+        is: true,
+        then: (schema) =>
+          schema.test({
+            message: t('manage.formErrors.feedbackContent'),
+            test: (choices) =>
+              choices?.every(
+                (choice) =>
+                  typeof choice.feedback !== 'undefined' &&
+                  choice.feedback !== null &&
+                  !choice.feedback?.match(/^(<br>(\n)*)$/g) &&
+                  choice.feedback !== ''
+              ),
           }),
       }),
   }
@@ -104,6 +109,21 @@ function useOptionsSchemaMC() {
               )
             },
           }),
+      })
+      .when('hasAnswerFeedbacks', {
+        is: true,
+        then: (schema) =>
+          schema.test({
+            message: t('manage.formErrors.feedbackContent'),
+            test: (choices) =>
+              choices?.every(
+                (choice) =>
+                  typeof choice.feedback !== 'undefined' &&
+                  choice.feedback !== null &&
+                  !choice.feedback?.match(/^(<br>(\n)*)$/g) &&
+                  choice.feedback !== ''
+              ),
+          }),
       }),
   }
 }
@@ -115,10 +135,23 @@ function useOptionsSchemaKPRIM() {
   return {
     hasAnswerFeedbacks: yup.boolean(),
     hasSampleSolution: yup.boolean(),
-    choices: baseChoicesSchema.length(
-      4,
-      t('manage.formErrors.NumberQuestionsRequiredKPRIM')
-    ),
+    choices: baseChoicesSchema
+      .length(4, t('manage.formErrors.NumberQuestionsRequiredKPRIM'))
+      .when('hasAnswerFeedbacks', {
+        is: true,
+        then: (schema) =>
+          schema.test({
+            message: t('manage.formErrors.feedbackContent'),
+            test: (choices) =>
+              choices?.every(
+                (choice) =>
+                  typeof choice.feedback !== 'undefined' &&
+                  choice.feedback !== null &&
+                  !choice.feedback?.match(/^(<br>(\n)*)$/g) &&
+                  choice.feedback !== ''
+              ),
+          }),
+      }),
   }
 }
 

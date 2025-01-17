@@ -1,6 +1,6 @@
 import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
-import { Tabs } from '@uzh-bf/design-system'
+import { Tabs, UserNotification } from '@uzh-bf/design-system'
 import { TableCell } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 
@@ -28,29 +28,37 @@ function IndividualLeaderboard({
 
   return (
     <Tabs.TabContent value="ind-leaderboard" className={{ root: 'h-full p-2' }}>
+      <UserNotification
+        message={t('manage.course.emailsInLeaderboardExport')}
+        className={{ root: 'mb-3' }}
+      />
       <DataTable
         isPaginated
         columns={[
           {
             accessorKey: 'rank',
             header: t('shared.leaderboard.rank'),
+            displayName: t('shared.leaderboard.rank'),
           },
           {
             accessorKey: 'username',
             header: t('shared.leaderboard.username'),
+            displayName: t('shared.leaderboard.username'),
           },
           {
             accessorKey: 'email',
             header: t('shared.leaderboard.email'),
             csvOnly: true,
+            displayName: t('shared.leaderboard.email'),
           },
           {
             accessorKey: 'score',
             header: t('shared.leaderboard.points'),
+            displayName: t('shared.leaderboard.points'),
           },
         ]}
         data={leaderboard ?? []}
-        csvFilename={`${courseName.replace(' ', '-')}_leaderboard`}
+        csvFilename={`${courseName.replace(' ', '-')}_course_leaderboard`}
         className={{
           tableHeader: 'h-7 p-2',
           tableCell: 'h-7 p-2',

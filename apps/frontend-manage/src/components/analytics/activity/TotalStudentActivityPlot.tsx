@@ -112,6 +112,7 @@ function TotalStudentActivityPlot({
               {
                 accessorKey: 'student',
                 header: t('shared.generic.student'),
+                displayName: t('shared.generic.student'),
               },
               {
                 accessorKey: 'activeWeeks',
@@ -123,6 +124,7 @@ function TotalStudentActivityPlot({
                     />
                   )
                 },
+                displayName: t('manage.analytics.activeWeeks'),
               },
               {
                 accessorKey: 'activeDaysPerWeek',
@@ -136,6 +138,7 @@ function TotalStudentActivityPlot({
                 },
                 cell: ({ row }: any) =>
                   `${parseFloat(row.getValue('activeDaysPerWeek')).toFixed(2)}`,
+                displayName: t('manage.analytics.activeDaysPerWeek'),
               },
               {
                 accessorKey: 'meanElementsPerDay',
@@ -149,6 +152,7 @@ function TotalStudentActivityPlot({
                 },
                 cell: ({ row }: any) =>
                   `${parseFloat(row.getValue('meanElementsPerDay')).toFixed(2)}`,
+                displayName: t('manage.analytics.meanElementsPerDay'),
               },
               {
                 accessorKey: 'activityLevelNumber',
@@ -163,6 +167,7 @@ function TotalStudentActivityPlot({
                 cell: ({ row }: any) => (
                   <LevelTag level={row.getValue('activityLevelNumber')} />
                 ),
+                displayName: t('manage.analytics.activityLevel'),
               },
             ]}
             data={participantActivity.map((entry, ix) => ({
