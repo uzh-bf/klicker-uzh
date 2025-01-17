@@ -9,11 +9,11 @@ import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
-import validateAndProcessElementOptions from 'src/lib/validateAndProcessElementOptions.js'
+import type { ContextWithUser } from '../lib/context.js'
+import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs, {
   ManipulateQuestionArgs,
-} from 'src/lib/validateElementInputs.js'
-import type { ContextWithUser } from '../lib/context.js'
+} from '../lib/validateElementInputs.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
