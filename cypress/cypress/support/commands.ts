@@ -230,7 +230,7 @@ Cypress.Commands.add(
       .realClick()
       .type(choices[0].content)
 
-    choices.slice(1).forEach((choice, ix) => {
+    cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
       cy.get('[data-cy="add-new-answer"]').click()
       cy.wait(500)
       cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
@@ -241,7 +241,7 @@ Cypress.Commands.add(
     if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
-      choices.forEach((choice, ix) => {
+      cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
         if (choice.correct) {
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
@@ -285,7 +285,7 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    choices.slice(1).forEach((choice, ix) => {
+    cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
       cy.get('[data-cy="add-new-answer"]').click()
       cy.wait(500)
       cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
@@ -296,7 +296,7 @@ Cypress.Commands.add(
     if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
-      choices.forEach((choice, ix) => {
+      cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
         if (choice.correct) {
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
@@ -442,15 +442,17 @@ Cypress.Commands.add(
     if (typeof solutionRanges !== 'undefined' && solutionRanges.length > 0) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       cy.get('[data-cy="set-solution-type-range"]').click()
-      solutionRanges.forEach((range, ix) => {
-        cy.get('[data-cy="add-solution-range"]').click()
-        cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
-          .click()
-          .type(range.min)
-        cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
-          .click()
-          .type(range.max)
-      })
+      cy.wrap(solutionRanges).each(
+        (range: { min: string; max: string }, ix) => {
+          cy.get('[data-cy="add-solution-range"]').click()
+          cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
+            .click()
+            .type(range.min)
+          cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
+            .click()
+            .type(range.max)
+        }
+      )
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -502,7 +504,7 @@ Cypress.Commands.add(
 
     if (typeof solutions !== 'undefined' && solutions.length > 0) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      solutions.forEach((solution, ix) => {
+      cy.wrap(solutions).each((solution: string, ix) => {
         cy.get(`[data-cy="add-solution-value"]`).click()
         cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
       })
@@ -687,7 +689,7 @@ function createStacks({
   stacks: StackType[]
   type?: 'block' | 'stack'
 }) {
-  stacks[0].elements.forEach((element, ix) => {
+  cy.wrap(stacks[0].elements).each((element: string, ix) => {
     const dataTransfer = new DataTransfer()
     cy.get(`[data-cy="element-item-${element}"]`)
       .contains(element)
@@ -703,9 +705,9 @@ function createStacks({
   })
 
   if (stacks.length > 1) {
-    stacks.slice(1).forEach((stack, ix) => {
+    cy.wrap(stacks.slice(1)).each((stack: { elements: string[] }, ix) => {
       cy.get(`[data-cy="drop-elements-add-${type}"]`).click()
-      stack.elements.forEach((element, jx) => {
+      cy.wrap(stack.elements).each((element: string, jx) => {
         const dataTransfer = new DataTransfer()
         cy.get(`[data-cy="element-item-${element}"]`)
           .contains(element)
@@ -833,6 +835,14 @@ Cypress.Commands.add(
   }
 )
 
+interface GroupActivityClueType {
+  type: 'text' | 'number'
+  name: string
+  displayName: string
+  content: string
+  unit?: string
+}
+
 interface CreateGroupActivityArgs {
   name: string
   displayName: string
@@ -841,13 +851,7 @@ interface CreateGroupActivityArgs {
   multiplier?: string
   scheduledStartDate: string
   scheduledEndDate: string
-  clues: {
-    type: 'text' | 'number'
-    name: string
-    displayName: string
-    content: string
-    unit?: string
-  }[]
+  clues: GroupActivityClueType[]
   stack: StackType
 }
 
@@ -896,7 +900,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Clues
-    clues.forEach((clue) => {
+    cy.wrap(clues).each((clue: GroupActivityClueType) => {
       cy.get('[data-cy="add-group-activity-clue"]').click()
       cy.get('[data-cy="group-activity-clue-type"]').click()
       cy.get(

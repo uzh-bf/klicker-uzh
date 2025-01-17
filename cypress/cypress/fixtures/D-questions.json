@@ -1,0 +1,104 @@
+{
+  "CT": {
+    "title": "Content Title",
+    "content": "Content Text",
+    "titleEdited": "Content Title Edited",
+    "contentEdited": "Content Text Edited"
+  },
+  "FC": {
+    "title": "Flashcard Title",
+    "content": "Flashcard Text",
+    "explanation": "Flashcard Explanation",
+    "titleEdited": "Flashcard Title Edited",
+    "contentEdited": "Flashcard Text Edited",
+    "explanationEdited": "Flashcard Explanation Edited"
+  },
+  "SC": {
+    "title": "Single Choice Title",
+    "content": "Single Choice Text",
+    "choices": ["50%", "100%"],
+    "titleEdited": "Single Choice Title Edited",
+    "contentEdited": "Single Choice Text Edited",
+    "choicesEdited": ["25%", "50%", "100%"],
+    "choicesFeedbacks": ["Feedback 1", "Feedback 2", "Feedback 3"]
+  },
+  "MC": {
+    "title": "Multiple Choice Title",
+    "content": "Multiple Choice Text",
+    "choices": ["25%", "50%", "75%", "100%"],
+    "titleEdited": "Multiple Choice Title Edited",
+    "contentEdited": "Multiple Choice Text Edited",
+    "choicesEdited": ["10%", "20%", "30%", "40%", "50%", "60%", "70%"],
+    "choicesFeedbacks": [
+      "Feedback 1",
+      "Feedback 2",
+      "Feedback 3",
+      "Feedback 4",
+      "Feedback 5",
+      "Feedback 6",
+      "Feedback 7"
+    ]
+  },
+  "KP": {
+    "title": "KPRIM Title",
+    "content": "KPRIM Text",
+    "choices": ["25%", "50%", "75%", "100%"],
+    "titleEdited": "KPRIM Title Edited",
+    "contentEdited": "KPRIM Text Edited",
+    "choicesEdited": ["10%", "20%", "30%", "40%"],
+    "choicesFeedbacks": ["Feedback 1", "Feedback 2", "Feedback 3", "Feedback 4"]
+  },
+  "NR": {
+    "title": "Numerical Range Title",
+    "content": "Numerical Range Text",
+    "min": 0,
+    "max": 100,
+    "accuracy": 0,
+    "unit": "%",
+    "titleEdited": "Numerical Range Title Edited",
+    "contentEdited": "Numerical Range Text Edited",
+    "minEdited": -200,
+    "maxEdited": 50,
+    "accuracyEdited": 2,
+    "unitEdited": "kg",
+    "solutionRanges": [
+      { "min": 40, "max": null },
+      { "min": -50, "max": 20 },
+      { "min": null, "max": -80 }
+    ],
+    "exactSolutions": [-10, 10, 50]
+  },
+  "FT": {
+    "title": "Free Text Question Title",
+    "content": "Free Text Question Text",
+    "maxLength": 100,
+    "titleEdited": "Free Text Question Title Edited",
+    "contentEdited": "Free Text Question Text Edited",
+    "maxLengthEdited": 300,
+    "sampleSolution": [
+      "Sample Solution 1",
+      "Sample Solution 2",
+      "Sample Solution 3"
+    ]
+  },
+  "SE": {
+    "title": "Selection Question Title",
+    "content": "Selection Question Text",
+    "explanation": "Selection Question Explanation",
+    "collection": "Private Collection (Vegetables)",
+    "inputs": 2,
+    "solutions": ["Cabbage", "Cucumber"],
+    "solutionsNotChosen": ["Artichoke", "Broccoli", "Dill", "Carrot"],
+    "titleEdited": "Selection Question Title Edited",
+    "contentEdited": "Selection Question Text Edited",
+    "explanationEdited": "Selection Question Explanation Edited",
+    "collectionEdited": "Public Collection (Fruits)",
+    "inputsEdited": 1,
+    "solutionsEdited": ["Apple", "Banana"],
+    "solutionsNotChosenEdited": ["Cherry", "Date", "Elderberry"]
+  },
+  "duplication": {
+    "title": "Duplication question title",
+    "content": "Duplication question content"
+  }
+}

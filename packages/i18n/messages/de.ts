@@ -1377,7 +1377,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerContent:
         'Bitte fügen Sie einen Inhalt zu Ihrer Antwortoption hinzu.',
       feedbackContent:
-        'Bitte fügen Sie einen Inhalt zu Ihrem Antwortfeedback hinzu.',
+        'Bitte fügen Sie einen Inhalt zu allen Antwortfeedbacks hinzu.',
       SCAnswersCorrect: 'Bei SC-Fragen muss genau eine Antwort korrekt sein.',
       MCAnswersCorrect:
         'Bei MC-Fragen muss mindestens eine Antwort korrekt sein.',

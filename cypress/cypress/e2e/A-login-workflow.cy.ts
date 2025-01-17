@@ -2,7 +2,13 @@ import messages from '../../../packages/i18n/messages/en'
 import { AvatarOptions } from '../../../packages/shared-components/src/constants'
 
 describe('Login / Logout workflows for lecturer and students', () => {
-  it('signs in into student account', () => {
+  beforeEach('Load fixture for this test case', function () {
+    cy.fixture('A-login.json').then((data) => {
+      this.data = data
+    })
+  })
+
+  it('Sign in to student account', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
@@ -17,7 +23,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="login-logo"]').should('exist')
   })
 
-  it('signs in into student account on mobile', () => {
+  it('Sign in to student account on mobile', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('iphone-x')
@@ -33,7 +39,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.viewport('macbook-16')
   })
 
-  it('signs in into the student account and tries to modify the profile settings', () => {
+  it('Sign in to the student account and tries to modify the profile settings', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.get('[data-cy="login-logo"]').should('exist')
@@ -139,9 +145,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     )
   })
 
-  it('signs in into student account and modifies the password', () => {
-    const newPassword = 'NEW PASSWORD'
-
+  it('Sign in into student account and modifies the password', function () {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
@@ -155,8 +159,10 @@ describe('Login / Logout workflows for lecturer and students', () => {
     // modify password
     cy.get('[data-cy="header-avatar"]').click()
     cy.get('[data-cy="edit-profile"]').click()
-    cy.get('[data-cy="update-account-password"]').type(newPassword)
-    cy.get('[data-cy="update-account-password-repetition"]').type(newPassword)
+    cy.get('[data-cy="update-account-password"]').type(this.data.newPassword)
+    cy.get('[data-cy="update-account-password-repetition"]').type(
+      this.data.newPassword
+    )
     cy.get('[data-cy="save-account-update"]').click()
     cy.wait(1000)
 
@@ -167,7 +173,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.reload()
     cy.get('[data-cy="login-logo"]').should('exist')
     cy.get('[data-cy="username-field"]').type(Cypress.env('STUDENT_USERNAME'))
-    cy.get('[data-cy="password-field"]').type(newPassword)
+    cy.get('[data-cy="password-field"]').type(this.data.newPassword)
     cy.get('[data-cy="submit-login"]').click()
     cy.get('[data-cy="homepage"]').should('exist')
 
@@ -195,7 +201,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="homepage"]').should('exist')
   })
 
-  it('signs in into student account with the students email', () => {
+  it('Sign in into student account with the students email', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
@@ -210,7 +216,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="login-logo"]').should('exist')
   })
 
-  it('signs in into lecturer account', () => {
+  it('Sign in into lecturer account', () => {
     cy.visit(Cypress.env('URL_MANAGE'))
     cy.clearAllCookies()
     cy.clearAllLocalStorage()

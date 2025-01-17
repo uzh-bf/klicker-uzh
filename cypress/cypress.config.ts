@@ -2,7 +2,6 @@ import { PrismaClient } from '@klicker-uzh/prisma'
 import { defineConfig } from 'cypress'
 
 export default defineConfig({
-  // TODO: no watch mode in CI
   watchForFileChanges: true,
   projectId: 'y436dx',
   env: {
@@ -80,6 +79,36 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async removeSoftDeletedPracticeQuiz({ quizName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const practiceQuizzes = await prisma.practiceQuiz.deleteMany({
+              where: {
+                name: quizName,
+                isDeleted: true,
+              },
+            })
+
+            if (!practiceQuizzes) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
         async getMicroLearningInfo({ mlName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
@@ -128,6 +157,96 @@ export default defineConfig({
           try {
             const count = await prisma.answerCollection.count()
             return count === 3 // 3 seeded answer collections that should not be removed through workflows
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async removeSoftDeletedMicrolearning({ mlName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const microLearnings = await prisma.microLearning.deleteMany({
+              where: {
+                name: mlName,
+                isDeleted: true,
+              },
+            })
+
+            if (!microLearnings) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async removeSoftDeletedLiveQuiz({ lqName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const liveQuizzes = await prisma.liveQuiz.deleteMany({
+              where: {
+                name: lqName,
+                isDeleted: true,
+              },
+            })
+
+            if (!liveQuizzes) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async removeSoftDeletedGroupActivity({ gaName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const groupActivities = await prisma.groupActivity.deleteMany({
+              where: {
+                name: gaName,
+                isDeleted: true,
+              },
+            })
+
+            if (!groupActivities) {
+              return false
+            }
+
+            return true
           } finally {
             await prisma.$disconnect()
           }

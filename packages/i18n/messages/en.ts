@@ -1364,7 +1364,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       questionName: 'Please enter a name for the question.',
       questionContent: 'Please add some content to your question.',
       answerContent: 'Please add some content to your answer option.',
-      feedbackContent: 'Please add some content to your answer feedback.',
+      feedbackContent: 'Please add some content to all your answer feedbacks.',
       SCAnswersCorrect:
         'For SC questions exactly one answer has to be marked as correct.',
       MCAnswersCorrect:
