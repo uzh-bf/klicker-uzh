@@ -13,6 +13,7 @@ export interface IActivityEvaluation {
   name: string
   displayName?: string | null
   description?: string | null
+  courseId?: string | null
   results: IStackEvaluation[]
   feedbacks?: IFeedback[] | null
   confusionFeedbacks?: DB.ConfusionTimestep[] | null
@@ -67,12 +68,17 @@ export interface IChoicesElementInstanceEvaluation
   results: IChoicesElementEvaluationResults
 }
 
+interface INumericalElementSolutionRange {
+  min?: number | null
+  max?: number | null
+}
+
 export interface INumericalElementEvaluationResults {
   totalAnswers: number
   anonymousAnswers: number
   maxValue?: number | null
   minValue?: number | null
-  solutionRanges: { min?: number | null; max?: number | null }[]
+  solutionRanges?: INumericalElementSolutionRange[] | null
   responseValues: {
     value: number
     count: number
@@ -149,6 +155,7 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
+    courseId: t.exposeString('courseId', { nullable: true }),
     results: t.expose('results', {
       type: [StackEvaluation],
     }),
@@ -270,6 +277,7 @@ export const NumericalElementResults = NumericalElementResultsRef.implement({
     minValue: t.exposeFloat('minValue', { nullable: true }),
     solutionRanges: t.expose('solutionRanges', {
       type: [NumericalElementSolutions],
+      nullable: true,
     }),
     responseValues: t.expose('responseValues', {
       type: [NumericalElementResult],
@@ -277,9 +285,8 @@ export const NumericalElementResults = NumericalElementResultsRef.implement({
   }),
 })
 
-export const NumericalElementSolutionsRef = builder.objectRef<
-  INumericalElementEvaluationResults['solutionRanges'][0]
->('NumericalElementSolutions')
+export const NumericalElementSolutionsRef =
+  builder.objectRef<INumericalElementSolutionRange>('NumericalElementSolutions')
 export const NumericalElementSolutions = NumericalElementSolutionsRef.implement(
   {
     fields: (t) => ({

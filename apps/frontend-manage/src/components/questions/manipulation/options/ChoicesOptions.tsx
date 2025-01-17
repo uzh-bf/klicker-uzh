@@ -222,15 +222,18 @@ function ChoicesOptions({
                                 newContent
                               )
                             }}
+                            showToolbarOnFocus={true}
+                            placeholder={t(
+                              'manage.questionForms.feedbackPlaceholder'
+                            )}
                             className={{
                               root: 'bg-white',
                               content:
                                 'border-uzh-grey-100 focus:border-primary-40 w-full rounded border',
                             }}
-                            showToolbarOnFocus={true}
-                            placeholder={t(
-                              'manage.questionForms.feedbackPlaceholder'
-                            )}
+                            data={{
+                              cy: `insert-answer-feedback-${index}`,
+                            }}
                           />
                         )}
                       </FastField>

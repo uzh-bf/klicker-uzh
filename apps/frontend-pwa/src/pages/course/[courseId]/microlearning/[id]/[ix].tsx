@@ -1,17 +1,17 @@
 import { useQuery } from '@apollo/client'
 import {
   GetMicroLearningDocument,
+  PublicationStatus,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Progress, Toast } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import PreviewMessage from '~/components/common/PreviewMessage'
+import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import Layout from '../../../../../components/Layout'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 import ElementStack from '../../../../../components/practiceQuiz/ElementStack'
@@ -100,9 +100,7 @@ function MicrolearningInstance() {
               router.push(`/course/${courseId}/microlearning/${id}/evaluation`)
             }}
             withParticipant={!!selfData?.self}
-            activityExpired={dayjs(microLearning.scheduledEndAt).isBefore(
-              dayjs()
-            )}
+            activityExpired={microLearning.status === PublicationStatus.Ended}
             activityExpiredMessage={t('pwa.microLearning.activityExpired')}
             previewOnly={previewMode}
           />

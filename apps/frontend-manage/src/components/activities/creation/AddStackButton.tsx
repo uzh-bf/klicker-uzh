@@ -192,7 +192,7 @@ function AddStackButton({
               })
             }
           }}
-          data-cy="drop-elements-add-stack"
+          data-cy={`drop-elements-add-${type}`}
         >
           <FontAwesomeIcon icon={faPlus} size="lg" />
           <div>

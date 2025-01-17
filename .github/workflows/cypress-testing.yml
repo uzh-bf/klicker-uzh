@@ -2,15 +2,16 @@ name: Klicker automated testing with cypress
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - apps/**
-      - packages/**
+    # paths:
+    #   - apps/**
+    #   - packages/**
   pull_request:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
     paths:
       - apps/**
       - packages/**
+      - cypress/**
 
 env:
   REGISTRY: ghcr.io
@@ -56,7 +57,7 @@ jobs:
     #   matrix:
     #     containers: [1, 2] # Run parallel instances
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
 
       - name: Define node version
         uses: actions/setup-node@v3
@@ -124,18 +125,33 @@ jobs:
         env:
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
 
-      - name: Start services in the background
-        run: pnpm run start:test &
+      - name: Start services and wait for readiness
+        run: |
+          chmod +x .github/scripts/wait-for-services.sh
+          .github/scripts/wait-for-services.sh
         env:
+          APP_SECRET: abcd
           DATABASE_URL: postgres://klicker:klicker@localhost:5432/klicker-prod
-        # run: pnpm run start:test
+          NODE_ENV: production
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          TIMEOUT_SECONDS: '300'
+          CHECK_INTERVAL: '5'
+
+      - name: Upload service logs
+        if: always() # This ensures logs are uploaded even if the previous step fails
+        uses: actions/upload-artifact@v3
+        with:
+          name: service-logs
+          path: service.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Cypress run
         uses: cypress-io/github-action@v6
         timeout-minutes: 60
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/api/graphql, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
           wait-on-timeout: 300
           record: true
           browser: electron

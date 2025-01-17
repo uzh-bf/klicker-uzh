@@ -122,7 +122,7 @@ function CancelLiveQuizModal({
           }
           onClick={async () => {
             await cancelLiveQuiz()
-            router.push('/sessions')
+            router.push('/quizzes')
             setOpen(false)
             setConfirmations({ ...initialConfirmations })
           }}

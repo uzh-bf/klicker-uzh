@@ -932,6 +932,19 @@ export async function changeInitialSettings(
   return user
 }
 
+export async function checkFeaturePreviewAvailable(ctx: Context) {
+  // check if user is logged in
+  if (!ctx.user?.sub || ctx.user?.role === UserRole.PARTICIPANT) {
+    return false
+  }
+
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  return user?.featurePreview ?? false
+}
+
 async function seedDemoQuestions(ctx: ContextWithUser) {
   // create single choice demo question
   const questionSC = await ctx.prisma.element.create({

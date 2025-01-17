@@ -137,7 +137,7 @@ const serviceBusTrigger = async function (
       choiceCount,
       pointsMultiplier,
     } = instanceInfo
-    let parsedSolutions
+    let parsedSolutions = undefined
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
@@ -188,8 +188,14 @@ const serviceBusTrigger = async function (
             timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
               ? TIME_TO_ZERO_BONUS
               : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: DEFAULT_POINTS,
-            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
+              ? DEFAULT_POINTS
+              : parseInt(instanceInfo.defaultPoints, 10),
+            defaultCorrectPoints: isNaN(
+              parseInt(instanceInfo.defaultCorrectPoints, 10)
+            )
+              ? DEFAULT_CORRECT_POINTS
+              : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsPercentage,
             pointsMultiplier,
           })
@@ -251,11 +257,20 @@ const serviceBusTrigger = async function (
             firstResponseReceivedAt,
             responseTimestamp,
             getsMaxPoints: parsedSolutions && answerCorrect === 1,
-            maxBonus: parseInt(instanceInfo.maxBonusPoints) ?? MAX_BONUS_POINTS,
-            timeToZeroBonus:
-              parseInt(instanceInfo.timeToZeroBonus) ?? TIME_TO_ZERO_BONUS,
-            defaultPoints: DEFAULT_POINTS,
-            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
+              ? MAX_BONUS_POINTS
+              : parseInt(instanceInfo.maxBonusPoints, 10),
+            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
+              ? TIME_TO_ZERO_BONUS
+              : parseInt(instanceInfo.timeToZeroBonus, 10),
+            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
+              ? DEFAULT_POINTS
+              : parseInt(instanceInfo.defaultPoints, 10),
+            defaultCorrectPoints: isNaN(
+              parseInt(instanceInfo.defaultCorrectPoints, 10)
+            )
+              ? DEFAULT_CORRECT_POINTS
+              : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsMultiplier,
           })
           xpAwarded = computeAwardedXp({
@@ -312,11 +327,20 @@ const serviceBusTrigger = async function (
             firstResponseReceivedAt,
             responseTimestamp,
             getsMaxPoints: Boolean(answerCorrect),
-            maxBonus: parseInt(instanceInfo.maxBonusPoints) ?? MAX_BONUS_POINTS,
-            timeToZeroBonus:
-              parseInt(instanceInfo.timeToZeroBonus) ?? TIME_TO_ZERO_BONUS,
-            defaultPoints: DEFAULT_POINTS,
-            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
+              ? MAX_BONUS_POINTS
+              : parseInt(instanceInfo.maxBonusPoints, 10),
+            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
+              ? TIME_TO_ZERO_BONUS
+              : parseInt(instanceInfo.timeToZeroBonus, 10),
+            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
+              ? DEFAULT_POINTS
+              : parseInt(instanceInfo.defaultPoints, 10),
+            defaultCorrectPoints: isNaN(
+              parseInt(instanceInfo.defaultCorrectPoints, 10)
+            )
+              ? DEFAULT_CORRECT_POINTS
+              : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsMultiplier,
           })
           xpAwarded = computeAwardedXp({

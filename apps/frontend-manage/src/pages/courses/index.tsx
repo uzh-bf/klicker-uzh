@@ -58,13 +58,9 @@ function CourseSelectionPage() {
     )
   }
 
-  const courses = dataCourses?.userCourses
-    ?.filter((course) => {
-      return showArchive ? true : !course.isArchived
-    })
-    .sort((a, b) => {
-      return dayjs(b.endDate).diff(dayjs(a.endDate))
-    })
+  const courses = dataCourses?.userCourses?.filter((course) => {
+    return showArchive ? true : !course.isArchived
+  })
 
   return (
     <Layout>

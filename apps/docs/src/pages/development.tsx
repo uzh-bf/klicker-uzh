@@ -1,4 +1,5 @@
 import Layout from '@theme/Layout'
+import { H1 } from '@uzh-bf/design-system'
 import RoadmapTile from '../components/development/RoadmapTile'
 
 const tileContent = [
@@ -48,11 +49,12 @@ const tileContent = [
       {
         content: 'Groups and Group Activities',
         href: 'https://community.klicker.uzh.ch/t/klickeruzh-v3-1-release-information/310/2',
-        status: 'Released in v3.0 (HS23) and v3.1 (FS24)',
+        status: 'Released in v3.0/v3.1 (HS23/FS24)',
       },
       {
         content: 'Randomized Group Formation',
-        status: 'Work in Progress',
+        href: 'https://www.gbl.uzh.ch/quartz/index',
+        status: 'Released in v3.2 (HS24)',
       },
       {
         content: 'Synchronous Group Activities',
@@ -104,15 +106,13 @@ const Development = () => {
     <Layout>
       <div className="m-auto max-w-[1300px] p-8">
         <div className="mb-4 flex h-12 flex-row items-start justify-between">
-          <div className="mb-8 text-3xl font-bold md:mb-0">
-            Get Involved - P-8 "Digital Skills"
-          </div>
+          <H1>Get Involved - P-8 "Digital Skills"</H1>
           <div className="hidden h-full flex-row gap-4 md:flex">
             <img
-              src="/img/logo_swissuniversities.png"
+              src="/img/logos/logo_swissuniversities.png"
               className="mr-8 h-full"
             />
-            <img src="/img/logo_uzh.jpeg" className="h-full" />
+            <img src="/img/logos/logo_uzh.jpeg" className="h-full" />
           </div>
         </div>
 
@@ -131,8 +131,11 @@ const Development = () => {
           </a>
           .
           <div className="mt-4 block md:hidden">
-            <img src="/img/logo_swissuniversities.png" className="mr-2 h-12" />
-            <img src="/img/logo_uzh.jpeg" className="h-12" />
+            <img
+              src="/img/logos/logo_swissuniversities.png"
+              className="mr-2 h-12"
+            />
+            <img src="/img/logos/logo_uzh.jpeg" className="h-12" />
           </div>
         </div>
         <div className="mb-16 grid w-full grid-cols-1 justify-between gap-4 md:grid-cols-2 lg:gap-4 xl:grid-cols-4">

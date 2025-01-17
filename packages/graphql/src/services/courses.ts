@@ -554,24 +554,19 @@ export async function getUserCourses(ctx: ContextWithUser) {
     include: {
       courses: {
         orderBy: {
-          createdAt: 'desc',
+          endDate: 'desc',
         },
       },
     },
   })
 
   // sort courses by archived or not
-  const archivedSortedCourses =
+  const filteredCourses =
     userCourses?.courses.sort((a, b) => {
       return a.isArchived === b.isArchived ? 0 : a.isArchived ? 1 : -1
     }) ?? []
 
-  // sort courses by start date descending
-  const startDateSortedCourses = archivedSortedCourses.sort((a, b) => {
-    return a.startDate > b.startDate ? -1 : a.startDate < b.startDate ? 1 : 0
-  })
-
-  return startDateSortedCourses
+  return filteredCourses
 }
 
 export async function getActiveUserCourses(ctx: ContextWithUser) {
@@ -1128,6 +1123,48 @@ export async function publishScheduledActivities(ctx: Context) {
     })
   })
 
+  return true
+}
+
+export async function endExpiredActivities(ctx: Context) {
+  // ! Set microlearning status to ended for all published microlearnings that have ended
+  const microlearningsToEnd = await ctx.prisma.microLearning.findMany({
+    where: {
+      status: PublicationStatus.PUBLISHED,
+      scheduledEndAt: {
+        lte: new Date(),
+      },
+    },
+  })
+
+  const updatedMicroLearningsToEnd = await Promise.all(
+    microlearningsToEnd.map((micro) =>
+      ctx.prisma.microLearning.update({
+        where: {
+          id: micro.id,
+        },
+        data: {
+          status: PublicationStatus.ENDED,
+        },
+      })
+    )
+  )
+
+  if (updatedMicroLearningsToEnd.length !== 0) {
+    await sendTeamsNotifications(
+      'graphql/endMicroLearningsCronjob',
+      `Successfully ended ${updatedMicroLearningsToEnd.length} microlearnings`
+    )
+  }
+
+  updatedMicroLearningsToEnd.forEach((micro) => {
+    ctx.pubSub.publish('microLearningEnded', micro)
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: micro.id,
+    })
+  })
+
   // ! Set group activity status to ended for all published group activities that have ended
   const groupActivitiesToEnd = await ctx.prisma.groupActivity.findMany({
     where: {
@@ -1153,17 +1190,60 @@ export async function publishScheduledActivities(ctx: Context) {
 
   if (updatedGroupActivitiesToEnd.length !== 0) {
     await sendTeamsNotifications(
-      'graphql/endGroupActivities',
+      'graphql/endGroupActivitiesCronjob',
       `Successfully ended ${updatedGroupActivitiesToEnd.length} group activities`
     )
   }
 
-  updatedGroupActivitiesToEnd.forEach((group) => {
+  updatedGroupActivitiesToEnd.forEach((activity) => {
+    ctx.pubSub.publish('groupActivityEnded', activity)
+    ctx.pubSub.publish('singleGroupActivityEnded', activity)
     ctx.emitter.emit('invalidate', {
       typename: 'GroupActivity',
-      id: group.id,
+      id: activity.id,
     })
   })
 
   return true
+}
+
+export async function getCourseActivities(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      practiceQuizzes: {
+        where: {
+          isDeleted: false,
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          _count: {
+            select: { stacks: true },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      microLearnings: {
+        where: {
+          isDeleted: false,
+          status: PublicationStatus.PUBLISHED,
+        },
+        include: {
+          _count: {
+            select: { stacks: true },
+          },
+        },
+        orderBy: {
+          scheduledStartAt: 'desc',
+        },
+      },
+    },
+  })
+
+  return course
 }

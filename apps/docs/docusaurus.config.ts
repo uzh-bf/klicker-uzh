@@ -5,7 +5,7 @@ import remarkMath from 'remark-math'
 
 const config: Config = {
   future: {
-    experimental_faster: true,
+    experimental_faster: false,
   },
   trailingSlash: true,
   title: 'KlickerUZH',
@@ -72,17 +72,9 @@ const config: Config = {
         },
       }
     },
-    // [
-    //   '@gabrielcsapo/docusaurus-plugin-matomo',
-    //   {
-    //     matomoUrl: 'https://webstats.uzh.ch',
-    //     siteUrl: 'https://www.klicker.uzh.ch',
-    //     siteId: '356',
-    //     matomoPhpScript: 'matomo.php',
-    //     matomoJsScript: 'matomo.js',
-    //     dev: true,
-    //   },
-    // ],
+
+    'docusaurus-plugin-matomo',
+
     [
       '@docusaurus/plugin-ideal-image',
       {
@@ -110,6 +102,12 @@ const config: Config = {
     ],
   ],
   themeConfig: {
+    matomo: {
+      matomoUrl: 'https://webstats.uzh.ch',
+      siteId: '356',
+      phpLoader: '/matomo.php',
+      jsLoader: '/matomo.js',
+    },
     announcementBar: {
       id: 'release_v3',
       content:
@@ -132,8 +130,8 @@ const config: Config = {
     navbar: {
       hideOnScroll: false,
       logo: {
-        src: '/img/KlickerLogo.png',
-        srcDark: '/img/KlickerLogo.png',
+        src: '/img/logos/KlickerLogo.png',
+        srcDark: '/img/logos/KlickerLogo.png',
         href: '/',
       },
       items: [
@@ -156,6 +154,11 @@ const config: Config = {
         {
           to: 'development',
           label: 'Roadmap',
+          position: 'left',
+        },
+        {
+          to: 'about',
+          label: 'About',
           position: 'left',
         },
         // {
@@ -197,7 +200,7 @@ const config: Config = {
     footer: {
       logo: {
         alt: 'KlickerUZH Logo',
-        src: '/img/KlickerLogo.png',
+        src: '/img/logos/KlickerLogo.png',
         width: 250,
         // height: 51,
       },

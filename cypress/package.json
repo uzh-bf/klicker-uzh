@@ -16,6 +16,7 @@
   "scripts": {
     "test": "doppler run --config=dev_cypress -- cypress open",
     "test:run": "doppler run --config=dev_cypress -- cypress run",
+    "test:run:one": "doppler run --config=dev_cypress -- cypress run --spec",
     "test:watch": "doppler run --config=dev_cypress -- cypress open --watch"
   },
   "engines": {

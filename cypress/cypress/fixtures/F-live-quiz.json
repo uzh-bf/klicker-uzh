@@ -1,0 +1,116 @@
+{
+  "SC1": {
+    "title": "SC Title LQ Test 1",
+    "content": "SC Question Content 1",
+    "choices": [{ "content": "50%" }, { "content": "100%" }]
+  },
+  "SC2": {
+    "title": "SC Title LQ Test 2",
+    "content": "SC Question Content 2",
+    "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+  },
+  "MC1": {
+    "title": "MC Title LQ Test 1",
+    "content": "MC Question Content 1",
+    "choices": [
+      { "content": "25%" },
+      { "content": "50%" },
+      { "content": "75%" },
+      { "content": "100%" }
+    ]
+  },
+  "MC2": {
+    "title": "MC Title LQ Test 2",
+    "content": "MC Question Content 2",
+    "choices": [
+      { "content": "25%", "correct": false },
+      { "content": "50%", "correct": true },
+      { "content": "75%" },
+      { "content": "100%" }
+    ]
+  },
+  "KP1": {
+    "title": "KPRIM Title LQ Test 1",
+    "content": "KPRIM Question Content 1",
+    "choices": [
+      { "content": "10%" },
+      { "content": "50%" },
+      { "content": "80%" },
+      { "content": "100%" }
+    ]
+  },
+  "KP2": {
+    "title": "KPRIM Title LQ Test 2",
+    "content": "KPRIM Question Content 2",
+    "choices": [
+      { "content": "10%", "correct": false },
+      { "content": "50%", "correct": true },
+      { "content": "80%" },
+      { "content": "100%" }
+    ]
+  },
+  "NR1": {
+    "title": "NR Title LQ Test 1",
+    "content": "NR Question Content 1",
+    "options": {},
+    "answer": "50"
+  },
+  "NR2": {
+    "title": "NR Title LQ Test 2",
+    "content": "NR Question Content 2",
+    "options": {
+      "min": "0",
+      "max": "100",
+      "unit": "%",
+      "accuracy": "2",
+      "solutionRanges": [
+        { "min": "0", "max": "25" },
+        { "min": "75", "max": "100" }
+      ]
+    },
+    "answer": "100"
+  },
+  "FT1": {
+    "title": "FT Title LQ Test 1",
+    "content": "FT Question Content 1",
+    "options": {},
+    "answer": "Solution 1"
+  },
+  "FT2": {
+    "title": "FT Title LQ Test 2",
+    "content": "FT Question Content 2",
+    "options": {
+      "maxLength": "100",
+      "solutions": ["Solution 1", "Solution 2"]
+    },
+    "answer": "Answer 2"
+  },
+  "course1": {
+    "name": "Testkurs",
+    "quiz": {
+      "name": "Live Quiz 1",
+      "displayName": "Live Quiz 1 (Display)",
+      "description": "Live Quiz 1 Description",
+      "nameNew": "Live Quiz 1 NEW",
+      "displayNameNew": "Live Quiz 1 (Display) NEW",
+      "descriptionNew": "Live Quiz 1 Description NEW",
+      "nameDupl": "Live Quiz 1 NEW (Copy)",
+      "defaultPoints": 50,
+      "defaultCorrectPoints": 100,
+      "maxBonusPoints": 200,
+      "timeToZeroBonus": 100
+    }
+  },
+  "course2": {
+    "name": "Non-Gamified Course",
+    "quiz": {
+      "name": "Live Quiz 2",
+      "displayName": "Live Quiz 2 (Display)",
+      "description": "Live Quiz 2 Description",
+      "feedbackDesktop": "Feedback Desktop",
+      "feedbackDesktop2": "Feedback Desktop 2",
+      "feedbackMobile": "Feedback Mobile",
+      "feedbackResponse": "Response to Feedback"
+    }
+  }
+}

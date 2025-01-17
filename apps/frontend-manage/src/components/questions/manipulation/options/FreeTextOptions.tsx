@@ -47,6 +47,7 @@ function FreeTextOptions({ values }: FreeTextOptionsProps) {
                         })}
                         type="text"
                         placeholder={t('shared.generic.solution')}
+                        data={{ cy: `set-solution-ix-${index}` }}
                       />
                       <Button
                         onClick={() => remove(index)}

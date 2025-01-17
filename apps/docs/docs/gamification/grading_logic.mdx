@@ -36,7 +36,7 @@ $$
   <img
     style={{ width: 600 }}
     alt="MC Grading Logic Illustration"
-    src="/img_v3/19_MC_awarded_points.svg"
+    src="/img/gamification/MC_awarded_points.svg"
   />
 </div>
 
@@ -54,7 +54,7 @@ $$
   <img
     style={{ width: 600 }}
     alt="KPRIM Grading Logic Illustration"
-    src="/img_v3/20_KPRIM_awarded_points.svg"
+    src="/img/gamification/KPRIM_awarded_points.svg"
   />
 </div>
 
@@ -68,9 +68,9 @@ For free text questions, you can currently specify a selection of correct respon
 
 ## Grading in Live Quizzes
 
-During synchronous live quizzes, every participant will receive 10 points for each submitted answer, independent of its correctness. If the submitted answer is correct, 5 additional points will be awarded. For partially correct answers, these 5 points are multiplied with a factor described in the sections above. If no sample solution is defined, students will not receive any time-dependent bonus, but only the fixed amount of 10 points (no multiplication with multiplier).
+During synchronous live quizzes, every participant will receive base points for each submitted answer, independent of its correctness (default: 10 points). If the submitted answer is correct, additional points will be awarded (default: 5 points). For partially correct answers, these 5 points are multiplied with a correctness factor described in the sections above. If no sample solution is defined, students will only receive the fixed amount of base points, which is not affected by the choice of multipliers.
 
-To incentivize fast and correct answers during live quizzes, additional bonus points are awarded. Starting time with the first correct answer, players will receive up to 45 points (default setting), depending on the time that passed between the first correct answer and theirs. By default, the slope to zero points is implemented with a duration of 20 seconds.
+To incentivize fast and correct answers during live quizzes, additional bonus points are awarded beyond the mentioned points for answering correctly. Starting time with the first correct answer, players will receive up to 45 bonus points (default setting), depending on the time that passed between the first correct answer and theirs. By default, the slope to zero points is implemented with a duration of 20 seconds.
 
 The corresponding resulting point curves for correct and wrong answers during live quizzes, when starting time with the first correct response, are shown in the plot below (not considering multipliers).
 
@@ -78,12 +78,27 @@ The corresponding resulting point curves for correct and wrong answers during li
   <img
     style={{ width: 600 }}
     alt="Illustration of Grading in Live Quizzes"
-    src="/img_v3/21_live_quiz_awarded_points.svg"
+    src="/img/gamification/live_quiz_awarded_points.svg"
   />
 </div>
 
+Formally, the number of awarded points is calculated as follows:
+
+$$
+\text{points}_{\text{awarded}}(t) =
+  p_b +  m \cdot \begin{cases} p_c + p_{\text{bonus}}(t) & \text{answer correct} \\
+  c \cdot \Big[ p_c + p_{\text{bonus}}(t) \Big] & \text{partially correct} \\
+  0 & \text{otherwise} \end{cases}
+$$
+
+$$
+p_{\text{bonus}}(t) = p_m \cdot \max\left(1 - \frac{t}{t_f}, 0\right)
+$$
+
+The number of base points is denoted with $p_b$ (default: 10 points), the number of points awarded for correct answers with $p_c$ (default: 5 points), the number of maximum bonus points with $p_m$ (default: 45 points) and the duration for the bonus points to fade with $t_f$ (default: 20 seconds). The multiplier of the question instance (consisting of the activity and question multipliers) is denoted with $m$, and the time that has passed between the first correct answer and the participant’s answer with $t$. To keep the formalism simple, the correctness of the answer $c$, is normalized to the interval $[0,1]$ with $1$ being assigned for completely correct responses. The grading of answers is performed as described for asynchronous activities in the previous sections.
+
 ### Advanced: Customized Grading
 
-For advanced use cases, it is also possible to customized the grading logic applied during live quizzes. Through a dedicated modal for advanced settings, which can be opened after selecting a gamified course, you can now choose a custom number of maximum bonus points and a custom duration for these to fade over time. A side-by-side illustration indicates the points awarded for a correct answer over time.
+For advanced use cases, it is possible to fully customize the grading logic applied during live quizzes. Through a dedicated modal for advanced settings, which can be opened by clicking onto the settings icon after selecting a gamified course, you can now choose a custom parametrization of the grading logic formalized in the previous section. A side-by-side illustration indicates the points awarded for correct or incorrect answers over time.
 
-![Advanced settings modal for customized point distribution](/img_v3/22_live_quiz_customized_grading.png)
+![Advanced settings modal for customized point distribution](/img/gamification/live_quiz_customized_grading.png)

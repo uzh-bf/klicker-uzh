@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
-import { faPencil } from '@fortawesome/free-solid-svg-icons'
+import { faChartPie, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Course,
@@ -11,6 +11,7 @@ import {
 import { Button, Dropdown, H1, Toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import CourseQRModal from '../liveQuiz/cockpit/CourseQRModal'
 import { getLTIAccessLink } from './PracticeQuizElement'
@@ -41,14 +42,16 @@ function CourseOverviewHeader({
   latestEndDate,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
-  const [courseSettingsModal, setCourseSettingsModal] = useState(false)
-  const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
+  const router = useRouter()
 
+  const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [copyToast, setCopyToast] = useState(false)
 
+  const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
+  const user = dataUser?.userProfile
 
   return (
     <div className="flex flex-row flex-wrap items-center justify-between">
@@ -82,7 +85,21 @@ function CourseOverviewHeader({
           dataModal={{ cy: 'course-join-modal' }}
           dataCloseButton={{ cy: 'course-join-modal-close' }}
         />
-        {dataUser?.userProfile?.catalyst && (
+        {user?.featurePreview ? (
+          <Button
+            onClick={() => {
+              window.open(`/analytics/${course.id}/activity`, '_blank')
+            }}
+            className={{ root: 'bg-primary-80 gap-3 text-white' }}
+            data={{ cy: 'course-learning-analytics-link' }}
+          >
+            <Button.Icon>
+              <FontAwesomeIcon icon={faChartPie} />
+            </Button.Icon>
+            <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
+          </Button>
+        ) : null}
+        {user?.catalyst && (
           <Dropdown
             data={{ cy: `course-actions-${name}` }}
             className={{
@@ -92,7 +109,7 @@ function CourseOverviewHeader({
             }}
             trigger={t('manage.course.otherActions')}
             items={[
-              dataUser?.userProfile?.catalyst
+              user?.catalyst
                 ? [
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,

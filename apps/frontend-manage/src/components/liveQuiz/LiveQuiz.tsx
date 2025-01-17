@@ -27,7 +27,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { WizardMode } from '../activities/ElementCreation'
-import DeletionModal from '../courses/modals/DeletionModal'
+import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
 
@@ -80,27 +80,30 @@ function LiveQuiz({
     }
   )
 
-  const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument, {
-    variables: { id: quiz.id },
-    update(cache) {
-      const data = cache.readQuery({
-        query: GetUserLiveQuizzesDocument,
-      })
-      cache.writeQuery({
-        query: GetUserLiveQuizzesDocument,
-        data: {
-          userLiveQuizzes:
-            data?.userLiveQuizzes?.filter((q) => q.id !== quiz.id) ?? [],
-        },
-      })
-    },
-    optimisticResponse: {
-      deleteLiveQuiz: {
-        __typename: 'LiveQuiz',
-        id: quiz.id,
+  const [deleteLiveQuiz, { loading: deletingLiveQuiz }] = useMutation(
+    DeleteLiveQuizDocument,
+    {
+      variables: { id: quiz.id },
+      update(cache) {
+        const data = cache.readQuery({
+          query: GetUserLiveQuizzesDocument,
+        })
+        cache.writeQuery({
+          query: GetUserLiveQuizzesDocument,
+          data: {
+            userLiveQuizzes:
+              data?.userLiveQuizzes?.filter((q) => q.id !== quiz.id) ?? [],
+          },
+        })
       },
-    },
-  })
+      optimisticResponse: {
+        deleteLiveQuiz: {
+          __typename: 'LiveQuiz',
+          id: quiz.id,
+        },
+      },
+    }
+  )
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [selectedLiveQuiz, setSelectedLiveQuiz] = useState<string>('')
@@ -186,13 +189,13 @@ function LiveQuiz({
 
                 {PublicationStatus.Published === quiz.status && (
                   <Link
-                    href={`/sessions/${quiz.id}/cockpit`}
+                    href={`/quizzes/${quiz.id}/cockpit`}
                     legacyBehavior
                     passHref
                   >
                     <a
                       className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`live-quiz-cockpit${quiz.name}`}
+                      data-cy={`live-quiz-cockpit-${quiz.name}`}
                     >
                       <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
                       <div>{t('manage.liveQuizzes.lecturerCockpit')}</div>
@@ -201,7 +204,7 @@ function LiveQuiz({
                 )}
                 {PublicationStatus.Ended === quiz.status && (
                   <Link
-                    href={`/sessions/${quiz.id}/evaluation`}
+                    href={`/quizzes/${quiz.id}/evaluation`}
                     legacyBehavior
                     passHref
                   >
@@ -223,7 +226,7 @@ function LiveQuiz({
                     disabled={startingQuiz}
                     onClick={async () => {
                       await startLiveQuiz()
-                      router.push(`sessions/${quiz.id}/cockpit`)
+                      router.push(`quizzes/${quiz.id}/cockpit`)
                     }}
                     data={{ cy: `start-live-quiz-${quiz.name}` }}
                   >
@@ -377,16 +380,12 @@ function LiveQuiz({
           </div>
         </Collapsible>
       </div>
-      <DeletionModal
-        title={t('manage.liveQuizzes.deleteLiveQuiz')}
-        description={t('manage.liveQuizzes.confirmLiveQuizDeletion')}
-        elementName={quiz.name || ''}
-        message={t('manage.liveQuizzes.liveQuizDeletionHint')}
-        deleteElement={deleteLiveQuiz}
+      <LiveQuizDeletionModal
+        quizId={quiz.id}
         open={deletionModal}
         setOpen={setDeletionModal}
-        primaryData={{ cy: 'confirm-delete-live-quiz' }}
-        secondaryData={{ cy: 'cancel-delete-live-quiz' }}
+        onDelete={deleteLiveQuiz}
+        deleting={deletingLiveQuiz}
       />
       <LiveQuizNameChangeModal
         quizId={quiz.id}

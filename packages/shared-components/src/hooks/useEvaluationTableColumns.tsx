@@ -1,16 +1,9 @@
-import {
-  faCheck,
-  faSort,
-  faSortDown,
-  faSortUp,
-  faX,
-} from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Button } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
+import TableSortingButton from '../TableSortingButton'
 
 interface UseEvaluationTableColumnsProps {
   showSolution: boolean
@@ -25,56 +18,27 @@ function useEvaluationTableColumns({
 }: UseEvaluationTableColumnsProps) {
   const t = useTranslations()
 
-  const SortingButton = ({
-    column,
-    title,
-    buttonTextSize,
-  }: {
-    column: any
-    title: string
-    buttonTextSize: string
-  }) => {
-    return (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        className={twMerge('h-7 !pl-0 hover:bg-transparent', buttonTextSize)}
-      >
-        {title}
-        <FontAwesomeIcon
-          icon={
-            column.getIsSorted() === 'asc'
-              ? faSortUp
-              : column.getIsSorted() === 'desc'
-                ? faSortDown
-                : faSort
-          }
-          className="ml-2 h-3 w-3"
-        />
-      </Button>
-    )
-  }
-
   const columns = useMemo(
     () => [
       {
         accessorKey: 'count',
         header: ({ column }: any) => {
           return (
-            <SortingButton
+            <TableSortingButton
               column={column}
               buttonTextSize={textSize}
               title={t('manage.evaluation.count')}
             />
           )
         },
+        displayName: t('manage.evaluation.count'),
         className: 'w-10',
       },
       {
         header: numericValues
           ? ({ column }: any) => {
               return (
-                <SortingButton
+                <TableSortingButton
                   column={column}
                   buttonTextSize={textSize}
                   title={t('manage.evaluation.value')}
@@ -94,11 +58,12 @@ function useEvaluationTableColumns({
 
           return row.getValue('value')
         },
+        displayName: t('manage.evaluation.value'),
       },
       {
         header: ({ column }: any) => {
           return (
-            <SortingButton
+            <TableSortingButton
               column={column}
               buttonTextSize={textSize}
               title="%"
@@ -110,6 +75,7 @@ function useEvaluationTableColumns({
           const amount = parseFloat(row.getValue('percentage')) * 100
           return `${String(amount.toFixed())} %`
         },
+        displayName: '%',
         className: 'w-20',
       },
       ...(showSolution
@@ -117,7 +83,7 @@ function useEvaluationTableColumns({
             {
               header: ({ column }: any) => {
                 return (
-                  <SortingButton
+                  <TableSortingButton
                     column={column}
                     buttonTextSize={textSize}
                     title="T/F"
@@ -137,6 +103,7 @@ function useEvaluationTableColumns({
                   return <FontAwesomeIcon icon={faX} className="text-red-600" />
                 return <>--</>
               },
+              displayName: t('shared.generic.correctness'),
               className: 'w-14',
             },
           ]

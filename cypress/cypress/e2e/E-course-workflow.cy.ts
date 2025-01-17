@@ -1,20 +1,17 @@
-import { v4 as uuid } from 'uuid'
 import messages from '../../../packages/i18n/messages/en'
 
-// global variable definitions for use across tests
-const courseName = 'Course e265bead-e3a9-4aa9-b76b-eb8c6637d9f6'
-const courseNameNew = 'Course 326ff897-554e-4b37-af6f-4c6e47efb775 NEW'
-const courseName2 = 'Course 33a79abc-debc-4374-9405-38e99f92fba8'
-const courseDisplayName = courseName + ' (Display)'
-const courseDisplayNameNew = courseNameNew + ' (Display)'
-const courseDisplayName2 = courseName2 + ' (Display)'
-const description = uuid()
-const runningTestCourse = 'Testkurs'
-const pastTestcourse = 'Testkurs 2'
+// global variable for ensured consistency with current dates
 const currentYear = new Date().getFullYear()
 
-describe('Test course creation and editing functionalities', () => {
-  it('Test the creation of a new course without gamification', () => {
+describe('Test course creation and editing functionalities', function () {
+  beforeEach('Load fixture for this test case', function () {
+    cy.fixture('E-course.json').then((data) => {
+      this.data = data
+    })
+  })
+
+  // ! Part 1: Course creation
+  it('Test the creation of a new course without gamification', function () {
     // log into frontend-manage
     cy.loginLecturer()
 
@@ -25,9 +22,13 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="course-list-button-new-course"]').click()
 
     // fill in the form
-    cy.get('[data-cy="course-name"]').type(courseName)
-    cy.get('[data-cy="course-display-name"]').type(courseDisplayName)
-    cy.get('[data-cy="course-description"]').realClick().type(description)
+    cy.get('[data-cy="course-name"]').type(this.data.course1.name)
+    cy.get('[data-cy="course-display-name"]').type(
+      this.data.course1.displayName
+    )
+    cy.get('[data-cy="course-description"]')
+      .realClick()
+      .type(this.data.course1.description)
 
     // change the start date
     cy.get('[data-cy="course-start-date-button"]').click()
@@ -75,10 +76,10 @@ describe('Test course creation and editing functionalities', () => {
 
     // check if the course is in the list
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(courseName).should('exist')
+    cy.findByText(this.data.course1.name).should('exist')
   })
 
-  it('Test the creation of a new gamified course', () => {
+  it('Test the creation of a new gamified course', function () {
     // log into frontend-manage
     cy.loginLecturer()
 
@@ -89,8 +90,10 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="course-list-button-new-course"]').click()
 
     // fill in the form
-    cy.get('[data-cy="course-name"]').type(courseName2)
-    cy.get('[data-cy="course-display-name"]').type(courseDisplayName2)
+    cy.get('[data-cy="course-name"]').type(this.data.course2.name)
+    cy.get('[data-cy="course-display-name"]').type(
+      this.data.course2.displayName
+    )
 
     // change the start date
     cy.get('[data-cy="course-start-date-button"]').click()
@@ -157,10 +160,10 @@ describe('Test course creation and editing functionalities', () => {
 
     // check if the course is in the list
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(courseName2).should('exist')
+    cy.findByText(this.data.course2.name).should('exist')
 
     // check that random group assignment should be disabled
-    cy.get(`[data-cy="course-list-button-${courseName2}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="tab-groups"]').click()
     cy.get('[data-cy="assign-random-groups"]').should('be.disabled')
     cy.findByText(messages.manage.course.randomGroupsNotPossible).should(
@@ -168,11 +171,12 @@ describe('Test course creation and editing functionalities', () => {
     )
   })
 
-  it('Have 10 students join the course and the random assignment pool', () => {
+  // ! Part 2: Randomized group creation
+  it('Have 10 students join the course and the random assignment pool', function () {
     // get the course PIN from the lecturer view
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${courseName2}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="course-pin"]')
       .invoke('text')
       .then(($coursePin) => {
@@ -201,18 +205,20 @@ describe('Test course creation and editing functionalities', () => {
       cy.get('[data-cy="join-course-submit-form"]').click()
 
       // join the random assignment pool
-      cy.get(`[data-cy="course-button-${courseDisplayName2}"]`).click()
+      cy.get(
+        `[data-cy="course-button-${this.data.course2.displayName}"]`
+      ).click()
       cy.get('[data-cy="student-course-create-group"]').click()
       cy.get('[data-cy="enter-random-group-pool"]').click()
       cy.findByText(messages.pwa.courses.leaveRandomGroupPool).should('exist')
     }
   })
 
-  it('Have 2 students join the course and create groups by themselves', () => {
+  it('Have 2 students join the course and create groups by themselves', function () {
     // get the course PIN from the lecturer view
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${courseName2}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="course-pin"]')
       .invoke('text')
       .then(($coursePin) => {
@@ -220,38 +226,40 @@ describe('Test course creation and editing functionalities', () => {
       })
 
     // student 11 joins course and creates a group by himself
-    const groupName11 = 'Group Student 11'
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME11') })
     cy.get('[data-cy="join-new-course"]').click()
     cy.get('@coursePin').then((pin) => {
       cy.get('[data-cy="join-course-pin-field"]').type(String(pin))
     })
     cy.get('[data-cy="join-course-submit-form"]').click()
-    cy.get(`[data-cy="course-button-${courseDisplayName2}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course2.displayName}"]`).click()
     cy.get('[data-cy="student-course-create-group"]').click()
-    cy.get('[data-cy="group-creation-name-input"]').type(groupName11)
+    cy.get('[data-cy="group-creation-name-input"]').type(
+      this.data.course2.group1
+    )
     cy.get('[data-cy="create-new-participant-group"]').click()
     cy.wait(1000)
 
     // student 12 joins course and creates a group by himself
-    const groupName12 = 'Group Student 12'
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME12') })
     cy.get('[data-cy="join-new-course"]').click()
     cy.get('@coursePin').then((pin) => {
       cy.get('[data-cy="join-course-pin-field"]').type(String(pin))
     })
     cy.get('[data-cy="join-course-submit-form"]').click()
-    cy.get(`[data-cy="course-button-${courseDisplayName2}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.course2.displayName}"]`).click()
     cy.get('[data-cy="student-course-create-group"]').click()
-    cy.get('[data-cy="group-creation-name-input"]').type(groupName12)
+    cy.get('[data-cy="group-creation-name-input"]').type(
+      this.data.course2.group2
+    )
     cy.get('[data-cy="create-new-participant-group"]').click()
     cy.wait(1000)
   })
 
-  it('Trigger the random group assignment for the gamified course', () => {
+  it('Trigger the random group assignment for the gamified course', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${courseName2}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="tab-groups"]').click()
     cy.get('[data-cy="assign-random-groups"]').click()
     cy.get('[data-cy="cancel-random-group-assignment"]').click()
@@ -264,7 +272,7 @@ describe('Test course creation and editing functionalities', () => {
     ).should('exist')
   })
 
-  it('Check from the student view that they have been assigned to groups successfully', () => {
+  it('Check from the student view that they have been assigned to groups successfully', function () {
     for (const studentUsername of [
       Cypress.env('STUDENT_USERNAME'),
       Cypress.env('STUDENT_USERNAME2'),
@@ -275,15 +283,17 @@ describe('Test course creation and editing functionalities', () => {
       cy.loginStudentPassword({ username: studentUsername })
 
       // check that an existing group is present
-      cy.get(`[data-cy="course-button-${courseDisplayName2}"]`).click()
+      cy.get(
+        `[data-cy="course-button-${this.data.course2.displayName}"]`
+      ).click()
       cy.get('[data-cy="student-course-create-group"]').should('not.exist')
     }
   })
 
-  it('Check that if group formation deadline is moved into the future, randomized assignment is possible again', () => {
+  it('Check that if group formation deadline is moved into the future, randomized assignment is possible again', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${courseName2}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.course2.name}"]`).click()
 
     // modify the course end date and group creation deadline
     cy.get('[data-cy="course-settings-button"]').click()
@@ -307,14 +317,18 @@ describe('Test course creation and editing functionalities', () => {
     )
   })
 
-  it('Check the content of the course overview and edit course properties', () => {
+  // ! Part 3: Course overview, editing, and archiving
+  it('Check the content of the course overview and edit course properties', function () {
     // log into frontend-manage
     cy.loginLecturer()
 
     // check if the course is in the detail view
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${courseName}"]`).click()
-    cy.get('[data-cy="course-name-with-pin"]').should('contain', courseName)
+    cy.get(`[data-cy="course-list-button-${this.data.course1.name}"]`).click()
+    cy.get('[data-cy="course-name-with-pin"]').should(
+      'contain',
+      this.data.course1.name
+    )
 
     // check out course join modal
     cy.get('[data-cy="course-join-button"]').click()
@@ -326,15 +340,22 @@ describe('Test course creation and editing functionalities', () => {
     cy.get('[data-cy="course-settings-button"]').click()
 
     // check if the name properties have been set correctly
-    cy.get('[data-cy="course-name"]').should('have.value', courseName)
+    cy.get('[data-cy="course-name"]').should(
+      'have.value',
+      this.data.course1.name
+    )
     cy.get('[data-cy="course-display-name"]').should(
       'have.value',
-      courseDisplayName
+      this.data.course1.displayName
     )
 
     // change the course name
-    cy.get('[data-cy="course-name"]').clear().type(courseNameNew)
-    cy.get('[data-cy="course-display-name"]').clear().type(courseDisplayNameNew)
+    cy.get('[data-cy="course-name"]')
+      .clear()
+      .type(this.data.course1.displayName)
+    cy.get('[data-cy="course-display-name"]')
+      .clear()
+      .type(this.data.course1.displayNameNew)
 
     // check course color and change it to green
     cy.get('[data-cy="course-color-trigger"]').click()
@@ -377,10 +398,13 @@ describe('Test course creation and editing functionalities', () => {
     // save settings and check correct values afterwards (gamification should be enabled & blocked)
     cy.get('[data-cy="manipulate-course-submit"]').click()
     cy.get('[data-cy="course-settings-button"]').click()
-    cy.get('[data-cy="course-name"]').should('have.value', courseNameNew)
+    cy.get('[data-cy="course-name"]').should(
+      'have.value',
+      this.data.course1.displayName
+    )
     cy.get('[data-cy="course-display-name"]').should(
       'have.value',
-      courseDisplayNameNew
+      this.data.course1.displayNameNew
     )
     cy.get('[data-cy="course-start-date-button"]').click()
     cy.get('[data-cy="course-start-date"]').type(`${currentYear + 1}-02-01`)
@@ -439,11 +463,11 @@ describe('Test course creation and editing functionalities', () => {
     )
   })
 
-  it('Test if the course leaderboards are visible on the student app', () => {
+  it('Test if the course leaderboards are visible on the student app', function () {
     cy.loginStudent()
 
     // check for the existince of the test course
-    cy.get(`[data-cy="course-button-${runningTestCourse}"]`).click()
+    cy.get(`[data-cy="course-button-${this.data.running.name}"]`).click()
     cy.get('[data-cy="student-course-leaderboard-tab"]').should('exist')
 
     // check if the leaderboards exist
@@ -451,112 +475,114 @@ describe('Test course creation and editing functionalities', () => {
     cy.findByText(messages.pwa.courses.groupLeaderboard).should('exist')
   })
 
-  it('Test course archive functionality', () => {
+  it('Test course archive functionality', function () {
     // login and switch to course list
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${runningTestCourse}"]`).should(
+    cy.get(`[data-cy="course-list-button-${this.data.running.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="course-list-button-${pastTestcourse}"]`).should('exist')
+    cy.get(`[data-cy="course-list-button-${this.data.past.name}"]`).should(
+      'exist'
+    )
 
     // check the archiving functionality
-    cy.get(`[data-cy="archive-course-${runningTestCourse}"]`).should(
+    cy.get(`[data-cy="archive-course-${this.data.running.name}"]`).should(
       'be.disabled'
     )
-    cy.get(`[data-cy="archive-course-${pastTestcourse}"]`)
+    cy.get(`[data-cy="archive-course-${this.data.past.name}"]`)
       .should('not.be.disabled')
       .click()
     cy.findByText(messages.manage.courseList.confirmCourseArchive).should(
       'exist'
     )
     cy.get('[data-cy="course-archive-modal-cancel"]').click()
-    cy.get(`[data-cy="archive-course-${pastTestcourse}"]`).click()
+    cy.get(`[data-cy="archive-course-${this.data.past.name}"]`).click()
     cy.get('[data-cy="course-archive-modal-confirm"]').click()
-    cy.get(`[data-cy="course-list-button-${pastTestcourse}"]`).should(
+    cy.get(`[data-cy="course-list-button-${this.data.past.name}"]`).should(
       'not.exist'
     )
 
     // check out the archive and re-activate the past course
     cy.get('[data-cy="toggle-course-archive"]').click()
-    cy.get(`[data-cy="course-list-button-${pastTestcourse}"]`).should('exist')
-    cy.get(`[data-cy="archive-course-${pastTestcourse}"]`).click()
+    cy.get(`[data-cy="course-list-button-${this.data.past.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="archive-course-${this.data.past.name}"]`).click()
     cy.findByText(messages.manage.courseList.confirmCourseUnarchive).should(
       'exist'
     )
     cy.get('[data-cy="course-archive-modal-confirm"]').click()
     cy.get('[data-cy="toggle-course-archive"]').click()
-    cy.get(`[data-cy="course-list-button-${pastTestcourse}"]`).should('exist')
+    cy.get(`[data-cy="course-list-button-${this.data.past.name}"]`).should(
+      'exist'
+    )
   })
 
-  it('Create a course with live quiz, practice quiz, and microlearning, and delete it again', () => {
+  // ! Part 4: Course deletion and required confirmations
+  it('Create a course with live quiz, practice quiz, and microlearning, and delete it again', function () {
     cy.loginLecturer()
-
-    // test-specific variables
-    const courseDelName = 'Course to be deleted ' + uuid()
-    const courseDelDisplayName = courseDelName + ' display'
-    const questionTitle = uuid()
-    const questionContent = uuid()
-    const liveQuizName = uuid()
-    const practiceQuizName = uuid()
-    const microLearningName = uuid()
 
     // create a new course
     cy.get('[data-cy="courses"]').click()
     cy.get('[data-cy="course-list-button-new-course"]').click()
-    cy.get('[data-cy="course-name"]').type(courseDelName)
-    cy.get('[data-cy="course-display-name"]').type(courseDelDisplayName)
+    cy.get('[data-cy="course-name"]').type(this.data.deletion.courseName)
+    cy.get('[data-cy="course-display-name"]').type(
+      this.data.deletion.displayName
+    )
     cy.get('[data-cy="course-gamification"]').click()
     cy.get('[data-cy="manipulate-course-submit"]').click()
     cy.get('[data-cy="courses"]').click()
-    cy.findByText(courseDelName).should('exist')
+    cy.findByText(this.data.deletion.courseName).should('exist')
     cy.reload()
 
     // create a question with sample solution
-    cy.get('[data-cy="questions"]').click()
+    cy.get('[data-cy="library"]').click()
     cy.createQuestionSC({
-      title: questionTitle,
-      content: questionContent,
+      title: this.data.deletion.qTitle,
+      content: this.data.deletion.qContent,
       choices: [{ content: '50%', correct: true }, { content: '100%' }],
     })
 
     // create a live quiz in the course
     cy.createLiveQuiz({
-      name: liveQuizName,
-      displayName: liveQuizName,
-      courseName: courseDelName,
-      blocks: [{ questions: [questionTitle] }],
+      name: this.data.deletion.lqName,
+      displayName: this.data.deletion.lqName,
+      courseName: this.data.deletion.courseName,
+      blocks: [{ elements: [this.data.deletion.qTitle] }],
     })
     cy.get('[data-cy="create-new-element"]').click()
 
     // create a practice quiz in the course
     cy.createPracticeQuiz({
-      name: practiceQuizName,
-      displayName: practiceQuizName,
-      description: description,
-      courseName: courseDelName,
-      stacks: [{ elements: [questionTitle] }],
+      name: this.data.deletion.pqName,
+      displayName: this.data.deletion.pqName,
+      description: this.data.course1.description,
+      courseName: this.data.deletion.courseName,
+      stacks: [{ elements: [this.data.deletion.qTitle] }],
     })
     cy.get('[data-cy="create-new-element"]').click()
 
     // create a microlearning in the course
     cy.createMicroLearning({
-      name: microLearningName,
-      displayName: microLearningName,
-      description,
+      name: this.data.deletion.mlName,
+      displayName: this.data.deletion.mlName,
+      description: this.data.course1.description,
       startDate: `${currentYear - 1}-01-01T02:00`,
       endDate: `${currentYear + 1}-01-01T02:00`,
-      courseName: courseDelName,
-      stacks: [{ elements: [questionTitle] }],
+      courseName: this.data.deletion.courseName,
+      stacks: [{ elements: [this.data.deletion.qTitle] }],
     })
     cy.get('[data-cy="create-new-element"]').click()
 
     // delete the course and check that it is not visible anymore after a reload
     cy.get('[data-cy="courses"]').click()
-    cy.get(`[data-cy="course-list-button-${courseDelName}"]`).should('exist')
-    cy.get(`[data-cy="delete-course-${courseDelName}"]`).click()
+    cy.get(
+      `[data-cy="course-list-button-${this.data.deletion.courseName}"]`
+    ).should('exist')
+    cy.get(`[data-cy="delete-course-${this.data.deletion.courseName}"]`).click()
     cy.get('[data-cy="course-deletion-modal-cancel"]').click()
-    cy.get(`[data-cy="delete-course-${courseDelName}"]`).click()
+    cy.get(`[data-cy="delete-course-${this.data.deletion.courseName}"]`).click()
     cy.get('[data-cy="course-deletion-participations-confirm"]').should(
       'not.exist'
     )
@@ -590,18 +616,18 @@ describe('Test course creation and editing functionalities', () => {
       'not.exist'
     )
     cy.get('[data-cy="course-deletion-modal-confirm"]').click()
-    cy.get(`[data-cy="course-list-button-${courseDelName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="course-list-button-${this.data.deletion.courseName}"]`
+    ).should('not.exist')
     cy.reload()
-    cy.get(`[data-cy="course-list-button-${courseDelName}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="course-list-button-${this.data.deletion.courseName}"]`
+    ).should('not.exist')
 
     // check that the live quiz has been removed from the course
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.contains('[data-cy="live-quiz-block"]', liveQuizName)
-    cy.get(`[data-cy="edit-live-quiz-${liveQuizName}"]`).click()
+    cy.contains('[data-cy="live-quiz-block"]', this.data.deletion.lqName)
+    cy.get(`[data-cy="edit-live-quiz-${this.data.deletion.lqName}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="select-course"]').contains(
@@ -609,20 +635,42 @@ describe('Test course creation and editing functionalities', () => {
     )
   })
 
-  it('Cleanup: Delete all created courses', () => {
+  it('Cleanup: Delete the live quiz that is not assigned to the course anymore', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="live-quizzes"]`).click()
+    cy.findByText(this.data.deletion.lqName).should('exist')
+    cy.get(`[data-cy="delete-live-quiz-${this.data.deletion.lqName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.findByText(this.data.deletion.lqName).should('not.exist')
+  })
+
+  // ! Cleanup
+  it('Cleanup: Delete all created courses', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
 
     // delete the non-gamified course
-    cy.get(`[data-cy="delete-course-${courseNameNew}"]`).click()
+    cy.get(`[data-cy="delete-course-${this.data.course1.displayName}"]`).click()
     cy.get('[data-cy="course-deletion-modal-confirm"]').click()
-    cy.findByText(courseNameNew).should('not.exist')
+    cy.findByText(this.data.course1.displayName).should('not.exist')
 
     // delete the gamified course
-    cy.get(`[data-cy="delete-course-${courseName2}"]`).click()
+    cy.get(`[data-cy="delete-course-${this.data.course2.name}"]`).click()
     cy.get('[data-cy="course-deletion-participations-confirm"]').click()
     cy.get('[data-cy="course-deletion-participant-group-confirm"]').click()
     cy.get('[data-cy="course-deletion-modal-confirm"]').click()
-    cy.findByText(courseName2).should('not.exist')
+    cy.findByText(this.data.course2.name).should('not.exist')
+  })
+
+  it('Cleanup: Delete the created questions', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-question-${this.data.deletion.qTitle}"]`).click()
+    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
+      'not.exist'
+    )
   })
 })

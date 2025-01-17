@@ -1,6 +1,7 @@
 mutation EndMicroLearning($id: String!) {
   endMicroLearning(id: $id) {
     id
+    status
     scheduledEndAt
   }
 }

@@ -160,7 +160,7 @@ Cypress.Commands.add(
       .realClick()
       .type(choices[0].content)
 
-    choices.slice(1).forEach((choice, ix) => {
+    cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
       cy.get('[data-cy="add-new-answer"]').click()
       cy.wait(500)
       cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
@@ -171,7 +171,7 @@ Cypress.Commands.add(
     if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
-      choices.forEach((choice, ix) => {
+      cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
         if (choice.correct) {
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
@@ -215,7 +215,7 @@ Cypress.Commands.add(
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
-    choices.slice(1).forEach((choice, ix) => {
+    cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
       cy.get('[data-cy="add-new-answer"]').click()
       cy.wait(500)
       cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
@@ -226,7 +226,7 @@ Cypress.Commands.add(
     if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
-      choices.forEach((choice, ix) => {
+      cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
         if (choice.correct) {
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
@@ -369,17 +369,19 @@ Cypress.Commands.add(
       cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
     }
 
-    if (solutionRanges.length > 0) {
+    if (typeof solutionRanges !== 'undefined' && solutionRanges.length > 0) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      solutionRanges.forEach((range, ix) => {
-        cy.get('[data-cy="add-solution-range"]').click()
-        cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
-          .click()
-          .type(range.min)
-        cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
-          .click()
-          .type(range.max)
-      })
+      cy.wrap(solutionRanges).each(
+        (range: { min: string; max: string }, ix) => {
+          cy.get('[data-cy="add-solution-range"]').click()
+          cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
+            .click()
+            .type(range.min)
+          cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
+            .click()
+            .type(range.max)
+        }
+      )
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -391,12 +393,19 @@ interface CreateQuestionFTArgs {
   title: string
   content: string
   maxLength?: string
+  solutions?: string[]
   multiplier?: string
 }
 
 Cypress.Commands.add(
   'createQuestionFT',
-  ({ title, content, maxLength, multiplier }: CreateQuestionFTArgs) => {
+  ({
+    title,
+    content,
+    maxLength,
+    solutions,
+    multiplier,
+  }: CreateQuestionFTArgs) => {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
     cy.get(
@@ -420,6 +429,14 @@ Cypress.Commands.add(
 
     if (typeof maxLength !== 'undefined') {
       cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
+    }
+
+    if (typeof solutions !== 'undefined' && solutions.length > 0) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      cy.wrap(solutions).each((solution: string, ix) => {
+        cy.get(`[data-cy="add-solution-value"]`).click()
+        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
+      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -483,7 +500,7 @@ interface CreateLiveQuizArgs {
   name: string
   displayName: string
   courseName?: string
-  blocks: { questions: string[] }[]
+  blocks: { elements: string[] }[]
 }
 
 Cypress.Commands.add(
@@ -511,24 +528,10 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Blocks & Questions
-    if (blocks.length > 0) {
-      const dataTransfer = new DataTransfer()
-
-      blocks[0].questions.forEach((question, ix) => {
-        cy.get(`[data-cy="question-item-${question}"]`)
-          .contains(question)
-          .trigger('dragstart', {
-            dataTransfer,
-          })
-        cy.get('[data-cy="drop-elements-block-0"]').trigger('drop', {
-          dataTransfer,
-        })
-        cy.get(`[data-cy="question-${ix}-stack-0"]`)
-          .should('exist')
-          .should('contain', question.substring(0, 20))
-      })
-    }
-
+    cy.createStacks({
+      stacks: blocks,
+      type: 'block',
+    })
     cy.get('[data-cy="next-or-submit"]').click()
   }
 )
@@ -537,36 +540,42 @@ interface StackType {
   elements: string[]
 }
 
-function createStacks({ stacks }: { stacks: StackType[] }) {
-  stacks[0].elements.forEach((element, ix) => {
+function createStacks({
+  stacks,
+  type = 'stack',
+}: {
+  stacks: StackType[]
+  type?: 'block' | 'stack'
+}) {
+  cy.wrap(stacks[0].elements).each((element: string, ix) => {
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="question-item-${element}"]`)
+    cy.get(`[data-cy="element-item-${element}"]`)
       .contains(element)
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
+    cy.get(`[data-cy="drop-elements-${type}-0"]`).trigger('drop', {
       dataTransfer,
     })
-    cy.get(`[data-cy="question-${ix}-stack-0"]`).contains(
+    cy.get(`[data-cy="element-${ix}-${type}-0"]`).contains(
       element.substring(0, 20)
     )
   })
 
   if (stacks.length > 1) {
-    stacks.slice(1).forEach((stack, ix) => {
-      cy.get('[data-cy="drop-elements-add-stack"]').click()
-      stack.elements.forEach((element, jx) => {
+    cy.wrap(stacks.slice(1)).each((stack: { elements: string[] }, ix) => {
+      cy.get(`[data-cy="drop-elements-add-${type}"]`).click()
+      cy.wrap(stack.elements).each((element: string, jx) => {
         const dataTransfer = new DataTransfer()
-        cy.get(`[data-cy="question-item-${element}"]`)
+        cy.get(`[data-cy="element-item-${element}"]`)
           .contains(element)
           .trigger('dragstart', {
             dataTransfer,
           })
-        cy.get(`[data-cy="drop-elements-stack-${ix + 1}"]`).trigger('drop', {
+        cy.get(`[data-cy="drop-elements-${type}-${ix + 1}"]`).trigger('drop', {
           dataTransfer,
         })
-        cy.get(`[data-cy="question-${jx}-stack-${ix + 1}"]`).contains(
+        cy.get(`[data-cy="element-${jx}-${type}-${ix + 1}"]`).contains(
           element.substring(0, 20)
         )
       })
@@ -684,6 +693,14 @@ Cypress.Commands.add(
   }
 )
 
+interface GroupActivityClueType {
+  type: 'text' | 'number'
+  name: string
+  displayName: string
+  content: string
+  unit?: string
+}
+
 interface CreateGroupActivityArgs {
   name: string
   displayName: string
@@ -692,13 +709,7 @@ interface CreateGroupActivityArgs {
   multiplier?: string
   scheduledStartDate: string
   scheduledEndDate: string
-  clues: {
-    type: 'text' | 'number'
-    name: string
-    displayName: string
-    content: string
-    unit?: string
-  }[]
+  clues: GroupActivityClueType[]
   stack: StackType
 }
 
@@ -747,7 +758,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="next-or-submit"]').click()
 
     // Step 4: Clues
-    clues.forEach((clue) => {
+    cy.wrap(clues).each((clue: GroupActivityClueType) => {
       cy.get('[data-cy="add-group-activity-clue"]').click()
       cy.get('[data-cy="group-activity-clue-type"]').click()
       cy.get(
@@ -821,6 +832,7 @@ declare global {
         title,
         content,
         maxLength,
+        solutions,
         multiplier,
       }: CreateQuestionFTArgs): Chainable<void>
       createFlashcard({
@@ -835,7 +847,13 @@ declare global {
         courseName,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
-      createStacks({ stacks }: { stacks: StackType[] }): Chainable<void>
+      createStacks({
+        stacks,
+        type,
+      }: {
+        stacks: StackType[]
+        type?: 'block' | 'stack'
+      }): Chainable<void>
       createPracticeQuiz({
         name,
         displayName,

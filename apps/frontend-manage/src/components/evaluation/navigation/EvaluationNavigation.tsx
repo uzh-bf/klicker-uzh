@@ -1,4 +1,12 @@
-import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import { faPieChart } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  CheckFeaturePreviewAvailableDocument,
+  StackEvaluation,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
 import useInstanceArrowNavigation from '../hooks/useInstanceArrowNavigation'
 import useStackInstanceUpdates from '../hooks/useStackInstanceUpdates'
@@ -6,6 +14,8 @@ import InstanceNavigation from './InstanceNavigation'
 import StackNavigation from './StackNavigation'
 
 interface EvaluationNavigationProps {
+  courseId: string
+  activityId: string
   stacks: StackEvaluation[]
   stackInstanceMap: Record<number, { label: string; value: number }[]>
   activeStack: ActiveStackType
@@ -19,6 +29,8 @@ interface EvaluationNavigationProps {
 }
 
 function EvaluationNavigation({
+  courseId,
+  activityId,
   stacks,
   stackInstanceMap,
   activeStack,
@@ -30,6 +42,10 @@ function EvaluationNavigation({
   leaderboardAvailable,
   feedbacksAvailable,
 }: EvaluationNavigationProps) {
+  const t = useTranslations()
+
+  const { data, loading } = useQuery(CheckFeaturePreviewAvailableDocument)
+
   // automatically switch the active stack based on the active instance
   useStackInstanceUpdates({
     activeInstance,
@@ -57,16 +73,35 @@ function EvaluationNavigation({
       ) : (
         <div />
       )}
-      <StackNavigation
-        stacks={stacks}
-        activeStack={activeStack}
-        setActiveStack={setActiveStack}
-        stackInstanceMap={stackInstanceMap}
-        setActiveInstance={setActiveInstance}
-        type={type}
-        leaderboardAvailable={leaderboardAvailable}
-        feedbacksAvailable={feedbacksAvailable}
-      />
+      <div className="flex flex-row items-center gap-4">
+        {!loading &&
+        data?.checkFeaturePreviewAvailable &&
+        type === 'Asynchronous' ? (
+          <Button
+            className={{ root: 'flex h-8 flex-row gap-2' }}
+            onClick={() =>
+              window.open(
+                `/analytics/${courseId}/quizzes/${activityId}`,
+                '_blank'
+              )
+            }
+            data={{ cy: 'quiz-analytics' }}
+          >
+            <FontAwesomeIcon icon={faPieChart} />
+            <div>{t('manage.analytics.quizAnalytics')}</div>
+          </Button>
+        ) : null}
+        <StackNavigation
+          stacks={stacks}
+          activeStack={activeStack}
+          setActiveStack={setActiveStack}
+          stackInstanceMap={stackInstanceMap}
+          setActiveInstance={setActiveInstance}
+          type={type}
+          leaderboardAvailable={leaderboardAvailable}
+          feedbacksAvailable={feedbacksAvailable}
+        />
+      </div>
     </div>
   )
 }

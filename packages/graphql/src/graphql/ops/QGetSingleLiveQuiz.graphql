@@ -20,6 +20,8 @@ query GetSingleLiveQuiz($quizId: String!) {
       id
     }
     pointsMultiplier
+    defaultPoints
+    defaultCorrectPoints
     maxBonusPoints
     timeToZeroBonus
     isGamificationEnabled

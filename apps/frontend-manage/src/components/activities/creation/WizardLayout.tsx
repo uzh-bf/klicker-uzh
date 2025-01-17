@@ -35,7 +35,7 @@ export interface ElementBlockFormValues {
   }[]
 }
 
-export interface ElememntBlockErrorValues {
+export interface ElementBlockErrorValues {
   timeLimit?: string
   elements?:
     | string
@@ -77,6 +77,8 @@ export interface LiveQuizFormValues extends CommonFormValues {
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean
+  defaultPoints: number
+  defaultCorrectPoints: number
   maxBonusPoints: number
   timeToZeroBonus: number
 }

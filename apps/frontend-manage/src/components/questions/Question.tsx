@@ -122,7 +122,7 @@ function Question({
   return (
     <div
       className="flex items-center gap-1.5"
-      data-cy={`question-item-${title}`}
+      data-cy={`element-item-${title}`}
     >
       <Checkbox checked={checked} onCheck={onCheck} />
       {drag(

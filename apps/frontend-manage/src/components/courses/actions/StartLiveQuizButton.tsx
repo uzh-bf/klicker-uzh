@@ -49,7 +49,7 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
           await startLiveQuiz({
             variables: { id: liveQuiz.id || '' },
           })
-          router.push(`/sessions/${liveQuiz.id}/cockpit`)
+          router.push(`/quizzes/${liveQuiz.id}/cockpit`)
         } catch (error) {
           console.log(error)
         }

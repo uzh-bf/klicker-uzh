@@ -194,6 +194,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             isGamificationEnabled: data.isGamificationEnabled,
             status: data.status ?? Prisma.PublicationStatus.DRAFT,
             pointsMultiplier: data.pointsMultiplier,
+            defaultPoints: data.defaultPoints,
+            defaultCorrectPoints: data.defaultCorrectPoints,
             maxBonusPoints: data.maxBonusPoints,
             timeToZeroBonus: data.timeToZeroBonus,
             blocks: {
@@ -1429,7 +1431,7 @@ Mehr bla bla...
         },
       },
       pointsMultiplier: 1,
-      status: Prisma.PublicationStatus.PUBLISHED,
+      status: Prisma.PublicationStatus.ENDED,
       scheduledEndAt: new Date('2024-01-01T11:00:00.000Z'),
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
       stacks: {
@@ -1470,7 +1472,7 @@ Mehr bla bla...
         },
       },
       pointsMultiplier: 1,
-      status: Prisma.PublicationStatus.PUBLISHED,
+      status: Prisma.PublicationStatus.ENDED,
       scheduledEndAt: new Date('2024-01-01T11:00:00.000Z'),
       scheduledStartAt: new Date('2020-01-01T11:00:00.000Z'),
       stacks: {

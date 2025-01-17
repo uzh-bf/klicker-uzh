@@ -32,6 +32,7 @@ import { WizardMode } from '../activities/ElementCreation'
 import CopyConfirmationToast from '../toasts/CopyConfirmationToast'
 import { getAccessLink, getLTIAccessLink } from './PracticeQuizElement'
 import StatusTag from './StatusTag'
+import ActivityAnalyticsLink from './actions/ActivityAnalyticsLink'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningEvaluationLink from './actions/MicroLearningEvaluationLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
@@ -64,16 +65,13 @@ function MicroLearningElement({
   const [deletionModal, setDeletionModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
   const [endingModal, setEndingModal] = useState(false)
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/microlearning/${microLearning.id}/`
+  const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
-
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/microlearning/${microLearning.id}/`
-  const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
-  const isFuture = dayjs(microLearning.scheduledStartAt).isAfter(dayjs())
-  const isPast = dayjs(microLearning.scheduledEndAt).isBefore(dayjs())
-  const isActive = !isFuture && !isPast
+  const user = dataUser?.userProfile
 
   const [unpublishMicroLearning] = useMutation(UnpublishMicroLearningDocument, {
     variables: { id: microLearning.id },
@@ -87,15 +85,6 @@ function MicroLearningElement({
         icon={faPencil}
       />
     ),
-    [PublicationStatus.Published]: (
-      <StatusTag
-        color="bg-green-300"
-        status={
-          isPast ? t('shared.generic.completed') : t('shared.generic.published')
-        }
-        icon={isPast ? faCheck : faPlay}
-      />
-    ),
     [PublicationStatus.Scheduled]: (
       <StatusTag
         color="bg-orange-200"
@@ -103,7 +92,20 @@ function MicroLearningElement({
         icon={faClock}
       />
     ),
-    [PublicationStatus.Ended]: null,
+    [PublicationStatus.Published]: (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.published')}
+        icon={faPlay}
+      />
+    ),
+    [PublicationStatus.Ended]: (
+      <StatusTag
+        color="bg-green-300"
+        status={t('shared.generic.completed')}
+        icon={faCheck}
+      />
+    ),
     [PublicationStatus.Graded]: null,
   }
 
@@ -176,7 +178,7 @@ function MicroLearningElement({
                     t,
                     name: microLearning.name,
                   }),
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -240,7 +242,7 @@ function MicroLearningElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -299,7 +301,7 @@ function MicroLearningElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  dataUser?.userProfile?.catalyst
+                  user?.catalyst
                     ? getLTIAccessLink({
                         href,
                         setCopyToast,
@@ -334,69 +336,125 @@ function MicroLearningElement({
                       cy: `duplicate-microlearning-${microLearning.name}`,
                     },
                   }),
-                  ...(isActive
-                    ? [
-                        {
-                          label: (
-                            <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-                              <FontAwesomeIcon
-                                icon={faCalendar}
-                                className="w-4"
-                              />
-                              <div>
-                                {t('manage.course.extendMicroLearning')}
-                              </div>
-                            </div>
-                          ),
-                          onClick: () => setExtensionModal(true),
-                          data: {
-                            cy: `extend-microlearning-${microLearning.name}`,
-                          },
+                  {
+                    label: (
+                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                        <FontAwesomeIcon icon={faCalendar} className="w-4" />
+                        <div>{t('manage.course.extendMicroLearning')}</div>
+                      </div>
+                    ),
+                    onClick: () => setExtensionModal(true),
+                    data: {
+                      cy: `extend-microlearning-${microLearning.name}`,
+                    },
+                  },
+                  {
+                    label: (
+                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                        <FontAwesomeIcon
+                          icon={faFlagCheckered}
+                          className="w-[1.2rem]"
+                        />
+                        <div>{t('manage.course.endMicroLearning')}</div>
+                      </div>
+                    ),
+                    onClick: () => setEndingModal(true),
+                    data: {
+                      cy: `end-microlearning-${microLearning.name}`,
+                    },
+                  },
+                  user?.featurePreview
+                    ? {
+                        label: (
+                          <ActivityAnalyticsLink
+                            courseId={courseId}
+                            activityId={microLearning.id}
+                          />
+                        ),
+                        onClick: () => null,
+                      }
+                    : [],
+                  deletionElement,
+                ].flat()}
+                triggerIcon={faHandPointer}
+              />
+            </>
+          )}
+
+          {microLearning.status === PublicationStatus.Ended && (
+            <>
+              <MicroLearningAccessLink
+                microLearning={microLearning}
+                href={href}
+              />
+              <Dropdown
+                data={{ cy: `microlearning-actions-${microLearning.name}` }}
+                className={{
+                  item: 'p-1 hover:bg-gray-200',
+                  viewport: 'bg-white',
+                }}
+                trigger={t('manage.course.otherActions')}
+                items={[
+                  user?.catalyst
+                    ? getLTIAccessLink({
+                        href,
+                        setCopyToast,
+                        t,
+                        name: microLearning.name,
+                      })
+                    : [],
+                  {
+                    label: (
+                      <MicroLearningEvaluationLink
+                        quizName={microLearning.name}
+                        evaluationHref={evaluationHref}
+                      />
+                    ),
+                    onClick: () => null,
+                  },
+                  getActivityDuplicationAction({
+                    id: microLearning.id,
+                    text: t('manage.course.duplicateMicroLearning'),
+                    wizardMode: WizardMode.Microlearning,
+                    router: router,
+                    data: {
+                      cy: `duplicate-microlearning-${microLearning.name}`,
+                    },
+                  }),
+                  {
+                    label: (
+                      <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
+                        <FontAwesomeIcon icon={faArrowsRotate} />
+                        <div>
+                          {t(
+                            'manage.course.convertMicroLearningToPracticeQuiz'
+                          )}
+                        </div>
+                      </div>
+                    ),
+                    onClick: () =>
+                      router.push({
+                        pathname: '/',
+                        query: {
+                          elementId: microLearning.id,
+                          conversionMode: 'microLearningToPracticeQuiz',
                         },
-                        {
-                          label: (
-                            <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-                              <FontAwesomeIcon
-                                icon={faFlagCheckered}
-                                className="w-[1.2rem]"
-                              />
-                              <div>{t('manage.course.endMicroLearning')}</div>
-                            </div>
-                          ),
-                          onClick: () => setEndingModal(true),
-                          data: {
-                            cy: `end-microlearning-${microLearning.name}`,
-                          },
-                        },
-                      ]
-                    : []),
-                  ...(isPast
-                    ? [
-                        {
-                          label: (
-                            <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-                              <FontAwesomeIcon icon={faArrowsRotate} />
-                              <div>
-                                {t(
-                                  'manage.course.convertMicroLearningToPracticeQuiz'
-                                )}
-                              </div>
-                            </div>
-                          ),
-                          onClick: () =>
-                            router.push({
-                              pathname: '/',
-                              query: {
-                                elementId: microLearning.id,
-                                conversionMode: 'microLearningToPracticeQuiz',
-                              },
-                            }),
-                          data: {
-                            cy: `convert-microlearning-${microLearning.name}-to-practice-quiz`,
-                          },
-                        },
-                      ]
-                    : []),
+                      }),
+                    data: {
+                      cy: `convert-microlearning-${microLearning.name}-to-practice-quiz`,
+                    },
+                  },
+                  user?.featurePreview
+                    ? {
+                        label: (
+                          <ActivityAnalyticsLink
+                            courseId={courseId}
+                            activityId={microLearning.id}
+                          />
+                        ),
+                        onClick: () => null,
+                      }
+                    : [],
                   deletionElement,
                 ].flat()}
                 triggerIcon={faHandPointer}

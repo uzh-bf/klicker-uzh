@@ -10,7 +10,15 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useState } from 'react'
 
-function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
+function LazyHMACLink({
+  quizId,
+  params,
+  identifier,
+}: {
+  quizId: string
+  params: string
+  identifier: string
+}) {
   const quizHMAC = useQuery(GetLiveQuizHmacDocument, {
     variables: {
       id: quizId,
@@ -23,7 +31,7 @@ function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
 
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
-  }/sessions/${quizId}/evaluation?hmac=${quizHMAC.data?.liveQuizHMAC}${
+  }/quizzes/${quizId}/evaluation?hmac=${quizHMAC.data?.liveQuizHMAC}${
     params ? `&${params}` : ''
   }`
 
@@ -37,7 +45,7 @@ function LazyHMACLink({ quizId, params }: { quizId: string; params: string }) {
         passHref
       >
         <a
-          data-cy={`open-embedding-link-live-quiz-${quizId}`}
+          data-cy={`open-embedding-link-${identifier}`}
           className="max-w-[calc(100%-3.5rem)] break-words text-sm"
         >
           {link}
@@ -94,7 +102,11 @@ function EmbeddingModal({
       </div>
       <div className="mb-4">
         <div className="w-30 font-bold">{t('shared.generic.evaluation')}</div>
-        <LazyHMACLink quizId={quizId} params={``} />
+        <LazyHMACLink
+          quizId={quizId}
+          params={``}
+          identifier="generic-evaluation"
+        />
       </div>
       <div className="flex flex-col gap-2">
         {elements?.map((element, ix) => {
@@ -109,6 +121,7 @@ function EmbeddingModal({
               <LazyHMACLink
                 quizId={quizId}
                 params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}`}
+                identifier={`question-${ix}`}
               />
             </div>
           )
@@ -120,6 +133,7 @@ function EmbeddingModal({
           <LazyHMACLink
             quizId={quizId}
             params={`leaderboard=true&hideControls=true`}
+            identifier={`leaderboard`}
           />
         </div>
       </div>

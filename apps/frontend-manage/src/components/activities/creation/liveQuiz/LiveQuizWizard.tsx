@@ -11,6 +11,8 @@ import {
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
+  LQ_DEFAULT_CORRECT_POINTS,
+  LQ_DEFAULT_POINTS,
   LQ_MAX_BONUS_POINTS,
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
@@ -59,6 +61,8 @@ interface LiveQuizWizardProps {
     | 'displayName'
     | 'description'
     | 'pointsMultiplier'
+    | 'defaultPoints'
+    | 'defaultCorrectPoints'
     | 'maxBonusPoints'
     | 'timeToZeroBonus'
     | 'isConfusionFeedbackEnabled'
@@ -116,6 +120,14 @@ function LiveQuizWizard({
     isGamificationEnabled: yup
       .boolean()
       .required(t('manage.activityWizard.liveQuizGamified')),
+    defaultPoints: yup
+      .number()
+      .required(t('manage.activityWizard.liveQuizDefaultPointsReq'))
+      .min(0, t('manage.activityWizard.liveQuizDefaultPointsMin')),
+    defaultCorrectPoints: yup
+      .number()
+      .required(t('manage.activityWizard.liveQuizDefaultCorrectPointsReq'))
+      .min(0, t('manage.activityWizard.liveQuizDefaultCorrectPointsMin')),
     maxBonusPoints: yup
       .number()
       .required(t('manage.activityWizard.liveQuizMaxBonusPointsReq'))
@@ -161,6 +173,8 @@ function LiveQuizWizard({
     blocks: [{ timeLimit: undefined, elements: [] }],
     courseId: '',
     multiplier: '1',
+    defaultPoints: LQ_DEFAULT_POINTS,
+    defaultCorrectPoints: LQ_DEFAULT_CORRECT_POINTS,
     maxBonusPoints: LQ_MAX_BONUS_POINTS,
     timeToZeroBonus: LQ_TIME_TO_ZERO_BONUS,
     isGamificationEnabled: false,
@@ -221,6 +235,11 @@ function LiveQuizWizard({
     multiplier: initialValues?.pointsMultiplier
       ? String(initialValues?.pointsMultiplier)
       : formDefaultValues.multiplier,
+    defaultPoints:
+      initialValues?.defaultPoints ?? formDefaultValues.defaultPoints,
+    defaultCorrectPoints:
+      initialValues?.defaultCorrectPoints ??
+      formDefaultValues.defaultCorrectPoints,
     maxBonusPoints:
       initialValues?.maxBonusPoints ?? formDefaultValues.maxBonusPoints,
     timeToZeroBonus:
@@ -304,7 +323,7 @@ function LiveQuizWizard({
             )}
             name={formData.name}
             editMode={editMode}
-            viewElementHref="/sessions"
+            viewElementHref="/quizzes"
             onRestartForm={() => {
               setIsWizardCompleted(false)
               closeWizard()
@@ -322,7 +341,7 @@ function LiveQuizWizard({
                       id: data.createLiveQuiz!.id,
                     },
                   })
-                  router.push(`/sessions/${data.createLiveQuiz!.id}/cockpit`)
+                  router.push(`/quizzes/${data.createLiveQuiz!.id}/cockpit`)
                 }}
                 className={{ root: 'space-x-1' }}
               >

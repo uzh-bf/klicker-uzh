@@ -31,7 +31,7 @@ function ConfusionCharts({ confusionValues }: Props): React.ReactElement {
 
   return (
     <div className="flex w-full flex-row">
-      <div className="flex w-full flex-col sm:flex-row lg:flex-col">
+      <div className="flex w-full flex-col sm:flex-row md:flex-col">
         <div className="w-full">
           <div className="h-10 w-full">
             <H3 className={{ root: 'mr-2 inline-block' }}>

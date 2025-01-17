@@ -4,6 +4,7 @@ query GetPracticeQuizEvaluation($id: String!) {
     name
     displayName
     description
+    courseId
 
     ...EvaluationResults
   }
