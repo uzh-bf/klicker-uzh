@@ -8,7 +8,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     })
   })
 
-  it('signs in into student account', () => {
+  it('Sign in to student account', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
@@ -23,7 +23,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="login-logo"]').should('exist')
   })
 
-  it('signs in into student account on mobile', () => {
+  it('Sign in to student account on mobile', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('iphone-x')
@@ -39,7 +39,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.viewport('macbook-16')
   })
 
-  it('signs in into the student account and tries to modify the profile settings', () => {
+  it('Sign in to the student account and tries to modify the profile settings', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.get('[data-cy="login-logo"]').should('exist')
@@ -145,7 +145,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     )
   })
 
-  it('signs in into student account and modifies the password', function () {
+  it('Sign in into student account and modifies the password', function () {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
@@ -201,7 +201,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="homepage"]').should('exist')
   })
 
-  it('signs in into student account with the students email', () => {
+  it('Sign in into student account with the students email', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.viewport('macbook-16')
@@ -216,7 +216,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
     cy.get('[data-cy="login-logo"]').should('exist')
   })
 
-  it('signs in into lecturer account', () => {
+  it('Sign in into lecturer account', () => {
     cy.visit(Cypress.env('URL_MANAGE'))
     cy.clearAllCookies()
     cy.clearAllLocalStorage()

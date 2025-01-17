@@ -1,4 +1,4 @@
-describe('Test functionalities of frontend-control applicati functionon', function () {
+describe('Test functionalities of frontend-control application', function () {
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('C-control.json').then((data) => {
       this.data = data
@@ -75,6 +75,47 @@ describe('Test functionalities of frontend-control applicati functionon', functi
     cy.get('[data-cy="deactivate-block"]').click()
     cy.get('[data-cy="end-live-quiz"]').click()
     cy.findByText(this.data.quizName).should('not.exist')
+  })
+
+  // ! Cleanup
+  it('Cleanup: Delete the created and completed live quiz', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="live-quizzes"]`).click()
+
+    cy.findByText(this.data.quizName).should('exist')
+    cy.get(`[data-cy="delete-live-quiz-${this.data.quizName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.findByText(this.data.quizName).should('not.exist')
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted live quiz directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedLiveQuiz', {
+      lqName: this.data.quizName,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted live quiz with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+
+  it('Cleanup: Delete the created questions', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="element-item-${this.data.questionTitle}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-question-${this.data.questionTitle}"]`).click()
+    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.get(`[data-cy="element-item-${this.data.questionTitle}"]`).should(
+      'not.exist'
+    )
   })
 
   // TODO (later): check if quiz is running correctly / add student answer

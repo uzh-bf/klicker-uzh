@@ -10,6 +10,7 @@ describe('Test course creation and editing functionalities', function () {
     })
   })
 
+  // ! Part 1: Course creation
   it('Test the creation of a new course without gamification', function () {
     // log into frontend-manage
     cy.loginLecturer()
@@ -170,6 +171,7 @@ describe('Test course creation and editing functionalities', function () {
     )
   })
 
+  // ! Part 2: Randomized group creation
   it('Have 10 students join the course and the random assignment pool', function () {
     // get the course PIN from the lecturer view
     cy.loginLecturer()
@@ -315,6 +317,7 @@ describe('Test course creation and editing functionalities', function () {
     )
   })
 
+  // ! Part 3: Course overview, editing, and archiving
   it('Check the content of the course overview and edit course properties', function () {
     // log into frontend-manage
     cy.loginLecturer()
@@ -516,6 +519,7 @@ describe('Test course creation and editing functionalities', function () {
     )
   })
 
+  // ! Part 4: Course deletion and required confirmations
   it('Create a course with live quiz, practice quiz, and microlearning, and delete it again', function () {
     cy.loginLecturer()
 
@@ -631,6 +635,16 @@ describe('Test course creation and editing functionalities', function () {
     )
   })
 
+  it('Cleanup: Delete the live quiz that is not assigned to the course anymore', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="live-quizzes"]`).click()
+    cy.findByText(this.data.deletion.lqName).should('exist')
+    cy.get(`[data-cy="delete-live-quiz-${this.data.deletion.lqName}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.findByText(this.data.deletion.lqName).should('not.exist')
+  })
+
+  // ! Cleanup
   it('Cleanup: Delete all created courses', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -646,5 +660,17 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-deletion-participant-group-confirm"]').click()
     cy.get('[data-cy="course-deletion-modal-confirm"]').click()
     cy.findByText(this.data.course2.name).should('not.exist')
+  })
+
+  it('Cleanup: Delete the created questions', function () {
+    cy.loginLecturer()
+    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-question-${this.data.deletion.qTitle}"]`).click()
+    cy.get('[data-cy="confirm-question-deletion"]').click()
+    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
+      'not.exist'
+    )
   })
 })

@@ -19,7 +19,7 @@ describe('Create and solve a group activity', function () {
   })
 
   // ! Part 0: Preparation - Question Creation
-  it('Create questions required for microlearning creation', function () {
+  it('Create questions required for group activity creation', function () {
     cy.loginLecturer()
 
     // SC question with solution
@@ -631,7 +631,7 @@ describe('Create and solve a group activity', function () {
     })
   })
 
-  it('Login as the second group member and verify that submission was successful', function () {
+  it('Login as the second group member and verify that the submission was successful', function () {
     cy.loginStudent()
 
     // open the group activity
@@ -648,7 +648,7 @@ describe('Create and solve a group activity', function () {
     })
   })
 
-  it('Solve the group activity as a second student', function () {
+  it('Solve the group activity as a student of a second group', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME5') })
 
     // start the group activity
@@ -679,7 +679,7 @@ describe('Create and solve a group activity', function () {
     })
   })
 
-  it('Login as a student in a second group and start the group activity', function () {
+  it('Login as a student of another group and start the group activity', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
 
     // open the group activity
@@ -741,7 +741,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="submit-group-activity"]').should('not.exist')
   })
 
-  it("Verify that a started group activity can still be seen, but not submitted after it's ended", function () {
+  it('Verify that a started group activity can still be seen, but not submitted after it ended', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
 
     // open the group activity
@@ -759,7 +759,7 @@ describe('Create and solve a group activity', function () {
     cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 
-  it("Verify that a group activity can't be started after it's ended", function () {
+  it('Verify that a group activity cannot be started after it ended', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME3') })
 
     // open the group activity
@@ -981,7 +981,7 @@ describe('Create and solve a group activity', function () {
     )
   })
 
-  it("Verify that groups that have not attempted to submit anything to the group activity can't see any results", function () {
+  it('Verify that groups that have not attempted to submit anything to the group activity cannot see any results', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
 
     // check if results are correctly marked as passed
@@ -1024,6 +1024,24 @@ describe('Create and solve a group activity', function () {
     cy.get(
       `[data-cy="group-activity-${this.data.running.displayName}"]`
     ).should('not.exist')
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted group activity (with results) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedGroupActivity', {
+      gaName: this.data.running.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted group activity with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 
   // ! Part 5: Synchronous Group Activity
@@ -1108,7 +1126,7 @@ describe('Create and solve a group activity', function () {
     cy.wait(2000)
   })
 
-  it('Login as a student and start the synchronous group activity', function () {
+  it('Login as a second student and start the synchronous group activity', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
@@ -1159,7 +1177,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
   })
 
-  it('Login as a second student and check that the group activity cannot be started anymore', function () {
+  it('Login as another student and check that the group activity cannot be started anymore', function () {
     cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
     cy.get('[data-cy="student-course-existing-group-0"]').click()
@@ -1198,6 +1216,24 @@ describe('Create and solve a group activity', function () {
     cy.get(
       `[data-cy="group-activity-${this.data.synchronous.displayName}"]`
     ).should('not.exist')
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted group activity (with results) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedGroupActivity', {
+      gaName: this.data.synchronous.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted group activity with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 
   it('Cleanup: Delete all created questions', function () {

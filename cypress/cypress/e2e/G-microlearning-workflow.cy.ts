@@ -588,7 +588,7 @@ describe('Different microlearning workflows', function () {
     })
   })
 
-  // ! Part 2: Running Microlearning
+  // ! Part 2: Running Microlearning and Answer Workflows / Student Frontend
   function answerMicroLearningPreview() {
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
@@ -635,7 +635,7 @@ describe('Different microlearning workflows', function () {
     )
   })
 
-  it('Publish a microlearning that will immediately be running', function () {
+  it('Publish a microlearning that will be running immediately', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${this.data.course}"]`).click()
@@ -729,7 +729,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="student-stack-submit"]').click()
   })
 
-  it("Check that the student's previous response is correctly loaded and respond to the second stack", function () {
+  it("Check that the student's previous response is correctly loaded (despite cookie reset) and respond to the second stack", function () {
     // sign in as a student on a mobile device and respond to the all questions
     cy.clearAllLocalStorage()
     cy.clearAllSessionStorage()
@@ -865,6 +865,24 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="microlearning-actions-${this.data.duplication.name}"]`
     ).should('not.exist')
+  })
+
+  it('Cleanup (DB): Hard delete soft-deleted microlearning (with results) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedMicrolearning', {
+      mlName: this.data.running.nameNew,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted microlearning with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 
   // ! Part 3: Future Microlearning
@@ -1043,6 +1061,24 @@ describe('Different microlearning workflows', function () {
     ).should('not.exist')
   })
 
+  it('Cleanup (DB): Hard delete soft-deleted microlearning (with results) directly in database', function () {
+    cy.loginLecturer()
+    cy.wait(2000)
+    cy.task('removeSoftDeletedMicrolearning', {
+      mlName: this.data.completed.name,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error(
+          'No soft deleted microlearning with this name has been found'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
+  })
+
   // ! Part 5: Practice Quiz Conversion
   it('Convert the seeded past microlearning into a practice quiz', function () {
     cy.loginLecturer()
@@ -1107,11 +1143,13 @@ describe('Different microlearning workflows', function () {
     )
   })
 
+  // ! Cleanup
   it('Cleanup: Delete all created questions', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
     const questions = [
       this.data.questions.SC1.title,
+      this.data.questions.SC2.title,
       this.data.questions.MC.title,
       this.data.questions.KP.title,
       this.data.questions.NR.title,
