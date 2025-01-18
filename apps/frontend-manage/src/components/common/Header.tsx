@@ -132,7 +132,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const rightNavigation: NavigationItemProps[] = [
     {
       type: 'button',
-      key: 'quizzes-menubar-dropdown',
+      key: 'support-menubar-item',
       icon: faQuestionCircle,
       onClick: () => setShowSupportModal(true),
       className: { icon: '-mx-1 ' },
@@ -141,7 +141,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
       type: 'dropdown',
       key: 'quizzes-menubar-dropdown',
       icon: faPlayCircle,
-      disabled: quizzes?.length === 0,
+      disabled: !quizzes || quizzes.length === 0,
       className: {
         content: 'border-green-600 mr-1 mt-0.5',
         icon: twMerge(
