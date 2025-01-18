@@ -2047,6 +2047,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     analytics: {
       selectAnalyticsDashboard: 'Bitte wählen Sie ein Analyse-Dashboard aus',
+      activity: 'Aktivität',
+      performance: 'Leistung & Fortschritt',
+      quizzes: 'Quizzes',
+      olderCourses: 'Ältere Kurse...',
       activityDashboard: 'Aktivitäts-Dashboard',
       performanceDashboard: 'Leistungs- und Fortschritts-Dashboard',
       quizDashboard: 'Quiz-Dashboard',

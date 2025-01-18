@@ -2030,6 +2030,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     analytics: {
       selectAnalyticsDashboard: 'Please select an analytics dashboard',
+      activity: 'Activity',
+      performance: 'Performance & Progress',
+      quizzes: 'Quizzes',
+      olderCourses: 'Older courses...',
       activityDashboard: 'Activity Dashboard',
       performanceDashboard: 'Performance and Progress Dashboard',
       quizDashboard: 'Quiz Dashboard',

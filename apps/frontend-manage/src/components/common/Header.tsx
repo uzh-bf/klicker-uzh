@@ -2,20 +2,20 @@ import { useQuery } from '@apollo/client'
 import {
   faPlayCircle,
   faQuestionCircle,
-  faUserCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import {
   GetCollectionSharingRequestsDocument,
+  GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Navigation } from '@uzh-bf/design-system'
-import { Badge } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Navigation, { NavigationItemProps } from './Navigation'
 import SupportModal from './SupportModal'
 
 interface HeaderProps {
@@ -27,191 +27,204 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
-  const { data: requestData } = useQuery(GetCollectionSharingRequestsDocument)
-  const { data } = useQuery(GetUserRunningLiveQuizzesDocument)
-  const quizzes = data?.userRunningLiveQuizzes
+  const { data: requestData } = useQuery(GetCollectionSharingRequestsDocument) // TODO: generalize this query for the new catalogue
+  const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
+    fetchPolicy: 'cache-first',
+  })
+  const { data: courseData } = useQuery(GetUserCoursesDocument, {
+    fetchPolicy: 'cache-first',
+  })
 
-  const navigationItems = [
+  const quizzes = liveQuizData?.userRunningLiveQuizzes
+  const courses = courseData?.userCourses
+
+  const leftNavigation: NavigationItemProps[] = [
     {
-      href: '/',
+      type: 'button',
+      key: 'library-menubar-item',
       label: t('manage.general.library'),
+      onClick: () => router.push('/'),
       active: router.pathname == '/',
-      cy: 'library',
+      data: { cy: 'library' },
     },
     {
-      href: '/quizzes',
+      type: 'button',
+      key: 'live-quizzes-menubar-item',
       label: t('manage.general.liveQuizzes'),
+      onClick: () => router.push('/quizzes'),
       active: router.pathname == '/quizzes',
-      cy: 'live-quizzes',
+      data: { cy: 'live-quizzes' },
     },
     {
-      href: '/courses',
+      type: 'button',
+      key: 'courses-menubar-item',
       label: t('manage.general.courses'),
+      onClick: () => router.push('/courses'),
       active: router.pathname == '/courses',
-      cy: 'courses',
+      data: { cy: 'courses' },
     },
     {
-      new: true,
-      notification:
-        (requestData?.getCollectionSharingRequests?.length ?? 0) > 0,
-      href: '/resources',
+      type: 'button',
+      key: 'resources-menubar-item',
       label: t('manage.general.resources'),
+      icon: faBolt,
+      onClick: () => router.push('/resources'),
       active: router.pathname == '/resources',
-      cy: 'resources',
+      data: { cy: 'resources' },
+      className: { icon: 'text-orange-400' },
     },
     ...(user?.featurePreview
       ? [
           {
-            new: true,
-            href: '/analytics',
+            type: 'dropdown',
+            key: 'analytics-menubar-item',
             label: t('manage.general.analytics'),
-            active: router.pathname == '/analytics',
-            cy: 'analytics',
-          },
+            icon: faBolt,
+            active: router.pathname.includes('/analytics'),
+            elements: [
+              ...(courses?.slice(0, 5).map((course) => ({
+                key: `course-analytics-${course.id}`,
+                type: 'submenu',
+                label: course.name,
+                data: { cy: `course-analytics-menu-${course.name}` },
+                options: [
+                  {
+                    key: `activity-dashboard-${course.name}`,
+                    type: 'link',
+                    label: t('manage.analytics.activity'),
+                    onClick: () =>
+                      router.push(`/analytics/${course.id}/activity`),
+                  },
+                  {
+                    key: `progress-dashboard-${course.name}`,
+                    type: 'link',
+                    label: t('manage.analytics.performance'),
+                    onClick: () =>
+                      router.push(`/analytics/${course.id}/performance`),
+                  },
+                  {
+                    key: `quiz-dashboard-${course.name}`,
+                    type: 'link',
+                    label: t('manage.analytics.quizzes'),
+                    onClick: () =>
+                      router.push(`/analytics/${course.id}/quizzes`),
+                  },
+                ],
+              })) ?? []),
+              {
+                key: 'analytics-all-courses-separator',
+                type: 'separator',
+              },
+              {
+                key: 'analytics-all-courses',
+                type: 'link',
+                label: t('manage.analytics.olderCourses'),
+                onClick: () => router.push('/analytics'),
+              },
+            ],
+            data: { cy: 'analytics' },
+            className: { icon: 'text-orange-400' },
+          } as NavigationItemProps,
         ]
       : []),
   ]
 
+  const rightNavigation: NavigationItemProps[] = [
+    {
+      type: 'button',
+      key: 'quizzes-menubar-dropdown',
+      icon: faQuestionCircle,
+      onClick: () => setShowSupportModal(true),
+      className: { icon: '-mx-1 ' },
+    },
+    {
+      type: 'dropdown',
+      key: 'quizzes-menubar-dropdown',
+      icon: faPlayCircle,
+      disabled: quizzes?.length === 0,
+      className: {
+        content: 'border-green-600 mr-1 mt-0.5',
+        icon: twMerge(
+          '-mx-1',
+          quizzes?.length !== 0 ? 'text-green-600' : 'text-slate-400'
+        ),
+      },
+      elements:
+        quizzes?.map((quiz) => ({
+          key: quiz.id,
+          type: 'link',
+          label: quiz.name,
+          onClick: () => router.push(`/quizzes/${quiz.id}/cockpit`),
+        })) ?? [],
+    },
+    {
+      type: 'dropdown',
+      key: 'user-menubar-dropdown',
+      label: user?.shortname ?? '',
+      icon: faUser,
+      data: { cy: 'user-menu' },
+      elements: [
+        {
+          key: 'settings',
+          type: 'link',
+          label: t('shared.generic.settings'),
+          onClick: () => router.push('/user/settings'),
+          data: { cy: 'menu-user-settings' },
+        },
+        {
+          key: 'token',
+          type: 'link',
+          label: t('manage.general.generateToken'),
+          onClick: () => router.push('/token'),
+          data: { cy: 'token-generation-page' },
+        },
+        {
+          key: 'separator-token-logout',
+          type: 'separator',
+        },
+        {
+          key: 'logout',
+          type: 'link',
+          label: t('shared.generic.logout'),
+          onClick: () =>
+            router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout'),
+          data: { cy: 'logout' },
+        },
+      ],
+      className: {
+        content: 'mr-1',
+      },
+    },
+  ]
+
   return (
-    <div
-      className="flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700 print:!hidden"
-      data-cy="navigation"
-    >
-      <Navigation
-        className={{
-          root: 'rounded-none bg-slate-100',
-        }}
+    <>
+      <div
+        className="flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700 print:!hidden"
+        data-cy="navigation"
       >
-        {navigationItems.map((item) => (
-          <Navigation.ButtonItem
-            data={{ cy: item.cy }}
-            key={item.href}
-            label={
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <div
-                    className={twMerge(
-                      item.active &&
-                        'underline decoration-2 underline-offset-[0.3rem]'
-                    )}
-                  >
-                    {item.label}
-                  </div>
-                  {item.notification && (
-                    <div className="absolute -right-2.5 -top-0.5 h-3 w-3 rounded-full bg-red-600" />
-                  )}
-                </div>
-                {item.new && (
-                  <Badge className="py-0.25 rounded bg-green-700 px-1.5 text-xs font-semibold text-white hover:bg-green-800">
-                    {t('shared.generic.new')}
-                  </Badge>
-                )}
-              </div>
-            }
-            className={{
-              label:
-                'bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base text-slate-700 transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
-              root: 'group text-slate-700 transition-all duration-300 ease-in-out hover:bg-inherit',
-            }}
-            onClick={() => {
-              router.push(item.href)
-            }}
+        <div className="ml-4 flex flex-row items-center gap-1">
+          <Image
+            src="/favicon.ico" // TODO: replace this with high resolution, transparent background, different gray logo
+            alt="KlickerUZH Logo"
+            width={35}
+            height={35}
+            onClick={() => router.push('/')}
+            className="hover:cursor-pointer"
           />
-        ))}
-      </Navigation>
-      <Navigation
-        className={{
-          root: 'rounded-none bg-slate-100',
-        }}
-      >
-        <div className="hidden md:block">
-          <Navigation.TriggerItem
-            icon={
-              <FontAwesomeIcon
-                icon={faPlayCircle}
-                className="h-5 group-hover:text-white"
-              />
-            }
-            dropdownWidth="w-36"
-            className={{
-              root: 'group hidden h-9 w-9 md:block',
-              icon: twMerge(
-                'text-uzh-grey-80',
-                quizzes?.length !== 0 && 'text-green-600'
-              ),
-              disabled: '!text-gray-400',
-            }}
-            disabled={quizzes?.length === 0}
-          >
-            {quizzes && quizzes.length > 0 ? (
-              quizzes.map((quiz) => {
-                return (
-                  <Navigation.DropdownItem
-                    key={quiz.id}
-                    title={quiz.name}
-                    onClick={() => router.push(`/quizzes/${quiz.id}/cockpit`)}
-                    className={{ title: 'text-base font-bold', root: 'p-2' }}
-                  />
-                )
-              })
-            ) : (
-              <div />
-            )}
-          </Navigation.TriggerItem>
+          <Navigation items={leftNavigation} />
         </div>
-        <Navigation.ButtonItem
-          onClick={() => setShowSupportModal(true)}
-          label=""
-          icon={<FontAwesomeIcon icon={faQuestionCircle} className="h-5" />}
-          className={{
-            root: 'hover:text-uzh-blue-100 hidden h-9 bg-transparent text-slate-700 hover:bg-transparent group-hover:text-white md:block',
-          }}
+        <Navigation
+          items={rightNavigation}
+          className={{ root: '-gap-1 flex flex-row' }}
         />
-        <Navigation.TriggerItem
-          icon={
-            <FontAwesomeIcon
-              icon={faUserCircle}
-              className="h-5 text-slate-700"
-            />
-          }
-          label={user?.shortname}
-          dropdownWidth="w-[16rem]"
-          className={{
-            label:
-              'bg-gradient-to-r from-slate-700 to-slate-700 bg-[length:0%_2px] bg-left-bottom bg-no-repeat text-base text-slate-700 transition-all duration-500 ease-out group-hover:bg-[length:100%_2px]',
-            root: 'group flex flex-row items-center gap-1 text-slate-700 transition-all duration-300 ease-in-out hover:bg-inherit',
-            dropdown: 'gap-0 p-1.5',
-          }}
-          data={{ cy: 'user-menu' }}
-        >
-          <Navigation.DropdownItem
-            title={t('shared.generic.settings')}
-            onClick={() => router.push('/user/settings')}
-            className={{ title: 'text-base font-bold', root: 'p-2' }}
-            data={{ cy: 'menu-user-settings' }}
-          />
-          <Navigation.DropdownItem
-            title={t('manage.general.generateToken')}
-            onClick={() => router.push('/token')}
-            className={{ title: 'text-base font-bold', root: 'p-2' }}
-            data={{ cy: 'token-generation-page' }}
-          />
-          <Navigation.DropdownItem
-            title={t('shared.generic.logout')}
-            onClick={async () => {
-              router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout')
-            }}
-            className={{ title: 'text-base font-bold', root: 'p-2' }}
-            data={{ cy: 'logout' }}
-          />
-        </Navigation.TriggerItem>
-      </Navigation>
+      </div>
       <SupportModal
         open={showSupportModal}
         setOpen={setShowSupportModal}
         user={user}
       />
-    </div>
+    </>
   )
 }
 

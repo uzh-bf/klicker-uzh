@@ -115,7 +115,7 @@ function LiveQuizTimeline({
           <div className="flex w-full flex-row flex-wrap gap-2 sm:w-max">
             <Button
               onClick={() => setEmbedModalOpen(true)}
-              className={{ root: 'h-10' }}
+              className={{ root: 'h-8' }}
               data={{ cy: 'embed-evaluation-cockpit' }}
             >
               <Button.Icon>
@@ -143,7 +143,7 @@ function LiveQuizTimeline({
             >
               <Button
                 fluid
-                className={{ root: 'h-10' }}
+                className={{ root: 'h-8' }}
                 data={{ cy: 'audience-view-cockpit' }}
               >
                 <Button.Icon>
@@ -152,23 +152,20 @@ function LiveQuizTimeline({
                 <Button.Label>{t('manage.cockpit.audienceView')}</Button.Label>
               </Button>
             </a>
-          </div>
-          <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
             <Link
               passHref
               href={`/quizzes/${quizId}/evaluation`}
-              className="flex-1"
               rel="noopener noreferrer"
               target="_blank"
             >
               <Button
                 fluid
-                className={{ root: 'h-10' }}
+                className={{ root: 'h-8' }}
                 disabled={isFeedbackQuiz}
                 data={{ cy: 'evaluation-results-cockpit' }}
               >
                 <Button.Icon>
-                  <FontAwesomeIcon icon={faUpRightFromSquare} />
+                  <FontAwesomeIcon icon={faUpRightFromSquare} className="h-4" />
                 </Button.Icon>
                 <Button.Label>
                   {t('manage.cockpit.evaluationResults')}
@@ -176,12 +173,13 @@ function LiveQuizTimeline({
               </Button>
             </Link>
           </div>
+
           {isFeedbackQuiz && (
             <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
                 loading={loading}
                 className={{
-                  root: twMerge('bg-uzh-red-100 h-10 text-white'),
+                  root: twMerge('bg-uzh-red-100 h-8 text-white'),
                 }}
                 onClick={handleEndLiveQuiz}
                 data={{ cy: 'end-live-quiz-cockpit' }}
