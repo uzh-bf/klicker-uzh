@@ -113,8 +113,9 @@ model User {
   competencyTrees   CompetencyTree[]
   answerCollections AnswerCollection[]
 
-  userGroups        UserGroup[] @relation("UserGroupMembers")
-  managedUserGroups UserGroup[] @relation("UserGroupOwner")
+  userGroups                UserGroup[]         @relation("UserGroupMembers")
+  managedUserGroups         UserGroup[]         @relation("UserGroupOwner")
+  managedCatalogCollections CatalogCollection[]
 
   sharedObjects     Permission[] @relation("SharedObjects")
   objectPermissions Permission[] @relation("ObjectPermissions")

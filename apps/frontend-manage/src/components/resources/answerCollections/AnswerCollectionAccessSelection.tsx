@@ -28,17 +28,17 @@ function AnswerCollectionAccessSelection({
           data: { cy: 'answer-collection-access-private' },
         },
         {
-          value: CollectionAccess.Public,
-          label: <CollectionAccessLabel accessType={CollectionAccess.Public} />,
-          data: { cy: 'answer-collection-access-public' },
-        },
-        {
           value: CollectionAccess.Restricted,
           label: (
             <CollectionAccessLabel accessType={CollectionAccess.Restricted} />
           ),
           disabled: restrictedDisabled,
           data: { cy: 'answer-collection-access-restricted' },
+        },
+        {
+          value: CollectionAccess.Public,
+          label: <CollectionAccessLabel accessType={CollectionAccess.Public} />,
+          data: { cy: 'answer-collection-access-public' },
         },
       ]}
       data={{ cy: 'answer-collection-access' }}
