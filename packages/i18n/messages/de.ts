@@ -1903,6 +1903,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accessPUBLIC: 'Öffentlich',
       accessPRIVATE: 'Privat',
       accessRESTRICTED: 'Eingeschränkt',
+      catalogCollection: 'Katalog-Sammlung',
+      catalogCollectionTooltip:
+        'Hier können Sie eine Katalog-Sammlung wählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll. Nur Nutzer mit Zugriff auf die entsprechende Katalog-Sammlung können Ihre Antwort-Sammlung dort importieren oder Zugriff darauf anfragen. Wählen Sie keine Katalog-Sammlung, ist die Sammlung für alle Nutzer sichtbar.',
+      noCatalogCollectionSelected: 'Keine Katalog-Sammlung ausgewählt',
       descriptionTooltip:
         'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
       descriptionPlaceholder:
@@ -1918,11 +1922,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uniqueValuesRequired:
         'Alle Optionen in einer Antwort-Sammlung müssen einen einzigartigen Wert haben. Bitte stellen Sie sicher, dass keine zwei Antwortoptionen übereinstimmen.',
       infoAccessPUBLIC:
-        'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und importiert werden.',
+        'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und über den Katalog importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
       infoAccessPRIVATE:
-        'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+        'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder über den Katalog importiert werden. Sie können nach Erstellung der Sammlung einzelnen Nutzern oder Nutzergruppen Zugriff gewähren.',
       infoAccessRESTRICTED:
-        'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern angefragt und nach Ihrer Zustimmung importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+        'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
       collectionCreationSuccess:
         'Die Antwort-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:

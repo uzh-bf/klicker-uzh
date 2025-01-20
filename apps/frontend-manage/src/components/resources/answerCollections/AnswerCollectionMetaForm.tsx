@@ -20,6 +20,7 @@ import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
 import AnswerCollectionAccessSelection from './AnswerCollectionAccessSelection'
+import AnswerCollectionCatalogSelection from './AnswerCollectionCatalogSelection'
 
 function AnswerCollectionMetaForm({
   collection,
@@ -88,6 +89,9 @@ function AnswerCollectionMetaForm({
               }
             />
           </div>
+          {values.access !== CollectionAccess.Private ? (
+            <AnswerCollectionCatalogSelection className="mb-3" />
+          ) : null}
           <EditorField
             required
             label={t('shared.generic.description')}

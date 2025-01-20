@@ -1888,6 +1888,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessPUBLIC: 'Public',
       accessRESTRICTED: 'Restricted',
       accessPRIVATE: 'Private',
+      catalogCollection: 'Catalog Collection',
+      catalogCollectionTooltip:
+        'Here you can select a catalog collection in which your answer collection should be visible. Only users with access to the corresponding catalog collection can import your answer collection there or request access to it. If you do not select a catalog collection, the collection is visible to all users.',
+      noCatalogCollectionSelected: 'No catalog collection selected',
       descriptionTooltip:
         'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
       descriptionPlaceholder:
@@ -1903,11 +1907,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uniqueValuesRequired:
         'All options in an answer collection need to have a unique value. Please make sure that no two answers options coincide.',
       infoAccessPUBLIC:
-        'Public answer collections can be viewed and imported by all users.',
+        'Public Answer Collections can be viewed by all users and imported via the catalog. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
       infoAccessPRIVATE:
-        'Private answer collections are only visible to you and cannot be viewed or imported by other users. Once other users use your answer collection, you cannot change the access of your collection anymore.',
+        'Private answer collections are only visible to you and cannot be viewed by other users or imported via the catalog. You can grant access to individual users or user groups after creating the collection.',
       infoAccessRESTRICTED:
-        'Restricted answer collections can be requested by other users and imported after your approval. Once other users use your answer collection, you cannot change the access of your collection anymore.',
+        'Restricted answer collections can be requested by other users in the catalog and imported after your approval. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
       collectionCreationSuccess:
         'The answer collection was created successfully.',
       collectionCreationError:

@@ -21,6 +21,7 @@ import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
 import AnswerCollectionAccessSelection from './AnswerCollectionAccessSelection'
+import AnswerCollectionCatalogSelection from './AnswerCollectionCatalogSelection'
 
 type AnswerCollectionFormValues = {
   name?: string
@@ -72,6 +73,7 @@ function AnswerCollectionCreation({
         initialValues={{
           name: undefined,
           access: CollectionAccess.Private,
+          catalogCollectionId: '',
           description: undefined,
           entries: [{ value: undefined }, { value: undefined }],
         }}
@@ -116,7 +118,7 @@ function AnswerCollectionCreation({
       >
         {({ values, errors, isValid, isSubmitting }) => (
           <Form>
-            <div className="flex space-x-4">
+            <div className="mb-1 flex space-x-4">
               <FormikTextField
                 required
                 name="name"
@@ -126,6 +128,9 @@ function AnswerCollectionCreation({
               />
               <AnswerCollectionAccessSelection />
             </div>
+            {values.access !== CollectionAccess.Private ? (
+              <AnswerCollectionCatalogSelection />
+            ) : null}
             {typeof values.access !== 'undefined' ? (
               <UserNotification
                 message={t(`manage.resources.infoAccess${values.access}`)}
