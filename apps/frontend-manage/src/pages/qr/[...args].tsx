@@ -61,7 +61,7 @@ export function QR({
           <QRCode
             ref={ref as MutableRefObject<QRCode>}
             logoHeight={width / 3.34}
-            logoImage="/img/logos/KlickerLogo.png"
+            logoImage="/img/KlickerLogo.png"
             logoWidth={width}
             size={width * 3}
             value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
