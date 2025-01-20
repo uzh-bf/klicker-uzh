@@ -10,12 +10,12 @@ import {
   GetUserRunningLiveQuizzesDocument,
   User,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Navigation, NavigationItemProps } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Navigation, { NavigationItemProps } from './Navigation'
 import SupportModal from './SupportModal'
 
 interface HeaderProps {
@@ -203,9 +203,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
         className="flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700 print:!hidden"
         data-cy="navigation"
       >
-        <div className="ml-4 flex flex-row items-center gap-1">
+        <div className="ml-4 flex flex-row items-center gap-1.5">
           <Image
-            src="/favicon.ico" // TODO: replace this with high resolution, transparent background, different gray logo
+            src="/img/klicker_icon_transparent.png"
             alt="KlickerUZH Logo"
             width={35}
             height={35}
