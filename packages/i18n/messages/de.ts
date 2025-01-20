@@ -394,7 +394,7 @@ KlickerUZH bietet Ihnen als Kursteilnehmenden eine ganze Reihe von Funktionalit�
 
 #### Umfragen und Live-Quiz
 
-![Live-Quiz _auf der linken Seite_](/img/live_quiz/lq_student_view.png)
+![Live-Quiz _auf der linken Seite_](/img/06_live_quiz.png)
 
 Während der Vorlesung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen auf [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) oder in der KlickerUZH-App (oder, falls vorhanden, in OLAT unter dem Modul "Live Quiz") zu beantworten. Die Resultate werden ohne Verzögerung grafisch dargestellt und können so nach Ablauf der Antwortzeit von den Dozierenden präsentiert und kommentiert werden.
 
@@ -402,7 +402,7 @@ Für die Beantwortung der Fragen ist kein Login erforderlich. Mit einem Login k�
 
 #### Live Q&A und Echtzeit-Feedback
 
-![Live Q&A und Real-time Feedback _rechts_](/img/live_quiz/lq_student_view.png)
+![Live Q&A und Real-time Feedback _rechts_](/img/06_live_quiz.png)
 
 Haben Sie eine Frage oder möchten Sie direktes Feedback zur Vorlesung geben? Mit dem Live-Q&A können Sie den Dozierenden oder Assistierenden direkt während der Vorlesung eine Frage stellen - auch wenn Sie von zu Hause aus an der Vorlesung teilnehmen. Außerdem haben Sie mit dem KlickerUZH die Möglichkeit, den Dozierenden während der Vorlesung direktes Feedback zu Tempo und Schwierigkeitsgrad der Vorlesung zu geben.
 
@@ -410,7 +410,7 @@ Die Teilnahme ist unter [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
 
 #### Practice Quiz, Microlearning und Flashcards
 
-![Übungsquiz in OLAT](/img/practice_quiz/pq_olat_view.png)
+![Übungsquiz in OLAT](/img/practice_quiz/07_practice_quiz.png)
 
 Practice Quizzes, Microlearning und Flashcards ermöglichen es Ihnen, den Kursinhalt außerhalb der Vorlesungszeit zu wiederholen und direktes Feedback zu Ihrer Lösung zu erhalten. Practice Quizzes und Flashcards sind immer und beliebig oft verfügbar, Microlearning dagegen nur einmal und in einem begrenzten Zeitrahmen (z.B. einmal pro Woche). Alle Elemente sind direkt über die KlickerUZH-App oder über den von Ihren Dozierenden zur Verfügung gestellten Link (auch anonym) zugänglich. Die Lernkarten sind noch in der Umsetzung und werden nach ca. 5 Wochen im Herbstsemester 2023 verfügbar sein.
 
@@ -424,7 +424,7 @@ Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen verg
 
 #### Challenge
 
-![Gamification](/img/leaderboard/course_leaderboard.png)
+![Gamification](/img/leaderboard/08_gamification.png)
 
 Alle Aktivitäten im KlickerUZH sind, wenn sie von den Dozierenden aktiviert werden, Teil einer gamifizierten Challenge. Im Rahmen der Challenge sammeln Sie Punkte für die Kursrangliste (wenn Sie im eingeloggten Zustand teilnehmen), Erfahrungspunkte und Erfolge.
 
@@ -447,7 +447,7 @@ Je nachdem, wie Ihr Kurs technisch aufgebaut ist, können Sie wie folgt vorgehen
 
 Öffnen Sie das KlickerUZH-Modul im OLAT-Kurs Ihrer Lehrveranstaltung.  Um Ihr KlickerUZH-Konto zu verwalten oder ein Neues zu erstellen, klicken Sie auf "Konto verwalten" innerhalb des KlickerUZH-Moduls.
 
-![](/img/account/create_account.png)
+![](/img/account/01_create_account.png)
 
 Wenn Sie bereits ein KlickerUZH-Konto besitzen, besuchen Sie einfach eine der KlickerUZH-Aktivitäten im LMS-Kurs und Sie sollten automatisch eingeloggt sein. Falls Sie nicht automatisch eingeloggt sind, können Sie sich über den Button oben rechts einloggen.
 
@@ -457,7 +457,7 @@ Wenn noch kein KlickerUZH-Konto für Sie existiert, werden Sie von einer Willkom
 
 Wenn Sie bereits ein KlickerUZH-Konto haben (z.B. von anderen Kursen), öffnen Sie die KlickerUZH-App und klicken Sie unterhalb der Kursübersicht auf "Kurs beitreten". Geben Sie die 9-stellige PIN ein, die Sie von Ihren Dozierenden erhalten haben. Sie sind nun Teil des Kurses und können an allen Aktivitäten teilnehmen.
 
-![](/img/account/join_course.png)
+![](/img/account/05_join_course.png)
 
 Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden Ihres Kurses erhalten haben (z.B. _{pwa_url}/course/XYZ/join?pin=111111111_). Damit können Sie ein neues KlickerUZH-Konto mit einem (anonymen) Benutzernamen und einem Passwort erstellen. Mit diesen Daten können Sie sich dann einloggen und Ihren persönlichen Avatar erstellen sowie an Aktivitäten teilnehmen.
 
