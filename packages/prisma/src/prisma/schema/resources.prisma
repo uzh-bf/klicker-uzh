@@ -1,18 +1,13 @@
 // ----- ANSWER COLLECTIONS -----
 // #region
-enum CollectionAccess {
-    PUBLIC
-    PRIVATE
-    RESTRICTED
-}
 
 model AnswerCollection {
-    id          Int              @id @default(autoincrement())
+    id          Int          @id @default(autoincrement())
     name        String
     description String
-    version     Int              @default(1)
-    isDeleted   Boolean          @default(false)
-    access      CollectionAccess @default(PRIVATE)
+    version     Int          @default(1)
+    isDeleted   Boolean      @default(false)
+    access      ObjectAccess @default(PRIVATE)
 
     // optional catalog collection in which this answer collection will be available for import (if access is RESTRICTED or PUBLIC)
     catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -53,6 +48,12 @@ model AnswerCollectionEntry {
 
 // ----- CATALOG -----
 // #region
+enum ObjectAccess {
+    PUBLIC
+    PRIVATE
+    RESTRICTED
+}
+
 model CatalogCollection {
     id          String  @id @default(uuid()) @db.Uuid
     name        String

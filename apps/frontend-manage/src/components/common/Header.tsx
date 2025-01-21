@@ -73,6 +73,16 @@ function Header({ user }: HeaderProps): React.ReactElement {
       data: { cy: 'resources' },
       className: { icon: 'text-orange-400' },
     },
+    {
+      type: 'button',
+      key: 'catalog-menubar-item',
+      label: t('manage.general.catalog'),
+      icon: faBolt,
+      onClick: () => router.push('/catalog'),
+      active: router.pathname == '/catalog',
+      data: { cy: 'catalog' },
+      className: { icon: 'text-orange-400' },
+    },
     ...(user?.featurePreview
       ? [
           {

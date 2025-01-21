@@ -4,8 +4,8 @@ import { faInfoCircle, faTrashCan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
-  CollectionAccess,
   ModifyAnswerCollectionDocument,
+  ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -79,17 +79,17 @@ function AnswerCollectionMetaForm({
             />
             <AnswerCollectionAccessSelection
               privateDisabled={
-                (collection.access === CollectionAccess.Restricted ||
-                  collection.access === CollectionAccess.Public) &&
+                (collection.access === ObjectAccess.Restricted ||
+                  collection.access === ObjectAccess.Public) &&
                 (collection.numSharedUsers ?? 0) > 0
               }
               restrictedDisabled={
-                collection.access === CollectionAccess.Public &&
+                collection.access === ObjectAccess.Public &&
                 (collection.numSharedUsers ?? 0) > 0
               }
             />
           </div>
-          {values.access !== CollectionAccess.Private ? (
+          {values.access !== ObjectAccess.Private ? (
             <AnswerCollectionCatalogSelection className="mb-3" />
           ) : null}
           <EditorField

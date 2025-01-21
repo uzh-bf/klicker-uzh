@@ -6,7 +6,7 @@ import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
-import CollectionAccessLabel from './CollectionAccessLabel'
+import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 
 function AnswerCollectionViewingModal({
   collection,
@@ -49,7 +49,7 @@ function AnswerCollectionViewingModal({
         data-cy="viewing-collection-access"
       >
         <div className="font-bold">{t('manage.resources.access')}:</div>
-        <CollectionAccessLabel accessType={collection.access} />
+        <ObjectAccessLabel accessType={collection.access} />
       </div>
       <div className="mt-2">
         <div className="font-bold">{t('manage.resources.answerOptions')}</div>

@@ -803,6 +803,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
       resources: 'Ressourcen',
+      catalog: 'Katalog',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -1946,22 +1947,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
-      accessTypes: 'Zugriffs-Typem',
-      all: 'Alle',
       userShortnames: 'Nutzer Kurznamen',
       requestImport: 'Anfragen / Importieren',
-      noPublicRestrictedCollections:
-        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Antwort-Sammlungen gefunden werden. Sammlungen, welche bereits importiert oder angefragt wurden, werden hier nicht angezeigt.',
       requestImportCollection: 'Antwort-Sammlung anfragen / importieren',
       requestAccessMessage:
-        "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
+        "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' (von {owner}) beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
       importCollectionMessage:
-        "Hier können Sie die Antwort-Sammlung '<b>{name}</b>' automatisch zu Ihren Sammlungen hinzufügen. Diese steht Ihnen ab sofort zur Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
+        'Hier können Sie eine Kopie der Antwort-Sammlung "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie die importierte Antwort-Sammlung direkt verwenden oder bei Bedarf anpassen. Änderungen an der ursprünglichen Antwort-Sammlung haben keinen Einfluss auf Ihre importierte Kopie.',
       showAnswers: 'Antworten anzeigen',
       importCollection: 'Antwort-Sammlung importieren',
       requestAccess: 'Zugriff beantragen',
-      requestImportSuccess:
-        'Die Antwort-Sammlung wurder erfolgreich importiert / beantragt',
       importError:
         'Beim Importieren der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       requestError:
@@ -2000,6 +1995,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zugriffs-Anfrage wurde erfolgreich zurückgezogen.',
       cancellationFailed:
         'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+    },
+    catalog: {
+      userGroups: 'Nutzergruppen',
+      userGroupsComingSoon:
+        'Hier werden bald die von Ihnen gemanagten Nutzergruppen, sowie Nutzergruppen zu welchen Sie zugewiesen wurden, angezeigt.',
+      accessTypes: 'Zugriffs-Typem',
+      objectType: 'Objekt-Typ',
+      all: 'Alle',
+      objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
+      noPublicRestrictedCollections:
+        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden. Object, für welche bereits Zugriff angefragt oder bestätigt wurde, können nicht mehr ausgewählt werden.',
+      requestAccess: 'Zugriff beantragen',
+      importObject: 'Objekt importieren',
+      accessRequested: 'Zugriff beantragt',
+      importPublicResource: 'Öffentliche Ressource importieren',
+      answerCollectionRequestSuccess:
+        'Der Zugriff auf die ausgewählte Antwort-Sammlung wurde erfolgreich benatragt.',
+      answerCollectionImportSuccess:
+        'Eine Kopie der Antwort-Sammlung wurde erfolgreich in Ihr Konto importiert.',
+      requestPublicResource:
+        "Durch das Bentragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den erteilten Berechtigungen. Gewährte Berechtigungen können jederzeit vom Besitzer widerrufen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die 'Importieren' Option.",
     },
     groupActivity: {
       activityMissingOrNotCompleted:

@@ -7,13 +7,13 @@ import {
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import AnswerCollectionCreation from './answerCollections/AnswerCollectionCreation'
 import AnswerCollectionList from './answerCollections/AnswerCollectionList'
 import CollectionDeletionErrorToast from './answerCollections/CollectionDeletionErrorToast'
 import CollectionDeletionSuccessToast from './answerCollections/CollectionDeletionSuccessToast'
 import CollectionRemovalErrorToast from './answerCollections/CollectionRemovalErrorToast'
 import CollectionRemovalSuccessToast from './answerCollections/CollectionRemovalSuccessToast'
 import CollectionSharingRequests from './answerCollections/CollectionSharingRequests'
-import CreateAddCollection from './answerCollections/CreateAddCollection'
 import RequestCancellationErrorToast from './answerCollections/RequestCancellationErrorToast'
 import RequestCancellationSuccessToast from './answerCollections/RequestCancellationSuccessToast'
 import SharedAnswerCollectionList from './SharedAnswerCollectionList'
@@ -37,7 +37,7 @@ function AnswerCollections() {
       <div className="mb-2">
         {t('manage.resources.answerCollectionsDescription')}
       </div>
-      <CreateAddCollection />
+      <AnswerCollectionCreation />
       <CollectionSharingRequests />
       <AnswerCollectionList
         collections={(data?.getAnswerCollections ?? []).filter(

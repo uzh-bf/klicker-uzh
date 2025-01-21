@@ -1,11 +1,25 @@
+/*
+  Warnings:
+
+  - The `access` column on the `AnswerCollection` table would be dropped and recreated. This will lead to data loss if there is data in the column.
+
+*/
+-- CreateEnum
+CREATE TYPE "ObjectAccess" AS ENUM ('PUBLIC', 'PRIVATE', 'RESTRICTED');
+
 -- AlterEnum
 ALTER TYPE "AccessLevel" ADD VALUE 'ADMIN';
 
 -- AlterTable
-ALTER TABLE "AnswerCollection" ADD COLUMN     "catalogCollectionId" UUID;
+ALTER TABLE "AnswerCollection" ADD COLUMN     "catalogCollectionId" UUID,
+DROP COLUMN "access",
+ADD COLUMN     "access" "ObjectAccess" NOT NULL DEFAULT 'PRIVATE';
 
 -- AlterTable
 ALTER TABLE "Permission" ADD COLUMN     "catalogCollectionId" UUID;
+
+-- DropEnum
+DROP TYPE "CollectionAccess";
 
 -- CreateTable
 CREATE TABLE "CatalogCollection" (

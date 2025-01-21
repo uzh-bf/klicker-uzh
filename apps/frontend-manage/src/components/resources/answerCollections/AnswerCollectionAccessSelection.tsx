@@ -1,7 +1,7 @@
-import { CollectionAccess } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import CollectionAccessLabel from './CollectionAccessLabel'
+import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 
 function AnswerCollectionAccessSelection({
   restrictedDisabled = false,
@@ -20,24 +20,20 @@ function AnswerCollectionAccessSelection({
       tooltip={t('manage.resources.accessTooltip')}
       items={[
         {
-          value: CollectionAccess.Private,
-          label: (
-            <CollectionAccessLabel accessType={CollectionAccess.Private} />
-          ),
+          value: ObjectAccess.Private,
+          label: <ObjectAccessLabel accessType={ObjectAccess.Private} />,
           disabled: privateDisabled,
           data: { cy: 'answer-collection-access-private' },
         },
         {
-          value: CollectionAccess.Restricted,
-          label: (
-            <CollectionAccessLabel accessType={CollectionAccess.Restricted} />
-          ),
+          value: ObjectAccess.Restricted,
+          label: <ObjectAccessLabel accessType={ObjectAccess.Restricted} />,
           disabled: restrictedDisabled,
           data: { cy: 'answer-collection-access-restricted' },
         },
         {
-          value: CollectionAccess.Public,
-          label: <CollectionAccessLabel accessType={CollectionAccess.Public} />,
+          value: ObjectAccess.Public,
+          label: <ObjectAccessLabel accessType={ObjectAccess.Public} />,
           data: { cy: 'answer-collection-access-public' },
         },
       ]}

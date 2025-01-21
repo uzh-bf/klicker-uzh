@@ -63,7 +63,7 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionEntry,
-  CollectionAccess,
+  ObjectAccess,
 } from './resource.js'
 import {
   FileUploadSAS,
@@ -1183,7 +1183,7 @@ export const Mutation = builder.mutationType({
         type: AnswerCollection,
         args: {
           name: t.arg.string({ required: true }),
-          access: t.arg({ type: CollectionAccess, required: true }),
+          access: t.arg({ type: ObjectAccess, required: true }),
           description: t.arg.string({ required: true }),
           answers: t.arg.stringList({ required: true }),
         },
@@ -1198,7 +1198,7 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           name: t.arg.string({ required: false }),
-          access: t.arg({ type: CollectionAccess, required: false }),
+          access: t.arg({ type: ObjectAccess, required: false }),
           description: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {

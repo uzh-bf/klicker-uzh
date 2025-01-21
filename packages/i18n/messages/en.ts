@@ -804,6 +804,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
       resources: 'Resources',
+      catalog: 'Catalog',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
@@ -1931,22 +1932,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The changes to the answer collection have been saved successfully.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
-      accessTypes: 'Access Types',
-      all: 'All',
       userShortnames: 'User Shortnames',
       requestImport: 'Request / Import',
-      noPublicRestrictedCollections:
-        'No public or restricted answer collections were found for the entered search criteria and filters. Collections that have already been imported or requested are not shown here.',
       requestImportCollection: 'Request / Import Answer Collection',
       requestAccessMessage:
-        'Here you can request access to the answer collection "<b>{name}</b>". The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once the owner accepts your request, the entire answer collection will be available to you automatically when creating the corresponding question types and on this page for viewing.',
+        'Here you can request access to the answer collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared answer collection in your questions.',
       importCollectionMessage:
-        'Here you can add the answer collection "<b>{name}</b>" to your collections. It is then immediately available to you when creating the corresponding question types and for viewing on this page.',
+        'Here you can import a copy of the answer collection "<b>{name}</b>" (by {owner}) to your own account. After the import is completed, you can directly use the imported answer collection or modify it as needed. Changes to the original answer collection will not affect your imported copy.',
       showAnswers: 'Show Answers',
       importCollection: 'Import Answer Collection',
       requestAccess: 'Request Access',
-      requestImportSuccess:
-        'The answer collection was successfully imported / requested.',
       importError:
         'An error occurred while importing the answer collection. Please try again or contact the support.',
       requestError:
@@ -1984,6 +1979,27 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       cancellationSuccessful: 'The access request was successfully withdrawn.',
       cancellationFailed:
         'An error occurred while withdrawing the access request. Please try again or contact the support.',
+    },
+    catalog: {
+      userGroups: 'User Groups',
+      userGroupsComingSoon:
+        'Here you will soon see the user groups you manage, as well as user groups to which you have been assigned.',
+      accessTypes: 'Access Types',
+      objectType: 'Object Type',
+      all: 'All',
+      objectTypeANSWER_COLLECTION: 'Answer Collection',
+      noPublicRestrictedCollections:
+        'No public or restricted objects were found for the entered search criteria and filters. Objects for which access has already been requested or confirmed cannot be selected anymore.',
+      requestAccess: 'Request Access',
+      importObject: 'Import Object',
+      accessRequested: 'Access requested',
+      answerCollectionRequestSuccess:
+        'The access to the selected answer collection was successfully requested.',
+      importPublicResource: 'Import Public Resource',
+      answerCollectionImportSuccess:
+        'A copy of the answer collection was successfully imported into your account.',
+      requestPublicResource:
+        "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
     },
     groupActivity: {
       activityMissingOrNotCompleted:

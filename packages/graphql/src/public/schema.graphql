@@ -5,6 +5,7 @@ schema {
 }
 
 enum AccessLevel {
+  ADMIN
   READ
   WRITE
 }
@@ -93,7 +94,7 @@ enum ActivityType {
 }
 
 type AnswerCollection {
-  access: CollectionAccess!
+  access: ObjectAccess!
   accessType: AccessType!
   description: String!
   entries: [AnswerCollectionEntry!]
@@ -158,6 +159,21 @@ type AwardEntry {
   participant: Participant
   participantGroup: ParticipantGroup
   type: String!
+}
+
+type CatalogObject {
+  access: ObjectAccess!
+  id: Int
+  isOwner: Boolean!
+  isSharedOrRequested: Boolean!
+  name: String!
+  objectType: CatalogObjectType!
+  ownerShortname: String
+  uuid: String
+}
+
+enum CatalogObjectType {
+  ANSWER_COLLECTION
 }
 
 type Choice {
@@ -254,12 +270,6 @@ type ChoicesInstanceEvaluation {
 
 type ClassAchievementInstance {
   id: Int!
-}
-
-enum CollectionAccess {
-  PRIVATE
-  PUBLIC
-  RESTRICTED
 }
 
 type ConfusionSummary {
@@ -1046,7 +1056,7 @@ type Mutation {
   changeParticipantLocale(locale: LocaleType!): Participant
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
-  createAnswerCollection(access: CollectionAccess!, answers: [String!]!, description: String!, name: String!): AnswerCollection
+  createAnswerCollection(access: ObjectAccess!, answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -1112,7 +1122,7 @@ type Mutation {
   manipulateSelectionQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
-  modifyAnswerCollection(access: CollectionAccess, description: String, id: Int!, name: String): AnswerCollection
+  modifyAnswerCollection(access: ObjectAccess, description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -1258,6 +1268,12 @@ input NumericalRestrictionsInput {
 type NumericalSolutionRange {
   max: Float
   min: Float
+}
+
+enum ObjectAccess {
+  PRIVATE
+  PUBLIC
+  RESTRICTED
 }
 
 input OptionsChoicesInput {
@@ -1477,10 +1493,10 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
-  getAnswerCollectionSelection: [AnswerCollection!]
   getAnswerCollections: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
+  getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCollectionSharingRequests: [AnswerCollectionSharingRequest!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
@@ -1503,6 +1519,7 @@ type Query {
   getPracticeQuizList: [Course!]
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
+  getSingleAnswerCollectionCatalog(collectionId: Int!): AnswerCollection
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]

@@ -111,6 +111,18 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedCompetencyTree(prisma)
   await seedEmailTemplates(prisma)
 
+  // seed catalog collection for objects that are not assigned to any custom catalog
+  const missingCatalogCollection = await prisma.catalogCollection.upsert({
+    where: {
+      id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+    },
+    create: {
+      id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+      name: '',
+    },
+    update: {},
+  })
+
   // seed answer collections
   const answerCollections = await Promise.all(
     DATA_TEST.ANSWER_COLLECTIONS.map(async (data) => {
@@ -133,6 +145,14 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           entries: {
             create: data.entries,
           },
+          catalogCollection:
+            data.access !== 'PRIVATE'
+              ? {
+                  connect: {
+                    id: missingCatalogCollection.id,
+                  },
+                }
+              : undefined,
         },
         update: {},
         include: {

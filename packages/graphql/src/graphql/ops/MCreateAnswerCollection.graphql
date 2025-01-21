@@ -1,6 +1,6 @@
 mutation CreateAnswerCollection(
   $name: String!
-  $access: CollectionAccess!
+  $access: ObjectAccess!
   $description: String!
   $answers: [String!]!
 ) {

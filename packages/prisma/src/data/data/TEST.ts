@@ -7,7 +7,7 @@ export const ANSWER_COLLECTIONS = [
     name: 'Public Collection (Fruits)',
     description:
       'This collection contains questions about fruits. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.CollectionAccess.PUBLIC,
+    access: Prisma.ObjectAccess.PUBLIC,
     entries: [
       {
         value: 'Apple',
@@ -30,7 +30,7 @@ export const ANSWER_COLLECTIONS = [
     name: 'Private Collection (Vegetables)',
     description:
       'This collection contains questions about vegetables. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.CollectionAccess.PRIVATE,
+    access: Prisma.ObjectAccess.PRIVATE,
     entries: [
       {
         value: 'Artichoke',
@@ -56,7 +56,7 @@ export const ANSWER_COLLECTIONS = [
     name: 'Restricted Collection (Animals)',
     description:
       'This collection contains questions about animals. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.CollectionAccess.RESTRICTED,
+    access: Prisma.ObjectAccess.RESTRICTED,
     entries: [
       {
         value: 'Antelope',

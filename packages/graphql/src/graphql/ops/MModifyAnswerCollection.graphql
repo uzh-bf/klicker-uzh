@@ -1,7 +1,7 @@
 mutation ModifyAnswerCollection(
   $id: Int!
   $name: String
-  $access: CollectionAccess
+  $access: ObjectAccess
   $description: String
 ) {
   modifyAnswerCollection(

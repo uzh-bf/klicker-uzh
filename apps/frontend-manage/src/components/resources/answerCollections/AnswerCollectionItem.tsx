@@ -1,17 +1,14 @@
 import { faClock, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  AnswerCollection,
-  CollectionAccess,
-} from '@klicker-uzh/graphql/dist/ops'
+import { AnswerCollection, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
-import CollectionAccessLabel from './CollectionAccessLabel'
 import CollectionDeletionModal from './CollectionDeletionModal'
 import CollectionRemovalModal from './CollectionRemovalModal'
 import RequestCancellationModal from './RequestCancellationModal'
@@ -46,22 +43,19 @@ function AnswerCollectionItem({
   const [removalModal, setRemovalModal] = useState(false)
   const [cancellationModal, setCancellationModal] = useState(false)
 
-  const collectionAccessMap: Record<CollectionAccess, React.ReactNode> = {
-    [CollectionAccess.Private]: (
-      <CollectionAccessLabel
-        accessType={CollectionAccess.Private}
+  const collectionAccessMap: Record<ObjectAccess, React.ReactNode> = {
+    [ObjectAccess.Private]: (
+      <ObjectAccessLabel
+        accessType={ObjectAccess.Private}
         className="text-sm"
       />
     ),
-    [CollectionAccess.Public]: (
-      <CollectionAccessLabel
-        accessType={CollectionAccess.Public}
-        className="text-sm"
-      />
+    [ObjectAccess.Public]: (
+      <ObjectAccessLabel accessType={ObjectAccess.Public} className="text-sm" />
     ),
-    [CollectionAccess.Restricted]: (
-      <CollectionAccessLabel
-        accessType={CollectionAccess.Restricted}
+    [ObjectAccess.Restricted]: (
+      <ObjectAccessLabel
+        accessType={ObjectAccess.Restricted}
         className="text-sm"
       />
     ),
