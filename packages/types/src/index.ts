@@ -132,7 +132,8 @@ export type CatalogObject = {
   objectType: CatalogObjectType
   access: ObjectAccess
   ownerShortname?: string
-  isSharedOrRequested: boolean
+  isRequested: boolean
+  isShared: boolean
   isOwner: boolean
 }
 

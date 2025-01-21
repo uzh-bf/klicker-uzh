@@ -1993,6 +1993,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestAccess: 'Request Access',
       importObject: 'Import Object',
       accessRequested: 'Access requested',
+      accessGranted: 'Access granted',
       answerCollectionRequestSuccess:
         'The access to the selected answer collection was successfully requested.',
       importPublicResource: 'Import Public Resource',

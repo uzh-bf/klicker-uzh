@@ -2009,6 +2009,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestAccess: 'Zugriff beantragen',
       importObject: 'Objekt importieren',
       accessRequested: 'Zugriff beantragt',
+      accessGranted: 'Zugriff gewährt',
       importPublicResource: 'Öffentliche Ressource importieren',
       answerCollectionRequestSuccess:
         'Der Zugriff auf die ausgewählte Antwort-Sammlung wurde erfolgreich benatragt.',

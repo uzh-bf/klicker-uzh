@@ -165,7 +165,8 @@ type CatalogObject {
   access: ObjectAccess!
   id: Int
   isOwner: Boolean!
-  isSharedOrRequested: Boolean!
+  isRequested: Boolean!
+  isShared: Boolean!
   name: String!
   objectType: CatalogObjectType!
   ownerShortname: String

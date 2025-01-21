@@ -6,7 +6,8 @@ query GetCatalogObjects($catalogCollectionId: String) {
     objectType
     access
     ownerShortname
-    isSharedOrRequested
+    isRequested
+    isShared
     isOwner
   }
 }

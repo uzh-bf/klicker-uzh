@@ -66,7 +66,8 @@ function ImportAnswerCollectionModal({
   return (
     <Modal
       open={open}
-      onClose={() => {
+      onClose={(e) => {
+        e?.stopPropagation()
         onClose()
         setShowEntries(false)
       }}
@@ -121,7 +122,8 @@ function ImportAnswerCollectionModal({
             <Button
               className={{ root: 'h-8 border-red-600 text-base' }}
               data={{ cy: 'cancel-answer-collection-import' }}
-              onClick={() => {
+              onClick={(e) => {
+                e?.stopPropagation()
                 setShowEntries(false)
                 onClose()
               }}
@@ -131,7 +133,8 @@ function ImportAnswerCollectionModal({
             </Button>
             <Button
               className={{ root: 'border-primary-80 h-8 text-base' }}
-              onClick={async () => {
+              onClick={async (e) => {
+                e?.stopPropagation()
                 // TODO: implement on click logic to request answer collection -> verify access to catalogue collection, then check remaining things as before, update cache
                 // const res = await importAnswerCollection()
                 // if (res.data?.importAnswerCollection) {

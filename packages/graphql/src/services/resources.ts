@@ -830,6 +830,10 @@ async function verifyUserAccessCatalogCollection(
   { catalogCollectionId }: { catalogCollectionId: string },
   ctx: ContextWithUser
 ) {
+  if (catalogCollectionId === MISSING_CATALOG_COLLECTION_ID) {
+    return true
+  }
+
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId,
@@ -842,16 +846,15 @@ async function verifyUserAccessCatalogCollection(
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
             },
-            // TODO: verify that user group access is checked correctly (and add user group support for all other sharing-related queries/mutations)
-            {
-              userGroup: {
-                members: {
-                  some: {
-                    id: ctx.user.sub,
-                  },
-                },
-              },
-            },
+            // {
+            //   userGroup: {
+            //     members: {
+            //       some: {
+            //         id: ctx.user.sub,
+            //       },
+            //     },
+            //   },
+            // },
           ],
         },
       },
@@ -966,7 +969,16 @@ export async function getCatalogObjects(
       objectType: CatalogObjectType.ANSWER_COLLECTION,
       access: collection.access,
       ownerShortname: collection.owner?.shortname,
-      isSharedOrRequested: collection.permissions.length > 0,
+      isRequested:
+        collection.permissions.length > 0 &&
+        typeof collection.permissions[0] !== 'undefined' &&
+        collection.permissions[0].permissionStatus ===
+          DB.PermissionStatus.REQUESTED,
+      isShared:
+        collection.permissions.length > 0 &&
+        typeof collection.permissions[0] !== 'undefined' &&
+        collection.permissions[0].permissionStatus ===
+          DB.PermissionStatus.GRANTED,
       isOwner: collection.ownerId === ctx.user.sub,
     })) ?? []
 
@@ -1059,7 +1071,8 @@ export async function requestAnswerCollection(
         objectType: CatalogObjectType.ANSWER_COLLECTION,
         access: updatedCollection.access,
         ownerShortname: permissionRequest.objectOwner?.shortname,
-        isSharedOrRequested: true,
+        isRequested: true,
+        isShared: false,
         isOwner: false,
       }
     : null

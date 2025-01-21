@@ -76,7 +76,8 @@ function RequestAnswerCollectionModal({
   return (
     <Modal
       open={open}
-      onClose={() => {
+      onClose={(e) => {
+        e?.stopPropagation()
         onClose()
       }}
       title={t('manage.catalog.requestAccess')}
@@ -109,7 +110,8 @@ function RequestAnswerCollectionModal({
             <Button
               className={{ root: 'h-8 border-red-600 text-base' }}
               data={{ cy: 'cancel-answer-collection-request' }}
-              onClick={() => {
+              onClick={(e) => {
+                e?.stopPropagation()
                 onClose()
               }}
             >
@@ -118,7 +120,8 @@ function RequestAnswerCollectionModal({
             </Button>
             <Button
               className={{ root: 'border-primary-80 h-8 text-base' }}
-              onClick={async () => {
+              onClick={async (e) => {
+                e?.stopPropagation()
                 const res = await requestAnswerCollection()
                 if (res.data?.requestAnswerCollection) {
                   onSuccess()

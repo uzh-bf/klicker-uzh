@@ -6,7 +6,8 @@ mutation RequestAnswerCollection($collectionId: Int!) {
     objectType
     access
     ownerShortname
-    isSharedOrRequested
+    isRequested
+    isShared
     isOwner
   }
 }
