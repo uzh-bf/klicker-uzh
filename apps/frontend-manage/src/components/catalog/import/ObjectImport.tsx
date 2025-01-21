@@ -73,13 +73,6 @@ function ObjectImport({
               key={`catalog-object-${object.id}-${object.name}`}
               object={object}
             />
-            // TODO: remove once functionality has been migrated
-            // <AnswerCollectionImportItem
-            //   key={`collection-button-selection-${collection.id}`}
-            //   collection={collection}
-            //   onClose={onClose}
-            //   onSuccess={onSuccess}
-            // />
           ))
         ) : (
           <UserNotification

@@ -16917,7 +16917,7 @@
             ],
             "type": {
               "kind": "OBJECT",
-              "name": "AnswerCollection",
+              "name": "CatalogObject",
               "ofType": null
             },
             "isDeprecated": false,

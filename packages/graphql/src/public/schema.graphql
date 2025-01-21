@@ -1133,7 +1133,7 @@ type Mutation {
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   removeAnswerCollection(collectionId: Int!): Int
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
-  requestAnswerCollection(collectionId: Int!): AnswerCollection
+  requestAnswerCollection(collectionId: Int!): CatalogObject
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback

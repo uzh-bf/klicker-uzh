@@ -100,7 +100,7 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
         </div>
       ) : null}
       {object.isSharedOrRequested ? (
-        <div className="flex flex-row">
+        <div className="flex flex-row items-center gap-1.5">
           <FontAwesomeIcon icon={faClock} />
           <div>{t('manage.catalog.accessRequested')}</div>
         </div>

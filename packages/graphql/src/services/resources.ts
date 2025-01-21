@@ -677,89 +677,6 @@ export async function importAnswerCollection(
   }
 }
 
-export async function requestAnswerCollection(
-  { collectionId }: { collectionId: number },
-  ctx: ContextWithUser
-) {
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      ownerId: {
-        not: null,
-      },
-    },
-    include: {
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-      },
-    },
-  })
-
-  // check if sharing request or granted access already exist and if there is still an owner that can grant access
-  if (
-    !collection ||
-    collection.ownerId === null ||
-    collection.access !== DB.ObjectAccess.RESTRICTED ||
-    collection.permissions.length > 0
-  ) {
-    return null
-  }
-
-  // create a new permission request
-  const permissionRequest = await ctx.prisma.permission.create({
-    data: {
-      accessLevel: DB.AccessLevel.READ,
-      permissionStatus: DB.PermissionStatus.REQUESTED,
-      answerCollection: {
-        connect: {
-          id: collectionId,
-        },
-      },
-      user: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
-      objectOwner: {
-        connect: {
-          id: collection.ownerId,
-        },
-      },
-    },
-    include: {
-      answerCollection: true,
-      objectOwner: {
-        select: {
-          shortname: true,
-        },
-      },
-    },
-  })
-
-  // TODO: notify owner of the collection by e-mail that there is a new access request
-
-  // invalidate cache for the imported collection
-  const updatedCollection = permissionRequest.answerCollection
-  ctx.emitter.emit('invalidate', {
-    typename: 'AnswerCollection',
-    id: updatedCollection?.id,
-  })
-
-  // return success of the request
-  return updatedCollection
-    ? {
-        ...updatedCollection,
-        accessType: AccessType.SHARED,
-        sharingStatus: permissionRequest.permissionStatus,
-        sharingLevel: permissionRequest.accessLevel,
-        ownerShortname: permissionRequest.objectOwner?.shortname,
-        isRemovable: true, // requested collection cannot be used already
-      }
-    : null
-}
-
 export async function cancelAnswerCollectionRequest(
   {
     collectionId,
@@ -925,7 +842,7 @@ async function verifyUserAccessCatalogCollection(
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
             },
-            // TODO: verify that user group access is checked correctly
+            // TODO: verify that user group access is checked correctly (and add user group support for all other sharing-related queries/mutations)
             {
               userGroup: {
                 members: {
@@ -974,7 +891,7 @@ export async function getSingleAnswerCollectionCatalog(
     return null
   }
 
-  // verify that the user has access to the collection the answer collection is contained in
+  // verify that the user has access to the catalog collection the answer collection is contained in
   const validAccess = collection.catalogCollectionId
     ? verifyUserAccessCatalogCollection(
         { catalogCollectionId: collection.catalogCollectionId },
@@ -1054,6 +971,98 @@ export async function getCatalogObjects(
     })) ?? []
 
   return [...mappedAnswerCollections]
+}
+
+export async function requestAnswerCollection(
+  { collectionId }: { collectionId: number },
+  ctx: ContextWithUser
+) {
+  // fetch the answer collection including potential pending permission requests
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      ownerId: {
+        not: null,
+      },
+    },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+        },
+      },
+    },
+  })
+
+  // check if granted / requested permission already exist and if there is still an owner that can grant access
+  if (
+    !collection ||
+    collection.ownerId === null ||
+    collection.permissions.length > 0
+  ) {
+    return null
+  }
+
+  // verify that the user has access to the catalog collection the answer collection is contained in
+  const validAccess = collection.catalogCollectionId
+    ? verifyUserAccessCatalogCollection(
+        { catalogCollectionId: collection.catalogCollectionId },
+        ctx
+      )
+    : true
+
+  // create a new permission request
+  const permissionRequest = await ctx.prisma.permission.create({
+    data: {
+      accessLevel: DB.AccessLevel.READ,
+      permissionStatus: DB.PermissionStatus.REQUESTED,
+      answerCollection: {
+        connect: {
+          id: collectionId,
+        },
+      },
+      user: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+      objectOwner: {
+        connect: {
+          id: collection.ownerId,
+        },
+      },
+    },
+    include: {
+      answerCollection: true,
+      objectOwner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  // TODO: notify owner of the collection by e-mail that there is a new access request
+
+  // invalidate cache for the imported collection
+  const updatedCollection = permissionRequest.answerCollection
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: updatedCollection?.id,
+  })
+
+  // return updated catalog object
+  return updatedCollection
+    ? {
+        id: updatedCollection.id,
+        name: updatedCollection.name,
+        objectType: CatalogObjectType.ANSWER_COLLECTION,
+        access: updatedCollection.access,
+        ownerShortname: permissionRequest.objectOwner?.shortname,
+        isSharedOrRequested: true,
+        isOwner: false,
+      }
+    : null
 }
 
 // #endregion

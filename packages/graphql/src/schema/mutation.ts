@@ -63,6 +63,7 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionEntry,
+  CatalogObject,
   ObjectAccess,
 } from './resource.js'
 import {
@@ -1254,7 +1255,7 @@ export const Mutation = builder.mutationType({
 
       requestAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: AnswerCollection,
+        type: CatalogObject,
         args: {
           collectionId: t.arg.int({ required: true }),
         },

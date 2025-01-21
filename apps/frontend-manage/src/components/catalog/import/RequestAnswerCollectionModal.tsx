@@ -1,10 +1,12 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  GetCatalogObjectsDocument,
   GetSingleAnswerCollectionCatalogDocument,
   ObjectAccess,
+  RequestAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -33,36 +35,41 @@ function RequestAnswerCollectionModal({
     },
   })
 
-  // TODO: request with validation
-  //   const [requestAnswerCollection, { loading: requestLoading }] = useMutation(
-  //       RequestAnswerCollectionDocument,
-  //       {
-  //         variables: { collectionId: collection.id },
-  //         update: (cache, { data }) => {
-  //           // check if request was successful
-  //           const requestedCollection = data?.requestAnswerCollection
-  //           if (!requestedCollection) return
+  const [requestAnswerCollection, { loading: requestLoading }] = useMutation(
+    RequestAnswerCollectionDocument,
+    {
+      variables: { collectionId: id },
+      update: (cache, { data }) => {
+        // check if request was successful
+        const requestedCollection = data?.requestAnswerCollection
+        if (!requestedCollection) return
 
-  //           // update lists of answer collections
-  //           const queryResult = cache.readQuery({
-  //             query: GetAnswerCollectionsDocument,
-  //           })
+        // update lists of answer collections
+        const catalogObjects = cache.readQuery({
+          query: GetCatalogObjectsDocument,
+        })
 
-  //           if (queryResult?.getAnswerCollections) {
-  //             const collections = queryResult?.getAnswerCollections
-  //             cache.writeQuery({
-  //               query: GetAnswerCollectionsDocument,
-  //               data: {
-  //                 getAnswerCollections: [...collections, requestedCollection],
-  //               },
-  //             })
-  //           }
+        if (catalogObjects?.getCatalogObjects) {
+          const updatedObjects = catalogObjects?.getCatalogObjects.map(
+            (obj) => {
+              if (obj.id === id) {
+                return requestedCollection
+              }
 
-  //           // update list of collections available for selection
-  //           // TODO: do not show imported objects in selection
-  //         },
-  //       }
-  //     )
+              return obj
+            }
+          )
+
+          cache.writeQuery({
+            query: GetCatalogObjectsDocument,
+            data: {
+              getCatalogObjects: updatedObjects,
+            },
+          })
+        }
+      },
+    }
+  )
 
   const collection = data?.getSingleAnswerCollectionCatalog
 
@@ -112,16 +119,15 @@ function RequestAnswerCollectionModal({
             <Button
               className={{ root: 'border-primary-80 h-8 text-base' }}
               onClick={async () => {
-                // TODO: implement on click logic to request answer collection -> verify access to catalogue collection, then check remaining things as before, update cache
-                // const res = await requestAnswerCollection()
-                // if (res.data?.requestAnswerCollection) {
-                //   onSuccess()
-                //   onClose()
-                // } else {
-                //   setError(true)
-                // }
+                const res = await requestAnswerCollection()
+                if (res.data?.requestAnswerCollection) {
+                  onSuccess()
+                  onClose()
+                } else {
+                  setShowError(true)
+                }
               }}
-              //   loading={loadingRequest} // TODO: re-introduce
+              loading={requestLoading}
               data={{ cy: 'confirm-answer-collection-request' }}
             >
               <FontAwesomeIcon icon={faPaperPlane} />
