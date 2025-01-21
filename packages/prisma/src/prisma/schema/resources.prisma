@@ -2,7 +2,9 @@
 // #region
 
 model AnswerCollection {
-    id          Int          @id @default(autoincrement())
+    id         Int  @id @default(autoincrement())
+    originalId Int? // id of the original answer collection after import (copy)
+
     name        String
     description String
     version     Int          @default(1)

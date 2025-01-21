@@ -1242,9 +1242,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      importAnswerCollection: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: AnswerCollection,
+      importAnswerCollection: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
         args: {
           collectionId: t.arg.int({ required: true }),
         },

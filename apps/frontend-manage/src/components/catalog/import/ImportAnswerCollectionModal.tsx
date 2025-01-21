@@ -1,8 +1,11 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSingleAnswerCollectionCatalogDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetSingleAnswerCollectionCatalogDocument,
+  ImportAnswerCollectionDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, Toast } from '@uzh-bf/design-system'
@@ -31,35 +34,12 @@ function ImportAnswerCollectionModal({
     },
   })
 
-  // TODO: implement with validation, etc.
-  //   const [importAnswerCollection, { loading: importLoading }] = useMutation(
-  //       ImportAnswerCollectionDocument,
-  //       {
-  //         variables: { collectionId: collection.id },
-  //         update: (cache, { data }) => {
-  //           if (!data?.importAnswerCollection) return
-  //           const newCollection = data.importAnswerCollection
-
-  //           // update lists of answer collections
-  //           const collectionsListQuery = cache.readQuery({
-  //             query: GetAnswerCollectionsDocument,
-  //           })
-  //           const collections = collectionsListQuery?.getAnswerCollections
-
-  //           if (collections) {
-  //             cache.writeQuery({
-  //               query: GetAnswerCollectionsDocument,
-  //               data: {
-  //                 getAnswerCollections: [...collections, newCollection],
-  //               },
-  //             })
-  //           }
-
-  //           // update list of collections available for selection
-  //           // TODO: do not show imported objects in selection
-  //         },
-  //       }
-  //     )
+  const [importAnswerCollection, { loading: importLoading }] = useMutation(
+    ImportAnswerCollectionDocument,
+    {
+      variables: { collectionId: id },
+    }
+  )
 
   const collection = data?.getSingleAnswerCollectionCatalog
 
@@ -72,6 +52,7 @@ function ImportAnswerCollectionModal({
         setShowEntries(false)
       }}
       title={t('manage.catalog.importPublicResource')}
+      className={{ content: 'text-sm' }}
     >
       {loading || !collection ? (
         <Loader />
@@ -135,16 +116,15 @@ function ImportAnswerCollectionModal({
               className={{ root: 'border-primary-80 h-8 text-base' }}
               onClick={async (e) => {
                 e?.stopPropagation()
-                // TODO: implement on click logic to request answer collection -> verify access to catalogue collection, then check remaining things as before, update cache
-                // const res = await importAnswerCollection()
-                // if (res.data?.importAnswerCollection) {
-                //   onSuccess()
-                //   onClose()
-                // } else {
-                //   setError(true)
-                // }
+                const res = await importAnswerCollection()
+                if (res.data?.importAnswerCollection) {
+                  onSuccess()
+                  onClose()
+                } else {
+                  setShowError(true)
+                }
               }}
-              //   loading={loadingImport} // TODO: re-introduce
+              loading={importLoading}
               data={{ cy: 'confirm-answer-collection-import' }}
             >
               <FontAwesomeIcon icon={faPaperPlane} />

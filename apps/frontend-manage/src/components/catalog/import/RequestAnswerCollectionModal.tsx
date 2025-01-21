@@ -81,6 +81,7 @@ function RequestAnswerCollectionModal({
         onClose()
       }}
       title={t('manage.catalog.requestAccess')}
+      className={{ content: 'text-sm' }}
     >
       {loading || !collection ? (
         <Loader />

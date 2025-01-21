@@ -12,6 +12,7 @@ ALTER TYPE "AccessLevel" ADD VALUE 'ADMIN';
 
 -- AlterTable
 ALTER TABLE "AnswerCollection" ADD COLUMN     "catalogCollectionId" UUID,
+ADD COLUMN     "originalId" INTEGER,
 DROP COLUMN "access",
 ADD COLUMN     "access" "ObjectAccess" NOT NULL DEFAULT 'PRIVATE';
 

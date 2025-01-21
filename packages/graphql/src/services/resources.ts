@@ -563,120 +563,6 @@ export async function addAnswerCollectionOption(
   return newEntry
 }
 
-export async function importAnswerCollection(
-  { collectionId }: { collectionId: number },
-  ctx: ContextWithUser
-) {
-  // get answer collection, verify public access and check if access has already been granted
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-    },
-    include: {
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-          permissionStatus: DB.PermissionStatus.GRANTED,
-        },
-      },
-    },
-  })
-
-  if (
-    !collection ||
-    collection.ownerId === null ||
-    collection.access !== DB.ObjectAccess.PUBLIC ||
-    collection.permissions.length > 0
-  ) {
-    return null
-  }
-
-  // create or update permission for the user
-  const updatedPermission = await ctx.prisma.permission.upsert({
-    where: {
-      answerCollectionId_userId: {
-        answerCollectionId: collectionId,
-        userId: ctx.user.sub,
-      },
-    },
-    create: {
-      permissionStatus: DB.PermissionStatus.GRANTED,
-      accessLevel: DB.AccessLevel.READ,
-      answerCollection: {
-        connect: {
-          id: collectionId,
-        },
-      },
-      user: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
-      objectOwner: {
-        connect: {
-          id: collection.ownerId,
-        },
-      },
-    },
-    update: {
-      permissionStatus: DB.PermissionStatus.GRANTED,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          owner: {
-            select: {
-              shortname: true,
-            },
-          },
-          entries: {
-            include: {
-              _count: {
-                select: {
-                  solutionUsages: true,
-                },
-              },
-            },
-            orderBy: {
-              value: 'asc',
-            },
-          },
-          _count: {
-            select: {
-              linkedElements: {
-                where: {
-                  ownerId: ctx.user.sub,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-
-  const updatedCollection = updatedPermission.answerCollection
-  if (!updatedCollection) {
-    return null
-  }
-
-  // invalidate cache for the imported collection
-  ctx.emitter.emit('invalidate', {
-    typename: 'AnswerCollection',
-    id: collectionId,
-  })
-
-  return {
-    ...updatedCollection,
-    accessType: AccessType.SHARED,
-    sharingStatus: updatedPermission.permissionStatus,
-    sharingLevel: updatedPermission.accessLevel,
-    entries: updatedCollection.entries,
-    ownerShortname: updatedCollection.owner?.shortname,
-    isRemovable: updatedCollection._count?.linkedElements === 0,
-  }
-}
-
 export async function cancelAnswerCollectionRequest(
   {
     collectionId,
@@ -1023,6 +909,10 @@ export async function requestAnswerCollection(
       )
     : true
 
+  if (!validAccess) {
+    return null
+  }
+
   // create a new permission request
   const permissionRequest = await ctx.prisma.permission.create({
     data: {
@@ -1076,6 +966,72 @@ export async function requestAnswerCollection(
         isOwner: false,
       }
     : null
+}
+
+export async function importAnswerCollection(
+  { collectionId }: { collectionId: number },
+  ctx: ContextWithUser
+) {
+  // get answer collection, verify public access and check if access has already been granted
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+    },
+    include: {
+      entries: true,
+    },
+  })
+
+  if (
+    !collection ||
+    collection.ownerId === null ||
+    collection.access !== DB.ObjectAccess.PUBLIC
+  ) {
+    return false
+  }
+
+  // verify that the user has access to the catalog collection the answer collection is contained in
+  const validAccess = collection.catalogCollectionId
+    ? await verifyUserAccessCatalogCollection(
+        { catalogCollectionId: collection.catalogCollectionId },
+        ctx
+      )
+    : true
+
+  if (!validAccess) {
+    return false
+  }
+
+  // create new answer collection with the content of the original one
+  await ctx.prisma.answerCollection.create({
+    data: {
+      // TODO: set originalId
+      name: collection.name,
+      description: collection.description,
+      access: DB.ObjectAccess.PRIVATE,
+      owner: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+      entries: {
+        create: collection.entries.map((entry) => ({
+          value: entry.value,
+        })),
+      },
+    },
+    include: {
+      entries: true,
+    },
+  })
+
+  // invalidate cache for the existing collection
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: collection.id,
+  })
+
+  return true
 }
 
 // #endregion

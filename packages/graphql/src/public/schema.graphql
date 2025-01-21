@@ -1101,7 +1101,7 @@ type Mutation {
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
-  importAnswerCollection(collectionId: Int!): AnswerCollection
+  importAnswerCollection(collectionId: Int!): Boolean!
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String

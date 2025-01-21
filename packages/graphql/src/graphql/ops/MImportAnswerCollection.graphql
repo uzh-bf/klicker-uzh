@@ -1,14 +1,3 @@
 mutation ImportAnswerCollection($collectionId: Int!) {
-  importAnswerCollection(collectionId: $collectionId) {
-    id
-    name
-    access
-    description
-    accessType
-    ownerShortname
-    entries {
-      id
-      value
-    }
-  }
+  importAnswerCollection(collectionId: $collectionId)
 }
