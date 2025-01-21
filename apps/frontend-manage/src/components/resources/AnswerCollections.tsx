@@ -13,7 +13,6 @@ import CollectionDeletionErrorToast from './answerCollections/CollectionDeletion
 import CollectionDeletionSuccessToast from './answerCollections/CollectionDeletionSuccessToast'
 import CollectionRemovalErrorToast from './answerCollections/CollectionRemovalErrorToast'
 import CollectionRemovalSuccessToast from './answerCollections/CollectionRemovalSuccessToast'
-import CollectionSharingRequests from './answerCollections/CollectionSharingRequests'
 import RequestCancellationErrorToast from './answerCollections/RequestCancellationErrorToast'
 import RequestCancellationSuccessToast from './answerCollections/RequestCancellationSuccessToast'
 import SharedAnswerCollectionList from './SharedAnswerCollectionList'
@@ -38,7 +37,6 @@ function AnswerCollections() {
         {t('manage.resources.answerCollectionsDescription')}
       </div>
       <AnswerCollectionCreation />
-      <CollectionSharingRequests />
       <AnswerCollectionList
         collections={(data?.getAnswerCollections ?? []).filter(
           (collection) => collection.accessType === AccessType.Owner

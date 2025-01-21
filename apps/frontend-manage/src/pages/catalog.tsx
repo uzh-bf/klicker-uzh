@@ -19,13 +19,13 @@ function Catalog() {
         key={`panel-group-catalog`}
         direction="horizontal"
       >
-        <ResizablePanel defaultSize={60} minSize={50} className="pr-4">
+        <ResizablePanel defaultSize={70} minSize={50} className="pr-4">
           <CatalogBrowser />
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel
-          defaultSize={40}
-          minSize={10}
+          defaultSize={30}
+          minSize={20}
           collapsible
           collapsedSize={0}
           className="gap-2 border-l pl-4"

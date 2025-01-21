@@ -178,6 +178,7 @@ model Permission {
     updatedAt DateTime @updatedAt
 
     // only one permission per object and user / user group
+    @@unique([catalogCollectionId, userId])
     @@unique([answerCollectionId, userId])
     @@unique([elementId, userId])
     @@unique([courseId, userId])
@@ -185,6 +186,7 @@ model Permission {
     @@unique([practiceQuizId, userId])
     @@unique([microLearningId, userId])
     @@unique([groupActivityId, userId])
+    @@unique([catalogCollectionId, userGroupId])
     @@unique([answerCollectionId, userGroupId])
     @@unique([elementId, userGroupId])
     @@unique([courseId, userGroupId])

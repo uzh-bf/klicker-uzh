@@ -114,9 +114,10 @@ export type AvatarSettings = {
 
 // ----- RESOURCES -----
 // #region
-export type AnswerCollectionSharingRequest = {
-  collectionId: number
-  collectionName: string
+export type ObjectSharingRequest = {
+  permissionId: number
+  objectName: string
+  objectType: CatalogObjectType
   userId: string
   userShortname: string
   userEmail: string

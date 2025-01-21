@@ -113,14 +113,6 @@ type AnswerCollectionEntry {
   value: String!
 }
 
-type AnswerCollectionSharingRequest {
-  collectionId: Int!
-  collectionName: String!
-  userEmail: String!
-  userId: String!
-  userShortname: String!
-}
-
 type ArchivedElement {
   id: Int!
   isArchived: Boolean!
@@ -1046,7 +1038,7 @@ type Mutation {
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
-  approveCollectionSharingRequest(collectionId: Int!, userId: String!): Boolean!
+  approveObjectSharingRequest(accessLevel: AccessLevel!, permissionId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
@@ -1068,7 +1060,7 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
-  declineCollectionSharingRequest(collectionId: Int!, userId: String!): Boolean!
+  declineObjectSharingRequest(permissionId: Int!, userId: String!): Boolean!
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(id: Int!): Int
   deleteCourse(id: String!): Course
@@ -1275,6 +1267,15 @@ enum ObjectAccess {
   PRIVATE
   PUBLIC
   RESTRICTED
+}
+
+type ObjectSharingRequest {
+  objectName: String!
+  objectType: CatalogObjectType!
+  permissionId: Int!
+  userEmail: String!
+  userId: String!
+  userShortname: String!
 }
 
 input OptionsChoicesInput {
@@ -1498,7 +1499,7 @@ type Query {
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
-  getCollectionSharingRequests: [AnswerCollectionSharingRequest!]
+  getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseGroups(courseId: String!): Course

@@ -5,7 +5,6 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import {
-  GetCollectionSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   User,
@@ -27,7 +26,8 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
-  const { data: requestData } = useQuery(GetCollectionSharingRequestsDocument) // TODO: generalize this query for the new catalogue
+  // TODO: replace with new query
+  // const { data: requestData } = useQuery(GetCollectionSharingRequestsDocument)
   const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-first',
   })

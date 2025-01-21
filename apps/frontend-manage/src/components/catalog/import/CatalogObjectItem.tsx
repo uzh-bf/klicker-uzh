@@ -33,7 +33,11 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
       <div
         className="flex flex-row items-center justify-between border-b border-solid px-1 py-1 text-sm hover:bg-slate-100"
         onClick={() => {
-          if (actionsDisabled) return
+          if (
+            actionsDisabled ||
+            (object.isRequested && object.access === ObjectAccess.Restricted)
+          )
+            return
 
           object.access === ObjectAccess.Public
             ? setImportModal(true)

@@ -103,6 +103,7 @@ export default {
       cancel: 'Cancel',
       confirm: 'Confirm',
       close: 'Close',
+      approve: 'Approve',
       sendAnswer: 'Send answer',
       begin: 'Begin',
       finish: 'Finish',
@@ -2001,6 +2002,20 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'A copy of the answer collection was successfully imported into your account.',
       requestPublicResource:
         "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
+      sharingRequestsExplanation:
+        'Please review the following access requests for your shared objects. Accepting a sharing request will grant the requesting user access to the corresponding object without creating a copy. Any modifications other users with write access to your objects make are directly visible to all users of the object.',
+      approveSharingRequest: 'Approve sharing request',
+      specifyAccessLevel:
+        'Please select an access level for sharing the object {objectName} (type: {objectType}) with the user {userShortname}. Please note that when granting write access, any changes other users make to your object are directly visible to all users with access to it. The official documentation of the sharing features provides further information.',
+      accessLevel: 'Access Level',
+      accessLevelREAD: 'Read Access',
+      accessLevelWRITE: 'Write Access',
+      approvalSuccessful: 'The sharing request was successfully approved.',
+      approvalFailed:
+        'An error occurred while approving the sharing request. Please try again or contact the support.',
+      declineSuccessful: 'The sharing request was successfully declined.',
+      declineFailed:
+        'An error occurred while declining the sharing request. Please try again or contact the support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

@@ -1,9 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   AccessType as AccessTypeEnum,
-  AnswerCollectionSharingRequest as AnswerCollectionSharingRequestType,
   CatalogObject as CatalogObjectInterface,
   CatalogObjectType as CatalogObjectTypeEnum,
+  ObjectSharingRequest as ObjectSharingRequestType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 
@@ -80,20 +80,18 @@ export const AnswerCollection = AnswerCollectionRef.implement({
   }),
 })
 
-export const AnswerCollectionSharingRequestRef =
-  builder.objectRef<AnswerCollectionSharingRequestType>(
-    'AnswerCollectionSharingRequest'
-  )
-export const AnswerCollectionSharingRequest =
-  AnswerCollectionSharingRequestRef.implement({
-    fields: (t) => ({
-      collectionId: t.exposeInt('collectionId'),
-      collectionName: t.exposeString('collectionName'),
-      userId: t.exposeString('userId'),
-      userShortname: t.exposeString('userShortname'),
-      userEmail: t.exposeString('userEmail'),
-    }),
-  })
+export const ObjectSharingRequestRef =
+  builder.objectRef<ObjectSharingRequestType>('ObjectSharingRequest')
+export const ObjectSharingRequest = ObjectSharingRequestRef.implement({
+  fields: (t) => ({
+    permissionId: t.exposeInt('permissionId'),
+    objectName: t.exposeString('objectName'),
+    objectType: t.expose('objectType', { type: CatalogObjectType }),
+    userId: t.exposeString('userId'),
+    userShortname: t.exposeString('userShortname'),
+    userEmail: t.exposeString('userEmail'),
+  }),
+})
 
 interface ISharingRequestResponse {
   collectionId: number

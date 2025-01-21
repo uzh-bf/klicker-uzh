@@ -104,6 +104,7 @@ export default {
       cancel: 'Abbrechen',
       confirm: 'Bestätigen',
       close: 'Schliessen',
+      approve: 'Genehmigen',
       sendAnswer: 'Antwort senden',
       begin: 'Beginnen',
       finish: 'Abschliessen',
@@ -2017,6 +2018,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Eine Kopie der Antwort-Sammlung wurde erfolgreich in Ihr Konto importiert.',
       requestPublicResource:
         "Durch das Bentragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den erteilten Berechtigungen. Gewährte Berechtigungen können jederzeit vom Besitzer widerrufen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die 'Importieren' Option.",
+      sharingRequestsExplanation:
+        'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
+      approveSharingRequest: 'Zugriffsanfrage akzeptieren',
+      specifyAccessLevel:
+        'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Schreiberechten, dass alle Änderungen anderer Nutzer an Ihrem Objekt direkt für alle Nutzer mit Zugriff auf dieses sichtbar sein werden. Die offizielle Dokumentation der Sharing-Funktionen enthält weiterführende Informationen.',
+      accessLevel: 'Zugriffslevel',
+      accessLevelREAD: 'Lesezugriff',
+      accessLevelWRITE: 'Schreibzugriff',
+      approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich akzeptiert.',
+      approvalFailed:
+        'Beim Akzeptieren der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      declineSuccessful: 'Die Zugriffsanfrage wurde erfolgreich abgelehnt.',
+      declineFailed:
+        'Beim Ablehnen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

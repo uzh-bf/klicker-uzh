@@ -6,9 +6,10 @@ import {
   ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { TextField, UserNotification } from '@uzh-bf/design-system'
+import { H2, TextField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import CatalogObjectItem from './CatalogObjectItem'
 import ObjectFilters from './ObjectFilters'
 import useObjectFilters from './useObjectFilters'
@@ -19,6 +20,8 @@ function ObjectImport({
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
+  const router = useRouter()
+
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<CatalogObjectType | ''>('')
   const [accessTypeFilter, setAccessTypeFilter] = useState<ObjectAccess | ''>(
@@ -39,13 +42,21 @@ function ObjectImport({
     accessTypeFilter,
   })
 
+  // set initial filter values based on query params
+  useEffect(() => {
+    if (router.query.filter) {
+      setTypeFilter(router.query.filter as CatalogObjectType)
+    }
+  }, [router.query])
+
   if (loading) {
     return <Loader />
   }
 
   // TODO: enable scrolling on this component on overflow!
   return (
-    <div className="mb-6">
+    <div>
+      <H2 className={{ root: 'md:-mb-5' }}>{t('manage.general.catalog')}</H2>
       <div className="mb-2 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <TextField
           placeholder={t('manage.general.searchPlaceholder')}

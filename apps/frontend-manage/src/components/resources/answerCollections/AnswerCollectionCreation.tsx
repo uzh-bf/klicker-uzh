@@ -1,7 +1,9 @@
 import { faDownload, faPlusCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import AnswerCollectionCreationForm from './AnswerCollectionCreationForm'
 import CollectionErrorToast from './CollectionErrorToast'
@@ -9,6 +11,8 @@ import CollectionSuccessToast from './CollectionSuccessToast'
 
 function AnswerCollectionCreation() {
   const t = useTranslations()
+  const router = useRouter()
+
   const [creationOpen, setCreationOpen] = useState(false)
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
@@ -27,7 +31,12 @@ function AnswerCollectionCreation() {
           </Button>
           <Button
             className={{ root: 'w-full sm:w-1/2' }}
-            onClick={() => null} // TODO: redirect to catalog with filter for answer collections set
+            onClick={() =>
+              router.push({
+                pathname: '/catalog',
+                query: { filter: CatalogObjectType.AnswerCollection },
+              })
+            }
             data={{ cy: 'add-shared-answer-collection' }}
           >
             <FontAwesomeIcon icon={faDownload} />

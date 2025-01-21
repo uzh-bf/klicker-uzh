@@ -61,6 +61,7 @@ import {
   Tag,
 } from './question.js'
 import {
+  AccessLevel,
   AnswerCollection,
   AnswerCollectionEntry,
   CatalogObject,
@@ -1295,28 +1296,29 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      approveCollectionSharingRequest: t.withAuth(asUserFullAccess).boolean({
+      approveObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          permissionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
+          accessLevel: t.arg({ type: AccessLevel, required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.resolveCollectionSharingRequest(
+          return ResourcesService.resolveObjectSharingRequest(
             { ...args, approved: true },
             ctx
           )
         },
       }),
 
-      declineCollectionSharingRequest: t.withAuth(asUserFullAccess).boolean({
+      declineObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          permissionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.resolveCollectionSharingRequest(
+          return ResourcesService.resolveObjectSharingRequest(
             { ...args, approved: false },
             ctx
           )

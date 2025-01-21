@@ -1,9 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   AccessType,
-  AnswerCollectionSharingRequest,
   CatalogObject,
   CatalogObjectType,
+  ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 
@@ -601,115 +601,6 @@ export async function cancelAnswerCollectionRequest(
   return true
 }
 
-export async function getCollectionSharingRequests(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      objectPermissions: {
-        where: {
-          permissionStatus: DB.PermissionStatus.REQUESTED,
-          answerCollectionId: {
-            not: null,
-          },
-        },
-        include: {
-          user: {
-            select: {
-              shortname: true,
-              email: true,
-            },
-          },
-          answerCollection: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  if (!user) {
-    return null
-  }
-
-  const requestedCollections = user.objectPermissions.reduce<
-    AnswerCollectionSharingRequest[]
-  >((acc, request) => {
-    if (
-      typeof request.answerCollection === 'undefined' ||
-      request.answerCollection === null ||
-      !request.user
-    ) {
-      return acc
-    }
-
-    acc.push({
-      collectionId: request.answerCollectionId!,
-      collectionName: request.answerCollection.name,
-      userId: request.userId!,
-      userShortname: request.user.shortname,
-      userEmail: request.user.email,
-    })
-    return acc
-  }, [])
-
-  return requestedCollections
-}
-
-export async function resolveCollectionSharingRequest(
-  {
-    collectionId,
-    userId,
-    approved,
-  }: {
-    collectionId: number
-    userId: string
-    approved: boolean
-  },
-  ctx: ContextWithUser
-) {
-  // check that the access request exists and that the user is the owner of the collection
-  const accessRequest = await ctx.prisma.permission.findUnique({
-    where: {
-      answerCollectionId_userId: {
-        answerCollectionId: collectionId,
-        userId,
-      },
-      permissionStatus: DB.PermissionStatus.REQUESTED,
-      objectOwnerId: ctx.user.sub,
-    },
-  })
-
-  if (!accessRequest) {
-    return false
-  }
-
-  // update the collection with the new access rights
-  if (approved) {
-    await ctx.prisma.permission.update({
-      where: {
-        id: accessRequest.id,
-      },
-      data: {
-        permissionStatus: DB.PermissionStatus.GRANTED,
-      },
-    })
-  } else {
-    await ctx.prisma.permission.delete({
-      where: {
-        id: accessRequest.id,
-      },
-    })
-  }
-
-  // TODO: send email to user that requested access about the approval / (and denial?)
-
-  return true
-}
-
 // verify that a user has access to a specific catalog collection (no access level enforced)
 // TODO: extend this function with an additional parameter to check for a specific access level
 async function verifyUserAccessCatalogCollection(
@@ -1005,7 +896,7 @@ export async function importAnswerCollection(
   // create new answer collection with the content of the original one
   await ctx.prisma.answerCollection.create({
     data: {
-      // TODO: set originalId
+      originalId: collection.id,
       name: collection.name,
       description: collection.description,
       access: DB.ObjectAccess.PRIVATE,
@@ -1030,6 +921,118 @@ export async function importAnswerCollection(
     typename: 'AnswerCollection',
     id: collection.id,
   })
+
+  return true
+}
+
+export async function getCatalogSharingRequests(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      objectPermissions: {
+        where: {
+          permissionStatus: DB.PermissionStatus.REQUESTED,
+          answerCollectionId: {
+            not: null,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              shortname: true,
+              email: true,
+            },
+          },
+          answerCollection: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!user) {
+    return null
+  }
+
+  const sharingRequests = user.objectPermissions.reduce<ObjectSharingRequest[]>(
+    (acc, request) => {
+      // sharing request for answer collection
+      if (
+        typeof request.answerCollection !== 'undefined' &&
+        request.answerCollection !== null &&
+        request.user
+      ) {
+        acc.push({
+          permissionId: request.id,
+          objectName: request.answerCollection.name,
+          objectType: CatalogObjectType.ANSWER_COLLECTION,
+          userId: request.userId!,
+          userShortname: request.user.shortname,
+          userEmail: request.user.email,
+        })
+      }
+
+      return acc
+    },
+    []
+  )
+
+  return sharingRequests
+}
+
+export async function resolveObjectSharingRequest(
+  {
+    permissionId,
+    userId,
+    accessLevel,
+    approved,
+  }: {
+    permissionId: number
+    userId: string
+    accessLevel?: DB.AccessLevel
+    approved: boolean
+  },
+  ctx: ContextWithUser
+) {
+  // check that the access request exists and that the user is the owner of the collection
+  const accessRequest = await ctx.prisma.permission.findUnique({
+    where: {
+      id: permissionId,
+      userId,
+      accessLevel: accessLevel ?? DB.AccessLevel.READ,
+      permissionStatus: DB.PermissionStatus.REQUESTED,
+      objectOwnerId: ctx.user.sub,
+    },
+  })
+
+  if (!accessRequest) {
+    return false
+  }
+
+  // update the collection with the new access rights
+  if (approved) {
+    await ctx.prisma.permission.update({
+      where: {
+        id: accessRequest.id,
+      },
+      data: {
+        permissionStatus: DB.PermissionStatus.GRANTED,
+      },
+    })
+  } else {
+    await ctx.prisma.permission.delete({
+      where: {
+        id: accessRequest.id,
+      },
+    })
+  }
+
+  // TODO: send email to user that requested access about the approval / (and denial?)
 
   return true
 }
