@@ -10,13 +10,12 @@ import CollectionSuccessToast from './CollectionSuccessToast'
 function AnswerCollectionCreation() {
   const t = useTranslations()
   const [creationOpen, setCreationOpen] = useState(false)
-  const [browsingOpen, setBrowsingOpen] = useState(false)
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
 
   return (
     <>
-      {!creationOpen && !browsingOpen ? (
+      {!creationOpen ? (
         <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <Button
             className={{ root: 'w-full sm:w-1/2' }}
@@ -28,7 +27,7 @@ function AnswerCollectionCreation() {
           </Button>
           <Button
             className={{ root: 'w-full sm:w-1/2' }}
-            onClick={() => setBrowsingOpen(true)}
+            onClick={() => null} // TODO: redirect to catalog with filter for answer collections set
             data={{ cy: 'add-shared-answer-collection' }}
           >
             <FontAwesomeIcon icon={faDownload} />

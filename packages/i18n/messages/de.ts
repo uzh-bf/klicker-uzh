@@ -2000,7 +2000,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       userGroups: 'Nutzergruppen',
       userGroupsComingSoon:
         'Hier werden bald die von Ihnen gemanagten Nutzergruppen, sowie Nutzergruppen zu welchen Sie zugewiesen wurden, angezeigt.',
-      accessTypes: 'Zugriffs-Typem',
+      accessTypes: 'Zugriffs-Typen',
       objectType: 'Objekt-Typ',
       all: 'Alle',
       objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',

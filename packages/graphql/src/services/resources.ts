@@ -893,7 +893,7 @@ export async function getSingleAnswerCollectionCatalog(
 
   // verify that the user has access to the catalog collection the answer collection is contained in
   const validAccess = collection.catalogCollectionId
-    ? verifyUserAccessCatalogCollection(
+    ? await verifyUserAccessCatalogCollection(
         { catalogCollectionId: collection.catalogCollectionId },
         ctx
       )
@@ -1005,7 +1005,7 @@ export async function requestAnswerCollection(
 
   // verify that the user has access to the catalog collection the answer collection is contained in
   const validAccess = collection.catalogCollectionId
-    ? verifyUserAccessCatalogCollection(
+    ? await verifyUserAccessCatalogCollection(
         { catalogCollectionId: collection.catalogCollectionId },
         ctx
       )
