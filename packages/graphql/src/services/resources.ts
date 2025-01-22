@@ -18,11 +18,13 @@ export async function createAnswerCollection(
     access,
     description,
     answers,
+    catalogCollectionId,
   }: {
     name: string
     access: DB.ObjectAccess
     description: string
     answers: string[]
+    catalogCollectionId?: string | null
   },
   ctx: ContextWithUser
 ) {
@@ -55,6 +57,15 @@ export async function createAnswerCollection(
           id: ctx.user.sub,
         },
       },
+      // connect to catalog collection if provided (and to empty catalog if not private)
+      catalogCollection:
+        access !== DB.ObjectAccess.PRIVATE
+          ? {
+              connect: {
+                id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+              },
+            }
+          : undefined,
     },
     include: {
       entries: true,
@@ -164,11 +175,15 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
   const ownedCollections = user.answerCollections.map((collection) => ({
     ...collection,
     accessType: AccessType.OWNER,
+    numSharedUsers: collection._count?.permissions,
+    catalogCollectionId:
+      collection.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
+        ? undefined // return undefined if collection is not linked to any catalog
+        : collection.catalogCollectionId,
     entries: collection.entries.map((entry) => ({
       ...entry,
       numSolutionUsages: entry._count?.solutionUsages,
     })),
-    numSharedUsers: collection._count?.permissions,
     isOwner: true,
     isEditable: true,
     isImported: collection.originalId !== null,
@@ -188,11 +203,15 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       accessType: AccessType.SHARED,
       sharingStatus: object.permissionStatus,
       sharingLevel: object.accessLevel,
+      ownerShortname: collection.owner?.shortname,
+      catalogCollectionId:
+        collection.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
+          ? undefined // return undefined if collection is not linked to any catalog
+          : collection.catalogCollectionId,
       entries:
         object.permissionStatus === DB.PermissionStatus.GRANTED
           ? collection.entries
           : undefined,
-      ownerShortname: collection.owner?.shortname,
       isOwner: false,
       isEditable: false,
       isImported: false,
@@ -210,11 +229,13 @@ export async function modifyAnswerCollection(
     name,
     access,
     description,
+    catalogCollectionId,
   }: {
     id: number
     name?: string | null
     access?: DB.ObjectAccess | null
     description?: string | null
+    catalogCollectionId?: string | null
   },
   ctx: ContextWithUser
 ) {
@@ -259,6 +280,15 @@ export async function modifyAnswerCollection(
         version: {
           increment: 1,
         },
+        // for non-private collections, set a catalog collection, for private ones, remove it
+        catalogCollection:
+          access !== DB.ObjectAccess.PRIVATE
+            ? {
+                connect: {
+                  id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+                },
+              }
+            : { disconnect: true },
       },
       include: {
         entries: true,

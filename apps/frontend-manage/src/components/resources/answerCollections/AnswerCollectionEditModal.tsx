@@ -74,6 +74,7 @@ function AnswerCollectionEditModal({
         />
       </div>
       <Toast
+        dismissible
         type="success"
         openExternal={successToast}
         onCloseExternal={() => setSuccessToast(false)}

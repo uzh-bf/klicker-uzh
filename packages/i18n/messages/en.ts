@@ -2011,6 +2011,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       declineSuccessful: 'The sharing request was successfully declined.',
       declineFailed:
         'An error occurred while declining the sharing request. Please try again or contact the support.',
+      noCatalogCollectionSelectedWarning:
+        'If you do not assign your shared object (with an access status other than "Private") to a specific catalog collection, all other users can find it in the catalog and import it / request access to it.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

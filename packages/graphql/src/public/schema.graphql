@@ -96,6 +96,7 @@ enum ActivityType {
 type AnswerCollection {
   access: ObjectAccess!
   accessType: AccessType!
+  catalogCollectionId: String
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
@@ -1053,7 +1054,7 @@ type Mutation {
   changeParticipantLocale(locale: LocaleType!): Participant
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
-  createAnswerCollection(access: ObjectAccess!, answers: [String!]!, description: String!, name: String!): AnswerCollection
+  createAnswerCollection(access: ObjectAccess!, answers: [String!]!, catalogCollectionId: String, description: String!, name: String!): AnswerCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -1119,7 +1120,7 @@ type Mutation {
   manipulateSelectionQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
-  modifyAnswerCollection(access: ObjectAccess, description: String, id: Int!, name: String): AnswerCollection
+  modifyAnswerCollection(access: ObjectAccess, catalogCollectionId: String, description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback

@@ -80,6 +80,9 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
+    catalogCollectionId: t.exposeString('catalogCollectionId', {
+      nullable: true,
+    }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
     isEditable: t.exposeBoolean('isEditable', { nullable: true }),
     isImported: t.exposeBoolean('isImported', { nullable: true }),

@@ -3,12 +3,14 @@ mutation CreateAnswerCollection(
   $access: ObjectAccess!
   $description: String!
   $answers: [String!]!
+  $catalogCollectionId: String
 ) {
   createAnswerCollection(
     name: $name
     access: $access
     description: $description
     answers: $answers
+    catalogCollectionId: $catalogCollectionId
   ) {
     id
     name

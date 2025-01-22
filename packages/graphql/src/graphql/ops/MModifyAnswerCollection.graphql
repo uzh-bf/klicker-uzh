@@ -3,12 +3,14 @@ mutation ModifyAnswerCollection(
   $name: String
   $access: ObjectAccess
   $description: String
+  $catalogCollectionId: String
 ) {
   modifyAnswerCollection(
     id: $id
     name: $name
     access: $access
     description: $description
+    catalogCollectionId: $catalogCollectionId
   ) {
     id
     name

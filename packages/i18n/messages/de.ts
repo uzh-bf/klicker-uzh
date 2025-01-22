@@ -2027,6 +2027,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       declineSuccessful: 'Die Zugriffsanfrage wurde erfolgreich abgelehnt.',
       declineFailed:
         'Beim Ablehnen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      noCatalogCollectionSelectedWarning:
+        "Wenn Sie Ihr geteiltes Objekt (mit einem anderen Zugriffsstatus als 'Privat') nicht einer bestimmten Katalog-Sammlung zuweisen, können alle anderen Nutzer dieses im Katalog finden und darüber importieren / Zugriff beantragen.",
     },
     groupActivity: {
       activityMissingOrNotCompleted:

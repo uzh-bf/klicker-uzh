@@ -1188,6 +1188,7 @@ export const Mutation = builder.mutationType({
           access: t.arg({ type: ObjectAccess, required: true }),
           description: t.arg.string({ required: true }),
           answers: t.arg.stringList({ required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.createAnswerCollection(args, ctx)
@@ -1202,6 +1203,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           access: t.arg({ type: ObjectAccess, required: false }),
           description: t.arg.string({ required: false }),
+          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.modifyAnswerCollection(args, ctx)

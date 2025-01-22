@@ -28,6 +28,7 @@ type AnswerCollectionFormValues = {
   access: ObjectAccess
   description?: string
   entries: { value?: string }[]
+  catalogCollectionId: string
 }
 
 function AnswerCollectionCreationForm({
@@ -84,6 +85,10 @@ function AnswerCollectionCreationForm({
               description: values.description!,
               access: values.access,
               answers: values.entries.map((entry) => entry.value!),
+              catalogCollectionId:
+                values.catalogCollectionId === ''
+                  ? undefined
+                  : values.catalogCollectionId,
             },
             update: (cache, { data }) => {
               if (!data?.createAnswerCollection) return

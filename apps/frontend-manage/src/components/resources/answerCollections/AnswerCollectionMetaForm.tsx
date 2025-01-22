@@ -40,6 +40,7 @@ function AnswerCollectionMetaForm({
         name: collection.name,
         access: collection.access,
         description: collection.description,
+        catalogCollectionId: collection.catalogCollectionId ?? '',
       }}
       onSubmit={async (values) => {
         const { data } = await modifyAnswerCollection({
@@ -52,6 +53,10 @@ function AnswerCollectionMetaForm({
               values.description !== collection.description
                 ? values.description
                 : undefined,
+            catalogCollectionId:
+              values.catalogCollectionId === ''
+                ? undefined
+                : values.catalogCollectionId,
           },
         })
 
