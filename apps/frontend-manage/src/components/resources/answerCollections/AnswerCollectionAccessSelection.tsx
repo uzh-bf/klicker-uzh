@@ -3,13 +3,7 @@ import { FormikSelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 
-function AnswerCollectionAccessSelection({
-  restrictedDisabled = false,
-  privateDisabled = false,
-}: {
-  restrictedDisabled?: boolean
-  privateDisabled?: boolean
-}) {
+function AnswerCollectionAccessSelection() {
   const t = useTranslations()
 
   return (
@@ -22,13 +16,11 @@ function AnswerCollectionAccessSelection({
         {
           value: ObjectAccess.Private,
           label: <ObjectAccessLabel accessType={ObjectAccess.Private} />,
-          disabled: privateDisabled,
           data: { cy: 'answer-collection-access-private' },
         },
         {
           value: ObjectAccess.Restricted,
           label: <ObjectAccessLabel accessType={ObjectAccess.Restricted} />,
-          disabled: restrictedDisabled,
           data: { cy: 'answer-collection-access-restricted' },
         },
         {

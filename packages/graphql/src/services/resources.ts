@@ -245,20 +245,6 @@ export async function modifyAnswerCollection(
     return null
   }
 
-  // if other users are already using the collection, their access rights must not be restricted
-  let numSharedUsers = collection._count.permissions
-  if (
-    (numSharedUsers > 0 &&
-      (collection.access === DB.ObjectAccess.RESTRICTED ||
-        collection.access === DB.ObjectAccess.PUBLIC) &&
-      access === DB.ObjectAccess.PRIVATE) ||
-    (numSharedUsers > 0 &&
-      collection.access === DB.ObjectAccess.PUBLIC &&
-      access === DB.ObjectAccess.RESTRICTED)
-  ) {
-    return null
-  }
-
   const updatedCollection = await ctx.prisma.$transaction(async (tx) => {
     // update changes in the database
     const updateResult = await tx.answerCollection.update({
@@ -279,31 +265,31 @@ export async function modifyAnswerCollection(
       },
     })
 
-    // if access is changed from restricted to public, accept all access requests
+    // if access is changed from restricted or public to private, all access requests will be declined automatically
     if (
-      collection.access === DB.ObjectAccess.RESTRICTED &&
-      access === DB.ObjectAccess.PUBLIC
+      (collection.access === DB.ObjectAccess.PUBLIC ||
+        collection.access === DB.ObjectAccess.RESTRICTED) &&
+      access === DB.ObjectAccess.PRIVATE
     ) {
-      await Promise.all(
-        collection.permissions.map((permission) =>
-          tx.permission.update({
-            where: {
-              id: permission.id,
-            },
-            data: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-          })
-        )
-      )
+      await tx.permission.deleteMany({
+        where: {
+          answerCollectionId: id,
+          permissionStatus: DB.PermissionStatus.REQUESTED,
+        },
+      })
 
-      // update number of shared users
-      numSharedUsers += collection.permissions.length
+      // invalidate the corresponding cache entries
+      collection.permissions.forEach((permission) => {
+        ctx.emitter.emit('invalidate', {
+          typename: 'Permission',
+          id: permission.id,
+        })
+      })
     }
 
     return {
       ...updateResult,
-      numSharedUsers,
+      numSharedUsers: collection._count.permissions,
       accessType: AccessType.OWNER,
     }
   })
@@ -452,9 +438,8 @@ export async function removeAnswerCollection(
   }
 
   // if no other users have access to this collection and the owner is already disconnected, delete it
-  let updatedCollection: DB.AnswerCollection
   if (collection._count.permissions === 1 && collection.ownerId === null) {
-    updatedCollection = await ctx.prisma.answerCollection.delete({
+    await ctx.prisma.answerCollection.delete({
       where: {
         id: collectionId,
       },
@@ -476,7 +461,7 @@ export async function removeAnswerCollection(
   return collection.id
 }
 
-export async function incrementCollectionVersion(
+async function incrementCollectionVersion(
   { collectionId }: { collectionId: number },
   ctx: ContextWithUser
 ) {
@@ -608,6 +593,10 @@ export async function cancelAnswerCollectionRequest(
 
   return true
 }
+// #endregion
+
+// ! Catalog Objects
+// #region
 
 // verify that a user has access to a specific catalog collection (no access level enforced)
 // TODO: extend this function with an additional parameter to check for a specific access level
@@ -707,10 +696,6 @@ export async function getSingleAnswerCollectionCatalog(
     }
   }
 }
-// #endregion
-
-// ! Catalog Objects
-// #region
 
 export async function getCatalogObjects(
   { catalogCollectionId }: { catalogCollectionId?: string | null },

@@ -99,7 +99,6 @@ function SharingRequestApprovalModal({
                 const queryData = cache.readQuery({
                   query: GetCatalogSharingRequestsDocument,
                 })
-
                 const previousRequests = queryData?.getCatalogSharingRequests
 
                 const queryData2 = cache.readQuery({

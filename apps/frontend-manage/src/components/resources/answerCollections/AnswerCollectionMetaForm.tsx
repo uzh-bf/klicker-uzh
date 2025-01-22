@@ -77,17 +77,7 @@ function AnswerCollectionMetaForm({
               tooltip={t('manage.resources.nameTooltip')}
               data={{ cy: 'answer-collection-name' }}
             />
-            <AnswerCollectionAccessSelection
-              privateDisabled={
-                (collection.access === ObjectAccess.Restricted ||
-                  collection.access === ObjectAccess.Public) &&
-                (collection.numSharedUsers ?? 0) > 0
-              }
-              restrictedDisabled={
-                collection.access === ObjectAccess.Public &&
-                (collection.numSharedUsers ?? 0) > 0
-              }
-            />
+            <AnswerCollectionAccessSelection />
           </div>
           {values.access !== ObjectAccess.Private ? (
             <AnswerCollectionCatalogSelection className="mb-3" />
