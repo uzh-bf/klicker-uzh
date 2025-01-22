@@ -69,8 +69,6 @@ function AnswerCollectionItem({
     ),
   }
 
-  console.log(collection.isImported)
-
   return (
     <>
       <Button
