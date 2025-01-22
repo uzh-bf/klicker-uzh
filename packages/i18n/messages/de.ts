@@ -1933,9 +1933,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Antwort-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
         'Beim Erstellen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass der Name der Sammlung einzigartig ist und versuchen Sie es erneut.',
-      createdAnswerCollections: 'Erstellte Antwort-Sammlungen',
-      sharedAnswerCollections: 'Geteilte Antwort-Sammlungen',
-      noAnswerCollections: 'Es wurden noch keine Antwort-Sammlungen erstellt.',
+      availableAnswerCollections: 'Verfügbare Antwort-Sammlungen',
+      noAnswerCollections:
+        'Es wurden noch keine Antwort-Sammlungen erstellt oder aus dem Katalog importiert.',
       numOfAnswers: '{number} Antworten',
       byOwner: 'von {owner}',
       clickToViewEdit: 'Ansehen / Editieren',
@@ -1948,9 +1948,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
-      userShortnames: 'Nutzer Kurznamen',
-      requestImport: 'Anfragen / Importieren',
-      requestImportCollection: 'Antwort-Sammlung anfragen / importieren',
       requestAccessMessage:
         "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' (von {owner}) beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
       importCollectionMessage:
@@ -1962,12 +1959,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Importieren der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       requestError:
         'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      noSharedRequestedAnswerCollections:
-        'Es wurden noch keine Antwort-Sammlungen angefragt oder importiert.',
       viewCollection: 'Sammlung ansehen',
       requestedAccess: 'Zugriff beantragt',
-      sharingRequests: 'Zugriffs-Anfragen',
-      unresolved: 'Unbearbeitet',
       deleteCollection: 'Sammlung löschen',
       deletionDisabledInUse:
         'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht löschen. Um die Sammlung zu löschen, entfernen Sie sie bitte zuerst aus allen Fragen, die sie verwenden.',
@@ -2004,6 +1997,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accessTypes: 'Zugriffs-Typen',
       objectType: 'Objekt-Typ',
       all: 'Alle',
+      sharingRequests: 'Zugriffs-Anfragen',
+      unresolved: 'Unbearbeitet',
       objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
       noPublicRestrictedCollections:
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden. Object, für welche bereits Zugriff angefragt oder bestätigt wurde, können nicht mehr ausgewählt werden.',

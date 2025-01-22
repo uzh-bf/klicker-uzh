@@ -1918,9 +1918,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The answer collection was created successfully.',
       collectionCreationError:
         'An error occurred while creating the answer collection. Please make sure that the name of the collection is unique and try again.',
-      createdAnswerCollections: 'Created Answer Collections',
-      sharedAnswerCollections: 'Shared Answer Collections',
-      noAnswerCollections: 'No answer collections have been created.',
+      availableAnswerCollections: 'Available Answer Collections',
+      noAnswerCollections:
+        'No answer collections have been created or imported form the catalog yet.',
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
       clickToViewEdit: 'Click to view / edit',
@@ -1933,9 +1933,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The changes to the answer collection have been saved successfully.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
-      userShortnames: 'User Shortnames',
-      requestImport: 'Request / Import',
-      requestImportCollection: 'Request / Import Answer Collection',
       requestAccessMessage:
         'Here you can request access to the answer collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared answer collection in your questions.',
       importCollectionMessage:
@@ -1947,12 +1944,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while importing the answer collection. Please try again or contact the support.',
       requestError:
         'An error occurred while requesting the answer collection. Please try again or contact the support.',
-      noSharedRequestedAnswerCollections:
-        'No shared answer collections have been imported or requested.',
       viewCollection: 'View Collection',
       requestedAccess: 'Requested Access',
-      sharingRequests: 'Sharing Requests',
-      unresolved: 'Unresolved',
       deleteCollection: 'Delete collection',
       deletionDisabledInUse:
         'This collection is used by at least one of your questions. Therefore, you cannot delete the collection. To delete the collection, please first remove it from all questions that use it.',
@@ -1988,6 +1981,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessTypes: 'Access Types',
       objectType: 'Object Type',
       all: 'All',
+      sharingRequests: 'Sharing Requests',
+      unresolved: 'Unresolved',
       objectTypeANSWER_COLLECTION: 'Answer Collection',
       noPublicRestrictedCollections:
         'No public or restricted objects were found for the entered search criteria and filters. Objects for which access has already been requested or confirmed cannot be selected anymore.',

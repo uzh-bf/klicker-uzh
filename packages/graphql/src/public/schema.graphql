@@ -99,6 +99,10 @@ type AnswerCollection {
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
+  isAccessGranted: Boolean
+  isEditable: Boolean
+  isImported: Boolean
+  isOwner: Boolean
   isRemovable: Boolean
   name: String!
   numSharedUsers: Int

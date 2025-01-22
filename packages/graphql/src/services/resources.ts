@@ -169,6 +169,10 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       numSolutionUsages: entry._count?.solutionUsages,
     })),
     numSharedUsers: collection._count?.permissions,
+    isOwner: true,
+    isEditable: true,
+    isImported: collection.originalId !== null,
+    isAccessGranted: false,
     isRemovable: collection._count?.linkedElements === 0,
   }))
 
@@ -189,6 +193,10 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
           ? collection.entries
           : undefined,
       ownerShortname: collection.owner?.shortname,
+      isOwner: false,
+      isEditable: false,
+      isImported: false,
+      isAccessGranted: object.permissionStatus === DB.PermissionStatus.GRANTED,
       isRemovable: collection._count?.linkedElements === 0,
     }
   })

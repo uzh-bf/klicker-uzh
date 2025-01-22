@@ -50,6 +50,10 @@ interface IAnswerCollection extends DB.AnswerCollection {
   sharingLevel?: DB.AccessLevel
   ownerShortname?: string
   numSharedUsers?: number
+  isOwner?: boolean
+  isEditable?: boolean
+  isImported?: boolean
+  isAccessGranted?: boolean
   isRemovable?: boolean
 }
 
@@ -76,6 +80,10 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+    isEditable: t.exposeBoolean('isEditable', { nullable: true }),
+    isImported: t.exposeBoolean('isImported', { nullable: true }),
+    isAccessGranted: t.exposeBoolean('isAccessGranted', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
   }),
 })

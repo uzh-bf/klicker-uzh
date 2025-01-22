@@ -1,9 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  AccessType,
-  GetAnswerCollectionsDocument,
-  PermissionStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -15,7 +11,6 @@ import CollectionRemovalErrorToast from './answerCollections/CollectionRemovalEr
 import CollectionRemovalSuccessToast from './answerCollections/CollectionRemovalSuccessToast'
 import RequestCancellationErrorToast from './answerCollections/RequestCancellationErrorToast'
 import RequestCancellationSuccessToast from './answerCollections/RequestCancellationSuccessToast'
-import SharedAnswerCollectionList from './SharedAnswerCollectionList'
 
 function AnswerCollections() {
   const t = useTranslations()
@@ -38,28 +33,7 @@ function AnswerCollections() {
       </div>
       <AnswerCollectionCreation />
       <AnswerCollectionList
-        collections={(data?.getAnswerCollections ?? []).filter(
-          (collection) => collection.accessType === AccessType.Owner
-        )}
-        loading={loading}
-        setDeletionSuccess={setDeletionSuccess}
-        setDeletionFailure={setDeletionFailure}
-        setRemovalSuccess={setRemovalSuccess}
-        setRemovalFailure={setRemovalFailure}
-        setCancellationSuccess={setCancellationSuccess}
-        setCancellationFailure={setCancellationFailure}
-      />
-      <SharedAnswerCollectionList
-        sharedCollections={(data?.getAnswerCollections ?? []).filter(
-          (collection) =>
-            collection.accessType === AccessType.Shared &&
-            collection.sharingStatus === PermissionStatus.Granted
-        )}
-        requestedCollections={(data?.getAnswerCollections ?? []).filter(
-          (collection) =>
-            collection.accessType === AccessType.Shared &&
-            collection.sharingStatus === PermissionStatus.Requested
-        )}
+        collections={data?.getAnswerCollections ?? []}
         loading={loading}
         setDeletionSuccess={setDeletionSuccess}
         setDeletionFailure={setDeletionFailure}

@@ -9,6 +9,10 @@ query GetAnswerCollections {
     description
     ownerShortname
     numSharedUsers
+    isOwner
+    isEditable
+    isImported
+    isAccessGranted
     isRemovable
     entries {
       id

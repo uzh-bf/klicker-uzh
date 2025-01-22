@@ -1,8 +1,12 @@
 import { faClock, faHandPointer } from '@fortawesome/free-regular-svg-icons'
-import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
+import {
+  faDownload,
+  faLink,
+  faUserGroup,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { AnswerCollection, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H4 } from '@uzh-bf/design-system'
+import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -15,7 +19,9 @@ import RequestCancellationModal from './RequestCancellationModal'
 
 function AnswerCollectionItem({
   collection,
-  editable = false,
+  isOwner = false,
+  isEditable = false,
+  isImported = false,
   accessGranted = false,
   setDeletionSuccess,
   setDeletionFailure,
@@ -25,7 +31,9 @@ function AnswerCollectionItem({
   setCancellationFailure,
 }: {
   collection: AnswerCollection
-  editable?: boolean
+  isOwner?: boolean
+  isEditable?: boolean
+  isImported?: boolean
   accessGranted?: boolean
   setDeletionSuccess: Dispatch<SetStateAction<boolean>>
   setDeletionFailure: Dispatch<SetStateAction<boolean>>
@@ -61,13 +69,15 @@ function AnswerCollectionItem({
     ),
   }
 
+  console.log(collection.isImported)
+
   return (
     <>
       <Button
         basic
         onClick={() => {
           // open editing modal for own collections
-          if (editable) {
+          if (isEditable) {
             setEditModal(true)
           }
           // allow viewing of shared collections (not for requested ones)
@@ -84,10 +94,20 @@ function AnswerCollectionItem({
         }}
         data={{ cy: `answer-collection-${collection.name}` }}
       >
-        <div className="flex flex-col items-start">
-          <div className={twMerge('flex flex-row gap-2', editable && 'gap-5')}>
-            <H4 className={{ root: 'mb-0' }}>{collection.name}</H4>
-            {editable ? (
+        <div className="flex flex-col items-start text-sm">
+          <div
+            className={twMerge('flex flex-row gap-2', isEditable && 'gap-5')}
+          >
+            <div className="flex flex-row items-center gap-1.5">
+              {!(isOwner && !isImported) && (
+                <FontAwesomeIcon
+                  icon={isImported ? faDownload : faLink}
+                  className="w-5"
+                />
+              )}
+              <div className="text-base">{collection.name}</div>
+            </div>
+            {isEditable ? (
               collectionAccessMap[collection.access]
             ) : (
               <div className="mb-[0.1rem] self-end text-sm text-gray-500">
@@ -107,7 +127,7 @@ function AnswerCollectionItem({
             </div>
           ) : null}
         </div>
-        {editable ? (
+        {isEditable ? (
           <div className="flex h-full flex-col items-end gap-0.5 self-end text-sm">
             {(collection.numSharedUsers ?? 0) > 0 ? (
               <div className="flex flex-row items-center gap-1.5">
@@ -121,24 +141,24 @@ function AnswerCollectionItem({
             </div>
           </div>
         ) : accessGranted ? (
-          <div className="text-primary-100 flex flex-row items-center gap-2">
+          <div className="text-primary-100 flex flex-row items-center gap-2 text-sm">
             <FontAwesomeIcon icon={faHandPointer} />
             <div>{t('manage.resources.viewCollection')}</div>
           </div>
         ) : (
-          <div className="flex flex-col items-end gap-0.5 py-0.5">
+          <div className="flex flex-col items-end gap-0.5 py-0.5 text-sm">
             <div className="text-primary-100 flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faClock} />
               <div>{t('manage.resources.requestedAccess')}</div>
             </div>
-            <div className="flex flex-row items-center gap-1.5 text-sm">
+            <div className="flex flex-row items-center gap-1.5">
               <FontAwesomeIcon icon={faHandPointer} />
               <div>{t('manage.resources.clickToCancelRequest')}</div>
             </div>
           </div>
         )}
       </Button>
-      {editable ? (
+      {isEditable ? (
         <>
           <AnswerCollectionEditModal
             collection={collection}
