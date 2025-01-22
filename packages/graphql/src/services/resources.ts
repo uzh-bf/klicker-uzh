@@ -178,7 +178,7 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
     numSharedUsers: collection._count?.permissions,
     catalogCollectionId:
       collection.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
-        ? undefined // return undefined if collection is not linked to any catalog
+        ? null // return null if collection is not linked to any catalog
         : collection.catalogCollectionId,
     entries: collection.entries.map((entry) => ({
       ...entry,
@@ -206,7 +206,7 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       ownerShortname: collection.owner?.shortname,
       catalogCollectionId:
         collection.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
-          ? undefined // return undefined if collection is not linked to any catalog
+          ? null // return null if collection is not linked to any catalog
           : collection.catalogCollectionId,
       entries:
         object.permissionStatus === DB.PermissionStatus.GRANTED
