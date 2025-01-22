@@ -1,14 +1,16 @@
 mutation ModifyAnswerCollection(
   $id: Int!
   $name: String
-  $access: CollectionAccess
+  $access: ObjectAccess
   $description: String
+  $catalogCollectionId: String
 ) {
   modifyAnswerCollection(
     id: $id
     name: $name
     access: $access
     description: $description
+    catalogCollectionId: $catalogCollectionId
   ) {
     id
     name

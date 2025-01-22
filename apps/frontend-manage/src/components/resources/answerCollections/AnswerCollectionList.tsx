@@ -1,9 +1,8 @@
 import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { UserNotification } from '@uzh-bf/design-system'
+import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
-import AnswerCollectionCollapsible from './AnswerCollectionCollapsible'
 import AnswerCollectionItem from './AnswerCollectionItem'
 
 function AnswerCollectionList({
@@ -27,12 +26,13 @@ function AnswerCollectionList({
 }) {
   const t = useTranslations()
 
+  if (loading) {
+    return <Loader />
+  }
+
   return (
-    <AnswerCollectionCollapsible
-      title={t('manage.resources.createdAnswerCollections')}
-      className={{ root: 'mb-4' }}
-    >
-      {loading ? <Loader /> : null}
+    <div className="mt-7">
+      <H3>{t('manage.resources.availableAnswerCollections')}</H3>
       {collections && collections.length === 0 ? (
         <UserNotification type="info" className={{ root: 'mt-1.5' }}>
           {t('manage.resources.noAnswerCollections')}
@@ -41,7 +41,10 @@ function AnswerCollectionList({
         <div className="mt-2 flex flex-col">
           {collections?.map((collection) => (
             <AnswerCollectionItem
-              editable
+              isOwner={collection.isOwner ?? false}
+              isEditable={collection.isEditable ?? false}
+              isImported={collection.isImported ?? false}
+              accessGranted={collection.isAccessGranted ?? false}
               key={`answer-collection-${collection.id}`}
               collection={collection}
               setDeletionSuccess={setDeletionSuccess}
@@ -54,7 +57,7 @@ function AnswerCollectionList({
           ))}
         </div>
       )}
-    </AnswerCollectionCollapsible>
+    </div>
   )
 }
 

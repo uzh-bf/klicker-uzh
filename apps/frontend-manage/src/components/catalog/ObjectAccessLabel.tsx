@@ -4,20 +4,22 @@ import {
   faUserLock,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CollectionAccess } from '@klicker-uzh/graphql/dist/ops'
+import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
-function CollectionAccessLabel({
+function ObjectAccessLabel({
   accessType,
+  iconOnly = false,
   className,
 }: {
-  accessType: CollectionAccess
+  accessType: ObjectAccess
+  iconOnly?: boolean
   className?: string
 }) {
   const t = useTranslations()
 
-  if (accessType === CollectionAccess.Public) {
+  if (accessType === ObjectAccess.Public) {
     return (
       <div
         className={twMerge(
@@ -26,10 +28,10 @@ function CollectionAccessLabel({
         )}
       >
         <FontAwesomeIcon icon={faLockOpen} />
-        {t(`manage.resources.access${CollectionAccess.Public}`)}
+        {!iconOnly ? t(`manage.resources.access${ObjectAccess.Public}`) : null}
       </div>
     )
-  } else if (accessType === CollectionAccess.Restricted) {
+  } else if (accessType === ObjectAccess.Restricted) {
     return (
       <div
         className={twMerge(
@@ -38,7 +40,9 @@ function CollectionAccessLabel({
         )}
       >
         <FontAwesomeIcon icon={faUserLock} />
-        {t(`manage.resources.access${CollectionAccess.Restricted}`)}
+        {!iconOnly
+          ? t(`manage.resources.access${ObjectAccess.Restricted}`)
+          : null}
       </div>
     )
   }
@@ -51,9 +55,9 @@ function CollectionAccessLabel({
       )}
     >
       <FontAwesomeIcon icon={faLock} />
-      {t(`manage.resources.access${CollectionAccess.Private}`)}
+      {!iconOnly ? t(`manage.resources.access${ObjectAccess.Private}`) : null}
     </div>
   )
 }
 
-export default CollectionAccessLabel
+export default ObjectAccessLabel

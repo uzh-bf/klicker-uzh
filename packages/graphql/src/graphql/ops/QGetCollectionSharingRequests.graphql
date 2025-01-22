@@ -1,9 +1,0 @@
-query GetCollectionSharingRequests {
-  getCollectionSharingRequests {
-    collectionId
-    collectionName
-    userId
-    userShortname
-    userEmail
-  }
-}

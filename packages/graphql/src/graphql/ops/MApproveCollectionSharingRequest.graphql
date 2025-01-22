@@ -1,6 +1,11 @@
-mutation ApproveCollectionSharingRequest(
-  $collectionId: Int!
+mutation ApproveObjectSharingRequest(
+  $permissionId: Int!
   $userId: String!
+  $accessLevel: AccessLevel!
 ) {
-  approveCollectionSharingRequest(collectionId: $collectionId, userId: $userId)
+  approveObjectSharingRequest(
+    permissionId: $permissionId
+    userId: $userId
+    accessLevel: $accessLevel
+  )
 }

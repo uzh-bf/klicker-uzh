@@ -1,29 +1,31 @@
 // ----- ANSWER COLLECTIONS -----
 // #region
-enum CollectionAccess {
-    PUBLIC
-    PRIVATE
-    RESTRICTED
-}
 
 model AnswerCollection {
-    id          Int              @id @default(autoincrement())
+    id         Int  @id @default(autoincrement())
+    originalId Int? // id of the original answer collection after import (copy)
+
     name        String
     description String
-    version     Int              @default(1)
-    isDeleted   Boolean          @default(false)
-    access      CollectionAccess @default(PRIVATE)
+    version     Int          @default(1)
+    isDeleted   Boolean      @default(false)
+    access      ObjectAccess @default(PRIVATE)
+
+    // optional catalog collection in which this answer collection will be available for import (if access is RESTRICTED or PUBLIC)
+    catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    catalogCollectionId String?            @db.Uuid
 
     entries AnswerCollectionEntry[]
 
     linkedElements Element[] // elements that use this answer collection
 
+    permissions Permission[]
+
     owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: SetNull)
     ownerId String? @db.Uuid
 
-    createdAt   DateTime     @default(now())
-    updatedAt   DateTime     @updatedAt
-    permissions Permission[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
     @@unique([ownerId, name])
 }
@@ -42,6 +44,37 @@ model AnswerCollectionEntry {
     updatedAt DateTime @updatedAt
 
     @@unique([collectionId, value])
+}
+
+// #endregion
+
+// ----- CATALOG -----
+// #region
+enum ObjectAccess {
+    PUBLIC
+    PRIVATE
+    RESTRICTED
+}
+
+model CatalogCollection {
+    id          String  @id @default(uuid()) @db.Uuid
+    name        String
+    description String?
+
+    // functionalities like "requesting access", etc. are not available here, access can only be provided explicitely (as for private objects)
+    // users / user groups that are allowed to import / request elements from this collection (read access)
+    // users / user groups that are allowed to add elements to this collection (write access)
+    // users / user groups that are allowed to edit the access rights of other users / user groups (admin access)
+    permissions Permission[]
+
+    // objects contained in this catalog collection
+    answerCollections AnswerCollection[]
+
+    owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    ownerId String? @db.Uuid
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 // #endregion
@@ -74,6 +107,7 @@ model MediaFile {
 enum AccessLevel {
     READ
     WRITE
+    ADMIN // e.g. on catalog colletions, admins can edit the access rights of other users
 }
 
 enum PermissionStatus {
@@ -116,6 +150,9 @@ model Permission {
     objectOwnerId String? @db.Uuid
 
     // shared objects
+    catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    catalogCollectionId String?            @db.Uuid
+
     answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     answerCollectionId Int?
 
@@ -141,6 +178,7 @@ model Permission {
     updatedAt DateTime @updatedAt
 
     // only one permission per object and user / user group
+    @@unique([catalogCollectionId, userId])
     @@unique([answerCollectionId, userId])
     @@unique([elementId, userId])
     @@unique([courseId, userId])
@@ -148,6 +186,7 @@ model Permission {
     @@unique([practiceQuizId, userId])
     @@unique([microLearningId, userId])
     @@unique([groupActivityId, userId])
+    @@unique([catalogCollectionId, userGroupId])
     @@unique([answerCollectionId, userGroupId])
     @@unique([elementId, userGroupId])
     @@unique([courseId, userGroupId])

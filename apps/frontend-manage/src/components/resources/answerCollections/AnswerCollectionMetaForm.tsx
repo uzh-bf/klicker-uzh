@@ -4,8 +4,8 @@ import { faInfoCircle, faTrashCan } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
-  CollectionAccess,
   ModifyAnswerCollectionDocument,
+  ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -20,6 +20,7 @@ import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
 import AnswerCollectionAccessSelection from './AnswerCollectionAccessSelection'
+import AnswerCollectionCatalogSelection from './AnswerCollectionCatalogSelection'
 
 function AnswerCollectionMetaForm({
   collection,
@@ -39,6 +40,7 @@ function AnswerCollectionMetaForm({
         name: collection.name,
         access: collection.access,
         description: collection.description,
+        catalogCollectionId: collection.catalogCollectionId ?? '',
       }}
       onSubmit={async (values) => {
         const { data } = await modifyAnswerCollection({
@@ -51,6 +53,10 @@ function AnswerCollectionMetaForm({
               values.description !== collection.description
                 ? values.description
                 : undefined,
+            catalogCollectionId:
+              values.catalogCollectionId === ''
+                ? undefined
+                : values.catalogCollectionId,
           },
         })
 
@@ -76,18 +82,11 @@ function AnswerCollectionMetaForm({
               tooltip={t('manage.resources.nameTooltip')}
               data={{ cy: 'answer-collection-name' }}
             />
-            <AnswerCollectionAccessSelection
-              privateDisabled={
-                (collection.access === CollectionAccess.Restricted ||
-                  collection.access === CollectionAccess.Public) &&
-                (collection.numSharedUsers ?? 0) > 0
-              }
-              restrictedDisabled={
-                collection.access === CollectionAccess.Public &&
-                (collection.numSharedUsers ?? 0) > 0
-              }
-            />
+            <AnswerCollectionAccessSelection />
           </div>
+          {values.access !== ObjectAccess.Private ? (
+            <AnswerCollectionCatalogSelection className="mb-3" />
+          ) : null}
           <EditorField
             required
             label={t('shared.generic.description')}

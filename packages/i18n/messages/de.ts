@@ -104,6 +104,7 @@ export default {
       cancel: 'Abbrechen',
       confirm: 'Bestätigen',
       close: 'Schliessen',
+      approve: 'Genehmigen',
       sendAnswer: 'Antwort senden',
       begin: 'Beginnen',
       finish: 'Abschliessen',
@@ -803,6 +804,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
       resources: 'Ressourcen',
+      catalog: 'Katalog',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -1903,6 +1905,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accessPUBLIC: 'Öffentlich',
       accessPRIVATE: 'Privat',
       accessRESTRICTED: 'Eingeschränkt',
+      catalogCollection: 'Katalog-Sammlung',
+      catalogCollectionTooltip:
+        'Hier können Sie eine Katalog-Sammlung wählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll. Nur Nutzer mit Zugriff auf die entsprechende Katalog-Sammlung können Ihre Antwort-Sammlung dort importieren oder Zugriff darauf anfragen. Wählen Sie keine Katalog-Sammlung, ist die Sammlung für alle Nutzer sichtbar.',
+      noCatalogCollectionSelected: 'Keine Katalog-Sammlung ausgewählt',
       descriptionTooltip:
         'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
       descriptionPlaceholder:
@@ -1918,18 +1924,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uniqueValuesRequired:
         'Alle Optionen in einer Antwort-Sammlung müssen einen einzigartigen Wert haben. Bitte stellen Sie sicher, dass keine zwei Antwortoptionen übereinstimmen.',
       infoAccessPUBLIC:
-        'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und importiert werden.',
+        'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und über den Katalog importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
       infoAccessPRIVATE:
-        'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+        'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder über den Katalog importiert werden. Sie können nach Erstellung der Sammlung einzelnen Nutzern oder Nutzergruppen Zugriff gewähren.',
       infoAccessRESTRICTED:
-        'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern angefragt und nach Ihrer Zustimmung importiert werden. Sobald andere Nutzer Ihre Antwort-Sammlung nutzen, können Sie den Zugriff Ihrer Sammlung nicht mehr ändern.',
+        'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
       collectionCreationSuccess:
         'Die Antwort-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
         'Beim Erstellen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass der Name der Sammlung einzigartig ist und versuchen Sie es erneut.',
-      createdAnswerCollections: 'Erstellte Antwort-Sammlungen',
-      sharedAnswerCollections: 'Geteilte Antwort-Sammlungen',
-      noAnswerCollections: 'Es wurden noch keine Antwort-Sammlungen erstellt.',
+      availableAnswerCollections: 'Verfügbare Antwort-Sammlungen',
+      noAnswerCollections:
+        'Es wurden noch keine Antwort-Sammlungen erstellt oder aus dem Katalog importiert.',
       numOfAnswers: '{number} Antworten',
       byOwner: 'von {owner}',
       clickToViewEdit: 'Ansehen / Editieren',
@@ -1942,32 +1948,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
-      accessTypes: 'Zugriffs-Typem',
-      all: 'Alle',
-      userShortnames: 'Nutzer Kurznamen',
-      requestImport: 'Anfragen / Importieren',
-      noPublicRestrictedCollections:
-        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Antwort-Sammlungen gefunden werden. Sammlungen, welche bereits importiert oder angefragt wurden, werden hier nicht angezeigt.',
-      requestImportCollection: 'Antwort-Sammlung anfragen / importieren',
       requestAccessMessage:
-        "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
+        "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' (von {owner}) beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
       importCollectionMessage:
-        "Hier können Sie die Antwort-Sammlung '<b>{name}</b>' automatisch zu Ihren Sammlungen hinzufügen. Diese steht Ihnen ab sofort zur Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
+        'Hier können Sie eine Kopie der Antwort-Sammlung "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie die importierte Antwort-Sammlung direkt verwenden oder bei Bedarf anpassen. Änderungen an der ursprünglichen Antwort-Sammlung haben keinen Einfluss auf Ihre importierte Kopie.',
       showAnswers: 'Antworten anzeigen',
       importCollection: 'Antwort-Sammlung importieren',
       requestAccess: 'Zugriff beantragen',
-      requestImportSuccess:
-        'Die Antwort-Sammlung wurder erfolgreich importiert / beantragt',
       importError:
         'Beim Importieren der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       requestError:
         'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      noSharedRequestedAnswerCollections:
-        'Es wurden noch keine Antwort-Sammlungen angefragt oder importiert.',
       viewCollection: 'Sammlung ansehen',
       requestedAccess: 'Zugriff beantragt',
-      sharingRequests: 'Zugriffs-Anfragen',
-      unresolved: 'Unbearbeitet',
       deleteCollection: 'Sammlung löschen',
       deletionDisabledInUse:
         'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht löschen. Um die Sammlung zu löschen, entfernen Sie sie bitte zuerst aus allen Fragen, die sie verwenden.',
@@ -1996,6 +1989,46 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zugriffs-Anfrage wurde erfolgreich zurückgezogen.',
       cancellationFailed:
         'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+    },
+    catalog: {
+      userGroups: 'Nutzergruppen',
+      userGroupsComingSoon:
+        'Hier werden bald die von Ihnen gemanagten Nutzergruppen, sowie Nutzergruppen zu welchen Sie zugewiesen wurden, angezeigt.',
+      accessTypes: 'Zugriffs-Typen',
+      objectType: 'Objekt-Typ',
+      all: 'Alle',
+      sharingRequests: 'Zugriffs-Anfragen',
+      unresolved: 'Unbearbeitet',
+      objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
+      noPublicRestrictedCollections:
+        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden. Object, für welche bereits Zugriff angefragt oder bestätigt wurde, können nicht mehr ausgewählt werden.',
+      requestAccess: 'Zugriff beantragen',
+      importObject: 'Objekt importieren',
+      accessRequested: 'Zugriff beantragt',
+      accessGranted: 'Zugriff gewährt',
+      importPublicResource: 'Öffentliche Ressource importieren',
+      answerCollectionRequestSuccess:
+        'Der Zugriff auf die ausgewählte Antwort-Sammlung wurde erfolgreich benatragt.',
+      answerCollectionImportSuccess:
+        'Eine Kopie der Antwort-Sammlung wurde erfolgreich in Ihr Konto importiert.',
+      requestPublicResource:
+        "Durch das Bentragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den erteilten Berechtigungen. Gewährte Berechtigungen können jederzeit vom Besitzer widerrufen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die 'Importieren' Option.",
+      sharingRequestsExplanation:
+        'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
+      approveSharingRequest: 'Zugriffsanfrage akzeptieren',
+      specifyAccessLevel:
+        'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Schreiberechten, dass alle Änderungen anderer Nutzer an Ihrem Objekt direkt für alle Nutzer mit Zugriff auf dieses sichtbar sein werden. Die offizielle Dokumentation der Sharing-Funktionen enthält weiterführende Informationen.',
+      accessLevel: 'Zugriffslevel',
+      accessLevelREAD: 'Lesezugriff',
+      accessLevelWRITE: 'Schreibzugriff',
+      approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich akzeptiert.',
+      approvalFailed:
+        'Beim Akzeptieren der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      declineSuccessful: 'Die Zugriffsanfrage wurde erfolgreich abgelehnt.',
+      declineFailed:
+        'Beim Ablehnen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      noCatalogCollectionSelectedWarning:
+        "Wenn Sie Ihr geteiltes Objekt (mit einem anderen Zugriffsstatus als 'Privat') nicht einer bestimmten Katalog-Sammlung zuweisen, können alle anderen Nutzer dieses im Katalog finden und darüber importieren / Zugriff beantragen.",
     },
     groupActivity: {
       activityMissingOrNotCompleted:

@@ -61,9 +61,11 @@ import {
   Tag,
 } from './question.js'
 import {
+  AccessLevel,
   AnswerCollection,
   AnswerCollectionEntry,
-  CollectionAccess,
+  CatalogObject,
+  ObjectAccess,
 } from './resource.js'
 import {
   FileUploadSAS,
@@ -1183,9 +1185,10 @@ export const Mutation = builder.mutationType({
         type: AnswerCollection,
         args: {
           name: t.arg.string({ required: true }),
-          access: t.arg({ type: CollectionAccess, required: true }),
+          access: t.arg({ type: ObjectAccess, required: true }),
           description: t.arg.string({ required: true }),
           answers: t.arg.stringList({ required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.createAnswerCollection(args, ctx)
@@ -1198,8 +1201,9 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           name: t.arg.string({ required: false }),
-          access: t.arg({ type: CollectionAccess, required: false }),
+          access: t.arg({ type: ObjectAccess, required: false }),
           description: t.arg.string({ required: false }),
+          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.modifyAnswerCollection(args, ctx)
@@ -1241,9 +1245,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      importAnswerCollection: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: AnswerCollection,
+      importAnswerCollection: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
         args: {
           collectionId: t.arg.int({ required: true }),
         },
@@ -1254,7 +1257,7 @@ export const Mutation = builder.mutationType({
 
       requestAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: AnswerCollection,
+        type: CatalogObject,
         args: {
           collectionId: t.arg.int({ required: true }),
         },
@@ -1295,28 +1298,29 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      approveCollectionSharingRequest: t.withAuth(asUserFullAccess).boolean({
+      approveObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          permissionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
+          accessLevel: t.arg({ type: AccessLevel, required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.resolveCollectionSharingRequest(
+          return ResourcesService.resolveObjectSharingRequest(
             { ...args, approved: true },
             ctx
           )
         },
       }),
 
-      declineCollectionSharingRequest: t.withAuth(asUserFullAccess).boolean({
+      declineObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          permissionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.resolveCollectionSharingRequest(
+          return ResourcesService.resolveObjectSharingRequest(
             { ...args, approved: false },
             ctx
           )

@@ -9,7 +9,14 @@ query GetAnswerCollections {
     description
     ownerShortname
     numSharedUsers
+    catalogCollectionId
+
+    isOwner
+    isEditable
+    isImported
+    isAccessGranted
     isRemovable
+
     entries {
       id
       value

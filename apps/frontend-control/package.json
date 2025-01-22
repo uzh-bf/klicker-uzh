@@ -17,7 +17,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@socialgouv/matomo-next": "1.9.1",
-    "@uzh-bf/design-system": "3.0.0-alpha.47",
+    "@uzh-bf/design-system": "3.0.0-alpha.49",
     "cross-env": "7.0.3",
     "dayjs": "1.11.13",
     "deepmerge": "4.3.1",

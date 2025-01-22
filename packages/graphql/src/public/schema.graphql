@@ -5,6 +5,7 @@ schema {
 }
 
 enum AccessLevel {
+  ADMIN
   READ
   WRITE
 }
@@ -93,11 +94,16 @@ enum ActivityType {
 }
 
 type AnswerCollection {
-  access: CollectionAccess!
+  access: ObjectAccess!
   accessType: AccessType!
+  catalogCollectionId: String
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
+  isAccessGranted: Boolean
+  isEditable: Boolean
+  isImported: Boolean
+  isOwner: Boolean
   isRemovable: Boolean
   name: String!
   numSharedUsers: Int
@@ -110,14 +116,6 @@ type AnswerCollectionEntry {
   id: Int!
   numSolutionUsages: Int
   value: String!
-}
-
-type AnswerCollectionSharingRequest {
-  collectionId: Int!
-  collectionName: String!
-  userEmail: String!
-  userId: String!
-  userShortname: String!
 }
 
 type ArchivedElement {
@@ -158,6 +156,22 @@ type AwardEntry {
   participant: Participant
   participantGroup: ParticipantGroup
   type: String!
+}
+
+type CatalogObject {
+  access: ObjectAccess!
+  id: Int
+  isOwner: Boolean!
+  isRequested: Boolean!
+  isShared: Boolean!
+  name: String!
+  objectType: CatalogObjectType!
+  ownerShortname: String
+  uuid: String
+}
+
+enum CatalogObjectType {
+  ANSWER_COLLECTION
 }
 
 type Choice {
@@ -254,12 +268,6 @@ type ChoicesInstanceEvaluation {
 
 type ClassAchievementInstance {
   id: Int!
-}
-
-enum CollectionAccess {
-  PRIVATE
-  PUBLIC
-  RESTRICTED
 }
 
 type ConfusionSummary {
@@ -1035,7 +1043,7 @@ type Mutation {
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
-  approveCollectionSharingRequest(collectionId: Int!, userId: String!): Boolean!
+  approveObjectSharingRequest(accessLevel: AccessLevel!, permissionId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
@@ -1046,7 +1054,7 @@ type Mutation {
   changeParticipantLocale(locale: LocaleType!): Participant
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
-  createAnswerCollection(access: CollectionAccess!, answers: [String!]!, description: String!, name: String!): AnswerCollection
+  createAnswerCollection(access: ObjectAccess!, answers: [String!]!, catalogCollectionId: String, description: String!, name: String!): AnswerCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -1057,7 +1065,7 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
-  declineCollectionSharingRequest(collectionId: Int!, userId: String!): Boolean!
+  declineObjectSharingRequest(permissionId: Int!, userId: String!): Boolean!
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(id: Int!): Int
   deleteCourse(id: String!): Course
@@ -1090,7 +1098,7 @@ type Mutation {
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
-  importAnswerCollection(collectionId: Int!): AnswerCollection
+  importAnswerCollection(collectionId: Int!): Boolean!
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -1112,7 +1120,7 @@ type Mutation {
   manipulateSelectionQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
-  modifyAnswerCollection(access: CollectionAccess, description: String, id: Int!, name: String): AnswerCollection
+  modifyAnswerCollection(access: ObjectAccess, catalogCollectionId: String, description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -1123,7 +1131,7 @@ type Mutation {
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   removeAnswerCollection(collectionId: Int!): Int
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
-  requestAnswerCollection(collectionId: Int!): AnswerCollection
+  requestAnswerCollection(collectionId: Int!): CatalogObject
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
@@ -1258,6 +1266,21 @@ input NumericalRestrictionsInput {
 type NumericalSolutionRange {
   max: Float
   min: Float
+}
+
+enum ObjectAccess {
+  PRIVATE
+  PUBLIC
+  RESTRICTED
+}
+
+type ObjectSharingRequest {
+  objectName: String!
+  objectType: CatalogObjectType!
+  permissionId: Int!
+  userEmail: String!
+  userId: String!
+  userShortname: String!
 }
 
 input OptionsChoicesInput {
@@ -1472,16 +1495,17 @@ type Query {
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlLiveQuiz(id: String!): LiveQuiz
+  countCatalogSharingRequests: Int!
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
-  getAnswerCollectionSelection: [AnswerCollection!]
   getAnswerCollections: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
-  getCollectionSharingRequests: [AnswerCollectionSharingRequest!]
+  getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
+  getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseGroups(courseId: String!): Course
@@ -1503,6 +1527,7 @@ type Query {
   getPracticeQuizList: [Course!]
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
+  getSingleAnswerCollectionCatalog(collectionId: Int!): AnswerCollection
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]

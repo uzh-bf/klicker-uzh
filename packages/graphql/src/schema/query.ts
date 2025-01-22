@@ -53,7 +53,11 @@ import {
   StackFeedback,
 } from './practiceQuiz.js'
 import { Element, ElementInstance, Tag } from './question.js'
-import { AnswerCollection, AnswerCollectionSharingRequest } from './resource.js'
+import {
+  AnswerCollection,
+  CatalogObject,
+  ObjectSharingRequest,
+} from './resource.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -822,19 +826,40 @@ export const Query = builder.queryType({
         },
       }),
 
-      getAnswerCollectionSelection: asUser.field({
-        nullable: true,
-        type: [AnswerCollection],
+      countCatalogSharingRequests: asUser.int({
+        nullable: false,
         resolve(_, __, ctx) {
-          return ResourcesService.getAnswerCollectionSelection(ctx)
+          return ResourcesService.countCatalogSharingRequests(ctx)
         },
       }),
 
-      getCollectionSharingRequests: asUser.field({
+      getCatalogSharingRequests: asUser.field({
         nullable: true,
-        type: [AnswerCollectionSharingRequest],
+        type: [ObjectSharingRequest],
         resolve(_, __, ctx) {
-          return ResourcesService.getCollectionSharingRequests(ctx)
+          return ResourcesService.getCatalogSharingRequests(ctx)
+        },
+      }),
+
+      getCatalogObjects: asUser.field({
+        nullable: true,
+        type: [CatalogObject],
+        args: {
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getCatalogObjects(args, ctx)
+        },
+      }),
+
+      getSingleAnswerCollectionCatalog: asUser.field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getSingleAnswerCollectionCatalog(args, ctx)
         },
       }),
     }

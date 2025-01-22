@@ -1,0 +1,13 @@
+query GetCatalogObjects($catalogCollectionId: String) {
+  getCatalogObjects(catalogCollectionId: $catalogCollectionId) {
+    id
+    uuid
+    name
+    objectType
+    access
+    ownerShortname
+    isRequested
+    isShared
+    isOwner
+  }
+}

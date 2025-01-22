@@ -1,6 +1,0 @@
-mutation DeclineCollectionSharingRequest(
-  $collectionId: Int!
-  $userId: String!
-) {
-  declineCollectionSharingRequest(collectionId: $collectionId, userId: $userId)
-}

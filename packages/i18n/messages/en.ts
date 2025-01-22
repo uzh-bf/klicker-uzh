@@ -103,6 +103,7 @@ export default {
       cancel: 'Cancel',
       confirm: 'Confirm',
       close: 'Close',
+      approve: 'Approve',
       sendAnswer: 'Send answer',
       begin: 'Begin',
       finish: 'Finish',
@@ -804,6 +805,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
       resources: 'Resources',
+      catalog: 'Catalog',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
@@ -1888,6 +1890,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessPUBLIC: 'Public',
       accessRESTRICTED: 'Restricted',
       accessPRIVATE: 'Private',
+      catalogCollection: 'Catalog Collection',
+      catalogCollectionTooltip:
+        'Here you can select a catalog collection in which your answer collection should be visible. Only users with access to the corresponding catalog collection can import your answer collection there or request access to it. If you do not select a catalog collection, the collection is visible to all users.',
+      noCatalogCollectionSelected: 'No catalog collection selected',
       descriptionTooltip:
         'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
       descriptionPlaceholder:
@@ -1903,18 +1909,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uniqueValuesRequired:
         'All options in an answer collection need to have a unique value. Please make sure that no two answers options coincide.',
       infoAccessPUBLIC:
-        'Public answer collections can be viewed and imported by all users.',
+        'Public Answer Collections can be viewed by all users and imported via the catalog. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
       infoAccessPRIVATE:
-        'Private answer collections are only visible to you and cannot be viewed or imported by other users. Once other users use your answer collection, you cannot change the access of your collection anymore.',
+        'Private answer collections are only visible to you and cannot be viewed by other users or imported via the catalog. You can grant access to individual users or user groups after creating the collection.',
       infoAccessRESTRICTED:
-        'Restricted answer collections can be requested by other users and imported after your approval. Once other users use your answer collection, you cannot change the access of your collection anymore.',
+        'Restricted answer collections can be requested by other users in the catalog and imported after your approval. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
       collectionCreationSuccess:
         'The answer collection was created successfully.',
       collectionCreationError:
         'An error occurred while creating the answer collection. Please make sure that the name of the collection is unique and try again.',
-      createdAnswerCollections: 'Created Answer Collections',
-      sharedAnswerCollections: 'Shared Answer Collections',
-      noAnswerCollections: 'No answer collections have been created.',
+      availableAnswerCollections: 'Available Answer Collections',
+      noAnswerCollections:
+        'No answer collections have been created or imported form the catalog yet.',
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
       clickToViewEdit: 'Click to view / edit',
@@ -1927,32 +1933,19 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The changes to the answer collection have been saved successfully.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
-      accessTypes: 'Access Types',
-      all: 'All',
-      userShortnames: 'User Shortnames',
-      requestImport: 'Request / Import',
-      noPublicRestrictedCollections:
-        'No public or restricted answer collections were found for the entered search criteria and filters. Collections that have already been imported or requested are not shown here.',
-      requestImportCollection: 'Request / Import Answer Collection',
       requestAccessMessage:
-        'Here you can request access to the answer collection "<b>{name}</b>". The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once the owner accepts your request, the entire answer collection will be available to you automatically when creating the corresponding question types and on this page for viewing.',
+        'Here you can request access to the answer collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared answer collection in your questions.',
       importCollectionMessage:
-        'Here you can add the answer collection "<b>{name}</b>" to your collections. It is then immediately available to you when creating the corresponding question types and for viewing on this page.',
+        'Here you can import a copy of the answer collection "<b>{name}</b>" (by {owner}) to your own account. After the import is completed, you can directly use the imported answer collection or modify it as needed. Changes to the original answer collection will not affect your imported copy.',
       showAnswers: 'Show Answers',
       importCollection: 'Import Answer Collection',
       requestAccess: 'Request Access',
-      requestImportSuccess:
-        'The answer collection was successfully imported / requested.',
       importError:
         'An error occurred while importing the answer collection. Please try again or contact the support.',
       requestError:
         'An error occurred while requesting the answer collection. Please try again or contact the support.',
-      noSharedRequestedAnswerCollections:
-        'No shared answer collections have been imported or requested.',
       viewCollection: 'View Collection',
       requestedAccess: 'Requested Access',
-      sharingRequests: 'Sharing Requests',
-      unresolved: 'Unresolved',
       deleteCollection: 'Delete collection',
       deletionDisabledInUse:
         'This collection is used by at least one of your questions. Therefore, you cannot delete the collection. To delete the collection, please first remove it from all questions that use it.',
@@ -1980,6 +1973,46 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       cancellationSuccessful: 'The access request was successfully withdrawn.',
       cancellationFailed:
         'An error occurred while withdrawing the access request. Please try again or contact the support.',
+    },
+    catalog: {
+      userGroups: 'User Groups',
+      userGroupsComingSoon:
+        'Here you will soon see the user groups you manage, as well as user groups to which you have been assigned.',
+      accessTypes: 'Access Types',
+      objectType: 'Object Type',
+      all: 'All',
+      sharingRequests: 'Sharing Requests',
+      unresolved: 'Unresolved',
+      objectTypeANSWER_COLLECTION: 'Answer Collection',
+      noPublicRestrictedCollections:
+        'No public or restricted objects were found for the entered search criteria and filters. Objects for which access has already been requested or confirmed cannot be selected anymore.',
+      requestAccess: 'Request Access',
+      importObject: 'Import Object',
+      accessRequested: 'Access requested',
+      accessGranted: 'Access granted',
+      answerCollectionRequestSuccess:
+        'The access to the selected answer collection was successfully requested.',
+      importPublicResource: 'Import Public Resource',
+      answerCollectionImportSuccess:
+        'A copy of the answer collection was successfully imported into your account.',
+      requestPublicResource:
+        "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
+      sharingRequestsExplanation:
+        'Please review the following access requests for your shared objects. Accepting a sharing request will grant the requesting user access to the corresponding object without creating a copy. Any modifications other users with write access to your objects make are directly visible to all users of the object.',
+      approveSharingRequest: 'Approve sharing request',
+      specifyAccessLevel:
+        'Please select an access level for sharing the object {objectName} (type: {objectType}) with the user {userShortname}. Please note that when granting write access, any changes other users make to your object are directly visible to all users with access to it. The official documentation of the sharing features provides further information.',
+      accessLevel: 'Access Level',
+      accessLevelREAD: 'Read Access',
+      accessLevelWRITE: 'Write Access',
+      approvalSuccessful: 'The sharing request was successfully approved.',
+      approvalFailed:
+        'An error occurred while approving the sharing request. Please try again or contact the support.',
+      declineSuccessful: 'The sharing request was successfully declined.',
+      declineFailed:
+        'An error occurred while declining the sharing request. Please try again or contact the support.',
+      noCatalogCollectionSelectedWarning:
+        'If you do not assign your shared object (with an access status other than "Private") to a specific catalog collection, all other users can find it in the catalog and import it / request access to it.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

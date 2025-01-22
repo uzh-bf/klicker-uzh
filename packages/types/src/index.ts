@@ -1,6 +1,7 @@
 import type {
   Element,
   ElementType,
+  ObjectAccess,
   PerformanceLevel,
 } from '@klicker-uzh/prisma'
 
@@ -15,6 +16,16 @@ export enum DisplayMode {
 export enum AccessType {
   OWNER = 'OWNER',
   SHARED = 'SHARED',
+}
+
+export enum CatalogObjectType {
+  ANSWER_COLLECTION = 'ANSWER_COLLECTION',
+  // TODO: add more object types once they are supported
+  // ELEMENT = 'ELEMENT',
+  // LIVE_QUIZ = 'LIVE_QUIZ',
+  // PRACTICE_QUIZ = 'PRACTICE_QUIZ',
+  // MICRO_LEARNING = 'MICRO_LEARNING',
+  // GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
 export enum ActivityType {
@@ -103,13 +114,30 @@ export type AvatarSettings = {
 
 // ----- RESOURCES -----
 // #region
-export type AnswerCollectionSharingRequest = {
-  collectionId: number
-  collectionName: string
+export type ObjectSharingRequest = {
+  permissionId: number
+  objectName: string
+  objectType: CatalogObjectType
   userId: string
   userShortname: string
   userEmail: string
 }
+// #endregion
+
+// ----- CATALOG -----
+// #region
+export type CatalogObject = {
+  id?: number
+  uuid?: string
+  name: string
+  objectType: CatalogObjectType
+  access: ObjectAccess
+  ownerShortname?: string
+  isRequested: boolean
+  isShared: boolean
+  isOwner: boolean
+}
+
 // #endregion
 
 // ----- ELEMENT DATA AND INSTANCES -----
