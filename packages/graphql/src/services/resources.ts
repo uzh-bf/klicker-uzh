@@ -933,6 +933,27 @@ export async function importAnswerCollection(
   return true
 }
 
+export async function countCatalogSharingRequests(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      objectPermissions: {
+        where: {
+          permissionStatus: DB.PermissionStatus.REQUESTED,
+        },
+      },
+    },
+  })
+
+  if (!user) {
+    return 0
+  }
+
+  return user.objectPermissions.length
+}
+
 export async function getCatalogSharingRequests(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {

@@ -1494,6 +1494,7 @@ type Query {
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlLiveQuiz(id: String!): LiveQuiz
+  countCatalogSharingRequests: Int!
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(quizId: String!): [Feedback!]

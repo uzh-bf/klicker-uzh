@@ -5,6 +5,7 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import {
+  CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   User,
@@ -26,8 +27,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
-  // TODO: replace with new query
-  // const { data: requestData } = useQuery(GetCollectionSharingRequestsDocument)
+  const { data: pendingRequestData } = useQuery(
+    CountCatalogSharingRequestsDocument
+  )
   const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-first',
   })
@@ -80,6 +82,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
       icon: faBolt,
       onClick: () => router.push('/catalog'),
       active: router.pathname == '/catalog',
+      notification: pendingRequestData?.countCatalogSharingRequests !== 0,
       data: { cy: 'catalog' },
       className: { icon: 'text-orange-400' },
     },

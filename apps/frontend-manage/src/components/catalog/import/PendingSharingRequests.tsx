@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  CountCatalogSharingRequestsDocument,
   DeclineObjectSharingRequestDocument,
   GetCatalogSharingRequestsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -94,20 +95,41 @@ function PendingSharingRequests() {
                       })
                       const previousRequests =
                         queryData?.getCatalogSharingRequests
-                      if (!previousRequests) return
 
-                      cache.writeQuery({
-                        query: GetCatalogSharingRequestsDocument,
-                        data: {
-                          getCatalogSharingRequests: previousRequests.filter(
-                            (r) =>
-                              !(
-                                r.permissionId === request.permissionId &&
-                                r.userId === request.userId
-                              )
-                          ),
-                        },
+                      const queryData2 = cache.readQuery({
+                        query: CountCatalogSharingRequestsDocument,
                       })
+                      const requestsCount =
+                        queryData2?.countCatalogSharingRequests
+
+                      if (!previousRequests && !requestsCount) return
+
+                      if (previousRequests) {
+                        cache.writeQuery({
+                          query: GetCatalogSharingRequestsDocument,
+                          data: {
+                            getCatalogSharingRequests: previousRequests.filter(
+                              (r) =>
+                                !(
+                                  r.permissionId === request.permissionId &&
+                                  r.userId === request.userId
+                                )
+                            ),
+                          },
+                        })
+                      }
+
+                      if (requestsCount) {
+                        cache.writeQuery({
+                          query: CountCatalogSharingRequestsDocument,
+                          data: {
+                            countCatalogSharingRequests: Math.max(
+                              requestsCount - 1,
+                              0
+                            ),
+                          },
+                        })
+                      }
                     },
                   })
 

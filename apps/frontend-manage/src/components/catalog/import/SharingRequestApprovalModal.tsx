@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AccessLevel,
   ApproveObjectSharingRequestDocument,
+  CountCatalogSharingRequestsDocument,
   GetCatalogSharingRequestsDocument,
   ObjectSharingRequest,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -98,21 +99,42 @@ function SharingRequestApprovalModal({
                 const queryData = cache.readQuery({
                   query: GetCatalogSharingRequestsDocument,
                 })
-                const previousRequests = queryData?.getCatalogSharingRequests
-                if (!previousRequests) return
 
-                cache.writeQuery({
-                  query: GetCatalogSharingRequestsDocument,
-                  data: {
-                    getCatalogSharingRequests: previousRequests.filter(
-                      (r) =>
-                        !(
-                          r.permissionId === request.permissionId &&
-                          r.userId === request.userId
-                        )
-                    ),
-                  },
+                const previousRequests = queryData?.getCatalogSharingRequests
+
+                const queryData2 = cache.readQuery({
+                  query: CountCatalogSharingRequestsDocument,
                 })
+                const requestsCount = queryData2?.countCatalogSharingRequests
+
+                if (!previousRequests && !requestsCount) return
+
+                if (previousRequests) {
+                  cache.writeQuery({
+                    query: GetCatalogSharingRequestsDocument,
+                    data: {
+                      getCatalogSharingRequests: previousRequests.filter(
+                        (r) =>
+                          !(
+                            r.permissionId === request.permissionId &&
+                            r.userId === request.userId
+                          )
+                      ),
+                    },
+                  })
+                }
+
+                if (requestsCount) {
+                  cache.writeQuery({
+                    query: CountCatalogSharingRequestsDocument,
+                    data: {
+                      countCatalogSharingRequests: Math.max(
+                        requestsCount - 1,
+                        0
+                      ),
+                    },
+                  })
+                }
               },
             })
 

@@ -826,6 +826,13 @@ export const Query = builder.queryType({
         },
       }),
 
+      countCatalogSharingRequests: asUser.int({
+        nullable: false,
+        resolve(_, __, ctx) {
+          return ResourcesService.countCatalogSharingRequests(ctx)
+        },
+      }),
+
       getCatalogSharingRequests: asUser.field({
         nullable: true,
         type: [ObjectSharingRequest],
