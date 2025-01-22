@@ -43,6 +43,7 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
             ? setImportModal(true)
             : setRequestModal(true)
         }}
+        data-cy={`catalog-object-${object.name}`}
       >
         <div className="flex flex-row items-center gap-2">
           <ObjectAccessLabel
@@ -77,6 +78,7 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
                 e?.stopPropagation()
                 setImportModal(true)
               }}
+              data={{ cy: `import-object-${object.name}` }}
             >
               <FontAwesomeIcon icon={faCopy} />
               <div>{t('manage.catalog.importObject')}</div>
@@ -95,6 +97,7 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
                 e?.stopPropagation()
                 setRequestModal(true)
               }}
+              data={{ cy: `request-access-${object.name}` }}
             >
               <FontAwesomeIcon icon={faHand} />
               <div>{t('manage.catalog.requestAccess')}</div>

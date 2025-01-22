@@ -48,6 +48,9 @@
     ]
   },
   "question": {
-    "title": "New SE Question to block deletion"
+    "title": "New SE Question to block deletion",
+    "content": "This is a new question to block deletion",
+    "numberOfInputs": 2,
+    "solutions": [0, 1, 4]
   }
 }

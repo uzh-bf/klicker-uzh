@@ -53,6 +53,7 @@ function ImportAnswerCollectionModal({
       }}
       title={t('manage.catalog.importPublicResource')}
       className={{ content: 'text-sm' }}
+      dataCloseButton={{ cy: 'close-answer-collection-import-modal' }}
     >
       {loading || !collection ? (
         <Loader />
