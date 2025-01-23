@@ -65,28 +65,34 @@ function Header({ user }: HeaderProps): React.ReactElement {
       active: router.pathname == '/courses',
       data: { cy: 'courses' },
     },
-    {
-      type: 'button',
-      key: 'resources-menubar-item',
-      label: t('manage.general.resources'),
-      icon: faBolt,
-      onClick: () => router.push('/resources'),
-      active: router.pathname == '/resources',
-      data: { cy: 'resources' },
-      className: { icon: 'text-orange-400' },
-    },
-    {
-      type: 'button',
-      key: 'catalog-menubar-item',
-      label: t('manage.general.catalog'),
-      icon: faBolt,
-      onClick: () => router.push('/catalog'),
-      active: router.pathname == '/catalog',
-      notification: pendingRequestData?.countCatalogSharingRequests !== 0,
-      data: { cy: 'catalog' },
-      className: { icon: 'text-orange-400' },
-    },
-    ...(user?.featurePreview
+    ...(user?.privatePreview
+      ? ([
+          {
+            type: 'button',
+            key: 'resources-menubar-item',
+            label: t('manage.general.resources'),
+            icon: faBolt,
+            onClick: () => router.push('/resources'),
+            active: router.pathname == '/resources',
+            data: { cy: 'resources' },
+            className: { icon: 'text-orange-400' },
+          },
+          {
+            type: 'button',
+            key: 'catalog-menubar-item',
+            label: t('manage.general.catalog'),
+            icon: faBolt,
+            onClick: () => router.push('/catalog'),
+            active: router.pathname == '/catalog',
+            notification:
+              pendingRequestData &&
+              pendingRequestData.countCatalogSharingRequests !== 0,
+            data: { cy: 'catalog' },
+            className: { icon: 'text-orange-400' },
+          },
+        ] as NavigationItemProps[])
+      : []),
+    ...(user?.publicPreview
       ? [
           {
             type: 'dropdown',

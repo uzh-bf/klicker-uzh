@@ -363,7 +363,7 @@ function MicroLearningElement({
                       cy: `end-microlearning-${microLearning.name}`,
                     },
                   },
-                  user?.featurePreview
+                  user?.publicPreview
                     ? {
                         label: (
                           <ActivityAnalyticsLink
@@ -444,7 +444,7 @@ function MicroLearningElement({
                       cy: `convert-microlearning-${microLearning.name}-to-practice-quiz`,
                     },
                   },
-                  user?.featurePreview
+                  user?.publicPreview
                     ? {
                         label: (
                           <ActivityAnalyticsLink

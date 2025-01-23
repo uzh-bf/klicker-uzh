@@ -251,6 +251,41 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async updateLecturerPermissions({
+          publicPreview,
+          privatePreview,
+        }: {
+          publicPreview: boolean
+          privatePreview: boolean
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const user = await prisma.user.update({
+              where: {
+                shortname: 'lecturer',
+              },
+              data: {
+                publicPreview,
+                privatePreview,
+              },
+            })
+
+            return !!user
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
       })
       return config
     },

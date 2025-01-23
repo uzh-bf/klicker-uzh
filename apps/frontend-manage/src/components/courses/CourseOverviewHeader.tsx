@@ -85,7 +85,7 @@ function CourseOverviewHeader({
           dataModal={{ cy: 'course-join-modal' }}
           dataCloseButton={{ cy: 'course-join-modal-close' }}
         />
-        {user?.featurePreview ? (
+        {user?.publicPreview ? (
           <Button
             onClick={() => {
               window.open(`/analytics/${course.id}/activity`, '_blank')

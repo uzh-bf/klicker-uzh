@@ -1,3 +1,4 @@
+import { useQuery } from '@apollo/client'
 import {
   faCheckCircle as faCheckCircleRegular,
   faCircleXmark,
@@ -21,7 +22,11 @@ import {
   faSquareCheck as faSquareCheckSolid,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementStatus, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CheckPrivatePreviewAvailableDocument,
+  ElementStatus,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -29,17 +34,6 @@ import React, { Suspense, useMemo, useState } from 'react'
 import SuspendedTags from './SuspendedTags'
 import TagHeader from './TagHeader'
 import TagItem from './TagItem'
-
-const elementTypeFilters: Record<ElementType, IconDefinition[]> = {
-  CONTENT: [faCommentRegular, faCommentSolid],
-  FLASHCARD: [faListRegular, faListSolid],
-  SC: [faQuestionRegular, faQuestionSolid],
-  MC: [faQuestionRegular, faQuestionSolid],
-  KPRIM: [faQuestionRegular, faQuestionSolid],
-  FREE_TEXT: [faQuestionRegular, faQuestionSolid],
-  NUMERICAL: [faQuestionRegular, faQuestionSolid],
-  SELECTION: [faSquareCheckRegular, faSquareCheckSolid],
-}
 
 const elementStatusFilters: Record<ElementStatus, IconDefinition[]> = {
   DRAFT: [faPenRegular, faPenSolid],
@@ -89,6 +83,23 @@ function TagList({
   handleToggleArchive,
 }: Props): React.ReactElement {
   const t = useTranslations()
+
+  const { data } = useQuery(CheckPrivatePreviewAvailableDocument, {
+    fetchPolicy: 'cache-first',
+  })
+  const elementTypeFilters: Record<ElementType, IconDefinition[] | undefined> =
+    {
+      CONTENT: [faCommentRegular, faCommentSolid],
+      FLASHCARD: [faListRegular, faListSolid],
+      SC: [faQuestionRegular, faQuestionSolid],
+      MC: [faQuestionRegular, faQuestionSolid],
+      KPRIM: [faQuestionRegular, faQuestionSolid],
+      FREE_TEXT: [faQuestionRegular, faQuestionSolid],
+      NUMERICAL: [faQuestionRegular, faQuestionSolid],
+      SELECTION: data?.checkPrivatePreviewAvailable
+        ? [faSquareCheckRegular, faSquareCheckSolid]
+        : undefined,
+    }
 
   const [questionStatusVisible, setQuestionStatusVisible] = useState(!compact)
   const [questionTypesVisible, setQuestionTypesVisible] = useState(!compact)
@@ -153,22 +164,27 @@ function TagList({
 
       {questionTypesVisible && (
         <ul className="list-none">
-          {Object.entries(elementTypeFilters).map(([type, icons]) => (
-            <TagItem
-              key={type}
-              text={t(`shared.${type as ElementType}.typeLabel`)}
-              icon={icons}
-              active={activeType === type}
-              onClick={(): void =>
-                handleTagClick({
-                  tagName: type,
-                  isTypeTag: true,
-                  isStatusTag: false,
-                  isUntagged: false,
-                })
-              }
-            />
-          ))}
+          {Object.entries(elementTypeFilters).map(([type, icons]) => {
+            if (!icons) return null
+
+            return (
+              <TagItem
+                key={type}
+                text={t(`shared.${type as ElementType}.typeLabel`)}
+                icon={icons}
+                active={activeType === type}
+                onClick={(): void =>
+                  handleTagClick({
+                    tagName: type,
+                    isTypeTag: true,
+                    isStatusTag: false,
+                    isUntagged: false,
+                  })
+                }
+                data={{ cy: `element-type-filter-${type}` }}
+              />
+            )
+          })}
         </ul>
       )}
 

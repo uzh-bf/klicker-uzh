@@ -7,9 +7,10 @@ interface TagItemProps {
   icon: IconDefinition[]
   active: boolean
   onClick: () => void
+  data?: { cy?: string; test?: string }
 }
 
-function TagItem({ text, icon, active, onClick }: TagItemProps) {
+function TagItem({ text, icon, active, onClick, data }: TagItemProps) {
   return (
     <li
       className={twMerge(
@@ -17,6 +18,8 @@ function TagItem({ text, icon, active, onClick }: TagItemProps) {
         active && 'text-primary-100'
       )}
       onClick={onClick}
+      data-cy={data?.cy}
+      data-test={data?.test}
     >
       <FontAwesomeIcon icon={active ? icon[1] : icon[0]} className="mr-2 w-4" />
       {text}

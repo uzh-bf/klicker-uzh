@@ -976,13 +976,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       CREATETitle: 'Frage erstellen',
       EDITTitle: 'Frage bearbeiten',
       DUPLICATETitle: 'Frage duplizieren',
-      questionType: 'Fragetyp',
-      selectQuestionType: 'Fragetyp auswählen',
+      elementType: 'Elementtyp',
+      selectQuestionType: 'Elementtyp auswählen',
       selectQuestionStatus: 'Status auswählen',
       questionStatus: 'Status',
-      questionTitle: 'Fragetitel',
+      elementTitle: 'Elementtitel',
       titleTooltip:
-        'Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.',
+        'Geben Sie einen kurzen, zusammenfassenden Titel für das Element ein. Dieser dient lediglich zur besseren Übersicht.',
       tagsTooltip:
         'Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern).',
       tagFormatting:

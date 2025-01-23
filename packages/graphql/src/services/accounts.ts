@@ -932,7 +932,7 @@ export async function changeInitialSettings(
   return user
 }
 
-export async function checkFeaturePreviewAvailable(ctx: Context) {
+export async function checkPublicPreviewAvailable(ctx: Context) {
   // check if user is logged in
   if (!ctx.user?.sub || ctx.user?.role === UserRole.PARTICIPANT) {
     return false
@@ -942,7 +942,20 @@ export async function checkFeaturePreviewAvailable(ctx: Context) {
     where: { id: ctx.user.sub },
   })
 
-  return user?.featurePreview ?? false
+  return user?.publicPreview ?? false
+}
+
+export async function checkPrivatePreviewAvailable(ctx: Context) {
+  // check if user is logged in
+  if (!ctx.user?.sub || ctx.user?.role === UserRole.PARTICIPANT) {
+    return false
+  }
+
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  return user?.privatePreview ?? false
 }
 
 async function seedDemoQuestions(ctx: ContextWithUser) {

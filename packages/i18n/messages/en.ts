@@ -977,13 +977,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CREATETitle: 'Create question',
       EDITTitle: 'Edit question',
       DUPLICATETitle: 'Duplicate question',
-      questionType: 'Question type',
-      questionStatus: 'Status',
+      elementType: 'Element type',
       selectQuestionType: 'Select question type',
       selectQuestionStatus: 'Select status',
-      questionTitle: 'Question title',
+      questionStatus: 'Status',
+      elementTitle: 'Element title',
       titleTooltip:
-        'Enter a short, summary title for the question. This is only used for better overview.',
+        'Enter a short, summary title for the element. This is only used for better overview.',
       tagsTooltip:
         'Add tags to your question to improve organization and reusability (similar to previous folders).',
       tagFormatting:

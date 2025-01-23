@@ -721,11 +721,17 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkFeaturePreviewAvailable: t.field({
+      checkPublicPreviewAvailable: t.boolean({
         nullable: false,
-        type: 'Boolean',
         resolve(_, __, ctx) {
-          return AccountService.checkFeaturePreviewAvailable(ctx)
+          return AccountService.checkPublicPreviewAvailable(ctx)
+        },
+      }),
+
+      checkPrivatePreviewAvailable: t.boolean({
+        nullable: false,
+        resolve(_, __, ctx) {
+          return AccountService.checkPrivatePreviewAvailable(ctx)
         },
       }),
 
