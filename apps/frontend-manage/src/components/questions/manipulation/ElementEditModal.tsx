@@ -134,7 +134,6 @@ function ElementEditModal({
   return (
     <Formik
       validateOnMount
-      enableReinitialize
       initialValues={autoSavedElement ?? initialValues}
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
@@ -296,6 +295,16 @@ function ElementEditModal({
           }
         }
 
+        // remove local storage entry
+        if (autoSavedElement) {
+          localStorage.removeItem(
+            typeof elementId === 'undefined'
+              ? 'autosave-element-creation'
+              : `autosave-element-${elementId}`
+          )
+        }
+
+        // close modal, set success toast
         setSubmitting(false)
         triggerSuccessToast()
         handleSetIsOpen(false)
