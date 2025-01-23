@@ -982,6 +982,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selectQuestionStatus: 'Select status',
       questionStatus: 'Status',
       elementTitle: 'Element title',
+      savingTemporarily: 'Updating temporary storage...',
+      temporarilySaved: 'Element temporarily saved',
       titleTooltip:
         'Enter a short, summary title for the element. This is only used for better overview.',
       tagsTooltip:

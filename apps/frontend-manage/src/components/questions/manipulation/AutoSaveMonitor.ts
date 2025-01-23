@@ -4,11 +4,14 @@ import { ElementFormTypes } from './types'
 function useAutoSave({
   values,
   setAutoSavedElement,
+  setSaving,
 }: {
   values: ElementFormTypes
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
+  setSaving: Dispatch<SetStateAction<boolean>>
 }) {
-  // create a call-back function that will save the editor's content every 5 seconds
+  // create a call-back function that will save the editor's content every 2 seconds
+  // (if not actively typing -> do not disturb other state updates)
   const savingTimeout = useRef<NodeJS.Timeout | null>(null)
   const autoSaveContent = useCallback(
     ({ values }: { values: ElementFormTypes }) => {
@@ -17,13 +20,15 @@ function useAutoSave({
       }
 
       savingTimeout.current = setTimeout(async () => {
+        setSaving(false)
         setAutoSavedElement(values)
-      }, 3000)
+      }, 2000)
     },
-    [setAutoSavedElement]
+    [setAutoSavedElement, setSaving]
   )
 
   useEffect(() => {
+    setSaving(true)
     autoSaveContent({ values })
 
     return () => {

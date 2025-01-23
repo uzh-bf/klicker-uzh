@@ -981,6 +981,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selectQuestionStatus: 'Status auswählen',
       questionStatus: 'Status',
       elementTitle: 'Elementtitel',
+      savingTemporarily: 'Element wird temporär gespeichert...',
+      temporarilySaved: 'Element temporär gespeichert',
       titleTooltip:
         'Geben Sie einen kurzen, zusammenfassenden Titel für das Element ein. Dieser dient lediglich zur besseren Übersicht.',
       tagsTooltip:

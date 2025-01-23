@@ -74,6 +74,7 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
   const [failureToast, setFailureToast] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
@@ -354,6 +355,7 @@ function ElementEditModal({
             <AutoSaveMonitor
               values={values}
               setAutoSavedElement={setAutoSavedElement}
+              setSaving={setSaving}
             />
             <ElementTypeMonitor
               elementType={values.type ?? ElementType.Sc}
@@ -413,11 +415,11 @@ function ElementEditModal({
                   <ElementFormErrors errors={errors} />
                 )}
               </div>
-
               <StudentElementPreview
                 values={values}
                 elementDataTypename={elementDataTypename}
                 answerCollectionEntries={answerCollectionEntries}
+                saving={saving}
               />
             </div>
 

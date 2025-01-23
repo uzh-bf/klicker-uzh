@@ -1,3 +1,5 @@
+import { faSave, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementData,
   ElementInstance,
@@ -17,12 +19,14 @@ interface StudentElementPreviewProps {
   values: ElementFormTypes
   elementDataTypename: ElementData['__typename']
   answerCollectionEntries?: { id: number; value: string }[]
+  saving: boolean
 }
 
 function StudentElementPreview({
   values,
   elementDataTypename,
   answerCollectionEntries,
+  saving,
 }: StudentElementPreviewProps): React.ReactElement {
   const t = useTranslations()
   const [studentResponse, setStudentResponse] =
@@ -161,6 +165,19 @@ function StudentElementPreview({
             ))}
           </div>
         )}
+      <div className="float-right mt-3 text-slate-400">
+        {saving ? (
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+            {t('manage.questionForms.savingTemporarily')}
+          </div>
+        ) : (
+          <div className="flex flex-row items-center gap-2">
+            <FontAwesomeIcon icon={faSave} />
+            {t('manage.questionForms.temporarilySaved')}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
