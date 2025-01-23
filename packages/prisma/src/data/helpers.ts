@@ -27,7 +27,8 @@ export async function prepareUser({
   shortname: string
   catalystIndividual?: boolean
   catalystInstitutional?: boolean
-  featurePreview?: boolean
+  publicPreview?: boolean
+  privatePreview?: boolean
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 

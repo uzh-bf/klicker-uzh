@@ -1487,8 +1487,9 @@ type PushSubscription {
 type Query {
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
-  checkFeaturePreviewAvailable: Boolean!
   checkParticipantNameAvailable(username: String!): Boolean!
+  checkPrivatePreviewAvailable: Boolean!
+  checkPublicPreviewAvailable: Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
   cockpitQuiz(id: String!): LiveQuiz
@@ -1822,13 +1823,14 @@ type User {
   catalyst: Boolean!
   catalystTier: String
   email: String!
-  featurePreview: Boolean!
   firstLogin: Boolean!
   id: ID!
   locale: LocaleType!
   loginToken: String
   loginTokenExpiresAt: Date
   mediaFiles: [MediaFile!]
+  privatePreview: Boolean!
+  publicPreview: Boolean!
   sendProjectUpdates: Boolean!
   shortname: String!
 }

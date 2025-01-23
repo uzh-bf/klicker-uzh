@@ -37,7 +37,7 @@ function ElementInformationFields({
           required={mode === ElementEditMode.CREATE}
           contentPosition="popper"
           disabled={mode === ElementEditMode.EDIT}
-          label={t('manage.questionForms.questionType')}
+          label={t('manage.questionForms.elementType')}
           placeholder={t('manage.questionForms.selectQuestionType')}
           items={questionTypeOptions}
           data={{ cy: 'select-question-type' }}
@@ -59,7 +59,7 @@ function ElementInformationFields({
         <FormikTextField
           name="name"
           required
-          label={t('manage.questionForms.questionTitle')}
+          label={t('manage.questionForms.elementTitle')}
           tooltip={t('manage.questionForms.titleTooltip')}
           className={{
             root: 'w-full',

@@ -24,9 +24,7 @@ function ElementFormErrors({
       <div>{t('manage.formErrors.resolveErrors')}</div>
       <ul className="ml-4 list-disc">
         {errors.name && (
-          <li>{`${t('manage.questionForms.questionTitle')}: ${
-            errors.name
-          }`}</li>
+          <li>{`${t('manage.questionForms.elementTitle')}: ${errors.name}`}</li>
         )}
         {errors.tags && (
           <li>{`${t('manage.questionPool.tags')}: ${errors.tags}`}</li>

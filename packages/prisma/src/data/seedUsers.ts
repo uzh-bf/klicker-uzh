@@ -18,17 +18,8 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       password: 'abcd',
       catalystIndividual: true,
       catalystInstitutional: true,
-      featurePreview: true,
-    })
-  )
-
-  const freeUser = await prisma.user.upsert(
-    await prepareUser({
-      id: USER_ID_TEST2,
-      name: 'Free Tier User',
-      email: 'free@df.uzh.ch',
-      shortname: 'free',
-      password: 'abcd',
+      publicPreview: true,
+      privatePreview: true,
     })
   )
 
@@ -40,6 +31,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       shortname: 'pro1',
       password: 'abcd',
       catalystIndividual: true,
+      publicPreview: true,
     })
   )
 
@@ -51,6 +43,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       shortname: 'pro2',
       password: 'abcd',
       catalystInstitutional: true,
+      privatePreview: true,
     })
   )
 
@@ -62,6 +55,16 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       shortname: 'pro3',
       password: 'abcd',
       catalystInstitutional: true,
+    })
+  )
+
+  const freeUser = await prisma.user.upsert(
+    await prepareUser({
+      id: USER_ID_TEST2,
+      name: 'Free Tier User',
+      email: 'free@df.uzh.ch',
+      shortname: 'free',
+      password: 'abcd',
     })
   )
 }
