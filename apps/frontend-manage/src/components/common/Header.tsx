@@ -84,7 +84,9 @@ function Header({ user }: HeaderProps): React.ReactElement {
             icon: faBolt,
             onClick: () => router.push('/catalog'),
             active: router.pathname == '/catalog',
-            notification: pendingRequestData?.countCatalogSharingRequests !== 0,
+            notification:
+              pendingRequestData &&
+              pendingRequestData.countCatalogSharingRequests !== 0,
             data: { cy: 'catalog' },
             className: { icon: 'text-orange-400' },
           },

@@ -181,6 +181,7 @@ function TagList({
                     isUntagged: false,
                   })
                 }
+                data={{ cy: `element-type-filter-${type}` }}
               />
             )
           })}
