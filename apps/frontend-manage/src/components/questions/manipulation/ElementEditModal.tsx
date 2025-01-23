@@ -300,7 +300,14 @@ function ElementEditModal({
         handleSetIsOpen(false)
       }}
     >
-      {({ values, errors, isSubmitting, isValid, setFieldValue }) => {
+      {({
+        values,
+        errors,
+        isSubmitting,
+        isValid,
+        setFieldValue,
+        validateForm,
+      }) => {
         if (loadingQuestion) {
           return null
         }
@@ -351,6 +358,7 @@ function ElementEditModal({
             <ElementTypeMonitor
               elementType={values.type ?? ElementType.Sc}
               setElementDataTypename={setElementDataTypename}
+              validateForm={validateForm}
             />
             <div className="flex flex-row gap-12">
               <div className="max-w-5xl flex-1">

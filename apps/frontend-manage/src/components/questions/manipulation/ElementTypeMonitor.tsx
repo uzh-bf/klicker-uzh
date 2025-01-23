@@ -1,14 +1,18 @@
 import { ElementData, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { FormikErrors } from 'formik'
 import { useEffect } from 'react'
+import { ElementFormTypes } from './types'
 
 interface ElementTypeMonitorProps {
   elementType: ElementType
   setElementDataTypename: (typename: ElementData['__typename']) => void
+  validateForm: () => Promise<FormikErrors<ElementFormTypes>>
 }
 
 function ElementTypeMonitor({
   elementType,
   setElementDataTypename,
+  validateForm,
 }: ElementTypeMonitorProps) {
   useEffect(() => {
     if (
@@ -28,6 +32,8 @@ function ElementTypeMonitor({
     } else {
       setElementDataTypename('ContentElementData')
     }
+
+    validateForm()
   }, [elementType])
 
   return null
