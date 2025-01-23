@@ -32,6 +32,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       password: 'abcd',
       catalystIndividual: true,
       publicPreview: true,
+      privatePreview: true,
     })
   )
 
@@ -43,6 +44,7 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       shortname: 'pro2',
       password: 'abcd',
       catalystInstitutional: true,
+      publicPreview: true,
       privatePreview: true,
     })
   )
