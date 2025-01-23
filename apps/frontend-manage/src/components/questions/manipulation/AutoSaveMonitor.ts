@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useRef } from 'react'
 import { ElementFormTypes } from './types'
 
-function useAutoSave({
+function AutoSaveMonitor({
   values,
   initialValuesString,
   setAutoSavedElement,
@@ -42,4 +42,4 @@ function useAutoSave({
   return null
 }
 
-export default useAutoSave
+export default AutoSaveMonitor
