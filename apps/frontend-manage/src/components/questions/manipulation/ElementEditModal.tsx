@@ -13,11 +13,13 @@ import {
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import ElementExplanationField from './ElementExplanationField'
 import ElementFailureToast from './ElementFailureToast'
@@ -42,6 +44,7 @@ import NumericalOptions from './options/NumericalOptions'
 import OptionsLabel from './options/OptionsLabel'
 import SampleSolutionSetting from './options/SampleSolutionSetting'
 import SelectionOptions from './options/SelectionOptions'
+import { ElementFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 import useValidationSchema from './useValidationSchema'
 
@@ -80,6 +83,14 @@ function ElementEditModal({
   const questionManipulationSchema = useValidationSchema({
     numberOfAnswerOptions: answerCollectionEntries.length,
   })
+
+  const [autoSavedElement, setAutoSavedElement] =
+    useLocalStorage<ElementFormTypes>(
+      typeof elementId === 'undefined'
+        ? 'autosave-element-creation'
+        : `autosave-element-${elementId}`,
+      undefined
+    )
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
@@ -123,7 +134,7 @@ function ElementEditModal({
     <Formik
       validateOnMount
       enableReinitialize
-      initialValues={initialValues}
+      initialValues={autoSavedElement ?? initialValues}
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
@@ -289,7 +300,7 @@ function ElementEditModal({
         handleSetIsOpen(false)
       }}
     >
-      {({ errors, isSubmitting, values, isValid, setFieldValue }) => {
+      {({ values, errors, isSubmitting, isValid, setFieldValue }) => {
         if (loadingQuestion) {
           return null
         }
@@ -333,6 +344,10 @@ function ElementEditModal({
               </Button>
             }
           >
+            <AutoSaveMonitor
+              values={values}
+              setAutoSavedElement={setAutoSavedElement}
+            />
             <ElementTypeMonitor
               elementType={values.type ?? ElementType.Sc}
               setElementDataTypename={setElementDataTypename}

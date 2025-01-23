@@ -52,13 +52,13 @@ function Index() {
   )
 
   const [searchInput, setSearchInput] = useState('')
+  const [sortBy, setSortBy] = useState('')
+  const [successToast, setSuccessToast] = useState(false)
   const [creationMode, setCreationMode] = useState<undefined | WizardMode>(
     undefined
   )
   const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
     useState(false)
-  const [sortBy, setSortBy] = useState('')
-  const [successToast, setSuccessToast] = useState(false)
 
   const [selectedQuestions, setSelectedQuestions] = useState<
     Record<number, Element | undefined>
