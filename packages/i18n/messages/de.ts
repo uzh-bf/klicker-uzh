@@ -981,8 +981,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selectQuestionStatus: 'Status auswählen',
       questionStatus: 'Status',
       elementTitle: 'Elementtitel',
-      savingTemporarily: 'Element wird temporär gespeichert...',
-      temporarilySaved: 'Element temporär gespeichert',
       recoverData: 'Daten-Wiederherstellung',
       temporaryStorageCreation:
         'Der Erstellungsprozess wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',

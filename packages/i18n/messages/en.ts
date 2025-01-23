@@ -982,8 +982,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selectQuestionStatus: 'Select status',
       questionStatus: 'Status',
       elementTitle: 'Element title',
-      savingTemporarily: 'Updating temporary storage...',
-      temporarilySaved: 'Element temporarily saved',
       recoverData: 'Data Recovery',
       temporaryStorageCreation:
         'The element creation process was aborted without saving. Please choose if you want to recover the last automatic data backup or discard this information.',

@@ -5,12 +5,10 @@ function useAutoSave({
   values,
   initialValuesString,
   setAutoSavedElement,
-  setSaving,
 }: {
   values: ElementFormTypes
   initialValuesString: string
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
-  setSaving: Dispatch<SetStateAction<boolean>>
 }) {
   // create a call-back function that will save the editor's content every 2 seconds
   // (if not actively typing -> do not disturb other state updates)
@@ -22,19 +20,16 @@ function useAutoSave({
       }
 
       savingTimeout.current = setTimeout(async () => {
-        setSaving(false)
-
         // only update the stored content if it has changed
         if (JSON.stringify(values) !== initialValuesString) {
           setAutoSavedElement(values)
         }
       }, 2000)
     },
-    [setAutoSavedElement, setSaving, initialValuesString]
+    [setAutoSavedElement, initialValuesString]
   )
 
   useEffect(() => {
-    setSaving(true)
     autoSaveContent({ values })
 
     return () => {
