@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.21...v3.3.0-alpha.22) (2025-01-23)
+
+
+### Features
+
+* add functionalities to import public answer collections and request access to restricted collections ([#4422](https://github.com/uzh-bf/klicker-uzh/issues/4422)) ([d31de0b](https://github.com/uzh-bf/klicker-uzh/commit/d31de0b54beaf31ec3d8a8a66a0dbcbd625f2280))
+* add possibility to specify exact solutions for numerical questions ([#4419](https://github.com/uzh-bf/klicker-uzh/issues/4419)) ([4bdc708](https://github.com/uzh-bf/klicker-uzh/commit/4bdc70898ce878b2da81e3ce973881537b26f413))
+* **apps/manage-frontend:** auto-save of user inputs in element edit modal ([#4474](https://github.com/uzh-bf/klicker-uzh/issues/4474)) ([367e5c2](https://github.com/uzh-bf/klicker-uzh/commit/367e5c25415bd6b6ca969d40d1ec1607bec87b8d))
+* implement creation and editing of new selection question type ([#4437](https://github.com/uzh-bf/klicker-uzh/issues/4437)) ([d11d883](https://github.com/uzh-bf/klicker-uzh/commit/d11d883cb98fda3cb7bebf17a9c8250186dfb171))
+* introduce answer collections and mechanisms to manage them ([#4421](https://github.com/uzh-bf/klicker-uzh/issues/4421)) ([3b45bb7](https://github.com/uzh-bf/klicker-uzh/commit/3b45bb76d44a2d1c7b4b6f8c43e7bbdd8f125d1d))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** do not allow duplicate option values in answer collections ([#4449](https://github.com/uzh-bf/klicker-uzh/issues/4449)) ([1a1a69a](https://github.com/uzh-bf/klicker-uzh/commit/1a1a69ab6491fe4eb2f90723b423885878c2e679))
+* **apps/frontend-manage:** ensure that element edit modal validation is triggered on element type change ([49da9f6](https://github.com/uzh-bf/klicker-uzh/commit/49da9f6874b2bd8ce2dc88f8e46552cfd87dd95a))
+* **apps/frontend-pwa:** ensure that previous selection submissions are loaded correctly in microlearning ([#4443](https://github.com/uzh-bf/klicker-uzh/issues/4443)) ([37d7c83](https://github.com/uzh-bf/klicker-uzh/commit/37d7c8364f2334d808ffa566fc65aa76da2897f0))
+* ensure that live quiz abortion modal also takes into account cached responses ([#4462](https://github.com/uzh-bf/klicker-uzh/issues/4462)) ([6b68040](https://github.com/uzh-bf/klicker-uzh/commit/6b68040faf27b4642e6e70d89a207c84aec6ca1e))
+* **packages/grading:** ensure that exact numerical solutions are numerical or parse accordingly ([#4463](https://github.com/uzh-bf/klicker-uzh/issues/4463)) ([4aeac8a](https://github.com/uzh-bf/klicker-uzh/commit/4aeac8aa397b7648aeabbbcd0bf231a672ea8916))
+* **packages/shared-components:** ensure that sample solutions are always visible on evaluation histogram ([#4420](https://github.com/uzh-bf/klicker-uzh/issues/4420)) ([d73c976](https://github.com/uzh-bf/klicker-uzh/commit/d73c97624f9d3920346eec2d210bfa7b2c2bccb1))
+
+
+### Build and CI
+
+* update pnpm in github workflows ([c50f772](https://github.com/uzh-bf/klicker-uzh/commit/c50f772fe26bd907d458faf63a58692d37e8d165))
+
+
+### Dependencies
+
+* add ts-node as dev dependency to grading and graphql packages ([#4456](https://github.com/uzh-bf/klicker-uzh/issues/4456)) ([379ff23](https://github.com/uzh-bf/klicker-uzh/commit/379ff232ae2d4fc34ec4dbe25ad168b989dfdee2))
+* downgrade pnpm to latest stable version 9 ([3960220](https://github.com/uzh-bf/klicker-uzh/commit/3960220d97cb8f326a8c9c2f48bca2c7f92f375f))
+* update pnpm and turbo, prevent lockfile issue in auth ([0efcd84](https://github.com/uzh-bf/klicker-uzh/commit/0efcd849619ff124d63cbe6e05775394e905e398))
+
+
+### Refactors
+
+* migrate answer collection sharing logic to new database structure ([#4451](https://github.com/uzh-bf/klicker-uzh/issues/4451)) ([53e3f55](https://github.com/uzh-bf/klicker-uzh/commit/53e3f55813ecd74c731f3bbdbc5ef7f867b8ec81))
+* modify sharing logic of answer collections to be compatible with new catalog collection functionalities ([#4471](https://github.com/uzh-bf/klicker-uzh/issues/4471)) ([b55f9b2](https://github.com/uzh-bf/klicker-uzh/commit/b55f9b28e325e0b1d16498b04cbc5455ed4f4b3e))
+
+
+### Enhancements
+
+* add frontend components, submission logic, evaluation logic and evaluation visualization for selection questions in asynchronous activities ([#4442](https://github.com/uzh-bf/klicker-uzh/issues/4442)) ([3293842](https://github.com/uzh-bf/klicker-uzh/commit/3293842ed4cc015ef7ed8dd0b00b371e7bfc72db))
+* add functionality to remove or delete answer collections, withdraw access requests, improve modification logic ([#4448](https://github.com/uzh-bf/klicker-uzh/issues/4448)) ([2ff28a5](https://github.com/uzh-bf/klicker-uzh/commit/2ff28a503250be438f26f42871982ba9310555af))
+* add support for selection questions in group activities & grading and extend corresponding test suite ([#4446](https://github.com/uzh-bf/klicker-uzh/issues/4446)) ([6e86d35](https://github.com/uzh-bf/klicker-uzh/commit/6e86d3540964effd6668754aa432a692c6db7dec))
+* add support for selection questions in live quiz ([#4447](https://github.com/uzh-bf/klicker-uzh/issues/4447)) ([ee954f1](https://github.com/uzh-bf/klicker-uzh/commit/ee954f117c8abfef69a9dda9436c3656d2025876))
+* allow incomplete submissions for selection questions ([#4453](https://github.com/uzh-bf/klicker-uzh/issues/4453)) ([bb03ee1](https://github.com/uzh-bf/klicker-uzh/commit/bb03ee1e8c32767ebda1d05a0b690af6f3ad9a16))
+* **apps/frontend-manage:** block deletion of answer collection entries used as solutions ([#4439](https://github.com/uzh-bf/klicker-uzh/issues/4439)) ([6cb6918](https://github.com/uzh-bf/klicker-uzh/commit/6cb69181ae8d68ff3da5339ad4b077a9470afdc2))
+* **apps/frontend-manage:** make input on selection questions searchable ([#4452](https://github.com/uzh-bf/klicker-uzh/issues/4452)) ([3a74b12](https://github.com/uzh-bf/klicker-uzh/commit/3a74b12f6728861cb77a5fcfccc4c6563120f0d5))
+* **apps/frontend-manage:** replace navigation on lecturer frontend ([#4469](https://github.com/uzh-bf/klicker-uzh/issues/4469)) ([39d3b8f](https://github.com/uzh-bf/klicker-uzh/commit/39d3b8f3fa557f5d2a1df2245eae648293c8dee3))
+* implement asynchronous activity evaluation for new selection question type ([#4444](https://github.com/uzh-bf/klicker-uzh/issues/4444)) ([619ad2d](https://github.com/uzh-bf/klicker-uzh/commit/619ad2d5eff809451d5720d88a45e6c2e2926b08))
+* implement element instance structure and frontend for selection questions ([#4440](https://github.com/uzh-bf/klicker-uzh/issues/4440)) ([b665f08](https://github.com/uzh-bf/klicker-uzh/commit/b665f08380333e2caa4f9d0f499d7083ee2bad10))
+* implement grading logic and extend frontend components for selection question compatibility ([#4441](https://github.com/uzh-bf/klicker-uzh/issues/4441)) ([18dd974](https://github.com/uzh-bf/klicker-uzh/commit/18dd9744e8cce9e2efbbad5013b9d36fdcd74609))
+* introduce approval process for requested access to answer collections ([#4425](https://github.com/uzh-bf/klicker-uzh/issues/4425)) ([545deae](https://github.com/uzh-bf/klicker-uzh/commit/545deaea2b295049bb31d61ffb670eadcad61391))
+* introduce private and public preview feature flags ([#4473](https://github.com/uzh-bf/klicker-uzh/issues/4473)) ([8171873](https://github.com/uzh-bf/klicker-uzh/commit/8171873c79ef1b66f35f443f53feb6417f7fc400))
+* **packages/grpahql:** add proper element options content validation to elements service ([#4468](https://github.com/uzh-bf/klicker-uzh/issues/4468)) ([2a4475c](https://github.com/uzh-bf/klicker-uzh/commit/2a4475cea5eae14ea651191257c8bff1e8fbf564))
+
 ## [3.3.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.20...v3.3.0-alpha.21) (2025-01-17)
 
 
