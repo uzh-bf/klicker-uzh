@@ -17,7 +17,7 @@ import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
@@ -127,7 +127,17 @@ function ElementEditModal({
     isDuplication,
   })
 
-  if (!initialValues || Object.keys(initialValues).length === 0) {
+  // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
+  // (otherwise, saving the question will directly trigger another save)
+  const formikInitialValues = useMemo(() => {
+    if (!initialValues) {
+      return undefined
+    }
+    return isDuplication ? initialValues : (autoSavedElement ?? initialValues)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isDuplication, initialValues])
+
+  if (!formikInitialValues || Object.keys(formikInitialValues).length === 0) {
     return <div />
   }
 
@@ -135,9 +145,7 @@ function ElementEditModal({
     <Formik
       validateOnMount
       enableReinitialize
-      initialValues={
-        isDuplication ? initialValues : (autoSavedElement ?? initialValues)
-      }
+      initialValues={formikInitialValues}
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
@@ -366,6 +374,7 @@ function ElementEditModal({
           >
             <AutoSaveMonitor
               values={values}
+              initialValuesString={JSON.stringify(formikInitialValues)}
               setAutoSavedElement={setAutoSavedElement}
               setSaving={setSaving}
             />

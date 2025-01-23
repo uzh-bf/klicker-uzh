@@ -3,10 +3,12 @@ import { ElementFormTypes } from './types'
 
 function useAutoSave({
   values,
+  initialValuesString,
   setAutoSavedElement,
   setSaving,
 }: {
   values: ElementFormTypes
+  initialValuesString: string
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
   setSaving: Dispatch<SetStateAction<boolean>>
 }) {
@@ -21,10 +23,14 @@ function useAutoSave({
 
       savingTimeout.current = setTimeout(async () => {
         setSaving(false)
-        setAutoSavedElement(values)
+
+        // only update the stored content if it has changed
+        if (JSON.stringify(values) !== initialValuesString) {
+          setAutoSavedElement(values)
+        }
       }, 2000)
     },
-    [setAutoSavedElement, setSaving]
+    [setAutoSavedElement, setSaving, initialValuesString]
   )
 
   useEffect(() => {

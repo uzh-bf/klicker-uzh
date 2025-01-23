@@ -40,6 +40,7 @@ function RecoveryPrompt({
           className={{
             root: 'border-2 border-red-600 hover:border-red-600 hover:text-red-600',
           }}
+          data={{ cy: 'discard-recovered-element-data' }}
         >
           <FontAwesomeIcon icon={faBan} />
           <div>{t('manage.questionForms.discard')}</div>
@@ -49,6 +50,7 @@ function RecoveryPrompt({
           className={{
             root: 'border-primary-80 hover:border-primary-80 border-2',
           }}
+          data={{ cy: 'load-recovered-element-data' }}
         >
           <FontAwesomeIcon icon={faArrowsRotate} />
           <div>{t('manage.questionForms.loadData')}</div>
