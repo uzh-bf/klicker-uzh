@@ -87,7 +87,7 @@ function ElementEditModal({
 
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
-      typeof elementId === 'undefined'
+      typeof elementId === 'undefined' || isDuplication
         ? 'autosave-element-creation'
         : `autosave-element-${elementId}`,
       undefined
@@ -134,7 +134,10 @@ function ElementEditModal({
   return (
     <Formik
       validateOnMount
-      initialValues={autoSavedElement ?? initialValues}
+      enableReinitialize
+      initialValues={
+        isDuplication ? initialValues : (autoSavedElement ?? initialValues)
+      }
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
@@ -298,7 +301,7 @@ function ElementEditModal({
         // remove local storage entry
         if (autoSavedElement) {
           localStorage.removeItem(
-            typeof elementId === 'undefined'
+            typeof elementId === 'undefined' || isDuplication
               ? 'autosave-element-creation'
               : `autosave-element-${elementId}`
           )

@@ -28,6 +28,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
 import ElementSuccessToast from '~/components/questions/manipulation/ElementSuccessToast'
+import RecoveryPrompt from '~/components/questions/manipulation/RecoveryPrompt'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementCreation, {
   WizardMode,
@@ -54,6 +55,7 @@ function Index() {
   const [searchInput, setSearchInput] = useState('')
   const [sortBy, setSortBy] = useState('')
   const [successToast, setSuccessToast] = useState(false)
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [creationMode, setCreationMode] = useState<undefined | WizardMode>(
     undefined
   )
@@ -390,9 +392,17 @@ function Index() {
                   )}
                 </div>
                 <Button
-                  onClick={() =>
-                    setIsQuestionCreationModalOpen(!isQuestionCreationModalOpen)
-                  }
+                  onClick={() => {
+                    const value = localStorage.getItem(
+                      'autosave-element-creation'
+                    )
+
+                    if (value) {
+                      setShowRecoveryPrompt(true)
+                    } else {
+                      setIsQuestionCreationModalOpen(true)
+                    }
+                  }}
                   className={{
                     root: 'bg-primary-80 h-10 font-bold text-white',
                   }}
@@ -438,14 +448,25 @@ function Index() {
         </div>
       </div>
 
-      {isQuestionCreationModalOpen && (
-        <ElementEditModal
-          handleSetIsOpen={setIsQuestionCreationModalOpen}
-          triggerSuccessToast={() => setSuccessToast(true)}
-          isOpen={isQuestionCreationModalOpen}
-          mode={ElementEditMode.CREATE}
-        />
-      )}
+      <ElementEditModal
+        handleSetIsOpen={setIsQuestionCreationModalOpen}
+        triggerSuccessToast={() => setSuccessToast(true)}
+        isOpen={isQuestionCreationModalOpen}
+        mode={ElementEditMode.CREATE}
+      />
+      <RecoveryPrompt
+        open={showRecoveryPrompt}
+        onRecovery={() => {
+          setShowRecoveryPrompt(false)
+          setIsQuestionCreationModalOpen(true)
+        }}
+        onDiscard={() => {
+          localStorage.removeItem('autosave-element-creation')
+          setShowRecoveryPrompt(false)
+          setIsQuestionCreationModalOpen(true)
+        }}
+        editMode={false}
+      />
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal />
       </Suspense>

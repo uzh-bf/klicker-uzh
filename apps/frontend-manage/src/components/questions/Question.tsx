@@ -20,6 +20,7 @@ import { twMerge } from 'tailwind-merge'
 import ElementEditModal, {
   ElementEditMode,
 } from './manipulation/ElementEditModal'
+import RecoveryPrompt from './manipulation/RecoveryPrompt'
 import QuestionTags from './QuestionTags'
 
 const StatusColors: Record<ElementStatus, string> = {
@@ -81,6 +82,7 @@ function Question({
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [deleteQuestion, { loading: deleting }] = useMutation(
     DeleteQuestionDocument
   )
@@ -177,7 +179,15 @@ function Question({
               className={{
                 root: 'space-x-2 bg-white text-sm md:w-36 md:text-base',
               }}
-              onClick={(): void => setIsModificationModalOpen(true)}
+              onClick={() => {
+                const value = localStorage.getItem(`autosave-element-${id}`)
+
+                if (value) {
+                  setShowRecoveryPrompt(true)
+                } else {
+                  setIsModificationModalOpen(true)
+                }
+              }}
               data={{ cy: `edit-question-${title}` }}
             >
               <Button.Icon>
@@ -185,6 +195,21 @@ function Question({
               </Button.Icon>
               <Button.Label>{t('shared.generic.edit')}</Button.Label>
             </Button>
+            {showRecoveryPrompt && (
+              <RecoveryPrompt
+                open={showRecoveryPrompt}
+                onRecovery={() => {
+                  setShowRecoveryPrompt(false)
+                  setIsModificationModalOpen(true)
+                }}
+                onDiscard={() => {
+                  localStorage.removeItem(`autosave-element-${id}`)
+                  setShowRecoveryPrompt(false)
+                  setIsModificationModalOpen(true)
+                }}
+                editMode={false}
+              />
+            )}
             {isModificationModalOpen && (
               <ElementEditModal
                 handleSetIsOpen={setIsModificationModalOpen}
@@ -198,7 +223,7 @@ function Question({
               className={{
                 root: 'space-x-2 bg-white text-sm md:w-36 md:text-base',
               }}
-              onClick={(): void => setIsDuplicationModalOpen(true)}
+              onClick={() => setIsDuplicationModalOpen(true)}
               data={{ cy: `duplicate-question-${title}` }}
             >
               <Button.Icon>

@@ -983,6 +983,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementTitle: 'Elementtitel',
       savingTemporarily: 'Element wird temporär gespeichert...',
       temporarilySaved: 'Element temporär gespeichert',
+      recoverData: 'Daten-Wiederherstellung',
+      temporaryStorageCreation:
+        'Der Erstellungsprozess wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
+      temporaryStorageEditing:
+        'Der Bearbeitungsprozess wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
+      discard: 'Verwerfen',
+      loadData: 'Daten laden',
       titleTooltip:
         'Geben Sie einen kurzen, zusammenfassenden Titel für das Element ein. Dieser dient lediglich zur besseren Übersicht.',
       tagsTooltip:
