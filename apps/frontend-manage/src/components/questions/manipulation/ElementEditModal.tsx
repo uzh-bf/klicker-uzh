@@ -13,11 +13,13 @@ import {
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import ElementExplanationField from './ElementExplanationField'
 import ElementFailureToast from './ElementFailureToast'
@@ -42,6 +44,7 @@ import NumericalOptions from './options/NumericalOptions'
 import OptionsLabel from './options/OptionsLabel'
 import SampleSolutionSetting from './options/SampleSolutionSetting'
 import SelectionOptions from './options/SelectionOptions'
+import { ElementFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 import useValidationSchema from './useValidationSchema'
 
@@ -81,6 +84,14 @@ function ElementEditModal({
     numberOfAnswerOptions: answerCollectionEntries.length,
   })
 
+  const [autoSavedElement, setAutoSavedElement] =
+    useLocalStorage<ElementFormTypes>(
+      typeof elementId === 'undefined' || isDuplication
+        ? 'autosave-element-creation'
+        : `autosave-element-${elementId}`,
+      undefined
+    )
+
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
     {
@@ -115,7 +126,17 @@ function ElementEditModal({
     isDuplication,
   })
 
-  if (!initialValues || Object.keys(initialValues).length === 0) {
+  // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
+  // (otherwise, saving the question will directly trigger another save)
+  const formikInitialValues = useMemo(() => {
+    if (!initialValues) {
+      return undefined
+    }
+    return isDuplication ? initialValues : (autoSavedElement ?? initialValues)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isDuplication, initialValues])
+
+  if (!formikInitialValues || Object.keys(formikInitialValues).length === 0) {
     return <div />
   }
 
@@ -123,7 +144,7 @@ function ElementEditModal({
     <Formik
       validateOnMount
       enableReinitialize
-      initialValues={initialValues}
+      initialValues={formikInitialValues}
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
@@ -284,6 +305,16 @@ function ElementEditModal({
           }
         }
 
+        // remove local storage entry
+        if (autoSavedElement) {
+          localStorage.removeItem(
+            typeof elementId === 'undefined' || isDuplication
+              ? 'autosave-element-creation'
+              : `autosave-element-${elementId}`
+          )
+        }
+
+        // close modal, set success toast
         setSubmitting(false)
         triggerSuccessToast()
         handleSetIsOpen(false)
@@ -334,12 +365,17 @@ function ElementEditModal({
               <Button
                 className={{ root: 'border-uzh-grey-80 mt-2' }}
                 onClick={() => handleSetIsOpen(false)}
-                data={{ cy: 'close-question-modal' }}
+                data={{ cy: 'close-element-modal' }}
               >
                 <Button.Label>{t('shared.generic.close')}</Button.Label>
               </Button>
             }
           >
+            <AutoSaveMonitor
+              values={values}
+              initialValuesString={JSON.stringify(formikInitialValues)}
+              setAutoSavedElement={setAutoSavedElement}
+            />
             <ElementTypeMonitor
               elementType={values.type ?? ElementType.Sc}
               setElementDataTypename={setElementDataTypename}
@@ -398,7 +434,6 @@ function ElementEditModal({
                   <ElementFormErrors errors={errors} />
                 )}
               </div>
-
               <StudentElementPreview
                 values={values}
                 elementDataTypename={elementDataTypename}

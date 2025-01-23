@@ -91,7 +91,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
         `[data-cy="select-question-type-${messages.shared.SC.typeLabel}"]`
       ).click()
     }
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   }
 
   it('Test login for catalyst users and non-catalyst users', function () {

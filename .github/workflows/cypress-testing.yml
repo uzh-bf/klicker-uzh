@@ -139,7 +139,7 @@ jobs:
 
       - name: Upload service logs
         if: always() # This ensures logs are uploaded even if the previous step fails
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: service-logs
           path: service.log

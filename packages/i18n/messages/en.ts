@@ -982,6 +982,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selectQuestionStatus: 'Select status',
       questionStatus: 'Status',
       elementTitle: 'Element title',
+      recoverData: 'Data Recovery',
+      temporaryStorageCreation:
+        'The element creation process was aborted without saving. Please choose if you want to recover the last automatic data backup or discard this information.',
+      temporaryStorageEditing:
+        'The element editing process was aborted without saving. Please choose if you want to recover the last automatic data backup or discard this information.',
+      discard: 'Discard',
+      loadData: 'Load data',
       titleTooltip:
         'Enter a short, summary title for the element. This is only used for better overview.',
       tagsTooltip:

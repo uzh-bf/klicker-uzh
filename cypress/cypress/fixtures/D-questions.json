@@ -100,5 +100,19 @@
   "duplication": {
     "title": "Duplication question title",
     "content": "Duplication question content"
+  },
+  "autoSave": {
+    "title": "Auto Save question title",
+    "content": "Auto Save question content",
+    "choices": [
+      { "content": "Choice 1" },
+      { "content": "Choice 2" },
+      { "content": "Choice 3", "correct": true },
+      { "content": "Choice 4" }
+    ],
+    "titleEdited": "Auto Save question title new",
+    "contentEdited": "Auto Save question content new",
+    "contentEdited2": "Auto Save question content new 2",
+    "titleEditedDuplicated": "Auto Save question title new (Copy)"
   }
 }
