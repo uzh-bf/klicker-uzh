@@ -448,12 +448,14 @@ function Index() {
         </div>
       </div>
 
-      <ElementEditModal
-        handleSetIsOpen={setIsQuestionCreationModalOpen}
-        triggerSuccessToast={() => setSuccessToast(true)}
-        isOpen={isQuestionCreationModalOpen}
-        mode={ElementEditMode.CREATE}
-      />
+      {isQuestionCreationModalOpen && (
+        <ElementEditModal
+          handleSetIsOpen={setIsQuestionCreationModalOpen}
+          triggerSuccessToast={() => setSuccessToast(true)}
+          isOpen={isQuestionCreationModalOpen}
+          mode={ElementEditMode.CREATE}
+        />
+      )}
       <RecoveryPrompt
         open={showRecoveryPrompt}
         onRecovery={() => {

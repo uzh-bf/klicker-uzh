@@ -365,7 +365,7 @@ function ElementEditModal({
               <Button
                 className={{ root: 'border-uzh-grey-80 mt-2' }}
                 onClick={() => handleSetIsOpen(false)}
-                data={{ cy: 'close-question-modal' }}
+                data={{ cy: 'close-element-modal' }}
               >
                 <Button.Label>{t('shared.generic.close')}</Button.Label>
               </Button>
