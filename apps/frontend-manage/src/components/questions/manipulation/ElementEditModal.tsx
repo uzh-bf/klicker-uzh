@@ -431,7 +431,7 @@ function ElementEditModal({
                   )}
 
                   {values.type === ElementType.CaseStudy && (
-                    <CaseStudyOptions values={values} />
+                    <CaseStudyOptions />
                   )}
                 </Form>
 

@@ -7,18 +7,14 @@ import {
   FormikTextField,
   H3,
 } from '@uzh-bf/design-system'
-import { FieldArray } from 'formik'
+import { FieldArray, useField } from 'formik'
 import { nanoid } from 'nanoid'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
-import { ElementFormTypesCaseStudy } from '../types'
 
-function CaseStudyCriteriaFields({
-  criteriaValues,
-}: {
-  criteriaValues?: ElementFormTypesCaseStudy['options']['criteria']
-}) {
+function CaseStudyCriteriaFields() {
   const t = useTranslations()
+  const [field, _, __] = useField<number[]>('options.criteria')
 
   return (
     <div>
@@ -28,7 +24,7 @@ function CaseStudyCriteriaFields({
         <FieldArray name="options.criteria">
           {({ push, remove }) => (
             <>
-              {criteriaValues?.map((_, index) => (
+              {field.value?.map((_, index) => (
                 <div
                   key={index}
                   className={twMerge(

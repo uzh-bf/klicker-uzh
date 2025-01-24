@@ -4,28 +4,42 @@ import {
   FormikSwitchField,
   FormLabel,
 } from '@uzh-bf/design-system'
-import { FieldHelperProps } from 'formik'
+import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import Select from 'react-select'
+import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
+import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
+import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
 function CaseStudyCollectionSelection({
   collections,
-  selectedAnswers,
-  collectionAnswers,
-  helpers,
 }: {
   collections: AnswerCollection[]
-  selectedAnswers: { label: string; value: number }[]
-  collectionAnswers: {
-    label: string
-    value: number
-    data: {
-      cy: string
-    }
-  }[]
-  helpers: FieldHelperProps<number[]>
 }) {
   const t = useTranslations()
+  const [itemsField, _, itemsHelpers] = useField<number[]>(
+    'options.selectedItems'
+  )
+  const [collectionField] = useField<string>('options.answerCollection')
+
+  // get all answer options from the selected collections
+  const collectionAnswers = useSelectAnswerCollectionOptions({
+    collectionId: collectionField.value,
+    collections,
+  })
+
+  // filter the available answer options for the ones included in the current form state
+  const selectedAnswers = useSelectedAnswerEntry({
+    field: itemsField,
+    collectionAnswers,
+  })
+
+  // udpate the selected correct answers if the answer collection changes
+  useAnswerCollectionChangeEffect({
+    field: itemsField,
+    helpers: itemsHelpers,
+    collectionAnswers,
+  })
 
   return (
     <>
@@ -78,7 +92,7 @@ function CaseStudyCollectionSelection({
             }}
             onChange={(newValue) =>
               // TODO: add confirmation step to changing this (if the previous value is not empty AND sample solution is activated -> all specified solution ranges will be lost!)
-              helpers.setValue(newValue.map((tag) => tag.value))
+              itemsHelpers.setValue(newValue.map((tag) => tag.value))
             }
             placeholder={t('manage.questionForms.selectCaseStudyItems')}
             noOptionsMessage={() =>
