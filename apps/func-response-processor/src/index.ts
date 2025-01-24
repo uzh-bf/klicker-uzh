@@ -23,7 +23,7 @@ const DEFAULT_POINTS = 10 // points a participant gets for participating in a po
 const DEFAULT_CORRECT_POINTS = 5 // points a participant gets for answering correctly (independent of time)
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
-// TODO: ensure that the response meets the restrictions specified in the question options
+// TODO: ensure that the response meets the restrictions specified in the element options
 
 Sentry.init()
 

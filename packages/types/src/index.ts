@@ -206,17 +206,17 @@ export type NumericalSolutionRange = {
   max?: number | null
 }
 
-interface BaseQuestionOptions {
+interface BaseElementOptions {
   hasSampleSolution?: boolean
   hasAnswerFeedbacks?: boolean
 }
 
-export interface ElementOptionsChoices extends BaseQuestionOptions {
+export interface ElementOptionsChoices extends BaseElementOptions {
   choices: Choice[]
   displayMode: DisplayMode
 }
 
-export interface ElementOptionsNumerical extends BaseQuestionOptions {
+export interface ElementOptionsNumerical extends BaseElementOptions {
   unit?: string | null
   accuracy?: number | null
   placeholder?: string | null
@@ -229,7 +229,7 @@ export type FreeTextRestrictions = {
   maxLength?: number | null
 }
 
-export interface ElementOptionsFreeText extends BaseQuestionOptions {
+export interface ElementOptionsFreeText extends BaseElementOptions {
   restrictions?: FreeTextRestrictions | null
   solutions?: string[] | null
 }
@@ -244,7 +244,7 @@ export interface SelectionAnswerCollection {
   entries: SelectionAnswerCollectionEntry[]
 }
 
-export interface ElementOptionsSelection extends BaseQuestionOptions {
+export interface ElementOptionsSelection extends BaseElementOptions {
   numberOfInputs?: number
   answerCollection?: SelectionAnswerCollection
   answerCollectionSolutionIds?: number[] | null

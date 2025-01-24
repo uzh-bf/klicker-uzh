@@ -7,7 +7,7 @@ import validateNumericalOptions from './validateNumericalOptions.js'
 import validateSCOptions from './validateSCOptions.js'
 import validateSelectionOptions from './validateSelectionOptions.js'
 
-export interface QuestionOptionsArgs {
+export interface ElementOptionsArgs {
   unit?: string | null // NR only
   accuracy?: number | null // NR only
   placeholder?: string | null // NR/FT only
@@ -40,7 +40,7 @@ export interface QuestionOptionsArgs {
 
 function validateAndProcessElementOptions(
   elementType: DB.ElementType,
-  options?: QuestionOptionsArgs | null
+  options?: ElementOptionsArgs | null
 ) {
   switch (elementType) {
     case DB.ElementType.SC:

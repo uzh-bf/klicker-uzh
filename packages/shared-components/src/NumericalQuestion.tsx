@@ -1,6 +1,6 @@
 import type {
+  NumericalElementOptions,
   NumericalInstanceEvaluation,
-  NumericalQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import React from 'react'
@@ -13,7 +13,7 @@ import { validateNumericalResponse } from './utils/validateResponse'
 
 interface NumericalQuestionProps {
   content: string
-  options: NumericalQuestionOptions
+  options: NumericalElementOptions
   response?: string
   valid: boolean
   setResponse: (newValue: string, valid: boolean) => void

@@ -31,7 +31,7 @@ export const ElementDisplayMode = builder.enumType('ElementDisplayMode', {
   values: Object.values(DisplayMode),
 })
 
-// ----- QUESTION OPTIONS -----
+// ----- ELEMENT OPTIONS -----
 // #region
 export const Choice = builder.objectRef<ChoiceType>('Choice').implement({
   fields: (t) => ({
@@ -42,8 +42,8 @@ export const Choice = builder.objectRef<ChoiceType>('Choice').implement({
   }),
 })
 
-export const ChoiceQuestionOptions = builder
-  .objectRef<ElementOptionsChoicesType>('ChoiceQuestionOptions')
+export const ChoiceElementOptions = builder
+  .objectRef<ElementOptionsChoicesType>('ChoiceElementOptions')
   .implement({
     fields: (t) => ({
       displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
@@ -75,8 +75,8 @@ export const NumericalSolutionRange = builder
     }),
   })
 
-export const NumericalQuestionOptions = builder
-  .objectRef<ElementOptionsNumericalType>('NumericalQuestionOptions')
+export const NumericalElementOptions = builder
+  .objectRef<ElementOptionsNumericalType>('NumericalElementOptions')
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
@@ -108,8 +108,8 @@ export const FreeTextRestrictions = builder
     }),
   })
 
-export const FreeTextQuestionOptions = builder
-  .objectRef<ElementOptionsFreeTextType>('FreeTextQuestionOptions')
+export const FreeTextElementOptions = builder
+  .objectRef<ElementOptionsFreeTextType>('FreeTextElementOptions')
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
@@ -126,9 +126,9 @@ export const FreeTextQuestionOptions = builder
     }),
   })
 
-export const SelectionQuestionOptionsCollectionEntry = builder
+export const SelectionAnswerCollectionEntry = builder
   .objectRef<SelectionAnswerCollectionEntryType>(
-    'SelectionQuestionOptionsCollectionEntry'
+    'SelectionAnswerCollectionEntry'
   )
   .implement({
     fields: (t) => ({
@@ -137,22 +137,20 @@ export const SelectionQuestionOptionsCollectionEntry = builder
     }),
   })
 
-export const SelectionQuestionOptionsCollection = builder
-  .objectRef<SelectionAnswerCollectionType>(
-    'SelectionQuestionOptionsCollection'
-  )
+export const SelectionAnswerCollection = builder
+  .objectRef<SelectionAnswerCollectionType>('SelectionAnswerCollection')
   .implement({
     fields: (t) => ({
       id: t.exposeInt('id'),
       entries: t.expose('entries', {
-        type: [SelectionQuestionOptionsCollectionEntry],
+        type: [SelectionAnswerCollectionEntry],
         nullable: true,
       }),
     }),
   })
 
-export const SelectionQuestionOptions = builder
-  .objectRef<ElementOptionsSelectionType>('SelectionQuestionOptions')
+export const SelectionElementOptions = builder
+  .objectRef<ElementOptionsSelectionType>('SelectionElementOptions')
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
@@ -163,7 +161,7 @@ export const SelectionQuestionOptions = builder
       }),
       numberOfInputs: t.exposeInt('numberOfInputs', { nullable: true }),
       answerCollection: t.expose('answerCollection', {
-        type: SelectionQuestionOptionsCollection,
+        type: SelectionAnswerCollection,
         nullable: true,
       }),
       answerCollectionSolutionIds: t.exposeIntList(
@@ -209,7 +207,7 @@ export const ChoicesElementData = builder
   .implement({
     fields: (t) => ({
       ...sharedElementData(t),
-      options: t.expose('options', { type: ChoiceQuestionOptions }),
+      options: t.expose('options', { type: ChoiceElementOptions }),
     }),
   })
 
@@ -221,7 +219,7 @@ export const NumericalElementData = builder
   .implement({
     fields: (t) => ({
       ...sharedElementData(t),
-      options: t.expose('options', { type: NumericalQuestionOptions }),
+      options: t.expose('options', { type: NumericalElementOptions }),
     }),
   })
 
@@ -233,7 +231,7 @@ export const FreeTextElementData = builder
   .implement({
     fields: (t) => ({
       ...sharedElementData(t),
-      options: t.expose('options', { type: FreeTextQuestionOptions }),
+      options: t.expose('options', { type: FreeTextElementOptions }),
     }),
   })
 
@@ -245,7 +243,7 @@ export const SelectionElementData = builder
   .implement({
     fields: (t) => ({
       ...sharedElementData(t),
-      options: t.expose('options', { type: SelectionQuestionOptions }),
+      options: t.expose('options', { type: SelectionElementOptions }),
     }),
   })
 

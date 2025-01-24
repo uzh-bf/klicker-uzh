@@ -1,6 +1,6 @@
 import type {
-  FreeTextQuestionOptions,
-  NumericalQuestionOptions,
+  FreeTextElementOptions,
+  NumericalElementOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 
 export function validateScResponse(response?: Record<number, boolean>) {
@@ -33,7 +33,7 @@ export function validateNumericalResponse({
   options,
 }: {
   response?: string
-  options: NumericalQuestionOptions
+  options: NumericalElementOptions
 }) {
   if (!response) return false
 
@@ -67,7 +67,7 @@ export function validateFreeTextResponse({
   options,
 }: {
   response?: string
-  options: FreeTextQuestionOptions
+  options: FreeTextElementOptions
 }) {
   if (!response || response.length == 0) {
     return false

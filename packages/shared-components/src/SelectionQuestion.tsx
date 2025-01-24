@@ -1,6 +1,6 @@
 import type {
+  SelectionElementOptions,
   SelectionInstanceEvaluation,
-  SelectionQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import React, { useMemo } from 'react'
@@ -15,7 +15,7 @@ import { validateSelectionResponse } from './utils/validateResponse'
 
 interface SelectionQuestionProps {
   content: string
-  options: SelectionQuestionOptions
+  options: SelectionElementOptions
   response?: Record<number, number>
   valid: boolean
   setResponse: (newValue: Record<number, number>, valid: boolean) => void

@@ -24,17 +24,17 @@ import type {
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
 import {
-  ChoiceQuestionOptions,
+  ChoiceElementOptions,
   ElementData,
   ElementDisplayMode,
   ElementInstanceOptions,
   ElementInstanceType,
   ElementStatus,
   ElementType,
-  FreeTextQuestionOptions,
-  NumericalQuestionOptions,
+  FreeTextElementOptions,
+  NumericalElementOptions,
   NumericalSolutionRange,
-  SelectionQuestionOptions,
+  SelectionElementOptions,
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
 
@@ -435,7 +435,7 @@ export const ChoicesElement = builder
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-      options: t.expose('options', { type: ChoiceQuestionOptions }),
+      options: t.expose('options', { type: ChoiceElementOptions }),
     }),
   })
 
@@ -447,7 +447,7 @@ export const NumericalElement = builder
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-      options: t.expose('options', { type: NumericalQuestionOptions }),
+      options: t.expose('options', { type: NumericalElementOptions }),
     }),
   })
 
@@ -459,7 +459,7 @@ export const FreeTextElement = builder
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-      options: t.expose('options', { type: FreeTextQuestionOptions }),
+      options: t.expose('options', { type: FreeTextElementOptions }),
     }),
   })
 
@@ -471,7 +471,7 @@ export const SelectionElement = builder
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-      options: t.expose('options', { type: SelectionQuestionOptions }),
+      options: t.expose('options', { type: SelectionElementOptions }),
     }),
   })
 
