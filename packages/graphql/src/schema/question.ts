@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import type {
+  ElementOptionsChoices as ElementOptionsChoicesType,
+  ElementOptionsFreeText as ElementOptionsFreeTextType,
+  ElementOptionsNumerical as ElementOptionsNumericalType,
+  ElementOptionsSelection as ElementOptionsSelectionType,
   IInstanceEvaluationChoices,
   IInstanceEvaluationContent,
   IInstanceEvaluationFlashcard,
@@ -20,21 +24,17 @@ import type {
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
 import {
-  ChoiceQuestionOptions,
+  ChoiceElementOptions,
   ElementData,
   ElementDisplayMode,
   ElementInstanceOptions,
   ElementInstanceType,
   ElementStatus,
   ElementType,
-  FreeTextQuestionOptions,
-  ISelectionQuestionOptions,
-  NumericalQuestionOptions,
+  FreeTextElementOptions,
+  NumericalElementOptions,
   NumericalSolutionRange,
-  SelectionQuestionOptions,
-  type IChoiceQuestionOptions,
-  type IFreeTextQuestionOptions,
-  type INumericalQuestionOptions,
+  SelectionElementOptions,
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
 
@@ -428,50 +428,50 @@ interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
 }
 export interface IChoicesElement extends IBaseElementProps {
-  options: IChoiceQuestionOptions
+  options: ElementOptionsChoicesType
 }
 export const ChoicesElement = builder
   .objectRef<IChoicesElement>('ChoicesElement')
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-      options: t.expose('options', { type: ChoiceQuestionOptions }),
+      options: t.expose('options', { type: ChoiceElementOptions }),
     }),
   })
 
 export interface INumericalElement extends IBaseElementProps {
-  options: INumericalQuestionOptions
+  options: ElementOptionsNumericalType
 }
 export const NumericalElement = builder
   .objectRef<INumericalElement>('NumericalElement')
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-      options: t.expose('options', { type: NumericalQuestionOptions }),
+      options: t.expose('options', { type: NumericalElementOptions }),
     }),
   })
 
 export interface IFreeTextElement extends IBaseElementProps {
-  options: IFreeTextQuestionOptions
+  options: ElementOptionsFreeTextType
 }
 export const FreeTextElement = builder
   .objectRef<IFreeTextElement>('FreeTextElement')
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-      options: t.expose('options', { type: FreeTextQuestionOptions }),
+      options: t.expose('options', { type: FreeTextElementOptions }),
     }),
   })
 
 export interface ISelectionElement extends IBaseElementProps {
-  options: ISelectionQuestionOptions
+  options: ElementOptionsSelectionType
 }
 export const SelectionElement = builder
   .objectRef<ISelectionElement>('SelectionElement')
   .implement({
     fields: (t) => ({
       ...sharedElementProps(t),
-      options: t.expose('options', { type: SelectionQuestionOptions }),
+      options: t.expose('options', { type: SelectionElementOptions }),
     }),
   })
 

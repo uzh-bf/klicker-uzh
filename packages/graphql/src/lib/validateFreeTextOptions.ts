@@ -1,6 +1,6 @@
-import { QuestionOptionsArgs } from './validateAndProcessElementOptions.js'
+import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
 
-function validateFreeTextOptions(options?: QuestionOptionsArgs | null) {
+function validateFreeTextOptions(options?: ElementOptionsArgs | null) {
   // options and hasSampleSolution need to be defined
   if (
     !options ||

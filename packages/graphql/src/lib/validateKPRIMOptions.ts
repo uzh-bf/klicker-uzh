@@ -1,7 +1,7 @@
-import { QuestionOptionsArgs } from './validateAndProcessElementOptions.js'
+import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
 import validateSharedChoicesFields from './validateSharedChoicesFields.js'
 
-function validateKPRIMOptions(options?: QuestionOptionsArgs | null) {
+function validateKPRIMOptions(options?: ElementOptionsArgs | null) {
   let valid = validateSharedChoicesFields(options)
   if (!valid) return false
 

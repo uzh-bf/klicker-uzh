@@ -1,6 +1,6 @@
 import type {
+  SelectionElementOptions,
   SelectionInstanceEvaluation,
-  SelectionQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import type { SingleSelectionResponse } from '@klicker-uzh/types'
 import { Progress } from '@uzh-bf/design-system'
@@ -14,7 +14,7 @@ function SEEValuation({
   options,
 }: {
   evaluation: SelectionInstanceEvaluation
-  options: SelectionQuestionOptions
+  options: SelectionElementOptions
 }) {
   const t = useTranslations()
 

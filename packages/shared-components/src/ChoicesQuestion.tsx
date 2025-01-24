@@ -1,5 +1,5 @@
 import type {
-  ChoiceQuestionOptions,
+  ChoiceElementOptions,
   ChoicesInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
@@ -22,7 +22,7 @@ import {
 interface ChoicesQuestionProps {
   content: string
   type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
-  options: ChoiceQuestionOptions
+  options: ChoiceElementOptions
   response?: Record<number, boolean>
   setResponse: (newValue: Record<number, boolean>, valid: boolean) => void
   existingResponse?: Record<number, boolean>

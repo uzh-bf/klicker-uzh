@@ -1,6 +1,6 @@
 import type {
+  FreeTextElementOptions,
   FreeTextInstanceEvaluation,
-  FreeTextQuestionOptions,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import React from 'react'
@@ -13,7 +13,7 @@ import { validateFreeTextResponse } from './utils/validateResponse'
 
 interface FreeTextQuestionProps {
   content: string
-  options: FreeTextQuestionOptions
+  options: FreeTextElementOptions
   response?: string
   valid: boolean
   setResponse: (newValue: string, valid: boolean) => void

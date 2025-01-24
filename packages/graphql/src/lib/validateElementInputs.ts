@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { QuestionOptionsArgs } from './validateAndProcessElementOptions.js'
+import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
 
 export interface ManipulateQuestionArgs {
   id?: number | null
@@ -8,7 +8,7 @@ export interface ManipulateQuestionArgs {
   name?: string | null
   content?: string | null
   explanation?: string | null
-  options?: QuestionOptionsArgs | null
+  options?: ElementOptionsArgs | null
   pointsMultiplier?: number | null
   tags?: string[] | null
 }
