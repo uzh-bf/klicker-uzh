@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import type {
+  ElementOptionsChoices as ElementOptionsChoicesType,
+  ElementOptionsFreeText as ElementOptionsFreeTextType,
+  ElementOptionsNumerical as ElementOptionsNumericalType,
+  ElementOptionsSelection as ElementOptionsSelectionType,
   IInstanceEvaluationChoices,
   IInstanceEvaluationContent,
   IInstanceEvaluationFlashcard,
@@ -28,13 +32,9 @@ import {
   ElementStatus,
   ElementType,
   FreeTextQuestionOptions,
-  ISelectionQuestionOptions,
   NumericalQuestionOptions,
   NumericalSolutionRange,
   SelectionQuestionOptions,
-  type IChoiceQuestionOptions,
-  type IFreeTextQuestionOptions,
-  type INumericalQuestionOptions,
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
 
@@ -428,7 +428,7 @@ interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'originalId'> {
   tags?: ITag[] | null
 }
 export interface IChoicesElement extends IBaseElementProps {
-  options: IChoiceQuestionOptions
+  options: ElementOptionsChoicesType
 }
 export const ChoicesElement = builder
   .objectRef<IChoicesElement>('ChoicesElement')
@@ -440,7 +440,7 @@ export const ChoicesElement = builder
   })
 
 export interface INumericalElement extends IBaseElementProps {
-  options: INumericalQuestionOptions
+  options: ElementOptionsNumericalType
 }
 export const NumericalElement = builder
   .objectRef<INumericalElement>('NumericalElement')
@@ -452,7 +452,7 @@ export const NumericalElement = builder
   })
 
 export interface IFreeTextElement extends IBaseElementProps {
-  options: IFreeTextQuestionOptions
+  options: ElementOptionsFreeTextType
 }
 export const FreeTextElement = builder
   .objectRef<IFreeTextElement>('FreeTextElement')
@@ -464,7 +464,7 @@ export const FreeTextElement = builder
   })
 
 export interface ISelectionElement extends IBaseElementProps {
-  options: ISelectionQuestionOptions
+  options: ElementOptionsSelectionType
 }
 export const SelectionElement = builder
   .objectRef<ISelectionElement>('SelectionElement')

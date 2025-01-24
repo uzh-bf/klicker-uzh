@@ -3,7 +3,15 @@ import {
   DisplayMode,
   type BaseElementData,
   type Choice as ChoiceType,
+  type ElementOptionsChoices as ElementOptionsChoicesType,
+  type ElementOptionsFreeText as ElementOptionsFreeTextType,
+  type ElementOptionsNumerical as ElementOptionsNumericalType,
+  type ElementOptionsSelection as ElementOptionsSelectionType,
+  type FreeTextRestrictions as FreeTextRestrictionsType,
+  type NumericalRestrictions as NumericalRestrictionsType,
   type NumericalSolutionRange as NumericalSolutionRangeType,
+  type SelectionAnswerCollectionEntry as SelectionAnswerCollectionEntryType,
+  type SelectionAnswerCollection as SelectionAnswerCollectionType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 
@@ -34,14 +42,8 @@ export const Choice = builder.objectRef<ChoiceType>('Choice').implement({
   }),
 })
 
-export interface IChoiceQuestionOptions {
-  displayMode: DisplayMode
-  hasSampleSolution?: boolean
-  hasAnswerFeedbacks?: boolean
-  choices: ChoiceType[]
-}
 export const ChoiceQuestionOptions = builder
-  .objectRef<IChoiceQuestionOptions>('ChoiceQuestionOptions')
+  .objectRef<ElementOptionsChoicesType>('ChoiceQuestionOptions')
   .implement({
     fields: (t) => ({
       displayMode: t.expose('displayMode', { type: ElementDisplayMode }),
@@ -55,12 +57,8 @@ export const ChoiceQuestionOptions = builder
     }),
   })
 
-export interface INumericalRestrictions {
-  min?: number
-  max?: number
-}
 export const NumericalRestrictions = builder
-  .objectRef<INumericalRestrictions>('NumericalRestrictions')
+  .objectRef<NumericalRestrictionsType>('NumericalRestrictions')
   .implement({
     fields: (t) => ({
       min: t.exposeFloat('min', { nullable: true }),
@@ -77,18 +75,8 @@ export const NumericalSolutionRange = builder
     }),
   })
 
-export interface INumericalQuestionOptions {
-  hasSampleSolution?: boolean
-  hasAnswerFeedbacks?: boolean
-  accuracy?: number | null
-  placeholder?: string | null
-  unit?: string | null
-  restrictions?: INumericalRestrictions | null
-  solutionRanges?: NumericalSolutionRangeType[] | null
-  exactSolutions?: number[] | null
-}
 export const NumericalQuestionOptions = builder
-  .objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')
+  .objectRef<ElementOptionsNumericalType>('NumericalQuestionOptions')
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
@@ -112,25 +100,16 @@ export const NumericalQuestionOptions = builder
     }),
   })
 
-export interface IFreeTextRestrictions {
-  maxLength?: number | null
-}
 export const FreeTextRestrictions = builder
-  .objectRef<IFreeTextRestrictions>('FreeTextRestrictions')
+  .objectRef<FreeTextRestrictionsType>('FreeTextRestrictions')
   .implement({
     fields: (t) => ({
       maxLength: t.exposeInt('maxLength', { nullable: true }),
     }),
   })
 
-export interface IFreeTextQuestionOptions {
-  hasSampleSolution?: boolean
-  hasAnswerFeedbacks?: boolean
-  restrictions?: IFreeTextRestrictions | null
-  solutions?: string[] | null
-}
 export const FreeTextQuestionOptions = builder
-  .objectRef<IFreeTextQuestionOptions>('FreeTextQuestionOptions')
+  .objectRef<ElementOptionsFreeTextType>('FreeTextQuestionOptions')
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
@@ -147,12 +126,8 @@ export const FreeTextQuestionOptions = builder
     }),
   })
 
-export interface ISelectionQuestionOptionsCollectionEntry {
-  id: number
-  value: string
-}
 export const SelectionQuestionOptionsCollectionEntry = builder
-  .objectRef<ISelectionQuestionOptionsCollectionEntry>(
+  .objectRef<SelectionAnswerCollectionEntryType>(
     'SelectionQuestionOptionsCollectionEntry'
   )
   .implement({
@@ -162,12 +137,8 @@ export const SelectionQuestionOptionsCollectionEntry = builder
     }),
   })
 
-export interface ISelectionQuestionOptionsCollection {
-  id: number
-  entries?: ISelectionQuestionOptionsCollectionEntry[] | null
-}
 export const SelectionQuestionOptionsCollection = builder
-  .objectRef<ISelectionQuestionOptionsCollection>(
+  .objectRef<SelectionAnswerCollectionType>(
     'SelectionQuestionOptionsCollection'
   )
   .implement({
@@ -180,15 +151,8 @@ export const SelectionQuestionOptionsCollection = builder
     }),
   })
 
-export interface ISelectionQuestionOptions {
-  hasSampleSolution?: boolean
-  hasAnswerFeedbacks?: boolean
-  numberOfInputs?: number | null
-  answerCollection?: ISelectionQuestionOptionsCollection | null
-  answerCollectionSolutionIds?: number[] | null
-}
 export const SelectionQuestionOptions = builder
-  .objectRef<ISelectionQuestionOptions>('SelectionQuestionOptions')
+  .objectRef<ElementOptionsSelectionType>('SelectionQuestionOptions')
   .implement({
     fields: (t) => ({
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
@@ -238,7 +202,7 @@ export const ElementInstanceOptions = builder
   })
 
 export interface IChoicesElementData extends BaseElementData {
-  options: IChoiceQuestionOptions
+  options: ElementOptionsChoicesType
 }
 export const ChoicesElementData = builder
   .objectRef<IChoicesElementData>('ChoicesElementData')
@@ -250,7 +214,7 @@ export const ChoicesElementData = builder
   })
 
 export interface INumericalElementData extends BaseElementData {
-  options: INumericalQuestionOptions
+  options: ElementOptionsNumericalType
 }
 export const NumericalElementData = builder
   .objectRef<INumericalElementData>('NumericalElementData')
@@ -262,7 +226,7 @@ export const NumericalElementData = builder
   })
 
 export interface IFreeTextElementData extends BaseElementData {
-  options: IFreeTextQuestionOptions
+  options: ElementOptionsFreeTextType
 }
 export const FreeTextElementData = builder
   .objectRef<IFreeTextElementData>('FreeTextElementData')
@@ -274,7 +238,7 @@ export const FreeTextElementData = builder
   })
 
 export interface ISelectionElementData extends BaseElementData {
-  options: ISelectionQuestionOptions
+  options: ElementOptionsSelectionType
 }
 export const SelectionElementData = builder
   .objectRef<ISelectionElementData>('SelectionElementData')

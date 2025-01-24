@@ -196,6 +196,11 @@ export type Choice = {
   feedback?: string
 }
 
+export type NumericalRestrictions = {
+  min?: number | null
+  max?: number | null
+}
+
 export type NumericalSolutionRange = {
   min?: number | null
   max?: number | null
@@ -213,29 +218,30 @@ export interface ElementOptionsChoices extends BaseQuestionOptions {
 
 export interface ElementOptionsNumerical extends BaseQuestionOptions {
   unit?: string | null
-  accuracy?: number
-  placeholder?: string
-  restrictions?: {
-    min?: number
-    max?: number
-  }
-  solutionRanges?: NumericalSolutionRange[]
-  exactSolutions?: number[]
+  accuracy?: number | null
+  placeholder?: string | null
+  restrictions?: NumericalRestrictions | null
+  solutionRanges?: NumericalSolutionRange[] | null
+  exactSolutions?: number[] | null
+}
+
+export type FreeTextRestrictions = {
+  maxLength?: number | null
 }
 
 export interface ElementOptionsFreeText extends BaseQuestionOptions {
-  solutions?: string[]
-  restrictions?: {
-    maxLength?: number | null
-  }
+  restrictions?: FreeTextRestrictions | null
+  solutions?: string[] | null
+}
+
+export type SelectionAnswerCollectionEntry = {
+  id: number
+  value: string
 }
 
 export interface SelectionAnswerCollection {
   id: number
-  entries: {
-    id: number
-    value: string
-  }[]
+  entries: SelectionAnswerCollectionEntry[]
 }
 
 export interface ElementOptionsSelection extends BaseQuestionOptions {
