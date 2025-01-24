@@ -269,6 +269,7 @@ export default {
       minimumShort: 'Min',
       maximumShort: 'Max',
       step: 'Schritt',
+      case: 'Fall',
     },
     contentInput: {
       boldStyle:
@@ -1059,6 +1060,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseStudyCriteriaUnitTooltip:
         'Die optionale Einheit wird den Studierenden neben den entsprechenden Werten angezeigt (z.B. "%").',
       addCriterion: 'Kriterium hinzufügen',
+      addCase: 'Neuen Fall hinzufügen',
+      removeCase: 'Fall entfernen',
+      caseName: 'Fallname',
+      caseStudyCaseNameTooltip:
+        "Bitte geben Sie einen Namen für den Fall an, welcher den Studierenden angezeigt wird (z.B. 'Szenario 1: Lorem ipsum').",
+      caseDescription: 'Fallbeschreibung',
+      caseStudyCaseDescriptionTooltip:
+        'Die Fallbeschreibung dient der detaillierten Beschreibung des Szenarios. Sie muss alle Informationen enthalten, welche die Studierenden benötigen, um die gegebenen Elemente auf die Kriterien zu bewerten.',
+      caseDescriptionPlaceholder:
+        'Detaillierte Fallbeschreibung hier eingeben…',
       LISTDisplay: 'Anzeige als Liste',
       GRIDDisplay: 'Anzeige als Raster',
       feedbackPlaceholder: 'Feedback eingeben…',

@@ -327,6 +327,7 @@ function ElementEditModal({
         isSubmitting,
         isValid,
         setFieldValue,
+        setFieldTouched,
         validateForm,
       }) => {
         if (loadingQuestion) {
@@ -431,7 +432,10 @@ function ElementEditModal({
                   )}
 
                   {values.type === ElementType.CaseStudy && (
-                    <CaseStudyOptions />
+                    <CaseStudyOptions
+                      setFieldValue={setFieldValue}
+                      setFieldTouched={setFieldTouched}
+                    />
                   )}
                 </Form>
 

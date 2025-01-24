@@ -268,6 +268,7 @@ export default {
       minimumShort: 'Min',
       maximumShort: 'Max',
       step: 'Step',
+      case: 'Case',
     },
     contentInput: {
       boldStyle:
@@ -1060,6 +1061,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       caseStudyCriteriaUnitTooltip:
         'The optional unit is displayed to the students next to the corresponding values (e.g. "%").',
       addCriterion: 'Add new criterion',
+      addCase: 'Add new case',
+      removeCase: 'Remove case',
+      caseName: 'Case name',
+      caseStudyCaseNameTooltip:
+        'Please enter a name for the case that will be displayed to the students (e.g. "Scenario 1: Lorem ipsum").',
+      caseDescription: 'Case description',
+      caseStudyCaseDescriptionTooltip:
+        'The case description is used to provide a detailed description of the scenario. It must contain all the information that students need to evaluate the given elements against the criteria.',
+      caseDescriptionPlaceholder: 'Enter detailed case description here...',
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',

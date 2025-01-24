@@ -3,11 +3,17 @@ import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import CaseStudyCasesFields, {
+  CaseStudySetterProps,
+} from './CaseStudyCasesFields'
 import CaseStudyCollectionSelection from './CaseStudyCollectionSelection'
 import CaseStudyCriteriaFields from './CaseStudyCriteriaFields'
 import useFormCollections from './useFormCollections'
 
-function CaseStudyOptions() {
+function CaseStudyOptions({
+  setFieldValue,
+  setFieldTouched,
+}: CaseStudySetterProps) {
   const t = useTranslations()
   const { data, loading } = useQuery(GetAnswerCollectionsDocument)
 
@@ -36,8 +42,10 @@ function CaseStudyOptions() {
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
       <CaseStudyCriteriaFields />
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
-      {/* // TODO: extract to separate component */}
-      <div>CASES /w CRITERIA SOLUTION RANGES IF DEFINED</div>
+      <CaseStudyCasesFields
+        setFieldTouched={setFieldTouched}
+        setFieldValue={setFieldValue}
+      />
     </div>
   )
 }
