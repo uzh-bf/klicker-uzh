@@ -75,6 +75,36 @@ export interface ElementFormTypesSelection extends SharedQuestionFormProps {
   }
 }
 
+export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
+  type: ElementType.CaseStudy
+  explanation?: string | null
+  options: {
+    hasSampleSolution: boolean
+    answerCollection: string
+    selectedItems: number[] // items that should be evaluated with respect to the defined criteria
+    cases: {
+      title: string
+      description: string
+      solutions?: {
+        itemId: number
+        criteriaSolutions: {
+          criterionId: string
+          min: number
+          max: number
+        }[]
+      }[]
+    }[]
+    criteria: {
+      id: string // short id
+      name: string
+      min: number
+      max: number
+      step: number
+      unit?: string | null
+    }[]
+  }
+}
+
 export interface ElementFormTypesFlashcard extends SharedQuestionFormProps {
   type: ElementType.Flashcard
   explanation: string
@@ -91,3 +121,4 @@ export type ElementFormTypes =
   | ElementFormTypesFlashcard
   | ElementFormTypesContent
   | ElementFormTypesSelection
+  | ElementFormTypesCaseStudy

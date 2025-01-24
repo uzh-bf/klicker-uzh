@@ -239,9 +239,44 @@ export interface SelectionAnswerCollection {
 }
 
 export interface ElementOptionsSelection extends BaseQuestionOptions {
-  numberOfInputs?: number
+  numberOfInputs: number
   answerCollection?: SelectionAnswerCollection
   answerCollectionSolutionIds?: number[] | null
+}
+
+export type CaseStudyCriterion = {
+  id: string // use short hashes to simplify distinction from items & ordering / ...
+  name: string
+  order: number
+  min: number
+  max: number
+  step: number
+  unit?: string | null
+}
+
+export type CaseStudyCaseCriteriaSolution = {
+  criterionId: string
+  min: number
+  max: number
+}
+
+export type CaseStudyCaseSolution = {
+  itemId: number
+  criteriaSolutions: CaseStudyCaseCriteriaSolution[]
+}
+
+export type CaseStudyCase = {
+  title: string
+  description: string
+  order: number
+  solutions?: CaseStudyCaseSolution[] | null
+}
+
+export interface ElementOptionsCaseStudy extends BaseQuestionOptions {
+  answerCollection?: SelectionAnswerCollection // instance only - link on element
+  collectionItemIds?: number[] // instance only - link on element
+  cases: CaseStudyCase[]
+  criteria: CaseStudyCriterion[]
 }
 
 export interface ElementOptionsFlashcard {}
@@ -254,6 +289,7 @@ export type ElementOptions =
   | ElementOptionsFlashcard
   | ElementOptionsContent
   | ElementOptionsSelection
+  | ElementOptionsCaseStudy
 
 export interface BaseElementData {
   id: string
@@ -295,6 +331,10 @@ export type SelectionElementData = IElementData<
   'SELECTION',
   ElementOptionsSelection
 >
+export type CaseStudyElementData = IElementData<
+  'CASE_STUDY',
+  ElementOptionsCaseStudy
+>
 
 export type AllElementTypeData =
   | ChoicesElementData
@@ -303,6 +343,7 @@ export type AllElementTypeData =
   | FlashcardElementData
   | ContentElementData
   | SelectionElementData
+  | CaseStudyElementData
 
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
@@ -337,7 +378,7 @@ export type ElementResultsContent = {
 }
 
 export type ElementResultsSelection = {
-  selections: Record<number, number>
+  selections: Record<string, number>
   total: number
 }
 

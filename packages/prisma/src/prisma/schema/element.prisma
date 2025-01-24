@@ -15,6 +15,7 @@ enum ElementType {
   CONTENT
   FLASHCARD
   SELECTION
+  CASE_STUDY
 }
 
 model Element {

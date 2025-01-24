@@ -5750,6 +5750,12 @@
         "interfaces": null,
         "enumValues": [
           {
+            "name": "CASE_STUDY",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "CONTENT",
             "description": null,
             "isDeprecated": false,

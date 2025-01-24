@@ -83,6 +83,15 @@ function useElementTypeOptions() {
         )}`,
       },
     })
+    baseElements.push({
+      value: ElementType.CaseStudy,
+      label: t(`shared.${ElementType.CaseStudy}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.CaseStudy}.typeLabel`
+        )}`,
+      },
+    })
   }
 
   return baseElements

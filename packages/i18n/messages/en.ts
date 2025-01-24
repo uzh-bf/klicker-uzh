@@ -70,6 +70,13 @@ export default {
       text: 'Please select the correct answer from the list.',
       richtext: 'Please select the <b>correct answer</b> from the list.',
     },
+    CASE_STUDY: {
+      short: 'CS',
+      typeLabel: 'Case Study (CS)',
+      text: 'Please evaluate all options with respect to the given criteria.',
+      richtext:
+        'Please evaluate all options with respect to the given criteria.',
+    },
     login: {
       installButton: 'Install Now',
     },

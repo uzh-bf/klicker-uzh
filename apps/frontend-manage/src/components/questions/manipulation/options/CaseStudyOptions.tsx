@@ -2,7 +2,6 @@ import { useQuery } from '@apollo/client'
 import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
-  FormikNumberField,
   FormikSelectField,
   FormikSwitchField,
   FormLabel,
@@ -10,27 +9,20 @@ import {
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
 import Select from 'react-select'
-import { ElementFormTypesSelection } from '../types'
+import { ElementFormTypesCaseStudy } from '../types'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useFormCollections from './useFormCollections'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
-interface SelectionOptionsProps {
-  values: ElementFormTypesSelection
-  setAnswerCollectionEntries: Dispatch<
-    SetStateAction<{ id: number; value: string }[]>
-  >
+interface CaseStudyOptionsProps {
+  values: ElementFormTypesCaseStudy
 }
 
-function SelectionOptions({
-  values,
-  setAnswerCollectionEntries,
-}: SelectionOptionsProps) {
+function CaseStudyOptions({ values }: CaseStudyOptionsProps) {
   const t = useTranslations()
-  const [field, _, helpers] = useField<number[]>('options.correctAnswers')
+  const [field, _, helpers] = useField<number[]>('options.selectedItems')
   const { data, loading } = useQuery(GetAnswerCollectionsDocument)
 
   // combine all collections that are accessible to the user
@@ -65,7 +57,7 @@ function SelectionOptions({
     return (
       <UserNotification
         type="warning"
-        message={t('manage.questionForms.SEAnswerCollectionRequired')}
+        message={t('manage.questionForms.CSAnswerCollectionRequired')}
         className={{ root: 'text-base' }}
       />
     )
@@ -73,13 +65,13 @@ function SelectionOptions({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1 lg:flex-row lg:items-start lg:gap-3">
+      <div className="flex flex-col justify-between gap-1 lg:flex-row lg:items-start lg:gap-3">
         <FormikSelectField
           required
           name="options.answerCollection"
           label={t('manage.questionForms.answerCollection')}
           labelType="small"
-          tooltip={t('manage.questionForms.SELECTIONOptionsTooltip')}
+          tooltip={t('manage.questionForms.caseStudyAnswerCollectionTooltip')}
           placeholder={t('manage.questionForms.selectCollection')}
           items={collections.map((collection) => ({
             label: collection.name,
@@ -94,58 +86,48 @@ function SelectionOptions({
             root: 'order-2 lg:order-1',
           }}
         />
-        <FormikNumberField
-          required
-          min={1}
-          name="options.numberOfInputs"
-          label={t('manage.questionForms.numberOfInputs')}
-          labelType="small"
-          data={{ cy: 'configure-number-of-inputs' }}
-          className={{
-            field: 'w-40',
-            root: 'order-3 lg:order-2',
-          }}
-        />
         <FormikSwitchField
           name="options.hasSampleSolution"
           label={t('shared.generic.sampleSolution')}
           data={{ cy: 'configure-sample-solution' }}
           className={{
             label: 'text-gray-600',
-            root: 'order-1 mt-2 self-end lg:order-3 lg:self-start',
+            root: 'order-1 mt-2 self-end lg:order-2 lg:self-start',
           }}
         />
       </div>
-      {values.options.hasSampleSolution ? (
-        <div>
-          <FormLabel
-            required
-            label={t('manage.questionForms.correctAnswerOptions')}
-            tooltip={t('manage.questionForms.correctAnswerOptionsTooltip')}
-            labelType="small"
+      <div>
+        <FormLabel
+          required
+          label={t('manage.questionForms.caseStudyItems')}
+          tooltip={t('manage.questionForms.caseStudyItemsTooltip')}
+          labelType="small"
+        />
+        <div data-cy="choose-case-study-items">
+          <Select
+            isClearable
+            isMulti
+            value={selectedAnswers}
+            options={collectionAnswers}
+            classNames={{
+              container: () => 'w-full',
+            }}
+            onChange={(newValue) =>
+              helpers.setValue(newValue.map((tag) => tag.value))
+            }
+            placeholder={t('manage.questionForms.selectCaseStudyItems')}
+            noOptionsMessage={() =>
+              t('manage.questionForms.noMatchingOptionFound')
+            }
           />
-          <div data-cy="choose-correct-answer-options">
-            <Select
-              isClearable
-              isMulti
-              value={selectedAnswers}
-              options={collectionAnswers}
-              classNames={{
-                container: () => 'w-full',
-              }}
-              onChange={(newValue) =>
-                helpers.setValue(newValue.map((tag) => tag.value))
-              }
-              placeholder={t('manage.questionForms.selectAnswerOptions')}
-              noOptionsMessage={() =>
-                t('manage.questionForms.noMatchingOptionFound')
-              }
-            />
-          </div>
         </div>
-      ) : null}
+      </div>
+      <hr className="border-uzh-grey-40 my-2 w-full border-2" />
+      <div>CRITERIA</div>
+      <hr className="border-uzh-grey-40 my-2 w-full border-2" />
+      <div>CASES /w CRITERIA SOLUTION RANGES IF DEFINED</div>
     </div>
   )
 }
 
-export default SelectionOptions
+export default CaseStudyOptions

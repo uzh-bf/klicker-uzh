@@ -519,6 +519,7 @@ enum ElementStatus {
 }
 
 enum ElementType {
+  CASE_STUDY
   CONTENT
   FLASHCARD
   FREE_TEXT

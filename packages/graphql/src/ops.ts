@@ -572,6 +572,7 @@ export enum ElementStatus {
 }
 
 export enum ElementType {
+  CaseStudy = 'CASE_STUDY',
   Content = 'CONTENT',
   Flashcard = 'FLASHCARD',
   FreeText = 'FREE_TEXT',

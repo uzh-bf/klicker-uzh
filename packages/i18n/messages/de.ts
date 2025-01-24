@@ -71,6 +71,13 @@ export default {
       richtext:
         'Bitte wählen Sie die <b>richtigen Antworten</b> aus der Liste.',
     },
+    CASE_STUDY: {
+      short: 'CS',
+      typeLabel: 'Fallstudie (CS)',
+      text: 'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
+      richtext:
+        'Bitte bewerten Sie alle Möglichkeiten auf die vorgegebenen Kriterien.',
+    },
     login: {
       installButton: 'Jetzt installieren',
     },
