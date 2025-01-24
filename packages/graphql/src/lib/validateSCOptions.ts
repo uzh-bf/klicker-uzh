@@ -1,7 +1,7 @@
-import { QuestionOptionsArgs } from './validateAndProcessElementOptions.js'
+import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
 import validateSharedChoicesFields from './validateSharedChoicesFields.js'
 
-function validateSCOptions(options?: QuestionOptionsArgs | null) {
+function validateSCOptions(options?: ElementOptionsArgs | null) {
   let valid = validateSharedChoicesFields(options)
   if (!valid) return false
 

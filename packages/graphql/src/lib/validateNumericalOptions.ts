@@ -1,6 +1,6 @@
-import { QuestionOptionsArgs } from './validateAndProcessElementOptions.js'
+import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
 
-function validateNumericalOptions(options?: QuestionOptionsArgs | null) {
+function validateNumericalOptions(options?: ElementOptionsArgs | null) {
   // options and hasSampleSolution need to be defined
   if (
     !options ||

@@ -181,6 +181,13 @@ type Choice {
   value: String!
 }
 
+type ChoiceElementOptions {
+  choices: [Choice!]!
+  displayMode: ElementDisplayMode!
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
+}
+
 type ChoiceElementResults {
   correct: Boolean
   count: Int!
@@ -195,13 +202,6 @@ input ChoiceInput {
   value: String!
 }
 
-type ChoiceQuestionOptions {
-  choices: [Choice!]!
-  displayMode: ElementDisplayMode!
-  hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean
-}
-
 type ChoicesElement {
   content: String!
   createdAt: Date
@@ -210,7 +210,7 @@ type ChoicesElement {
   isArchived: Boolean
   isDeleted: Boolean
   name: String!
-  options: ChoiceQuestionOptions!
+  options: ChoiceElementOptions!
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -225,7 +225,7 @@ type ChoicesElementData {
   explanation: String
   id: ID!
   name: String!
-  options: ChoiceQuestionOptions!
+  options: ChoiceElementOptions!
   pointsMultiplier: Int!
   type: ElementType!
 }
@@ -664,7 +664,7 @@ type FreeTextElement {
   isArchived: Boolean
   isDeleted: Boolean
   name: String!
-  options: FreeTextQuestionOptions!
+  options: FreeTextElementOptions!
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -679,9 +679,16 @@ type FreeTextElementData {
   explanation: String
   id: ID!
   name: String!
-  options: FreeTextQuestionOptions!
+  options: FreeTextElementOptions!
   pointsMultiplier: Int!
   type: ElementType!
+}
+
+type FreeTextElementOptions {
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
+  restrictions: FreeTextRestrictions
+  solutions: [String!]
 }
 
 type FreeTextInstanceEvaluation {
@@ -702,13 +709,6 @@ type FreeTextInstanceEvaluation {
   solutions: [String!]
   xp: Int
   xpAwarded: Int
-}
-
-type FreeTextQuestionOptions {
-  hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean
-  restrictions: FreeTextRestrictions
-  solutions: [String!]
 }
 
 type FreeTextRestrictions {
@@ -1166,7 +1166,7 @@ type NumericalElement {
   isArchived: Boolean
   isDeleted: Boolean
   name: String!
-  options: NumericalQuestionOptions!
+  options: NumericalElementOptions!
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -1181,7 +1181,7 @@ type NumericalElementData {
   explanation: String
   id: ID!
   name: String!
-  options: NumericalQuestionOptions!
+  options: NumericalElementOptions!
   pointsMultiplier: Int!
   type: ElementType!
 }
@@ -1196,6 +1196,17 @@ type NumericalElementInstanceEvaluation {
   results: NumericalElementResults!
   statistics: Statistics
   type: ElementType!
+}
+
+type NumericalElementOptions {
+  accuracy: Int
+  exactSolutions: [Float!]
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
+  placeholder: String
+  restrictions: NumericalRestrictions
+  solutionRanges: [NumericalSolutionRange!]
+  unit: String
 }
 
 type NumericalElementResult {
@@ -1238,17 +1249,6 @@ type NumericalInstanceEvaluation {
   solutionRanges: [NumericalSolutionRange!]
   xp: Int
   xpAwarded: Int
-}
-
-type NumericalQuestionOptions {
-  accuracy: Int
-  exactSolutions: [Float!]
-  hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean
-  placeholder: String
-  restrictions: NumericalRestrictions
-  solutionRanges: [NumericalSolutionRange!]
-  unit: String
 }
 
 type NumericalRestrictions {
@@ -1590,6 +1590,16 @@ input ResponseInput {
   value: String
 }
 
+type SelectionAnswerCollection {
+  entries: [SelectionAnswerCollectionEntry!]
+  id: Int!
+}
+
+type SelectionAnswerCollectionEntry {
+  id: Int!
+  value: String!
+}
+
 type SelectionElement {
   content: String!
   createdAt: Date
@@ -1598,7 +1608,7 @@ type SelectionElement {
   isArchived: Boolean
   isDeleted: Boolean
   name: String!
-  options: SelectionQuestionOptions!
+  options: SelectionElementOptions!
   pointsMultiplier: Int!
   status: ElementStatus!
   tags: [Tag!]
@@ -1613,7 +1623,7 @@ type SelectionElementData {
   explanation: String
   id: ID!
   name: String!
-  options: SelectionQuestionOptions!
+  options: SelectionElementOptions!
   pointsMultiplier: Int!
   type: ElementType!
 }
@@ -1627,6 +1637,14 @@ type SelectionElementInstanceEvaluation {
   name: String!
   results: SelectionElementResults!
   type: ElementType!
+}
+
+type SelectionElementOptions {
+  answerCollection: SelectionAnswerCollection
+  answerCollectionSolutionIds: [Int!]
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
+  numberOfInputs: Int
 }
 
 type SelectionElementResult {
@@ -1661,24 +1679,6 @@ type SelectionInstanceEvaluation {
   selectionResponses: [SingleSelectionResponse!]
   xp: Int
   xpAwarded: Int
-}
-
-type SelectionQuestionOptions {
-  answerCollection: SelectionQuestionOptionsCollection
-  answerCollectionSolutionIds: [Int!]
-  hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean
-  numberOfInputs: Int
-}
-
-type SelectionQuestionOptionsCollection {
-  entries: [SelectionQuestionOptionsCollectionEntry!]
-  id: Int!
-}
-
-type SelectionQuestionOptionsCollectionEntry {
-  id: Int!
-  value: String!
 }
 
 type SharingRequestResponse {
