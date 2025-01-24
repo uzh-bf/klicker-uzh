@@ -261,6 +261,14 @@ export default {
       answerCollection: 'Antwort-Sammlung',
       users: 'Nutzer',
       unknown: 'Unbekannt',
+      name: 'Name',
+      minimum: 'Minimum',
+      maximum: 'Maximum',
+      stepSize: 'Schrittweite',
+      criteria: 'Kriterien',
+      minimumShort: 'Min',
+      maximumShort: 'Max',
+      step: 'Schritt',
     },
     contentInput: {
       boldStyle:
@@ -1021,15 +1029,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       SELECTIONOptionsTooltip:
         'Wählen Sie hier die Antwort-Sammlung aus welcher die Studierenden die korrekten Antworten auswählen sollen.',
       SEAnswerCollectionRequired:
-        "Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung!. Sie können diese entweder unter dem Reiter 'Ressourcen' selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer importieren.",
+        "Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung. Sie können diese entweder unter dem Reiter 'Ressourcen' selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer aus dem Katalog importieren.",
+      CSAnswerCollectionRequired:
+        "Zur Erstellung von Fallstudien benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung. Sie können diese entweder unter dem Reiter 'Ressourcen' selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer aus dem Katalog importieren.",
       selectCollection: 'Sammlung auswählen...',
       answerCollection: 'Antwort-Sammlung',
+      caseStudyAnswerCollectionTooltip:
+        'Bitte wählen Sie eine Antwort-Sammlung, aus welcher Sie die in der Fallstudie zu bewertenden Elemente auswählen möchten.',
       numberOfInputs: 'Anzahl Eingabefelder',
       correctAnswerOptions: 'Korrekte Antwortoptionen',
       correctAnswerOptionsTooltip:
         'Bitte wählen Sie die korrekten Antwortoptionen aus der Liste der Antwortmöglichkeiten aus. Die Anzahl der korrekten Antwortoptionen muss mindestens der Anzahl Eingabefelder entsprechen',
       selectAnswerOptions: 'Antwortmöglichkeiten auswählen...',
       noMatchingOptionFound: 'Keine passende Option gefunden',
+      caseStudyItems: 'Fallstudien-Elemente',
+      caseStudyItemsTooltip:
+        'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
+      selectCaseStudyItems: 'Elemente auswählen...',
+      caseStudyCriteriaDescription:
+        'Bitte definieren Sie hier die Kriterien gemäss welchen die oben ausgewählten Elemente der Fallstudie bewertet werden sollen. Für mehr Informationen zu den einzelnen Feldern, beachten Sie bitte auch die entsprechenden Tooltips.',
+      caseStudyCriteriaNameTooltip:
+        'Der Name des Kriteriums wird den Studierenden angezeigt (z.B. "Wahrscheinlichkeit").',
+      caseStudyCriteriaMinTooltip:
+        'Der Minimalwert entscheidet über die untere Grenze des Schiebereglers.',
+      caseStudyCriteriaMaxTooltip:
+        'Der Maximalwert entscheidet über die obere Grenze des Schiebereglers.',
+      caseStudyCriteriaStepTooltip:
+        'Die Schrittweite entscheidet über die Schritte bei der Einstellung des Schiebereglers.',
+      caseStudyCriteriaUnitTooltip:
+        'Die optionale Einheit wird den Studierenden neben den entsprechenden Werten angezeigt (z.B. "%").',
+      addCriterion: 'Kriterium hinzufügen',
       LISTDisplay: 'Anzeige als Liste',
       GRIDDisplay: 'Anzeige als Raster',
       feedbackPlaceholder: 'Feedback eingeben…',

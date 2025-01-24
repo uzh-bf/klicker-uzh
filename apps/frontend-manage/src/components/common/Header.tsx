@@ -224,6 +224,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
       >
         <div className="ml-4 flex flex-row items-center gap-1.5">
           <Image
+            priority
             src="/img/klicker_icon_transparent.png"
             alt="KlickerUZH Logo"
             width={35}

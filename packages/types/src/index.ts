@@ -251,7 +251,7 @@ export interface ElementOptionsSelection extends BaseElementOptions {
 }
 
 export type CaseStudyCriterion = {
-  id: string // use short hashes to simplify distinction from items & ordering / ...
+  id: string // use nanoid (as for choices) to simplify distinction from items & ordering
   name: string
   order: number
   min: number

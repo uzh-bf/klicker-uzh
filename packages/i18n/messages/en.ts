@@ -260,6 +260,14 @@ export default {
       answerCollection: 'Answer Collection',
       users: 'Users',
       unknown: 'Unknown',
+      name: 'Name',
+      minimum: 'Minimum',
+      maximum: 'Maximum',
+      stepSize: 'Step Size',
+      criteria: 'Criteria',
+      minimumShort: 'Min',
+      maximumShort: 'Max',
+      step: 'Step',
     },
     contentInput: {
       boldStyle:
@@ -1022,8 +1030,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       SELECTIONOptionsTooltip:
         'Please select the answer collection from which the students should select the correct answers.',
       SEAnswerCollectionRequired:
-        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.',
+        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users through the catalog.',
+      CSAnswerCollectionRequired:
+        'To create case studies, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users through the catalog.',
       answerCollection: 'Answer collection',
+      caseStudyAnswerCollectionTooltip:
+        'Please select an answer collection from which you want to select the elements to be evaluated in the case study.',
       selectCollection: 'Select collection...',
       numberOfInputs: 'Number of inputs',
       correctAnswerOptions: 'Correct answer options',
@@ -1031,6 +1043,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please select the correct answer options from the list of answer options. The number of correct answer options must correspond to the number of input fields.',
       selectAnswerOptions: 'Select answer options...',
       noMatchingOptionFound: 'No matching option found',
+      caseStudyItems: 'Case study items',
+      caseStudyItemsTooltip:
+        'Please select the elements from the answer collection that participants should evaluate in the case study according to the criteria recorded below.',
+      selectCaseStudyItems: 'Select items...',
+      caseStudyCriteriaDescription:
+        'Please define the criteria according to which the selected elements of the case study above should be evaluated. For more information on the individual fields, please also refer to the corresponding tooltips.',
+      caseStudyCriteriaNameTooltip:
+        'The name of the criterion is displayed to the students (e.g. "Probability").',
+      caseStudyCriteriaMinTooltip:
+        'The minimum value determines the lower limit of the slider.',
+      caseStudyCriteriaMaxTooltip:
+        'The maximum value determines the upper limit of the slider.',
+      caseStudyCriteriaStepTooltip:
+        'The step size determines the steps when setting the slider.',
+      caseStudyCriteriaUnitTooltip:
+        'The optional unit is displayed to the students next to the corresponding values (e.g. "%").',
+      addCriterion: 'Add new criterion',
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',
