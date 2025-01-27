@@ -447,26 +447,6 @@ function useOptionsSchemaSelection({
 function useOptionsSchemaCaseStudy() {
   const t = useTranslations()
 
-  // options: {
-  //   hasSampleSolution: boolean
-  //   answerCollection: string
-  //   selectedItems: number[] // items that should be evaluated with respect to the defined criteria
-  //   cases: {
-  //     title: string
-  //     description: string
-  //     // key of top level record is `itemId-${item.id}`, key of nested record is criterion id
-  //     solutions?: Record<string, Record<string, { min: number; max: number }>>
-  //   }[]
-  //   criteria: {
-  //     id: string // short id
-  //     name: string
-  //     min: number
-  //     max: number
-  //     step: number
-  //     unit?: string | null
-  //   }[]
-  // }
-
   return {
     hasSampleSolution: yup.boolean(),
     answerCollection: yup
@@ -537,80 +517,119 @@ function useOptionsSchemaCaseStudy() {
                 !description?.match(/^(<br>(\n)*)$/g) && description !== '',
             }),
           solutions: yup.object().test({
-            message: t('manage.formErrors.CSSolutionsRequired'),
             test: function (
               solutions: ElementFormTypesCaseStudy['options']['cases'][0]['solutions']
             ) {
-              // extract parent of parent
               const grandparent = this.from?.[2].value
 
-              // if sample solution is not set, solutions are not required
-              if (!grandparent.hasSampleSolution) return true
+              if (!grandparent.hasSampleSolution) {
+                return true
+              }
 
-              if (!solutions) return false
+              if (!solutions) {
+                return this.createError({
+                  message: t('manage.formErrors.CSSolutionsRequired'),
+                })
+              }
 
-              // get selected items and criteria
               const selectedItems: ElementFormTypesCaseStudy['options']['selectedItems'] =
                 grandparent.selectedItems
               const criteria: ElementFormTypesCaseStudy['options']['criteria'] =
                 grandparent.criteria
 
-              // check if we have solutions for all selected items
               const solutionKeys = Object.keys(solutions)
-              if (solutionKeys.length !== selectedItems.length) return false
+              if (solutionKeys.length !== selectedItems.length) {
+                return this.createError({
+                  message: t(
+                    'manage.formErrors.CSSolutionsMissingCertainItems'
+                  ),
+                })
+              }
 
-              // check if each selected item has solutions for all criteria
-              return selectedItems.every((itemId) => {
+              for (let itemIx = 0; itemIx < selectedItems.length; itemIx++) {
+                const itemId = selectedItems[itemIx]
                 const criterionSolutions = solutions[`itemId-${itemId}`]
-                if (!criterionSolutions) return false
 
-                // check if number of criterion solutions matches criteria length
-                if (Object.keys(criterionSolutions).length !== criteria.length)
-                  return false
+                if (
+                  !criterionSolutions ||
+                  Object.keys(criterionSolutions).length !== criteria.length
+                ) {
+                  return this.createError({
+                    message: t(
+                      'manage.formErrors.CSSolutionsMissingCriteriaItem',
+                      {
+                        itemNumber: itemIx + 1,
+                      }
+                    ),
+                  })
+                }
 
-                // validate structure of each solution
-                return criteria.every((criterion) => {
+                for (const criterion of criteria) {
                   const solution = criterionSolutions[criterion.id]
-                  const minValue = parseFloat(solution.min)
-                  const maxValue = parseFloat(solution.max)
+                  const minValue = parseFloat(solution?.min)
+                  const maxValue = parseFloat(solution?.max)
 
-                  // solution must be defined and have a min and max value
                   if (
                     !solution ||
                     typeof solution.min !== 'string' ||
                     typeof solution.max !== 'string' ||
                     Number.isNaN(minValue) ||
                     Number.isNaN(maxValue)
-                  )
-                    return false
+                  ) {
+                    return this.createError({
+                      message: t(
+                        'manage.formErrors.CSSolutionsMinMaxRequired',
+                        {
+                          itemNumber: itemIx + 1,
+                          criterionName: criterion.name,
+                        }
+                      ),
+                    })
+                  }
 
-                  // min must be less or equal to max
-                  if (minValue > maxValue) return false
+                  if (minValue > maxValue) {
+                    return this.createError({
+                      message: t('manage.formErrors.CSSolutionsMinMaxOrder', {
+                        itemNumber: itemIx + 1,
+                        criterionName: criterion.name,
+                      }),
+                    })
+                  }
 
-                  // check if criterion values are defined, otherwise skip this validation part until they are defined
                   const criterionMin = parseFloat(criterion.min)
                   const criterionMax = parseFloat(criterion.max)
                   const stepValue = parseFloat(criterion.step)
 
                   if (
-                    Number.isNaN(criterionMin) ||
-                    Number.isNaN(criterionMax) ||
-                    Number.isNaN(stepValue)
+                    !Number.isNaN(criterionMin) &&
+                    !Number.isNaN(criterionMax) &&
+                    !Number.isNaN(stepValue)
                   ) {
-                    return true
-                  } else {
-                    // min and max need to lie within the bounds of the criterion and at least step size apart
-                    if (
-                      minValue < criterionMin ||
-                      maxValue > criterionMax ||
-                      minValue + stepValue > maxValue
-                    )
-                      return false
-                  }
+                    if (minValue < criterionMin || maxValue > criterionMax) {
+                      return this.createError({
+                        message: t(
+                          'manage.formErrors.CSSolutionsMinMaxBounds',
+                          {
+                            itemNumber: itemIx + 1,
+                            criterionName: criterion.name,
+                          }
+                        ),
+                      })
+                    }
 
-                  return true
-                })
-              })
+                    if (minValue + stepValue > maxValue) {
+                      return this.createError({
+                        message: t('manage.formErrors.CSSolutionsMinMaxStep', {
+                          itemNumber: itemIx + 1,
+                          criterionName: criterion.name,
+                        }),
+                      })
+                    }
+                  }
+                }
+              }
+
+              return true
             },
           }),
         })

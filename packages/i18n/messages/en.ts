@@ -1483,7 +1483,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CSAnswerCollectionRequired:
         'Please select an answer collection from which the elements to be evaluated in the case study are selected.',
       CSItemsRequired:
-        'Please select at least one element from the answer collection that participants should evaluate against the created criteria.',
+        'Please select at least one item from the answer collection that participants should evaluate against the created criteria.',
       CSCriteriaNameRequired: 'Please enter a name for the criterion.',
       CSCriteriaMinRequired: 'Please enter a minimum value for the criterion.',
       CSCriteriaMinLessThanMax:
@@ -1498,7 +1498,19 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CSCaseTitleRequired: 'Please enter a title for the case.',
       CSCaseDescriptionRequired: 'Please enter a description for the case.',
       CSSolutionsRequired:
-        'For case studies with sample solutions, a correct solution range must be defined for each element and the corresponding criteria. Please ensure that the respective bounds lie within the interval of the corresponding criterion and are at least one step size apart.',
+        'For case studies with sample solutions, a correct solution range must be defined for each item and the corresponding criteria.',
+      CSSolutionsMissingCertainItems:
+        'Please provide a solution for all items and criteria.',
+      CSSolutionsMissingCriteriaItem:
+        'Please make sure that a correct solution has been defined for all criteria for item {itemNumber}.',
+      CSSolutionsMinMaxRequired:
+        'Please enter both boundary values for the solution range for item {itemNumber} and criterion "{criterionName}".',
+      CSSolutionsMinMaxOrder:
+        'The minimum value must be less than the maximum value (item {itemNumber}, criterion "{criterionName}").',
+      CSSolutionsMinMaxBounds:
+        'The lower and upper bounds of the solution interval must lie within the value range of the criterion (item {itemNumber}, criterion "{criterionName}").',
+      CSSolutionsMinMaxStep:
+        'The lower and upper bounds of the solution interval must be at least one step size apart (item {itemNumber}, criterion "{criterionName}").',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',

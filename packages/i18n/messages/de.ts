@@ -1521,7 +1521,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       CSCaseDescriptionRequired:
         'Bitte geben Sie eine Beschreibung für den Fall ein.',
       CSSolutionsRequired:
-        'Bei Fallstudien mit Musterlösung muss für jedes Element und die entsprechenden Kriterien ein korrekter Bereich definiert werden. Bitte stellen Sie sicher, dass die jeweiligen Grenzen im Interval des entsprechenden Kriteriums liegen mindestens eine Schrittweite voneinander entfernt sind.',
+        'Bei Fallstudien mit Musterlösung muss für jedes Element und die entsprechenden Kriterien ein korrekter Bereich definiert werden.',
+      CSSolutionsMissingCertainItems:
+        'Bitte geben Sie für alle Elemente und Kriterien eine Lösung an.',
+      CSSolutionsMissingCriteriaItem:
+        'Bitte stellen Sie sicher, dass für alle Kriterien bei Element {itemNumber} eine korrekte Lösung definiert wurde.',
+      CSSolutionsMinMaxRequired:
+        'Bitte geben Sie bei Element {itemNumber} und Kriterium "{criterionName}" beide Randwerte für den Lösungsbereich an.',
+      CSSolutionsMinMaxOrder:
+        'Der Minimalwert muss kleiner als der Maximalwert sein (Element {itemNumber}, Kriterium "{criterionName}").',
+      CSSolutionsMinMaxBounds:
+        'Die Unter- und Obergrenze der Lösungsintervalls müssen innerhalb des Wertebereichs des Kriteriums liegen (Element {itemNumber}, Kriterium "{criterionName}").',
+      CSSolutionsMinMaxStep:
+        'Unter- und Obergrenze des Lösungsintervalls müssen mindestens eine Schrittweite auseinanderliegen (Element {itemNumber}, Kriterium "{criterionName}").',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Live Quizzes',
