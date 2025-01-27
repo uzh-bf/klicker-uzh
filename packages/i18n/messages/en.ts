@@ -253,6 +253,7 @@ export default {
       answerCollection: 'Answer Collection',
       users: 'Users',
       unknown: 'Unknown',
+      entries: 'entries',
     },
     contentInput: {
       boldStyle:

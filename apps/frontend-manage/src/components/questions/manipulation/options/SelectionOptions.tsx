@@ -118,7 +118,7 @@ function SelectionOptions({
           tooltip={t('manage.questionForms.SELECTIONOptionsTooltip')}
           placeholder={t('manage.questionForms.selectCollection')}
           items={collections.map((collection) => ({
-            label: collection.name,
+            label: `${collection.name} (${collection.entries?.length ?? 0} ${t('shared.generic.entries')})`,
             value: String(collection.id),
             data: {
               cy: `select-answer-collection-${collection.name}`,

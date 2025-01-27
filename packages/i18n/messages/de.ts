@@ -254,6 +254,7 @@ export default {
       answerCollection: 'Antwort-Sammlung',
       users: 'Nutzer',
       unknown: 'Unbekannt',
+      entries: 'Einträge',
     },
     contentInput: {
       boldStyle:
