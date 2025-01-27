@@ -4,6 +4,27 @@ import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 
+const TriggerButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<typeof Button>
+>(function Trigger(props, forwardedRef) {
+  const t = useTranslations()
+
+  return (
+    <Button
+      {...props}
+      ref={forwardedRef}
+      type="button"
+      className={{
+        root: 'border-red-600 hover:border-red-600 hover:text-red-600',
+      }}
+    >
+      <FontAwesomeIcon icon={faTrashCan} />
+      {t('manage.questionForms.removeCase')}
+    </Button>
+  )
+})
+
 function CaseStudyCaseDeletionButton({
   hasSampleSolution,
   onConfirm,
@@ -17,32 +38,16 @@ function CaseStudyCaseDeletionButton({
   const [deletionConfirmationOpen, setDeletionConfirmationOpen] =
     useState(false)
 
-  const TriggerButton = React.forwardRef<
-    HTMLButtonElement,
-    React.ComponentProps<typeof Button>
-  >(function Trigger(props, forwardedRef) {
-    return (
-      <Button
-        {...props}
-        ref={forwardedRef}
-        type="button"
-        onClick={() => setDeletionConfirmationOpen(true)}
-        className={{
-          root: 'border-red-600 hover:border-red-600 hover:text-red-600',
-        }}
-        data={{ cy: `delete-case-${index}` }}
-      >
-        <FontAwesomeIcon icon={faTrashCan} />
-        {t('manage.questionForms.removeCase')}
-      </Button>
-    )
-  })
-
   return (
     <Modal
       open={deletionConfirmationOpen}
       onClose={() => setDeletionConfirmationOpen(false)}
-      trigger={<TriggerButton />}
+      trigger={
+        <TriggerButton
+          onClick={() => setDeletionConfirmationOpen(true)}
+          data={{ cy: `delete-case-${index}` }}
+        />
+      }
       title={t('manage.questionForms.confirmCaseDeletion')}
     >
       <div className="flex flex-col gap-4">
