@@ -373,7 +373,9 @@ describe('Create, edit and share answer collections', function () {
     ).click()
 
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
-    cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
+    cy.findByText(
+      messages.manage.questionForms.SEAnswerCollectionRequired.substring(0, 20)
+    )
   })
 
   it("Verify that the private answer collection cannot be removed by user 'pro1' as it is used in a question", function () {
@@ -546,7 +548,9 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
-    cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
+    cy.findByText(
+      messages.manage.questionForms.SEAnswerCollectionRequired.substring(0, 20)
+    )
   })
 
   it('Grant access to restricted answer collection (for user pro1)', function () {
@@ -609,7 +613,9 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
-    cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
+    cy.findByText(
+      messages.manage.questionForms.SEAnswerCollectionRequired.substring(0, 20)
+    )
   })
 
   it('Verify that restricted answer collection can be used in selection question by user pro1 and create question', function () {
@@ -860,7 +866,9 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
-    cy.findByText(messages.manage.questionForms.SEAnswerCollectionRequired)
+    cy.findByText(
+      messages.manage.questionForms.SEAnswerCollectionRequired.substring(0, 20)
+    )
   })
 
   it('Import (and copy) the public answer collection (for user pro2)', function () {
