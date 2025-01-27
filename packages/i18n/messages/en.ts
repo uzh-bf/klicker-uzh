@@ -253,6 +253,7 @@ export default {
       answerCollection: 'Answer Collection',
       users: 'Users',
       unknown: 'Unknown',
+      entries: 'entries',
     },
     contentInput: {
       boldStyle:
@@ -1015,7 +1016,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       SELECTIONOptionsTooltip:
         'Please select the answer collection from which the students should select the correct answers.',
       SEAnswerCollectionRequired:
-        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.',
+        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users there.',
       answerCollection: 'Answer collection',
       selectCollection: 'Select collection...',
       numberOfInputs: 'Number of inputs',

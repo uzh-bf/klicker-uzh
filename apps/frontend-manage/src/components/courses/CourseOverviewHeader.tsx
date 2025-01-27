@@ -210,9 +210,9 @@ function CourseOverviewHeader({
       />
 
       <Toast
+        type="success"
         openExternal={copyToast}
         onCloseExternal={() => setCopyToast(false)}
-        type="success"
         className={{ root: 'w-[24rem]' }}
       >
         {t('manage.course.linkLTICopied')}

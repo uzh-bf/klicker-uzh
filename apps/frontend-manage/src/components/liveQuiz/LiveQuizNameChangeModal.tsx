@@ -144,7 +144,7 @@ function LiveQuizNameChangeModal({
         openExternal={successToast}
         onCloseExternal={() => setSuccessToast(false)}
         type="success"
-        duration={6000}
+        duration={4000}
       >
         {t('manage.liveQuizzes.liveQuizNameChangeSuccess')}
       </Toast>

@@ -44,7 +44,7 @@ function PendingSharingRequests() {
       <Toast
         dismissible
         type="success"
-        duration={4000}
+        duration={3000}
         openExternal={declineSuccessful}
         onCloseExternal={() => setDeclineSuccessful(false)}
         className={{ root: 'max-w-[30rem]' }}
@@ -64,7 +64,7 @@ function PendingSharingRequests() {
       <Toast
         dismissible
         type="success"
-        duration={4000}
+        duration={3000}
         openExternal={approvalSuccessful}
         onCloseExternal={() => setApprovalSuccessful(false)}
         className={{ root: 'max-w-[30rem]' }}

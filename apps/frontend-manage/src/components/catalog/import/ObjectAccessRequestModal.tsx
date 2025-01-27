@@ -27,9 +27,10 @@ function ObjectAccessRequestModal({
         />
         <Toast
           dismissible
+          type="success"
+          duration={3000}
           openExternal={successModal}
           onCloseExternal={() => setSuccessModal(false)}
-          type="success"
         >
           {t('manage.catalog.answerCollectionRequestSuccess')}
         </Toast>
