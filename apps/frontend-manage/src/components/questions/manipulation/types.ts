@@ -85,14 +85,8 @@ export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
     cases: {
       title: string
       description: string
-      solutions?: {
-        itemId: number
-        criteriaSolutions: {
-          criterionId: string
-          min: number
-          max: number
-        }[]
-      }[]
+      // key of top level record is `itemId-${item.id}`, key of nested record is criterion id
+      solutions?: Record<string, Record<string, { min: number; max: number }>>
     }[]
     criteria: {
       id: string // short id
