@@ -256,6 +256,7 @@ function ElementFormErrors({
             errors.options.cases as {
               title?: string
               description?: string
+              solutions?: string
             }[]
           ).map(
             (criterionError, ix) =>

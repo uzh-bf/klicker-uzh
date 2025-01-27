@@ -1504,13 +1504,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CSSolutionsMissingCriteriaItem:
         'Please make sure that a correct solution has been defined for all criteria for item {itemNumber}.',
       CSSolutionsMinMaxRequired:
-        'Please enter both boundary values for the solution range for item {itemNumber} and criterion "{criterionName}".',
+        'Please enter both the lower and upper limits for the solution range for item {itemNumber} and criterion "{criterionName}".',
       CSSolutionsMinMaxOrder:
         'The minimum value must be less than the maximum value (item {itemNumber}, criterion "{criterionName}").',
       CSSolutionsMinMaxBounds:
-        'The lower and upper bounds of the solution interval must lie within the value range of the criterion (item {itemNumber}, criterion "{criterionName}").',
+        'The lower and upper limits of the solution interval must lie within the value range of the criterion (item {itemNumber}, criterion "{criterionName}").',
       CSSolutionsMinMaxStep:
-        'The lower and upper bounds of the solution interval must be at least one step size apart (item {itemNumber}, criterion "{criterionName}").',
+        'The lower and upper limits of the solution interval must be at least one step size apart (item {itemNumber}, criterion "{criterionName}").',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',

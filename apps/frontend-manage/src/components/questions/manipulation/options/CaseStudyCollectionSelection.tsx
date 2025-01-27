@@ -122,7 +122,10 @@ function CaseStudyCollectionSelection({
         </div>
         <CaseStudyCollectionChangeModal
           open={changeModalOpen}
-          onClose={() => setChangeModalOpen(false)}
+          onClose={() => {
+            setNewValue('')
+            setChangeModalOpen(false)
+          }}
           onConfirm={() => {
             collectionHelpers.setValue(newValue)
             itemsHelpers.setValue([])
