@@ -42,6 +42,7 @@ function SelectionOptions({
   const collectionAnswers = useSelectAnswerCollectionOptions({
     collectionId: values.options.answerCollection,
     collections,
+    setAnswerCollectionEntries,
   })
 
   // filter the available answer options for the ones included in the current form state

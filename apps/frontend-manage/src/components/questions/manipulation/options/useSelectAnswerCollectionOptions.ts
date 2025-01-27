@@ -1,12 +1,16 @@
 import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
-import { useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 
 function useSelectAnswerCollectionOptions({
   collectionId,
   collections,
+  setAnswerCollectionEntries,
 }: {
   collectionId: string
   collections: AnswerCollection[]
+  setAnswerCollectionEntries?: Dispatch<
+    SetStateAction<{ id: number; value: string }[]>
+  >
 }) {
   return useMemo(() => {
     const selectedCollection = collections.find(
@@ -15,6 +19,15 @@ function useSelectAnswerCollectionOptions({
 
     if (!selectedCollection || !selectedCollection.entries) {
       return []
+    }
+
+    if (setAnswerCollectionEntries) {
+      setAnswerCollectionEntries(
+        selectedCollection.entries.map((entry) => ({
+          id: entry.id,
+          value: entry.value,
+        }))
+      )
     }
 
     return selectedCollection.entries.map((entry) => ({

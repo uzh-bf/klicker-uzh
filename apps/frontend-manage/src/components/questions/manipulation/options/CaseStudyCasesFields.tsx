@@ -24,14 +24,16 @@ export interface CaseStudySetterProps {
     isTouched?: boolean,
     shouldValidate?: boolean
   ) => Promise<void | FormikErrors<ElementFormTypes>>
+  hasSampleSolution: boolean
 }
 
 function CaseStudyCasesFields({
   setFieldValue,
   setFieldTouched,
+  hasSampleSolution,
 }: CaseStudySetterProps) {
   const t = useTranslations()
-  const [casesField, _, __] =
+  const [casesField] =
     useField<ElementFormTypesCaseStudy['options']['cases']>('options.cases')
 
   return (
@@ -47,7 +49,6 @@ function CaseStudyCasesFields({
                   </H3>
                   <Button
                     type="button"
-                    // TODO: add confirmation step before removing
                     onClick={() => remove(ix)}
                     className={{
                       root: 'border-red-600 hover:border-red-600 hover:text-red-600',

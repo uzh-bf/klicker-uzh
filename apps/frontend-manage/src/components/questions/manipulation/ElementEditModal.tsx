@@ -435,6 +435,7 @@ function ElementEditModal({
                     <CaseStudyOptions
                       setFieldValue={setFieldValue}
                       setFieldTouched={setFieldTouched}
+                      hasSampleSolution={values.options.hasSampleSolution}
                     />
                   )}
                 </Form>

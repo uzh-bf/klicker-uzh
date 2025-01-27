@@ -13,6 +13,7 @@ import useFormCollections from './useFormCollections'
 function CaseStudyOptions({
   setFieldValue,
   setFieldTouched,
+  hasSampleSolution,
 }: CaseStudySetterProps) {
   const t = useTranslations()
   const { data, loading } = useQuery(GetAnswerCollectionsDocument)
@@ -42,9 +43,11 @@ function CaseStudyOptions({
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
       <CaseStudyCriteriaFields />
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
+      {/* // TODO: extend this component with sample solution inputs, continue with editing and submission logic, seed extension, storage of element itself, test suite extension */}
       <CaseStudyCasesFields
         setFieldTouched={setFieldTouched}
         setFieldValue={setFieldValue}
+        hasSampleSolution={hasSampleSolution}
       />
     </div>
   )
