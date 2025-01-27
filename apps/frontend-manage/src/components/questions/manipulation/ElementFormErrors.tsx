@@ -259,9 +259,9 @@ function ElementFormErrors({
               solutions?: string
             }[]
           ).map(
-            (criterionError, ix) =>
-              criterionError &&
-              Object.values(criterionError)
+            (caseError, ix) =>
+              caseError &&
+              Object.values(caseError)
                 .filter((error) => typeof error !== 'undefined')
                 .map((error) => (
                   <li key={`case-${ix}-${error}`}>
