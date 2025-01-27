@@ -374,7 +374,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
     cy.findByText(
-      messages.manage.questionForms.SEAnswerCollectionRequired.substring(0, 20)
+      'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.'
     )
   })
 
@@ -549,7 +549,7 @@ describe('Create, edit and share answer collections', function () {
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
     cy.findByText(
-      messages.manage.questionForms.SEAnswerCollectionRequired.substring(0, 20)
+      'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.'
     )
   })
 
@@ -614,7 +614,7 @@ describe('Create, edit and share answer collections', function () {
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
     cy.findByText(
-      messages.manage.questionForms.SEAnswerCollectionRequired.substring(0, 20)
+      'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.'
     )
   })
 
@@ -867,7 +867,7 @@ describe('Create, edit and share answer collections', function () {
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
     cy.findByText(
-      messages.manage.questionForms.SEAnswerCollectionRequired.substring(0, 20)
+      'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.'
     )
   })
 
