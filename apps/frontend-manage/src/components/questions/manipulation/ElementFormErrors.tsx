@@ -181,7 +181,7 @@ function ElementFormErrors({
             )}: ${errors.options.solutions}`}</li>
           )}
 
-        {/* error messages specific to NR questions */}
+        {/* error messages specific to SE / CS questions */}
         {'options' in errors &&
           errors.options &&
           'answerCollection' in errors.options &&
@@ -189,6 +189,7 @@ function ElementFormErrors({
             <li>{`${t('manage.questionForms.answerCollection')}: ${errors.options.answerCollection}`}</li>
           )}
 
+        {/* error messages specific to SE questions */}
         {'options' in errors &&
           errors.options &&
           'numberOfInputs' in errors.options &&
@@ -201,6 +202,79 @@ function ElementFormErrors({
           'correctAnswers' in errors.options &&
           errors.options.correctAnswers && (
             <li>{`${t('manage.questionForms.correctAnswerOptions')}: ${errors.options.correctAnswers}`}</li>
+          )}
+
+        {/* error messages specific to CS questions */}
+        {'options' in errors &&
+          errors.options &&
+          'selectedItems' in errors.options &&
+          errors.options.selectedItems && (
+            <li>{`${t('manage.questionForms.selectedItems')}: ${errors.options.selectedItems}`}</li>
+          )}
+
+        {'options' in errors &&
+          errors.options &&
+          'criteria' in errors.options &&
+          errors.options.criteria &&
+          typeof errors.options.criteria === 'object' &&
+          (
+            errors.options.criteria as {
+              id?: string
+              name?: string
+              min?: string
+              max?: string
+              step?: string
+              unit?: string
+            }[]
+          ).flatMap(
+            (criterionError, ix) =>
+              criterionError &&
+              Object.values(criterionError)
+                .filter((error) => typeof error !== 'undefined')
+                .map((error) => (
+                  <li key={`criterion-${ix}-${error}`}>
+                    {`${t('shared.generic.criterion')} ${ix + 1}: ${error}`}
+                  </li>
+                ))
+          )}
+        {'options' in errors &&
+          errors.options &&
+          'criteria' in errors.options &&
+          errors.options.criteria &&
+          typeof errors.options.criteria === 'string' && (
+            <li>
+              {`${t('shared.generic.criteria')}: ${errors.options.criteria}`}
+            </li>
+          )}
+
+        {'options' in errors &&
+          errors.options &&
+          'cases' in errors.options &&
+          errors.options.cases &&
+          typeof errors.options.cases === 'object' &&
+          (
+            errors.options.cases as {
+              title?: string
+              description?: string
+              solutions?: string
+            }[]
+          ).map(
+            (caseError, ix) =>
+              caseError &&
+              Object.values(caseError)
+                .filter((error) => typeof error !== 'undefined')
+                .map((error) => (
+                  <li key={`case-${ix}-${error}`}>
+                    {`${t('shared.generic.case')} ${ix + 1}: ${error}`}
+                  </li>
+                ))
+          )}
+        {'options' in errors &&
+          errors.options &&
+          'cases' in errors.options &&
+          errors.options.cases &&
+          typeof errors.options.cases === 'string' && (
+            <li>{`${t('shared.generic.cases')}: ${errors.options.cases}`}</li>
           )}
       </ul>
     </UserNotification>

@@ -50,6 +50,7 @@ function CaseStudyOptions({
       <CaseStudyCollectionSelection
         collections={collections}
         setSelectedItems={setSelectedItems}
+        hasSampleSolution={hasSampleSolution}
       />
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
       <CaseStudyCriteriaFields />

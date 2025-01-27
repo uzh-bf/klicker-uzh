@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
+import { ElementFormTypesCaseStudy } from './types'
 
 function useSharedValidationSchema() {
   const t = useTranslations()
@@ -170,8 +171,8 @@ function useOptionsSchemaNumerical() {
     restrictions: yup.object().shape({
       min: yup
         .number()
-        .min(-1e30, t('manage.formErrors.NRUnderflow'))
-        .max(1e30, t('manage.formErrors.NROverflow'))
+        .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+        .max(1e30, t('manage.formErrors.NumericalOverflow'))
         .nullable()
         .when('max', {
           is: (max?: number) => typeof max !== 'undefined' && max !== null,
@@ -183,8 +184,8 @@ function useOptionsSchemaNumerical() {
         }),
       max: yup
         .number()
-        .min(-1e30, t('manage.formErrors.NRUnderflow'))
-        .max(1e30, t('manage.formErrors.NROverflow'))
+        .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+        .max(1e30, t('manage.formErrors.NumericalOverflow'))
         .nullable(),
     }),
 
@@ -242,7 +243,7 @@ function useOptionsSchemaNumerical() {
             })
             // check that the min and max values are within the system restrictions
             .test({
-              message: t('manage.formErrors.NRUnderflow'),
+              message: t('manage.formErrors.NumericalUnderflow'),
               test: (value) => {
                 if (!value) return true
                 return !value.some(
@@ -257,7 +258,7 @@ function useOptionsSchemaNumerical() {
               },
             })
             .test({
-              message: t('manage.formErrors.NROverflow'),
+              message: t('manage.formErrors.NumericalOverflow'),
               test: (value) => {
                 if (!value) return true
                 return !value.some(
@@ -326,8 +327,8 @@ function useOptionsSchemaNumerical() {
         yup
           .number()
           .required(t('manage.formErrors.enterSolution'))
-          .min(-1e30, t('manage.formErrors.NRUnderflow'))
-          .max(1e30, t('manage.formErrors.NROverflow'))
+          .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+          .max(1e30, t('manage.formErrors.NumericalOverflow'))
       )
       .when('hasSampleSolution', {
         is: true,
@@ -443,12 +444,206 @@ function useOptionsSchemaSelection({
   }
 }
 
+function useOptionsSchemaCaseStudy() {
+  const t = useTranslations()
+
+  return {
+    hasSampleSolution: yup.boolean(),
+    answerCollection: yup
+      .string()
+      .required(t('manage.formErrors.CSAnswerCollectionRequired')),
+    selectedItems: yup
+      .array()
+      .of(yup.number())
+      .required(t('manage.formErrors.CSItemsRequired'))
+      .min(1, t('manage.formErrors.CSItemsRequired')),
+    criteria: yup
+      .array()
+      .of(
+        yup.object().shape({
+          id: yup.string().required(),
+          name: yup
+            .string()
+            .required(t('manage.formErrors.CSCriteriaNameRequired')),
+          min: yup
+            .number()
+            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+            .max(1e30, t('manage.formErrors.NumericalOverflow'))
+            .required(t('manage.formErrors.CSCriteriaMinRequired'))
+            .when('max', {
+              is: (max?: number) => typeof max !== 'undefined' && max !== null,
+              then: (schema) =>
+                schema.lessThan(
+                  yup.ref('max'),
+                  t('manage.formErrors.CSCriteriaMinLessThanMax')
+                ),
+            }),
+          max: yup
+            .number()
+            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+            .max(1e30, t('manage.formErrors.NumericalOverflow'))
+            .required(t('manage.formErrors.CSCriteriaMaxRequired')),
+          step: yup
+            .number()
+            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+            .max(1e30, t('manage.formErrors.NumericalOverflow'))
+            .required(t('manage.formErrors.CSCriteriaStepRequired'))
+            .test({
+              message: t('manage.formErrors.CSStepSizeTooLarge'),
+              test: function (step) {
+                const max = this.parent.max
+                const min = this.parent.min
+                return step <= (max - min) / 2
+              },
+            }),
+          unit: yup.string().nullable(),
+        })
+      )
+      .required(t('manage.formErrors.CSCriteriaRequired'))
+      .min(1, t('manage.formErrors.CSCriteriaRequired')),
+    cases: yup
+      .array()
+      .of(
+        yup.object().shape({
+          title: yup
+            .string()
+            .required(t('manage.formErrors.CSCaseTitleRequired')),
+          description: yup
+            .string()
+            .required(t('manage.formErrors.CSCaseDescriptionRequired'))
+            .test({
+              message: t('manage.formErrors.CSCaseDescriptionRequired'),
+              test: (description) =>
+                !description?.match(/^(<br>(\n)*)$/g) && description !== '',
+            }),
+          solutions: yup.object().test({
+            test: function (
+              solutions: ElementFormTypesCaseStudy['options']['cases'][0]['solutions']
+            ) {
+              const grandparent = this.from?.[2].value
+
+              if (!grandparent.hasSampleSolution) {
+                return true
+              }
+
+              if (!solutions) {
+                return this.createError({
+                  message: t('manage.formErrors.CSSolutionsRequired'),
+                })
+              }
+
+              const selectedItems: ElementFormTypesCaseStudy['options']['selectedItems'] =
+                grandparent.selectedItems
+              const criteria: ElementFormTypesCaseStudy['options']['criteria'] =
+                grandparent.criteria
+
+              const solutionKeys = Object.keys(solutions)
+              if (solutionKeys.length !== selectedItems.length) {
+                return this.createError({
+                  message: t(
+                    'manage.formErrors.CSSolutionsMissingCertainItems'
+                  ),
+                })
+              }
+
+              for (let itemIx = 0; itemIx < selectedItems.length; itemIx++) {
+                const itemId = selectedItems[itemIx]
+                const criterionSolutions = solutions[`itemId-${itemId}`]
+
+                if (
+                  !criterionSolutions ||
+                  Object.keys(criterionSolutions).length !== criteria.length
+                ) {
+                  return this.createError({
+                    message: t(
+                      'manage.formErrors.CSSolutionsMissingCriteriaItem',
+                      {
+                        itemNumber: itemIx + 1,
+                      }
+                    ),
+                  })
+                }
+
+                for (const criterion of criteria) {
+                  const solution = criterionSolutions[criterion.id]
+                  const minValue = parseFloat(solution?.min)
+                  const maxValue = parseFloat(solution?.max)
+
+                  if (
+                    !solution ||
+                    typeof solution.min !== 'string' ||
+                    typeof solution.max !== 'string' ||
+                    Number.isNaN(minValue) ||
+                    Number.isNaN(maxValue)
+                  ) {
+                    return this.createError({
+                      message: t(
+                        'manage.formErrors.CSSolutionsMinMaxRequired',
+                        {
+                          itemNumber: itemIx + 1,
+                          criterionName: criterion.name,
+                        }
+                      ),
+                    })
+                  }
+
+                  if (minValue > maxValue) {
+                    return this.createError({
+                      message: t('manage.formErrors.CSSolutionsMinMaxOrder', {
+                        itemNumber: itemIx + 1,
+                        criterionName: criterion.name,
+                      }),
+                    })
+                  }
+
+                  const criterionMin = parseFloat(criterion.min)
+                  const criterionMax = parseFloat(criterion.max)
+                  const stepValue = parseFloat(criterion.step)
+
+                  if (
+                    !Number.isNaN(criterionMin) &&
+                    !Number.isNaN(criterionMax) &&
+                    !Number.isNaN(stepValue)
+                  ) {
+                    if (minValue < criterionMin || maxValue > criterionMax) {
+                      return this.createError({
+                        message: t(
+                          'manage.formErrors.CSSolutionsMinMaxBounds',
+                          {
+                            itemNumber: itemIx + 1,
+                            criterionName: criterion.name,
+                          }
+                        ),
+                      })
+                    }
+
+                    if (minValue + stepValue > maxValue) {
+                      return this.createError({
+                        message: t('manage.formErrors.CSSolutionsMinMaxStep', {
+                          itemNumber: itemIx + 1,
+                          criterionName: criterion.name,
+                        }),
+                      })
+                    }
+                  }
+                }
+              }
+
+              return true
+            },
+          }),
+        })
+      )
+      .required(t('manage.formErrors.CSCasesRequired'))
+      .min(1, t('manage.formErrors.CSCasesRequired')),
+  }
+}
+
 function useValidationSchema({
   numberOfAnswerOptions,
 }: {
   numberOfAnswerOptions?: number
 }) {
-  const t = useTranslations()
   const optionsSchemaSC = useOptionsSchemaSC()
   const optionsSchemaMC = useOptionsSchemaMC()
   const optionsSchemaKPRIM = useOptionsSchemaKPRIM()
@@ -457,6 +652,7 @@ function useValidationSchema({
   const optionsSchemaSelection = useOptionsSchemaSelection({
     numberOfAnswerOptions,
   })
+  const optionsSchemaCaseStudy = useOptionsSchemaCaseStudy()
 
   return yup.object().shape({
     ...useSharedValidationSchema(),
@@ -484,6 +680,10 @@ function useValidationSchema({
 
         case ElementType.Selection: {
           return schema.shape(optionsSchemaSelection)
+        }
+
+        case ElementType.CaseStudy: {
+          return schema.shape(optionsSchemaCaseStudy)
         }
 
         default:
