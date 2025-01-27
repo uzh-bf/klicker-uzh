@@ -1,9 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  AccessType,
-  GetAnswerCollectionsDocument,
-  PermissionStatus,
-} from '@klicker-uzh/graphql/dist/ops'
+import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormikNumberField,
@@ -14,9 +10,13 @@ import {
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useEffect, useMemo } from 'react'
+import { Dispatch, SetStateAction } from 'react'
 import Select from 'react-select'
 import { ElementFormTypesSelection } from '../types'
+import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
+import useFormCollections from './useFormCollections'
+import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
+import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
 interface SelectionOptionsProps {
   values: ElementFormTypesSelection
@@ -34,64 +34,29 @@ function SelectionOptions({
   const { data, loading } = useQuery(GetAnswerCollectionsDocument)
 
   // combine all collections that are accessible to the user
-  const collections = useMemo(
-    () =>
-      (data?.getAnswerCollections ?? []).filter(
-        (collection) =>
-          (collection.accessType === AccessType.Shared &&
-            collection.sharingStatus === PermissionStatus.Granted) ||
-          collection.accessType === AccessType.Owner
-      ),
-    [data?.getAnswerCollections]
-  )
+  const collections = useFormCollections({
+    dbCollections: data?.getAnswerCollections,
+  })
 
   // get all answer options from the selected collections
-  const collectionAnswers = useMemo(() => {
-    const selectedCollection = collections.find(
-      (collection) =>
-        collection.id === parseInt(values.options.answerCollection)
-    )
-
-    if (!selectedCollection || !selectedCollection.entries) {
-      return []
-    }
-
-    // set answer collection for question preview
-    setAnswerCollectionEntries(selectedCollection.entries)
-
-    return selectedCollection.entries.map((entry) => ({
-      label: entry.value,
-      value: entry.id,
-      data: { cy: `select-answer-${entry.value}` },
-    }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collections, values.options.answerCollection])
+  const collectionAnswers = useSelectAnswerCollectionOptions({
+    collectionId: values.options.answerCollection,
+    collections,
+    setAnswerCollectionEntries,
+  })
 
   // filter the available answer options for the ones included in the current form state
-  const selectedAnswers = useMemo(() => {
-    if (!field.value) {
-      return []
-    }
-
-    return collectionAnswers.filter((entry) =>
-      field.value.includes(entry.value)
-    )
-  }, [collectionAnswers, field.value])
+  const selectedAnswers = useSelectedAnswerEntry({
+    field,
+    collectionAnswers,
+  })
 
   // udpate the selected correct answers if the answer collection changes
-  useEffect(() => {
-    if (!field.value || !collectionAnswers || collectionAnswers.length === 0) {
-      return
-    }
-
-    const newFieldValues = field.value.filter((id) =>
-      collectionAnswers.map((entry) => entry.value).includes(id)
-    )
-
-    helpers.setValue(newFieldValues)
-    // do not add value as a dependency --> rendering loo! - updates only on collection change desired
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionAnswers])
+  useAnswerCollectionChangeEffect({
+    field,
+    helpers,
+    collectionAnswers,
+  })
 
   if (loading) {
     return <Loader />

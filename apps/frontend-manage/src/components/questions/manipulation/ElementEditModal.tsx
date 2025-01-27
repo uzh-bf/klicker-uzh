@@ -37,6 +37,7 @@ import {
   prepareSelectionArgs,
 } from './helpers'
 import AnswerFeedbackSetting from './options/AnswerFeedbackSetting'
+import CaseStudyOptions from './options/CaseStudyOptions'
 import ChoicesOptions from './options/ChoicesOptions'
 import DisplayModeSetting from './options/DisplayModeSetting'
 import FreeTextOptions from './options/FreeTextOptions'
@@ -326,6 +327,7 @@ function ElementEditModal({
         isSubmitting,
         isValid,
         setFieldValue,
+        setFieldTouched,
         validateForm,
       }) => {
         if (loadingQuestion) {
@@ -426,6 +428,14 @@ function ElementEditModal({
                     <SelectionOptions
                       values={values}
                       setAnswerCollectionEntries={setAnswerCollectionEntries}
+                    />
+                  )}
+
+                  {values.type === ElementType.CaseStudy && (
+                    <CaseStudyOptions
+                      setFieldValue={setFieldValue}
+                      setFieldTouched={setFieldTouched}
+                      hasSampleSolution={values.options.hasSampleSolution}
                     />
                   )}
                 </Form>
