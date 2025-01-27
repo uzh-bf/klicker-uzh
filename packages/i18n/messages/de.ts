@@ -272,6 +272,7 @@ export default {
       step: 'Schritt',
       case: 'Fall',
       cases: 'Fälle',
+      entries: 'Einträge',
     },
     contentInput: {
       boldStyle:
@@ -1032,9 +1033,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       SELECTIONOptionsTooltip:
         'Wählen Sie hier die Antwort-Sammlung aus welcher die Studierenden die korrekten Antworten auswählen sollen.',
       SEAnswerCollectionRequired:
-        "Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung. Sie können diese entweder unter dem Reiter 'Ressourcen' selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer aus dem Katalog importieren.",
+        "Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung!. Sie können diese entweder unter dem Reiter <link>'Ressourcen'</link> selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer importieren.",
       CSAnswerCollectionRequired:
-        "Zur Erstellung von Fallstudien benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung. Sie können diese entweder unter dem Reiter 'Ressourcen' selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer aus dem Katalog importieren.",
+        "Zur Erstellung von Fallstudien benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung. Sie können diese entweder unter dem Reiter <link>'Ressourcen'</link> selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer aus dem Katalog importieren.",
       selectCollection: 'Sammlung auswählen...',
       answerCollection: 'Antwort-Sammlung',
       caseStudyAnswerCollectionTooltip:

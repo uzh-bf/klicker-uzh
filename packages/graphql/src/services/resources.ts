@@ -741,6 +741,9 @@ export async function getCatalogObjects(
           ownerId: {
             not: null,
           },
+          access: {
+            in: [DB.ObjectAccess.PUBLIC, DB.ObjectAccess.RESTRICTED],
+          },
         },
         select: {
           id: true,

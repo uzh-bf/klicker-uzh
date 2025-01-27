@@ -10,6 +10,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { Dispatch, SetStateAction } from 'react'
 import Select from 'react-select'
 import { ElementFormTypesSelection } from '../types'
@@ -64,11 +65,18 @@ function SelectionOptions({
 
   if (collections.length === 0) {
     return (
-      <UserNotification
-        type="warning"
-        message={t('manage.questionForms.SEAnswerCollectionRequired')}
-        className={{ root: 'text-base' }}
-      />
+      <UserNotification type="warning" className={{ root: 'text-base' }}>
+        {t.rich('manage.questionForms.SEAnswerCollectionRequired', {
+          link: (text) => (
+            <Link
+              href="/resources"
+              className="text-primary-100 hover:underline"
+            >
+              {text}
+            </Link>
+          ),
+        })}
+      </UserNotification>
     )
   }
 
@@ -83,7 +91,7 @@ function SelectionOptions({
           tooltip={t('manage.questionForms.SELECTIONOptionsTooltip')}
           placeholder={t('manage.questionForms.selectCollection')}
           items={collections.map((collection) => ({
-            label: collection.name,
+            label: `${collection.name} (${collection.entries?.length ?? 0} ${t('shared.generic.entries')})`,
             value: String(collection.id),
             data: {
               cy: `select-answer-collection-${collection.name}`,

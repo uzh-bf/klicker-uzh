@@ -17,7 +17,7 @@ function CollectionSuccessToast({
       openExternal={open}
       onCloseExternal={() => setOpen(false)}
       className={{ root: 'max-w-[30rem]' }}
-      duration={4000}
+      duration={3000}
     >
       {t('manage.resources.collectionCreationSuccess')}
     </Toast>

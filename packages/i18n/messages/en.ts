@@ -271,6 +271,7 @@ export default {
       step: 'Step',
       case: 'Case',
       cases: 'Cases',
+      entries: 'entries',
     },
     contentInput: {
       boldStyle:
@@ -1033,9 +1034,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       SELECTIONOptionsTooltip:
         'Please select the answer collection from which the students should select the correct answers.',
       SEAnswerCollectionRequired:
-        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users through the catalog.',
+        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users there.',
       CSAnswerCollectionRequired:
-        'To create case studies, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users through the catalog.',
+        'To create case studies, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users through the catalog.',
       answerCollection: 'Answer collection',
       caseStudyAnswerCollectionTooltip:
         'Please select an answer collection from which you want to select the elements to be evaluated in the case study.',
