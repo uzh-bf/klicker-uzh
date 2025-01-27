@@ -1044,6 +1044,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selectAnswerOptions: 'Antwortmöglichkeiten auswählen...',
       noMatchingOptionFound: 'Keine passende Option gefunden',
       caseStudyItems: 'Fallstudien-Elemente',
+      changeOfAnswerCollection: 'Wechsel der Antwort-Sammlung',
+      confirmCollectionChange:
+        'Sind Sie sicher, dass Sie die Antwort-Sammlung wechseln möchten? Die bisher ausgewählten Elemente der Fallstudie und alle definierten Musterlösungen gehen durch diesen Wechsel verloren.',
       caseStudyItemsTooltip:
         'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
       selectCaseStudyItems: 'Elemente auswählen...',
@@ -1065,6 +1068,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseName: 'Fallname',
       caseStudyCaseNameTooltip:
         "Bitte geben Sie einen Namen für den Fall an, welcher den Studierenden angezeigt wird (z.B. 'Szenario 1: Lorem ipsum').",
+      confirmCaseDelete:
+        'Sind Sie sicher, dass Sie diesen Fall löschen möchten?',
+      confirmCaseDeleteSolutions:
+        'Sind Sie sicher, dass Sie diesen Fall inklusive aller definierten Musterlösungen löschen möchten?',
+      confirmCaseDeletion: 'Fall löschen',
       caseDescription: 'Fallbeschreibung',
       caseStudyCaseDescriptionTooltip:
         'Die Fallbeschreibung dient der detaillierten Beschreibung des Szenarios. Sie muss alle Informationen enthalten, welche die Studierenden benötigen, um die gegebenen Elemente auf die Kriterien zu bewerten.',

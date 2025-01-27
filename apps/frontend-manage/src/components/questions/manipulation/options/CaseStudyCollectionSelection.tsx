@@ -1,13 +1,14 @@
 import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import {
-  FormikSelectField,
   FormikSwitchField,
   FormLabel,
+  SelectField,
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import Select from 'react-select'
+import CaseStudyCollectionChangeModal from './CaseStudyCollectionChangeModal'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
@@ -15,15 +16,22 @@ import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 function CaseStudyCollectionSelection({
   collections,
   setSelectedItems,
+  hasSampleSolution,
 }: {
   collections: AnswerCollection[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
+  hasSampleSolution: boolean
 }) {
   const t = useTranslations()
+  const [changeModalOpen, setChangeModalOpen] = useState(false)
+  const [newValue, setNewValue] = useState<string>('')
+
   const [itemsField, _, itemsHelpers] = useField<number[]>(
     'options.selectedItems'
   )
-  const [collectionField] = useField<string>('options.answerCollection')
+  const [collectionField, __, collectionHelpers] = useField<string>(
+    'options.answerCollection'
+  )
 
   // get all answer options from the selected collections
   const collectionAnswers = useSelectAnswerCollectionOptions({
@@ -48,9 +56,18 @@ function CaseStudyCollectionSelection({
   return (
     <>
       <div className="flex flex-col justify-between gap-1 lg:flex-row lg:items-start lg:gap-3">
-        <FormikSelectField
+        <SelectField
           required
-          name="options.answerCollection"
+          value={collectionField.value}
+          onChange={(value) => {
+            if (hasSampleSolution && selectedAnswers.length > 0) {
+              setNewValue(value)
+              setChangeModalOpen(true)
+            } else {
+              collectionHelpers.setValue(value)
+              itemsHelpers.setValue([])
+            }
+          }}
           label={t('manage.questionForms.answerCollection')}
           labelType="small"
           tooltip={t('manage.questionForms.caseStudyAnswerCollectionTooltip')}
@@ -95,7 +112,6 @@ function CaseStudyCollectionSelection({
               container: () => 'w-full',
             }}
             onChange={(newValue) =>
-              // TODO: add confirmation step to changing this (if the previous value is not empty AND sample solution is activated -> all specified solution ranges will be lost!)
               itemsHelpers.setValue(newValue.map((tag) => tag.value))
             }
             placeholder={t('manage.questionForms.selectCaseStudyItems')}
@@ -104,6 +120,14 @@ function CaseStudyCollectionSelection({
             }
           />
         </div>
+        <CaseStudyCollectionChangeModal
+          open={changeModalOpen}
+          onClose={() => setChangeModalOpen(false)}
+          onConfirm={() => {
+            collectionHelpers.setValue(newValue)
+            itemsHelpers.setValue([])
+          }}
+        />
       </div>
     </>
   )

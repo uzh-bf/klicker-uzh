@@ -1045,6 +1045,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selectAnswerOptions: 'Select answer options...',
       noMatchingOptionFound: 'No matching option found',
       caseStudyItems: 'Case study items',
+      changeOfAnswerCollection: 'Change of answer collection',
+      confirmCollectionChange:
+        'Are you sure you want to change the answer collection? The previously selected elements of the case study and all defined sample solutions will be lost due to this change.',
       caseStudyItemsTooltip:
         'Please select the elements from the answer collection that participants should evaluate in the case study according to the criteria recorded below.',
       selectCaseStudyItems: 'Select items...',
@@ -1066,6 +1069,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       caseName: 'Case name',
       caseStudyCaseNameTooltip:
         'Please enter a name for the case that will be displayed to the students (e.g. "Scenario 1: Lorem ipsum").',
+      confirmCaseDelete: 'Are you sure you want to delete this case?',
+      confirmCaseDeleteSolutions:
+        'Are you sure you want to delete this case including all defined sample solutions?',
+      confirmCaseDeletion: 'Delete case',
       caseDescription: 'Case description',
       caseStudyCaseDescriptionTooltip:
         'The case description is used to provide a detailed description of the scenario. It must contain all the information that students need to evaluate the given elements against the criteria.',

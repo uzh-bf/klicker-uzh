@@ -1,4 +1,3 @@
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -19,6 +18,7 @@ import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../../common/ContentInput'
 import { ElementFormTypes, ElementFormTypesCaseStudy } from '../types'
+import CaseStudyCaseDeletionButton from './CaseStudyCaseDeletionButton'
 
 export interface CaseStudySetterProps {
   setFieldValue: (
@@ -63,17 +63,11 @@ function CaseStudyCasesFields({
                   <H3>
                     {t('shared.generic.case')} {ix + 1}
                   </H3>
-                  <Button
-                    type="button"
-                    // TODO: add confirmation step before removing, since the description and all the sample solutions disappear alongside it
-                    onClick={() => remove(ix)}
-                    className={{
-                      root: 'border-red-600 hover:border-red-600 hover:text-red-600',
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faTrashCan} />
-                    {t('manage.questionForms.removeCase')}
-                  </Button>
+                  <CaseStudyCaseDeletionButton
+                    hasSampleSolution={hasSampleSolution}
+                    onConfirm={() => remove(ix)}
+                    index={ix}
+                  />
                 </div>
                 <FormikTextField
                   required
@@ -137,7 +131,7 @@ function CaseStudyCasesFields({
                         )}
                       />
                     </div>
-                    <div className="mt-3 flex flex-col gap-2">
+                    <div className="mt-2 flex flex-col gap-2">
                       {selectedItems.map((item, itemIx) => {
                         const itemIdString = `itemId-${item.id}`
 
