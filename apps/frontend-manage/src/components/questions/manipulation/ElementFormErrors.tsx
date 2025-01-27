@@ -276,8 +276,6 @@ function ElementFormErrors({
           typeof errors.options.cases === 'string' && (
             <li>{`${t('shared.generic.cases')}: ${errors.options.cases}`}</li>
           )}
-
-        {/* // TODO: error parsing for solutions of case study questions */}
       </ul>
     </UserNotification>
   )
