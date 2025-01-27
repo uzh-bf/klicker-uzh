@@ -334,8 +334,6 @@ function ElementEditModal({
           return null
         }
 
-        console.log(errors)
-
         return (
           <Modal
             asPortal
