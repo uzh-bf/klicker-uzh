@@ -26,6 +26,7 @@ function AnswerCollectionEditModal({
       open={open}
       onClose={() => {
         setOptionsEditingDisabled(false)
+        setSuccessToast(false)
         onClose()
       }}
       title={t('manage.resources.answerCollection', { name: collection.name })}
@@ -76,6 +77,7 @@ function AnswerCollectionEditModal({
       <Toast
         dismissible
         type="success"
+        duration={3000}
         openExternal={successToast}
         onCloseExternal={() => setSuccessToast(false)}
       >
