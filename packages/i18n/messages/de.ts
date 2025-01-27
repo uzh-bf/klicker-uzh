@@ -1520,6 +1520,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       CSCaseTitleRequired: 'Bitte geben Sie einen Titel für den Fall ein.',
       CSCaseDescriptionRequired:
         'Bitte geben Sie eine Beschreibung für den Fall ein.',
+      CSSolutionsRequired:
+        'Bei Fallstudien mit Musterlösung muss für jedes Element und die entsprechenden Kriterien ein korrekter Bereich definiert werden. Bitte stellen Sie sicher, dass die jeweiligen Grenzen im Interval des entsprechenden Kriteriums liegen mindestens eine Schrittweite voneinander entfernt sind.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Live Quizzes',

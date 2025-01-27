@@ -1497,6 +1497,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CSCasesRequired: 'At least one case is required to create a case study.',
       CSCaseTitleRequired: 'Please enter a title for the case.',
       CSCaseDescriptionRequired: 'Please enter a description for the case.',
+      CSSolutionsRequired:
+        'For case studies with sample solutions, a correct solution range must be defined for each element and the corresponding criteria. Please ensure that the respective bounds lie within the interval of the corresponding criterion and are at least one step size apart.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',

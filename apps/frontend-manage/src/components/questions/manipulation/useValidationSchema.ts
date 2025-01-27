@@ -5,6 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
+import { ElementFormTypesCaseStudy } from './types'
 
 function useSharedValidationSchema() {
   const t = useTranslations()
@@ -535,7 +536,83 @@ function useOptionsSchemaCaseStudy() {
               test: (description) =>
                 !description?.match(/^(<br>(\n)*)$/g) && description !== '',
             }),
-          // TODO: add schema for solutions!!
+          solutions: yup.object().test({
+            message: t('manage.formErrors.CSSolutionsRequired'),
+            test: function (
+              solutions: ElementFormTypesCaseStudy['options']['cases'][0]['solutions']
+            ) {
+              // extract parent of parent
+              const grandparent = this.from?.[2].value
+
+              // if sample solution is not set, solutions are not required
+              if (!grandparent.hasSampleSolution) return true
+
+              if (!solutions) return false
+
+              // get selected items and criteria
+              const selectedItems: ElementFormTypesCaseStudy['options']['selectedItems'] =
+                grandparent.selectedItems
+              const criteria: ElementFormTypesCaseStudy['options']['criteria'] =
+                grandparent.criteria
+
+              // check if we have solutions for all selected items
+              const solutionKeys = Object.keys(solutions)
+              if (solutionKeys.length !== selectedItems.length) return false
+
+              // check if each selected item has solutions for all criteria
+              return selectedItems.every((itemId) => {
+                const criterionSolutions = solutions[`itemId-${itemId}`]
+                if (!criterionSolutions) return false
+
+                // check if number of criterion solutions matches criteria length
+                if (Object.keys(criterionSolutions).length !== criteria.length)
+                  return false
+
+                // validate structure of each solution
+                return criteria.every((criterion) => {
+                  const solution = criterionSolutions[criterion.id]
+                  const minValue = parseFloat(solution.min)
+                  const maxValue = parseFloat(solution.max)
+
+                  // solution must be defined and have a min and max value
+                  if (
+                    !solution ||
+                    typeof solution.min !== 'string' ||
+                    typeof solution.max !== 'string' ||
+                    Number.isNaN(minValue) ||
+                    Number.isNaN(maxValue)
+                  )
+                    return false
+
+                  // min must be less or equal to max
+                  if (minValue > maxValue) return false
+
+                  // check if criterion values are defined, otherwise skip this validation part until they are defined
+                  const criterionMin = parseFloat(criterion.min)
+                  const criterionMax = parseFloat(criterion.max)
+                  const stepValue = parseFloat(criterion.step)
+
+                  if (
+                    Number.isNaN(criterionMin) ||
+                    Number.isNaN(criterionMax) ||
+                    Number.isNaN(stepValue)
+                  ) {
+                    return true
+                  } else {
+                    // min and max need to lie within the bounds of the criterion and at least step size apart
+                    if (
+                      minValue < criterionMin ||
+                      maxValue > criterionMax ||
+                      minValue + stepValue > maxValue
+                    )
+                      return false
+                  }
+
+                  return true
+                })
+              })
+            },
+          }),
         })
       )
       .required(t('manage.formErrors.CSCasesRequired'))
@@ -548,7 +625,6 @@ function useValidationSchema({
 }: {
   numberOfAnswerOptions?: number
 }) {
-  const t = useTranslations()
   const optionsSchemaSC = useOptionsSchemaSC()
   const optionsSchemaMC = useOptionsSchemaMC()
   const optionsSchemaKPRIM = useOptionsSchemaKPRIM()
