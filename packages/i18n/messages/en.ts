@@ -264,11 +264,13 @@ export default {
       minimum: 'Minimum',
       maximum: 'Maximum',
       stepSize: 'Step Size',
+      criterion: 'Criterion',
       criteria: 'Criteria',
       minimumShort: 'Min',
       maximumShort: 'Max',
       step: 'Step',
       case: 'Case',
+      cases: 'Cases',
     },
     contentInput: {
       boldStyle:
@@ -1048,6 +1050,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       changeOfAnswerCollection: 'Change of answer collection',
       confirmCollectionChange:
         'Are you sure you want to change the answer collection? The previously selected elements of the case study and all defined sample solutions will be lost due to this change.',
+      selectedItems: 'Selected items',
       caseStudyItemsTooltip:
         'Please select the elements from the answer collection that participants should evaluate in the case study according to the criteria recorded below.',
       selectCaseStudyItems: 'Select items...',
@@ -1066,8 +1069,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       addCriterion: 'Add new criterion',
       addCase: 'Add new case',
       removeCase: 'Remove case',
-      caseName: 'Case name',
-      caseStudyCaseNameTooltip:
+      caseTitle: 'Case name',
+      caseStudyCaseTitleTooltip:
         'Please enter a name for the case that will be displayed to the students (e.g. "Scenario 1: Lorem ipsum").',
       confirmCaseDelete: 'Are you sure you want to delete this case?',
       confirmCaseDeleteSolutions:
@@ -1460,9 +1463,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'There must be exactly four answer options for Kprim questions',
       explanationRequired:
         'Please enter an explanation. On flashcards, this explanation will be displayed to students as an answer to the question.',
-      NRUnderflow:
+      NumericalUnderflow:
         'Numerical quantities cannot be smaller than -1e30 for technical reasons.',
-      NROverflow:
+      NumericalOverflow:
         'Numerical quantities cannot be larger than 1e30 for technical reasons.',
       NRSolutionRangesWithinRestrictions:
         'The solution ranges must lie within the specified restrictions.',
@@ -1477,6 +1480,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please select the correct answer options from your collection.',
       SEcorrectAnswersMatchInputs:
         'The number of correct answers must be larger or equal to the number of input fields.',
+      CSAnswerCollectionRequired:
+        'Please select an answer collection from which the elements to be evaluated in the case study are selected.',
+      CSItemsRequired:
+        'Please select at least one element from the answer collection that participants should evaluate against the created criteria.',
+      CSCriteriaNameRequired: 'Please enter a name for the criterion.',
+      CSCriteriaMinRequired: 'Please enter a minimum value for the criterion.',
+      CSCriteriaMinLessThanMax:
+        'The minimum value must be less than the maximum value.',
+      CSCriteriaMaxRequired: 'Please enter a maximum value for the criterion.',
+      CSCriteriaStepRequired: 'Please enter a step size for the criterion.',
+      CSStepSizeTooLarge:
+        'The step size must be less than or equal to half of the interval width.',
+      CSCriteriaRequired:
+        'At least one criterion is required to create a case study.',
+      CSCasesRequired: 'At least one case is required to create a case study.',
+      CSCaseTitleRequired: 'Please enter a title for the case.',
+      CSCaseDescriptionRequired: 'Please enter a description for the case.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',

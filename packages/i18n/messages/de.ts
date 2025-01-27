@@ -265,11 +265,13 @@ export default {
       minimum: 'Minimum',
       maximum: 'Maximum',
       stepSize: 'Schrittweite',
+      criterion: 'Kriterium',
       criteria: 'Kriterien',
       minimumShort: 'Min',
       maximumShort: 'Max',
       step: 'Schritt',
       case: 'Fall',
+      cases: 'Fälle',
     },
     contentInput: {
       boldStyle:
@@ -1047,6 +1049,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       changeOfAnswerCollection: 'Wechsel der Antwort-Sammlung',
       confirmCollectionChange:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung wechseln möchten? Die bisher ausgewählten Elemente der Fallstudie und alle definierten Musterlösungen gehen durch diesen Wechsel verloren.',
+      selectedItems: 'Ausgewählte Elemente',
       caseStudyItemsTooltip:
         'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
       selectCaseStudyItems: 'Elemente auswählen...',
@@ -1065,8 +1068,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       addCriterion: 'Kriterium hinzufügen',
       addCase: 'Neuen Fall hinzufügen',
       removeCase: 'Fall entfernen',
-      caseName: 'Fallname',
-      caseStudyCaseNameTooltip:
+      caseTitle: 'Fallname',
+      caseStudyCaseTitleTooltip:
         "Bitte geben Sie einen Namen für den Fall an, welcher den Studierenden angezeigt wird (z.B. 'Szenario 1: Lorem ipsum').",
       confirmCaseDelete:
         'Sind Sie sicher, dass Sie diesen Fall löschen möchten?',
@@ -1475,9 +1478,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei Kprim-Fragen müssen genau vier Antwortmöglichkeiten gegeben werden',
       explanationRequired:
         'Bitte geben Sie eine Erklärung ein. Auf Flashcards wird diese Erklärung den Studierenden als Antwort auf die Frage angezeigt.',
-      NRUnderflow:
+      NumericalUnderflow:
         'Numerische Angaben dürfen aus technischen Gründen nicht kleiner als -1e30 sein.',
-      NROverflow:
+      NumericalOverflow:
         'Numerische Angaben dürfen aus technischen Gründen nicht größer als 1e30 sein.',
       NRSolutionRangesWithinRestrictions:
         'Die Lösungsbereiche müssen innerhalb der angegebenen Einschränkungen liegen.',
@@ -1494,6 +1497,29 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie die korrekten Antwortmöglichkeiten aus Ihrer Sammlung aus.',
       SEcorrectAnswersMatchInputs:
         'Die Anzahl der korrekten Antworten muss mindestens der Anzahl der Eingabefelder entsprechen.',
+      CSAnswerCollectionRequired:
+        'Bitte wählen Sie eine Antwort-Sammlung aus welcher die zu bewertenden Element der Fallstudie selektiert werden.',
+      CSItemsRequired:
+        'Bitte wählen Sie mindestens ein Element aus der Antwort-Sammlung aus, welches von den Teilnehmenden auf die erstellten Kriterien bewertet werden soll.',
+      CSCriteriaNameRequired:
+        'Bitte geben Sie einen Namen für das Kriterium ein.',
+      CSCriteriaMinRequired:
+        'Bitte geben Sie einen Minimalwert für das Kriterium ein.',
+      CSCriteriaMinLessThanMax:
+        'Der Minimalwert muss kleiner als der Maximalwert sein.',
+      CSCriteriaMaxRequired:
+        'Bitte geben Sie einen Maximalwert für das Kriterium ein.',
+      CSCriteriaStepRequired:
+        'Bitte geben Sie eine Schrittweite für das Kriterium ein.',
+      CSStepSizeTooLarge:
+        'Die Schrittweite darf maximal der halben Intervallbreite entsprechen.',
+      CSCriteriaRequired:
+        'Zur Erstellung einer Fallstudie wird mindestens ein Kriterium benötigt.',
+      CSCasesRequired:
+        'Zur Erstellung einer Fallstudie wird mindestens ein Fall benötigt.',
+      CSCaseTitleRequired: 'Bitte geben Sie einen Titel für den Fall ein.',
+      CSCaseDescriptionRequired:
+        'Bitte geben Sie eine Beschreibung für den Fall ein.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Live Quizzes',

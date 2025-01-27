@@ -170,8 +170,8 @@ function useOptionsSchemaNumerical() {
     restrictions: yup.object().shape({
       min: yup
         .number()
-        .min(-1e30, t('manage.formErrors.NRUnderflow'))
-        .max(1e30, t('manage.formErrors.NROverflow'))
+        .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+        .max(1e30, t('manage.formErrors.NumericalOverflow'))
         .nullable()
         .when('max', {
           is: (max?: number) => typeof max !== 'undefined' && max !== null,
@@ -183,8 +183,8 @@ function useOptionsSchemaNumerical() {
         }),
       max: yup
         .number()
-        .min(-1e30, t('manage.formErrors.NRUnderflow'))
-        .max(1e30, t('manage.formErrors.NROverflow'))
+        .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+        .max(1e30, t('manage.formErrors.NumericalOverflow'))
         .nullable(),
     }),
 
@@ -242,7 +242,7 @@ function useOptionsSchemaNumerical() {
             })
             // check that the min and max values are within the system restrictions
             .test({
-              message: t('manage.formErrors.NRUnderflow'),
+              message: t('manage.formErrors.NumericalUnderflow'),
               test: (value) => {
                 if (!value) return true
                 return !value.some(
@@ -257,7 +257,7 @@ function useOptionsSchemaNumerical() {
               },
             })
             .test({
-              message: t('manage.formErrors.NROverflow'),
+              message: t('manage.formErrors.NumericalOverflow'),
               test: (value) => {
                 if (!value) return true
                 return !value.some(
@@ -326,8 +326,8 @@ function useOptionsSchemaNumerical() {
         yup
           .number()
           .required(t('manage.formErrors.enterSolution'))
-          .min(-1e30, t('manage.formErrors.NRUnderflow'))
-          .max(1e30, t('manage.formErrors.NROverflow'))
+          .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+          .max(1e30, t('manage.formErrors.NumericalOverflow'))
       )
       .when('hasSampleSolution', {
         is: true,
@@ -443,6 +443,106 @@ function useOptionsSchemaSelection({
   }
 }
 
+function useOptionsSchemaCaseStudy() {
+  const t = useTranslations()
+
+  // options: {
+  //   hasSampleSolution: boolean
+  //   answerCollection: string
+  //   selectedItems: number[] // items that should be evaluated with respect to the defined criteria
+  //   cases: {
+  //     title: string
+  //     description: string
+  //     // key of top level record is `itemId-${item.id}`, key of nested record is criterion id
+  //     solutions?: Record<string, Record<string, { min: number; max: number }>>
+  //   }[]
+  //   criteria: {
+  //     id: string // short id
+  //     name: string
+  //     min: number
+  //     max: number
+  //     step: number
+  //     unit?: string | null
+  //   }[]
+  // }
+
+  return {
+    hasSampleSolution: yup.boolean(),
+    answerCollection: yup
+      .string()
+      .required(t('manage.formErrors.CSAnswerCollectionRequired')),
+    selectedItems: yup
+      .array()
+      .of(yup.number())
+      .required(t('manage.formErrors.CSItemsRequired'))
+      .min(1, t('manage.formErrors.CSItemsRequired')),
+    criteria: yup
+      .array()
+      .of(
+        yup.object().shape({
+          id: yup.string().required(),
+          name: yup
+            .string()
+            .required(t('manage.formErrors.CSCriteriaNameRequired')),
+          min: yup
+            .number()
+            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+            .max(1e30, t('manage.formErrors.NumericalOverflow'))
+            .required(t('manage.formErrors.CSCriteriaMinRequired'))
+            .when('max', {
+              is: (max?: number) => typeof max !== 'undefined' && max !== null,
+              then: (schema) =>
+                schema.lessThan(
+                  yup.ref('max'),
+                  t('manage.formErrors.CSCriteriaMinLessThanMax')
+                ),
+            }),
+          max: yup
+            .number()
+            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+            .max(1e30, t('manage.formErrors.NumericalOverflow'))
+            .required(t('manage.formErrors.CSCriteriaMaxRequired')),
+          step: yup
+            .number()
+            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+            .max(1e30, t('manage.formErrors.NumericalOverflow'))
+            .required(t('manage.formErrors.CSCriteriaStepRequired'))
+            .test({
+              message: t('manage.formErrors.CSStepSizeTooLarge'),
+              test: function (step) {
+                const max = this.parent.max
+                const min = this.parent.min
+                return step <= (max - min) / 2
+              },
+            }),
+          unit: yup.string().nullable(),
+        })
+      )
+      .required(t('manage.formErrors.CSCriteriaRequired'))
+      .min(1, t('manage.formErrors.CSCriteriaRequired')),
+    cases: yup
+      .array()
+      .of(
+        yup.object().shape({
+          title: yup
+            .string()
+            .required(t('manage.formErrors.CSCaseTitleRequired')),
+          description: yup
+            .string()
+            .required(t('manage.formErrors.CSCaseDescriptionRequired'))
+            .test({
+              message: t('manage.formErrors.CSCaseDescriptionRequired'),
+              test: (description) =>
+                !description?.match(/^(<br>(\n)*)$/g) && description !== '',
+            }),
+          // TODO: add schema for solutions!!
+        })
+      )
+      .required(t('manage.formErrors.CSCasesRequired'))
+      .min(1, t('manage.formErrors.CSCasesRequired')),
+  }
+}
+
 function useValidationSchema({
   numberOfAnswerOptions,
 }: {
@@ -457,6 +557,7 @@ function useValidationSchema({
   const optionsSchemaSelection = useOptionsSchemaSelection({
     numberOfAnswerOptions,
   })
+  const optionsSchemaCaseStudy = useOptionsSchemaCaseStudy()
 
   return yup.object().shape({
     ...useSharedValidationSchema(),
@@ -484,6 +585,10 @@ function useValidationSchema({
 
         case ElementType.Selection: {
           return schema.shape(optionsSchemaSelection)
+        }
+
+        case ElementType.CaseStudy: {
+          return schema.shape(optionsSchemaCaseStudy)
         }
 
         default:

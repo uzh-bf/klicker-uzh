@@ -71,9 +71,9 @@ function CaseStudyCasesFields({
                 </div>
                 <FormikTextField
                   required
-                  name={`options.cases.${ix}.name`}
-                  label={t('manage.questionForms.caseName')}
-                  tooltip={t('manage.questionForms.caseStudyCaseNameTooltip')}
+                  name={`options.cases.${ix}.title`}
+                  label={t('manage.questionForms.caseTitle')}
+                  tooltip={t('manage.questionForms.caseStudyCaseTitleTooltip')}
                   className={{ root: 'mb-1' }}
                 />
                 <FastField
