@@ -1,7 +1,13 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button, FormikTextField, FormLabel, H3 } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikNumberField,
+  FormikTextField,
+  FormLabel,
+  H3,
+} from '@uzh-bf/design-system'
 import {
   FastField,
   FastFieldProps,
@@ -10,6 +16,7 @@ import {
   useField,
 } from 'formik'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../../common/ContentInput'
 import { ElementFormTypes, ElementFormTypesCaseStudy } from '../types'
 
@@ -24,17 +31,26 @@ export interface CaseStudySetterProps {
     isTouched?: boolean,
     shouldValidate?: boolean
   ) => Promise<void | FormikErrors<ElementFormTypes>>
+}
+
+interface CaseStudyCasesFieldsProps extends CaseStudySetterProps {
   hasSampleSolution: boolean
+  selectedItems: { id: number; name: string }[]
 }
 
 function CaseStudyCasesFields({
   setFieldValue,
   setFieldTouched,
   hasSampleSolution,
-}: CaseStudySetterProps) {
+  selectedItems,
+}: CaseStudyCasesFieldsProps) {
   const t = useTranslations()
   const [casesField] =
     useField<ElementFormTypesCaseStudy['options']['cases']>('options.cases')
+  const [criteriaField] =
+    useField<ElementFormTypesCaseStudy['options']['criteria']>(
+      'options.criteria'
+    )
 
   return (
     <div>
@@ -49,6 +65,7 @@ function CaseStudyCasesFields({
                   </H3>
                   <Button
                     type="button"
+                    // TODO: add confirmation step before removing, since the description and all the sample solutions disappear alongside it
                     onClick={() => remove(ix)}
                     className={{
                       root: 'border-red-600 hover:border-red-600 hover:text-red-600',
@@ -105,7 +122,89 @@ function CaseStudyCasesFields({
                     </div>
                   )}
                 </FastField>
-                <hr className="border-uzh-grey-40 border-1 mt-4 w-full" />
+
+                {hasSampleSolution && selectedItems && criteriaField.value && (
+                  <div className="mt-6">
+                    <div className="flex flex-row gap-6">
+                      <FormLabel
+                        required
+                        label={t('manage.questionForms.caseStudySolutions', {
+                          number: ix + 1,
+                        })}
+                        labelType="small"
+                        tooltip={t(
+                          'manage.questionForms.caseStudySolutionsTooltip'
+                        )}
+                      />
+                    </div>
+                    <div className="mt-3 flex flex-col gap-2">
+                      {selectedItems.map((item, itemIx) => {
+                        const itemIdString = `itemId-${item.id}`
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={twMerge(
+                              itemIx !== selectedItems.length - 1
+                                ? 'border-b pb-3'
+                                : ''
+                            )}
+                          >
+                            <div className="-mb-6 font-bold">{item.name}</div>
+                            <div className="flex flex-col gap-2">
+                              {criteriaField.value.map(
+                                (criterion, criterionIx) => (
+                                  <div
+                                    key={criterion.id}
+                                    className="flex items-end gap-4"
+                                  >
+                                    <div className="mb-1 line-clamp-1 flex-1">
+                                      {criterion.name}
+                                    </div>
+                                    <div className="flex gap-4">
+                                      <FormikNumberField
+                                        required
+                                        label={
+                                          criterionIx === 0
+                                            ? t(
+                                                'manage.questionForms.lowerLimit'
+                                              )
+                                            : undefined
+                                        }
+                                        name={`options.cases.${ix}.solutions.${itemIdString}.${criterion.id}.min`}
+                                        className={{
+                                          root: 'w-28',
+                                          input: 'h-8',
+                                        }}
+                                      />
+                                      <FormikNumberField
+                                        required
+                                        label={
+                                          criterionIx === 0
+                                            ? t(
+                                                'manage.questionForms.upperLimit'
+                                              )
+                                            : undefined
+                                        }
+                                        name={`options.cases.${ix}.solutions.${itemIdString}.${criterion.id}.max`}
+                                        className={{
+                                          root: 'w-28',
+                                          input: 'h-8',
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <hr className="border-uzh-grey-40 mt-4 w-full border-2" />
               </div>
             ))}
             <Button

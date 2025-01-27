@@ -6,6 +6,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
+import { Dispatch, SetStateAction } from 'react'
 import Select from 'react-select'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
@@ -13,8 +14,10 @@ import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
 function CaseStudyCollectionSelection({
   collections,
+  setSelectedItems,
 }: {
   collections: AnswerCollection[]
+  setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
 }) {
   const t = useTranslations()
   const [itemsField, _, itemsHelpers] = useField<number[]>(
@@ -32,6 +35,7 @@ function CaseStudyCollectionSelection({
   const selectedAnswers = useSelectedAnswerEntry({
     field: itemsField,
     collectionAnswers,
+    setSelectedItems,
   })
 
   // udpate the selected correct answers if the answer collection changes

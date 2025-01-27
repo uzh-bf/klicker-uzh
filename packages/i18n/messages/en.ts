@@ -1070,6 +1070,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       caseStudyCaseDescriptionTooltip:
         'The case description is used to provide a detailed description of the scenario. It must contain all the information that students need to evaluate the given elements against the criteria.',
       caseDescriptionPlaceholder: 'Enter detailed case description here...',
+      caseStudySolutions: 'Sample Solutions for Case {number}',
+      caseStudySolutionsTooltip:
+        'Please enter the range for each element and criterion that should be considered correct.',
+      lowerLimit: 'Lower limit',
+      upperLimit: 'Upper limit',
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',

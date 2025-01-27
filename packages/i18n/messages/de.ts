@@ -1070,6 +1070,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Fallbeschreibung dient der detaillierten Beschreibung des Szenarios. Sie muss alle Informationen enthalten, welche die Studierenden benötigen, um die gegebenen Elemente auf die Kriterien zu bewerten.',
       caseDescriptionPlaceholder:
         'Detaillierte Fallbeschreibung hier eingeben…',
+      caseStudySolutions: 'Musterlösungen für Fall {number}',
+      caseStudySolutionsTooltip:
+        'Bitte geben Sie hier für jedes zu Bewertende Element und Kriterium einen Bereich an, welcher als korrekt bewertet werden soll.',
+      lowerLimit: 'Untere Grenze',
+      upperLimit: 'Obere Grenze',
       LISTDisplay: 'Anzeige als Liste',
       GRIDDisplay: 'Anzeige als Raster',
       feedbackPlaceholder: 'Feedback eingeben…',

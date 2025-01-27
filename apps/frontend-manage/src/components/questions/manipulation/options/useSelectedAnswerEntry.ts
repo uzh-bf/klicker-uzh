@@ -1,22 +1,32 @@
 import { FieldInputProps } from 'formik'
-import { useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 
 function useSelectedAnswerEntry({
   field,
   collectionAnswers,
+  setSelectedItems,
 }: {
   field: FieldInputProps<number[]>
   collectionAnswers: { label: string; value: number }[]
+  setSelectedItems?: Dispatch<SetStateAction<{ id: number; name: string }[]>>
 }) {
   return useMemo(() => {
     if (!field.value) {
       return []
     }
 
-    return collectionAnswers.filter((entry) =>
+    const selectedAnswers = collectionAnswers.filter((entry) =>
       field.value.includes(entry.value)
     )
-  }, [collectionAnswers, field.value])
+
+    if (setSelectedItems) {
+      setSelectedItems(
+        selectedAnswers.map((entry) => ({ id: entry.value, name: entry.label }))
+      )
+    }
+
+    return selectedAnswers
+  }, [collectionAnswers, field.value, setSelectedItems])
 }
 
 export default useSelectedAnswerEntry
