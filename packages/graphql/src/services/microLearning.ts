@@ -245,7 +245,7 @@ export async function manipulateMicroLearning(
           entries: true,
         },
       },
-      answerCollectionSolutions: true,
+      answerCollectionItems: true,
     },
   })
 

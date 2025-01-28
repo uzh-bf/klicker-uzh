@@ -219,7 +219,7 @@ export function prepareQuestion({
           id: collectionId,
         },
       },
-      answerCollectionSolutions: {
+      answerCollectionItems: {
         connect: correctOptionIds.map((id) => ({
           id,
         })),

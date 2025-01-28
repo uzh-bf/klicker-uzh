@@ -1,0 +1,65 @@
+mutation ManipulateCaseStudyQuestion(
+  $id: Int
+  $status: ElementStatus
+  $name: String
+  $content: String
+  $explanation: String
+  $options: OptionsCaseStudyInput
+  $pointsMultiplier: Int
+  $tags: [String!]
+) {
+  manipulateCaseStudyQuestion(
+    id: $id
+    status: $status
+    name: $name
+    content: $content
+    explanation: $explanation
+    options: $options
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+  ) {
+    __typename
+    ... on CaseStudyElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+      options {
+        hasSampleSolution
+        answerCollection {
+          id
+        }
+        collectionItemIds
+        criteria {
+          id
+          name
+          order
+          min
+          max
+          step
+          unit
+        }
+        cases {
+          title
+          description
+          order
+          solutions {
+            itemId
+            criteriaSolutions {
+              criterionId
+              min
+              max
+            }
+          }
+        }
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+}

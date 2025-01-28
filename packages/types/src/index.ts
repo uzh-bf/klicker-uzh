@@ -234,20 +234,20 @@ export interface ElementOptionsFreeText extends BaseElementOptions {
   solutions?: string[] | null
 }
 
-export type SelectionAnswerCollectionEntry = {
+export type ElementOptionsAnswerCollectionEntry = {
   id: number
   value: string
 }
 
-export interface SelectionAnswerCollection {
+export interface ElementOptionsAnswerCollection {
   id: number
-  entries: SelectionAnswerCollectionEntry[]
+  entries: ElementOptionsAnswerCollectionEntry[]
 }
 
 export interface ElementOptionsSelection extends BaseElementOptions {
   numberOfInputs: number
-  answerCollection?: SelectionAnswerCollection
-  answerCollectionSolutionIds?: number[] | null
+  answerCollection?: ElementOptionsAnswerCollection // instance only - link on element
+  answerCollectionSolutionIds?: number[] | null // instance only - link on element
 }
 
 export type CaseStudyCriterion = {
@@ -260,7 +260,7 @@ export type CaseStudyCriterion = {
   unit?: string | null
 }
 
-export type CaseStudyCaseCriteriaSolution = {
+export type CaseStudyCaseCriterionSolution = {
   criterionId: string
   min: number
   max: number
@@ -268,7 +268,7 @@ export type CaseStudyCaseCriteriaSolution = {
 
 export type CaseStudyCaseSolution = {
   itemId: number
-  criteriaSolutions: CaseStudyCaseCriteriaSolution[]
+  criteriaSolutions: CaseStudyCaseCriterionSolution[]
 }
 
 export type CaseStudyCase = {
@@ -279,10 +279,10 @@ export type CaseStudyCase = {
 }
 
 export interface ElementOptionsCaseStudy extends BaseElementOptions {
-  answerCollection?: SelectionAnswerCollection // instance only - link on element
+  answerCollection?: ElementOptionsAnswerCollection // instance only - link on element
   collectionItemIds?: number[] // instance only - link on element
-  cases: CaseStudyCase[]
   criteria: CaseStudyCriterion[]
+  cases: CaseStudyCase[]
 }
 
 export interface ElementOptionsFlashcard {}

@@ -158,6 +158,87 @@ type AwardEntry {
   type: String!
 }
 
+type CaseStudyCase {
+  description: String!
+  order: Int!
+  solutions: [CaseStudyCaseSolution!]
+  title: String!
+}
+
+type CaseStudyCaseCriterionSolution {
+  criterionId: String!
+  max: Float!
+  min: Float!
+}
+
+input CaseStudyCaseInput {
+  description: String!
+  order: Int!
+  solutions: [CaseStudySolutionInput!]
+  title: String!
+}
+
+type CaseStudyCaseSolution {
+  criteriaSolutions: [CaseStudyCaseCriterionSolution!]!
+  itemId: Int!
+}
+
+input CaseStudyCriteriaSolutionInput {
+  criterionId: String!
+  max: Float!
+  min: Float!
+}
+
+type CaseStudyCriterion {
+  id: String!
+  max: Float!
+  min: Float!
+  name: String!
+  order: Int!
+  step: Float!
+  unit: String
+}
+
+input CaseStudyCriterionInput {
+  id: String!
+  max: Float!
+  min: Float!
+  name: String!
+  order: Int!
+  step: Float!
+  unit: String
+}
+
+type CaseStudyElement {
+  content: String!
+  createdAt: Date
+  explanation: String
+  id: Int!
+  isArchived: Boolean
+  isDeleted: Boolean
+  name: String!
+  options: CaseStudyElementOptions!
+  pointsMultiplier: Int!
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date
+  version: Int!
+}
+
+type CaseStudyElementOptions {
+  answerCollection: ElementOptionsAnswerCollection
+  cases: [CaseStudyCase!]
+  collectionItemIds: [Int!]
+  criteria: [CaseStudyCriterion!]
+  hasSampleSolution: Boolean
+}
+
+input CaseStudySolutionInput {
+  criteriaSolutions: [CaseStudyCriteriaSolutionInput!]!
+  itemId: Int!
+}
+
 type CatalogObject {
   access: ObjectAccess!
   id: Int
@@ -415,7 +496,7 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar Date
 
-union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
+union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
 
 type ElementBlock {
   elements: [ElementInstance!]
@@ -482,6 +563,16 @@ enum ElementInstanceType {
   LIVE_QUIZ
   MICROLEARNING
   PRACTICE_QUIZ
+}
+
+type ElementOptionsAnswerCollection {
+  entries: [ElementOptionsAnswerCollectionEntry!]
+  id: Int!
+}
+
+type ElementOptionsAnswerCollectionEntry {
+  id: Int!
+  value: String!
 }
 
 enum ElementOrderType {
@@ -1113,6 +1204,7 @@ type Mutation {
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
+  manipulateCaseStudyQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
   manipulateContentElement(content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
@@ -1282,6 +1374,14 @@ type ObjectSharingRequest {
   userEmail: String!
   userId: String!
   userShortname: String!
+}
+
+input OptionsCaseStudyInput {
+  answerCollection: Int
+  cases: [CaseStudyCaseInput!]
+  collectionItemIds: [Int!]
+  criteria: [CaseStudyCriterionInput!]
+  hasSampleSolution: Boolean
 }
 
 input OptionsChoicesInput {
@@ -1591,16 +1691,6 @@ input ResponseInput {
   value: String
 }
 
-type SelectionAnswerCollection {
-  entries: [SelectionAnswerCollectionEntry!]
-  id: Int!
-}
-
-type SelectionAnswerCollectionEntry {
-  id: Int!
-  value: String!
-}
-
 type SelectionElement {
   content: String!
   createdAt: Date
@@ -1641,9 +1731,8 @@ type SelectionElementInstanceEvaluation {
 }
 
 type SelectionElementOptions {
-  answerCollection: SelectionAnswerCollection
+  answerCollection: ElementOptionsAnswerCollection
   answerCollectionSolutionIds: [Int!]
-  hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
   numberOfInputs: Int
 }

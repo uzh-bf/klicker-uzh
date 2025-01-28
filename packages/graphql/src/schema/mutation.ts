@@ -54,6 +54,7 @@ import {
   ArchivedElement,
   Element,
   ElementInstance,
+  OptionsCaseStudyInput,
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
@@ -1009,6 +1010,29 @@ export const Mutation = builder.mutationType({
         resolve(_, args, ctx) {
           return QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.SELECTION },
+            ctx
+          )
+        },
+      }),
+
+      manipulateCaseStudyQuestion: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Element,
+        args: {
+          id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+          options: t.arg({
+            type: OptionsCaseStudyInput,
+          }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.manipulateQuestion(
+            { ...args, type: DB.ElementType.CASE_STUDY },
             ctx
           )
         },

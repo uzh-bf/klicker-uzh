@@ -47,9 +47,9 @@ model Element {
   elementInstances ElementInstance[]
   feedbacks        ElementFeedback[]
 
-  answerCollectionSolutions AnswerCollectionEntry[] @relation("ElementAnswerCollectionSolutions")
-  answerCollection          AnswerCollection?       @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  answerCollectionId        Int?
+  answerCollectionItems AnswerCollectionEntry[] @relation("ElementAnswerCollectionUsedItems")
+  answerCollection      AnswerCollection?       @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  answerCollectionId    Int?
 
   permissions Permission[]
 

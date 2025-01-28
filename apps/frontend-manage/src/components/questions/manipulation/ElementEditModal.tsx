@@ -5,6 +5,7 @@ import {
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
   GetUserTagsDocument,
+  ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
   ManipulateContentElementDocument,
   ManipulateFlashcardElementDocument,
@@ -29,6 +30,7 @@ import ElementTypeMonitor from './ElementTypeMonitor'
 import InstanceUpdateSwitch from './InstanceUpdateSwitch'
 import StudentElementPreview from './StudentElementPreview'
 import {
+  prepareCaseStudyArgs,
   prepareChoicesArgs,
   prepareContentArgs,
   prepareFlashcardArgs,
@@ -118,6 +120,9 @@ function ElementEditModal({
   )
   const [manipulateSelectionQuestion] = useMutation(
     ManipulateSelectionQuestionDocument
+  )
+  const [manipulateCaseStudyQuestion] = useMutation(
+    ManipulateCaseStudyQuestionDocument
   )
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
 
@@ -224,6 +229,7 @@ function ElementEditModal({
 
             break
           }
+
           case ElementType.Numerical: {
             const args = prepareNumericalArgs({
               elementId,
@@ -247,6 +253,7 @@ function ElementEditModal({
 
             break
           }
+
           case ElementType.FreeText: {
             const args = prepareFreeTextArgs({
               elementId,
@@ -270,6 +277,7 @@ function ElementEditModal({
 
             break
           }
+
           case ElementType.Selection: {
             const args = prepareSelectionArgs({
               elementId,
@@ -287,6 +295,30 @@ function ElementEditModal({
 
             const data = result.data?.manipulateSelectionQuestion
             if (data?.__typename !== 'SelectionElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
+            break
+          }
+
+          case ElementType.CaseStudy: {
+            const args = prepareCaseStudyArgs({
+              elementId,
+              isDuplication,
+              values,
+            })
+
+            const result = await manipulateCaseStudyQuestion({
+              variables: args,
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
+            })
+
+            const data = result.data?.manipulateCaseStudyQuestion
+            if (data?.__typename !== 'CaseStudyElement' || !data.id) {
               setFailureToast(true)
               return
             }

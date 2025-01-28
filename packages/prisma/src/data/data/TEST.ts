@@ -276,7 +276,7 @@ export const QUESTIONS = [
       numberOfInputs: 2,
     },
     collectionName: 'Restricted Collection (Animals)',
-    answerCollectionSolutions: ['Bear', 'Cat', 'Dog'],
+    answerCollectionItems: ['Bear', 'Cat', 'Dog'],
   },
 ]
 

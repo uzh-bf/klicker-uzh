@@ -29,6 +29,7 @@ import type {
   ChoicesElementData,
   ContentElementData,
   ElementInstanceResults,
+  ElementOptionsAnswerCollection,
   ElementOptionsChoices,
   ElementOptionsFreeText,
   ElementOptionsNumerical,
@@ -46,7 +47,6 @@ import type {
   InstanceEvaluationNumerical,
   InstanceEvaluationSelection,
   NumericalElementData,
-  SelectionAnswerCollection,
   SelectionElementData,
   SingleQuestionResponse,
   SingleQuestionResponseChoices,
@@ -3021,7 +3021,7 @@ function combineSelectionResults({
 }: {
   results: ElementResultsSelection
   anonymousResults: ElementResultsSelection
-  answerOptions: SelectionAnswerCollection
+  answerOptions: ElementOptionsAnswerCollection
 }) {
   return answerOptions.entries.map((option) => ({
     answerId: option.id,

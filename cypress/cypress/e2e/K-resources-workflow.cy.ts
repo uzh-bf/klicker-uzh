@@ -373,9 +373,6 @@ describe('Create, edit and share answer collections', function () {
     ).click()
 
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
-    cy.findByText(
-      'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.'
-    )
   })
 
   it("Verify that the private answer collection cannot be removed by user 'pro1' as it is used in a question", function () {
@@ -548,9 +545,6 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
-    cy.findByText(
-      'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.'
-    )
   })
 
   it('Grant access to restricted answer collection (for user pro1)', function () {
@@ -613,9 +607,6 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
-    cy.findByText(
-      'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.'
-    )
   })
 
   it('Verify that restricted answer collection can be used in selection question by user pro1 and create question', function () {
@@ -866,9 +857,6 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
     ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
-    cy.findByText(
-      'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the "Resources" tab or import an existing collection from other users there.'
-    )
   })
 
   it('Import (and copy) the public answer collection (for user pro2)', function () {

@@ -1007,7 +1007,7 @@ export async function manipulateGroupActivity(
           entries: true,
         },
       },
-      answerCollectionSolutions: true,
+      answerCollectionItems: true,
     },
   })
 
