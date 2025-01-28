@@ -146,6 +146,67 @@ export const OptionsSelectionInput = builder.inputType(
   }
 )
 
+export const CaseStudyCriterionInput = builder.inputType(
+  'CaseStudyCriterionInput',
+  {
+    fields: (t) => ({
+      id: t.string({ required: true }),
+      name: t.string({ required: true }),
+      order: t.int({ required: true }),
+      min: t.float({ required: true }),
+      max: t.float({ required: true }),
+      step: t.float({ required: true }),
+      unit: t.string({ required: false }),
+    }),
+  }
+)
+
+export const CaseStudyCriteriaSolutionInput = builder.inputType(
+  'CaseStudyCriteriaSolutionInput',
+  {
+    fields: (t) => ({
+      criterionId: t.string({ required: true }),
+      min: t.float({ required: true }),
+      max: t.float({ required: true }),
+    }),
+  }
+)
+
+export const CaseStudySolutionInput = builder.inputType(
+  'CaseStudySolutionInput',
+  {
+    fields: (t) => ({
+      itemId: t.int({ required: true }),
+      criteriaSolutions: t.field({
+        type: [CaseStudyCriteriaSolutionInput],
+        required: true,
+      }),
+    }),
+  }
+)
+
+export const CaseStudyCaseInput = builder.inputType('CaseStudyCaseInput', {
+  fields: (t) => ({
+    title: t.string({ required: true }),
+    description: t.string({ required: true }),
+    order: t.int({ required: true }),
+    solutions: t.field({ type: [CaseStudySolutionInput], required: false }),
+  }),
+})
+
+export const OptionsCaseStudyInput = builder.inputType(
+  'OptionsCaseStudyInput',
+  {
+    fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      answerCollectionId: t.int({ required: false }),
+      collectionItemIds: t.intList({ required: false }),
+      criteria: t.field({ type: [CaseStudyCriterionInput], required: false }),
+      cases: t.field({ type: [CaseStudyCaseInput], required: false }),
+    }),
+  }
+)
+
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
 // #region
 export const SingleQuestionResponseChoices = builder

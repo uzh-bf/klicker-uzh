@@ -281,8 +281,8 @@ export type CaseStudyCase = {
 export interface ElementOptionsCaseStudy extends BaseElementOptions {
   answerCollection?: SelectionAnswerCollection // instance only - link on element
   collectionItemIds?: number[] // instance only - link on element
-  cases: CaseStudyCase[]
   criteria: CaseStudyCriterion[]
+  cases: CaseStudyCase[]
 }
 
 export interface ElementOptionsFlashcard {}

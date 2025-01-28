@@ -1,4 +1,5 @@
 import {
+  ElementFormTypesCaseStudy,
   ElementFormTypesChoices,
   ElementFormTypesContent,
   ElementFormTypesFlashcard,
@@ -85,6 +86,7 @@ export function prepareChoicesArgs({
         }
       }),
     },
+
     tags: values.tags,
   }
 }
@@ -153,6 +155,7 @@ export function prepareNumericalArgs({
             })
           : undefined,
     },
+
     tags: values.tags,
   }
 }
@@ -191,6 +194,7 @@ export function prepareFreeTextArgs({
       },
       solutions: values.options.solutions,
     },
+
     tags: values.tags,
   }
 }
@@ -222,6 +226,63 @@ export function prepareSelectionArgs({
       numberOfInputs: parseInt(values.options.numberOfInputs),
       correctAnswers: values.options.correctAnswers,
     },
+
+    tags: values.tags,
+  }
+}
+
+interface PrepareCaseStudyArgsProps {
+  elementId?: number
+  isDuplication: boolean
+  values: ElementFormTypesCaseStudy
+}
+export function prepareCaseStudyArgs({
+  elementId,
+  isDuplication,
+  values,
+}: PrepareCaseStudyArgsProps) {
+  return {
+    id: isDuplication ? undefined : elementId,
+    name: values.name,
+    status: values.status,
+    content: values.content,
+    explanation:
+      !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
+        ? values.explanation
+        : null,
+    pointsMultiplier: parseInt(values.pointsMultiplier),
+
+    options: {
+      hasSampleSolution: values.options.hasSampleSolution,
+      answerCollectionId: parseInt(values.options.answerCollection),
+      collectionItemIds: values.options.selectedItems,
+
+      criteria: values.options.criteria.map((criterion, index) => ({
+        id: criterion.id,
+        name: criterion.name,
+        min: parseFloat(criterion.min),
+        max: parseFloat(criterion.max),
+        step: parseFloat(criterion.step),
+        order: index,
+      })),
+
+      cases: values.options.cases.map((c, index) => ({
+        title: c.title,
+        description: c.description,
+        order: index,
+        solutions: Object.entries(c.solutions ?? {}).map(([key, value]) => ({
+          itemId: parseInt(key.split('-')[1]),
+          criteriaSolutions: Object.entries(value).map(
+            ([criterionId, criterionValue]) => ({
+              criterionId,
+              min: parseFloat(criterionValue.min),
+              max: parseFloat(criterionValue.max),
+            })
+          ),
+        })),
+      })),
+    },
+
     tags: values.tags,
   }
 }

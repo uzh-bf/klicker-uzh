@@ -158,6 +158,34 @@ type AwardEntry {
   type: String!
 }
 
+input CaseStudyCaseInput {
+  description: String!
+  order: Int!
+  solutions: [CaseStudySolutionInput!]
+  title: String!
+}
+
+input CaseStudyCriteriaSolutionInput {
+  criterionId: String!
+  max: Float!
+  min: Float!
+}
+
+input CaseStudyCriterionInput {
+  id: String!
+  max: Float!
+  min: Float!
+  name: String!
+  order: Int!
+  step: Float!
+  unit: String
+}
+
+input CaseStudySolutionInput {
+  criteriaSolutions: [CaseStudyCriteriaSolutionInput!]!
+  itemId: Int!
+}
+
 type CatalogObject {
   access: ObjectAccess!
   id: Int
@@ -1113,6 +1141,7 @@ type Mutation {
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
+  manipulateCaseStudyQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
   manipulateContentElement(content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
@@ -1282,6 +1311,14 @@ type ObjectSharingRequest {
   userEmail: String!
   userId: String!
   userShortname: String!
+}
+
+input OptionsCaseStudyInput {
+  answerCollectionId: Int
+  cases: [CaseStudyCaseInput!]
+  collectionItemIds: [Int!]
+  criteria: [CaseStudyCriterionInput!]
+  hasSampleSolution: Boolean
 }
 
 input OptionsChoicesInput {
