@@ -8,7 +8,11 @@ import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { sort } from 'remeda'
 import { ElementEditMode } from './ElementEditModal'
-import { ElementFormTypes } from './types'
+import {
+  ElementFormTypes,
+  ElementFormTypesCaseStudySolution,
+  ElementFormTypesCaseStudySolutions,
+} from './types'
 
 interface UseElementFormInitialValuesProps {
   mode: ElementEditMode
@@ -137,6 +141,54 @@ function useElementFormInitialValues({
             ? String(options.answerCollection?.id)
             : '',
           correctAnswers: options.answerCollectionSolutionIds ?? undefined,
+        },
+      }
+    } else if (question.__typename === 'CaseStudyElement') {
+      const options = question.options
+
+      return {
+        ...sharedAttributes,
+        type: ElementType.CaseStudy,
+        options: {
+          hasSampleSolution: options.hasSampleSolution ?? false,
+          answerCollection: options.answerCollection
+            ? String(options.answerCollection.id)
+            : '',
+          selectedItems: options.collectionItemIds ?? [],
+          criteria:
+            options.criteria?.map((criterion) => ({
+              ...criterion,
+              min: String(criterion.min),
+              max: String(criterion.max),
+              step: String(criterion.step),
+            })) ?? [],
+          cases:
+            options.cases?.map((caseItem) => ({
+              title: caseItem.title,
+              description: caseItem.description,
+              solutions: options.hasSampleSolution
+                ? caseItem.solutions!.reduce<ElementFormTypesCaseStudySolutions>(
+                    (acc, solution) => {
+                      const criteriaSolutions =
+                        solution.criteriaSolutions.reduce<ElementFormTypesCaseStudySolution>(
+                          (acc, sol) => {
+                            acc[sol.criterionId] = {
+                              min: String(sol.min),
+                              max: String(sol.max),
+                            }
+
+                            return acc
+                          },
+                          {}
+                        )
+
+                      acc[`itemId-${solution.itemId}`] = criteriaSolutions
+                      return acc
+                    },
+                    {}
+                  )
+                : undefined,
+            })) ?? [],
         },
       }
     } else if (question.__typename === 'FlashcardElement') {

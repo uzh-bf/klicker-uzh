@@ -38,7 +38,7 @@ model AnswerCollectionEntry {
     collectionId Int
 
     // elements where this entry is used as a sample solution -> deletion not allowed
-    solutionUsages Element[] @relation("ElementAnswerCollectionSolutions")
+    itemUsages Element[] @relation("ElementAnswerCollectionUsedItems")
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

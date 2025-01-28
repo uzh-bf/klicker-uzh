@@ -59,7 +59,7 @@ export async function getSingleQuestion(
           order: 'asc',
         },
       },
-      answerCollectionSolutions: true,
+      answerCollectionItems: true,
     },
   })
 
@@ -67,14 +67,18 @@ export async function getSingleQuestion(
     return null
   }
 
+  const selectedItemIds = question.answerCollectionItems.map((item) => item.id)
+
   return {
     ...question,
     options: {
       ...question.options,
+      // SE / CS elements
       answerCollection: { id: question.answerCollectionId, entries: [] },
-      answerCollectionSolutionIds: question.answerCollectionSolutions.map(
-        (sol) => sol.id
-      ),
+      // SE elements
+      answerCollectionSolutionIds: selectedItemIds,
+      // CS elements
+      collectionItemIds: selectedItemIds,
     },
   }
 }
@@ -98,7 +102,7 @@ export async function getArtificialElementInstance(
           entries: true,
         },
       },
-      answerCollectionSolutions: true,
+      answerCollectionItems: true,
     },
   })
 
@@ -176,7 +180,7 @@ export async function manipulateQuestion(
                 order: 'asc',
               },
             },
-            answerCollectionSolutions: true,
+            answerCollectionItems: true,
           },
         })
       : undefined
@@ -188,17 +192,31 @@ export async function manipulateQuestion(
       .map((tag) => tag.name)
   }
 
-  // determine which answer options are no longer considered to be correct
+  // (SE only) determine which answer options are no longer considered to be correct
   if (
     type === DB.ElementType.SELECTION &&
-    questionPrev?.answerCollectionSolutions
+    questionPrev?.answerCollectionItems
   ) {
-    const prevSolutionsIds = questionPrev.answerCollectionSolutions.map(
+    const prevSolutionsIds = questionPrev.answerCollectionItems.map(
       (sol) => sol.id
     )
     collectionAnswersToDisconnect = options?.hasSampleSolution
       ? prevSolutionsIds.filter((sol) => !options.correctAnswers?.includes(sol))
       : prevSolutionsIds
+  }
+
+  // (CS only) determine which answer options are no longer used in the case study
+  // (similar to selection questions, but not dependent on definition of a sample solution)
+  if (
+    type === DB.ElementType.CASE_STUDY &&
+    questionPrev?.answerCollectionItems
+  ) {
+    const previousItemIds = questionPrev.answerCollectionItems.map(
+      (item) => item.id
+    )
+    collectionAnswersToDisconnect = previousItemIds.filter((item) =>
+      options?.collectionItemIds?.includes(item)
+    )
   }
 
   const question = await ctx.prisma.element.upsert({
@@ -234,7 +252,7 @@ export async function manipulateQuestion(
       },
       // connect the selection question to the corresponding answer collection
       answerCollection:
-        type === DB.ElementType.SELECTION
+        type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
           ? {
               connect: {
                 id: options!.answerCollection!,
@@ -242,12 +260,16 @@ export async function manipulateQuestion(
             }
           : undefined,
       // connect the answer collection options to the selection question if sample solution is enabled
-      answerCollectionSolutions:
-        type === DB.ElementType.SELECTION && options?.hasSampleSolution
+      answerCollectionItems:
+        type === DB.ElementType.SELECTION && options!.hasSampleSolution
           ? {
-              connect: options.correctAnswers!.map((id) => ({ id })),
+              connect: options!.correctAnswers!.map((id) => ({ id })),
             }
-          : undefined,
+          : type === DB.ElementType.CASE_STUDY
+            ? {
+                connect: options!.collectionItemIds!.map((id) => ({ id })),
+              }
+            : undefined,
     },
     update: {
       status: status ?? undefined,
@@ -285,7 +307,7 @@ export async function manipulateQuestion(
       },
       // connect new answer collection and disconnect previous one if they are not the same
       answerCollection:
-        type === DB.ElementType.SELECTION
+        type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
           ? {
               connect: {
                 id: options!.answerCollection!,
@@ -293,12 +315,15 @@ export async function manipulateQuestion(
             }
           : undefined,
       // connect or disconnect the answer collection options if sample solution is enabled
-      answerCollectionSolutions:
-        type === DB.ElementType.SELECTION
+      answerCollectionItems:
+        type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
           ? {
-              connect: options?.hasSampleSolution
-                ? options.correctAnswers!.map((id) => ({ id }))
-                : undefined,
+              connect:
+                type === DB.ElementType.SELECTION && options?.hasSampleSolution
+                  ? options.correctAnswers!.map((id) => ({ id }))
+                  : type === DB.ElementType.CASE_STUDY
+                    ? options?.collectionItemIds?.map((id) => ({ id }))
+                    : undefined,
               disconnect: collectionAnswersToDisconnect.map((id) => ({ id })),
             }
           : undefined,
@@ -309,7 +334,7 @@ export async function manipulateQuestion(
           order: 'asc',
         },
       },
-      answerCollectionSolutions: true,
+      answerCollectionItems: true,
     },
   })
 
@@ -319,7 +344,7 @@ export async function manipulateQuestion(
   })
 
   if (
-    type === DB.ElementType.SELECTION &&
+    (type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY) &&
     typeof options?.answerCollection !== 'undefined'
   ) {
     ctx.emitter.emit('invalidate', {
@@ -332,10 +357,14 @@ export async function manipulateQuestion(
     ...question,
     options: {
       ...question.options,
+      // SE / CS elements
       answerCollection: { id: question.answerCollectionId, entries: [] },
-      answerCollectionSolutionIds: question.answerCollectionSolutions.map(
+      // SE elements
+      answerCollectionSolutionIds: question.answerCollectionItems.map(
         (sol) => sol.id
       ),
+      // CS elements
+      collectionItemIds: question.answerCollectionItems.map((item) => item.id),
     },
   }
 }
@@ -355,7 +384,7 @@ export async function deleteQuestion(
       answerCollection: {
         disconnect: true,
       },
-      answerCollectionSolutions: {
+      answerCollectionItems: {
         set: [],
       },
     },
@@ -594,7 +623,7 @@ export async function updateElementInstances(
           entries: true,
         },
       },
-      answerCollectionSolutions: true,
+      answerCollectionItems: true,
     },
   })
 

@@ -248,7 +248,7 @@ export async function manipulatePracticeQuiz(
           entries: true,
         },
       },
-      answerCollectionSolutions: true,
+      answerCollectionItems: true,
     },
   })
 

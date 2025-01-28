@@ -227,7 +227,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       let collectionId: number | undefined = undefined
       let correctOptionIds: number[] = []
 
-      if (data.collectionName && data.answerCollectionSolutions) {
+      if (data.collectionName && data.answerCollectionItems) {
         const collection = answerCollections.find(
           (ac) => ac.name === data.collectionName
         )
@@ -239,7 +239,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         }
 
         collectionId = collection.id
-        correctOptionIds = data.answerCollectionSolutions.map((solValue) => {
+        correctOptionIds = data.answerCollectionItems.map((solValue) => {
           const entry = collection.entries.find(
             (entry) => entry.value === solValue
           )
@@ -267,7 +267,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
               entries: true,
             },
           },
-          answerCollectionSolutions: true,
+          answerCollectionItems: true,
         },
       })
     })
@@ -931,7 +931,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     (q) => q.type === Prisma.ElementType.SELECTION
   )
   const selectionResponse =
-    selectionQuestion?.answerCollectionSolutions.map((sol) => sol.id) ?? []
+    selectionQuestion?.answerCollectionItems.map((sol) => sol.id) ?? []
 
   const groupActivityDecisions = groupActivityCompleted.stacks[0]!.elements.map(
     (element) => {

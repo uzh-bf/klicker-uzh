@@ -350,7 +350,7 @@ export async function manipulateLiveQuiz(
           entries: true,
         },
       },
-      answerCollectionSolutions: true,
+      answerCollectionItems: true,
     },
   })
 

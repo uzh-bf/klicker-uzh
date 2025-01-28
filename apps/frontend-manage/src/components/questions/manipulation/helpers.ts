@@ -254,16 +254,18 @@ export function prepareCaseStudyArgs({
 
     options: {
       hasSampleSolution: values.options.hasSampleSolution,
-      answerCollectionId: parseInt(values.options.answerCollection),
+      answerCollection: parseInt(values.options.answerCollection),
       collectionItemIds: values.options.selectedItems,
 
       criteria: values.options.criteria.map((criterion, index) => ({
         id: criterion.id,
         name: criterion.name,
+        order: index,
         min: parseFloat(criterion.min),
         max: parseFloat(criterion.max),
         step: parseFloat(criterion.step),
-        order: index,
+        unit:
+          criterion.unit && criterion.unit !== '' ? criterion.unit : undefined,
       })),
 
       cases: values.options.cases.map((c, index) => ({

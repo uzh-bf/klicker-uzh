@@ -2,7 +2,14 @@ import * as DB from '@klicker-uzh/prisma'
 import {
   DisplayMode,
   type BaseElementData,
+  type CaseStudyCaseCriterionSolution as CaseStudyCaseCriterionSolutionType,
+  type CaseStudyCaseSolution as CaseStudyCaseSolutionType,
+  type CaseStudyCase as CaseStudyCaseType,
+  type CaseStudyCriterion as CaseStudyCriterionType,
   type Choice as ChoiceType,
+  type ElementOptionsAnswerCollectionEntry as ElementOptionsAnswerCollectionEntryType,
+  type ElementOptionsAnswerCollection as ElementOptionsAnswerCollectionType,
+  type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   type ElementOptionsChoices as ElementOptionsChoicesType,
   type ElementOptionsFreeText as ElementOptionsFreeTextType,
   type ElementOptionsNumerical as ElementOptionsNumericalType,
@@ -10,8 +17,6 @@ import {
   type FreeTextRestrictions as FreeTextRestrictionsType,
   type NumericalRestrictions as NumericalRestrictionsType,
   type NumericalSolutionRange as NumericalSolutionRangeType,
-  type SelectionAnswerCollectionEntry as SelectionAnswerCollectionEntryType,
-  type SelectionAnswerCollection as SelectionAnswerCollectionType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 
@@ -126,9 +131,9 @@ export const FreeTextElementOptions = builder
     }),
   })
 
-export const SelectionAnswerCollectionEntry = builder
-  .objectRef<SelectionAnswerCollectionEntryType>(
-    'SelectionAnswerCollectionEntry'
+export const ElementOptionsAnswerCollectionEntry = builder
+  .objectRef<ElementOptionsAnswerCollectionEntryType>(
+    'ElementOptionsAnswerCollectionEntry'
   )
   .implement({
     fields: (t) => ({
@@ -137,13 +142,15 @@ export const SelectionAnswerCollectionEntry = builder
     }),
   })
 
-export const SelectionAnswerCollection = builder
-  .objectRef<SelectionAnswerCollectionType>('SelectionAnswerCollection')
+export const ElementOptionsAnswerCollection = builder
+  .objectRef<ElementOptionsAnswerCollectionType>(
+    'ElementOptionsAnswerCollection'
+  )
   .implement({
     fields: (t) => ({
       id: t.exposeInt('id'),
       entries: t.expose('entries', {
-        type: [SelectionAnswerCollectionEntry],
+        type: [ElementOptionsAnswerCollectionEntry],
         nullable: true,
       }),
     }),
@@ -156,12 +163,9 @@ export const SelectionElementOptions = builder
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
         nullable: true,
       }),
-      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
-        nullable: true,
-      }),
       numberOfInputs: t.exposeInt('numberOfInputs', { nullable: true }),
       answerCollection: t.expose('answerCollection', {
-        type: SelectionAnswerCollection,
+        type: ElementOptionsAnswerCollection,
         nullable: true,
       }),
       answerCollectionSolutionIds: t.exposeIntList(
@@ -170,6 +174,79 @@ export const SelectionElementOptions = builder
           nullable: true,
         }
       ),
+    }),
+  })
+
+export const CaseStudyCriterion = builder
+  .objectRef<CaseStudyCriterionType>('CaseStudyCriterion')
+  .implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+      order: t.exposeInt('order'),
+      min: t.exposeFloat('min'),
+      max: t.exposeFloat('max'),
+      step: t.exposeFloat('step'),
+      unit: t.exposeString('unit', { nullable: true }),
+    }),
+  })
+
+export const CaseStudyCaseCriterionSolution = builder
+  .objectRef<CaseStudyCaseCriterionSolutionType>(
+    'CaseStudyCaseCriterionSolution'
+  )
+  .implement({
+    fields: (t) => ({
+      criterionId: t.exposeString('criterionId'),
+      min: t.exposeFloat('min'),
+      max: t.exposeFloat('max'),
+    }),
+  })
+
+export const CaseStudyCaseSolution = builder
+  .objectRef<CaseStudyCaseSolutionType>('CaseStudyCaseSolution')
+  .implement({
+    fields: (t) => ({
+      itemId: t.exposeInt('itemId'),
+      criteriaSolutions: t.expose('criteriaSolutions', {
+        type: [CaseStudyCaseCriterionSolution],
+      }),
+    }),
+  })
+
+export const CaseStudyCase = builder
+  .objectRef<CaseStudyCaseType>('CaseStudyCase')
+  .implement({
+    fields: (t) => ({
+      title: t.exposeString('title'),
+      description: t.exposeString('description'),
+      order: t.exposeInt('order'),
+      solutions: t.expose('solutions', {
+        type: [CaseStudyCaseSolution],
+        nullable: true,
+      }),
+    }),
+  })
+
+export const CaseStudyElementOptions = builder
+  .objectRef<ElementOptionsCaseStudyType>('CaseStudyElementOptions')
+  .implement({
+    fields: (t) => ({
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
+      answerCollection: t.expose('answerCollection', {
+        type: ElementOptionsAnswerCollection,
+        nullable: true,
+      }),
+      collectionItemIds: t.exposeIntList('collectionItemIds', {
+        nullable: true,
+      }),
+      criteria: t.expose('criteria', {
+        type: [CaseStudyCriterion],
+        nullable: true,
+      }),
+      cases: t.expose('cases', { type: [CaseStudyCase], nullable: true }),
     }),
   })
 // #endregion

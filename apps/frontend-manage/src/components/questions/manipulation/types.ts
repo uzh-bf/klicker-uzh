@@ -75,6 +75,25 @@ export interface ElementFormTypesSelection extends SharedQuestionFormProps {
   }
 }
 
+// key of top level record is `itemId-${item.id}`, key of nested record is criterion id
+export type ElementFormTypesCaseStudySolution = Record<
+  string,
+  { min: string; max: string }
+>
+export type ElementFormTypesCaseStudySolutions = Record<
+  string,
+  ElementFormTypesCaseStudySolution
+>
+
+export type ElementFormTypesCaseStudyCriterion = {
+  id: string // short id
+  name: string
+  min: string
+  max: string
+  step: string
+  unit?: string | null
+}
+
 export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
   type: ElementType.CaseStudy
   explanation?: string | null
@@ -85,17 +104,9 @@ export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
     cases: {
       title: string
       description: string
-      // key of top level record is `itemId-${item.id}`, key of nested record is criterion id
-      solutions?: Record<string, Record<string, { min: string; max: string }>>
+      solutions?: ElementFormTypesCaseStudySolutions
     }[]
-    criteria: {
-      id: string // short id
-      name: string
-      min: string
-      max: string
-      step: string
-      unit?: string | null
-    }[]
+    criteria: ElementFormTypesCaseStudyCriterion[]
   }
 }
 

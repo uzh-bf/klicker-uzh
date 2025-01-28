@@ -12,6 +12,9 @@ mutation DeleteQuestion($id: Int!) {
     ... on SelectionElement {
       id
     }
+    ... on CaseStudyElement {
+      id
+    }
     ... on FlashcardElement {
       id
     }

@@ -19,8 +19,7 @@ mutation ManipulateCaseStudyQuestion(
     tags: $tags
   ) {
     __typename
-    # TODO: replace with CaseStudyElement query content
-    ... on SelectionElement {
+    ... on CaseStudyElement {
       id
       name
       status
@@ -30,11 +29,32 @@ mutation ManipulateCaseStudyQuestion(
       pointsMultiplier
       options {
         hasSampleSolution
-        numberOfInputs
         answerCollection {
           id
         }
-        answerCollectionSolutionIds
+        collectionItemIds
+        criteria {
+          id
+          name
+          order
+          min
+          max
+          step
+          unit
+        }
+        cases {
+          title
+          description
+          order
+          solutions {
+            itemId
+            criteriaSolutions {
+              criterionId
+              min
+              max
+            }
+          }
+        }
       }
       tags {
         id

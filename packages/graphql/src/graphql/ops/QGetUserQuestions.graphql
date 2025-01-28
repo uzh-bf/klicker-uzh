@@ -140,6 +140,33 @@ query GetUserQuestions {
       }
     }
 
+    ... on CaseStudyElement {
+      id
+      name
+      status
+      type
+      content
+
+      pointsMultiplier
+      version
+
+      isArchived
+      isDeleted
+      createdAt
+      updatedAt
+
+      options {
+        __typename
+        hasSampleSolution
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
     ... on FlashcardElement {
       id
       name

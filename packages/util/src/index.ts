@@ -38,7 +38,7 @@ const QUESTION_KEYS: ElementKeys[] = [
 
 export type ElementWithAnswerCollection = Element & {
   answerCollection?: { id: number; entries: AnswerCollectionEntry[] } | null
-  answerCollectionSolutions?: AnswerCollectionEntry[] | null
+  answerCollectionItems?: AnswerCollectionEntry[] | null
 }
 
 export function processElementData(
@@ -93,7 +93,7 @@ export function processElementData(
   ) {
     if (
       !element.answerCollection?.entries ||
-      (element.options.hasSampleSolution && !element.answerCollectionSolutions)
+      (element.options.hasSampleSolution && !element.answerCollectionItems)
     ) {
       throw new Error(
         'Answer collection or solutions missing for selection element'
@@ -111,7 +111,7 @@ export function processElementData(
 
     // extract the ids of the correct solution options
     const answerCollectionSolutionIds = element.options.hasSampleSolution
-      ? element.answerCollectionSolutions!.map((entry) => entry.id)
+      ? element.answerCollectionItems!.map((entry) => entry.id)
       : []
 
     return {

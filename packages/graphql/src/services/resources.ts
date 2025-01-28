@@ -97,7 +97,7 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
             include: {
               _count: {
                 select: {
-                  solutionUsages: true,
+                  itemUsages: true,
                 },
               },
             },
@@ -153,7 +153,7 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
                   _count: {
                     select: {
                       // solution usage information is only relevant for write access
-                      solutionUsages: true,
+                      itemUsages: true,
                     },
                   },
                 },
@@ -182,7 +182,7 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
         : collection.catalogCollectionId,
     entries: collection.entries.map((entry) => ({
       ...entry,
-      numSolutionUsages: entry._count?.solutionUsages,
+      numSolutionUsages: entry._count?.itemUsages,
     })),
     isOwner: true,
     isEditable: true,

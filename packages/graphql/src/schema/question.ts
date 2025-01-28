@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import type {
+  ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   ElementOptionsChoices as ElementOptionsChoicesType,
   ElementOptionsFreeText as ElementOptionsFreeTextType,
   ElementOptionsNumerical as ElementOptionsNumericalType,
@@ -24,6 +25,7 @@ import type {
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
 import {
+  CaseStudyElementOptions,
   ChoiceElementOptions,
   ElementData,
   ElementDisplayMode,
@@ -199,7 +201,7 @@ export const OptionsCaseStudyInput = builder.inputType(
   {
     fields: (t) => ({
       hasSampleSolution: t.boolean({ required: false }),
-      answerCollectionId: t.int({ required: false }),
+      answerCollection: t.int({ required: false }),
       collectionItemIds: t.intList({ required: false }),
       criteria: t.field({ type: [CaseStudyCriterionInput], required: false }),
       cases: t.field({ type: [CaseStudyCaseInput], required: false }),
@@ -536,6 +538,18 @@ export const SelectionElement = builder
     }),
   })
 
+export interface ICaseStudyElement extends IBaseElementProps {
+  options: ElementOptionsCaseStudyType
+}
+export const CaseStudyElement = builder
+  .objectRef<ICaseStudyElement>('CaseStudyElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      options: t.expose('options', { type: CaseStudyElementOptions }),
+    }),
+  })
+
 export interface IFlashcardElement extends IBaseElementProps {}
 export const FlashcardElement = builder
   .objectRef<IFlashcardElement>('FlashcardElement')
@@ -562,6 +576,7 @@ export const Element = builder.unionType('Element', {
     FlashcardElement,
     ContentElement,
     SelectionElement,
+    CaseStudyElement,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -579,6 +594,8 @@ export const Element = builder.unionType('Element', {
         return ContentElement
       case DB.ElementType.SELECTION:
         return SelectionElement
+      case DB.ElementType.CASE_STUDY:
+        return CaseStudyElement
     }
   },
 })

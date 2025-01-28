@@ -116,6 +116,53 @@ query GetSingleQuestion($id: Int!) {
       }
     }
 
+    ... on CaseStudyElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      options {
+        hasSampleSolution
+        answerCollection {
+          id
+        }
+        collectionItemIds
+        criteria {
+          id
+          name
+          order
+          min
+          max
+          step
+          unit
+        }
+        cases {
+          title
+          description
+          order
+          solutions {
+            itemId
+            criteriaSolutions {
+              criterionId
+              min
+              max
+            }
+          }
+        }
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
     ... on FlashcardElement {
       id
       version
