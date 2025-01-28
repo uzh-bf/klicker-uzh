@@ -1528,6 +1528,27 @@ describe('Create different types of elements (with and without sample solution) 
 
   // ! Part 8: Selection questions
   // #region
+  it('Create the answer collections that will be used for the selection question tests', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: this.data.SE.collection,
+      accessCy: 'private',
+      access: messages.manage.resources.accessPRIVATE,
+      description: this.data.SE.collectionDescription,
+      entries: [...this.data.SE.solutions, ...this.data.SE.solutionsNotChosen],
+    })
+    cy.createAnswerCollection({
+      name: this.data.SE.collectionEdited,
+      accessCy: 'restricted',
+      access: messages.manage.resources.accessRESTRICTED,
+      description: this.data.SE.collectionDescriptionEdited,
+      entries: [
+        ...this.data.SE.solutionsEdited,
+        ...this.data.SE.solutionsNotChosenEdited,
+      ],
+    })
+  })
+
   it('Create a Selection question', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -1667,7 +1688,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  it('Check that all options of the answer collection can be edited', function () {
+  it('Verify that all options of the answer collection can be edited', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
 
@@ -1725,9 +1746,7 @@ describe('Create different types of elements (with and without sample solution) 
   it('Verify that the options that are used as a solution cannot be deleted anymore', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
-    cy.findByText(messages.manage.resources.answerOptionUsedAsSolution).should(
-      'exist'
-    )
+    cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
 
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
@@ -1853,7 +1872,843 @@ describe('Create different types of elements (with and without sample solution) 
   })
   // #endregion
 
-  // ! Part 9: Question duplication
+  // ! Part 9: Case Study questions
+  // #region
+  it('Create the answer collection that will be used for the case study question tests', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: this.data.CS.collection,
+      accessCy: 'private',
+      access: messages.manage.resources.accessPRIVATE,
+      description: this.data.CS.collectionDescription,
+      entries: [...this.data.CS.items, ...this.data.CS.unselectedItems],
+    })
+    cy.createAnswerCollection({
+      name: this.data.CS.collectionEdited,
+      accessCy: 'restricted',
+      access: messages.manage.resources.accessRESTRICTED,
+      description: this.data.CS.collectionDescriptionEdited,
+      entries: [
+        ...this.data.CS.itemsEdited,
+        ...this.data.CS.unselectedItemsEdited,
+      ],
+    })
+  })
+
+  it('Create a Case Study question', function () {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SC.typeLabel)
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.CASE_STUDY.typeLabel)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // enter question data
+    cy.get('[data-cy="insert-question-title"]').click().type(this.data.CS.title)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .type(this.data.CS.content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .type(this.data.CS.explanation)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // select an answer collection
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      messages.manage.questionForms.selectCollection
+    )
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.CS.collection}"]`
+    ).click()
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      this.data.CS.collection
+    )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // select items for case study
+    cy.wrap(this.data.CS.items).each((item: string) => {
+      cy.get('[data-cy="choose-case-study-items"]').click()
+      cy.findByText(item).realClick()
+      cy.get('[data-cy="choose-case-study-items"]').contains(item)
+    })
+
+    // add new criteria, and remove one again
+    cy.wrap([...this.data.CS.criteria, this.data.CS.removedCriterion]).each(
+      (
+        criterion: {
+          name: string
+          min: number
+          max: number
+          step: number
+          unit?: string
+        },
+        ix
+      ) => {
+        cy.get('[data-cy="add-new-criterion"]').click()
+        cy.get(`[data-cy="criterion-${ix}-name"]`).click().type(criterion.name)
+        cy.get(`[data-cy="criterion-${ix}-min"]`)
+          .click()
+          .type(String(criterion.min))
+        cy.get(`[data-cy="criterion-${ix}-max"]`)
+          .click()
+          .type(String(criterion.max))
+        cy.get(`[data-cy="criterion-${ix}-step"]`)
+          .click()
+          .type(String(criterion.step))
+        if (criterion.unit) {
+          cy.get(`[data-cy="criterion-${ix}-unit"]`)
+            .click()
+            .type(criterion.unit)
+        }
+
+        cy.get(`[data-cy="criterion-${ix}-name"]`).should(
+          'have.value',
+          criterion.name
+        )
+        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
+          'have.value',
+          String(criterion.min)
+        )
+        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+          'have.value',
+          String(criterion.max)
+        )
+        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+          'have.value',
+          String(criterion.step)
+        )
+        if (criterion.unit) {
+          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+            'have.value',
+            criterion.unit
+          )
+        }
+      }
+    )
+    cy.get(
+      `[data-cy="remove-criterion-${this.data.CS.criteria.length}"]`
+    ).click()
+    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-name"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-min"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-max"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-step"]`).should(
+      'not.exist'
+    )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    cy.wrap([...this.data.CS.cases, this.data.CS.removedCase]).each(
+      (caseItem: { title: string; description: string }, ix) => {
+        cy.get('[data-cy="add-new-case"]').click()
+        cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
+        cy.get(`[data-cy="case-description-${ix}"]`)
+          .realClick()
+          .type(caseItem.description)
+
+        cy.get(`[data-cy="case-title-${ix}"]`).should(
+          'have.value',
+          caseItem.title
+        )
+        cy.get(`[data-cy="case-description-${ix}"]`).contains(
+          caseItem.description
+        )
+        cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+      }
+    )
+    cy.get(`[data-cy="delete-case-${this.data.CS.cases.length}"]`).click()
+    cy.get(`[data-cy="cancel-delete-case"]`).click()
+    cy.get(`[data-cy="delete-case-${this.data.CS.cases.length}"]`).click()
+    cy.get(`[data-cy="confirm-delete-case"]`).click()
+    cy.get(`[data-cy="case-title-${this.data.CS.cases.length}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="case-description-${this.data.CS.cases.length}"]`).should(
+      'not.exist'
+    )
+
+    // test that enabling sample solution works correctly
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+
+    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
+      this.data.CS.content
+    )
+    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
+      this.data.CS.title
+    )
+    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
+      messages.shared.READY.statusLabel
+    )
+  })
+
+  it('Verify that the correct content has been saved', function () {
+    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.CS.title
+    )
+    cy.get('[data-cy="select-question-status"]').contains(
+      messages.shared.READY.statusLabel
+    )
+    cy.get('[data-cy="insert-question-text"]').contains(this.data.CS.content)
+    cy.get('[data-cy="insert-question-explanation"]').contains(
+      this.data.CS.explanation
+    )
+
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      this.data.CS.collection
+    )
+    cy.wrap(this.data.CS.items).each((item: string) => {
+      cy.get('[data-cy="choose-case-study-items"]').contains(item)
+    })
+
+    cy.wrap(this.data.CS.criteria).each(
+      (
+        criterion: {
+          name: string
+          min: number
+          max: number
+          step: number
+          unit?: string
+        },
+        ix
+      ) => {
+        cy.get(`[data-cy="criterion-${ix}-name"]`).should(
+          'have.value',
+          criterion.name
+        )
+        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
+          'have.value',
+          String(criterion.min)
+        )
+        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+          'have.value',
+          String(criterion.max)
+        )
+        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+          'have.value',
+          String(criterion.step)
+        )
+        if (criterion.unit) {
+          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+            'have.value',
+            criterion.unit
+          )
+        }
+      }
+    )
+
+    cy.wrap(this.data.CS.cases).each(
+      (caseItem: { title: string; description: string }, ix) => {
+        cy.get(`[data-cy="case-title-${ix}"]`).should(
+          'have.value',
+          caseItem.title
+        )
+        cy.get(`[data-cy="case-description-${ix}"]`).contains(
+          caseItem.description
+        )
+      }
+    )
+
+    cy.get('[data-cy="close-element-modal"]').click()
+  })
+
+  // TODO: Verify the preview of the case study question (once available)
+
+  it('Verify that the deletion of answer collection entries is limited, editing is unaffected', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
+
+    cy.wrap(this.data.CS.items).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.CS.unselectedItems).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Verify that the answer collection used in the case study can no longer be deleted', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
+    cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
+    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
+  })
+
+  it('Add a sample solution to the case study question', function () {
+    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.CS.title
+    )
+
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // correct answers for all criteria & items are required
+    Object.entries(this.data.CS.solutions).forEach(([caseIx, caseValue]) => {
+      Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
+        Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
+          const value = criterionValue as { lower: number; upper: number }
+
+          cy.get('[data-cy="save-new-question"]').should('be.disabled')
+          cy.get(
+            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+          )
+            .click()
+            .type(String(value.lower))
+          cy.get(
+            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+          )
+            .click()
+            .type(String(value.upper))
+
+          cy.get(
+            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+          ).should('have.value', String(value.lower))
+          cy.get(
+            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+          ).should('have.value', String(value.upper))
+        })
+      })
+    })
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+  })
+
+  it('Verify that the sample solution has been stored correctly for the modified case study question', function () {
+    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.CS.title
+    )
+
+    Object.entries(this.data.CS.solutions).forEach(([caseIx, caseValue]) => {
+      Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
+        Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
+          const value = criterionValue as { lower: number; upper: number }
+
+          cy.get(
+            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+          ).should('have.value', String(value.lower))
+          cy.get(
+            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+          ).should('have.value', String(value.upper))
+        })
+      })
+    })
+
+    cy.get('[data-cy="close-element-modal"]').click()
+  })
+
+  it('Verify that the case study validation logic covers all required cases and block submission of invalid element edit modals', function () {
+    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+
+    // missing question title -> invalid
+    cy.get('[data-cy="insert-question-title"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-question-title"]').click().type(this.data.CS.title)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // missing question content -> invalid
+    cy.get('[data-cy="insert-question-text"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .type(this.data.CS.content)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // missing question explanation -> valid
+    cy.get('[data-cy="insert-question-explanation"]').realClick().clear()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .type(this.data.CS.explanation)
+
+    // criteria name, min, max, step required -> invalid (if removed)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="criterion-0-name"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-0-name"]')
+      .click()
+      .type(this.data.CS.criteria[0].name)
+
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-0-min"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-0-min"]')
+      .click()
+      .type(String(this.data.CS.criteria[0].min))
+
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-0-max"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-0-max"]')
+      .click()
+      .type(String(this.data.CS.criteria[0].max))
+
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-0-step"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-0-step"]')
+      .click()
+      .type(String(this.data.CS.criteria[0].step))
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // criterion min <= max required & max - min >= 2 * step -> otherwise invalid
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="criterion-0-min"]')
+      .click()
+      .clear()
+      .type(
+        String(this.data.CS.criteria[0].max + this.data.CS.criteria[0].step + 1)
+      )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-0-min"]')
+      .click()
+      .clear()
+      .type(
+        String(
+          this.data.CS.criteria[0].max - 2 * this.data.CS.criteria[0].step + 1
+        )
+      )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-0-min"]')
+      .click()
+      .clear()
+      .type(
+        String(
+          this.data.CS.criteria[0].max - 2 * this.data.CS.criteria[0].step - 1
+        )
+      )
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-0-min"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.criteria[0].min))
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // solutions: lower and upper bound required
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .type(this.data.CS.solutions[1][3][0].lower)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="case-solution-1-3-0-upper"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-upper"]')
+      .click()
+      .type(this.data.CS.solutions[1][3][0].upper)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // solutions: min <= max required
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutions[1][3][0].upper + 1)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutions[1][3][0].lower)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // solutions: min and max lie within the bounds of the criterion
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.criteria[0].min - 1))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.criteria[0].min))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.criteria[0].min + 1))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutions[1][3][0].lower)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-upper"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.criteria[0].max + 1))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-upper"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.criteria[0].max))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-upper"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.criteria[0].max - 1))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-upper"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutions[1][3][0].upper)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // solutions: max - min >= step size
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(
+        String(
+          this.data.CS.solutions[1][3][0].upper -
+            this.data.CS.criteria[0].step +
+            1
+        )
+      )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(
+        String(
+          this.data.CS.solutions[1][3][0].upper - this.data.CS.criteria[0].step
+        )
+      )
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(
+        String(
+          this.data.CS.solutions[1][3][0].upper -
+            this.data.CS.criteria[0].step -
+            1
+        )
+      )
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-0-lower"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutions[1][3][0].lower)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+  })
+
+  it('Edit the case study question and change the answer collection (including new sample solutions)', function () {
+    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]')
+      .click()
+      .clear()
+      .type(this.data.CS.titleEdited)
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.CS.contentEdited)
+
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.CS.collectionEdited}"]`
+    ).click()
+    cy.get('[data-cy="cancel-change-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.CS.collectionEdited}"]`
+    ).click()
+    cy.get('[data-cy="confirm-change-collection"]').click()
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      this.data.CS.collectionEdited
+    )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // answer options are cleared on collection change
+
+    // select items for case study
+    cy.wrap(this.data.CS.itemsEdited).each((item: string) => {
+      cy.get('[data-cy="choose-case-study-items"]').click()
+      cy.findByText(item).realClick()
+      cy.get('[data-cy="choose-case-study-items"]').contains(item)
+    })
+
+    // clear all fields, enter new criteria
+    cy.wrap(this.data.CS.criteriaEdited).each(
+      (
+        criterion: {
+          name: string
+          min: number
+          max: number
+          step: number
+          unit?: string
+        },
+        ix
+      ) => {
+        cy.get(`[data-cy="criterion-${ix}-name"]`)
+          .click()
+          .clear()
+          .type(criterion.name)
+        cy.get(`[data-cy="criterion-${ix}-min"]`)
+          .click()
+          .clear()
+          .type(String(criterion.min))
+        cy.get(`[data-cy="criterion-${ix}-max"]`)
+          .click()
+          .clear()
+          .type(String(criterion.max))
+        cy.get(`[data-cy="criterion-${ix}-step"]`)
+          .click()
+          .clear()
+          .type(String(criterion.step))
+        cy.get(`[data-cy="criterion-${ix}-unit"]`).click().clear()
+
+        if (criterion.unit) {
+          cy.get(`[data-cy="criterion-${ix}-unit"]`)
+            .click()
+            .type(criterion.unit)
+        }
+
+        cy.get(`[data-cy="criterion-${ix}-name"]`).should(
+          'have.value',
+          criterion.name
+        )
+        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
+          'have.value',
+          String(criterion.min)
+        )
+        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+          'have.value',
+          String(criterion.max)
+        )
+        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+          'have.value',
+          String(criterion.step)
+        )
+        if (criterion.unit) {
+          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+            'have.value',
+            criterion.unit
+          )
+        }
+      }
+    )
+
+    // remove all existing cases
+    for (let i = 0; i < this.data.CS.cases.length; i++) {
+      cy.get(`[data-cy="delete-case-0"]`).click()
+      cy.get(`[data-cy="confirm-delete-case"]`).click()
+    }
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // cases required
+
+    // add new cases
+    cy.wrap(this.data.CS.casesEdited).each(
+      (caseItem: { title: string; description: string }, ix) => {
+        cy.get('[data-cy="add-new-case"]').click()
+        cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
+        cy.get(`[data-cy="case-description-${ix}"]`)
+          .realClick()
+          .type(caseItem.description)
+
+        cy.get(`[data-cy="case-title-${ix}"]`).should(
+          'have.value',
+          caseItem.title
+        )
+        cy.get(`[data-cy="case-description-${ix}"]`).contains(
+          caseItem.description
+        )
+      }
+    )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // solution required
+
+    // add new sample solutions
+    Object.entries(this.data.CS.solutionsEdited).forEach(
+      ([caseIx, caseValue]) => {
+        Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
+          Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
+            const value = criterionValue as { lower: number; upper: number }
+
+            cy.get('[data-cy="save-new-question"]').should('be.disabled')
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+            )
+              .click()
+              .type(String(value.lower))
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+            )
+              .click()
+              .type(String(value.upper))
+
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+            ).should('have.value', String(value.lower))
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+            ).should('have.value', String(value.upper))
+          })
+        })
+      }
+    )
+
+    cy.get('[data-cy="save-new-question"]').click()
+  })
+
+  it('Verify that all changes to the case study question have been saved correctly', function () {
+    cy.get(`[data-cy="edit-question-${this.data.CS.titleEdited}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.CS.titleEdited
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .contains(this.data.CS.contentEdited)
+
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      this.data.CS.collectionEdited
+    )
+    cy.wrap(this.data.CS.itemsEdited).each((item: string) => {
+      cy.get('[data-cy="choose-case-study-items"]').contains(item)
+    })
+
+    cy.wrap(this.data.CS.criteriaEdited).each(
+      (
+        criterion: {
+          name: string
+          min: number
+          max: number
+          step: number
+          unit?: string
+        },
+        ix
+      ) => {
+        cy.get(`[data-cy="criterion-${ix}-name"]`).should(
+          'have.value',
+          criterion.name
+        )
+        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
+          'have.value',
+          String(criterion.min)
+        )
+        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+          'have.value',
+          String(criterion.max)
+        )
+        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+          'have.value',
+          String(criterion.step)
+        )
+        if (criterion.unit) {
+          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+            'have.value',
+            criterion.unit
+          )
+        }
+      }
+    )
+
+    cy.wrap(this.data.CS.casesEdited).each(
+      (caseItem: { title: string; description: string }, ix) => {
+        cy.get(`[data-cy="case-title-${ix}"]`).should(
+          'have.value',
+          caseItem.title
+        )
+        cy.get(`[data-cy="case-description-${ix}"]`).contains(
+          caseItem.description
+        )
+      }
+    )
+
+    Object.entries(this.data.CS.solutionsEdited).forEach(
+      ([caseIx, caseValue]) => {
+        Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
+          Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
+            const value = criterionValue as { lower: number; upper: number }
+
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+            ).should('have.value', String(value.lower))
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+            ).should('have.value', String(value.upper))
+          })
+        })
+      }
+    )
+
+    cy.get('[data-cy="close-element-modal"]').click()
+  })
+
+  it('Verify that all elements of the previously used answer collection and the collection itself can be deleted again', function () {
+    cy.get('[data-cy="resources"]').click()
+
+    cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
+    cy.wrap(this.data.CS.items).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.CS.unselectedItems).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.findByText(messages.manage.resources.answerOptionUsed).should(
+      'not.exist'
+    )
+    cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    cy.get(
+      `[data-cy="answer-collection-${this.data.CS.collectionEdited}"]`
+    ).click()
+    cy.wrap(this.data.CS.itemsEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.CS.unselectedItemsEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
+    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+  // #endregion
+
+  // ! Part 10: Question duplication
   // #region
   it('Create a new question, duplicates it and then deletes them again', function () {
     cy.get('[data-cy="create-question"]').click()
@@ -1913,7 +2768,7 @@ describe('Create different types of elements (with and without sample solution) 
   })
   // #endregion
 
-  // ! Part 10: Auto-Save functionality for Elements
+  // ! Part 11: Auto-Save functionality for Elements
   // #region
   function enterSCQuestionContent(data) {
     cy.get('[data-cy="insert-question-title"]').type(data.autoSave.title)
@@ -2194,6 +3049,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.NR.titleEdited,
       this.data.FT.titleEdited,
       this.data.SE.titleEdited,
+      this.data.CS.titleEdited,
       this.data.autoSave.titleEdited,
     ]
 
@@ -2206,8 +3062,8 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that after the deletion of the linked question, all solution options can be deleted again', function () {
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
 
+    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -2221,6 +3077,76 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    cy.get(
+      `[data-cy="answer-collection-${this.data.SE.collectionEdited}"]`
+    ).click()
+    cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.SE.solutionsNotChosenEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
+    cy.wrap(this.data.CS.items).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.CS.unselectedItems).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    cy.get(
+      `[data-cy="answer-collection-${this.data.CS.collectionEdited}"]`
+    ).click()
+    cy.wrap(this.data.CS.itemsEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.CS.unselectedItemsEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Cleanup: Delete all created answer collections', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.SE.collection })
+    cy.deleteAnswerCollection({ collectionName: this.data.SE.collectionEdited })
+    cy.deleteAnswerCollection({ collectionName: this.data.CS.collection })
+    cy.deleteAnswerCollection({ collectionName: this.data.CS.collectionEdited })
+
+    // validate that no collections except from the seeded ones remain
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
   // #endregion
 })

@@ -214,8 +214,8 @@ export async function manipulateQuestion(
     const previousItemIds = questionPrev.answerCollectionItems.map(
       (item) => item.id
     )
-    collectionAnswersToDisconnect = previousItemIds.filter((item) =>
-      options?.collectionItemIds?.includes(item)
+    collectionAnswersToDisconnect = previousItemIds.filter(
+      (item) => !options?.collectionItemIds?.includes(item)
     )
   }
 

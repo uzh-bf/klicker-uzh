@@ -49,7 +49,7 @@ function AnswerCollectionEditModal({
           (entry) => (entry.numSolutionUsages ?? 0) > 0
         ) ? (
           <UserNotification
-            message={t('manage.resources.answerOptionUsedAsSolution')}
+            message={t('manage.resources.answerOptionUsed')}
             type="warning"
             className={{ root: 'mb-2' }}
           />

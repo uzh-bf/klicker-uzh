@@ -85,17 +85,233 @@
     "title": "Selection Question Title",
     "content": "Selection Question Text",
     "explanation": "Selection Question Explanation",
-    "collection": "Private Collection (Vegetables)",
     "inputs": 2,
-    "solutions": ["Cabbage", "Cucumber"],
-    "solutionsNotChosen": ["Artichoke", "Broccoli", "Dill", "Carrot"],
+    "collection": "City Collection",
+    "collectionDescription": "This is a collection of cities",
+    "solutions": ["London", "Paris"],
+    "solutionsNotChosen": ["Tokyo", "Berlin", "Rome", "Madrid"],
     "titleEdited": "Selection Question Title Edited",
     "contentEdited": "Selection Question Text Edited",
     "explanationEdited": "Selection Question Explanation Edited",
-    "collectionEdited": "Public Collection (Fruits)",
     "inputsEdited": 1,
-    "solutionsEdited": ["Apple", "Banana"],
-    "solutionsNotChosenEdited": ["Cherry", "Date", "Elderberry"]
+    "collectionEdited": "Meal Collection",
+    "collectionDescriptionEdited": "This is a collection of meals",
+    "solutionsEdited": ["Curry", "Pizza", "Sushi"],
+    "solutionsNotChosenEdited": ["Burger", "Pasta", "Salad", "Soup"]
+  },
+  "CS": {
+    "title": "Case Study Question Title",
+    "content": "Case Study Question Text",
+    "explanation": "Case Study Question Explanation",
+    "collection": "Country Collection",
+    "collectionDescription": "This is a collection of countries",
+    "items": ["Germany", "France", "Italy", "Spain"],
+    "unselectedItems": ["USA", "UK", "Japan", "China"],
+    "criteria": [
+      {
+        "name": "Population",
+        "min": 1000000,
+        "max": 10000000,
+        "step": 1000
+      },
+      {
+        "name": "Area",
+        "min": 100,
+        "max": 5000,
+        "step": 10,
+        "unit": "km^2"
+      }
+    ],
+    "removedCriterion": {
+      "name": "GDP",
+      "min": 500,
+      "max": 50000,
+      "step": 100
+    },
+    "cases": [
+      {
+        "title": "Case 1",
+        "description": "Case 1 Description - Data from 1800"
+      },
+      {
+        "title": "Case 2",
+        "description": "Case 2 Description - Data from 2000"
+      }
+    ],
+    "removedCase": {
+      "title": "Case 3",
+      "description": "Case 3 Description"
+    },
+    "solutions": {
+      "0": {
+        "0": {
+          "0": {
+            "lower": 3000000,
+            "upper": 4000000
+          },
+          "1": {
+            "lower": 1000,
+            "upper": 2000
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 5000000,
+            "upper": 6000000
+          },
+          "1": {
+            "lower": 2000,
+            "upper": 3000
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 7000000,
+            "upper": 8000000
+          },
+          "1": {
+            "lower": 3000,
+            "upper": 4000
+          }
+        },
+        "3": {
+          "0": {
+            "lower": 9000000,
+            "upper": 10000000
+          },
+          "1": {
+            "lower": 4000,
+            "upper": 5000
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "lower": 2000000,
+            "upper": 3000000
+          },
+          "1": {
+            "lower": 500,
+            "upper": 1500
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 4000000,
+            "upper": 5000000
+          },
+          "1": {
+            "lower": 1500,
+            "upper": 2500
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 6000000,
+            "upper": 7000000
+          },
+          "1": {
+            "lower": 2500,
+            "upper": 3500
+          }
+        },
+        "3": {
+          "0": {
+            "lower": 8000000,
+            "upper": 9000000
+          },
+          "1": {
+            "lower": 3500,
+            "upper": 4500
+          }
+        }
+      }
+    },
+    "titleEdited": "Case Study Question Title Edited",
+    "contentEdited": "Case Study Question Text Edited",
+    "explanationEdited": "Case Study Question Explanation Edited",
+    "collectionEdited": "Continent Collection",
+    "collectionDescriptionEdited": "This is a collection of continents",
+    "itemsEdited": ["Europe", "Asia"],
+    "unselectedItemsEdited": [
+      "Africa",
+      "North America",
+      "Oceania",
+      "Antarctica",
+      "South America"
+    ],
+    "criteriaEdited": [
+      {
+        "name": "GDP per capita",
+        "min": 20000,
+        "max": 100000,
+        "step": 1000,
+        "unit": "USD"
+      },
+      {
+        "name": "Life expectancy",
+        "min": 40,
+        "max": 90,
+        "step": 1
+      }
+    ],
+    "casesEdited": [
+      {
+        "title": "Case 1 Edited",
+        "description": "Case 1 Description - Data from 1900"
+      },
+      {
+        "title": "Case 2 Edited",
+        "description": "Case 2 Description - Predicted data for 2100"
+      }
+    ],
+    "solutionsEdited": {
+      "0": {
+        "0": {
+          "0": {
+            "lower": 30000,
+            "upper": 40000
+          },
+          "1": {
+            "lower": 50,
+            "upper": 60
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 50000,
+            "upper": 60000
+          },
+          "1": {
+            "lower": 60,
+            "upper": 70
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "lower": 40000,
+            "upper": 50000
+          },
+          "1": {
+            "lower": 60,
+            "upper": 70
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 60000,
+            "upper": 70000
+          },
+          "1": {
+            "lower": 70,
+            "upper": 80
+          }
+        }
+      }
+    }
   },
   "duplication": {
     "title": "Duplication question title",
