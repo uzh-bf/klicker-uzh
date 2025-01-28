@@ -1979,8 +1979,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. Additionally, you can import public answer collections from other users or request access to them.',
       newAnswerCollection: 'New Answer Collection',
       addSharedAnswerCollection: 'Add Shared Answer Collection',
-      answerOptionUsedAsSolution:
-        'Answer options marked with the warning symbol are already used as correct solutions in a question by you or other users (in case of a shared collection). Please keep this in mind when editing the answer. The option cannot be deleted.',
+      answerOptionUsed:
+        'Answer options marked with the warning symbol are already used as sample solutions or case study items in a question by you or other users (in case of a shared collection). Please keep this in mind when editing the answer. The option cannot be deleted.',
       name: 'Name',
       nameTooltip:
         'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',

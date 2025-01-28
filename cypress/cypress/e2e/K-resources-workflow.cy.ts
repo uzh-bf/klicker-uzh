@@ -21,13 +21,6 @@ describe('Create, edit and share answer collections', function () {
     })
   }
 
-  function deleteAnswerCollection({ name }: { name: string }) {
-    cy.get(`[data-cy="answer-collection-${name}"]`).click()
-    cy.get('[data-cy="delete-answer-collection"]').click()
-    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
-    cy.get(`[data-cy="answer-collection-${name}"]`).should('not.exist')
-  }
-
   function removeAnswerCollection({ name }: { name: string }) {
     cy.get(`[data-cy="answer-collection-${name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
@@ -297,7 +290,7 @@ describe('Create, edit and share answer collections', function () {
       this.data.restricted.name,
       this.data.public.name,
     ]).each((name: string) => {
-      deleteAnswerCollection({ name })
+      cy.deleteAnswerCollection({ collectionName: name })
     })
   })
 
@@ -397,7 +390,7 @@ describe('Create, edit and share answer collections', function () {
   it('Verify that the private answer collection can be deleted', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    deleteAnswerCollection({ name: this.data.private.name })
+    cy.deleteAnswerCollection({ collectionName: this.data.private.name })
   })
 
   it('Cleanup: Verify that all answer collections have been deleted properly', function () {
@@ -692,7 +685,7 @@ describe('Create, edit and share answer collections', function () {
   it('Remove created restricted answer collection (through owner interface - soft deletion)', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    deleteAnswerCollection({ name: this.data.restricted.name })
+    cy.deleteAnswerCollection({ collectionName: this.data.restricted.name })
   })
 
   it('Verify that the restricted answer collection is still visible to user pro1', function () {
@@ -956,7 +949,7 @@ describe('Create, edit and share answer collections', function () {
   it('Delete the created public answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    deleteAnswerCollection({ name: this.data.public.name })
+    cy.deleteAnswerCollection({ collectionName: this.data.public.name })
   })
 
   it('Verify that imported answer collection is still visible to user pro2', function () {
@@ -982,7 +975,7 @@ describe('Create, edit and share answer collections', function () {
   it('Remove the imported answer collection from user pro2', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
-    deleteAnswerCollection({ name: this.data.public.name })
+    cy.deleteAnswerCollection({ collectionName: this.data.public.name })
   })
 
   it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
@@ -1206,7 +1199,7 @@ describe('Create, edit and share answer collections', function () {
   it('Cleanup: Delete the private answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    deleteAnswerCollection({ name: this.data.private.name })
+    cy.deleteAnswerCollection({ collectionName: this.data.private.name })
   })
 
   it('Cleanup: Verify that all created answer collections have been deleted properly', function () {

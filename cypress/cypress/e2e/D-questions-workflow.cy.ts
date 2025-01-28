@@ -1528,6 +1528,27 @@ describe('Create different types of elements (with and without sample solution) 
 
   // ! Part 8: Selection questions
   // #region
+  it('Create the answer collections that will be used for the selection question tests', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: this.data.SE.collection,
+      accessCy: 'private',
+      access: messages.manage.resources.accessPRIVATE,
+      description: this.data.SE.collectionDescription,
+      entries: [...this.data.SE.solutions, ...this.data.SE.solutionsNotChosen],
+    })
+    cy.createAnswerCollection({
+      name: this.data.SE.collectionEdited,
+      accessCy: 'restricted',
+      access: messages.manage.resources.accessRESTRICTED,
+      description: this.data.SE.collectionDescriptionEdited,
+      entries: [
+        ...this.data.SE.solutionsEdited,
+        ...this.data.SE.solutionsNotChosenEdited,
+      ],
+    })
+  })
+
   it('Create a Selection question', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -1667,7 +1688,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  it('Check that all options of the answer collection can be edited', function () {
+  it('Verify that all options of the answer collection can be edited', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
 
@@ -1725,9 +1746,7 @@ describe('Create different types of elements (with and without sample solution) 
   it('Verify that the options that are used as a solution cannot be deleted anymore', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
-    cy.findByText(messages.manage.resources.answerOptionUsedAsSolution).should(
-      'exist'
-    )
+    cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
 
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
@@ -1853,7 +1872,34 @@ describe('Create different types of elements (with and without sample solution) 
   })
   // #endregion
 
-  // ! Part 9: Question duplication
+  // ! Part 9: Case Study questions
+  // #region
+  // TODO: Craete a case study question
+
+  // TODO: Verify that the correct content has been saved
+
+  // TODO: Verify that creation was successful and taht preview is visible and correct (preview part postponed until available)
+
+  // TODO: Verify that all options of the linked answer collection can be edited
+
+  // TODO: Verify that the answer collection options used as items in the case study can no longer be deleted
+
+  // TODO: Verify that the used answer collection can no longer be deleted
+
+  // TODO: Add a sample solution to the case study question
+
+  // TODO: Verify that the sample solution has been stored correctly for the modified case study question
+
+  // TODO: Verify that the case study validation logic covers all required cases and block submission of invalid element edit modals
+
+  // TODO: Edit the case study question and change the answer collection (including new sample solutions)
+
+  // TODO: Verify that all changes to the case study question have been saved correctly
+
+  // TODO: Verify that all elements of the previously used answer collection and the collection itself can be deleted again
+  // #endregion
+
+  // ! Part 10: Question duplication
   // #region
   it('Create a new question, duplicates it and then deletes them again', function () {
     cy.get('[data-cy="create-question"]').click()
@@ -1913,7 +1959,7 @@ describe('Create different types of elements (with and without sample solution) 
   })
   // #endregion
 
-  // ! Part 10: Auto-Save functionality for Elements
+  // ! Part 11: Auto-Save functionality for Elements
   // #region
   function enterSCQuestionContent(data) {
     cy.get('[data-cy="insert-question-title"]').type(data.autoSave.title)
@@ -2194,6 +2240,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.NR.titleEdited,
       this.data.FT.titleEdited,
       this.data.SE.titleEdited,
+      // TODO: add CS element
       this.data.autoSave.titleEdited,
     ]
 
@@ -2206,8 +2253,8 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Verify that after the deletion of the linked question, all solution options can be deleted again', function () {
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
 
+    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -2221,6 +2268,45 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    cy.get(
+      `[data-cy="answer-collection-${this.data.SE.collectionEdited}"]`
+    ).click()
+    cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.SE.solutionsNotChosenEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    // TODO: include collection used in CS element
+  })
+
+  it('Cleanup: Delete all created answer collections', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.SE.collection })
+    cy.deleteAnswerCollection({ collectionName: this.data.SE.collectionEdited })
+    // TODO: include collections used in CS element
+
+    // validate that no collections except from the seeded ones remain
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
   // #endregion
 })

@@ -2002,8 +2002,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Zusätzlich können Sie hier öffentliche Antwort-Sammlungen anderer Nutzer importieren bzw. Zugriff auf diese anfragen.',
       newAnswerCollection: 'Neue Antwort-Sammlung',
       addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
-      answerOptionUsedAsSolution:
-        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage als korrekte Lösung verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
+      answerOptionUsed:
+        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage als korrekte Lösung or Fallstudien-Element verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
       name: 'Name',
       nameTooltip:
         'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
