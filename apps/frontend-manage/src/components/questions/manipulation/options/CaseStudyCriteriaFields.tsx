@@ -46,6 +46,7 @@ function CaseStudyCriteriaFields() {
                       tooltip: 'max-w-[30rem]',
                     }}
                     maxLength={100}
+                    data={{ cy: `criterion-${index}-name` }}
                   />
                   <FormikNumberField
                     required
@@ -62,6 +63,7 @@ function CaseStudyCriteriaFields() {
                       input: 'h-8',
                       tooltip: 'max-w-[30rem]',
                     }}
+                    data={{ cy: `criterion-${index}-min` }}
                   />
                   <FormikNumberField
                     required
@@ -78,6 +80,7 @@ function CaseStudyCriteriaFields() {
                       input: 'h-8',
                       tooltip: 'max-w-[30rem]',
                     }}
+                    data={{ cy: `criterion-${index}-max` }}
                   />
                   <FormikNumberField
                     required
@@ -92,6 +95,7 @@ function CaseStudyCriteriaFields() {
                       input: 'h-8',
                       tooltip: 'max-w-[30rem]',
                     }}
+                    data={{ cy: `criterion-${index}-step` }}
                   />
                   <FormikTextField
                     hideError
@@ -106,12 +110,14 @@ function CaseStudyCriteriaFields() {
                       tooltip: 'max-w-[30rem]',
                     }}
                     maxLength={10}
+                    data={{ cy: `criterion-${index}-unit` }}
                   />
                   <Button
                     onClick={() => remove(index)}
                     className={{
                       root: 'mt-6 h-8 w-8 items-center justify-center border-red-600 hover:border-red-600 hover:text-red-600',
                     }}
+                    data={{ cy: `remove-criterion-${index}` }}
                   >
                     <FontAwesomeIcon icon={faTrashCan} />
                   </Button>
@@ -131,6 +137,7 @@ function CaseStudyCriteriaFields() {
                 className={{
                   root: 'border-primary-80 items-center justify-center',
                 }}
+                data={{ cy: 'add-new-criterion' }}
               >
                 <FontAwesomeIcon icon={faPlus} />
                 {t('manage.questionForms.addCriterion')}

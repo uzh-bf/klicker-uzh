@@ -75,6 +75,7 @@ function CaseStudyCasesFields({
                   label={t('manage.questionForms.caseTitle')}
                   tooltip={t('manage.questionForms.caseStudyCaseTitleTooltip')}
                   className={{ root: 'mb-1' }}
+                  data={{ cy: `case-title-${ix}` }}
                 />
                 <FastField
                   name={`options.cases.${ix}.description`}
@@ -112,6 +113,7 @@ function CaseStudyCasesFields({
                         )}
                         showToolbarOnFocus={false}
                         className={{ content: 'max-w-none' }}
+                        data={{ cy: `case-description-${ix}` }}
                       />
                     </div>
                   )}
@@ -170,6 +172,9 @@ function CaseStudyCasesFields({
                                           root: 'w-28',
                                           input: 'h-8',
                                         }}
+                                        data={{
+                                          cy: `case-solution-${ix}-${itemIx}-${criterionIx}-lower`,
+                                        }}
                                       />
                                       <FormikNumberField
                                         required
@@ -184,6 +189,9 @@ function CaseStudyCasesFields({
                                         className={{
                                           root: 'w-28',
                                           input: 'h-8',
+                                        }}
+                                        data={{
+                                          cy: `case-solution-${ix}-${itemIx}-${criterionIx}-upper`,
                                         }}
                                       />
                                     </div>
@@ -207,6 +215,7 @@ function CaseStudyCasesFields({
               className={{
                 root: 'border-primary-80 justify-center font-semibold',
               }}
+              data={{ cy: 'add-new-case' }}
             >
               <FontAwesomeIcon icon={faPlus} />
               {t('manage.questionForms.addCase')}
