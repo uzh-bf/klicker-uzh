@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { DisplayMode } from '@klicker-uzh/types'
 import {
   OptionsCaseStudyInput,
   OptionsChoicesInput,
@@ -14,39 +15,10 @@ import validateNumericalOptions from './validateNumericalOptions.js'
 import validateSCOptions from './validateSCOptions.js'
 import validateSelectionOptions from './validateSelectionOptions.js'
 
-// TODO: remove this interface definition, once the union type correctly works for the choices question mutation
-// export interface ElementOptionsArgs {
-//   unit?: string | null // NR only
-//   accuracy?: number | null // NR only
-//   placeholder?: string | null // NR/FT only
-//   restrictions?: {
-//     maxLength?: number | null // FT only
-//     minLength?: number | null // unused
-//     pattern?: string | null // unused
-//     min?: number | null // NR only
-//     max?: number | null // NR only
-//   } | null
-//   feedback?: string | null // unused
-//   solutionRanges?: { min?: number | null; max?: number | null }[] | null // NR only
-//   exactSolutions?: number[] | null // NR only
-//   solutions?: string[] | null // FT only
-//   choices?: // SC, MC, KPRIM only
-//   | {
-//         ix: number
-//         value: string
-//         correct?: boolean | null
-//         feedback?: string | null
-//       }[]
-//     | null
-//   displayMode?: DisplayMode | null // SC, MC, KPRIM only
-//   numberOfInputs?: number | null // SE only
-//   answerCollection?: number | null // SE only
-//   correctAnswers?: number[] | null // SE only
-//   hasSampleSolution?: boolean | null // Questions only
-//   hasAnswerFeedbacks?: boolean | null // SC, MC, KPRIM only
-// }
-
-export type ElementOptionsArgs = OptionsChoicesInput &
+// display mode type workaround required for typescript to accept corresponding inputs
+export type ElementOptionsArgs = (Omit<OptionsChoicesInput, 'displayMode'> & {
+  displayMode?: DisplayMode | null
+}) &
   OptionsNumericalInput &
   OptionsFreeTextInput &
   OptionsSelectionInput &
