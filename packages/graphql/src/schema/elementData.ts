@@ -218,6 +218,7 @@ export const CaseStudyCase = builder
   .objectRef<CaseStudyCaseType>('CaseStudyCase')
   .implement({
     fields: (t) => ({
+      id: t.exposeString('id'),
       title: t.exposeString('title'),
       description: t.exposeString('description'),
       order: t.exposeInt('order'),

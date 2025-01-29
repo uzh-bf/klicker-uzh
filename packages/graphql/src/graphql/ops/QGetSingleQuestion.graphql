@@ -140,6 +140,7 @@ query GetSingleQuestion($id: Int!) {
           unit
         }
         cases {
+          id
           title
           description
           order

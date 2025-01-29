@@ -14,6 +14,7 @@ import {
   FormikErrors,
   useField,
 } from 'formik'
+import { nanoid } from 'nanoid'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import ContentInput from '../../../common/ContentInput'
@@ -211,7 +212,9 @@ function CaseStudyCasesFields({
             ))}
             <Button
               type="button"
-              onClick={() => push({ name: undefined, description: '' })}
+              onClick={() =>
+                push({ id: nanoid(), name: undefined, description: '' })
+              }
               className={{
                 root: 'border-primary-80 justify-center font-semibold',
               }}

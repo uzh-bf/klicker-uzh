@@ -272,6 +272,7 @@ export type CaseStudyCaseSolution = {
 }
 
 export type CaseStudyCase = {
+  id: string // use nanoid (as for choices) to simplify distinction from items & ordering
   title: string
   description: string
   order: number

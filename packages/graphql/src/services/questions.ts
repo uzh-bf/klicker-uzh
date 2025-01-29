@@ -357,12 +357,14 @@ export async function manipulateQuestion(
     ...question,
     options: {
       ...question.options,
-      // SE / CS elements
+      // SE elements
       answerCollection: { id: question.answerCollectionId, entries: [] },
       // SE elements
       answerCollectionSolutionIds: question.answerCollectionItems.map(
         (sol) => sol.id
       ),
+      // CS elements
+      answerCollectionId: question.answerCollectionId,
       // CS elements
       collectionItemIds: question.answerCollectionItems.map((item) => item.id),
     },

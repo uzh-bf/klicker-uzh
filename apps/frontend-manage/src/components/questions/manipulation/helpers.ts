@@ -269,6 +269,7 @@ export function prepareCaseStudyArgs({
       })),
 
       cases: values.options.cases.map((c, index) => ({
+        id: c.id,
         title: c.title,
         description: c.description,
         order: index,

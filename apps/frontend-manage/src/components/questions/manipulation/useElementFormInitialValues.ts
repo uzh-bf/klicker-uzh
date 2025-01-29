@@ -164,6 +164,7 @@ function useElementFormInitialValues({
             })) ?? [],
           cases:
             options.cases?.map((caseItem) => ({
+              id: caseItem.id,
               title: caseItem.title,
               description: caseItem.description,
               solutions: options.hasSampleSolution
