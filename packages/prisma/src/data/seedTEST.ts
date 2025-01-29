@@ -1,4 +1,4 @@
-import { ActivityType } from '@klicker-uzh/types'
+import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/util'
 import { v4 as uuid } from 'uuid'
 import Prisma from '../../dist/index.js'
-import { type Element } from '../prisma/client/index.js'
+import { ElementType, type Element } from '../prisma/client/index.js'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -225,7 +225,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const questionsTest = await Promise.all(
     DATA_TEST.QUESTIONS.map((data) => {
       let collectionId: number | undefined = undefined
-      let correctOptionIds: number[] = []
+      let usedCollectionEntries: number[] = []
+      let caseStudyCasesWithSolution:
+        | ElementOptionsCaseStudy['cases']
+        | undefined
 
       if (data.collectionName && data.answerCollectionItems) {
         const collection = answerCollections.find(
@@ -239,7 +242,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         }
 
         collectionId = collection.id
-        correctOptionIds = data.answerCollectionItems.map((solValue) => {
+        usedCollectionEntries = data.answerCollectionItems.map((solValue) => {
           const entry = collection.entries.find(
             (entry) => entry.value === solValue
           )
@@ -252,14 +255,67 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
           return entry.id
         })
+
+        // if sample solutions are activated for the case study, map the corresponding items to respective ids
+        if (
+          data.type === Prisma.ElementType.CASE_STUDY &&
+          data.options.hasSampleSolution
+        ) {
+          // verify that cases and solutions therein are given
+          if (!data.options.cases || data.options.cases.length === 0) {
+            throw new Error('Cases for case study need to be defined')
+          }
+
+          const cases = data.options.cases
+          if (cases.some((caseItem) => !('solutions' in caseItem))) {
+            throw new Error(
+              'Cases need to have solutions defined, if sample solutions are activated'
+            )
+          }
+
+          // map the items in the solutions to their respective ids
+          caseStudyCasesWithSolution = cases.map((caseItem) => {
+            if (!('solutions' in caseItem) || !caseItem.solutions) {
+              throw new Error(
+                'Solutions need to be defined for case study cases with sample solution activated'
+              )
+            }
+
+            return {
+              ...caseItem,
+              solutions: caseItem.solutions.map((solution) => {
+                const entry = collection.entries.find(
+                  (entry) => entry.value === solution.item
+                )
+
+                if (typeof entry === 'undefined') {
+                  throw new Error(
+                    `Item with value ${solution.item} not found in answer collection ${collection.name}`
+                  )
+                }
+
+                return {
+                  itemId: entry.id,
+                  criteriaSolutions: solution.criteriaSolutions,
+                }
+              }),
+            }
+          })
+        }
       }
 
       return prisma.element.upsert({
         ...prepareQuestion({
           ownerId: USER_ID_TEST,
           ...data,
+          options: caseStudyCasesWithSolution
+            ? {
+                ...data.options,
+                cases: caseStudyCasesWithSolution,
+              }
+            : data.options,
           collectionId,
-          correctOptionIds,
+          usedCollectionEntries,
         }),
         include: {
           answerCollection: {
@@ -667,7 +723,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 0,
             flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements,
             courseId: COURSE_ID_TEST,
           }),
@@ -712,7 +770,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 100,
             flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements,
             courseId: COURSE_ID_TEST,
           }),
@@ -757,7 +817,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 200,
             flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements,
             courseId: COURSE_ID_TEST,
           }),
@@ -802,7 +864,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 300,
             flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements,
             courseId: COURSE_ID_TEST,
           }),
@@ -847,7 +911,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 400,
             flashcards: [flashcards[0]!],
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements: [contentElements[0]!],
             courseId: COURSE_ID_TEST,
           }),
@@ -899,7 +965,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 500,
             flashcards: [flashcards[0]!],
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements: [contentElements[0]!],
             courseId: COURSE_ID_TEST,
           }),
@@ -1340,7 +1408,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareStackVariety({
             migrationIdOffset: 600,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
@@ -1475,7 +1545,9 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 900,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1521,7 +1593,9 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 1000,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1563,7 +1637,9 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 1100,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1606,7 +1682,9 @@ Mehr bla bla...
             migrationIdOffset: 1200,
             flashcards: flashcards,
             questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.FREE_TEXT
+              (q) =>
+                q.type !== Prisma.ElementType.FREE_TEXT &&
+                q.type !== Prisma.ElementType.CASE_STUDY // TODO: include case study questions once supported
             ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
@@ -1651,7 +1729,9 @@ Once this microlearning is published, it will be immediately accessible
           ...prepareStackVariety({
             migrationIdOffset: 1300,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ), // TODO: once supported, include case study elements
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,

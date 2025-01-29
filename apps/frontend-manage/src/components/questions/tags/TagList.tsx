@@ -16,6 +16,7 @@ import {
   faCommentDots as faCommentDotsSolid,
   faComment as faCommentSolid,
   faEye as faEyeSolid,
+  faListCheck,
   faRectangleList as faListSolid,
   faPenToSquare as faPenSolid,
   faCircleQuestion as faQuestionSolid,
@@ -98,6 +99,9 @@ function TagList({
       NUMERICAL: [faQuestionRegular, faQuestionSolid],
       SELECTION: data?.checkPrivatePreviewAvailable
         ? [faSquareCheckRegular, faSquareCheckSolid]
+        : undefined,
+      CASE_STUDY: data?.checkPrivatePreviewAvailable
+        ? [faListCheck, faListCheck]
         : undefined,
     }
 
