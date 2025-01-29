@@ -128,9 +128,7 @@ query GetSingleQuestion($id: Int!) {
 
       options {
         hasSampleSolution
-        answerCollection {
-          id
-        }
+        answerCollectionId
         collectionItemIds
         criteria {
           id

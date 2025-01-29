@@ -226,12 +226,24 @@ type CaseStudyElement {
   version: Int!
 }
 
+type CaseStudyElementData {
+  content: String!
+  elementId: Int!
+  explanation: String
+  id: ID!
+  name: String!
+  options: CaseStudyElementOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
 type CaseStudyElementOptions {
-  answerCollection: ElementOptionsAnswerCollection
+  answerCollectionId: Int
   cases: [CaseStudyCase!]
   collectionItemIds: [Int!]
   criteria: [CaseStudyCriterion!]
   hasSampleSolution: Boolean
+  items: [ElementOptionsAnswerCollectionEntry!]
 }
 
 input CaseStudySolutionInput {

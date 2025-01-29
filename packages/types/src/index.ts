@@ -246,8 +246,8 @@ export interface ElementOptionsAnswerCollection {
 
 export interface ElementOptionsSelection extends BaseElementOptions {
   numberOfInputs: number
-  answerCollection?: ElementOptionsAnswerCollection // instance only - link on element
-  answerCollectionSolutionIds?: number[] | null // instance only - link on element
+  answerCollection?: ElementOptionsAnswerCollection // instance and element data fetching only (not stored here on db element)
+  answerCollectionSolutionIds?: number[] | null // instance and element data fetching only (not stored here on db element)
 }
 
 export type CaseStudyCriterion = {
@@ -279,8 +279,9 @@ export type CaseStudyCase = {
 }
 
 export interface ElementOptionsCaseStudy extends BaseElementOptions {
-  answerCollection?: ElementOptionsAnswerCollection // instance only - link on element
-  collectionItemIds?: number[] // instance only - link on element
+  answerCollectionId?: number // for element data fetching only
+  collectionItemIds?: number[] // for element data fetching only
+  items?: ElementOptionsAnswerCollectionEntry[] // instance only
   criteria: CaseStudyCriterion[]
   cases: CaseStudyCase[]
 }

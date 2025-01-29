@@ -235,11 +235,15 @@ export const CaseStudyElementOptions = builder
       hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
         nullable: true,
       }),
-      answerCollection: t.expose('answerCollection', {
-        type: ElementOptionsAnswerCollection,
+      // element fetching only
+      answerCollectionId: t.exposeInt('answerCollectionId', { nullable: true }),
+      // element fetching only
+      collectionItemIds: t.exposeIntList('collectionItemIds', {
         nullable: true,
       }),
-      collectionItemIds: t.exposeIntList('collectionItemIds', {
+      // element instance only
+      items: t.expose('items', {
+        type: [ElementOptionsAnswerCollectionEntry],
         nullable: true,
       }),
       criteria: t.expose('criteria', {
@@ -321,6 +325,18 @@ export const SelectionElementData = builder
     fields: (t) => ({
       ...sharedElementData(t),
       options: t.expose('options', { type: SelectionElementOptions }),
+    }),
+  })
+
+export interface ICaseStudyElementData extends BaseElementData {
+  options: ElementOptionsCaseStudyType
+}
+export const CaseStudyElementData = builder
+  .objectRef<ICaseStudyElementData>('CaseStudyElementData')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementData(t),
+      options: t.expose('options', { type: CaseStudyElementOptions }),
     }),
   })
 
