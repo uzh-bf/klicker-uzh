@@ -116,15 +116,54 @@ export function processElementData(
 
     return {
       ...pick(element, NO_OPTIONS_KEYS),
+      type: element.type,
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
       options: {
         hasSampleSolution: element.options.hasSampleSolution,
         numberOfInputs: element.options.numberOfInputs,
         answerCollection: answerCollectionOptions,
         answerCollectionSolutionIds,
       },
+    }
+  } else if (element.type === PrismaElementType.CASE_STUDY) {
+    // make sure that answer collection and selected items were passed to the function
+    if (
+      !element.answerCollection ||
+      !element.answerCollection.entries ||
+      element.answerCollection.entries.length === 0 ||
+      !element.answerCollectionItems ||
+      element.answerCollectionItems.length === 0
+    ) {
+      throw new Error(
+        'Answer collection or selected items missing for case study element'
+      )
+    }
+
+    // extract selected items from collection (store only relevant information on instance)
+    const selectedItemIds = element.answerCollectionItems.map((item) => item.id)
+    const caseStudyItems = element.options.answerCollection.entries.flatMap(
+      (entry: AnswerCollectionEntry) => {
+        if (selectedItemIds?.includes(entry.id)) {
+          return {
+            id: entry.id,
+            value: entry.value,
+          }
+        }
+
+        return []
+      }
+    )
+
+    return {
+      ...pick(element, NO_OPTIONS_KEYS),
       type: element.type,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
+      options: {
+        ...element.options,
+        items: caseStudyItems,
+      },
     }
   } else {
     throw new Error(
