@@ -73,10 +73,12 @@ export async function getSingleQuestion(
     ...question,
     options: {
       ...question.options,
-      // SE / CS elements
+      // SE elements
       answerCollection: { id: question.answerCollectionId, entries: [] },
       // SE elements
       answerCollectionSolutionIds: selectedItemIds,
+      // CS elements
+      answerCollectionId: question.answerCollectionId,
       // CS elements
       collectionItemIds: selectedItemIds,
     },
