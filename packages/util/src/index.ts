@@ -9,9 +9,12 @@ import {
   type Choice,
   type ElementInstanceResults,
   type ElementKeys,
+  type ElementOptionsCaseStudy,
   type ElementOptionsChoices,
   type ElementOptionsFreeText,
   type ElementOptionsNumerical,
+  type ElementOptionsSelection,
+  type ElementResultsCaseStudy,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
 
@@ -116,15 +119,54 @@ export function processElementData(
 
     return {
       ...pick(element, NO_OPTIONS_KEYS),
+      type: element.type,
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
       options: {
         hasSampleSolution: element.options.hasSampleSolution,
         numberOfInputs: element.options.numberOfInputs,
         answerCollection: answerCollectionOptions,
         answerCollectionSolutionIds,
-      },
+      } as ElementOptionsSelection,
+    }
+  } else if (element.type === PrismaElementType.CASE_STUDY) {
+    // make sure that answer collection and selected items were passed to the function
+    if (
+      !element.answerCollection ||
+      !element.answerCollection.entries ||
+      element.answerCollection.entries.length === 0 ||
+      !element.answerCollectionItems ||
+      element.answerCollectionItems.length === 0
+    ) {
+      throw new Error(
+        'Answer collection or selected items missing for case study element'
+      )
+    }
+
+    // extract selected items from collection (store only relevant information on instance)
+    const selectedItemIds = element.answerCollectionItems.map((item) => item.id)
+    const caseStudyItems = element.answerCollection.entries.flatMap(
+      (entry: AnswerCollectionEntry) => {
+        if (selectedItemIds?.includes(entry.id)) {
+          return {
+            id: entry.id,
+            value: entry.value,
+          }
+        }
+
+        return []
+      }
+    )
+
+    return {
+      ...pick(element, NO_OPTIONS_KEYS),
       type: element.type,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
+      options: {
+        ...element.options,
+        items: caseStudyItems,
+      } as ElementOptionsCaseStudy,
     }
   } else {
     throw new Error(
@@ -169,12 +211,17 @@ export function getInitialElementResults(
     return {
       total: 0,
     }
-  } else if (
-    element.type === PrismaElementType.SELECTION &&
-    'answerCollection' in element &&
-    element.answerCollection &&
-    'entries' in element.answerCollection
-  ) {
+  } else if (element.type === PrismaElementType.SELECTION) {
+    if (
+      !('answerCollection' in element) ||
+      !element.answerCollection ||
+      !('entries' in element.answerCollection)
+    ) {
+      throw new Error(
+        'Answer collection missing for selection element during result initialization'
+      )
+    }
+
     const selections: Record<number, number> = {}
     for (const entry of element.answerCollection.entries) {
       selections[entry.id] = 0
@@ -182,6 +229,57 @@ export function getInitialElementResults(
 
     return {
       selections,
+      total: 0,
+    }
+  } else if (element.type === PrismaElementType.CASE_STUDY) {
+    // verify that both the selected items from the answer collection are available
+    if (
+      !('answerCollectionItems' in element) ||
+      !element.answerCollectionItems ||
+      element.answerCollectionItems.length === 0 ||
+      !('criteria' in element.options) ||
+      !('cases' in element.options)
+    ) {
+      throw new Error(
+        'Selected items missing for case study element during result initialization'
+      )
+    }
+
+    const assessment: ElementResultsCaseStudy['assessment'] = {}
+    const options = element.options as ElementOptionsCaseStudy
+    const itemIds = element.answerCollectionItems.map((item) => item.id)
+
+    // initialize all cases, their items and criteria as empty maps
+    options.cases.forEach((caseItem) => {
+      if (
+        caseItem.id === '__proto__' ||
+        caseItem.id === 'constructor' ||
+        caseItem.id === 'prototype'
+      ) {
+        throw new Error('Invalid caseItem.id value')
+      }
+
+      assessment[caseItem.id] = {}
+
+      itemIds.forEach((itemId) => {
+        assessment[caseItem.id]![String(itemId)] = {}
+
+        options.criteria.forEach((criterion) => {
+          if (
+            criterion.id === '__proto__' ||
+            criterion.id === 'constructor' ||
+            criterion.id === 'prototype'
+          ) {
+            throw new Error('Invalid criterion.id value')
+          }
+
+          assessment[caseItem.id]![String(itemId)]![criterion.id] = {}
+        })
+      })
+    })
+
+    return {
+      assessment,
       total: 0,
     }
   } else {

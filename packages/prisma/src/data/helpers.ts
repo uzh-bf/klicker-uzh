@@ -147,14 +147,16 @@ export function prepareQuestion({
   type,
   ownerId,
   content,
+  explanation,
   choices,
   options,
   collectionId,
-  correctOptionIds,
+  usedCollectionEntries,
 }: {
   originalId: string
   name: string
   content: string
+  explanation?: string
   type: Prisma.ElementType
   ownerId: string
   choices?: {
@@ -164,11 +166,13 @@ export function prepareQuestion({
   }[]
   options?: any
   collectionId?: number
-  correctOptionIds?: number[]
+  usedCollectionEntries?: number[]
 }) {
   const args = {
     originalId,
     name,
+    content,
+    explanation,
     type,
     owner: {
       connect: {
@@ -187,7 +191,6 @@ export function prepareQuestion({
 
     const data = {
       ...args,
-      content,
       options: {
         ...options,
         choices: preparedChoices,
@@ -208,11 +211,10 @@ export function prepareQuestion({
 
   if (
     typeof collectionId !== 'undefined' &&
-    typeof correctOptionIds !== 'undefined'
+    typeof usedCollectionEntries !== 'undefined'
   ) {
     const data = {
       ...args,
-      content,
       options,
       answerCollection: {
         connect: {
@@ -220,7 +222,7 @@ export function prepareQuestion({
         },
       },
       answerCollectionItems: {
-        connect: correctOptionIds.map((id) => ({
+        connect: usedCollectionEntries.map((id) => ({
           id,
         })),
       },
@@ -240,7 +242,6 @@ export function prepareQuestion({
 
   const data = {
     ...args,
-    content,
     options: options ?? {},
   }
 

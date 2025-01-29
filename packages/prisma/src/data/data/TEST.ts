@@ -24,6 +24,60 @@ export const ANSWER_COLLECTIONS = [
       {
         value: 'Elderberry',
       },
+      {
+        value: 'Fig',
+      },
+      {
+        value: 'Grape',
+      },
+      {
+        value: 'Honeydew',
+      },
+      {
+        value: 'Kiwi',
+      },
+      {
+        value: 'Lemon',
+      },
+      {
+        value: 'Mango',
+      },
+      {
+        value: 'Nectarine',
+      },
+      {
+        value: 'Orange',
+      },
+      {
+        value: 'Peach',
+      },
+      {
+        value: 'Quince',
+      },
+      {
+        value: 'Raspberry',
+      },
+      {
+        value: 'Strawberry',
+      },
+      {
+        value: 'Tangerine',
+      },
+      {
+        value: 'Ugli',
+      },
+      {
+        value: 'Vanilla',
+      },
+      {
+        value: 'Watermelon',
+      },
+      {
+        value: 'Ximenia',
+      },
+      {
+        value: 'Yuzu',
+      },
     ],
   },
   {
@@ -275,8 +329,164 @@ export const QUESTIONS = [
       hasSampleSolution: true,
       numberOfInputs: 2,
     },
-    collectionName: 'Restricted Collection (Animals)',
+    collectionName: ANSWER_COLLECTIONS[2]!.name,
     answerCollectionItems: ['Bear', 'Cat', 'Dog'],
+  },
+  {
+    originalId: '7',
+    name: 'Testfrage CASE STUDY (without sample solution)',
+    content: 'Which fruits best mix into a fruit salad?',
+    explanation:
+      'All sample solutions should only be considered as subjective opinions, every taste is different.',
+    type: ElementType.CASE_STUDY,
+    options: {
+      hasSampleSolution: false,
+      cases: [
+        {
+          id: 'u6IgHeHsCzk00g1dXOTaI',
+          order: 0,
+          title: 'General Case',
+          description:
+            'Please create the tastiest combination for a fruit salad\n',
+        },
+        {
+          id: 'WbUzlpHCxU2xnWfDrxhJ5',
+          order: 1,
+          title: 'Gourmet Case',
+          description:
+            'Please create the tastiest combination for a fruit salad\n',
+        },
+      ],
+      criteria: [
+        {
+          id: '2X4-oflktqmEw_XRezZzz',
+          max: 10,
+          min: 1,
+          name: 'Tastiness',
+          step: 1,
+          order: 0,
+        },
+        {
+          id: '7XQGlPsaizMq_CzBYmc54',
+          max: 100,
+          min: 1,
+          name: 'Cost',
+          step: 0.1,
+          unit: 'CHF',
+          order: 1,
+        },
+      ],
+    },
+    collectionName: ANSWER_COLLECTIONS[0]!.name,
+    answerCollectionItems: ['Apple', 'Date', 'Grape', 'Mango'],
+  },
+  {
+    originalId: '8',
+    name: 'Testfrage CASE STUDY (with sample solution)',
+    content: 'Which fruits best mix into a fruit salad?',
+    explanation:
+      'All sample solutions should only be considered as subjective opinions, every taste is different.',
+    type: ElementType.CASE_STUDY,
+    options: {
+      hasSampleSolution: true,
+      cases: [
+        {
+          id: 'oNthfOWJfBbKGjU70MihG',
+          order: 0,
+          title: 'General Case',
+          solutions: [
+            {
+              item: 'Apple', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 7, min: 3, criterionId: 'YDnUOgvbi_YhEkZ3MM2DY' },
+                { max: 4, min: 2, criterionId: 'MBu5NrfoYZGD-DCMoaNwL' },
+              ],
+            },
+            {
+              item: 'Date', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 8, min: 6, criterionId: 'YDnUOgvbi_YhEkZ3MM2DY' },
+                { max: 20, min: 5, criterionId: 'MBu5NrfoYZGD-DCMoaNwL' },
+              ],
+            },
+            {
+              item: 'Grape', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 7, min: 4, criterionId: 'YDnUOgvbi_YhEkZ3MM2DY' },
+                { max: 7, min: 3, criterionId: 'MBu5NrfoYZGD-DCMoaNwL' },
+              ],
+            },
+            {
+              item: 'Mango', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 8, min: 4, criterionId: 'YDnUOgvbi_YhEkZ3MM2DY' },
+                { max: 30, min: 5, criterionId: 'MBu5NrfoYZGD-DCMoaNwL' },
+              ],
+            },
+          ],
+          description:
+            'Please create the tastiest combination for a fruit salad\n',
+        },
+        {
+          id: 'FCnD8rvbi_CjEkEfMM2FP',
+          order: 1,
+          title: 'Gourmet Case',
+          solutions: [
+            {
+              item: 'Apple', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 10, min: 5, criterionId: 'YDnUOgvbi_YhEkZ3MM2DY' },
+                { max: 4, min: 2, criterionId: 'MBu5NrfoYZGD-DCMoaNwL' },
+              ],
+            },
+            {
+              item: 'Date', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 9, min: 8, criterionId: 'YDnUOgvbi_YhEkZ3MM2DY' },
+                { max: 30, min: 10, criterionId: 'MBu5NrfoYZGD-DCMoaNwL' },
+              ],
+            },
+            {
+              item: 'Grape', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 4, min: 3, criterionId: 'YDnUOgvbi_YhEkZ3MM2DY' },
+                { max: 7, min: 3, criterionId: 'MBu5NrfoYZGD-DCMoaNwL' },
+              ],
+            },
+            {
+              item: 'Mango', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 6, min: 2, criterionId: 'YDnUOgvbi_YhEkZ3MM2DY' },
+                { max: 50, min: 25, criterionId: 'MBu5NrfoYZGD-DCMoaNwL' },
+              ],
+            },
+          ],
+          description:
+            'Please create the tastiest combination for a fruit salad\n',
+        },
+      ],
+      criteria: [
+        {
+          id: 'YDnUOgvbi_YhEkZ3MM2DY',
+          max: 10,
+          min: 1,
+          name: 'Tastiness',
+          step: 1,
+          order: 0,
+        },
+        {
+          id: 'MBu5NrfoYZGD-DCMoaNwL',
+          max: 100,
+          min: 1,
+          name: 'Cost',
+          step: 0.1,
+          unit: 'CHF',
+          order: 1,
+        },
+      ],
+    },
+    collectionName: ANSWER_COLLECTIONS[0]!.name,
+    answerCollectionItems: ['Apple', 'Date', 'Grape', 'Mango'],
   },
 ]
 

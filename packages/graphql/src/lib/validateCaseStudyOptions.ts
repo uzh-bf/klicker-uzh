@@ -90,7 +90,8 @@ function validateCaseStudyOptions(options?: ElementOptionsArgs | null) {
         !caseItem.solutions ||
         Object.keys(caseItem.solutions).length !== items.length ||
         Object.values(caseItem.solutions).some(
-          (solutions) => Object.keys(solutions).length !== criteria.length
+          (solutions) =>
+            Object.keys(solutions.criteriaSolutions).length !== criteria.length
         )
       ) {
         console.error(

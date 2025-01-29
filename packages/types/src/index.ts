@@ -246,8 +246,8 @@ export interface ElementOptionsAnswerCollection {
 
 export interface ElementOptionsSelection extends BaseElementOptions {
   numberOfInputs: number
-  answerCollection?: ElementOptionsAnswerCollection // instance only - link on element
-  answerCollectionSolutionIds?: number[] | null // instance only - link on element
+  answerCollection?: ElementOptionsAnswerCollection // instance and element data fetching only (not stored here on db element)
+  answerCollectionSolutionIds?: number[] | null // instance and element data fetching only (not stored here on db element)
 }
 
 export type CaseStudyCriterion = {
@@ -272,6 +272,7 @@ export type CaseStudyCaseSolution = {
 }
 
 export type CaseStudyCase = {
+  id: string // use nanoid (as for choices) to simplify distinction from items & ordering
   title: string
   description: string
   order: number
@@ -279,8 +280,9 @@ export type CaseStudyCase = {
 }
 
 export interface ElementOptionsCaseStudy extends BaseElementOptions {
-  answerCollection?: ElementOptionsAnswerCollection // instance only - link on element
-  collectionItemIds?: number[] // instance only - link on element
+  answerCollectionId?: number // for element data fetching only
+  collectionItemIds?: number[] // for element data fetching only
+  items?: ElementOptionsAnswerCollectionEntry[] // instance only
   criteria: CaseStudyCriterion[]
   cases: CaseStudyCase[]
 }
@@ -363,7 +365,7 @@ export type ElementResultsChoices = {
 
 export type ElementResultsOpen = {
   responses: {
-    [x: string]: {
+    [md5Hash: string]: {
       count: number
       value: string
       correct?: boolean
@@ -388,12 +390,31 @@ export type ElementResultsSelection = {
   total: number
 }
 
+export type ElementResultsCaseStudy = {
+  // student responses are stored with keys: caseId, itemId, criterionId, response map as for open results
+  assessment: {
+    [caseId: string]: {
+      [itemId: string]: {
+        [criterionId: string]: {
+          [md5Hash: string]: {
+            count: number
+            value: string
+            correct?: boolean
+          }
+        }
+      }
+    }
+  }
+  total: number
+}
+
 export type ElementInstanceResults =
   | ElementResultsChoices
   | ElementResultsOpen
   | ElementResultsFlashcard
   | ElementResultsContent
   | ElementResultsSelection
+  | ElementResultsCaseStudy
 
 export type GroupActivityDecision = {
   instanceId: number

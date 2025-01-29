@@ -189,6 +189,7 @@ export const CaseStudySolutionInput = builder.inputType(
 
 export const CaseStudyCaseInput = builder.inputType('CaseStudyCaseInput', {
   fields: (t) => ({
+    id: t.string({ required: true }),
     title: t.string({ required: true }),
     description: t.string({ required: true }),
     order: t.int({ required: true }),

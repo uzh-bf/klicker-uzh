@@ -102,6 +102,7 @@ export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
     answerCollection: string
     selectedItems: number[] // items that should be evaluated with respect to the defined criteria
     cases: {
+      id: string // short id
       title: string
       description: string
       solutions?: ElementFormTypesCaseStudySolutions

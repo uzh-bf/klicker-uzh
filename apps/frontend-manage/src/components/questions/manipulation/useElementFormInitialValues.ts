@@ -151,8 +151,8 @@ function useElementFormInitialValues({
         type: ElementType.CaseStudy,
         options: {
           hasSampleSolution: options.hasSampleSolution ?? false,
-          answerCollection: options.answerCollection
-            ? String(options.answerCollection.id)
+          answerCollection: options.answerCollectionId
+            ? String(options.answerCollectionId)
             : '',
           selectedItems: options.collectionItemIds ?? [],
           criteria:
@@ -164,6 +164,7 @@ function useElementFormInitialValues({
             })) ?? [],
           cases:
             options.cases?.map((caseItem) => ({
+              id: caseItem.id,
               title: caseItem.title,
               description: caseItem.description,
               solutions: options.hasSampleSolution

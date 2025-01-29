@@ -127,6 +127,7 @@ function validateAndProcessElementOptions(
           unit: criterion.unit ?? undefined,
         })),
         cases: options.cases!.map((caseItem) => ({
+          id: caseItem.id,
           title: caseItem.title,
           description: caseItem.description,
           order: caseItem.order,
