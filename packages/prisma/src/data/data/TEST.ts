@@ -343,14 +343,14 @@ export const QUESTIONS = [
       hasSampleSolution: false,
       cases: [
         {
-          id: 'oNthfOWJfBbKGjU70MihG',
+          id: 'u6IgHeHsCzk00g1dXOTaI',
           order: 0,
           title: 'General Case',
           description:
             'Please create the tastiest combination for a fruit salad\n',
         },
         {
-          id: 'FCnD8rvbi_CjEkEfMM2FP',
+          id: 'WbUzlpHCxU2xnWfDrxhJ5',
           order: 1,
           title: 'Gourmet Case',
           description:
@@ -359,7 +359,7 @@ export const QUESTIONS = [
       ],
       criteria: [
         {
-          id: 'YDnUOgvbi_YhEkZ3MM2DY',
+          id: '2X4-oflktqmEw_XRezZzz',
           max: 10,
           min: 1,
           name: 'Tastiness',
@@ -367,7 +367,7 @@ export const QUESTIONS = [
           order: 0,
         },
         {
-          id: 'MBu5NrfoYZGD-DCMoaNwL',
+          id: '7XQGlPsaizMq_CzBYmc54',
           max: 100,
           min: 1,
           name: 'Cost',
