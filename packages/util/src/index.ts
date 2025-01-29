@@ -9,9 +9,11 @@ import {
   type Choice,
   type ElementInstanceResults,
   type ElementKeys,
+  type ElementOptionsCaseStudy,
   type ElementOptionsChoices,
   type ElementOptionsFreeText,
   type ElementOptionsNumerical,
+  type ElementResultsCaseStudy,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
 
@@ -175,6 +177,7 @@ export function processElementData(
 export function getInitialElementResults(
   element: ElementWithAnswerCollection
 ): ElementInstanceResults {
+  // TODO: extend for case study elements
   if (element.type === PrismaElementType.FLASHCARD) {
     return {
       INCORRECT: 0,
@@ -221,6 +224,42 @@ export function getInitialElementResults(
 
     return {
       selections,
+      total: 0,
+    }
+  } else if (
+    element.type === PrismaElementType.CASE_STUDY &&
+    'answerCollection' in element.options &&
+    'answerCollectionItems' in element.options
+  ) {
+    // verify that both the selected items from the answer collection are available
+    if (
+      !element.answerCollectionItems ||
+      element.answerCollectionItems.length === 0
+    ) {
+      throw new Error(
+        'Selected items missing for case study element during result initialization'
+      )
+    }
+
+    const assessment: ElementResultsCaseStudy['assessment'] = {}
+    const options = element.options as ElementOptionsCaseStudy
+    const itemIds = element.answerCollectionItems.map((item) => item.id)
+
+    // initialize all cases, their items and criteria as empty maps
+    options.cases.forEach((caseItem) => {
+      assessment[caseItem.id] = {}
+
+      itemIds.forEach((itemId) => {
+        assessment[caseItem.id]![String(itemId)] = {}
+
+        options.criteria.forEach((criterion) => {
+          assessment[caseItem.id]![String(itemId)]![criterion.id] = {}
+        })
+      })
+    })
+
+    return {
+      assessment,
       total: 0,
     }
   } else {

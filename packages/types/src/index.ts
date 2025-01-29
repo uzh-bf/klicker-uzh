@@ -365,7 +365,7 @@ export type ElementResultsChoices = {
 
 export type ElementResultsOpen = {
   responses: {
-    [x: string]: {
+    [md5Hash: string]: {
       count: number
       value: string
       correct?: boolean
@@ -390,12 +390,31 @@ export type ElementResultsSelection = {
   total: number
 }
 
+export type ElementResultsCaseStudy = {
+  // student responses are stored with keys: caseId, itemId, criterionId, response map as for open results
+  assessment: {
+    [caseId: string]: {
+      [itemId: string]: {
+        [criterionId: string]: {
+          [md5Hash: string]: {
+            count: number
+            value: string
+            correct?: boolean
+          }
+        }
+      }
+    }
+  }
+  total: number
+}
+
 export type ElementInstanceResults =
   | ElementResultsChoices
   | ElementResultsOpen
   | ElementResultsFlashcard
   | ElementResultsContent
   | ElementResultsSelection
+  | ElementResultsCaseStudy
 
 export type GroupActivityDecision = {
   instanceId: number
