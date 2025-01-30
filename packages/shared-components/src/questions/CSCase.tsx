@@ -30,7 +30,10 @@ function CSCase({
     <div className="mt-6">
       {currentCase.description !== '<br>' && (
         <div>
-          <div className="mb-1 text-xl font-bold">
+          <div
+            className="mb-1 text-xl font-bold"
+            data-cy={`case-${caseIndex + 1}-title`}
+          >
             {`${caseIndex + 1}. ${currentCase.title}`}
           </div>
           <div
@@ -38,7 +41,10 @@ function CSCase({
               'bg-primary-10 prose prose-p:!m-0 prose-img:!m-0 mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6'
             )}
           >
-            <Markdown content={currentCase.description} />
+            <Markdown
+              content={currentCase.description}
+              data={{ cy: `case-${caseIndex + 1}-description` }}
+            />
           </div>
         </div>
       )}
@@ -62,7 +68,7 @@ function CSCase({
                   {/* only show compact version on smaller devices */}
                   <div
                     className="-mb-1 block md:hidden"
-                    data-cy={`cs-slider-value-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`}
+                    data-cy={`cs-slider-value-${elementIx + 1}-${caseIndex + 1}-${itemIx + 1}-${criterionIx + 1}`}
                   >
                     {criterion.unit
                       ? `${caseResponse[item.id]![criterion.id] ?? '-'} ${criterion.unit}`
@@ -104,7 +110,7 @@ function CSCase({
                       unit: 'h-8 px-2',
                     }} // only show on larger devices
                     data={{
-                      cy: `cs-slider-nr-value-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`,
+                      cy: `cs-slider-nr-value-${elementIx + 1}-${caseIndex + 1}-${itemIx + 1}-${criterionIx + 1}`,
                     }}
                   />
                 </div>

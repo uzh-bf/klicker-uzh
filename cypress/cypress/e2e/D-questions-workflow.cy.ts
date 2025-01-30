@@ -2133,7 +2133,84 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
   })
 
-  // TODO: Verify the preview of the case study question (once available)
+  it.only('Verify that creation was successful', function () {
+    cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.CS.title
+    )
+
+    cy.get('[data-cy="student-element-preview"]')
+      .findByText(messages.shared.questions.csCaseStudyInstructions)
+      .should('exist')
+    cy.get('[data-cy="student-element-preview"]') // instructions should be visible in preview
+      .findByText(this.data.CS.content)
+      .should('exist')
+
+    // check if case information is visible
+    cy.get('[data-cy="case-1-title"]').contains(this.data.CS.cases[0].title)
+    cy.get('[data-cy="case-1-description"]').contains(
+      this.data.CS.cases[0].description
+    )
+    cy.get('[data-cy="case-2-title"]').contains(this.data.CS.cases[1].title)
+    cy.get('[data-cy="case-2-description"]').contains(
+      this.data.CS.cases[1].description
+    )
+
+    // check that sliders are initilized correctly and that values changes persist
+    const steps = 78
+    const midValue =
+      this.data.CS.criteria[0].min +
+      (this.data.CS.criteria[0].max - this.data.CS.criteria[0].min) / 2
+    const slidedValue = midValue + steps * this.data.CS.criteria[0].step
+    cy.get('[data-cy="cs-slider-nr-value-1-1-1-1"]').should('have.value', '')
+    cy.get('[data-cy="cs-slider-1-1-1-1"]')
+      .click()
+      .type('{rightarrow}{leftarrow}')
+    cy.get('[data-cy="cs-slider-nr-value-1-1-1-1"]').should(
+      'have.value',
+      String(midValue)
+    )
+    cy.get('[data-cy="cs-slider-1-1-1-1"]')
+      .click()
+      .type('{rightarrow}'.repeat(steps))
+    cy.get('[data-cy="cs-slider-nr-value-1-1-1-1"]').should(
+      'have.value',
+      String(slidedValue)
+    )
+
+    // check that moving a slider all the way to one end works to be expected
+    cy.get('[data-cy="cs-slider-nr-value-1-1-1-2"]').should('have.value', '')
+    cy.get('[data-cy="cs-slider-1-1-1-2"]')
+      .click()
+      .type('{leftarrow}'.repeat(260))
+    cy.get('[data-cy="cs-slider-nr-value-1-1-1-2"]').should(
+      'have.value',
+      String(this.data.CS.criteria[1].min)
+    )
+    cy.get('[data-cy="cs-slider-1-1-1-2"]')
+      .click()
+      .type('{rightarrow}'.repeat(600))
+    cy.get('[data-cy="cs-slider-nr-value-1-1-1-2"]').should(
+      'have.value',
+      String(this.data.CS.criteria[1].max)
+    )
+
+    // check that sliders are shown for all response items
+    for (let caseIx = 0; caseIx < this.data.CS.cases.length; caseIx++) {
+      for (
+        let criterionIx = 0;
+        criterionIx < this.data.CS.criteria.length;
+        criterionIx++
+      ) {
+        for (let itemIx = 0; itemIx < this.data.CS.items.length; itemIx++) {
+          cy.get(
+            `[data-cy="cs-slider-nr-value-1-${caseIx + 1}-${itemIx + 1}-${criterionIx + 1}"]`
+          ).should('exist')
+        }
+      }
+    }
+  })
 
   it('Verify that the deletion of answer collection entries is limited, editing is unaffected', function () {
     cy.get('[data-cy="resources"]').click()
