@@ -1408,7 +1408,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareStackVariety({
             migrationIdOffset: 600,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
@@ -1543,7 +1545,9 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 900,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1589,7 +1593,9 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 1000,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1631,7 +1637,9 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 1100,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1719,7 +1727,9 @@ Once this microlearning is published, it will be immediately accessible
           ...prepareStackVariety({
             migrationIdOffset: 1300,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) => q.type !== Prisma.ElementType.CASE_STUDY
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,

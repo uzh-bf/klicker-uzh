@@ -8,7 +8,7 @@ function useSelectAnswerCollectionOptions({
 }: {
   collectionId: string
   collections: AnswerCollection[]
-  setAnswerCollectionEntries?: Dispatch<
+  setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
 }) {
@@ -21,14 +21,12 @@ function useSelectAnswerCollectionOptions({
       return []
     }
 
-    if (setAnswerCollectionEntries) {
-      setAnswerCollectionEntries(
-        selectedCollection.entries.map((entry) => ({
-          id: entry.id,
-          value: entry.value,
-        }))
-      )
-    }
+    setAnswerCollectionEntries(
+      selectedCollection.entries.map((entry) => ({
+        id: entry.id,
+        value: entry.value,
+      }))
+    )
 
     return selectedCollection.entries.map((entry) => ({
       label: entry.value,

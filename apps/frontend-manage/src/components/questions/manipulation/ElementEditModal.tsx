@@ -80,8 +80,9 @@ function ElementEditModal({
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
-  const [elementDataTypename, setElementDataTypename] =
-    useState<ElementData['__typename']>('ChoicesElementData')
+  const [elementDataTypename, setElementDataTypename] = useState<
+    ElementData['__typename'] | undefined
+  >()
 
   const questionManipulationSchema = useValidationSchema({
     numberOfAnswerOptions: answerCollectionEntries.length,
@@ -468,6 +469,7 @@ function ElementEditModal({
                       setFieldValue={setFieldValue}
                       setFieldTouched={setFieldTouched}
                       hasSampleSolution={values.options.hasSampleSolution}
+                      setAnswerCollectionEntries={setAnswerCollectionEntries}
                     />
                   )}
                 </Form>

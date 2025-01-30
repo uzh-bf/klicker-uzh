@@ -60,7 +60,10 @@ function CSCase({
                     className={{ label: 'font-normal' }}
                   />
                   {/* only show compact version on smaller devices */}
-                  <div className="-mb-1 block md:hidden">
+                  <div
+                    className="-mb-1 block md:hidden"
+                    data-cy={`cs-slider-value-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`}
+                  >
                     {criterion.unit
                       ? `${caseResponse[item.id]![criterion.id] ?? '-'} ${criterion.unit}`
                       : (caseResponse[item.id]![criterion.id] ?? '-')}
@@ -98,8 +101,11 @@ function CSCase({
                     className={{
                       field: 'hidden w-40 md:block',
                       input: 'h-8',
-                      unit: 'h-8',
+                      unit: 'h-8 px-2',
                     }} // only show on larger devices
+                    data={{
+                      cy: `cs-slider-nr-value-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`,
+                    }}
                   />
                 </div>
               </div>
