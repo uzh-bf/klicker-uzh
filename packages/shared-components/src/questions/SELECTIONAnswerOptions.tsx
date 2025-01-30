@@ -3,11 +3,12 @@ import { FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
 import Select from 'react-select'
+import type { SelectionStudentResponseType } from 'src/StudentElement'
 import { twMerge } from 'tailwind-merge'
 
 interface SELECTIONAnswerOptionsProps {
-  responses: Record<number, number>
-  onChange: (newValue: Record<number, number>) => void
+  responses: SelectionStudentResponseType
+  onChange: (newValue: SelectionStudentResponseType) => void
   options: SelectionElementOptions
   elementIx: number
   disabled: boolean

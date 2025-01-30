@@ -183,7 +183,7 @@ export const CaseStudyCriterion = builder
     fields: (t) => ({
       id: t.exposeString('id'),
       name: t.exposeString('name'),
-      order: t.exposeInt('order'),
+      order: t.exposeInt('order', { nullable: true }),
       min: t.exposeFloat('min'),
       max: t.exposeFloat('max'),
       step: t.exposeFloat('step'),
@@ -221,7 +221,7 @@ export const CaseStudyCase = builder
       id: t.exposeString('id'),
       title: t.exposeString('title'),
       description: t.exposeString('description'),
-      order: t.exposeInt('order'),
+      order: t.exposeInt('order', { nullable: true }),
       solutions: t.expose('solutions', {
         type: [CaseStudyCaseSolution],
         nullable: true,
@@ -249,9 +249,8 @@ export const CaseStudyElementOptions = builder
       }),
       criteria: t.expose('criteria', {
         type: [CaseStudyCriterion],
-        nullable: true,
       }),
-      cases: t.expose('cases', { type: [CaseStudyCase], nullable: true }),
+      cases: t.expose('cases', { type: [CaseStudyCase] }),
     }),
   })
 // #endregion
@@ -367,6 +366,7 @@ export const ElementData = builder.unionType('ElementData', {
     FlashcardElementData,
     ContentElementData,
     SelectionElementData,
+    CaseStudyElementData,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -380,6 +380,8 @@ export const ElementData = builder.unionType('ElementData', {
         return FreeTextElementData
       case DB.ElementType.SELECTION:
         return SelectionElementData
+      case DB.ElementType.CASE_STUDY:
+        return CaseStudyElementData
       case DB.ElementType.FLASHCARD:
         return FlashcardElementData
       case DB.ElementType.CONTENT:

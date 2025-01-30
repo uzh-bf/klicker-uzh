@@ -9,6 +9,7 @@ import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
 import SEEValuation from './evaluation/SEEvaluation'
 import SELECTIONAnswerOptions from './questions/SELECTIONAnswerOptions'
+import type { SelectionStudentResponseType } from './StudentElement'
 import completeSelectionResponse from './utils/completeSelectionResponse'
 import getEmptySelectionResponse from './utils/getEmptySelectionResponse'
 import { validateSelectionResponse } from './utils/validateResponse'
@@ -16,10 +17,10 @@ import { validateSelectionResponse } from './utils/validateResponse'
 interface SelectionQuestionProps {
   content: string
   options: SelectionElementOptions
-  response?: Record<number, number>
+  response?: SelectionStudentResponseType
   valid: boolean
-  setResponse: (newValue: Record<number, number>, valid: boolean) => void
-  existingResponse?: Record<number, number>
+  setResponse: (newValue: SelectionStudentResponseType, valid: boolean) => void
+  existingResponse?: SelectionStudentResponseType
   elementIx: number
   evaluation?: SelectionInstanceEvaluation
   disabled?: boolean

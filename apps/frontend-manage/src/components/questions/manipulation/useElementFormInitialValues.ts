@@ -163,7 +163,7 @@ function useElementFormInitialValues({
               step: String(criterion.step),
             })) ?? [],
           cases:
-            options.cases?.map((caseItem) => ({
+            options.cases.map((caseItem) => ({
               id: caseItem.id,
               title: caseItem.title,
               description: caseItem.description,

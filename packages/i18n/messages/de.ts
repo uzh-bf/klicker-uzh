@@ -16,6 +16,7 @@ export default {
         'Bitte wählen Sie <b>{number} korrekte Antwort-Optionen</b> aus der vorgegebenen Liste.',
       seCorrectAnswerN: 'Antwort {number}',
       noMatchingOptionFound: 'Keine passende Option gefunden.',
+      csCaseStudyInstructions: 'Fallstudie: Instruktionen',
     },
     DRAFT: {
       statusLabel: 'Entwurf',
@@ -273,6 +274,8 @@ export default {
       case: 'Fall',
       cases: 'Fälle',
       entries: 'Einträge',
+      content: 'Inhalt',
+      instructions: 'Anweisungen',
     },
     contentInput: {
       boldStyle:
@@ -1017,7 +1020,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie einen Multiplikator, mit welchem die Punkte für diese Frage multipliziert werden sollen. Der Multiplikator kann nur zwischen 1 und 4 liegen.',
       questionTooltip:
         'Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen.',
+      contentTooltip:
+        'Geben Sie den Inhalt ein, den Sie den Teilnehmenden präsentieren möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen.',
+      instructionsTooltip:
+        'Geben Sie hier die Instruktionen für die Studierenden ein, welche als Wegleitung für die Beantwortung der Fallstudie dienen.',
       questionPlaceholder: 'Fragetext hier eingeben…',
+      contentPlaceholder: 'Inhalt hier eingeben…',
+      instructionsPlaceholder: 'Instruktionen hier eingeben…',
       explanationTooltip:
         'Geben Sie hier eine generische Erklärung zu Ihrer Frage ein, welche den Studierenden unabhängig von Ihrer Antwort in Übungs-Quizzen und Microlearnings als Erklärung der Lösung angezeigt wird.',
       explanationPlaceholder: 'Erklärung hier eingeben…',

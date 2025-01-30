@@ -6,6 +6,7 @@ import type {
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import type { Dispatch, SetStateAction } from 'react'
 import React from 'react'
+import CaseStudyQuestion from './CaseStudyQuestion'
 import ChoicesQuestion from './ChoicesQuestion'
 import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
@@ -17,6 +18,22 @@ export type ElementChoicesType =
   | ElementType.Sc
   | ElementType.Mc
   | ElementType.Kprim
+
+export type ChoicesStudentResponseType = {
+  [optionIx: number]: boolean | undefined
+}
+
+export type SelectionStudentResponseType = {
+  [inputIx: number]: number // collection entry id
+}
+
+export type CaseStudyStudentResponseType = {
+  [caseId: string]: {
+    [itemId: string]: {
+      [criterionId: string]: number | undefined
+    }
+  }
+}
 
 export type InstanceStackStudentResponseType =
   | {
@@ -33,7 +50,7 @@ export type InstanceStackStudentResponseType =
     }
   | {
       type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
-      response?: Record<number, boolean | undefined>
+      response?: ChoicesStudentResponseType
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
@@ -51,7 +68,13 @@ export type InstanceStackStudentResponseType =
     }
   | {
       type: ElementType.Selection
-      response?: Record<number, number>
+      response?: SelectionStudentResponseType
+      valid?: boolean
+      evaluation?: InstanceEvaluation
+    }
+  | {
+      type: ElementType.CaseStudy
+      response?: CaseStudyStudentResponseType
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
@@ -101,46 +124,7 @@ function StudentElement({
 }: StudentElementStackProps | StudentElementSingleProps) {
   const evaluation = stackStorage?.[element.id]?.evaluation
 
-  if (element.elementData.__typename === 'FlashcardElementData') {
-    return (
-      <Flashcard
-        key={element.id}
-        content={element.elementData.content}
-        explanation={element.elementData.explanation!}
-        response={
-          typeof studentResponse !== 'undefined'
-            ? (studentResponse[element.id]?.response as FlashcardCorrectness)
-            : (singleStudentResponse.response as FlashcardCorrectness)
-        }
-        setResponse={(studentResponse) => {
-          typeof setStudentResponse !== 'undefined'
-            ? setStudentResponse((response) => {
-                return {
-                  ...response,
-                  [element.id]: {
-                    ...response[element.id],
-                    type: ElementType.Flashcard,
-                    response: studentResponse,
-                    valid: true,
-                  },
-                }
-              })
-            : setSingleStudentResponse((response) => {
-                return {
-                  ...response,
-                  type: ElementType.Flashcard,
-                  response: studentResponse,
-                  valid: true,
-                }
-              })
-        }}
-        existingResponse={
-          stackStorage?.[element.id]?.response as FlashcardCorrectness
-        }
-        elementIx={elementIx}
-      />
-    )
-  } else if (element.elementData.__typename === 'ChoicesElementData') {
+  if (element.elementData.__typename === 'ChoicesElementData') {
     return (
       <ChoicesQuestion
         key={element.id}
@@ -149,8 +133,9 @@ function StudentElement({
         options={element.elementData.options}
         response={
           typeof studentResponse !== 'undefined'
-            ? (studentResponse[element.id]?.response as Record<number, boolean>)
-            : (singleStudentResponse.response as Record<number, boolean>)
+            ? (studentResponse[element.id]
+                ?.response as ChoicesStudentResponseType)
+            : (singleStudentResponse.response as ChoicesStudentResponseType)
         }
         setResponse={(newValue, valid) => {
           typeof setStudentResponse !== 'undefined'
@@ -175,7 +160,7 @@ function StudentElement({
               })
         }}
         existingResponse={
-          stackStorage?.[element.id]?.response as Record<number, boolean>
+          stackStorage?.[element.id]?.response as ChoicesStudentResponseType
         }
         evaluation={
           evaluation && evaluation.__typename === 'ChoicesInstanceEvaluation'
@@ -290,8 +275,9 @@ function StudentElement({
         options={element.elementData.options}
         response={
           typeof studentResponse !== 'undefined'
-            ? (studentResponse[element.id]?.response as Record<number, number>)
-            : (singleStudentResponse.response as Record<number, number>)
+            ? (studentResponse[element.id]
+                ?.response as SelectionStudentResponseType)
+            : (singleStudentResponse.response as SelectionStudentResponseType)
         }
         valid={
           typeof studentResponse !== 'undefined'
@@ -321,7 +307,7 @@ function StudentElement({
               })
         }}
         existingResponse={
-          stackStorage?.[element.id]?.response as Record<number, number>
+          stackStorage?.[element.id]?.response as SelectionStudentResponseType
         }
         evaluation={
           evaluation && evaluation.__typename === 'SelectionInstanceEvaluation'
@@ -331,6 +317,93 @@ function StudentElement({
         elementIx={elementIx}
         disabled={disabledInput}
         preview={preview}
+      />
+    )
+  } else if (element.elementData.__typename === 'CaseStudyElementData') {
+    return (
+      <CaseStudyQuestion
+        key={element.id}
+        sequential={false} // sequential setting is only relevant for live-quiz applications
+        content={element.elementData.content}
+        options={element.elementData.options}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]
+                ?.response as CaseStudyStudentResponseType)
+            : (singleStudentResponse.response as CaseStudyStudentResponseType)
+        }
+        setResponse={(newValue, valid) => {
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: ElementType.CaseStudy,
+                    response: newValue,
+                    valid: valid,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: ElementType.CaseStudy,
+                  response: newValue,
+                  valid: valid,
+                }
+              })
+        }}
+        existingResponse={
+          stackStorage?.[element.id]?.response as CaseStudyStudentResponseType
+        }
+        // evaluation={
+        //   evaluation && evaluation.__typename === 'SelectionInstanceEvaluation'
+        //     ? evaluation
+        //     : undefined
+        // }
+        elementIx={elementIx}
+        disabled={disabledInput}
+        // preview={preview}
+      />
+    )
+  } else if (element.elementData.__typename === 'FlashcardElementData') {
+    return (
+      <Flashcard
+        key={element.id}
+        content={element.elementData.content}
+        explanation={element.elementData.explanation!}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as FlashcardCorrectness)
+            : (singleStudentResponse.response as FlashcardCorrectness)
+        }
+        setResponse={(studentResponse) => {
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: ElementType.Flashcard,
+                    response: studentResponse,
+                    valid: true,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: ElementType.Flashcard,
+                  response: studentResponse,
+                  valid: true,
+                }
+              })
+        }}
+        existingResponse={
+          stackStorage?.[element.id]?.response as FlashcardCorrectness
+        }
+        elementIx={elementIx}
       />
     )
   } else if (element.elementData.__typename === 'ContentElementData') {

@@ -7,14 +7,15 @@ import { Button } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import ChoiceFeedback from '../evaluation/ChoiceFeedback'
+import type { ChoicesStudentResponseType } from '../StudentElement'
 
 export interface KPAnswerOptionsProps {
   displayMode?: ElementDisplayMode
   type: ElementType
   choices: Choice[]
   feedbacks?: QuestionFeedback[] | null
-  value?: Record<number, boolean>
-  onChange: (newValue: Record<number, boolean>) => void
+  value?: ChoicesStudentResponseType
+  onChange: (newValue: ChoicesStudentResponseType) => void
   id?: string
   elementIx: number
   disabled: boolean

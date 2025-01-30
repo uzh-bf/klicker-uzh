@@ -161,7 +161,7 @@ type AwardEntry {
 type CaseStudyCase {
   description: String!
   id: String!
-  order: Int!
+  order: Int
   solutions: [CaseStudyCaseSolution!]
   title: String!
 }
@@ -196,7 +196,7 @@ type CaseStudyCriterion {
   max: Float!
   min: Float!
   name: String!
-  order: Int!
+  order: Int
   step: Float!
   unit: String
 }
@@ -241,9 +241,9 @@ type CaseStudyElementData {
 
 type CaseStudyElementOptions {
   answerCollectionId: Int
-  cases: [CaseStudyCase!]
+  cases: [CaseStudyCase!]!
   collectionItemIds: [Int!]
-  criteria: [CaseStudyCriterion!]
+  criteria: [CaseStudyCriterion!]!
   hasSampleSolution: Boolean
   items: [ElementOptionsAnswerCollectionEntry!]
 }
@@ -536,7 +536,7 @@ enum ElementBlockStatus {
   SCHEDULED
 }
 
-union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | SelectionElementData
+union ElementData = CaseStudyElementData | ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | SelectionElementData
 
 enum ElementDisplayMode {
   GRID

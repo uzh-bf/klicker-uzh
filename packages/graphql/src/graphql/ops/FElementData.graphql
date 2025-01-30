@@ -88,6 +88,45 @@ fragment ElementData on ElementInstance {
       }
     }
 
+    ... on CaseStudyElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+      options {
+        hasSampleSolution
+        items {
+          id
+          value
+        }
+        criteria {
+          id
+          name
+          min
+          max
+          step
+          unit
+        }
+        cases {
+          id
+          title
+          description
+          solutions {
+            itemId
+            criteriaSolutions {
+              criterionId
+              min
+              max
+            }
+          }
+        }
+      }
+    }
+
     ... on FlashcardElementData {
       __typename
       id

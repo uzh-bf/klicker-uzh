@@ -253,7 +253,7 @@ export interface ElementOptionsSelection extends BaseElementOptions {
 export type CaseStudyCriterion = {
   id: string // use nanoid (as for choices) to simplify distinction from items & ordering
   name: string
-  order: number
+  order?: number
   min: number
   max: number
   step: number
@@ -275,7 +275,7 @@ export type CaseStudyCase = {
   id: string // use nanoid (as for choices) to simplify distinction from items & ordering
   title: string
   description: string
-  order: number
+  order?: number
   solutions?: CaseStudyCaseSolution[] | null
 }
 
