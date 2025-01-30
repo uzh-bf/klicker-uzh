@@ -2133,7 +2133,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="close-element-modal"]').click()
   })
 
-  it.only('Verify that creation was successful', function () {
+  it('Verify that creation was successful', function () {
     cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
