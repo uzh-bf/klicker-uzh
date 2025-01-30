@@ -1,9 +1,11 @@
+import type { SelectionStudentResponseType } from 'src/StudentElement'
+
 function completeSelectionResponse({
   existingResponse,
   emptyResponses,
 }: {
-  existingResponse?: Record<number, number>
-  emptyResponses: Record<number, number>
+  existingResponse?: SelectionStudentResponseType
+  emptyResponses: SelectionStudentResponseType
 }) {
   if (!existingResponse) {
     return undefined

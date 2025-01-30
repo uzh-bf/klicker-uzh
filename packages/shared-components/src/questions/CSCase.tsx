@@ -2,9 +2,9 @@ import type { CaseStudyElementOptions } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { FormLabel, NumberField } from '@uzh-bf/design-system'
 import React from 'react'
-import Loader from 'src/Loader'
 import type { CaseStudyStudentResponseType } from 'src/StudentElement'
 import { twMerge } from 'tailwind-merge'
+import Loader from '../Loader'
 import CSSlider from './CSSlider'
 
 function CSCase({
