@@ -6,13 +6,14 @@ import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import ChoiceFeedback from '../evaluation/ChoiceFeedback'
+import type { ChoicesStudentResponseType } from '../StudentElement'
 
 export interface SCAnswerOptionsProps {
   displayMode?: ElementDisplayMode
   choices: Choice[]
   feedbacks?: QuestionFeedback[] | null
-  value?: Record<number, boolean>
-  onChange: (value: Record<number, boolean>) => void
+  value?: ChoicesStudentResponseType
+  onChange: (value: ChoicesStudentResponseType) => void
   id?: string
   elementIx: number
   disabled: boolean

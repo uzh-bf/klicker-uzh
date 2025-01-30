@@ -2,8 +2,13 @@ import type {
   FreeTextElementOptions,
   NumericalElementOptions,
 } from '@klicker-uzh/graphql/dist/ops'
+import type {
+  CaseStudyStudentResponseType,
+  ChoicesStudentResponseType,
+  SelectionStudentResponseType,
+} from '../StudentElement'
 
-export function validateScResponse(response?: Record<number, boolean>) {
+export function validateScResponse(response?: ChoicesStudentResponseType) {
   return (
     typeof response !== 'undefined' &&
     response !== null &&
@@ -11,7 +16,7 @@ export function validateScResponse(response?: Record<number, boolean>) {
   )
 }
 
-export function validateMcResponse(response?: Record<number, boolean>) {
+export function validateMcResponse(response?: ChoicesStudentResponseType) {
   return (
     typeof response !== 'undefined' &&
     response !== null &&
@@ -19,7 +24,7 @@ export function validateMcResponse(response?: Record<number, boolean>) {
   )
 }
 
-export function validateKprimResponse(response?: Record<number, boolean>) {
+export function validateKprimResponse(response?: ChoicesStudentResponseType) {
   return (
     typeof response !== 'undefined' &&
     response !== null &&
@@ -87,7 +92,7 @@ export function validateFreeTextResponse({
 export function validateSelectionResponse({
   response,
 }: {
-  response?: Record<number, number>
+  response?: SelectionStudentResponseType
 }) {
   // ensure that at least one option is selected and that selected answer options are unique
   if (
@@ -95,6 +100,28 @@ export function validateSelectionResponse({
     Object.values(response).every((value) => value === -1) ||
     new Set(Object.values(response).filter((r) => r !== -1)).size !==
       Object.values(response).filter((r) => r !== -1).length
+  ) {
+    return false
+  }
+
+  return true
+}
+
+export function validateCaseStudyResponse({
+  response,
+}: {
+  response?: CaseStudyStudentResponseType
+}) {
+  // ensure that values for all items and criteria are defined before submitting
+  if (
+    !response ||
+    Object.values(response).some((item) =>
+      Object.values(item).some((criteriaResponses) =>
+        Object.values(criteriaResponses).some(
+          (value) => typeof value === 'undefined'
+        )
+      )
+    )
   ) {
     return false
   }

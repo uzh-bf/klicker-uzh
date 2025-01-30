@@ -335,7 +335,8 @@ export const QUESTIONS = [
   {
     originalId: '7',
     name: 'Testfrage CASE STUDY (without sample solution)',
-    content: 'Which fruits best mix into a fruit salad?',
+    content:
+      'Which fruits best mix into a fruit salad? You will be asked to assess different items based on tastiness and cost. The corresponding scenario, which should be considered during the assessment will be described in the separate cases',
     explanation:
       'All sample solutions should only be considered as subjective opinions, every taste is different.',
     type: ElementType.CASE_STUDY,
@@ -347,14 +348,14 @@ export const QUESTIONS = [
           order: 0,
           title: 'General Case',
           description:
-            'Please create the tastiest combination for a fruit salad\n',
+            'In this case, you are asked to create the tastiest combination of available fruits. You do not have to consider any specific requirements.\n',
         },
         {
           id: 'WbUzlpHCxU2xnWfDrxhJ5',
           order: 1,
           title: 'Gourmet Case',
           description:
-            'Please create the tastiest combination for a fruit salad\n',
+            'In addition to the previously described scenario, you are now asked to not only rate the elements, but also keep in mind how these assessments might be affected by being considered in a gourmet restaurant context.\n',
         },
       ],
       criteria: [
@@ -383,7 +384,8 @@ export const QUESTIONS = [
   {
     originalId: '8',
     name: 'Testfrage CASE STUDY (with sample solution)',
-    content: 'Which fruits best mix into a fruit salad?',
+    content:
+      'Which fruits best mix into a fruit salad? You will be asked to assess different items based on tastiness and cost. The corresponding scenario, which should be considered during the assessment will be described in the separate cases',
     explanation:
       'All sample solutions should only be considered as subjective opinions, every taste is different.',
     type: ElementType.CASE_STUDY,
@@ -425,7 +427,7 @@ export const QUESTIONS = [
             },
           ],
           description:
-            'Please create the tastiest combination for a fruit salad\n',
+            'In this case, you are asked to create the tastiest combination of available fruits. You do not have to consider any specific requirements.\n',
         },
         {
           id: 'FCnD8rvbi_CjEkEfMM2FP',
@@ -462,7 +464,7 @@ export const QUESTIONS = [
             },
           ],
           description:
-            'Please create the tastiest combination for a fruit salad\n',
+            'In addition to the previously described scenario, you are now asked to not only rate the elements, but also keep in mind how these assessments might be affected by being considered in a gourmet restaurant context.\n',
         },
       ],
       criteria: [

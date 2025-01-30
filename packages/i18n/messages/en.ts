@@ -16,6 +16,7 @@ export default {
         'Please choose <b>{number} correct answer options</b> from the provided selection.',
       seCorrectAnswerN: 'Answer {number}',
       noMatchingOptionFound: 'No matching option found.',
+      csCaseStudyInstructions: 'Case Study: Instructions',
     },
     DRAFT: {
       statusLabel: 'Draft',
@@ -272,6 +273,8 @@ export default {
       case: 'Case',
       cases: 'Cases',
       entries: 'entries',
+      content: 'Content',
+      instructions: 'Instructions',
     },
     contentInput: {
       boldStyle:
@@ -1018,7 +1021,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Select a multiplier with which the points for this question should be multiplied. It can be chosen between 1 and 4.',
       questionTooltip:
         'Enter the question you want to ask the participants. The rich text editor allows you to use the following (block) formatting: bold text, italic text, code, quotes, numbered lists, unordered lists and LaTeX formulas. Hover over the individual buttons for more information.',
+      contentTooltip:
+        'Enter the content you want to present to the participants. The rich text editor allows you to use the following (block) formatting: bold text, italic text, code, quotes, numbered lists, unordered lists and LaTeX formulas. Hover over the individual buttons for more information.',
+      instructionsTooltip:
+        'Enter the instructions for the students here, which serve as a guide for answering the case study.',
       questionPlaceholder: 'Enter your question here...',
+      contentPlaceholder: 'Enter your content here...',
+      instructionsPlaceholder: 'Enter your instructions here...',
       explanationTooltip:
         'Enter a generic explanation of your question here, which will be displayed to students in practice quizzes and microlearning regardless of their answer as an explanation of the correct solution.',
       explanationPlaceholder: 'Enter your explanation here...',

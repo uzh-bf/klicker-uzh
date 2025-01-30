@@ -2,6 +2,7 @@ import type { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import React, { useEffect } from 'react'
 import type {
+  CaseStudyStudentResponseType,
   ElementChoicesType,
   InstanceStackStudentResponseType,
 } from '../StudentElement'
@@ -33,14 +34,45 @@ function useSingleStudentResponse({
         ),
         valid: false,
       })
-    } else if (instance.elementData.type === ElementType.Content) {
+    } else if (instance.elementData.__typename === 'ContentElementData') {
       setStudentResponse({
-        type: instance.elementData.type,
+        type: ElementType.Content,
         response: defaultRead ? true : undefined,
         valid: true,
       })
+    } else if (instance.elementData.__typename === 'CaseStudyElementData') {
+      const cases = instance.elementData.options.cases
+      const items = instance.elementData.options.items
+      const criteria = instance.elementData.options.criteria
+
+      // compute the correct empty type by reducing cases, items and criteria
+      const emptyResponse = cases.reduce<CaseStudyStudentResponseType>(
+        (acc, caseObj) => {
+          acc[caseObj.id] = items!.reduce<CaseStudyStudentResponseType['']>(
+            (itemAcc, item) => {
+              itemAcc[item.id] = criteria.reduce<
+                CaseStudyStudentResponseType['']['']
+              >((criterionAcc, criterion) => {
+                criterionAcc[criterion.id] = undefined
+                return criterionAcc
+              }, {})
+              return itemAcc
+            },
+            {}
+          )
+          return acc
+        },
+        {}
+      )
+
+      setStudentResponse({
+        type: ElementType.CaseStudy,
+        response: emptyResponse,
+        valid: false,
+      })
     }
     // default case - valid for FREE_TEXT, NUMERICAL, FLASHCARD elements
+    // SELECTION response can be set to undefined -> will be overwritten in SelectionQuestion component
     else {
       setStudentResponse({
         type: instance.elementData.type,

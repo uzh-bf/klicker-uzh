@@ -13,6 +13,7 @@ import SCEvaluation from './evaluation/SCEvaluation'
 import KPAnswerOptions from './questions/KPAnswerOptions'
 import MCAnswerOptions from './questions/MCAnswerOptions'
 import SCAnswerOptions from './questions/SCAnswerOptions'
+import type { ChoicesStudentResponseType } from './StudentElement'
 import {
   validateKprimResponse,
   validateMcResponse,
@@ -23,9 +24,9 @@ interface ChoicesQuestionProps {
   content: string
   type: ElementType.Sc | ElementType.Mc | ElementType.Kprim
   options: ChoiceElementOptions
-  response?: Record<number, boolean>
-  setResponse: (newValue: Record<number, boolean>, valid: boolean) => void
-  existingResponse?: Record<number, boolean>
+  response?: ChoicesStudentResponseType
+  setResponse: (newValue: ChoicesStudentResponseType, valid: boolean) => void
+  existingResponse?: ChoicesStudentResponseType
   elementIx: number
   evaluation?: ChoicesInstanceEvaluation
   disabled?: boolean
@@ -66,7 +67,7 @@ function ChoicesQuestion({
             choices={options.choices}
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
-            onChange={(newValue: Record<number, boolean>) => {
+            onChange={(newValue: ChoicesStudentResponseType) => {
               const valid = validateKprimResponse(newValue)
               setResponse(newValue, valid)
             }}
@@ -81,7 +82,7 @@ function ChoicesQuestion({
             choices={options.choices}
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
-            onChange={(newValue: Record<number, boolean>) => {
+            onChange={(newValue: ChoicesStudentResponseType) => {
               const valid = validateMcResponse(newValue)
               setResponse(newValue, valid)
             }}
@@ -96,7 +97,7 @@ function ChoicesQuestion({
             choices={options.choices}
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
-            onChange={(newValue: Record<number, boolean>) => {
+            onChange={(newValue: ChoicesStudentResponseType) => {
               const valid = validateScResponse(newValue)
               setResponse(newValue, valid)
             }}

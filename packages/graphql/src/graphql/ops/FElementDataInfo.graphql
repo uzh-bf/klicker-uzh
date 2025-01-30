@@ -44,6 +44,17 @@ fragment ElementDataInfo on ElementInstance {
       pointsMultiplier
     }
 
+    ... on CaseStudyElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+    }
+
     ... on FlashcardElementData {
       __typename
       id

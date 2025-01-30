@@ -60,23 +60,16 @@ export function NUMERICALAnswerOptions({
           placeholder={placeholder}
           disabled={disabled}
           precision={accuracy}
+          unit={unit}
           className={{
             input: twMerge(
               'focus:border-primary-80',
-              unit && '!rounded-r-none',
+              unit && 'rounded-r-none',
               !valid && 'border-red-600'
             ),
           }}
           data={{ cy: `input-numerical-${elementIx + 1}` }}
         />
-        {unit && (
-          <div
-            className="flex min-w-max flex-col items-center justify-center rounded-r bg-slate-600 px-4 text-white"
-            data-cy="input-numerical-unit"
-          >
-            {unit}
-          </div>
-        )}
       </div>
       {!valid && (
         <div className="text-black">

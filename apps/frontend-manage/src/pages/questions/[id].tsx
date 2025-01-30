@@ -53,7 +53,7 @@ function QuestionDetails() {
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center">
+    <div className="flex w-full items-center justify-center">
       <div className="flex w-full flex-col items-center p-6">
         <H2 className={{ root: 'mb-3' }}>
           {t('manage.general.questionPreview', {

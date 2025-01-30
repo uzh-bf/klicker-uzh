@@ -1,3 +1,4 @@
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FormLabel } from '@uzh-bf/design-system'
 import { FastField, FastFieldProps, FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -18,6 +19,56 @@ function ElementContentInput({
   setFieldValue,
 }: ElementContentInputProps) {
   const t = useTranslations()
+  const labelMap: Record<
+    ElementType,
+    | 'shared.generic.question'
+    | 'shared.generic.content'
+    | 'shared.generic.instructions'
+  > = {
+    [ElementType.Content]: 'shared.generic.content',
+    [ElementType.Flashcard]: 'shared.generic.question',
+    [ElementType.Sc]: 'shared.generic.question',
+    [ElementType.Mc]: 'shared.generic.question',
+    [ElementType.Kprim]: 'shared.generic.question',
+    [ElementType.Numerical]: 'shared.generic.question',
+    [ElementType.FreeText]: 'shared.generic.question',
+    [ElementType.Selection]: 'shared.generic.question',
+    [ElementType.CaseStudy]: 'shared.generic.instructions',
+  }
+
+  const tooltipMap: Record<
+    ElementType,
+    | 'manage.questionForms.questionTooltip'
+    | 'manage.questionForms.contentTooltip'
+    | 'manage.questionForms.instructionsTooltip'
+  > = {
+    [ElementType.Content]: 'manage.questionForms.contentTooltip',
+    [ElementType.Flashcard]: 'manage.questionForms.questionTooltip',
+    [ElementType.Sc]: 'manage.questionForms.questionTooltip',
+    [ElementType.Mc]: 'manage.questionForms.questionTooltip',
+    [ElementType.Kprim]: 'manage.questionForms.questionTooltip',
+    [ElementType.Numerical]: 'manage.questionForms.questionTooltip',
+    [ElementType.FreeText]: 'manage.questionForms.questionTooltip',
+    [ElementType.Selection]: 'manage.questionForms.questionTooltip',
+    [ElementType.CaseStudy]: 'manage.questionForms.instructionsTooltip',
+  }
+
+  const placeholderMap: Record<
+    ElementType,
+    | 'manage.questionForms.questionPlaceholder'
+    | 'manage.questionForms.contentPlaceholder'
+    | 'manage.questionForms.instructionsPlaceholder'
+  > = {
+    [ElementType.Content]: 'manage.questionForms.contentPlaceholder',
+    [ElementType.Flashcard]: 'manage.questionForms.questionPlaceholder',
+    [ElementType.Sc]: 'manage.questionForms.questionPlaceholder',
+    [ElementType.Mc]: 'manage.questionForms.questionPlaceholder',
+    [ElementType.Kprim]: 'manage.questionForms.questionPlaceholder',
+    [ElementType.Numerical]: 'manage.questionForms.questionPlaceholder',
+    [ElementType.FreeText]: 'manage.questionForms.questionPlaceholder',
+    [ElementType.Selection]: 'manage.questionForms.questionPlaceholder',
+    [ElementType.CaseStudy]: 'manage.questionForms.instructionsPlaceholder',
+  }
 
   return (
     <div className="mt-4">
@@ -36,9 +87,9 @@ function ElementContentInput({
           <>
             <FormLabel
               required
-              label={t('shared.generic.question')}
+              label={t(labelMap[values.type])}
               labelType="small"
-              tooltip={t('manage.questionForms.questionTooltip')}
+              tooltip={t(tooltipMap[values.type])}
             />
             <ContentInput
               error={meta.error}
@@ -48,7 +99,7 @@ function ElementContentInput({
                 setFieldValue('content', newValue)
               }
               showToolbarOnFocus={false}
-              placeholder={t('manage.questionForms.questionPlaceholder')}
+              placeholder={t(placeholderMap[values.type])}
               key={`${values.type}-content`}
               data={{ cy: 'insert-question-text' }}
               className={{ content: 'max-w-none' }}
