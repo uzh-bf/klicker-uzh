@@ -158,6 +158,21 @@ query GetUserQuestions {
       options {
         __typename
         hasSampleSolution
+        criteria {
+          id
+          name
+          order
+          min
+          max
+          step
+          unit
+        }
+        cases {
+          id
+          title
+          description
+          order
+        }
       }
 
       tags {

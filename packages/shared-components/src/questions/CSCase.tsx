@@ -2,9 +2,9 @@ import type { CaseStudyElementOptions } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { FormLabel, NumberField } from '@uzh-bf/design-system'
 import React from 'react'
-import type { CaseStudyStudentResponseType } from 'src/StudentElement'
 import { twMerge } from 'tailwind-merge'
 import Loader from '../Loader'
+import type { CaseStudyStudentResponseType } from '../StudentElement'
 import CSSlider from './CSSlider'
 
 function CSCase({
@@ -50,7 +50,7 @@ function CSCase({
       )}
 
       {typeof caseResponse !== 'undefined' ? (
-        items!.map((item, itemIx) => (
+        (items ?? []).map((item, itemIx) => (
           <div
             key={`student-element-cs-item-${item.id}`}
             className="mb-4 border-b border-slate-200 pb-4 last:border-b-0"

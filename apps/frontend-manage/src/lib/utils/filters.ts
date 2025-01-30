@@ -66,7 +66,10 @@ function filterQuestions(
   if (filters.answerFeedbacks) {
     results = results.filter(
       (element) =>
-        'options' in element && element.options.hasAnswerFeedbacks === true
+        'options' in element &&
+        element.options &&
+        'hasAnswerFeedbacks' in element.options &&
+        element.options.hasAnswerFeedbacks === true
     )
   }
 

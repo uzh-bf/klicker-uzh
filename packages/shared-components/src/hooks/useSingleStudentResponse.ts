@@ -48,18 +48,17 @@ function useSingleStudentResponse({
       // compute the correct empty type by reducing cases, items and criteria
       const emptyResponse = cases.reduce<CaseStudyStudentResponseType>(
         (acc, caseObj) => {
-          acc[caseObj.id] = items!.reduce<CaseStudyStudentResponseType['']>(
-            (itemAcc, item) => {
-              itemAcc[item.id] = criteria.reduce<
-                CaseStudyStudentResponseType['']['']
-              >((criterionAcc, criterion) => {
-                criterionAcc[criterion.id] = undefined
-                return criterionAcc
-              }, {})
-              return itemAcc
-            },
-            {}
-          )
+          acc[caseObj.id] = (items ?? []).reduce<
+            CaseStudyStudentResponseType['']
+          >((itemAcc, item) => {
+            itemAcc[item.id] = criteria.reduce<
+              CaseStudyStudentResponseType['']['']
+            >((criterionAcc, criterion) => {
+              criterionAcc[criterion.id] = undefined
+              return criterionAcc
+            }, {})
+            return itemAcc
+          }, {})
           return acc
         },
         {}

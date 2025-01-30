@@ -3,8 +3,8 @@ import { FormLabel } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
 import Select from 'react-select'
-import type { SelectionStudentResponseType } from 'src/StudentElement'
 import { twMerge } from 'tailwind-merge'
+import type { SelectionStudentResponseType } from '../StudentElement'
 
 interface SELECTIONAnswerOptionsProps {
   responses: SelectionStudentResponseType
