@@ -71,8 +71,8 @@ function CSCase({
                     data-cy={`cs-slider-value-${elementIx + 1}-${caseIndex + 1}-${itemIx + 1}-${criterionIx + 1}`}
                   >
                     {criterion.unit
-                      ? `${caseResponse[item.id]![criterion.id] ?? '-'} ${criterion.unit}`
-                      : (caseResponse[item.id]![criterion.id] ?? '-')}
+                      ? `${caseResponse[item.id]?.[criterion.id] ?? '-'} ${criterion.unit}`
+                      : (caseResponse[item.id]?.[criterion.id] ?? '-')}
                   </div>
                 </div>
                 <div className="flex flex-col gap-5 md:flex-row md:items-center">
@@ -82,7 +82,7 @@ function CSCase({
                     itemIx={itemIx}
                     criterionIx={criterionIx}
                     disabled={disabled}
-                    value={caseResponse[item.id]![criterion.id]}
+                    value={caseResponse[item.id]?.[criterion.id]}
                     onChange={(newValue) => {
                       setCaseResponse({
                         ...caseResponse,
@@ -101,7 +101,7 @@ function CSCase({
                   />
                   <NumberField
                     disabled
-                    value={caseResponse[item.id]![criterion.id] ?? ''}
+                    value={caseResponse[item.id]?.[criterion.id] ?? ''}
                     onChange={() => null}
                     unit={criterion.unit ?? undefined}
                     className={{
