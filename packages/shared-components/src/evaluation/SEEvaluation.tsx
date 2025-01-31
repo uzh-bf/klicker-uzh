@@ -93,6 +93,7 @@ function SEEValuation({
             <div key={`top-response-${response.answerId}`}>
               <div className="-mb-0.5 text-sm">{`${ix + 1}. ${response.value}`}</div>
               <Progress
+                noMinWidth
                 value={response.count}
                 max={evaluation.numAnswers ?? 1}
                 formatter={() => null}
@@ -103,7 +104,7 @@ function SEEValuation({
                     response.correct && 'border-green-600'
                   ),
                   indicator: twMerge(
-                    'min-w-0 bg-red-600 px-0',
+                    'bg-red-600 px-0',
                     response.correct && 'bg-green-600'
                   ),
                 }}

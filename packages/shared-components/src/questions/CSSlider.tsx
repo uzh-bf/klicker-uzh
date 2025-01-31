@@ -1,5 +1,6 @@
 import { Slider } from '@uzh-bf/design-system'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface CSSliderProps {
   elementIx: number
@@ -13,6 +14,7 @@ interface CSSliderProps {
   min: number
   max: number
   step: number
+  solution?: { min: number; max: number }
 }
 
 function CSSlider({
@@ -27,7 +29,14 @@ function CSSlider({
   min,
   max,
   step,
+  solution,
 }: CSSliderProps) {
+  const correct =
+    typeof solution !== 'undefined' && typeof value !== 'undefined'
+      ? value >= solution.min - Number.EPSILON &&
+        value <= solution.max + Number.EPSILON
+      : undefined
+
   return (
     <div className="w-full self-center">
       <Slider
@@ -41,7 +50,17 @@ function CSSlider({
         step={step}
         className={{
           root: 'h-6',
-          range: typeof value === 'undefined' ? 'bg-gray-200' : '',
+          range: twMerge(
+            typeof value === 'undefined' && 'bg-gray-200',
+            typeof correct !== 'undefined' &&
+              (correct
+                ? 'bg-green-700 bg-opacity-80'
+                : 'bg-red-700 bg-opacity-80')
+          ),
+          thumb: twMerge(
+            typeof correct !== 'undefined' &&
+              (correct ? 'border-green-700' : 'border-red-700')
+          ),
         }}
         dataThumb={{
           cy: `cs-slider-${elementIx + 1}-${caseIndex + 1}-${itemIx + 1}-${criterionIx + 1}`,

@@ -1,7 +1,15 @@
-import type { CaseStudyElementOptions } from '@klicker-uzh/graphql/dist/ops'
+import type {
+  CaseStudyElementOptions,
+  CaseStudyInstanceEvaluation,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import CSEvaluation from './evaluation/CSEvaluation'
+import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
+import QuestionExplanation from './evaluation/QuestionExplanation'
+import useCaseStudySolutionsObject from './hooks/useCaseStudySolutionsObject'
 import CSCase from './questions/CSCase'
 import type { CaseStudyStudentResponseType } from './StudentElement'
 import { validateCaseStudyResponse } from './utils/validateResponse'
@@ -14,7 +22,7 @@ interface CaseStudyQuestionProps {
   setResponse: (newValue: CaseStudyStudentResponseType, valid: boolean) => void
   existingResponse?: CaseStudyStudentResponseType
   elementIx: number
-  // evaluation?: SelectionInstanceEvaluation
+  evaluation?: CaseStudyInstanceEvaluation
   disabled?: boolean
   // preview: boolean
 }
@@ -27,7 +35,7 @@ function CaseStudyQuestion({
   setResponse,
   existingResponse,
   elementIx,
-  // evaluation,
+  evaluation,
   disabled = false,
   // preview,
 }: CaseStudyQuestionProps) {
@@ -35,11 +43,14 @@ function CaseStudyQuestion({
   const [caseIndex, setCaseIndex] = useState(0)
   const currentSingleCaseId = options.cases[caseIndex]?.id
 
+  // convert case study solutions to object for efficient access
+  const solutions = useCaseStudySolutionsObject({ evaluation })
+
   return (
     <div className="flex flex-col gap-4 md:flex-row">
       <div className="flex-1">
         {content !== '<br>' && (
-          <div>
+          <div className={twMerge(!!evaluation && 'mb-3')}>
             <div className="mb-1 mt-3 text-lg font-bold italic">
               {t('shared.questions.csCaseStudyInstructions')}
             </div>
@@ -47,10 +58,9 @@ function CaseStudyQuestion({
           </div>
         )}
 
-        {/* // TODO: once evaluation is available */}
-        {/* {evaluation && evaluation.explanation && (
+        {evaluation && evaluation.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />
-        )} */}
+        )}
 
         {sequential ? (
           <div>
@@ -97,6 +107,7 @@ function CaseStudyQuestion({
                 currentCase={currentCase}
                 items={options.items}
                 criteria={options.criteria}
+                solutions={solutions?.[currentCase.id]}
                 disabled={disabled}
                 caseResponse={
                   existingResponse?.[currentCase.id] ??
@@ -126,7 +137,7 @@ function CaseStudyQuestion({
         )}
       </div>
 
-      {/* {evaluation && evaluation.answerSolutionIds && (
+      {evaluation && evaluation.studySolutions && solutions && (
         <div
           className="col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4 md:ml-2 md:mr-0 md:w-64 md:px-0 lg:w-80"
           key={`evaluation-${elementIx}`}
@@ -135,10 +146,14 @@ function CaseStudyQuestion({
             <div className="flex flex-row justify-between">
               <PracticeQuizPoints evaluation={evaluation} />
             </div>
-            <CSEValuation evaluation={evaluation} options={options} />
+            <CSEvaluation
+              evaluation={evaluation}
+              options={options}
+              solutions={solutions}
+            />
           </div>
         </div>
-      )} */}
+      )}
     </div>
   )
 }

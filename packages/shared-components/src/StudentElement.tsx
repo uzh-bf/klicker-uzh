@@ -357,11 +357,11 @@ function StudentElement({
         existingResponse={
           stackStorage?.[element.id]?.response as CaseStudyStudentResponseType
         }
-        // evaluation={
-        //   evaluation && evaluation.__typename === 'SelectionInstanceEvaluation'
-        //     ? evaluation
-        //     : undefined
-        // }
+        evaluation={
+          evaluation && evaluation.__typename === 'CaseStudyInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
         elementIx={elementIx}
         disabled={disabledInput}
         // preview={preview}

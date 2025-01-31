@@ -14,6 +14,10 @@
   right: 0px
 }
 
+.top-0 {
+  top: 0px
+}
+
 .order-1 {
   order: 1
 }
@@ -118,6 +122,10 @@
 
 .mt-1\.5 {
   margin-top: 0.375rem
+}
+
+.mt-10 {
+  margin-top: 2.5rem
 }
 
 .mt-2 {
@@ -230,6 +238,10 @@
 
 .min-h-\[6rem\] {
   min-height: 6rem
+}
+
+.w-0\.5 {
+  width: 0.125rem
 }
 
 .w-10 {
@@ -503,9 +515,19 @@
   border-color: rgb(22 163 74 / var(--tw-border-opacity, 1))
 }
 
+.border-green-700 {
+  --tw-border-opacity: 1;
+  border-color: rgb(21 128 61 / var(--tw-border-opacity, 1))
+}
+
 .border-red-600 {
   --tw-border-opacity: 1;
   border-color: rgb(220 38 38 / var(--tw-border-opacity, 1))
+}
+
+.border-red-700 {
+  --tw-border-opacity: 1;
+  border-color: rgb(185 28 28 / var(--tw-border-opacity, 1))
 }
 
 .border-slate-200 {
@@ -612,9 +634,19 @@
   background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1))
 }
 
+.bg-red-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(239 68 68 / var(--tw-bg-opacity, 1))
+}
+
 .bg-red-600 {
   --tw-bg-opacity: 1;
   background-color: rgb(220 38 38 / var(--tw-bg-opacity, 1))
+}
+
+.bg-red-700 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(185 28 28 / var(--tw-bg-opacity, 1))
 }
 
 .bg-slate-100 {
@@ -657,6 +689,14 @@
 
 .bg-opacity-60 {
   --tw-bg-opacity: 0.6
+}
+
+.bg-opacity-70 {
+  --tw-bg-opacity: 0.7
+}
+
+.bg-opacity-80 {
+  --tw-bg-opacity: 0.8
 }
 
 .bg-gradient-to-r {
