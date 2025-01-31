@@ -56,6 +56,39 @@ export const ElementInstanceInput = builder.inputType('ElementInstanceInput', {
   }),
 })
 
+export const CaseStudyCriterionResponse = builder.inputType(
+  'CaseStudyCriterionResponse',
+  {
+    fields: (t) => ({
+      criterionId: t.string({ required: true }),
+      response: t.float({ required: true }),
+    }),
+  }
+)
+
+export const CaseStudyItemResponse = builder.inputType(
+  'CaseStudyItemResponse',
+  {
+    fields: (t) => ({
+      itemId: t.int({ required: true }),
+      criterionResponses: t.field({
+        type: [CaseStudyCriterionResponse],
+        required: true,
+      }),
+    }),
+  }
+)
+
+export const CaseStudyCaseResponse = builder.inputType(
+  'CaseStudyCaseResponse',
+  {
+    fields: (t) => ({
+      caseId: t.string({ required: true }),
+      itemResponses: t.field({ type: [CaseStudyItemResponse], required: true }),
+    }),
+  }
+)
+
 export const StackResponseInput = builder.inputType('StackResponseInput', {
   fields: (t) => ({
     instanceId: t.int({ required: true }),
@@ -69,6 +102,10 @@ export const StackResponseInput = builder.inputType('StackResponseInput', {
     numericalResponse: t.float({ required: false }),
     freeTextResponse: t.string({ required: false }),
     selectionResponse: t.intList({ required: false }),
+    caseStudyResponse: t.field({
+      type: [CaseStudyCaseResponse],
+      required: false,
+    }),
   }),
 })
 

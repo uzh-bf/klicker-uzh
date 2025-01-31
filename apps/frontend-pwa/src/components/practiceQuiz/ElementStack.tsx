@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  CaseStudyCaseResponse,
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectness,
@@ -465,6 +466,45 @@ function ElementStack({
                         selectionResponse: Object.values(
                           value.response!
                         ).filter((entry) => typeof entry !== 'undefined'),
+                      }
+                    } else if (value.type === ElementType.CaseStudy) {
+                      const caseStudyResponse: CaseStudyCaseResponse[] =
+                        Object.entries(value.response!).map(
+                          ([caseId, caseResponse]) => {
+                            return {
+                              caseId,
+                              itemResponses: Object.entries(caseResponse).map(
+                                ([itemId, itemResponse]) => {
+                                  return {
+                                    itemId: parseInt(itemId),
+                                    criterionResponses: Object.entries(
+                                      itemResponse
+                                    ).flatMap(
+                                      ([criterionId, criterionResponse]) => {
+                                        if (
+                                          typeof criterionResponse ===
+                                          'undefined'
+                                        ) {
+                                          return []
+                                        }
+
+                                        return {
+                                          criterionId: criterionId,
+                                          response: criterionResponse,
+                                        }
+                                      }
+                                    ),
+                                  }
+                                }
+                              ),
+                            }
+                          }
+                        )
+
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: value.type,
+                        caseStudyResponse,
                       }
                     } else {
                       return {

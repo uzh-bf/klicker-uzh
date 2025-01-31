@@ -1408,9 +1408,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareStackVariety({
             migrationIdOffset: 600,
             flashcards: flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: questionsTest,
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,

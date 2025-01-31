@@ -180,6 +180,11 @@ input CaseStudyCaseInput {
   title: String!
 }
 
+input CaseStudyCaseResponse {
+  caseId: String!
+  itemResponses: [CaseStudyItemResponse!]!
+}
+
 type CaseStudyCaseSolution {
   criteriaSolutions: [CaseStudyCaseCriterionSolution!]!
   itemId: Int!
@@ -209,6 +214,11 @@ input CaseStudyCriterionInput {
   order: Int!
   step: Float!
   unit: String
+}
+
+input CaseStudyCriterionResponse {
+  criterionId: String!
+  response: Float!
 }
 
 type CaseStudyElement {
@@ -246,6 +256,11 @@ type CaseStudyElementOptions {
   criteria: [CaseStudyCriterion!]!
   hasSampleSolution: Boolean
   items: [ElementOptionsAnswerCollectionEntry!]
+}
+
+input CaseStudyItemResponse {
+  criterionResponses: [CaseStudyCriterionResponse!]!
+  itemId: Int!
 }
 
 input CaseStudySolutionInput {
@@ -1860,6 +1875,7 @@ enum StackFeedbackStatus {
 }
 
 input StackResponseInput {
+  caseStudyResponse: [CaseStudyCaseResponse!]
   choicesResponse: [Int!]
   contentReponse: Boolean
   flashcardResponse: FlashcardCorrectnessType

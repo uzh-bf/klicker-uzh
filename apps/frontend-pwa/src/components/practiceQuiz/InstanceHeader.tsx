@@ -171,7 +171,12 @@ function InstanceHeader({
           {correctness === ResponseCorrectnessType.Incorrect && (
             <FontAwesomeIcon icon={faXmark} className="text-red-600" />
           )}
-          <H4 data={{ cy: `element-instance-header-${name}` }}>{name}</H4>
+          <div
+            className="text-lg font-bold"
+            data-cy={`element-instance-header-${name}`}
+          >
+            {name}
+          </div>
         </div>
         {withParticipant && (
           <div className="-mr-2 flex flex-row items-center gap-4">

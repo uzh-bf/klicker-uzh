@@ -40,7 +40,7 @@ function CaseStudyQuestion({
       <div className="flex-1">
         {content !== '<br>' && (
           <div>
-            <div className="mb-1 text-xl font-bold">
+            <div className="mb-1 mt-3 text-lg font-bold italic">
               {t('shared.questions.csCaseStudyInstructions')}
             </div>
             <Markdown content={content} />

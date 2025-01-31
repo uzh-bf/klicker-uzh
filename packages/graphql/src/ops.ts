@@ -214,6 +214,11 @@ export type CaseStudyCaseInput = {
   title: Scalars['String']['input'];
 };
 
+export type CaseStudyCaseResponse = {
+  caseId: Scalars['String']['input'];
+  itemResponses: Array<CaseStudyItemResponse>;
+};
+
 export type CaseStudyCaseSolution = {
   __typename?: 'CaseStudyCaseSolution';
   criteriaSolutions: Array<CaseStudyCaseCriterionSolution>;
@@ -245,6 +250,11 @@ export type CaseStudyCriterionInput = {
   order: Scalars['Int']['input'];
   step: Scalars['Float']['input'];
   unit?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CaseStudyCriterionResponse = {
+  criterionId: Scalars['String']['input'];
+  response: Scalars['Float']['input'];
 };
 
 export type CaseStudyElement = {
@@ -285,6 +295,11 @@ export type CaseStudyElementOptions = {
   criteria: Array<CaseStudyCriterion>;
   hasSampleSolution?: Maybe<Scalars['Boolean']['output']>;
   items?: Maybe<Array<ElementOptionsAnswerCollectionEntry>>;
+};
+
+export type CaseStudyItemResponse = {
+  criterionResponses: Array<CaseStudyCriterionResponse>;
+  itemId: Scalars['Int']['input'];
 };
 
 export type CaseStudySolutionInput = {
@@ -3042,6 +3057,7 @@ export enum StackFeedbackStatus {
 }
 
 export type StackResponseInput = {
+  caseStudyResponse?: InputMaybe<Array<CaseStudyCaseResponse>>;
   choicesResponse?: InputMaybe<Array<Scalars['Int']['input']>>;
   contentReponse?: InputMaybe<Scalars['Boolean']['input']>;
   flashcardResponse?: InputMaybe<FlashcardCorrectnessType>;

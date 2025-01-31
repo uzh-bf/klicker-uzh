@@ -2,6 +2,7 @@ import { ElementType, type ElementStack } from '@klicker-uzh/graphql/dist/ops'
 import type { SelectionElementData } from '@klicker-uzh/types'
 import React, { useEffect } from 'react'
 import type {
+  CaseStudyStudentResponseType,
   ElementChoicesType,
   StackStudentResponseType,
 } from '../StudentElement'
@@ -56,6 +57,37 @@ function useStudentResponse({
             response: emptyResponses,
             valid: false,
           }
+          return acc
+        } else if (element.elementData.__typename === 'CaseStudyElementData') {
+          const cases = element.elementData.options.cases
+          const items = element.elementData.options.items
+          const criteria = element.elementData.options.criteria
+
+          // compute the correct empty type by reducing cases, items and criteria
+          const emptyResponse = cases.reduce<CaseStudyStudentResponseType>(
+            (caseAcc, caseObj) => {
+              caseAcc[caseObj.id] = (items ?? []).reduce<
+                CaseStudyStudentResponseType['']
+              >((itemAcc, item) => {
+                itemAcc[item.id] = criteria.reduce<
+                  CaseStudyStudentResponseType['']['']
+                >((criterionAcc, criterion) => {
+                  criterionAcc[criterion.id] = undefined
+                  return criterionAcc
+                }, {})
+                return itemAcc
+              }, {})
+              return caseAcc
+            },
+            {}
+          )
+
+          acc[element.id] = {
+            type: ElementType.CaseStudy,
+            response: emptyResponse,
+            valid: false,
+          }
+
           return acc
         }
         // default case - valid for FREE_TEXT, NUMERICAL, FLASHCARD elements
