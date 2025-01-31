@@ -2878,6 +2878,7 @@ export enum ResponseCorrectnessType {
 }
 
 export type ResponseInput = {
+  assessment?: InputMaybe<Array<CaseStudyCaseResponse>>;
   choices?: InputMaybe<Array<Scalars['Int']['input']>>;
   selection?: InputMaybe<Array<Scalars['Int']['input']>>;
   value?: InputMaybe<Scalars['String']['input']>;

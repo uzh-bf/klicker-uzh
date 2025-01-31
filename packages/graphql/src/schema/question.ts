@@ -39,6 +39,7 @@ import {
   SelectionElementOptions,
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
+import { CaseStudyCaseResponse } from './practiceQuiz.js'
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -133,6 +134,10 @@ export const ResponseInput = builder.inputType('ResponseInput', {
     choices: t.intList({ required: false }),
     value: t.string({ required: false }),
     selection: t.intList({ required: false }),
+    assessment: t.field({
+      type: [CaseStudyCaseResponse],
+      required: false,
+    }),
   }),
 })
 

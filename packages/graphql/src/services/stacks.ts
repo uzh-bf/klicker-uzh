@@ -1,6 +1,7 @@
 import {
   computeAwardedXp,
   computeSimpleAwardedPoints,
+  gradeQuestionCaseStudy,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
@@ -25,6 +26,7 @@ import {
 } from '@klicker-uzh/prisma'
 import type {
   AllElementTypeData,
+  CaseStudyElementData,
   Choice,
   ChoicesElementData,
   ContentElementData,
@@ -34,6 +36,7 @@ import type {
   ElementOptionsFreeText,
   ElementOptionsNumerical,
   ElementOptionsSelection,
+  ElementResultsCaseStudy,
   ElementResultsChoices,
   ElementResultsContent,
   ElementResultsFlashcard,
@@ -65,7 +68,11 @@ import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
 import type { Context } from '../lib/context.js'
-import type { ResponseInput } from '../ops.js'
+import type {
+  CaseStudyCaseResponse,
+  CaseStudyElementOptions,
+  ResponseInput,
+} from '../ops.js'
 
 type PrismaTransactionClient = Omit<
   PrismaClient<Prisma.PrismaClientOptions, never>,
@@ -1406,6 +1413,21 @@ function computeQuestionEvaluation({
       correctness,
       multiplier,
     })
+  } else if (
+    elementData.type === ElementType.CASE_STUDY &&
+    'assessments' in results &&
+    'assessments' in anonymousResults
+  ) {
+    return null
+
+    // TODO: implement case study evaluation
+    // return evaluateCaseStudyElementResponse({
+    //   elementData,
+    //   results,
+    //   anonymousResults,
+    //   correctness,
+    //   multiplier,
+    // })
   } else {
     return null
   }
@@ -1532,6 +1554,40 @@ export function evaluateSelectionAnswerCorrectness({
     response: response.selection,
     correctAnswers: elementData.options.answerCollectionSolutionIds,
   })
+  return correctness
+}
+
+export function evaluateCaseStudyAnswerCorrectness({
+  elementData,
+  response,
+}: {
+  elementData: CaseStudyElementData
+  response: ResponseInput
+}) {
+  if (!elementData.options.hasSampleSolution) {
+    return 1
+  }
+
+  if (
+    !('assessment' in response) ||
+    !response.assessment ||
+    response.assessment.length === 0
+  ) {
+    return null
+  }
+
+  const hasSolutions = elementData.options.cases.every(
+    (caseItem) => caseItem.solutions && caseItem.solutions.length > 0
+  )
+  const correctness = hasSolutions
+    ? gradeQuestionCaseStudy({
+        response: response.assessment,
+        solutions: elementData.options.cases.map((caseItem) => ({
+          caseId: caseItem.id,
+          itemSolutions: caseItem.solutions!,
+        })),
+      })
+    : null
   return correctness
 }
 
@@ -1722,14 +1778,133 @@ export function updateSelectionResults({
   }
 }
 
+type CaseStudySolutionsObject = {
+  [caseId: string]: {
+    [itemId: number]: {
+      [criterionId: string]: {
+        min: number
+        max: number
+      }
+    }
+  }
+}
+
+function convertCaseStudySolutionsObject({
+  instance,
+}: {
+  instance: ElementInstance
+}): CaseStudySolutionsObject | undefined {
+  // convert case study solutions to object for faster access (if sample solution is defined)
+  const options = instance.elementData.options as CaseStudyElementOptions
+  const caseStudySolutions = options.hasSampleSolution
+    ? options.cases.reduce<CaseStudySolutionsObject>((acc, caseItem) => {
+        acc[caseItem.id] = options.items!.reduce((itemAcc, item) => {
+          itemAcc[item.id] = options.criteria.reduce(
+            (criterionAcc, criterion) => {
+              criterionAcc[criterion.id] = {
+                min: criterion.min,
+                max: criterion.max,
+              }
+              return criterionAcc
+            },
+            {}
+          )
+          return itemAcc
+        }, {})
+        return acc
+      }, {})
+    : undefined
+
+  return caseStudySolutions
+}
+
+function updateCaseStudyResults({
+  previousResults,
+  response,
+  solutions,
+}: {
+  previousResults: ElementResultsCaseStudy
+  response: ResponseInput
+  solutions?: CaseStudySolutionsObject
+}) {
+  if (
+    !('assessment' in response) ||
+    !response.assessment ||
+    response.assessment.length === 0
+  ) {
+    return { results: previousResults, modified: false }
+  }
+
+  // update aggregated assessments wherever new values are provided
+  const newAssessments = { ...previousResults.assessments }
+  response.assessment.forEach((caseResponse) => {
+    const caseId = caseResponse.caseId
+
+    caseResponse.itemResponses.forEach((itemResponse) => {
+      const itemId = itemResponse.itemId
+
+      itemResponse.criterionResponses.forEach((criterionResponse) => {
+        const criterionId = criterionResponse.criterionId
+        const responseValue = criterionResponse.response
+
+        // hash response value for efficient access (as done for open results)
+        const MD5 = createHash('md5')
+        MD5.update(String(responseValue))
+        const responseHash = MD5.digest('hex')
+
+        // get existing responses for this case, item, and criterion
+        const existingCombinedResponses =
+          newAssessments[caseId]?.[itemId]?.[criterionId]
+
+        // compute correctness of new response value
+        const sampleSolution = solutions?.[caseId]?.[itemId]?.[criterionId]
+        const responseCorrectness = sampleSolution
+          ? responseValue >= sampleSolution.min - Number.EPSILON &&
+            responseValue <= sampleSolution.max + Number.EPSILON
+          : undefined
+
+        // update existing response or create new response
+        if (!existingCombinedResponses) {
+          // even on initialization, all keys should already be set correctly
+          throw new Error('Existing combined responses are missing')
+        } else {
+          // increment counter of existing identical response or create new entry otherwise
+          if (Object.keys(existingCombinedResponses).includes(responseHash)) {
+            newAssessments[caseId]![itemId]![criterionId]![responseHash] = {
+              ...existingCombinedResponses[responseHash]!,
+              count: existingCombinedResponses[responseHash]!.count + 1,
+            }
+          } else {
+            newAssessments[caseId]![itemId]![criterionId]![responseHash] = {
+              value: responseValue,
+              count: 1,
+              correct: responseCorrectness,
+            }
+          }
+        }
+      })
+    })
+  })
+
+  return {
+    results: {
+      assessments: newAssessments,
+      total: previousResults.total + 1,
+    },
+    modified: true,
+  }
+}
+
 function updateQuestionResults({
   existingInstance,
   participation,
   response,
+  caseStudySolutions,
 }: {
   existingInstance: ElementInstance
   participation: (Participation & { participant: Participant }) | null
   response: ResponseInput
+  caseStudySolutions?: CaseStudySolutionsObject
 }): {
   correctness: number | null
   results: ElementInstanceResults
@@ -1752,7 +1927,7 @@ function updateQuestionResults({
       : 1
 
     const res = updateChoicesResults({
-      previousResults: previousResults,
+      previousResults,
       response,
     })
 
@@ -1769,7 +1944,7 @@ function updateQuestionResults({
       : 1
 
     const res = updateNumericalResults({
-      previousResults: previousResults,
+      previousResults,
       elementData,
       response,
       correct: correctness === 1,
@@ -1788,7 +1963,7 @@ function updateQuestionResults({
       : 1
 
     const res = updateFreeTextResults({
-      previousResults: previousResults,
+      previousResults,
       elementData,
       response,
       correct: correctness === 1,
@@ -1807,8 +1982,26 @@ function updateQuestionResults({
       : 1
 
     const res = updateSelectionResults({
-      previousResults: previousResults,
+      previousResults,
       response,
+    })
+
+    return {
+      ...res,
+      correctness,
+    }
+  } else if (
+    elementData.type === ElementType.CASE_STUDY &&
+    'assessments' in previousResults
+  ) {
+    correctness = elementData.options.hasSampleSolution
+      ? evaluateCaseStudyAnswerCorrectness({ elementData, response })
+      : 1
+
+    const res = updateCaseStudyResults({
+      previousResults,
+      response,
+      solutions: caseStudySolutions,
     })
 
     return {
@@ -2036,16 +2229,57 @@ function computeAggregatedResponsesSelection({
   return newAggResponses
 }
 
+function computeAggregatedResponsesCaseStudy({
+  instance,
+  existingResponse,
+  responseAssessment,
+  solutions,
+}: {
+  instance: ElementInstance
+  existingResponse: PrismaQuestionResponse | null
+  responseAssessment: CaseStudyCaseResponse[]
+  solutions?: CaseStudySolutionsObject
+}) {
+  // check that all data required for results initialization is provided in instance
+  if (
+    !('items' in instance.elementData.options) ||
+    !('cases' in instance.elementData.options) ||
+    !('criteria' in instance.elementData.options)
+  ) {
+    throw new Error(
+      'Items, cases, or criteria are missing in case study element'
+    )
+  }
+
+  // initialize aggregated responses either empty or with previous values
+  const newAggResponses = (existingResponse?.aggregatedResponses ??
+    getInitialElementResults({
+      type: instance.elementType,
+      answerCollectionItems: instance.elementData.options.items,
+      options: instance.elementData.options,
+    } as ElementWithAnswerCollection)) as ElementResultsCaseStudy
+
+  const updatedResults = updateCaseStudyResults({
+    previousResults: newAggResponses,
+    response: { assessment: responseAssessment },
+    solutions,
+  })
+
+  return updatedResults.results
+}
+
 function computeAggregatedResponsesQuestion({
   instance,
   existingResponse,
   response,
   correctness,
+  caseStudySolutions,
 }: {
   instance: ElementInstance
   existingResponse: PrismaQuestionResponse | null
   response: ResponseInput
   correctness?: number | null
+  caseStudySolutions?: CaseStudySolutionsObject
 }): ElementInstanceResults | null {
   if (
     instance.elementType === ElementType.SC ||
@@ -2075,6 +2309,13 @@ function computeAggregatedResponsesQuestion({
       instance,
       existingResponse,
       responseSelection: response.selection!,
+    })
+  } else if (instance.elementType === ElementType.CASE_STUDY) {
+    return computeAggregatedResponsesCaseStudy({
+      instance,
+      existingResponse,
+      responseAssessment: response.assessment!,
+      solutions: caseStudySolutions,
     })
   }
 
@@ -2359,6 +2600,7 @@ export async function respondToQuestion(
   },
   ctx: Context
 ) {
+  // TODO: update this function to support case study responses
   const result = await ctx.prisma.$transaction(async (prisma) => {
     const existingInstance = await getValidateElementInstance({
       prisma,
@@ -2378,11 +2620,20 @@ export async function respondToQuestion(
         ? existingInstance.responses[0]
         : null
 
+    // conver the case study solutions to object form for more efficient access
+    const caseStudySolutions =
+      existingInstance.elementType === ElementType.CASE_STUDY
+        ? convertCaseStudySolutionsObject({
+            instance: existingInstance,
+          })
+        : undefined
+
     // evaluate response correctness and compute updated instance results
     const { correctness, results, modified } = updateQuestionResults({
       existingInstance,
       participation,
       response,
+      caseStudySolutions,
     })
 
     if (!modified || results === null) {
@@ -2493,6 +2744,7 @@ export async function respondToQuestion(
         existingResponse,
         response,
         correctness,
+        caseStudySolutions,
       })
 
       if (!newAggResponses) {
@@ -2599,6 +2851,15 @@ interface ElementResponseInput {
   numericalResponse?: number | null
   freeTextResponse?: string | null
   selectionResponse?: number[] | null
+  caseStudyResponse?:
+    | {
+        caseId: string
+        itemResponses: {
+          itemId: number
+          criterionResponses: { criterionId: string; response: number }[]
+        }[]
+      }[]
+    | null
 }
 
 async function respondToElement({
@@ -2796,6 +3057,37 @@ async function respondToElement({
         id: response.instanceId,
         response: {
           selection: response.selectionResponse?.filter((r) => r !== -1), // only forward valid responses
+        },
+        answerTime,
+        participation,
+        skipTracking,
+      },
+      ctx
+    )
+
+    if (result) {
+      return {
+        grading: result.status,
+        score: result.evaluation?.score ?? 0,
+        evaluation: {
+          instanceId: response.instanceId,
+          ...result.evaluation,
+        } as InstanceEvaluation,
+      }
+    } else {
+      return {
+        grading: null,
+        score: null,
+        evaluation: null,
+      }
+    }
+  } else if (response.type === ElementType.CASE_STUDY) {
+    const result = await respondToQuestion(
+      {
+        courseId: courseId,
+        id: response.instanceId,
+        response: {
+          assessment: response.caseStudyResponse,
         },
         answerTime,
         participation,

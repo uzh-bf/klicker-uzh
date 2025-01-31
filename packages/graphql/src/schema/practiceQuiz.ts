@@ -89,6 +89,7 @@ export const CaseStudyCaseResponse = builder.inputType(
   }
 )
 
+// this type needs to be consistent with the ElementResponseInput type in the stacks service
 export const StackResponseInput = builder.inputType('StackResponseInput', {
   fields: (t) => ({
     instanceId: t.int({ required: true }),

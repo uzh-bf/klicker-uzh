@@ -392,13 +392,13 @@ export type ElementResultsSelection = {
 
 export type ElementResultsCaseStudy = {
   // student responses are stored with keys: caseId, itemId, criterionId, response map as for open results
-  assessment: {
+  assessments: {
     [caseId: string]: {
       [itemId: string]: {
         [criterionId: string]: {
           [md5Hash: string]: {
+            value: number
             count: number
-            value: string
             correct?: boolean
           }
         }

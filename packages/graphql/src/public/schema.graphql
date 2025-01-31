@@ -1715,6 +1715,7 @@ enum ResponseCorrectnessType {
 }
 
 input ResponseInput {
+  assessment: [CaseStudyCaseResponse!]
   choices: [Int!]
   selection: [Int!]
   value: String
