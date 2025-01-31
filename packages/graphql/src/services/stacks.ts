@@ -1420,7 +1420,7 @@ function computeQuestionEvaluation({
   ) {
     return null
 
-    // TODO: implement case study evaluation
+    // TODO: compute case study evaluation return content
     // return evaluateCaseStudyElementResponse({
     //   elementData,
     //   results,
@@ -1797,20 +1797,20 @@ function convertCaseStudySolutionsObject({
   // convert case study solutions to object for faster access (if sample solution is defined)
   const options = instance.elementData.options as CaseStudyElementOptions
   const caseStudySolutions = options.hasSampleSolution
-    ? options.cases.reduce<CaseStudySolutionsObject>((acc, caseItem) => {
-        acc[caseItem.id] = options.items!.reduce((itemAcc, item) => {
-          itemAcc[item.id] = options.criteria.reduce(
-            (criterionAcc, criterion) => {
-              criterionAcc[criterion.id] = {
-                min: criterion.min,
-                max: criterion.max,
-              }
-              return criterionAcc
-            },
-            {}
-          )
-          return itemAcc
-        }, {})
+    ? options.cases.reduce<CaseStudySolutionsObject>((acc, caseObj) => {
+        acc[caseObj.id] = caseObj.solutions!.reduce(
+          (itemAcc, { itemId, criteriaSolutions }) => {
+            itemAcc[itemId] = criteriaSolutions.reduce(
+              (criterionAcc, { criterionId, min, max }) => {
+                criterionAcc[criterionId] = { min, max }
+                return criterionAcc
+              },
+              {}
+            )
+            return itemAcc
+          },
+          {}
+        )
         return acc
       }, {})
     : undefined
@@ -2600,7 +2600,6 @@ export async function respondToQuestion(
   },
   ctx: Context
 ) {
-  // TODO: update this function to support case study responses
   const result = await ctx.prisma.$transaction(async (prisma) => {
     const existingInstance = await getValidateElementInstance({
       prisma,

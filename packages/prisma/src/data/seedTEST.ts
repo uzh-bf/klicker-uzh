@@ -1408,7 +1408,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareStackVariety({
             migrationIdOffset: 600,
             flashcards: flashcards,
-            questions: questionsTest,
+            questions: questionsTest.filter(
+              (q) =>
+                q.type === ElementType.CONTENT ||
+                q.type === ElementType.FLASHCARD ||
+                q.type === ElementType.FREE_TEXT ||
+                q.options.hasSampleSolution
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
