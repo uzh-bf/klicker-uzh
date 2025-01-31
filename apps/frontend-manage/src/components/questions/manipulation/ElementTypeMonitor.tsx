@@ -29,6 +29,8 @@ function ElementTypeMonitor({
       setElementDataTypename('FlashcardElementData')
     } else if (elementType === ElementType.Selection) {
       setElementDataTypename('SelectionElementData')
+    } else if (elementType === ElementType.CaseStudy) {
+      setElementDataTypename('CaseStudyElementData')
     } else {
       setElementDataTypename('ContentElementData')
     }

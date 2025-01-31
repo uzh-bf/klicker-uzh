@@ -17,10 +17,14 @@ function CaseStudyCollectionSelection({
   collections,
   setSelectedItems,
   hasSampleSolution,
+  setAnswerCollectionEntries,
 }: {
   collections: AnswerCollection[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
+  setAnswerCollectionEntries: Dispatch<
+    SetStateAction<{ id: number; value: string }[]>
+  >
 }) {
   const t = useTranslations()
   const [changeModalOpen, setChangeModalOpen] = useState(false)
@@ -37,6 +41,7 @@ function CaseStudyCollectionSelection({
   const collectionAnswers = useSelectAnswerCollectionOptions({
     collectionId: collectionField.value,
     collections,
+    setAnswerCollectionEntries,
   })
 
   // filter the available answer options for the ones included in the current form state

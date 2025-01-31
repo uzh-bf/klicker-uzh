@@ -1,4 +1,4 @@
-import type { SelectionStudentResponseType } from 'src/StudentElement'
+import type { SelectionStudentResponseType } from '../StudentElement'
 
 function getEmptySelectionResponse({
   numberOfInputs,

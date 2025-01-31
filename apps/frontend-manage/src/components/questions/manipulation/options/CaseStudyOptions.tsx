@@ -4,7 +4,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { useState } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import CaseStudyCasesFields, {
   CaseStudySetterProps,
 } from './CaseStudyCasesFields'
@@ -14,12 +14,16 @@ import useFormCollections from './useFormCollections'
 
 interface CaseStudyOptionsProps extends CaseStudySetterProps {
   hasSampleSolution: boolean
+  setAnswerCollectionEntries: Dispatch<
+    SetStateAction<{ id: number; value: string }[]>
+  >
 }
 
 function CaseStudyOptions({
   setFieldValue,
   setFieldTouched,
   hasSampleSolution,
+  setAnswerCollectionEntries,
 }: CaseStudyOptionsProps) {
   const t = useTranslations()
   const [selectedItems, setSelectedItems] = useState<
@@ -59,6 +63,7 @@ function CaseStudyOptions({
         collections={collections}
         setSelectedItems={setSelectedItems}
         hasSampleSolution={hasSampleSolution}
+        setAnswerCollectionEntries={setAnswerCollectionEntries}
       />
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
       <CaseStudyCriteriaFields />

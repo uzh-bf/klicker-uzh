@@ -44,7 +44,7 @@ function CSSlider({
           range: typeof value === 'undefined' ? 'bg-gray-200' : '',
         }}
         dataThumb={{
-          cy: `cs-slider-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`,
+          cy: `cs-slider-${elementIx + 1}-${caseIndex + 1}-${itemIx + 1}-${criterionIx + 1}`,
         }}
       />
     </div>

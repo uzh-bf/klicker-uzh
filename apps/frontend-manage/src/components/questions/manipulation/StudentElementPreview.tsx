@@ -1,21 +1,19 @@
-import {
-  ElementData,
-  ElementInstance,
-  ElementInstanceType,
-  ElementType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ElementData, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
-  StackStudentResponseType,
+  InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { ElementFormTypes } from './types'
+import useArtificialElementInstance from './useArtificialElementInstance'
 
 interface StudentElementPreviewProps {
   values: ElementFormTypes
-  elementDataTypename: ElementData['__typename']
+  elementDataTypename?: ElementData['__typename']
   answerCollectionEntries?: { id: number; value: string }[]
 }
 
@@ -25,104 +23,42 @@ function StudentElementPreview({
   answerCollectionEntries,
 }: StudentElementPreviewProps): React.ReactElement {
   const t = useTranslations()
+
+  // generate artificial instance from form content
+  const artificialInstance = useArtificialElementInstance({
+    values,
+    elementDataTypename,
+    answerCollectionEntries,
+  })
+
+  // initialize student response with default state (SC question = default form state) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
-    useState<StackStudentResponseType>({})
+    useState<InstanceStackStudentResponseType>({
+      type: ElementType.Sc,
+      response: undefined,
+      valid: false,
+    })
+
+  // hook running on every instance change to initialize the student response correctly
+  useSingleStudentResponse({
+    instance: artificialInstance,
+    setStudentResponse,
+  })
+
+  if (!artificialInstance) {
+    return <Loader />
+  }
 
   return (
-    <div className="max-w-sm flex-1">
+    <div className="max-w-sm flex-1" data-cy="student-element-preview">
       <H3>{t('shared.generic.preview')}</H3>
       <div className="rounded border p-4">
         <StudentElement
           preview
-          element={
-            {
-              id: 0,
-              type: ElementInstanceType.LiveQuiz,
-              elementType: values.type,
-              elementData: {
-                id: '0',
-                elementId: 0,
-                __typename: elementDataTypename,
-                content: values.content,
-                explanation:
-                  'explanation' in values ? values.explanation : undefined,
-                name: values.name,
-                pointsMultiplier: parseInt(values.pointsMultiplier ?? '1'),
-                type: values.type,
-                options:
-                  'options' in values
-                    ? {
-                        displayMode:
-                          'displayMode' in values.options
-                            ? values.options.displayMode
-                            : undefined,
-                        choices:
-                          'choices' in values.options
-                            ? values.options.choices
-                            : undefined,
-                        accuracy:
-                          'accuracy' in values.options &&
-                          typeof values.options.accuracy !== 'undefined' &&
-                          values.options.accuracy !== null
-                            ? parseInt(String(values.options.accuracy))
-                            : undefined,
-                        unit:
-                          'unit' in values.options
-                            ? values.options.unit
-                            : undefined,
-                        restrictions: {
-                          min:
-                            'restrictions' in values.options &&
-                            values.options.restrictions &&
-                            'min' in values.options.restrictions &&
-                            typeof values.options.restrictions.min !==
-                              'undefined' &&
-                            values.options.restrictions.min !== null
-                              ? parseFloat(
-                                  String(values.options.restrictions.min)
-                                )
-                              : undefined,
-                          max:
-                            'restrictions' in values.options &&
-                            values.options.restrictions &&
-                            'max' in values.options.restrictions &&
-                            typeof values.options.restrictions.max !==
-                              'undefined' &&
-                            values.options.restrictions.max !== null
-                              ? parseFloat(
-                                  String(values.options.restrictions.max)
-                                )
-                              : undefined,
-                          maxLength:
-                            'restrictions' in values.options &&
-                            values.options.restrictions &&
-                            'maxLength' in values.options.restrictions &&
-                            typeof values.options.restrictions.maxLength !==
-                              'undefined' &&
-                            values.options.restrictions.maxLength !== null
-                              ? parseFloat(
-                                  String(values.options.restrictions.maxLength)
-                                )
-                              : undefined,
-                        },
-                        numberOfInputs:
-                          'numberOfInputs' in values.options &&
-                          values.options.numberOfInputs
-                            ? values.options.numberOfInputs
-                            : 1,
-                        answerCollection:
-                          typeof answerCollectionEntries !== 'undefined' &&
-                          answerCollectionEntries.length > 0
-                            ? { entries: answerCollectionEntries }
-                            : undefined,
-                      }
-                    : undefined,
-              },
-            } as ElementInstance
-          }
+          element={artificialInstance}
           elementIx={0}
-          studentResponse={studentResponse}
-          setStudentResponse={setStudentResponse}
+          singleStudentResponse={studentResponse}
+          setSingleStudentResponse={setStudentResponse}
         />
       </div>
       {'explanation' in values && values.explanation ? (

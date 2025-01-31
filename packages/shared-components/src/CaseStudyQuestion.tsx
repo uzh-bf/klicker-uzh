@@ -33,7 +33,7 @@ function CaseStudyQuestion({
 }: CaseStudyQuestionProps) {
   const t = useTranslations()
   const [caseIndex, setCaseIndex] = useState(0)
-  const currentSingleCaseId = options.cases[caseIndex]!.id
+  const currentSingleCaseId = options.cases[caseIndex]?.id
 
   return (
     <div className="flex flex-col gap-4 md:flex-row">
@@ -62,10 +62,14 @@ function CaseStudyQuestion({
               criteria={options.criteria}
               disabled={disabled}
               caseResponse={
-                existingResponse?.[currentSingleCaseId] ??
-                response?.[currentSingleCaseId]
+                currentSingleCaseId
+                  ? (existingResponse?.[currentSingleCaseId] ??
+                    response?.[currentSingleCaseId])
+                  : {}
               }
               setCaseResponse={(newValue: CaseStudyStudentResponseType['']) => {
+                if (!currentSingleCaseId) return
+
                 // TODO: potentially additionally validate the validity of the single step to enable / disable navigation between cases
                 const valid = validateCaseStudyResponse({
                   response: {
