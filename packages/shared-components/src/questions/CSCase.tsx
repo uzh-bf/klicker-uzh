@@ -31,7 +31,7 @@ function CSCase({
       {currentCase.description !== '<br>' && (
         <div>
           <div
-            className="mb-1 text-xl font-bold"
+            className="mb-1 text-lg font-bold"
             data-cy={`case-${caseIndex + 1}-title`}
           >
             {`${caseIndex + 1}. ${currentCase.title}`}
@@ -55,7 +55,7 @@ function CSCase({
             key={`student-element-cs-item-${item.id}`}
             className="mb-4 border-b border-slate-200 pb-4 last:border-b-0"
           >
-            <div className="text-lg font-bold">{item.value}</div>
+            <div className="font-bold">{item.value}</div>
             {criteria.map((criterion, criterionIx) => (
               <div key={`student-element-cs-criterion-${criterion.id}`}>
                 <div className="-mb-2 flex flex-row items-center justify-between">

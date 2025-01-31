@@ -165,6 +165,100 @@ export function gradeQuestionSelection({
   return validResponses.length / numberOfInputs
 }
 
+interface GradeQuestionCaseStudyArgs {
+  response: {
+    caseId: string
+    itemResponses: {
+      itemId: number
+      criterionResponses: { criterionId: string; response: number }[]
+    }[]
+  }[]
+  solutions?:
+    | {
+        caseId: string
+        itemSolutions: {
+          itemId: number
+          criteriaSolutions: { criterionId: string; min: number; max: number }[]
+        }[]
+      }[]
+    | null
+}
+
+type CaseStudyResponseObject = {
+  [caseId: string]: {
+    [itemId: number]: {
+      [criterionId: string]: number // value = response
+    }
+  }
+}
+
+export function gradeQuestionCaseStudy({
+  response,
+  solutions,
+}: GradeQuestionCaseStudyArgs): number | null {
+  if (!solutions || solutions.length === 0) return null
+
+  // convert response into an object for faster access
+  const responseMap = response.reduce<CaseStudyResponseObject>(
+    (acc, { caseId, itemResponses }) => {
+      acc[caseId] = itemResponses.reduce<CaseStudyResponseObject['']>(
+        (acc, { itemId, criterionResponses }) => {
+          acc[itemId] = criterionResponses.reduce<
+            CaseStudyResponseObject[''][0]
+          >((acc, { criterionId, response }) => {
+            acc[criterionId] = response
+            return acc
+          }, {})
+          return acc
+        },
+        {}
+      )
+      return acc
+    },
+    {}
+  )
+
+  const { totalAssessmentCases, totalCorrectCases } = solutions.reduce<{
+    totalAssessmentCases: number
+    totalCorrectCases: number
+  }>(
+    (acc, { caseId, itemSolutions }) => {
+      for (const { itemId, criteriaSolutions } of itemSolutions) {
+        for (const { criterionId, min, max } of criteriaSolutions) {
+          // extract student response for the specific case, item and criterion
+          const responseValue = responseMap[caseId]?.[itemId]?.[criterionId]
+
+          // increment counter of total assessment cases
+          acc.totalAssessmentCases++
+
+          // if the response value is undefined, the student did not set the corresponding slider
+          if (responseValue === undefined) {
+            continue
+          }
+
+          // check if the submitted response lies within the correct range
+          if (
+            responseValue >= min - Number.EPSILON &&
+            responseValue <= max + Number.EPSILON
+          ) {
+            acc.totalCorrectCases++
+          }
+        }
+      }
+
+      return acc
+    },
+    {
+      totalAssessmentCases: 0,
+      totalCorrectCases: 0,
+    }
+  )
+
+  return totalAssessmentCases === 0
+    ? 0
+    : totalCorrectCases / totalAssessmentCases
+}
+
 interface ComputeAwardedPointsArgs {
   firstResponseReceivedAt: string | null
   responseTimestamp: number

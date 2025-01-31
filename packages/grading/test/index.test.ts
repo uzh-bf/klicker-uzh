@@ -2,6 +2,7 @@ import {
   computeAwardedPoints,
   computeAwardedXp,
   computeSimpleAwardedPoints,
+  gradeQuestionCaseStudy,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
@@ -346,6 +347,464 @@ describe('@klicker-uzh/grading', () => {
       correctAnswers: [3, 4, 5, 6, 7],
     })
     expect(grade11).toEqual(0)
+  })
+
+  it('should grade CASE_STUDY questions correctly', () => {
+    // missing sample solution (undefined / null)
+    const grade1 = gradeQuestionCaseStudy({
+      response: [],
+      solutions: undefined,
+    })
+    expect(grade1).toEqual(null)
+
+    const grade2 = gradeQuestionCaseStudy({
+      response: [],
+      solutions: null,
+    })
+    expect(grade2).toEqual(null)
+
+    const grade3 = gradeQuestionCaseStudy({
+      response: [],
+      solutions: [],
+    })
+    expect(grade3).toEqual(null)
+
+    // minimal scenario (1 case, 1 item, 1 criterion) - correct / wrong / value on correctness boundaries / slightly above / below
+    const minScenarioSolutions = [
+      {
+        caseId: 'iLVwZltIbP',
+        itemSolutions: [
+          {
+            itemId: 1,
+            criteriaSolutions: [
+              { criterionId: 'lnmcuMWRcw', min: 0.1, max: 10 },
+            ],
+          },
+        ],
+      },
+    ]
+    const minScenarioCorrect = [
+      {
+        caseId: 'iLVwZltIbP',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [{ criterionId: 'lnmcuMWRcw', response: 5 }],
+          },
+        ],
+      },
+    ]
+    const minScenarioIncorrect = [
+      {
+        caseId: 'iLVwZltIbP',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [{ criterionId: 'lnmcuMWRcw', response: -5 }],
+          },
+        ],
+      },
+    ]
+    const minScenarioLowerBoundary = [
+      {
+        caseId: 'iLVwZltIbP',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [{ criterionId: 'lnmcuMWRcw', response: 0.1 }],
+          },
+        ],
+      },
+    ]
+    const minScenarioUpperBoundary = [
+      {
+        caseId: 'iLVwZltIbP',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [{ criterionId: 'lnmcuMWRcw', response: 10 }],
+          },
+        ],
+      },
+    ]
+    const minScenarioBelowBoundary = [
+      {
+        caseId: 'iLVwZltIbP',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: 'lnmcuMWRcw', response: 0.1 - 2 * Number.EPSILON },
+            ],
+          },
+        ],
+      },
+    ]
+    const minScenarioAboveBoundary = [
+      {
+        caseId: 'iLVwZltIbP',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: 'lnmcuMWRcw', response: 10 + 5 * Number.EPSILON },
+            ],
+          },
+        ],
+      },
+    ]
+
+    const grade4 = gradeQuestionCaseStudy({
+      response: minScenarioCorrect,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade4).toEqual(1)
+
+    const grade5 = gradeQuestionCaseStudy({
+      response: minScenarioIncorrect,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade5).toEqual(0)
+
+    const grade6 = gradeQuestionCaseStudy({
+      response: minScenarioLowerBoundary,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade6).toEqual(1)
+
+    const grade7 = gradeQuestionCaseStudy({
+      response: minScenarioUpperBoundary,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade7).toEqual(1)
+
+    const grade8 = gradeQuestionCaseStudy({
+      response: minScenarioBelowBoundary,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade8).toEqual(0)
+
+    const grade9 = gradeQuestionCaseStudy({
+      response: minScenarioAboveBoundary,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade9).toEqual(0)
+
+    // extended scenario (1 case, 2 items, 3 criteria) - correct / partial / wrong / partially missing response (missing = wrong)
+    const singleCaseSolutions = [
+      {
+        caseId: 'oYXpqxVHlc',
+        itemSolutions: [
+          {
+            itemId: 1,
+            criteriaSolutions: [
+              { criterionId: 'ZxZ__w6JDo', min: 0.1, max: 10 },
+              { criterionId: 'OTA9w3CV_d', min: 0.2, max: 20 },
+              { criterionId: '_6CyIiKyxq', min: 0.3, max: 30 },
+            ],
+          },
+          {
+            itemId: 2,
+            criteriaSolutions: [
+              { criterionId: 'gxeraKdd9S', min: 1, max: 100 },
+              { criterionId: 'MrZZYfr2Ue', min: 2, max: 200 },
+              { criterionId: 'BoH0JvaZAW', min: 3, max: 300 },
+            ],
+          },
+        ],
+      },
+    ]
+    const correctResponse = [
+      {
+        caseId: 'oYXpqxVHlc',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: 'ZxZ__w6JDo', response: 5 },
+              { criterionId: 'OTA9w3CV_d', response: 10 },
+              { criterionId: '_6CyIiKyxq', response: 15 },
+            ],
+          },
+          {
+            itemId: 2,
+            criterionResponses: [
+              { criterionId: 'gxeraKdd9S', response: 50 },
+              { criterionId: 'MrZZYfr2Ue', response: 100 },
+              { criterionId: 'BoH0JvaZAW', response: 150 },
+            ],
+          },
+        ],
+      },
+    ]
+    const partialCorrectResponse = [
+      {
+        caseId: 'oYXpqxVHlc',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: 'ZxZ__w6JDo', response: -5 },
+              { criterionId: 'OTA9w3CV_d', response: -10 },
+              { criterionId: '_6CyIiKyxq', response: 15 },
+            ],
+          },
+          {
+            itemId: 2,
+            criterionResponses: [
+              { criterionId: 'gxeraKdd9S', response: -50 },
+              { criterionId: 'MrZZYfr2Ue', response: -100 },
+              { criterionId: 'BoH0JvaZAW', response: 150 },
+            ],
+          },
+        ],
+      },
+    ]
+    const wrongResponse = [
+      {
+        caseId: 'oYXpqxVHlc',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: 'ZxZ__w6JDo', response: -5 },
+              { criterionId: 'OTA9w3CV_d', response: -10 },
+              { criterionId: '_6CyIiKyxq', response: -15 },
+            ],
+          },
+          {
+            itemId: 2,
+            criterionResponses: [
+              { criterionId: 'gxeraKdd9S', response: -50 },
+              { criterionId: 'MrZZYfr2Ue', response: -100 },
+              { criterionId: 'BoH0JvaZAW', response: -150 },
+            ],
+          },
+        ],
+      },
+    ]
+    const partialMissingResponse = [
+      {
+        caseId: 'oYXpqxVHlc',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: 'ZxZ__w6JDo', response: 5 },
+              { criterionId: 'OTA9w3CV_d', response: 10 },
+            ],
+          },
+          {
+            itemId: 2,
+            criterionResponses: [{ criterionId: 'gxeraKdd9S', response: 50 }],
+          },
+        ],
+      },
+    ]
+
+    const grade10 = gradeQuestionCaseStudy({
+      response: correctResponse,
+      solutions: singleCaseSolutions,
+    })
+    expect(grade10).toEqual(1)
+
+    const grade11 = gradeQuestionCaseStudy({
+      response: partialCorrectResponse,
+      solutions: singleCaseSolutions,
+    })
+    expect(grade11).toBeCloseTo(1 / 3, 4)
+
+    const grade12 = gradeQuestionCaseStudy({
+      response: wrongResponse,
+      solutions: singleCaseSolutions,
+    })
+    expect(grade12).toEqual(0)
+
+    const grade13 = gradeQuestionCaseStudy({
+      response: partialMissingResponse,
+      solutions: singleCaseSolutions,
+    })
+    expect(grade13).toEqual(0.5)
+
+    // extended scenario (2 cases, 2 items, 2 criteria) - correct / partial / wrong
+    const extendedCaseSolutions = [
+      {
+        caseId: '79H4ZEZgPH',
+        itemSolutions: [
+          {
+            itemId: 1,
+            criteriaSolutions: [
+              { criterionId: '0uD_6bdzdK', min: 1, max: 2 },
+              { criterionId: 'HbTvnNgqi2', min: 3, max: 4 },
+            ],
+          },
+          {
+            itemId: 2,
+            criteriaSolutions: [
+              { criterionId: 'tkBKPtfp_F', min: 100, max: 200 },
+              { criterionId: 'pllKZBz9bR', min: 300, max: 400 },
+            ],
+          },
+        ],
+      },
+      {
+        caseId: 'eP02ejbh9e',
+        itemSolutions: [
+          {
+            itemId: 3,
+            criteriaSolutions: [
+              { criterionId: 'PsScPn4zIW', min: 1000, max: 2000 },
+              { criterionId: 'c6YIO3Icgb', min: 3000, max: 4000 },
+            ],
+          },
+          {
+            itemId: 4,
+            criteriaSolutions: [
+              { criterionId: 'YBCkjkK51v', min: -200, max: -100 },
+              { criterionId: 'znjuifvBDa', min: -400, max: -300 },
+            ],
+          },
+        ],
+      },
+    ]
+    const extendedCorrectResponse = [
+      {
+        caseId: '79H4ZEZgPH',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: '0uD_6bdzdK', response: 1 },
+              { criterionId: 'HbTvnNgqi2', response: 3.5 },
+            ],
+          },
+          {
+            itemId: 2,
+            criterionResponses: [
+              { criterionId: 'tkBKPtfp_F', response: 150 },
+              { criterionId: 'pllKZBz9bR', response: 350 },
+            ],
+          },
+        ],
+      },
+      {
+        caseId: 'eP02ejbh9e',
+        itemResponses: [
+          {
+            itemId: 3,
+            criterionResponses: [
+              { criterionId: 'PsScPn4zIW', response: 1500 },
+              { criterionId: 'c6YIO3Icgb', response: 3500 },
+            ],
+          },
+          {
+            itemId: 4,
+            criterionResponses: [
+              { criterionId: 'YBCkjkK51v', response: -150 },
+              { criterionId: 'znjuifvBDa', response: -350 },
+            ],
+          },
+        ],
+      },
+    ]
+    const extendedPartialCorrectResponse = [
+      {
+        caseId: '79H4ZEZgPH',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: '0uD_6bdzdK', response: 1 },
+              { criterionId: 'HbTvnNgqi2', response: 3 },
+            ],
+          },
+          {
+            itemId: 2,
+            criterionResponses: [
+              { criterionId: 'tkBKPtfp_F', response: 150 },
+              { criterionId: 'pllKZBz9bR', response: 350 },
+            ],
+          },
+        ],
+      },
+      {
+        caseId: 'eP02ejbh9e',
+        itemResponses: [
+          {
+            itemId: 3,
+            criterionResponses: [
+              { criterionId: 'PsScPn4zIW', response: -1500 },
+              { criterionId: 'c6YIO3Icgb', response: -3500 },
+            ],
+          },
+          {
+            itemId: 4,
+            criterionResponses: [
+              { criterionId: 'YBCkjkK51v', response: -150 },
+              { criterionId: 'znjuifvBDa', response: -350 },
+            ],
+          },
+        ],
+      },
+    ]
+    const extendedWrongResponse = [
+      {
+        caseId: '79H4ZEZgPH',
+        itemResponses: [
+          {
+            itemId: 1,
+            criterionResponses: [
+              { criterionId: '0uD_6bdzdK', response: -1 },
+              { criterionId: 'HbTvnNgqi2', response: 100 },
+            ],
+          },
+          {
+            itemId: 2,
+            criterionResponses: [
+              { criterionId: 'tkBKPtfp_F', response: 0 },
+              { criterionId: 'pllKZBz9bR', response: 0 },
+            ],
+          },
+        ],
+      },
+      {
+        caseId: 'eP02ejbh9e',
+        itemResponses: [
+          {
+            itemId: 3,
+            criterionResponses: [
+              { criterionId: 'PsScPn4zIW', response: -1500 },
+              { criterionId: 'c6YIO3Icgb', response: -3500 },
+            ],
+          },
+          {
+            itemId: 4,
+            criterionResponses: [
+              { criterionId: 'YBCkjkK51v', response: 150 },
+              { criterionId: 'znjuifvBDa', response: 350 },
+            ],
+          },
+        ],
+      },
+    ]
+
+    const grade14 = gradeQuestionCaseStudy({
+      response: extendedCorrectResponse,
+      solutions: extendedCaseSolutions,
+    })
+    expect(grade14).toEqual(1)
+
+    const grade15 = gradeQuestionCaseStudy({
+      response: extendedPartialCorrectResponse,
+      solutions: extendedCaseSolutions,
+    })
+    expect(grade15).toBeCloseTo(0.75, 4)
+
+    const grade16 = gradeQuestionCaseStudy({
+      response: extendedWrongResponse,
+      solutions: extendedCaseSolutions,
+    })
+    expect(grade16).toEqual(0)
   })
 
   it('should compute the awarded points correctly for live quizzes', () => {

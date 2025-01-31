@@ -245,7 +245,7 @@ export function getInitialElementResults(
       )
     }
 
-    const assessment: ElementResultsCaseStudy['assessment'] = {}
+    const assessments: ElementResultsCaseStudy['assessments'] = {}
     const options = element.options as ElementOptionsCaseStudy
     const itemIds = element.answerCollectionItems.map((item) => item.id)
 
@@ -259,10 +259,10 @@ export function getInitialElementResults(
         throw new Error('Invalid caseItem.id value')
       }
 
-      assessment[caseItem.id] = {}
+      assessments[caseItem.id] = {}
 
       itemIds.forEach((itemId) => {
-        assessment[caseItem.id]![String(itemId)] = {}
+        assessments[caseItem.id]![String(itemId)] = {}
 
         options.criteria.forEach((criterion) => {
           if (
@@ -273,13 +273,13 @@ export function getInitialElementResults(
             throw new Error('Invalid criterion.id value')
           }
 
-          assessment[caseItem.id]![String(itemId)]![criterion.id] = {}
+          assessments[caseItem.id]![String(itemId)]![criterion.id] = {}
         })
       })
     })
 
     return {
-      assessment,
+      assessments,
       total: 0,
     }
   } else {

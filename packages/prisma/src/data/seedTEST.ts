@@ -1409,8 +1409,12 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             migrationIdOffset: 600,
             flashcards: flashcards,
             questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+              (q) =>
+                q.type === ElementType.CONTENT ||
+                q.type === ElementType.FLASHCARD ||
+                q.type === ElementType.FREE_TEXT ||
+                q.options.hasSampleSolution
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,

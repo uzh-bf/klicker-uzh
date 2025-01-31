@@ -180,6 +180,11 @@ input CaseStudyCaseInput {
   title: String!
 }
 
+input CaseStudyCaseResponse {
+  caseId: String!
+  itemResponses: [CaseStudyItemResponse!]!
+}
+
 type CaseStudyCaseSolution {
   criteriaSolutions: [CaseStudyCaseCriterionSolution!]!
   itemId: Int!
@@ -209,6 +214,11 @@ input CaseStudyCriterionInput {
   order: Int!
   step: Float!
   unit: String
+}
+
+input CaseStudyCriterionResponse {
+  criterionId: String!
+  response: Float!
 }
 
 type CaseStudyElement {
@@ -246,6 +256,36 @@ type CaseStudyElementOptions {
   criteria: [CaseStudyCriterion!]!
   hasSampleSolution: Boolean
   items: [ElementOptionsAnswerCollectionEntry!]
+}
+
+type CaseStudyInstanceEvaluation {
+  assessments: [SingleCaseStudyResponse!]
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseCaseStudy
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  studySolutions: [CaseStudySolution!]
+  xp: Int
+  xpAwarded: Int
+}
+
+input CaseStudyItemResponse {
+  criterionResponses: [CaseStudyCriterionResponse!]!
+  itemId: Int!
+}
+
+type CaseStudySolution {
+  caseId: String!
+  solutions: [CaseStudyCaseSolution!]
 }
 
 input CaseStudySolutionInput {
@@ -979,7 +1019,7 @@ type GroupMessage {
   updatedAt: Date!
 }
 
-union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
+union InstanceEvaluation = CaseStudyInstanceEvaluation | ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
 
 type InstanceFeedback {
   activityType: ActivityType!
@@ -1700,6 +1740,7 @@ enum ResponseCorrectnessType {
 }
 
 input ResponseInput {
+  assessment: [CaseStudyCaseResponse!]
   choices: [Int!]
   selection: [Int!]
   value: String
@@ -1790,6 +1831,13 @@ type SharingRequestResponse {
   userId: String!
 }
 
+type SingleCaseStudyResponse {
+  caseId: String!
+  criterionId: String!
+  itemId: Int!
+  responseValues: [Float!]!
+}
+
 type SingleChoiceResponse {
   count: Int!
   ix: Int!
@@ -1803,6 +1851,26 @@ type SingleFreeTextResponse {
 type SingleNumericalResponse {
   count: Int!
   value: Float!
+}
+
+type SingleQuestionResponseCaseStudy {
+  assessment: SingleQuestionResponseCaseStudyCases!
+}
+
+type SingleQuestionResponseCaseStudyCases {
+  caseId: String!
+  itemResponses: [SingleQuestionResponseCaseStudyItem!]!
+}
+
+type SingleQuestionResponseCaseStudyCriterion {
+  correct: Boolean
+  criterionId: String!
+  value: Float!
+}
+
+type SingleQuestionResponseCaseStudyItem {
+  criterionResponses: [SingleQuestionResponseCaseStudyCriterion!]!
+  itemId: Int!
 }
 
 type SingleQuestionResponseChoices {
@@ -1860,6 +1928,7 @@ enum StackFeedbackStatus {
 }
 
 input StackResponseInput {
+  caseStudyResponse: [CaseStudyCaseResponse!]
   choicesResponse: [Int!]
   contentReponse: Boolean
   flashcardResponse: FlashcardCorrectnessType
