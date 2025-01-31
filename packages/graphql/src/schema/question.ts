@@ -1,10 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 import type {
+  CaseStudySolution as CaseStudySolutionType,
   ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   ElementOptionsChoices as ElementOptionsChoicesType,
   ElementOptionsFreeText as ElementOptionsFreeTextType,
   ElementOptionsNumerical as ElementOptionsNumericalType,
   ElementOptionsSelection as ElementOptionsSelectionType,
+  IInstanceEvaluationCaseStudy,
   IInstanceEvaluationChoices,
   IInstanceEvaluationContent,
   IInstanceEvaluationFlashcard,
@@ -12,9 +14,11 @@ import type {
   IInstanceEvaluationNumerical,
   IInstanceEvaluationSelection,
   IQuestionFeedback,
+  SingleCaseStudyResponse as SingleCaseStudyResponseType,
   SingleChoiceResponse as SingleChoiceResponseType,
   SingleFreeTextResponse as SingleFreeTextResponseType,
   SingleNumericalResponse as SingleNumericalRepsonseType,
+  SingleQuestionResponseCaseStudy as SingleQuestionResponseCaseStudyType,
   SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
   SingleQuestionResponseContent as SingleQuestionResponseContentType,
   SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
@@ -25,6 +29,7 @@ import type {
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
 import {
+  CaseStudyCaseSolution,
   CaseStudyElementOptions,
   ChoiceElementOptions,
   ElementData,
@@ -368,16 +373,6 @@ export const SingleFreeTextResponse = builder
     }),
   })
 
-export const SingleSelectionResponse = builder
-  .objectRef<SingleSelectionResponseType>('SingleSelectionResponse')
-  .implement({
-    fields: (t) => ({
-      answerId: t.exposeInt('answerId'),
-      value: t.exposeString('value'),
-      count: t.exposeInt('count'),
-    }),
-  })
-
 export const FreeTextInstanceEvaluation = builder
   .objectRef<IInstanceEvaluationFreeText>('FreeTextInstanceEvaluation')
   .implement({
@@ -395,6 +390,16 @@ export const FreeTextInstanceEvaluation = builder
     }),
   })
 
+export const SingleSelectionResponse = builder
+  .objectRef<SingleSelectionResponseType>('SingleSelectionResponse')
+  .implement({
+    fields: (t) => ({
+      answerId: t.exposeInt('answerId'),
+      value: t.exposeString('value'),
+      count: t.exposeInt('count'),
+    }),
+  })
+
 export const SelectionInstanceEvaluation = builder
   .objectRef<IInstanceEvaluationSelection>('SelectionInstanceEvaluation')
   .implement({
@@ -409,6 +414,99 @@ export const SelectionInstanceEvaluation = builder
       }),
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseSelection,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const SingleQuestionResponseCaseStudyCriterion = builder
+  .objectRef<
+    SingleQuestionResponseCaseStudyType['assessment']['itemResponses'][0]['criterionResponses'][0]
+  >('SingleQuestionResponseCaseStudyCriterion')
+  .implement({
+    fields: (t) => ({
+      criterionId: t.exposeString('criterionId'),
+      value: t.exposeFloat('value'),
+      correct: t.exposeBoolean('correct', { nullable: true }),
+    }),
+  })
+
+export const SingleQuestionResponseCaseStudyItem = builder
+  .objectRef<
+    SingleQuestionResponseCaseStudyType['assessment']['itemResponses'][0]
+  >('SingleQuestionResponseCaseStudyItem')
+  .implement({
+    fields: (t) => ({
+      itemId: t.exposeInt('itemId'),
+      criterionResponses: t.expose('criterionResponses', {
+        type: [SingleQuestionResponseCaseStudyCriterion],
+      }),
+    }),
+  })
+
+export const SingleQuestionResponseCaseStudyCases = builder
+  .objectRef<
+    SingleQuestionResponseCaseStudyType['assessment']
+  >('SingleQuestionResponseCaseStudyCases')
+  .implement({
+    fields: (t) => ({
+      caseId: t.exposeString('caseId'),
+      itemResponses: t.expose('itemResponses', {
+        type: [SingleQuestionResponseCaseStudyItem],
+      }),
+    }),
+  })
+
+export const SingleQuestionResponseCaseStudy = builder
+  .objectRef<SingleQuestionResponseCaseStudyType>(
+    'SingleQuestionResponseCaseStudy'
+  )
+  .implement({
+    fields: (t) => ({
+      assessment: t.expose('assessment', {
+        type: SingleQuestionResponseCaseStudyCases,
+      }),
+    }),
+  })
+
+export const SingleCaseStudyResponse = builder
+  .objectRef<SingleCaseStudyResponseType>('SingleCaseStudyResponse')
+  .implement({
+    fields: (t) => ({
+      caseId: t.exposeString('caseId'),
+      itemId: t.exposeInt('itemId'),
+      criterionId: t.exposeString('criterionId'),
+      responseValues: t.exposeFloatList('responseValues'),
+    }),
+  })
+
+export const CaseStudySolution = builder
+  .objectRef<CaseStudySolutionType>('CaseStudySolution')
+  .implement({
+    fields: (t) => ({
+      caseId: t.exposeString('caseId'),
+      solutions: t.expose('solutions', {
+        type: [CaseStudyCaseSolution],
+        nullable: true,
+      }),
+    }),
+  })
+
+export const CaseStudyInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationCaseStudy>('CaseStudyInstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      ...sharedEvaluationProps(t),
+      assessments: t.expose('assessments', {
+        type: [SingleCaseStudyResponse],
+        nullable: true,
+      }),
+      studySolutions: t.expose('studySolutions', {
+        type: [CaseStudySolution],
+        nullable: true,
+      }),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseCaseStudy,
         nullable: true,
       }),
     }),
@@ -444,6 +542,7 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
     NumericalInstanceEvaluation,
     FreeTextInstanceEvaluation,
     SelectionInstanceEvaluation,
+    CaseStudyInstanceEvaluation,
     FlashcardInstanceEvaluation,
     ContentInstanceEvaluation,
   ],
@@ -457,12 +556,14 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
         return NumericalInstanceEvaluation
       case DB.ElementType.FREE_TEXT:
         return FreeTextInstanceEvaluation
+      case DB.ElementType.SELECTION:
+        return SelectionInstanceEvaluation
+      case DB.ElementType.CASE_STUDY:
+        return CaseStudyInstanceEvaluation
       case DB.ElementType.FLASHCARD:
         return FlashcardInstanceEvaluation
       case DB.ElementType.CONTENT:
         return ContentInstanceEvaluation
-      case DB.ElementType.SELECTION:
-        return SelectionInstanceEvaluation
     }
   },
 })

@@ -174,6 +174,20 @@ export type SingleQuestionResponseSelection = {
   selection: number[]
 }
 
+export type SingleQuestionResponseCaseStudy = {
+  assessment: {
+    caseId: string
+    itemResponses: {
+      itemId: number
+      criterionResponses: {
+        criterionId: string
+        value: number
+        correct?: boolean
+      }[]
+    }[]
+  }
+}
+
 export type SingleQuestionResponseFlashcard = {
   correctness: FlashcardCorrectness
 }
@@ -188,6 +202,7 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseFlashcard
   | SingleQuestionResponseContent
   | SingleQuestionResponseSelection
+  | SingleQuestionResponseCaseStudy
 
 export type Choice = {
   ix: number
@@ -505,6 +520,34 @@ export interface IInstanceEvaluationSelection extends IBaseInstanceEvaluation {
 }
 export type InstanceEvaluationSelection = IInstanceEvaluationSelection
 
+export type CaseStudySolutionsObject = {
+  [caseId: string]: {
+    [itemId: string]: {
+      [criterionId: string]: {
+        min: number
+        max: number
+      }
+    }
+  }
+}
+export type CaseStudySolution = {
+  caseId: string
+  solutions: CaseStudyCaseSolution[] // format of solutions in element options / elementData
+}
+// ? Caution: The following type does not coincide with the results structure in the database (for less required computations in the frontend)
+export type SingleCaseStudyResponse = {
+  caseId: string
+  itemId: number
+  criterionId: string
+  responseValues: number[] // responses by other participants (irrespective of count)
+}
+export interface IInstanceEvaluationCaseStudy extends IBaseInstanceEvaluation {
+  assessments?: SingleCaseStudyResponse[]
+  studySolutions?: CaseStudySolution[]
+  lastResponse?: SingleQuestionResponseCaseStudy | null
+}
+export type InstanceEvaluationCaseStudy = IInstanceEvaluationCaseStudy
+
 export interface IInstanceEvaluationFlashcard extends IBaseInstanceEvaluation {
   lastResponse?: SingleQuestionResponseFlashcard | null
 }
@@ -522,6 +565,7 @@ export type InstanceEvaluation =
   | IInstanceEvaluationFlashcard
   | IInstanceEvaluationContent
   | IInstanceEvaluationSelection
+  | IInstanceEvaluationCaseStudy
 // #endregion
 
 // ----- LEARNING ANALYTICS -----

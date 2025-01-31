@@ -134,6 +134,61 @@ fragment StackFeedbackEvaluations on StackFeedback {
       correctness
     }
 
+    ... on CaseStudyInstanceEvaluation {
+      instanceId
+      elementType
+      pointsMultiplier
+      explanation
+      feedbacks {
+        ix
+        feedback
+        correct
+        value
+      }
+      numAnswers
+      assessments {
+        __typename
+        caseId
+        itemId
+        criterionId
+        responseValues
+      }
+      score
+      xp
+      pointsAwarded
+      percentile
+      newPointsFrom
+      xpAwarded
+      newXpFrom
+      studySolutions {
+        __typename
+        caseId
+        solutions {
+          itemId
+          criteriaSolutions {
+            criterionId
+            min
+            max
+          }
+        }
+      }
+      lastResponse {
+        __typename
+        assessment {
+          caseId
+          itemResponses {
+            itemId
+            criterionResponses {
+              criterionId
+              value
+              correct
+            }
+          }
+        }
+      }
+      correctness
+    }
+
     ... on FlashcardInstanceEvaluation {
       instanceId
       elementType

@@ -27,11 +27,13 @@ import {
 import type {
   AllElementTypeData,
   CaseStudyElementData,
+  CaseStudySolutionsObject,
   Choice,
   ChoicesElementData,
   ContentElementData,
   ElementInstanceResults,
   ElementOptionsAnswerCollection,
+  ElementOptionsCaseStudy,
   ElementOptionsChoices,
   ElementOptionsFreeText,
   ElementOptionsNumerical,
@@ -45,12 +47,14 @@ import type {
   FlashcardElementData,
   FreeTextElementData,
   InstanceEvaluation,
+  InstanceEvaluationCaseStudy,
   InstanceEvaluationChoices,
   InstanceEvaluationFreeText,
   InstanceEvaluationNumerical,
   InstanceEvaluationSelection,
   NumericalElementData,
   SelectionElementData,
+  SingleCaseStudyResponse,
   SingleQuestionResponse,
   SingleQuestionResponseChoices,
   SingleQuestionResponseContent,
@@ -1175,10 +1179,13 @@ type FreeTextEvaluationReturnType = Pick<
   InstanceEvaluationFreeText,
   SharedEvaluationProps | 'solutions' | 'answers'
 >
-
 type SelectionEvaluationReturnType = Pick<
   InstanceEvaluationSelection,
   SharedEvaluationProps | 'answerSolutionIds' | 'selectionResponses'
+>
+type CaseStudyEvaluationReturnType = Pick<
+  InstanceEvaluationCaseStudy,
+  SharedEvaluationProps | 'assessments' | 'studySolutions'
 >
 
 async function getValidateElementInstance({
@@ -1350,6 +1357,44 @@ function evaluateSelectionElementResponse({
   }
 }
 
+function evaluateCaseStudyElementResponse({
+  elementData,
+  results,
+  anonymousResults,
+  correctness,
+  multiplier,
+}: {
+  elementData: CaseStudyElementData
+  results: ElementResultsCaseStudy
+  anonymousResults: ElementResultsCaseStudy
+  correctness: number | null
+  multiplier?: number
+}): CaseStudyEvaluationReturnType | null {
+  return {
+    elementType: ElementType.CASE_STUDY,
+    feedbacks: [],
+    numAnswers: results.total + anonymousResults.total,
+    assessments: reduceCaseStudyResults({
+      results,
+      anonymousResults,
+      options: elementData.options,
+    }),
+    studySolutions: elementData.options.cases.map((c) => ({
+      caseId: c.id,
+      solutions: elementData.options.hasSampleSolution ? c.solutions! : [],
+    })),
+    score: correctness
+      ? Math.round(correctness * POINTS_PER_INSTANCE * (multiplier ?? 1))
+      : 0,
+    xp: computeAwardedXp({
+      pointsPercentage: correctness,
+    }),
+    percentile: correctness ?? 0,
+    pointsMultiplier: multiplier ?? 1,
+    explanation: elementData.explanation,
+  }
+}
+
 function computeQuestionEvaluation({
   elementData,
   results,
@@ -1418,16 +1463,13 @@ function computeQuestionEvaluation({
     'assessments' in results &&
     'assessments' in anonymousResults
   ) {
-    return null
-
-    // TODO: compute case study evaluation return content
-    // return evaluateCaseStudyElementResponse({
-    //   elementData,
-    //   results,
-    //   anonymousResults,
-    //   correctness,
-    //   multiplier,
-    // })
+    return evaluateCaseStudyElementResponse({
+      elementData,
+      results,
+      anonymousResults,
+      correctness,
+      multiplier,
+    })
   } else {
     return null
   }
@@ -1778,17 +1820,6 @@ export function updateSelectionResults({
   }
 }
 
-type CaseStudySolutionsObject = {
-  [caseId: string]: {
-    [itemId: number]: {
-      [criterionId: string]: {
-        min: number
-        max: number
-      }
-    }
-  }
-}
-
 function convertCaseStudySolutionsObject({
   instance,
 }: {
@@ -1800,7 +1831,7 @@ function convertCaseStudySolutionsObject({
     ? options.cases.reduce<CaseStudySolutionsObject>((acc, caseObj) => {
         acc[caseObj.id] = caseObj.solutions!.reduce(
           (itemAcc, { itemId, criteriaSolutions }) => {
-            itemAcc[itemId] = criteriaSolutions.reduce(
+            itemAcc[String(itemId)] = criteriaSolutions.reduce(
               (criterionAcc, { criterionId, min, max }) => {
                 criterionAcc[criterionId] = { min, max }
                 return criterionAcc
@@ -1854,10 +1885,11 @@ function updateCaseStudyResults({
 
         // get existing responses for this case, item, and criterion
         const existingCombinedResponses =
-          newAssessments[caseId]?.[itemId]?.[criterionId]
+          newAssessments[caseId]?.[String(itemId)]?.[criterionId]
 
         // compute correctness of new response value
-        const sampleSolution = solutions?.[caseId]?.[itemId]?.[criterionId]
+        const sampleSolution =
+          solutions?.[caseId]?.[String(itemId)]?.[criterionId]
         const responseCorrectness = sampleSolution
           ? responseValue >= sampleSolution.min - Number.EPSILON &&
             responseValue <= sampleSolution.max + Number.EPSILON
@@ -1870,12 +1902,16 @@ function updateCaseStudyResults({
         } else {
           // increment counter of existing identical response or create new entry otherwise
           if (Object.keys(existingCombinedResponses).includes(responseHash)) {
-            newAssessments[caseId]![itemId]![criterionId]![responseHash] = {
+            newAssessments[caseId]![String(itemId)]![criterionId]![
+              responseHash
+            ] = {
               ...existingCombinedResponses[responseHash]!,
               count: existingCombinedResponses[responseHash]!.count + 1,
             }
           } else {
-            newAssessments[caseId]![itemId]![criterionId]![responseHash] = {
+            newAssessments[caseId]![String(itemId)]![criterionId]![
+              responseHash
+            ] = {
               value: responseValue,
               count: 1,
               correct: responseCorrectness,
@@ -3321,6 +3357,51 @@ function combineSelectionResults({
       (results.selections[option.id] ?? 0) +
       (anonymousResults.selections[option.id] ?? 0),
   }))
+}
+
+function reduceCaseStudyResults({
+  results,
+  anonymousResults,
+  options,
+}: {
+  results: ElementResultsCaseStudy
+  anonymousResults: ElementResultsCaseStudy
+  options: ElementOptionsCaseStudy
+}): SingleCaseStudyResponse[] {
+  const combinedResponses = options.cases.flatMap((caseObj) =>
+    options.items
+      ? options.items.flatMap((item) =>
+          options.criteria.map((criterion) => {
+            const caseId = caseObj.id
+            const itemId = item.id
+            const criterionId = criterion.id
+
+            // extract result and anonymous result values
+            const resultValues = Object.values(
+              results.assessments[caseId]?.[itemId]?.[criterionId] ?? {}
+            ).map((r) => r.value)
+            const anonymousResultValues = Object.values(
+              anonymousResults.assessments[caseId]?.[itemId]?.[criterionId] ??
+                {}
+            ).map((r) => r.value)
+
+            // combine the values into a single array with unique values
+            const combinedResultValues = [
+              ...new Set([...resultValues, ...anonymousResultValues]),
+            ]
+
+            return {
+              caseId,
+              itemId,
+              criterionId,
+              responseValues: combinedResultValues,
+            }
+          })
+        )
+      : []
+  )
+
+  return combinedResponses
 }
 
 function computeChoicesEvaluation({
