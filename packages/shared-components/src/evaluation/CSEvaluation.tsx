@@ -52,9 +52,9 @@ function CSEvaluation({
                   <div
                     key={`sidebar-evaluation-case-${caseObj.id}-item-${item.id}-criterion-${criterion.id}`}
                   >
-                    <div className="mt-1.5 flex flex-row justify-between text-sm">
+                    <div className="mt-1.5 flex w-full flex-row justify-between text-sm">
                       <div>{criterion.name}</div>
-                      <div className="font-bold text-green-700">{`[${evaluationValue.solutionMin}, ${evaluationValue.solutionMax}]`}</div>
+                      <div className="min-w-max font-bold text-green-700">{`[${evaluationValue.solutionMin}, ${evaluationValue.solutionMax}]`}</div>
                     </div>
                     <div>
                       <div className="relative">

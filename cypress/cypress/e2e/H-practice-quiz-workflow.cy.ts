@@ -73,9 +73,9 @@ describe('Different practice quiz workflows', function () {
     // create answer collection
     cy.get('[data-cy="resources"]').click()
     cy.createAnswerCollection({
-      name: this.data.questions.SE.collection.name,
-      description: this.data.questions.SE.collection.description,
-      entries: this.data.questions.SE.collection.options,
+      name: this.data.questions.collection.name,
+      description: this.data.questions.collection.description,
+      entries: this.data.questions.collection.options,
       access: messages.manage.resources.accessPRIVATE,
       accessCy: 'private',
     })
@@ -86,10 +86,24 @@ describe('Different practice quiz workflows', function () {
       title: this.data.questions.SE.title,
       content: this.data.questions.SE.content,
       numberOfInputs: this.data.questions.SE.inputs,
-      collectionName: this.data.questions.SE.collection.name,
-      correctAnswers: this.data.questions.SE.collection.options.filter((_, i) =>
+      collectionName: this.data.questions.collection.name,
+      correctAnswers: this.data.questions.collection.options.filter((_, i) =>
         this.data.questions.SE.solutions.includes(i)
       ),
+    })
+
+    // create a case study question
+    cy.createQuestionCS({
+      title: this.data.questions.CS.title,
+      content: this.data.questions.CS.content,
+      explanation: this.data.questions.CS.explanation,
+      collectionName: this.data.questions.collection.name,
+      selectedItems: this.data.questions.collection.options.filter((_, i) =>
+        this.data.questions.CS.selectedItems.includes(i)
+      ),
+      criteria: this.data.questions.CS.criteria,
+      cases: this.data.questions.CS.cases,
+      solutions: this.data.questions.CS.solutions,
     })
   })
 
@@ -171,6 +185,7 @@ describe('Different practice quiz workflows', function () {
         { elements: [this.data.questions.NR.title] },
         { elements: [this.data.questions.FT.title] },
         { elements: [this.data.questions.SE.title] },
+        { elements: [this.data.questions.CS.title] },
         { elements: [this.data.questions.FC.title] },
         { elements: [this.data.questions.CT.title] },
       ],
@@ -286,9 +301,12 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.SE.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.questions.CS.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
+      this.data.questions.FC.title.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-8"]').contains(
       this.data.questions.CT.title.substring(0, 20)
     )
 
@@ -299,10 +317,10 @@ describe('Different practice quiz workflows', function () {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-stack-8"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-9"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="element-0-stack-8"]').contains(
+    cy.get('[data-cy="element-0-stack-9"]').contains(
       this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -379,12 +397,15 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.SE.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.questions.CS.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
-      this.data.questions.CT.title.substring(0, 20)
+      this.data.questions.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-8"]').contains(
+      this.data.questions.CT.title.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-9"]').contains(
       this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -467,12 +488,15 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.SE.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.questions.CS.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
-      this.data.questions.CT.title.substring(0, 20)
+      this.data.questions.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-8"]').contains(
+      this.data.questions.CT.title.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-9"]').contains(
       this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -495,6 +519,20 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="practice-quiz-actions-${this.data.running.nameDupl}"]`
     ).should('not.exist')
   })
+
+  function computeCaseStudySlidedValue({ criterion, answer }) {
+    const criterionMin = criterion.min
+    const criterionMax = criterion.max
+    const criterionStep = criterion.step
+    const midValue = criterionMin + (criterionMax - criterionMin) / 2
+    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
+    const slidedValue = Math.max(
+      Math.min(midValue + signedSteps * criterionStep, criterionMax),
+      criterionMin
+    )
+
+    return slidedValue
+  }
 
   // ! Part 2: Running Practice Quiz
   // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
@@ -595,18 +633,84 @@ describe('Different practice quiz workflows', function () {
     cy.get('[id="react-select-selection-1-field-3-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[id="selection-1-field-1"]')
-      .contains(data.questions.SE.collection.options[1])
+      .contains(data.questions.collection.options[1])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-1-field-2"]')
-      .contains(data.questions.SE.collection.options[0])
+      .contains(data.questions.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-1-field-3"]')
-      .contains(data.questions.SE.collection.options[3])
+      .contains(data.questions.collection.options[3])
       .should('have.css', 'pointer-events', 'none')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // CS Question
+    cy.findByText(data.questions.CS.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // full answer is required
+              cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+
+              // move sliders to answer values
+              const answer = criterionAnswer as { click: string; steps: number }
+              cy.get(
+                `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              )
+                .click()
+                .type(answer.click.repeat(answer.steps))
+
+              // verify that correct value is set
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
+    cy.get('[data-cy="student-stack-submit"]').click()
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // verify that correct value is still set
+              const answer = criterionAnswer as { click: string; steps: number }
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+
+              // try to move slider and verify that value remains the same
+              cy.get(
+                `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              )
+                .click()
+                .type('{leftarrow}')
+              cy.get(
+                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // skip back and forth
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="practice-quiz-progress-5"]').click()
+    cy.get('[data-cy="student-stack-continue"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-progress-3"]').click()
     cy.get('[data-cy="student-stack-continue"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-progress-1"]').click()
@@ -614,6 +718,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="practice-quiz-progress-2"]').click()
     cy.get('[data-cy="student-stack-continue"]').should('not.be.disabled')
     cy.get('[data-cy="practice-quiz-progress-0"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
@@ -736,7 +841,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[id="react-select-selection-1-field-1-option-0"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[id="selection-1-field-1"]')
-      .contains(data.questions.SE.collection.options[0])
+      .contains(data.questions.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-1-field-2"]')
       .contains(messages.shared.questions.seSelectOption)
@@ -744,6 +849,70 @@ describe('Different practice quiz workflows', function () {
     cy.get('[id="selection-1-field-3"]')
       .contains(messages.shared.questions.seSelectOption)
       .should('have.css', 'pointer-events', 'none')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // CS Question - no partial submissions possible
+    cy.findByText(data.questions.CS.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // full answer is required
+              cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+
+              // move sliders to answer values
+              const answer = criterionAnswer as { click: string; steps: number }
+              cy.get(
+                `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              )
+                .click()
+                .type(answer.click.repeat(answer.steps))
+
+              // verify that correct value is set
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
+    cy.get('[data-cy="student-stack-submit"]').click()
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // verify that correct value is still set
+              const answer = criterionAnswer as { click: string; steps: number }
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+
+              // try to move slider and verify that value remains the same
+              cy.get(
+                `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              )
+                .click()
+                .type('{leftarrow}')
+              cy.get(
+                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // Flashcard - no partial submissions possible
@@ -1044,6 +1213,7 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.NR.title,
       this.data.questions.FT.title,
       this.data.questions.SE.title,
+      this.data.questions.CS.title,
       this.data.questions.FC.title,
       this.data.questions.CT.title,
     ]
@@ -1057,7 +1227,7 @@ describe('Different practice quiz workflows', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.deleteAnswerCollection({
-      collectionName: this.data.questions.SE.collection.name,
+      collectionName: this.data.questions.collection.name,
     })
   })
 
