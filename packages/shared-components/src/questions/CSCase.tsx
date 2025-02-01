@@ -1,5 +1,6 @@
 import type { CaseStudyElementOptions } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import type { CaseStudySolutionsObject } from '@klicker-uzh/types'
 import { FormLabel, NumberField } from '@uzh-bf/design-system'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -13,6 +14,7 @@ function CSCase({
   currentCase,
   items,
   criteria,
+  solutions,
   disabled,
   caseResponse,
   setCaseResponse,
@@ -22,6 +24,7 @@ function CSCase({
   currentCase: CaseStudyElementOptions['cases'][0]
   items: CaseStudyElementOptions['items']
   criteria: CaseStudyElementOptions['criteria']
+  solutions?: CaseStudySolutionsObject['']
   disabled: boolean
   caseResponse?: CaseStudyStudentResponseType['']
   setCaseResponse: (newValue: CaseStudyStudentResponseType['']) => void
@@ -98,6 +101,7 @@ function CSCase({
                     min={criterion.min}
                     max={criterion.max}
                     step={criterion.step}
+                    solution={solutions?.[item.id]?.[criterion.id]}
                   />
                   <NumberField
                     disabled
