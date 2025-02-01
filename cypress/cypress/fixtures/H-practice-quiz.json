@@ -60,21 +60,185 @@
       },
       "answer": "Testinput"
     },
+    "collection": {
+      "name": "Answer Collection PQ",
+      "description": "Answer Collection PQ Description",
+      "options": [
+        "Answer Collection PQ Option 1",
+        "Answer Collection PQ Option 2",
+        "Answer Collection PQ Option 3",
+        "Answer Collection PQ Option 4",
+        "Answer Collection PQ Option 5"
+      ]
+    },
     "SE": {
       "title": "SE 1f6bf5c9-13a0-4cbc-abb7-bb77fe7381f1",
       "content": "SE Question PQ",
       "inputs": 3,
-      "solutions": [0, 1, 2, 4],
-      "collection": {
-        "name": "SE Collection PQ",
-        "description": "SE Collection PQ Description",
-        "options": [
-          "SE PQ Option 1",
-          "SE PQ Option 2",
-          "SE PQ Option 3",
-          "SE PQ Option 4",
-          "SE PQ Option 5"
-        ]
+      "solutions": [0, 1, 2, 4]
+    },
+    "CS": {
+      "title": "CS c4ad2b4b-6bb1-431d-8d03-5997df7791f1",
+      "content": "CS Question PQ",
+      "explanation": "CS Explanation PQ",
+      "collectionName": "Answer Collection PQ",
+      "selectedItems": [0, 2, 4],
+      "criteria": [
+        {
+          "name": "Criterion 1 with range 0-100",
+          "min": 0,
+          "max": 100,
+          "step": 0.2,
+          "unit": "%"
+        },
+        {
+          "name": "Criterion 2 with range -500 to 1000",
+          "min": -500,
+          "max": 1000,
+          "step": 10
+        }
+      ],
+      "cases": [
+        {
+          "title": "Case 1",
+          "description": "Case 1 Description"
+        },
+        {
+          "title": "Case 2",
+          "description": "Case 2 Description"
+        }
+      ],
+      "solutions": {
+        "0": {
+          "0": {
+            "0": {
+              "lower": 23.4,
+              "upper": 87.9
+            },
+            "1": {
+              "lower": -234.5,
+              "upper": 456.7
+            }
+          },
+          "1": {
+            "0": {
+              "lower": 0,
+              "upper": 100
+            },
+            "1": {
+              "lower": -500,
+              "upper": 789.3
+            }
+          },
+          "2": {
+            "0": {
+              "lower": 45.6,
+              "upper": 92.1
+            },
+            "1": {
+              "lower": -123.4,
+              "upper": 1000
+            }
+          }
+        },
+        "1": {
+          "0": {
+            "0": {
+              "lower": 12.8,
+              "upper": 67.3
+            },
+            "1": {
+              "lower": -432.1,
+              "upper": 567.8
+            }
+          },
+          "1": {
+            "0": {
+              "lower": 34.5,
+              "upper": 89.2
+            },
+            "1": {
+              "lower": -345.6,
+              "upper": 890.1
+            }
+          },
+          "2": {
+            "0": {
+              "lower": 56.7,
+              "upper": 78.9
+            },
+            "1": {
+              "lower": -289.3,
+              "upper": 678.2
+            }
+          }
+        }
+      },
+      "answers": {
+        "0": {
+          "0": {
+            "0": {
+              "click": "{leftarrow}",
+              "steps": 45
+            },
+            "1": {
+              "click": "{rightarrow}",
+              "steps": 73
+            }
+          },
+          "1": {
+            "0": {
+              "click": "{leftarrow}",
+              "steps": 12
+            },
+            "1": {
+              "click": "{rightarrow}",
+              "steps": 89
+            }
+          },
+          "2": {
+            "0": {
+              "click": "{leftarrow}",
+              "steps": 34
+            },
+            "1": {
+              "click": "{rightarrow}",
+              "steps": 67
+            }
+          }
+        },
+        "1": {
+          "0": {
+            "0": {
+              "click": "{rightarrow}",
+              "steps": 28
+            },
+            "1": {
+              "click": "{leftarrow}",
+              "steps": 91
+            }
+          },
+          "1": {
+            "0": {
+              "click": "{rightarrow}",
+              "steps": 56
+            },
+            "1": {
+              "click": "{leftarrow}",
+              "steps": 83
+            }
+          },
+          "2": {
+            "0": {
+              "click": "{rightarrow}",
+              "steps": 15
+            },
+            "1": {
+              "click": "{leftarrow}",
+              "steps": 62
+            }
+          }
+        }
       }
     },
     "FC": {

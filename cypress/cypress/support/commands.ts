@@ -204,13 +204,20 @@ Cypress.Commands.add(
 interface CreateChoicesQuestionArgs {
   title: string
   content: string
+  explanation?: string
   choices: { content: string; correct?: boolean }[]
   multiplier?: string
 }
 
 Cypress.Commands.add(
   'createQuestionSC',
-  ({ title, content, choices, multiplier }: CreateChoicesQuestionArgs) => {
+  ({
+    title,
+    content,
+    explanation,
+    choices,
+    multiplier,
+  }: CreateChoicesQuestionArgs) => {
     // throw an error if no choices were provided
     if (choices.length < 2) {
       throw new Error('SC questions require at least 2 choices')
@@ -218,6 +225,13 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(title)
+
+    // enter optional explanation
+    if (explanation) {
+      cy.get('[data-cy="insert-question-explanation"]')
+        .realClick()
+        .type(explanation)
+    }
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -258,7 +272,13 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
   'createQuestionMC',
-  ({ title, content, choices, multiplier }: CreateChoicesQuestionArgs) => {
+  ({
+    title,
+    content,
+    explanation,
+    choices,
+    multiplier,
+  }: CreateChoicesQuestionArgs) => {
     // throw an error if no choices were provided
     if (choices.length < 2) {
       throw new Error('MC questions require at least 2 choices')
@@ -275,6 +295,14 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="insert-question-title"]').type(title)
     cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+
+    // enter optional explanation
+    if (explanation) {
+      cy.get('[data-cy="insert-question-explanation"]')
+        .realClick()
+        .type(explanation)
+    }
+
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .type(choices[0].content)
@@ -313,7 +341,13 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
   'createQuestionKPRIM',
-  ({ title, content, choices, multiplier }: CreateChoicesQuestionArgs) => {
+  ({
+    title,
+    content,
+    explanation,
+    choices,
+    multiplier,
+  }: CreateChoicesQuestionArgs) => {
     // throw an error if there are not 4 choices
     if (choices.length !== 4) {
       throw new Error('KPRIM questions require exactly 4 choices')
@@ -338,6 +372,13 @@ Cypress.Commands.add(
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
     ).click()
+
+    // enter optional explanation
+    if (explanation) {
+      cy.get('[data-cy="insert-question-explanation"]')
+        .realClick()
+        .type(explanation)
+    }
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -388,6 +429,7 @@ Cypress.Commands.add(
 interface CreateQuestionNRArgs {
   title: string
   content: string
+  explanation?: string
   min?: string
   max?: string
   unit?: string
@@ -402,6 +444,7 @@ Cypress.Commands.add(
   ({
     title,
     content,
+    explanation,
     min,
     max,
     unit,
@@ -421,6 +464,13 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="insert-question-title"]').click().type(title)
     cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+
+    // enter optional explanation
+    if (explanation) {
+      cy.get('[data-cy="insert-question-explanation"]')
+        .realClick()
+        .type(explanation)
+    }
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -487,6 +537,7 @@ Cypress.Commands.add(
 interface CreateQuestionFTArgs {
   title: string
   content: string
+  explanation?: string
   maxLength?: string
   solutions?: string[]
   multiplier?: string
@@ -497,6 +548,7 @@ Cypress.Commands.add(
   ({
     title,
     content,
+    explanation,
     maxLength,
     solutions,
     multiplier,
@@ -512,6 +564,13 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="insert-question-title"]').click().type(title)
     cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+
+    // enter optional explanation
+    if (explanation) {
+      cy.get('[data-cy="insert-question-explanation"]')
+        .realClick()
+        .type(explanation)
+    }
 
     if (typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
@@ -592,6 +651,182 @@ Cypress.Commands.add(
         cy.get('[data-cy="choose-correct-answer-options"]').click()
         cy.findByText(solution).realClick()
         cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+      })
+    }
+
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+  }
+)
+
+interface CreateCaseStudyArgs {
+  title: string
+  content: string
+  explanation?: string
+  collectionName: string
+  selectedItems: string[]
+  criteria: {
+    name: string
+    min: number
+    max: number
+    step: number
+    unit?: string
+  }[]
+  cases: {
+    title: string
+    description: string
+  }[]
+  solutions?: {
+    [caseIx: string]: {
+      [itemIx: string]: {
+        [criterionIx: string]: {
+          lower: number
+          upper: number
+        }
+      }
+    }
+  }
+}
+
+Cypress.Commands.add(
+  'createQuestionCS',
+  ({
+    title,
+    content,
+    explanation,
+    collectionName,
+    selectedItems,
+    criteria,
+    cases,
+    solutions,
+  }: CreateCaseStudyArgs) => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.CASE_STUDY.typeLabel)
+
+    // enter title and content
+    cy.get('[data-cy="insert-question-title"]').click().type(title)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+
+    // enter optional explanation
+    if (explanation) {
+      cy.get('[data-cy="insert-question-explanation"]')
+        .realClick()
+        .type(explanation)
+    }
+
+    // select an answer collection
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      messages.manage.questionForms.selectCollection
+    )
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(`[data-cy="select-answer-collection-${collectionName}"]`).click()
+    cy.get('[data-cy="select-answer-collection"]').contains(collectionName)
+
+    // select items for case study
+    cy.wrap(selectedItems).each((item: string) => {
+      cy.get('[data-cy="choose-case-study-items"]').click()
+      cy.findByText(item).realClick()
+      cy.get('[data-cy="choose-case-study-items"]').contains(item)
+    })
+
+    // add criteria
+    cy.wrap(criteria).each(
+      (criterion: CreateCaseStudyArgs['criteria'][0], ix) => {
+        // create new criterion and fill in information
+        cy.get('[data-cy="add-new-criterion"]').click()
+        cy.get(`[data-cy="criterion-${ix}-name"]`).click().type(criterion.name)
+        cy.get(`[data-cy="criterion-${ix}-min"]`)
+          .click()
+          .type(String(criterion.min))
+        cy.get(`[data-cy="criterion-${ix}-max"]`)
+          .click()
+          .type(String(criterion.max))
+        cy.get(`[data-cy="criterion-${ix}-step"]`)
+          .click()
+          .type(String(criterion.step))
+
+        if (criterion.unit) {
+          cy.get(`[data-cy="criterion-${ix}-unit"]`)
+            .click()
+            .type(criterion.unit)
+        }
+
+        // verify that all data has been entered correctly
+        cy.get(`[data-cy="criterion-${ix}-name"]`).should(
+          'have.value',
+          criterion.name
+        )
+        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
+          'have.value',
+          String(criterion.min)
+        )
+        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+          'have.value',
+          String(criterion.max)
+        )
+        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+          'have.value',
+          String(criterion.step)
+        )
+        if (criterion.unit) {
+          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+            'have.value',
+            criterion.unit
+          )
+        }
+      }
+    )
+
+    // add cases
+    cy.wrap(cases).each((caseItem: CreateCaseStudyArgs['cases'][0], ix) => {
+      // add new case information
+      cy.get('[data-cy="add-new-case"]').click()
+      cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
+      cy.get(`[data-cy="case-description-${ix}"]`)
+        .realClick()
+        .type(caseItem.description)
+
+      // verify that all data has been entered correctly
+      cy.get(`[data-cy="case-title-${ix}"]`).should(
+        'have.value',
+        caseItem.title
+      )
+      cy.get(`[data-cy="case-description-${ix}"]`).contains(
+        caseItem.description
+      )
+    })
+
+    // add solutions (if defined)
+    if (solutions) {
+      cy.get('[data-cy="configure-sample-solution"]').click()
+      Object.entries(solutions).forEach(([caseIx, caseValue]) => {
+        Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
+          Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+            )
+              .click()
+              .type(String(criterionValue.lower))
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+            )
+              .click()
+              .type(String(criterionValue.upper))
+
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+            ).should('have.value', String(criterionValue.lower))
+            cy.get(
+              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+            ).should('have.value', String(criterionValue.upper))
+          })
+        })
       })
     }
 
@@ -980,24 +1215,28 @@ declare global {
       createQuestionSC({
         title,
         content,
+        explanation,
         choices,
         multiplier,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionMC({
         title,
         content,
+        explanation,
         choices,
         multiplier,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionKPRIM({
         title,
         content,
+        explanation,
         choices,
         multiplier,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionNR({
         title,
         content,
+        explanation,
         min,
         max,
         unit,
@@ -1008,6 +1247,7 @@ declare global {
       createQuestionFT({
         title,
         content,
+        explanation,
         maxLength,
         solutions,
         multiplier,
@@ -1020,6 +1260,16 @@ declare global {
         numberOfInputs,
         correctAnswers,
       }: CreateSelectionArgs): Chainable<void>
+      createQuestionCS({
+        title,
+        content,
+        explanation,
+        collectionName,
+        selectedItems,
+        criteria,
+        cases,
+        solutions,
+      }: CreateCaseStudyArgs): Chainable<void>
       createFlashcard({
         title,
         content,

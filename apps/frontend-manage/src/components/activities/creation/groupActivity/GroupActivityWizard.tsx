@@ -53,6 +53,7 @@ const acceptedTypes = [
   ElementType.FreeText,
   ElementType.Content,
   ElementType.Selection,
+  ElementType.CaseStudy,
 ]
 
 interface GroupActivityWizardProps {
