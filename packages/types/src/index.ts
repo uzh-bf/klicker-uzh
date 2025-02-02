@@ -1,6 +1,7 @@
 import type {
   Element,
   ElementType,
+  ObjectAccess,
   PerformanceLevel,
 } from '@klicker-uzh/prisma'
 
@@ -10,6 +11,21 @@ export type ElementKeys = keyof Element
 export enum DisplayMode {
   LIST = 'LIST',
   GRID = 'GRID',
+}
+
+export enum AccessType {
+  OWNER = 'OWNER',
+  SHARED = 'SHARED',
+}
+
+export enum CatalogObjectType {
+  ANSWER_COLLECTION = 'ANSWER_COLLECTION',
+  // TODO: add more object types once they are supported
+  // ELEMENT = 'ELEMENT',
+  // LIVE_QUIZ = 'LIVE_QUIZ',
+  // PRACTICE_QUIZ = 'PRACTICE_QUIZ',
+  // MICRO_LEARNING = 'MICRO_LEARNING',
+  // GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
 export enum ActivityType {
@@ -96,16 +112,36 @@ export type AvatarSettings = {
 }
 // #endregion
 
+// ----- RESOURCES -----
+// #region
+export type ObjectSharingRequest = {
+  permissionId: number
+  objectName: string
+  objectType: CatalogObjectType
+  userId: string
+  userShortname: string
+  userEmail: string
+}
+// #endregion
+
+// ----- CATALOG -----
+// #region
+export type CatalogObject = {
+  id?: number
+  uuid?: string
+  name: string
+  objectType: CatalogObjectType
+  access: ObjectAccess
+  ownerShortname?: string
+  isRequested: boolean
+  isShared: boolean
+  isOwner: boolean
+}
+
+// #endregion
+
 // ----- ELEMENT DATA AND INSTANCES -----
 // #region
-export type SingleQuestionResponseChoices = {
-  choices: number[]
-}
-
-export type SingleQuestionResponseValue = {
-  value: string
-}
-
 export enum FlashcardCorrectness {
   INCORRECT = 'INCORRECT',
   PARTIAL = 'PARTIAL',
@@ -126,6 +162,18 @@ export enum StackFeedbackStatus {
   PARTIAL = 'partial',
 }
 
+export type SingleQuestionResponseChoices = {
+  choices: number[]
+}
+
+export type SingleQuestionResponseValue = {
+  value: string
+}
+
+export type SingleQuestionResponseSelection = {
+  selection: number[]
+}
+
 export type SingleQuestionResponseFlashcard = {
   correctness: FlashcardCorrectness
 }
@@ -139,6 +187,7 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseValue
   | SingleQuestionResponseFlashcard
   | SingleQuestionResponseContent
+  | SingleQuestionResponseSelection
 
 export type Choice = {
   ix: number
@@ -171,6 +220,7 @@ export interface ElementOptionsNumerical extends BaseQuestionOptions {
     max?: number
   }
   solutionRanges?: NumericalSolutionRange[]
+  exactSolutions?: number[]
 }
 
 export interface ElementOptionsFreeText extends BaseQuestionOptions {
@@ -178,6 +228,20 @@ export interface ElementOptionsFreeText extends BaseQuestionOptions {
   restrictions?: {
     maxLength?: number | null
   }
+}
+
+export interface SelectionAnswerCollection {
+  id: number
+  entries: {
+    id: number
+    value: string
+  }[]
+}
+
+export interface ElementOptionsSelection extends BaseQuestionOptions {
+  numberOfInputs?: number
+  answerCollection?: SelectionAnswerCollection
+  answerCollectionSolutionIds?: number[] | null
 }
 
 export interface ElementOptionsFlashcard {}
@@ -189,6 +253,7 @@ export type ElementOptions =
   | ElementOptionsFreeText
   | ElementOptionsFlashcard
   | ElementOptionsContent
+  | ElementOptionsSelection
 
 export interface BaseElementData {
   id: string
@@ -226,6 +291,10 @@ export type FlashcardElementData = IElementData<
   ElementOptionsFlashcard
 >
 export type ContentElementData = IElementData<'CONTENT', ElementOptionsContent>
+export type SelectionElementData = IElementData<
+  'SELECTION',
+  ElementOptionsSelection
+>
 
 export type AllElementTypeData =
   | ChoicesElementData
@@ -233,6 +302,7 @@ export type AllElementTypeData =
   | NumericalElementData
   | FlashcardElementData
   | ContentElementData
+  | SelectionElementData
 
 export type ElementInstanceOptions = {
   pointsMultiplier?: number
@@ -266,11 +336,17 @@ export type ElementResultsContent = {
   total: number
 }
 
+export type ElementResultsSelection = {
+  selections: Record<number, number>
+  total: number
+}
+
 export type ElementInstanceResults =
   | ElementResultsChoices
   | ElementResultsOpen
   | ElementResultsFlashcard
   | ElementResultsContent
+  | ElementResultsSelection
 
 export type GroupActivityDecision = {
   instanceId: number
@@ -279,6 +355,7 @@ export type GroupActivityDecision = {
   choicesResponse?: number[] | null
   numericalResponse?: number | null
   contentResponse?: boolean | null
+  selectionResponse?: number[] | null
 }
 export type GroupActivityDecisions = GroupActivityDecision[]
 
@@ -335,6 +412,7 @@ export type SingleNumericalResponse = { count: number; value: number }
 export interface IInstanceEvaluationNumerical extends IBaseInstanceEvaluation {
   responses?: SingleNumericalResponse[]
   solutionRanges?: NumericalSolutionRange[]
+  exactSolutions?: number[]
   lastResponse?: SingleQuestionResponseValue | null
 }
 export type InstanceEvaluationNumerical = IInstanceEvaluationNumerical
@@ -346,6 +424,18 @@ export interface IInstanceEvaluationFreeText extends IBaseInstanceEvaluation {
   lastResponse?: SingleQuestionResponseValue | null
 }
 export type InstanceEvaluationFreeText = IInstanceEvaluationFreeText
+
+export type SingleSelectionResponse = {
+  answerId: number
+  value: string
+  count: number
+}
+export interface IInstanceEvaluationSelection extends IBaseInstanceEvaluation {
+  selectionResponses?: SingleSelectionResponse[]
+  answerSolutionIds?: number[]
+  lastResponse?: SingleQuestionResponseSelection | null
+}
+export type InstanceEvaluationSelection = IInstanceEvaluationSelection
 
 export interface IInstanceEvaluationFlashcard extends IBaseInstanceEvaluation {
   lastResponse?: SingleQuestionResponseFlashcard | null
@@ -363,6 +453,7 @@ export type InstanceEvaluation =
   | IInstanceEvaluationFreeText
   | IInstanceEvaluationFlashcard
   | IInstanceEvaluationContent
+  | IInstanceEvaluationSelection
 // #endregion
 
 // ----- LEARNING ANALYTICS -----

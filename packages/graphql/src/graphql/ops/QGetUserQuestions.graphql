@@ -64,6 +64,7 @@ query GetUserQuestions {
           min
           max
         }
+        exactSolutions
         restrictions {
           __typename
           min
@@ -102,6 +103,34 @@ query GetUserQuestions {
           __typename
           maxLength
         }
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on SelectionElement {
+      id
+      name
+      status
+      type
+      content
+
+      pointsMultiplier
+      version
+
+      isArchived
+      isDeleted
+      createdAt
+      updatedAt
+
+      options {
+        __typename
+        hasSampleSolution
+        numberOfInputs
       }
 
       tags {

@@ -45,6 +45,7 @@ query GetGradingGroupActivity($id: String!) {
         choicesResponse
         numericalResponse
         contentResponse
+        selectionResponse
       }
 
       resultsComputedAt

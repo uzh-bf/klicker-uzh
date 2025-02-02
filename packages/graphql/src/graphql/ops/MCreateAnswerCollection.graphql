@@ -1,0 +1,26 @@
+mutation CreateAnswerCollection(
+  $name: String!
+  $access: ObjectAccess!
+  $description: String!
+  $answers: [String!]!
+  $catalogCollectionId: String
+) {
+  createAnswerCollection(
+    name: $name
+    access: $access
+    description: $description
+    answers: $answers
+    catalogCollectionId: $catalogCollectionId
+  ) {
+    id
+    name
+    access
+    description
+    accessType
+    ownerShortname
+    entries {
+      id
+      value
+    }
+  }
+}

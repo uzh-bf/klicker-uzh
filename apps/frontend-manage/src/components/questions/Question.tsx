@@ -1,20 +1,6 @@
-import {
-  faComment as faCommentRegular,
-  faRectangleList as faListRegular,
-  faCircleQuestion as faQuestionRegular,
-} from '@fortawesome/free-regular-svg-icons'
-import { IconDefinition, faArchive } from '@fortawesome/free-solid-svg-icons'
-import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
-import { Badge } from '@uzh-bf/design-system/dist/future'
-import React, { useState } from 'react'
-import { useDrag } from 'react-dnd'
-import { twMerge } from 'tailwind-merge'
-// TODO: readd modals and tags
-// import QuestionDetailsModal from './QuestionDetailsModal'
-// import QuestionDuplicationModal from './QuestionDuplicationModal'
 import { useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
-import { faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faArchive, faPencil, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   DeleteQuestionDocument,
@@ -24,28 +10,23 @@ import {
   Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
+import { Button, Checkbox, H2, H3, Modal } from '@uzh-bf/design-system'
+import { Badge } from '@uzh-bf/design-system/dist/future'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import React, { useState } from 'react'
+import { useDrag } from 'react-dnd'
+import { twMerge } from 'tailwind-merge'
 import ElementEditModal, {
   ElementEditMode,
 } from './manipulation/ElementEditModal'
+import RecoveryPrompt from './manipulation/RecoveryPrompt'
 import QuestionTags from './QuestionTags'
-// import QuestionTags from './QuestionTags'
 
 const StatusColors: Record<ElementStatus, string> = {
   [ElementStatus.Draft]: 'bg-slate-400',
   [ElementStatus.Review]: 'bg-violet-400',
   [ElementStatus.Ready]: 'bg-green-400',
-}
-
-const ElementIcons: Record<ElementType, IconDefinition> = {
-  FLASHCARD: faListRegular,
-  CONTENT: faCommentRegular,
-  SC: faQuestionRegular,
-  MC: faQuestionRegular,
-  KPRIM: faQuestionRegular,
-  FREE_TEXT: faQuestionRegular,
-  NUMERICAL: faQuestionRegular,
 }
 
 export interface QuestionDragDropTypes {
@@ -69,6 +50,7 @@ interface QuestionProps {
   type: ElementType
   content: string
   onCheck: () => void
+  triggerSuccessToast: () => void
   unsetDeletedQuestion: (questionId: number) => void
   hasAnswerFeedbacks: boolean
   hasSampleSolution: boolean
@@ -87,6 +69,7 @@ function Question({
   type,
   content,
   onCheck,
+  triggerSuccessToast,
   unsetDeletedQuestion,
   isArchived = false,
   hasAnswerFeedbacks,
@@ -99,6 +82,7 @@ function Question({
   const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
   const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false)
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [deleteQuestion, { loading: deleting }] = useMutation(
     DeleteQuestionDocument
   )
@@ -195,7 +179,15 @@ function Question({
               className={{
                 root: 'space-x-2 bg-white text-sm md:w-36 md:text-base',
               }}
-              onClick={(): void => setIsModificationModalOpen(true)}
+              onClick={() => {
+                const value = localStorage.getItem(`autosave-element-${id}`)
+
+                if (value) {
+                  setShowRecoveryPrompt(true)
+                } else {
+                  setIsModificationModalOpen(true)
+                }
+              }}
               data={{ cy: `edit-question-${title}` }}
             >
               <Button.Icon>
@@ -203,11 +195,27 @@ function Question({
               </Button.Icon>
               <Button.Label>{t('shared.generic.edit')}</Button.Label>
             </Button>
+            {showRecoveryPrompt && (
+              <RecoveryPrompt
+                open={showRecoveryPrompt}
+                onRecovery={() => {
+                  setShowRecoveryPrompt(false)
+                  setIsModificationModalOpen(true)
+                }}
+                onDiscard={() => {
+                  localStorage.removeItem(`autosave-element-${id}`)
+                  setShowRecoveryPrompt(false)
+                  setIsModificationModalOpen(true)
+                }}
+                editMode={false}
+              />
+            )}
             {isModificationModalOpen && (
               <ElementEditModal
                 handleSetIsOpen={setIsModificationModalOpen}
+                triggerSuccessToast={triggerSuccessToast}
                 isOpen={isModificationModalOpen}
-                questionId={id}
+                elementId={id}
                 mode={ElementEditMode.EDIT}
               />
             )}
@@ -215,7 +223,7 @@ function Question({
               className={{
                 root: 'space-x-2 bg-white text-sm md:w-36 md:text-base',
               }}
-              onClick={(): void => setIsDuplicationModalOpen(true)}
+              onClick={() => setIsDuplicationModalOpen(true)}
               data={{ cy: `duplicate-question-${title}` }}
             >
               <Button.Icon>
@@ -226,8 +234,9 @@ function Question({
             {isDuplicationModalOpen && (
               <ElementEditModal
                 handleSetIsOpen={setIsDuplicationModalOpen}
+                triggerSuccessToast={triggerSuccessToast}
                 isOpen={isDuplicationModalOpen}
-                questionId={id}
+                elementId={id}
                 mode={ElementEditMode.DUPLICATE}
               />
             )}

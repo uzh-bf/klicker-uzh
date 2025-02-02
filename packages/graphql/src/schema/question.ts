@@ -5,6 +5,7 @@ import type {
   IInstanceEvaluationFlashcard,
   IInstanceEvaluationFreeText,
   IInstanceEvaluationNumerical,
+  IInstanceEvaluationSelection,
   IQuestionFeedback,
   SingleChoiceResponse as SingleChoiceResponseType,
   SingleFreeTextResponse as SingleFreeTextResponseType,
@@ -12,7 +13,9 @@ import type {
   SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
   SingleQuestionResponseContent as SingleQuestionResponseContentType,
   SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
+  SingleQuestionResponseSelection as SingleQuestionResponseSelectionType,
   SingleQuestionResponseValue as SingleQuestionResponseValueType,
+  SingleSelectionResponse as SingleSelectionResponseType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementFeedbackRef } from './analytics.js'
@@ -25,8 +28,10 @@ import {
   ElementStatus,
   ElementType,
   FreeTextQuestionOptions,
+  ISelectionQuestionOptions,
   NumericalQuestionOptions,
   NumericalSolutionRange,
+  SelectionQuestionOptions,
   type IChoiceQuestionOptions,
   type IFreeTextQuestionOptions,
   type INumericalQuestionOptions,
@@ -90,6 +95,7 @@ export const OptionsNumericalInput = builder.inputType(
         type: [SolutionRangeInput],
         required: false,
       }),
+      exactSolutions: t.floatList({ required: false }),
       feedback: t.string({ required: false }),
     }),
   }
@@ -124,8 +130,21 @@ export const ResponseInput = builder.inputType('ResponseInput', {
   fields: (t) => ({
     choices: t.intList({ required: false }),
     value: t.string({ required: false }),
+    selection: t.intList({ required: false }),
   }),
 })
+
+export const OptionsSelectionInput = builder.inputType(
+  'OptionsSelectionInput',
+  {
+    fields: (t) => ({
+      hasSampleSolution: t.boolean({ required: false }),
+      answerCollection: t.int({ required: false }),
+      numberOfInputs: t.int({ required: false }),
+      correctAnswers: t.intList({ required: false }),
+    }),
+  }
+)
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
 // #region
@@ -142,6 +161,16 @@ export const SingleQuestionResponseValue = builder
   .implement({
     fields: (t) => ({
       value: t.exposeString('value'),
+    }),
+  })
+
+export const SingleQuestionResponseSelection = builder
+  .objectRef<SingleQuestionResponseSelectionType>(
+    'SingleQuestionResponseSelection'
+  )
+  .implement({
+    fields: (t) => ({
+      selection: t.exposeIntList('selection'),
     }),
   })
 
@@ -253,6 +282,7 @@ export const NumericalInstanceEvaluation = builder
         type: [NumericalSolutionRange],
         nullable: true,
       }),
+      exactSolutions: t.exposeFloatList('exactSolutions', { nullable: true }),
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseValue,
         nullable: true,
@@ -264,6 +294,16 @@ export const SingleFreeTextResponse = builder
   .objectRef<SingleFreeTextResponseType>('SingleFreeTextResponse')
   .implement({
     fields: (t) => ({
+      value: t.exposeString('value'),
+      count: t.exposeInt('count'),
+    }),
+  })
+
+export const SingleSelectionResponse = builder
+  .objectRef<SingleSelectionResponseType>('SingleSelectionResponse')
+  .implement({
+    fields: (t) => ({
+      answerId: t.exposeInt('answerId'),
       value: t.exposeString('value'),
       count: t.exposeInt('count'),
     }),
@@ -281,6 +321,25 @@ export const FreeTextInstanceEvaluation = builder
       solutions: t.exposeStringList('solutions', { nullable: true }),
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseValue,
+        nullable: true,
+      }),
+    }),
+  })
+
+export const SelectionInstanceEvaluation = builder
+  .objectRef<IInstanceEvaluationSelection>('SelectionInstanceEvaluation')
+  .implement({
+    fields: (t) => ({
+      ...sharedEvaluationProps(t),
+      selectionResponses: t.expose('selectionResponses', {
+        type: [SingleSelectionResponse],
+        nullable: true,
+      }),
+      answerSolutionIds: t.exposeIntList('answerSolutionIds', {
+        nullable: true,
+      }),
+      lastResponse: t.expose('lastResponse', {
+        type: SingleQuestionResponseSelection,
         nullable: true,
       }),
     }),
@@ -315,6 +374,7 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
     ChoicesInstanceEvaluation,
     NumericalInstanceEvaluation,
     FreeTextInstanceEvaluation,
+    SelectionInstanceEvaluation,
     FlashcardInstanceEvaluation,
     ContentInstanceEvaluation,
   ],
@@ -332,6 +392,8 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
         return FlashcardInstanceEvaluation
       case DB.ElementType.CONTENT:
         return ContentInstanceEvaluation
+      case DB.ElementType.SELECTION:
+        return SelectionInstanceEvaluation
     }
   },
 })
@@ -401,6 +463,18 @@ export const FreeTextElement = builder
     }),
   })
 
+export interface ISelectionElement extends IBaseElementProps {
+  options: ISelectionQuestionOptions
+}
+export const SelectionElement = builder
+  .objectRef<ISelectionElement>('SelectionElement')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementProps(t),
+      options: t.expose('options', { type: SelectionQuestionOptions }),
+    }),
+  })
+
 export interface IFlashcardElement extends IBaseElementProps {}
 export const FlashcardElement = builder
   .objectRef<IFlashcardElement>('FlashcardElement')
@@ -426,6 +500,7 @@ export const Element = builder.unionType('Element', {
     FreeTextElement,
     FlashcardElement,
     ContentElement,
+    SelectionElement,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -441,6 +516,8 @@ export const Element = builder.unionType('Element', {
         return FlashcardElement
       case DB.ElementType.CONTENT:
         return ContentElement
+      case DB.ElementType.SELECTION:
+        return SelectionElement
     }
   },
 })

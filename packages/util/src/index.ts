@@ -1,4 +1,5 @@
 import {
+  type AnswerCollectionEntry,
   type Element,
   ElementInstanceType as PrismaElementInstanceType,
   ElementType as PrismaElementType,
@@ -21,7 +22,7 @@ const CONTENT_KEYS: ElementKeys[] = [
   'type',
   'pointsMultiplier',
 ]
-const FLASHCARD_KEYS: ElementKeys[] = [
+const NO_OPTIONS_KEYS: ElementKeys[] = [
   'name',
   'content',
   'explanation',
@@ -35,10 +36,17 @@ const QUESTION_KEYS: ElementKeys[] = [
   'options',
 ]
 
-export function processElementData(element: Element): AllElementTypeData {
+export type ElementWithAnswerCollection = Element & {
+  answerCollection?: { id: number; entries: AnswerCollectionEntry[] } | null
+  answerCollectionSolutions?: AnswerCollectionEntry[] | null
+}
+
+export function processElementData(
+  element: ElementWithAnswerCollection
+): AllElementTypeData {
   if (element.type === PrismaElementType.FLASHCARD) {
     return {
-      ...pick(element, FLASHCARD_KEYS),
+      ...pick(element, NO_OPTIONS_KEYS),
       type: element.type,
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
@@ -78,6 +86,46 @@ export function processElementData(element: Element): AllElementTypeData {
       id: `${element.id}-v${element.version}`,
       elementId: element.id,
     }
+  } else if (
+    element.type === PrismaElementType.SELECTION &&
+    'hasSampleSolution' in element.options &&
+    'numberOfInputs' in element.options
+  ) {
+    if (
+      !element.answerCollection?.entries ||
+      (element.options.hasSampleSolution && !element.answerCollectionSolutions)
+    ) {
+      throw new Error(
+        'Answer collection or solutions missing for selection element'
+      )
+    }
+
+    // formulate answer collection in the format as it will be required in the element data options
+    const answerCollectionOptions = {
+      id: element.answerCollection.id,
+      entries: element.answerCollection.entries.map((entry) => ({
+        id: entry.id,
+        value: entry.value,
+      })),
+    }
+
+    // extract the ids of the correct solution options
+    const answerCollectionSolutionIds = element.options.hasSampleSolution
+      ? element.answerCollectionSolutions!.map((entry) => entry.id)
+      : []
+
+    return {
+      ...pick(element, NO_OPTIONS_KEYS),
+      options: {
+        hasSampleSolution: element.options.hasSampleSolution,
+        numberOfInputs: element.options.numberOfInputs,
+        answerCollection: answerCollectionOptions,
+        answerCollectionSolutionIds,
+      },
+      type: element.type,
+      id: `${element.id}-v${element.version}`,
+      elementId: element.id,
+    }
   } else {
     throw new Error(
       'Invalid element type encountered during element data processing'
@@ -86,7 +134,7 @@ export function processElementData(element: Element): AllElementTypeData {
 }
 
 export function getInitialElementResults(
-  element: Element
+  element: ElementWithAnswerCollection
 ): ElementInstanceResults {
   if (element.type === PrismaElementType.FLASHCARD) {
     return {
@@ -119,6 +167,21 @@ export function getInitialElementResults(
     }
   } else if (element.type === PrismaElementType.CONTENT) {
     return {
+      total: 0,
+    }
+  } else if (
+    element.type === PrismaElementType.SELECTION &&
+    'answerCollection' in element &&
+    element.answerCollection &&
+    'entries' in element.answerCollection
+  ) {
+    const selections: Record<number, number> = {}
+    for (const entry of element.answerCollection.entries) {
+      selections[entry.id] = 0
+    }
+
+    return {
+      selections,
       total: 0,
     }
   } else {

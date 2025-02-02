@@ -13,6 +13,7 @@ mutation GradeGroupActivitySubmission(
       choicesResponse
       numericalResponse
       contentResponse
+      selectionResponse
     }
 
     resultsComputedAt

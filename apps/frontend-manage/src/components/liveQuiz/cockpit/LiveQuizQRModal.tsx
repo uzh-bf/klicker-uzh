@@ -44,7 +44,7 @@ function LiveQuizQRModal({ quizId }: { quizId: string }): React.ReactElement {
     >
       <div className="flex flex-col gap-8 md:flex-row">
         <div className="flex-1">
-          <H3>Account Link</H3>
+          <H3>{t('manage.cockpit.qrCodeAccountLinkTitle')}</H3>
           <Prose>{t('manage.cockpit.qrCodeAccountLinkDescription')}</Prose>
           <QR
             className={{ title: 'text-base', canvas: 'flex justify-center' }}

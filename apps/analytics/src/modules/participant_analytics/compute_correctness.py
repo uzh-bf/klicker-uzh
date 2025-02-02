@@ -69,16 +69,35 @@ def compute_correctness_columns(df_element_instances, row):
 
     elif element_instance["type"] == "NUMERICAL":
         response_value = float(response["value"])
-        within_range = list(
-            map(
-                lambda range: float(range["min"])
-                <= response_value
-                <= float(range["max"]),
-                options["solutionRanges"],
+
+        if "solutionRanges" in options:
+            within_range = list(
+                map(
+                    lambda range: float(range["min"])
+                    <= response_value
+                    <= float(range["max"]),
+                    options["solutionRanges"],
+                )
             )
-        )
-        if any(within_range):
-            return "CORRECT"
+            if any(within_range):
+                return "CORRECT"
+            else:
+                return "INCORRECT"
+
+        elif "exactSolutions" in options:
+            response_correct = list(
+                map(
+                    lambda solution: float(solution) - 1e-10
+                    <= response_value
+                    <= float(solution) + 1e-10,
+                    options["exactSolutions"],
+                )
+            )
+
+            if any(response_correct):
+                return "CORRECT"
+            else:
+                return "INCORRECT"
 
         return "INCORRECT"
 

@@ -95,15 +95,6 @@ export const ACTIVE_CHART_TYPES: Record<
   ElementType,
   { label: ChartLabels; value: ChartType }[]
 > = {
-  [ElementType.FreeText]: [
-    { label: 'manage.evaluation.table', value: ChartType.TABLE },
-    { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
-  ],
-  [ElementType.Numerical]: [
-    { label: 'manage.evaluation.histogram', value: ChartType.HISTOGRAM },
-    { label: 'manage.evaluation.table', value: ChartType.TABLE },
-    { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
-  ],
   [ElementType.Sc]: [
     { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
     { label: 'manage.evaluation.table', value: ChartType.TABLE },
@@ -114,6 +105,18 @@ export const ACTIVE_CHART_TYPES: Record<
   ],
   [ElementType.Kprim]: [
     { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
+  ],
+  [ElementType.Numerical]: [
+    { label: 'manage.evaluation.histogram', value: ChartType.HISTOGRAM },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
+    { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
+  ],
+  [ElementType.FreeText]: [
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
+    { label: 'manage.evaluation.wordCloud', value: ChartType.WORD_CLOUD },
+  ],
+  [ElementType.Selection]: [
     { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
   [ElementType.Flashcard]: [

@@ -1,0 +1,13 @@
+query GetSingleAnswerCollectionCatalog($collectionId: Int!) {
+  getSingleAnswerCollectionCatalog(collectionId: $collectionId) {
+    id
+    name
+    description
+    access
+    ownerShortname
+    entries {
+      id
+      value
+    }
+  }
+}

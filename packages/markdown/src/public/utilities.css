@@ -122,7 +122,7 @@
 
 .bg-white {
   --tw-bg-opacity: 1;
-  background-color: rgb(255 255 255 / var(--tw-bg-opacity))
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1))
 }
 
 .object-contain {
@@ -151,12 +151,12 @@
 
 .text-black {
   --tw-text-opacity: 1;
-  color: rgb(0 0 0 / var(--tw-text-opacity))
+  color: rgb(0 0 0 / var(--tw-text-opacity, 1))
 }
 
 .text-slate-600 {
   --tw-text-opacity: 1;
-  color: rgb(71 85 105 / var(--tw-text-opacity))
+  color: rgb(71 85 105 / var(--tw-text-opacity, 1))
 }
 
 .shadow {
@@ -168,17 +168,17 @@
 @media (hover: hover) and (pointer: fine) {
   .hover\:bg-slate-200:hover {
     --tw-bg-opacity: 1;
-    background-color: rgb(226 232 240 / var(--tw-bg-opacity))
+    background-color: rgb(226 232 240 / var(--tw-bg-opacity, 1))
   }
 
   .hover\:text-black:hover {
     --tw-text-opacity: 1;
-    color: rgb(0 0 0 / var(--tw-text-opacity))
+    color: rgb(0 0 0 / var(--tw-text-opacity, 1))
   }
 
   .hover\:text-white:hover {
     --tw-text-opacity: 1;
-    color: rgb(255 255 255 / var(--tw-text-opacity))
+    color: rgb(255 255 255 / var(--tw-text-opacity, 1))
   }
 }
 

@@ -1,28 +1,17 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import {
+  CheckPrivatePreviewAvailableDocument,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 function useElementTypeOptions() {
   const t = useTranslations()
+  const { data } = useQuery(CheckPrivatePreviewAvailableDocument, {
+    fetchPolicy: 'cache-first',
+  })
 
-  return [
-    {
-      value: ElementType.Content,
-      label: t(`shared.${ElementType.Content}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Content}.typeLabel`
-        )}`,
-      },
-    },
-    {
-      value: ElementType.Flashcard,
-      label: t(`shared.${ElementType.Flashcard}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Flashcard}.typeLabel`
-        )}`,
-      },
-    },
+  const baseElements = [
     {
       value: ElementType.Sc,
       label: t(`shared.${ElementType.Sc}.typeLabel`),
@@ -64,7 +53,39 @@ function useElementTypeOptions() {
         )}`,
       },
     },
+    {
+      value: ElementType.Content,
+      label: t(`shared.${ElementType.Content}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Content}.typeLabel`
+        )}`,
+      },
+    },
+    {
+      value: ElementType.Flashcard,
+      label: t(`shared.${ElementType.Flashcard}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Flashcard}.typeLabel`
+        )}`,
+      },
+    },
   ]
+
+  if (data?.checkPrivatePreviewAvailable) {
+    baseElements.push({
+      value: ElementType.Selection,
+      label: t(`shared.${ElementType.Selection}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Selection}.typeLabel`
+        )}`,
+      },
+    })
+  }
+
+  return baseElements
 }
 
 export default useElementTypeOptions

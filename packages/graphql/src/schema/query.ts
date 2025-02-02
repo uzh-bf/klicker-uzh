@@ -10,6 +10,7 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
+import * as ResourcesService from '../services/resources.js'
 import * as StacksService from '../services/stacks.js'
 import {
   CourseActivityAnalytics,
@@ -52,6 +53,11 @@ import {
   StackFeedback,
 } from './practiceQuiz.js'
 import { Element, ElementInstance, Tag } from './question.js'
+import {
+  AnswerCollection,
+  CatalogObject,
+  ObjectSharingRequest,
+} from './resource.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -715,11 +721,17 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkFeaturePreviewAvailable: t.field({
+      checkPublicPreviewAvailable: t.boolean({
         nullable: false,
-        type: 'Boolean',
         resolve(_, __, ctx) {
-          return AccountService.checkFeaturePreviewAvailable(ctx)
+          return AccountService.checkPublicPreviewAvailable(ctx)
+        },
+      }),
+
+      checkPrivatePreviewAvailable: t.boolean({
+        nullable: false,
+        resolve(_, __, ctx) {
+          return AccountService.checkPrivatePreviewAvailable(ctx)
         },
       }),
 
@@ -809,6 +821,51 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return AnalyticsService.getActivityAnalytics(args, ctx)
+        },
+      }),
+
+      getAnswerCollections: asUser.field({
+        nullable: true,
+        type: [AnswerCollection],
+        resolve(_, __, ctx) {
+          return ResourcesService.getAnswerCollections(ctx)
+        },
+      }),
+
+      countCatalogSharingRequests: asUser.int({
+        nullable: false,
+        resolve(_, __, ctx) {
+          return ResourcesService.countCatalogSharingRequests(ctx)
+        },
+      }),
+
+      getCatalogSharingRequests: asUser.field({
+        nullable: true,
+        type: [ObjectSharingRequest],
+        resolve(_, __, ctx) {
+          return ResourcesService.getCatalogSharingRequests(ctx)
+        },
+      }),
+
+      getCatalogObjects: asUser.field({
+        nullable: true,
+        type: [CatalogObject],
+        args: {
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getCatalogObjects(args, ctx)
+        },
+      }),
+
+      getSingleAnswerCollectionCatalog: asUser.field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getSingleAnswerCollectionCatalog(args, ctx)
         },
       }),
     }

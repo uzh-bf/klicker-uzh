@@ -25,7 +25,6 @@ mutation ManipulateFlashcardElement(
       content
       explanation
       pointsMultiplier
-
       tags {
         id
         name

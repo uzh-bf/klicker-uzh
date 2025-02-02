@@ -41,7 +41,6 @@ function ElementContentInput({
               tooltip={t('manage.questionForms.questionTooltip')}
             />
             <ContentInput
-              autoFocus
               error={meta.error}
               touched={meta.touched}
               content={field.value || '<br>'}

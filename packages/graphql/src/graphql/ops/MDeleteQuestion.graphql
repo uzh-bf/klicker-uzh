@@ -9,6 +9,9 @@ mutation DeleteQuestion($id: Int!) {
     ... on FreeTextElement {
       id
     }
+    ... on SelectionElement {
+      id
+    }
     ... on FlashcardElement {
       id
     }

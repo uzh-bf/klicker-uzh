@@ -23,14 +23,13 @@ function GroupActivityConfirmationModal({
   courseId,
 }: GroupActivityConfirmationModalProps) {
   const t = useTranslations()
-  const {
-    data: summaryData,
-    loading: summaryLoading,
-    refetch,
-  } = useQuery(GetGroupActivitySummaryDocument, {
-    variables: { id: activityId },
-    skip: !open,
-  })
+  const { data: summaryData, loading: summaryLoading } = useQuery(
+    GetGroupActivitySummaryDocument,
+    {
+      variables: { id: activityId },
+      skip: !open,
+    }
+  )
 
   const [deleteGroupActivity, { loading: deletingGroupActivity }] = useMutation(
     DeleteGroupActivityDocument,
@@ -55,13 +54,6 @@ function GroupActivityConfirmationModal({
     deleteStartedInstances: false,
     deleteSubmissions: false,
   })
-
-  // manually re-trigger the query when the modal is opened
-  useEffect(() => {
-    if (open) {
-      refetch()
-    }
-  }, [open])
 
   useEffect(() => {
     if (summaryData?.getGroupActivitySummary) {

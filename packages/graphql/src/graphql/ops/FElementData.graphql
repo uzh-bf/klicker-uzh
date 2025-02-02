@@ -43,6 +43,7 @@ fragment ElementData on ElementInstance {
           min
           max
         }
+        exactSolutions
       }
     }
 
@@ -61,6 +62,29 @@ fragment ElementData on ElementInstance {
           maxLength
         }
         solutions
+      }
+    }
+
+    ... on SelectionElementData {
+      __typename
+      id
+      elementId
+      name
+      type
+      content
+      explanation
+      pointsMultiplier
+      options {
+        hasSampleSolution
+        numberOfInputs
+        answerCollection {
+          id
+          entries {
+            id
+            value
+          }
+        }
+        answerCollectionSolutionIds
       }
     }
 

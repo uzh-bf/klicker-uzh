@@ -9,6 +9,7 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   // ! Part 1: Content elements
+  // #region
   it('Create a content element', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -58,7 +59,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .contains(this.data.CT.content)
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
   it('Edit a content element', function () {
@@ -100,10 +101,12 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .contains(this.data.CT.contentEdited)
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
+  // #endregion
 
   // ! Part 2: Flashcards
+  // #region
   it('Create a flashcard element', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -159,7 +162,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
       .contains(this.data.FC.explanation)
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
   it('Edit a flashcard element', function () {
@@ -208,10 +211,12 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
       .contains(this.data.FC.explanationEdited)
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
+  // #endregion
 
   // ! Part 3: Single choice questions
+  // #region
   it('Create a single choice question', function () {
     // fill in minimal information for SC question
     cy.get('[data-cy="create-question"]').click()
@@ -313,7 +318,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
       .contains(this.data.SC.choices[1])
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
   it('Edit a single choice question and add a sample solution', function () {
@@ -488,10 +493,12 @@ describe('Create different types of elements (with and without sample solution) 
         .contains(feedback)
     })
 
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
+  // #endregion
 
   // ! Part 4: Multiple choice questions
+  // #region
   it('Create a multiple choice question', function () {
     // insert general information for MC question
     cy.get('[data-cy="create-question"]').click()
@@ -621,7 +628,7 @@ describe('Create different types of elements (with and without sample solution) 
         .realClick()
         .contains(choice)
     })
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
   it('Edit a multiple choice question and add a sample solution', function () {
@@ -787,10 +794,12 @@ describe('Create different types of elements (with and without sample solution) 
         .contains(feedback)
     })
 
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
+  // #endregion
 
   // ! Part 5: KPRIM questions
+  // #region
   it('Create a KPRIM question', function () {
     // create KPRIM question with minimal information
     cy.get('[data-cy="create-question"]').click()
@@ -967,7 +976,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-answer-field-3"]')
       .realClick()
       .contains(this.data.KP.choices[0])
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
   it('Edit a KPRIM question and add a sample solution', function () {
@@ -1038,7 +1047,7 @@ describe('Create different types of elements (with and without sample solution) 
         .realClick()
         .contains(choice)
     })
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
   it('Edit the KPRIM question again and add answer feedbacks', function () {
@@ -1131,8 +1140,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
   })
+  // #endregion
 
   // ! Part 6: Numerical questions
+  // #region
   it('Create a Numerical question', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -1218,7 +1229,7 @@ describe('Create different types of elements (with and without sample solution) 
       'have.value',
       String(this.data.NR.accuracy)
     )
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
   it('Edit a Numerical question and add a sample solution', function () {
@@ -1250,9 +1261,11 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-    cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one solution range is required
     cy.wait(500)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // selection of sample solution type required
 
+    cy.get('[data-cy="set-solution-type-range"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // selection of sample solution type required
     cy.wrap(this.data.NR.solutionRanges).each(
       (range: { min: number | null; max: number | null }, ix) => {
         cy.get('[data-cy="add-solution-range"]').click()
@@ -1269,6 +1282,33 @@ describe('Create different types of elements (with and without sample solution) 
         cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
       }
     )
+
+    // solution ranges with min below restrictions min or max above restrictions max are not allowed
+    const newIx = this.data.NR.solutionRanges.length
+    cy.get('[data-cy="add-solution-range"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // min or max required
+    cy.get(`[data-cy="set-solution-range-min-${newIx}"]`)
+      .click()
+      .type(String(this.data.NR.minEdited - 10))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get(`[data-cy="set-solution-range-min-${newIx}"]`)
+      .click()
+      .clear()
+      .type(String(this.data.NR.minEdited))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get(`[data-cy="delete-solution-range-ix-${newIx}"]`).click()
+    cy.get('[data-cy="add-solution-range"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // min or max required
+    cy.get(`[data-cy="set-solution-range-max-${newIx}"]`)
+      .click()
+      .type(String(this.data.NR.maxEdited + 10))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get(`[data-cy="set-solution-range-max-${newIx}"]`)
+      .click()
+      .clear()
+      .type(String(this.data.NR.maxEdited))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get(`[data-cy="delete-solution-range-ix-${newIx}"]`).click()
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
@@ -1323,10 +1363,57 @@ describe('Create different types of elements (with and without sample solution) 
       }
     )
 
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
+  it('Edit the numerical question again and set an exact solution', function () {
+    cy.get(`[data-cy="edit-question-${this.data.NR.titleEdited}"]`).click()
+    cy.get('[data-cy="set-solution-type-exact"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
+
+    cy.wrap(this.data.NR.exactSolutions).each((solution: number, ix) => {
+      cy.get(`[data-cy="add-exact-solution"]`).click()
+      cy.get(`[data-cy="set-exact-solution-${ix}"]`)
+        .click()
+        .type(String(solution))
+      cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    })
+
+    // exact solutions outside of the restrictions are not allowed
+    const newIx = this.data.NR.exactSolutions.length
+    cy.get(`[data-cy="add-exact-solution"]`).click()
+    cy.get(`[data-cy="set-exact-solution-${newIx}"]`)
+      .click()
+      .type(String(this.data.NR.minEdited - 10))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get(`[data-cy="delete-exact-solution-${newIx}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get(`[data-cy="add-exact-solution"]`).click()
+    cy.get(`[data-cy="set-exact-solution-${newIx}"]`)
+      .click()
+      .type(String(this.data.NR.maxEdited + 10))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get(`[data-cy="delete-exact-solution-${newIx}"]`).click()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="save-new-question"]').click({ force: true })
+    cy.wait(1000)
+  })
+
+  it('Verify that the exact solutions of the numerical question are stored and loaded correctly', function () {
+    cy.get(`[data-cy="edit-question-${this.data.NR.titleEdited}"]`).click()
+    cy.wrap(this.data.NR.exactSolutions).each((solution: number, ix) => {
+      cy.get(`[data-cy="set-exact-solution-${ix}"]`).should(
+        'have.value',
+        String(solution)
+      )
+    })
+    cy.get('[data-cy="close-element-modal"]').click()
+  })
+  // #endregion
+
   // ! Part 7: Free Text questions
+  // #region
   it('Create a Free Text question', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]')
@@ -1383,7 +1470,7 @@ describe('Create different types of elements (with and without sample solution) 
       'have.value',
       this.data.FT.maxLength
     )
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
   })
 
   it('Edit a Free Text question', function () {
@@ -1435,10 +1522,339 @@ describe('Create different types of elements (with and without sample solution) 
     cy.wrap(this.data.FT.sampleSolution).each((solution: string, ix) => {
       cy.get(`[data-cy="set-solution-ix-${ix}"]`).should('have.value', solution)
     })
-    cy.get('[data-cy="close-question-modal"]').click()
+    cy.get('[data-cy="close-element-modal"]').click()
+  })
+  // #endregion
+
+  // ! Part 8: Selection questions
+  // #region
+  it('Create a Selection question', function () {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SC.typeLabel)
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SELECTION.typeLabel)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // enter question data
+    cy.get('[data-cy="insert-question-title"]').click().type(this.data.SE.title)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="select-question-status"]').click()
+    cy.get(
+      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .type(this.data.SE.content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .type(this.data.SE.explanation)
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // select an answer collection
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      messages.manage.questionForms.selectCollection
+    )
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.SE.collection}"]`
+    ).click()
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      this.data.SE.collection
+    )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    // configure number of inputs and test min & max restrictions
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .type(String(this.data.SE.inputs))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .clear()
+      .type(
+        String(
+          this.data.SE.solutions.length + this.data.SE.solutionsNotChosen.length
+        )
+      ) // maximum number of inputs = options - 1
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .clear()
+      .type(
+        String(
+          this.data.SE.solutions.length +
+            this.data.SE.solutionsNotChosen.length -
+            1
+        )
+      )
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .clear()
+      .type(String(this.data.SE.inputs))
+
+    // test that enabling sample solution works correctly
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+
+    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
+      this.data.SE.content
+    )
+    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
+      this.data.SE.title
+    )
+    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
+      messages.shared.READY.statusLabel
+    )
   })
 
-  // ! Part 8: Question duplication
+  it('Verify that the correct content has been saved', function () {
+    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.SE.title
+    )
+    cy.get('[data-cy="select-question-status"]').contains(
+      messages.shared.READY.statusLabel
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .contains(this.data.SE.content)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .contains(this.data.SE.explanation)
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      this.data.SE.collection
+    )
+    cy.get('[data-cy="configure-number-of-inputs"]').should(
+      'have.value',
+      this.data.SE.inputs
+    )
+    cy.get('[data-cy="close-element-modal"]').click()
+  })
+
+  it('Verify that creation was successful and that preview is visible and correct', function () {
+    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
+      this.data.SE.title
+    )
+    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
+      this.data.SE.content
+    )
+
+    // check that inputs are available
+    for (let i = 1; i < this.data.SE.inputs; i++) {
+      cy.get(`[id="selection-1-field-${i + 1}"]`).should('exist')
+    }
+
+    // check that all options are available
+    cy.get('[id="selection-1-field-1"]').click()
+    cy.wrap(this.data.SE.solutions).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+    cy.wrap(this.data.SE.solutionsNotChosen).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+
+  it('Check that all options of the answer collection can be edited', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+
+    cy.wrap(this.data.SE.solutions).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.SE.solutionsNotChosen).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Add a sample solution to the created selection question', function () {
+    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.SE.title
+    )
+
+    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // at least one correct answer is required
+    cy.get('[data-cy="choose-correct-answer-options"]').click()
+    cy.findByText(this.data.SE.solutions[0]).realClick()
+    cy.get('[data-cy="choose-correct-answer-options"]').contains(
+      this.data.SE.solutions[0]
+    )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // number of solutions needs to be >= number of inputs
+    cy.wrap(this.data.SE.solutions.slice(1)).each((solution: string) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').click()
+      cy.findByText(solution).realClick()
+      cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+    })
+    cy.get('[data-cy="save-new-question"]').click()
+  })
+
+  it('Verify that the sample solution has been stored correctly for the modified selection question', function () {
+    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.SE.title
+    )
+
+    cy.wrap(this.data.SE.solutions).each((solution: string) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+    })
+    cy.get('[data-cy="close-element-modal"]').click()
+  })
+
+  it('Verify that the options that are used as a solution cannot be deleted anymore', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+    cy.findByText(messages.manage.resources.answerOptionUsedAsSolution).should(
+      'exist'
+    )
+
+    cy.wrap(this.data.SE.solutions).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.SE.solutionsNotChosen).each((sol) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+
+  it('Verify that the answer collection cannot be deleted anymore', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
+  })
+
+  it('Edit the selection question and change the answer collection (including new sample solutions)', function () {
+    cy.get(`[data-cy="edit-question-${this.data.SE.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]')
+      .click()
+      .clear()
+      .type(this.data.SE.titleEdited)
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.SE.contentEdited)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .clear()
+      .type(this.data.SE.explanationEdited)
+
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.SE.collectionEdited}"]`
+    ).click()
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      this.data.SE.collectionEdited
+    )
+    cy.get('[data-cy="save-new-question"]').should('be.disabled') // answer options are cleared on collection change
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .clear()
+      .type(String(this.data.SE.inputsEdited))
+    cy.wrap(this.data.SE.solutionsEdited).each((solution: string) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').click()
+      cy.findByText(solution).realClick()
+    })
+
+    cy.get('[data-cy="save-new-question"]').click()
+  })
+
+  it('Verify that the edited state of the selection question persists', function () {
+    cy.get(`[data-cy="edit-question-${this.data.SE.titleEdited}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.SE.titleEdited
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .contains(this.data.SE.contentEdited)
+    cy.get('[data-cy="insert-question-explanation"]')
+      .realClick()
+      .contains(this.data.SE.explanationEdited)
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      this.data.SE.collectionEdited
+    )
+    cy.get('[data-cy="configure-number-of-inputs"]').should(
+      'have.value',
+      this.data.SE.inputsEdited
+    )
+    cy.wrap(this.data.SE.solutionsEdited).each((solution: string) => {
+      cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+    })
+  })
+
+  it('Verify that the previous answer collection could be deleted again, the current one not', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
+    cy.get('[data-cy="close-answer-collection-edit-modal"]').click()
+    cy.get(
+      `[data-cy="answer-collection-${this.data.SE.collectionEdited}"]`
+    ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
+  })
+
+  it('Check that only answer options not used as solutions can be deleted', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+
+    cy.wrap(this.data.SE.solutions).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.SE.solutionsNotChosen).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+
+    cy.get(
+      `[data-cy="answer-collection-${this.data.SE.collectionEdited}"]`
+    ).click()
+    cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.SE.solutionsNotChosenEdited).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+  // #endregion
+
+  // ! Part 9: Question duplication
+  // #region
   it('Create a new question, duplicates it and then deletes them again', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(
@@ -1495,8 +1911,279 @@ describe('Create different types of elements (with and without sample solution) 
       'not.exist'
     )
   })
+  // #endregion
+
+  // ! Part 10: Auto-Save functionality for Elements
+  // #region
+  function enterSCQuestionContent(data) {
+    cy.get('[data-cy="insert-question-title"]').type(data.autoSave.title)
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .type(data.autoSave.content)
+    cy.get('[data-cy="insert-answer-field-0"]')
+      .realClick()
+      .type(data.autoSave.choices[0].content)
+    cy.wrap(data.autoSave.choices.slice(1)).each(
+      (choice: { content: string }, ix) => {
+        cy.get('[data-cy="add-new-answer"]').click()
+        cy.wait(500)
+        cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
+          .realClick()
+          .type(choice.content)
+      }
+    )
+    cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+    cy.wrap(data.autoSave.choices).each((choice: { correct?: boolean }, ix) => {
+      if (choice.correct) {
+        cy.get(`[data-cy="set-correctness-${ix}"]`).click()
+      }
+    })
+  }
+
+  it('Verify that empty questions are not stored in local storage (creation)', function () {
+    // open modal, wait for auto-save, close modal
+    cy.get('[data-cy="create-question"]').click()
+    cy.wait(3000) // wait longer than auto-save requires
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // recovery prompt should not be shown
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="discard-recovered-element-data"]').should('not.exist')
+    cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
+    cy.get('[data-cy="select-question-type"]').contains(
+      messages.shared.SC.typeLabel
+    )
+    cy.get('[data-cy="insert-question-title"]').should('have.value', '')
+  })
+
+  it('Verify that non-empty questions are stored and loaded correctly on demand (creation)', function () {
+    cy.get('[data-cy="create-question"]').click()
+
+    // create SC question with content
+    enterSCQuestionContent(this.data)
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // re-open modal, load data, verify content, close modal
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="load-recovered-element-data"]').click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.title
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .contains(this.data.autoSave.content)
+    cy.wrap(this.data.autoSave.choices).each(
+      (choice: { content: string }, ix) => {
+        cy.get(`[data-cy="insert-answer-field-${ix}"]`).contains(choice.content)
+      }
+    )
+  })
+
+  it('Verify that non-empty questions are stored and discarded on request (creation)', function () {
+    cy.get('[data-cy="create-question"]').click()
+
+    // create SC question with content
+    enterSCQuestionContent(this.data)
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="discard-recovered-element-data"]').click()
+    cy.get('[data-cy="insert-question-title"]').should('have.value', '')
+  })
+
+  it('Verify that local storage is correctly cleared after creating a question', function () {
+    cy.get('[data-cy="create-question"]').click()
+
+    // create SC question with content
+    enterSCQuestionContent(this.data)
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+
+    // check that local storage is cleared correctly on save and new editor is empty
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
+    cy.get('[data-cy="insert-question-title"]').should('have.value', '')
+  })
+
+  it('Verify that opening the edit modal and closing without modifications does not trigger prompt', function () {
+    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.title
+    )
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // recovery prompt should not be shown
+    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get('[data-cy="discard-recovered-element-data"]').should('not.exist')
+    cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.title
+    )
+  })
+
+  it('Verify that after editing a question and waiting for auto-save the corresponding content can be loaded', function () {
+    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+
+    // modify title and content
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.title
+    )
+    cy.get('[data-cy="insert-question-title"]')
+      .clear()
+      .type(this.data.autoSave.titleEdited)
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.autoSave.content
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.autoSave.contentEdited)
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // recovery prompt should not be shown & load data, verify updated content is visible
+    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get('[data-cy="load-recovered-element-data"]').click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.titleEdited
+    )
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.autoSave.contentEdited
+    )
+  })
+
+  it('Verify that after editing a question, auto-saving and discarding the saved content, the original content is loaded', function () {
+    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+
+    // modify title and content
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.title
+    )
+    cy.get('[data-cy="insert-question-title"]')
+      .clear()
+      .type(this.data.autoSave.titleEdited)
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.autoSave.content
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.autoSave.contentEdited)
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // recovery prompt should not be shown & discard data, verify original content is visible
+    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get('[data-cy="discard-recovered-element-data"]').click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.title
+    )
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.autoSave.content
+    )
+    cy.wait(3000)
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // verify that when closing and opening now after discarding, no prompt is shown
+    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+    cy.get('[data-cy="discard-recovered-element-data"]').should('not.exist')
+    cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
+  })
+
+  it('Verify that after editing an element and saving it, no prompt is shown to the user', function () {
+    cy.get(`[data-cy="edit-question-${this.data.autoSave.title}"]`).click()
+
+    // modify title and content
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.title
+    )
+    cy.get('[data-cy="insert-question-title"]')
+      .clear()
+      .type(this.data.autoSave.titleEdited)
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.autoSave.content
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.autoSave.contentEdited)
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="save-new-question"]').click()
+
+    // recovery prompt should not be shown, verify edited content is visible
+    cy.get(
+      `[data-cy="edit-question-${this.data.autoSave.titleEdited}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.titleEdited
+    )
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.autoSave.contentEdited
+    )
+  })
+
+  it('Verify that when duplicating a question, wating for auto-save and opening the creation form, the content cannot be loaded', function () {
+    cy.get(
+      `[data-cy="duplicate-question-${this.data.autoSave.titleEdited}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.titleEditedDuplicated
+    )
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.autoSave.contentEdited
+    )
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // verify that the duplicated
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="load-recovered-element-data"]').should('not.exist')
+  })
+
+  it('Verify that when duplicating a question, modifying it slightly,wating for auto-save and opening the creation form, the content can be loaded', function () {
+    cy.get(
+      `[data-cy="duplicate-question-${this.data.autoSave.titleEdited}"]`
+    ).click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.titleEditedDuplicated
+    )
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.autoSave.contentEdited2)
+    cy.wait(3000) // wait for auto-save to trigger
+    cy.get('[data-cy="close-element-modal"]').click()
+
+    // verify that the duplicated
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="load-recovered-element-data"]').click()
+    cy.get('[data-cy="insert-question-title"]').should(
+      'have.value',
+      this.data.autoSave.titleEditedDuplicated
+    )
+    cy.get('[data-cy="insert-question-text"]').contains(
+      this.data.autoSave.contentEdited2
+    )
+  })
+  // #endregion
 
   // ! Cleanup
+  // #region
   it('Cleanup: Delete all created questions', function () {
     const questions = [
       this.data.CT.titleEdited,
@@ -1506,6 +2193,8 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.KP.titleEdited,
       this.data.NR.titleEdited,
       this.data.FT.titleEdited,
+      this.data.SE.titleEdited,
+      this.data.autoSave.titleEdited,
     ]
 
     cy.wrap(questions).each((title: string) => {
@@ -1514,4 +2203,24 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
     })
   })
+
+  it('Verify that after the deletion of the linked question, all solution options can be deleted again', function () {
+    cy.get('[data-cy="resources"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+
+    cy.wrap(this.data.SE.solutions).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.wrap(this.data.SE.solutionsNotChosen).each((sol: string) => {
+      cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
+        'not.be.disabled'
+      )
+      cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
+    })
+    cy.get("[data-cy='close-answer-collection-edit-modal']").click()
+  })
+  // #endregion
 })

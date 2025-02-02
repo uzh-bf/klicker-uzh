@@ -94,7 +94,8 @@ model User {
   catalystIndividual    Boolean @default(false)
   catalystTier          String?
 
-  featurePreview Boolean @default(false)
+  publicPreview  Boolean @default(false)
+  privatePreview Boolean @default(false)
 
   logins            UserLogin[]
   session           Session[]
@@ -111,6 +112,14 @@ model User {
   microLearnings    MicroLearning[]
   liveQuizzes       LiveQuiz[]
   competencyTrees   CompetencyTree[]
+  answerCollections AnswerCollection[]
+
+  userGroups                UserGroup[]         @relation("UserGroupMembers")
+  managedUserGroups         UserGroup[]         @relation("UserGroupOwner")
+  managedCatalogCollections CatalogCollection[]
+
+  sharedObjects     Permission[] @relation("SharedObjects")
+  objectPermissions Permission[] @relation("ObjectPermissions")
 
   firstLogin Boolean @default(true)
 

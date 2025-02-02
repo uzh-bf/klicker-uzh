@@ -29,6 +29,45 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
+      ... on NumericalElementInstanceEvaluation {
+        __typename
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
+        results {
+          totalAnswers
+          anonymousAnswers
+          maxValue
+          minValue
+          solutionRanges {
+            min
+            max
+          }
+          exactSolutions
+          responseValues {
+            value
+            correct
+            count
+          }
+        }
+
+        statistics {
+          max
+          mean
+          median
+          min
+          q1
+          q3
+          sd
+        }
+      }
+
       ... on FreeElementInstanceEvaluation {
         __typename
         id
@@ -53,7 +92,7 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
-      ... on NumericalElementInstanceEvaluation {
+      ... on SelectionElementInstanceEvaluation {
         __typename
         id
         type
@@ -67,27 +106,13 @@ fragment EvaluationResults on ActivityEvaluation {
         results {
           totalAnswers
           anonymousAnswers
-          maxValue
-          minValue
-          solutionRanges {
-            min
-            max
-          }
-          responseValues {
+          numberOfInputs
+          answerSolutionIds
+          selectionResponses {
+            answerId
             value
-            correct
             count
           }
-        }
-
-        statistics {
-          max
-          mean
-          median
-          min
-          q1
-          q3
-          sd
         }
       }
 

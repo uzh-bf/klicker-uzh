@@ -48,6 +48,22 @@
         "maxLength": "100"
       }
     },
+    "SE": {
+      "title": "SE 7ca16bbb-9eac-44f2-94ff-c2c32c05f16d",
+      "content": "SE Question Group Activity",
+      "inputs": 3,
+      "collection": {
+        "name": "SE Collection Group Activity",
+        "description": "SE Collection Group Activity Description",
+        "options": [
+          "SE Group Activity Option 1",
+          "SE Group Activity Option 2",
+          "SE Group Activity Option 3",
+          "SE Group Activity Option 4",
+          "SE Group Activity Option 5"
+        ]
+      }
+    },
     "CT": {
       "title": "Content Question Title",
       "content": "CT Question Group Activity"
@@ -106,15 +122,16 @@
       "numerical": "100"
     },
     "grading": {
-      "maxPoints": ["200", "100", "100", "300", "100", "200"],
-      "scores1": ["100", "100", "50", "200", "80", "200"],
-      "scores2": ["50", "25", "25", "75", "25", "50"],
+      "maxPoints": ["200", "100", "100", "300", "100", "100", "200"],
+      "scores1": ["100", "100", "50", "200", "80", "80", "200"],
+      "scores2": ["50", "25", "25", "75", "25", "25", "50"],
       "comments1": [
         "Great job at question 1!",
         null,
         null,
         "Great job at question 4!",
         "Good job at question 5!",
+        "Good job at question 6!",
         null
       ],
       "comments2": [
@@ -123,7 +140,8 @@
         "This is not correct for question 3...",
         null,
         null,
-        "This is not correct for question 6..."
+        null,
+        "This is not correct for question 7..."
       ],
       "gradingComment1": "This is a test grading comment",
       "gradingComment2": null

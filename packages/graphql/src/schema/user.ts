@@ -36,7 +36,8 @@ export const User = UserRef.implement({
     }),
     catalystTier: t.exposeString('catalystTier', { nullable: true }),
 
-    featurePreview: t.exposeBoolean('featurePreview'),
+    publicPreview: t.exposeBoolean('publicPreview'),
+    privatePreview: t.exposeBoolean('privatePreview'),
 
     mediaFiles: t.expose('mediaFiles', {
       type: [MediaFileRef],

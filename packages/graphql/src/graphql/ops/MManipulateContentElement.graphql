@@ -22,7 +22,6 @@ mutation ManipulateContentElement(
       type
       content
       pointsMultiplier
-
       tags {
         id
         name

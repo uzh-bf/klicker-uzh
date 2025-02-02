@@ -8,7 +8,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
-import { UserNotification } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -53,16 +53,23 @@ function QuestionDetails() {
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center p-8">
-      <div className="w-[64rem] max-w-full">
-        <StudentElement
-          element={instance}
-          elementIx={0}
-          singleStudentResponse={studentResponse}
-          setSingleStudentResponse={setStudentResponse}
-          hideReadButton={false}
-          disabledInput={false}
-        />
+    <div className="flex h-full w-full items-center justify-center">
+      <div className="flex w-full flex-col items-center p-6">
+        <H2 className={{ root: 'mb-3' }}>
+          {t('manage.general.questionPreview', {
+            question: instance.elementData.name,
+          })}
+        </H2>
+        <div className="w-[64rem] max-w-full rounded-lg border border-solid p-5">
+          <StudentElement
+            element={instance}
+            elementIx={0}
+            singleStudentResponse={studentResponse}
+            setSingleStudentResponse={setStudentResponse}
+            hideReadButton={false}
+            disabledInput={false}
+          />
+        </div>
       </div>
     </div>
   )

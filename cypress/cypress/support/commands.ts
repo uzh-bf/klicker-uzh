@@ -97,6 +97,18 @@ Cypress.Commands.add(
   })
 )
 
+Cypress.Commands.add(
+  'loginInstitutionalCatalyst2',
+  loginFactory({
+    email: 'pro3@df.uzh.ch',
+    sub: '76047345-3801-4628-ae7b-adbebcfe8825',
+    role: 'USER',
+    scope: 'ACCOUNT_OWNER',
+    catalystInstitutional: true,
+    catalystIndividual: false,
+  })
+)
+
 Cypress.Commands.add('loginStudent', () => {
   cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME') })
 })
@@ -121,12 +133,70 @@ Cypress.Commands.add('loginControlApp', () => {
   cy.clearAllLocalStorage()
   cy.viewport('macbook-16')
   cy.get('[data-cy="login-logo"]').should('exist')
-  cy.get('[data-cy="shortname-field"]').type(Cypress.env('LECTURER_IDENTIFIER'))
+  cy.get('[data-cy="shortname-field"]').type(Cypress.env('LECTURER_SHORTNAME'))
   cy.get('@token').then((token) => {
     cy.get('[data-cy="token-field"]').type(String(token))
   })
   cy.get('[data-cy="submit-login"]').click()
 })
+
+interface AnswerCollectionArgs {
+  name: string
+  accessCy: string
+  access: string
+  description: string
+  entries: string[]
+}
+
+Cypress.Commands.add(
+  'createAnswerCollection',
+  ({ name, accessCy, access, description, entries }: AnswerCollectionArgs) => {
+    cy.get('[data-cy="create-answer-collection"]').click()
+    cy.get('[data-cy="answer-collection-name"]').type(name)
+    cy.get('[data-cy="answer-collection-name"]').should('have.value', name)
+
+    cy.get('[data-cy="answer-collection-access"]').contains(
+      messages.manage.resources.accessPRIVATE
+    )
+    cy.get('[data-cy="answer-collection-access"]').click()
+    cy.get(`[data-cy="answer-collection-access-${accessCy}"]`).click()
+    cy.get('[data-cy="answer-collection-access"]').contains(access)
+
+    cy.get('[data-cy="answer-collection-description"]')
+      .realClick()
+      .type(description)
+    cy.get('[data-cy="answer-collection-description"]')
+      .realClick()
+      .contains(description)
+
+    cy.get('[data-cy="response-entry-0"]').type(entries[0])
+    cy.get('[data-cy="response-entry-0"]').should('have.value', entries[0])
+    cy.get('[data-cy="response-entry-1"]').type(entries[1])
+    cy.get('[data-cy="response-entry-1"]').should('have.value', entries[1])
+    entries.slice(2).forEach((value, ix) => {
+      cy.get('[data-cy="add-response-entry"]').click()
+      cy.get(`[data-cy="response-entry-${ix + 2}"]`).type(value)
+      cy.get(`[data-cy="response-entry-${ix + 2}"]`).should('have.value', value)
+    })
+
+    cy.get('[data-cy="submit-create-answer-collection"]').click()
+    cy.get(`[data-cy="answer-collection-${name}"]`).should('exist')
+    cy.get(`[data-cy="answer-collection-${name}"]`).contains(access)
+  }
+)
+
+interface DeleteCollectionArgs {
+  collectionName: string
+}
+
+Cypress.Commands.add(
+  'deleteAnswerCollection',
+  ({ collectionName }: DeleteCollectionArgs) => {
+    cy.get(`[data-cy="answer-collection-${collectionName}"]`).click()
+    cy.get('[data-cy="delete-answer-collection"]').click()
+    cy.get('[data-cy="confirm-delete-answer-collection"]').click()
+  }
+)
 
 interface CreateChoicesQuestionArgs {
   title: string
@@ -319,7 +389,8 @@ interface CreateQuestionNRArgs {
   max?: string
   unit?: string
   accuracy?: string
-  solutionRanges?: { min: string; max: string }[]
+  solutionRanges?: { min: string; max: string }[] | null
+  exactSolutions?: string[] | null
   multiplier?: string
 }
 
@@ -333,6 +404,7 @@ Cypress.Commands.add(
     unit,
     accuracy,
     solutionRanges,
+    exactSolutions,
     multiplier,
   }: CreateQuestionNRArgs) => {
     cy.get('[data-cy="create-question"]').click()
@@ -369,8 +441,13 @@ Cypress.Commands.add(
       cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
     }
 
-    if (typeof solutionRanges !== 'undefined' && solutionRanges.length > 0) {
+    if (
+      typeof solutionRanges !== 'undefined' &&
+      solutionRanges !== null &&
+      solutionRanges.length > 0
+    ) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      cy.get('[data-cy="set-solution-type-range"]').click()
       cy.wrap(solutionRanges).each(
         (range: { min: string; max: string }, ix) => {
           cy.get('[data-cy="add-solution-range"]').click()
@@ -382,6 +459,21 @@ Cypress.Commands.add(
             .type(range.max)
         }
       )
+    }
+
+    if (
+      typeof exactSolutions !== 'undefined' &&
+      exactSolutions !== null &&
+      exactSolutions.length > 0
+    ) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      cy.get('[data-cy="set-solution-type-exact"]').click()
+      cy.wrap(exactSolutions).each((solution: string, ix) => {
+        cy.get(`[data-cy="add-exact-solution"]`).click()
+        cy.get(`[data-cy="set-exact-solution-${ix}"]`)
+          .click()
+          .type(String(solution))
+      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -444,6 +536,67 @@ Cypress.Commands.add(
   }
 )
 
+interface CreateSelectionArgs {
+  title: string
+  content: string
+  explanation?: string
+  collectionName: string
+  numberOfInputs: number
+  correctAnswers?: string[]
+}
+
+Cypress.Commands.add(
+  'createQuestionSE',
+  ({
+    title,
+    content,
+    explanation,
+    collectionName,
+    numberOfInputs,
+    correctAnswers,
+  }: CreateSelectionArgs) => {
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-question-type"]')
+      .should('exist')
+      .contains(messages.shared.SELECTION.typeLabel)
+
+    cy.get('[data-cy="insert-question-title"]').click().type(title)
+    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
+
+    if (explanation) {
+      cy.get('[data-cy="insert-question-explanation"]')
+        .realClick()
+        .type(explanation)
+    }
+
+    cy.get('[data-cy="select-answer-collection"]').contains(
+      messages.manage.questionForms.selectCollection
+    )
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(`[data-cy="select-answer-collection-${collectionName}"]`).click()
+    cy.get('[data-cy="select-answer-collection"]').contains(collectionName)
+    cy.get('[data-cy="configure-number-of-inputs"]')
+      .click()
+      .type(String(numberOfInputs))
+
+    if (correctAnswers && correctAnswers.length > 0) {
+      cy.get('[data-cy="configure-sample-solution"]').click()
+      correctAnswers.forEach((solution) => {
+        cy.get('[data-cy="choose-correct-answer-options"]').click()
+        cy.findByText(solution).realClick()
+        cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
+      })
+    }
+
+    cy.get('[data-cy="save-new-question"]').click()
+    cy.wait(500)
+  }
+)
+
 interface CreateFlashcardArgs {
   title: string
   content: string
@@ -495,6 +648,16 @@ Cypress.Commands.add(
     cy.wait(500)
   }
 )
+
+interface DeleteElementArgs {
+  elementName: string
+}
+
+Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
+  cy.get(`[data-cy="delete-question-${elementName}"]`).click()
+  cy.get('[data-cy="confirm-question-deletion"]').click()
+  cy.get(`[data-cy="element-item-${elementName}"]`).should('not.exist')
+})
 
 interface CreateLiveQuizArgs {
   name: string
@@ -797,9 +960,20 @@ declare global {
       loginFreeUser(): Chainable<void>
       loginIndividualCatalyst(): Chainable<void>
       loginInstitutionalCatalyst(): Chainable<void>
+      loginInstitutionalCatalyst2(): Chainable<void>
       loginStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       loginControlApp(): Chainable<void>
+      createAnswerCollection({
+        name,
+        accessCy,
+        access,
+        description,
+        entries,
+      }: AnswerCollectionArgs): Chainable<void>
+      deleteAnswerCollection({
+        collectionName,
+      }: DeleteCollectionArgs): Chainable<void>
       createQuestionSC({
         title,
         content,
@@ -835,12 +1009,21 @@ declare global {
         solutions,
         multiplier,
       }: CreateQuestionFTArgs): Chainable<void>
+      createQuestionSE({
+        title,
+        content,
+        explanation,
+        collectionName,
+        numberOfInputs,
+        correctAnswers,
+      }: CreateSelectionArgs): Chainable<void>
       createFlashcard({
         title,
         content,
         explanation,
       }: CreateFlashcardArgs): Chainable<void>
       createContent({ title, content }: CreateContentArgs): Chainable<void>
+      deleteElement({ elementName }: DeleteElementArgs): Chainable<void>
       createLiveQuiz({
         name,
         displayName,

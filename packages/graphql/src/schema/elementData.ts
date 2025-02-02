@@ -85,6 +85,7 @@ export interface INumericalQuestionOptions {
   unit?: string | null
   restrictions?: INumericalRestrictions | null
   solutionRanges?: NumericalSolutionRangeType[] | null
+  exactSolutions?: number[] | null
 }
 export const NumericalQuestionOptions = builder
   .objectRef<INumericalQuestionOptions>('NumericalQuestionOptions')
@@ -107,6 +108,7 @@ export const NumericalQuestionOptions = builder
         type: [NumericalSolutionRange],
         nullable: true,
       }),
+      exactSolutions: t.exposeFloatList('exactSolutions', { nullable: true }),
     }),
   })
 
@@ -142,6 +144,70 @@ export const FreeTextQuestionOptions = builder
         nullable: true,
       }),
       solutions: t.exposeStringList('solutions', { nullable: true }),
+    }),
+  })
+
+export interface ISelectionQuestionOptionsCollectionEntry {
+  id: number
+  value: string
+}
+export const SelectionQuestionOptionsCollectionEntry = builder
+  .objectRef<ISelectionQuestionOptionsCollectionEntry>(
+    'SelectionQuestionOptionsCollectionEntry'
+  )
+  .implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      value: t.exposeString('value'),
+    }),
+  })
+
+export interface ISelectionQuestionOptionsCollection {
+  id: number
+  entries?: ISelectionQuestionOptionsCollectionEntry[] | null
+}
+export const SelectionQuestionOptionsCollection = builder
+  .objectRef<ISelectionQuestionOptionsCollection>(
+    'SelectionQuestionOptionsCollection'
+  )
+  .implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      entries: t.expose('entries', {
+        type: [SelectionQuestionOptionsCollectionEntry],
+        nullable: true,
+      }),
+    }),
+  })
+
+export interface ISelectionQuestionOptions {
+  hasSampleSolution?: boolean
+  hasAnswerFeedbacks?: boolean
+  numberOfInputs?: number | null
+  answerCollection?: ISelectionQuestionOptionsCollection | null
+  answerCollectionSolutionIds?: number[] | null
+}
+export const SelectionQuestionOptions = builder
+  .objectRef<ISelectionQuestionOptions>('SelectionQuestionOptions')
+  .implement({
+    fields: (t) => ({
+      hasSampleSolution: t.exposeBoolean('hasSampleSolution', {
+        nullable: true,
+      }),
+      hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks', {
+        nullable: true,
+      }),
+      numberOfInputs: t.exposeInt('numberOfInputs', { nullable: true }),
+      answerCollection: t.expose('answerCollection', {
+        type: SelectionQuestionOptionsCollection,
+        nullable: true,
+      }),
+      answerCollectionSolutionIds: t.exposeIntList(
+        'answerCollectionSolutionIds',
+        {
+          nullable: true,
+        }
+      ),
     }),
   })
 // #endregion
@@ -207,6 +273,18 @@ export const FreeTextElementData = builder
     }),
   })
 
+export interface ISelectionElementData extends BaseElementData {
+  options: ISelectionQuestionOptions
+}
+export const SelectionElementData = builder
+  .objectRef<ISelectionElementData>('SelectionElementData')
+  .implement({
+    fields: (t) => ({
+      ...sharedElementData(t),
+      options: t.expose('options', { type: SelectionQuestionOptions }),
+    }),
+  })
+
 export interface IFlashcardElementData extends BaseElementData {}
 export const FlashcardElementData = builder
   .objectRef<IFlashcardElementData>('FlashcardElementData')
@@ -232,6 +310,7 @@ export const ElementData = builder.unionType('ElementData', {
     FreeTextElementData,
     FlashcardElementData,
     ContentElementData,
+    SelectionElementData,
   ],
   resolveType: (element) => {
     switch (element.type) {
@@ -243,6 +322,8 @@ export const ElementData = builder.unionType('ElementData', {
         return NumericalElementData
       case DB.ElementType.FREE_TEXT:
         return FreeTextElementData
+      case DB.ElementType.SELECTION:
+        return SelectionElementData
       case DB.ElementType.FLASHCARD:
         return FlashcardElementData
       case DB.ElementType.CONTENT:

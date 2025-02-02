@@ -5,69 +5,15 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { Choice, DisplayMode } from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type { ContextWithUser } from '../lib/context.js'
-
-function processElementOptions(elementType: DB.ElementType, options: any) {
-  switch (elementType) {
-    case DB.ElementType.SC:
-    case DB.ElementType.MC:
-    case DB.ElementType.KPRIM: {
-      return {
-        displayMode: options.displayMode ?? DisplayMode.LIST,
-        hasSampleSolution: options.hasSampleSolution ?? false,
-        hasAnswerFeedbacks:
-          (options.hasSampleSolution && options.hasAnswerFeedbacks) ?? false,
-        choices: options.choices.map((choice: Choice) => ({
-          ...choice,
-          correct: options.hasSampleSolution ? choice.correct : undefined,
-          feedback:
-            options.hasSampleSolution && options.hasAnswerFeedbacks
-              ? choice.feedback
-              : undefined,
-        })),
-      }
-    }
-
-    case DB.ElementType.NUMERICAL: {
-      return {
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        unit: options?.unit ?? undefined,
-        accuracy: options?.accuracy ?? undefined,
-        placeholder: options?.placeholder ?? undefined,
-        restrictions: {
-          ...options?.restrictions,
-          min: options?.restrictions?.min ?? undefined,
-          max: options?.restrictions?.max ?? undefined,
-        },
-        solutionRanges: options?.hasSampleSolution
-          ? (options?.solutionRanges ?? undefined)
-          : undefined,
-      }
-    }
-
-    case DB.ElementType.FREE_TEXT: {
-      return {
-        hasSampleSolution: options?.hasSampleSolution ?? false,
-        solutions: options?.hasSampleSolution
-          ? (options?.solutions ?? undefined)
-          : undefined,
-        restrictions: {
-          ...options?.restrictions,
-          maxLength: options?.restrictions?.maxLength ?? undefined,
-        },
-      }
-    }
-
-    default: {
-      return {}
-    }
-  }
-}
+import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
+import validateElementInputs, {
+  ManipulateQuestionArgs,
+} from '../lib/validateElementInputs.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -113,10 +59,24 @@ export async function getSingleQuestion(
           order: 'asc',
         },
       },
+      answerCollectionSolutions: true,
     },
   })
 
-  return question
+  if (!question) {
+    return null
+  }
+
+  return {
+    ...question,
+    options: {
+      ...question.options,
+      answerCollection: { id: question.answerCollectionId, entries: [] },
+      answerCollectionSolutionIds: question.answerCollectionSolutions.map(
+        (sol) => sol.id
+      ),
+    },
+  }
 }
 
 export async function getArtificialElementInstance(
@@ -131,6 +91,14 @@ export async function getArtificialElementInstance(
     where: {
       id: elementId,
       ownerId: ctx.user.sub,
+    },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
     },
   })
 
@@ -161,46 +129,6 @@ export async function getArtificialElementInstance(
   }
 }
 
-interface QuestionOptionsArgs {
-  unit?: string | null
-  accuracy?: number | null
-  placeholder?: string | null
-  restrictions?: {
-    maxLength?: number | null
-    minLength?: number | null
-    pattern?: string | null
-    min?: number | null
-    max?: number | null
-  } | null
-  feedback?: string | null
-  solutionRanges?: { min?: number | null; max?: number | null }[] | null
-  solutions?: string[] | null
-  choices?:
-    | {
-        ix: number
-        value: string
-        correct?: boolean | null
-        feedback?: string | null
-      }[]
-    | null
-  displayMode?: DisplayMode | null
-  hasSampleSolution?: boolean | null
-  hasAnswerFeedbacks?: boolean | null
-  pointsMultiplier?: number | null
-}
-
-interface ManipulateQuestionArgs {
-  id?: number | null
-  status?: DB.ElementStatus | null
-  type: DB.ElementType
-  name?: string | null
-  content?: string | null
-  explanation?: string | null
-  options?: QuestionOptionsArgs | null
-  pointsMultiplier?: number | null
-  tags?: string[] | null
-}
-
 export async function manipulateQuestion(
   {
     id,
@@ -215,7 +143,25 @@ export async function manipulateQuestion(
   }: ManipulateQuestionArgs,
   ctx: ContextWithUser
 ) {
-  let tagsToDelete: string[] = []
+  let tagsToDisconnect: string[] = []
+  let collectionAnswersToDisconnect: number[] = []
+
+  // validate if all required fields and options are specified
+  const validInputs = validateElementInputs({
+    id,
+    status,
+    type,
+    name,
+    content,
+    explanation,
+    pointsMultiplier,
+  })
+  const processedOptions = validateAndProcessElementOptions(type, options)
+
+  // if the provided information is not valid for the element creation / editing, return null
+  if (!validInputs || processedOptions === null) {
+    return null
+  }
 
   const questionPrev =
     typeof id !== 'undefined' && id !== null
@@ -230,14 +176,29 @@ export async function manipulateQuestion(
                 order: 'asc',
               },
             },
+            answerCollectionSolutions: true,
           },
         })
       : undefined
 
+  // determine which tags have been deconnected
   if (questionPrev?.tags) {
-    tagsToDelete = questionPrev.tags
+    tagsToDisconnect = questionPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
+  }
+
+  // determine which answer options are no longer considered to be correct
+  if (
+    type === DB.ElementType.SELECTION &&
+    questionPrev?.answerCollectionSolutions
+  ) {
+    const prevSolutionsIds = questionPrev.answerCollectionSolutions.map(
+      (sol) => sol.id
+    )
+    collectionAnswersToDisconnect = options?.hasSampleSolution
+      ? prevSolutionsIds.filter((sol) => !options.correctAnswers?.includes(sol))
+      : prevSolutionsIds
   }
 
   const question = await ctx.prisma.element.upsert({
@@ -245,13 +206,13 @@ export async function manipulateQuestion(
       id: typeof id !== 'undefined' && id !== null ? id : -1,
     },
     create: {
-      status: status ?? undefined,
+      status: status!,
       type,
-      name: name ?? 'Missing Question Title',
-      content: content ?? 'Missing Question Content',
+      name: name!,
+      content: content!,
       explanation: explanation ?? undefined,
-      pointsMultiplier: pointsMultiplier ?? 1,
-      options: processElementOptions(type, options),
+      pointsMultiplier: pointsMultiplier!,
+      options: processedOptions,
       owner: {
         connect: {
           id: ctx.user.sub,
@@ -271,6 +232,22 @@ export async function manipulateQuestion(
           }
         }),
       },
+      // connect the selection question to the corresponding answer collection
+      answerCollection:
+        type === DB.ElementType.SELECTION
+          ? {
+              connect: {
+                id: options!.answerCollection!,
+              },
+            }
+          : undefined,
+      // connect the answer collection options to the selection question if sample solution is enabled
+      answerCollectionSolutions:
+        type === DB.ElementType.SELECTION && options?.hasSampleSolution
+          ? {
+              connect: options.correctAnswers!.map((id) => ({ id })),
+            }
+          : undefined,
     },
     update: {
       status: status ?? undefined,
@@ -281,7 +258,8 @@ export async function manipulateQuestion(
       version: {
         increment: 1,
       },
-      options: options ? processElementOptions(type, options) : undefined,
+      options: options ? processedOptions : undefined,
+      // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
         connectOrCreate: tags
           ?.filter((tag: string) => tag !== '')
@@ -296,7 +274,7 @@ export async function manipulateQuestion(
               create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
             }
           }),
-        disconnect: tagsToDelete.map((tag) => {
+        disconnect: tagsToDisconnect.map((tag) => {
           return {
             ownerId_name: {
               ownerId: ctx.user.sub,
@@ -305,6 +283,25 @@ export async function manipulateQuestion(
           }
         }),
       },
+      // connect new answer collection and disconnect previous one if they are not the same
+      answerCollection:
+        type === DB.ElementType.SELECTION
+          ? {
+              connect: {
+                id: options!.answerCollection!,
+              },
+            }
+          : undefined,
+      // connect or disconnect the answer collection options if sample solution is enabled
+      answerCollectionSolutions:
+        type === DB.ElementType.SELECTION
+          ? {
+              connect: options?.hasSampleSolution
+                ? options.correctAnswers!.map((id) => ({ id }))
+                : undefined,
+              disconnect: collectionAnswersToDisconnect.map((id) => ({ id })),
+            }
+          : undefined,
     },
     include: {
       tags: {
@@ -312,6 +309,7 @@ export async function manipulateQuestion(
           order: 'asc',
         },
       },
+      answerCollectionSolutions: true,
     },
   })
 
@@ -320,13 +318,33 @@ export async function manipulateQuestion(
     id: question.id,
   })
 
-  return question
+  if (
+    type === DB.ElementType.SELECTION &&
+    typeof options?.answerCollection !== 'undefined'
+  ) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'AnswerCollection',
+      id: options.answerCollection,
+    })
+  }
+
+  return {
+    ...question,
+    options: {
+      ...question.options,
+      answerCollection: { id: question.answerCollectionId, entries: [] },
+      answerCollectionSolutionIds: question.answerCollectionSolutions.map(
+        (sol) => sol.id
+      ),
+    },
+  }
 }
 
 export async function deleteQuestion(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
+  // soft delete question and disconnect linked answer collection and sample solutions
   const question = await ctx.prisma.element.update({
     where: {
       id: id,
@@ -334,6 +352,12 @@ export async function deleteQuestion(
     },
     data: {
       isDeleted: true,
+      answerCollection: {
+        disconnect: true,
+      },
+      answerCollectionSolutions: {
+        set: [],
+      },
     },
   })
 
@@ -349,6 +373,19 @@ export async function deleteQuestion(
   //   typename: 'Element',
   //   id: question.id,
   // })
+
+  ctx.emitter.emit('invalidate', {
+    typename: 'Element',
+    id: question.id,
+  })
+
+  // if answer collection was connected, invalidate it
+  if (question.answerCollectionId) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'AnswerCollection',
+      id: question.answerCollectionId,
+    })
+  }
 
   return question
 }
@@ -552,6 +589,12 @@ export async function updateElementInstances(
           },
         },
       },
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
     },
   })
 

@@ -1,0 +1,3 @@
+mutation DeclineObjectSharingRequest($permissionId: Int!, $userId: String!) {
+  declineObjectSharingRequest(permissionId: $permissionId, userId: $userId)
+}

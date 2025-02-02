@@ -224,6 +224,18 @@ function ElementStack({
                   response: evaluation.lastResponse.value,
                 },
               }
+            } else if (
+              elementType === ElementType.Selection &&
+              evaluation.__typename === 'SelectionInstanceEvaluation'
+            ) {
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: evaluation.lastResponse.selection,
+                },
+              }
             }
 
             return acc
@@ -445,6 +457,14 @@ function ElementStack({
                         instanceId: parseInt(instanceId),
                         type: ElementType.FreeText,
                         freeTextResponse: value.response,
+                      }
+                    } else if (value.type === ElementType.Selection) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Selection,
+                        selectionResponse: Object.values(
+                          value.response!
+                        ).filter((entry) => typeof entry !== 'undefined'),
                       }
                     } else {
                       return {

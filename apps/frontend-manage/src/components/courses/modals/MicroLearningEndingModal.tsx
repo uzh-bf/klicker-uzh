@@ -6,7 +6,6 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
@@ -24,14 +23,13 @@ function MicroLearningEndingModal({
   courseId,
 }: MicroLearningEndingModalProps) {
   const t = useTranslations()
-  const {
-    data: summaryData,
-    loading: summaryLoading,
-    refetch,
-  } = useQuery(GetMicroLearningSummaryDocument, {
-    variables: { id: activityId },
-    skip: !open,
-  })
+  const { data: summaryData, loading: summaryLoading } = useQuery(
+    GetMicroLearningSummaryDocument,
+    {
+      variables: { id: activityId },
+      skip: !open,
+    }
+  )
 
   const [endMicroLearning, { loading: endingMicroLearning }] = useMutation(
     EndMicroLearningDocument,
@@ -76,13 +74,6 @@ function MicroLearningEndingModal({
       },
     }
   )
-
-  // manually re-trigger the query when the modal is opened
-  useEffect(() => {
-    if (open) {
-      refetch()
-    }
-  }, [open])
 
   if (!summaryData?.getMicroLearningSummary) return null
   const summary = summaryData.getMicroLearningSummary

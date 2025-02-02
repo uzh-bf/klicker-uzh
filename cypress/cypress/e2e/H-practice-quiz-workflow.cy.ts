@@ -69,6 +69,28 @@ describe('Different practice quiz workflows', function () {
       title: this.data.questions.CT.title,
       content: this.data.questions.CT.content,
     })
+
+    // create answer collection
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: this.data.questions.SE.collection.name,
+      description: this.data.questions.SE.collection.description,
+      entries: this.data.questions.SE.collection.options,
+      access: messages.manage.resources.accessPRIVATE,
+      accessCy: 'private',
+    })
+
+    // create selection question
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: this.data.questions.SE.title,
+      content: this.data.questions.SE.content,
+      numberOfInputs: this.data.questions.SE.inputs,
+      collectionName: this.data.questions.SE.collection.name,
+      correctAnswers: this.data.questions.SE.collection.options.filter((_, i) =>
+        this.data.questions.SE.solutions.includes(i)
+      ),
+    })
   })
 
   // ! Part 1: Practice Quiz Creation
@@ -148,6 +170,7 @@ describe('Different practice quiz workflows', function () {
         { elements: [this.data.questions.KP.title] },
         { elements: [this.data.questions.NR.title] },
         { elements: [this.data.questions.FT.title] },
+        { elements: [this.data.questions.SE.title] },
         { elements: [this.data.questions.FC.title] },
         { elements: [this.data.questions.CT.title] },
       ],
@@ -260,9 +283,12 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.FT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.questions.SE.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
+      this.data.questions.FC.title.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-7"]').contains(
       this.data.questions.CT.title.substring(0, 20)
     )
 
@@ -273,10 +299,10 @@ describe('Different practice quiz workflows', function () {
       .trigger('dragstart', {
         dataTransfer,
       })
-    cy.get('[data-cy="drop-elements-stack-7"]').trigger('drop', {
+    cy.get('[data-cy="drop-elements-stack-8"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="element-0-stack-7"]').contains(
+    cy.get('[data-cy="element-0-stack-8"]').contains(
       this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -350,12 +376,15 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.FT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.questions.SE.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      this.data.questions.CT.title.substring(0, 20)
+      this.data.questions.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
+      this.data.questions.CT.title.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-8"]').contains(
       this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -435,12 +464,15 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.FT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.questions.SE.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      this.data.questions.CT.title.substring(0, 20)
+      this.data.questions.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
+      this.data.questions.CT.title.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-8"]').contains(
       this.data.questions.SC1.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
@@ -465,17 +497,24 @@ describe('Different practice quiz workflows', function () {
   })
 
   // ! Part 2: Running Practice Quiz
-  function answerRunningPracticeQuiz() {
+  // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
+  function answerRunningPracticeQuiz(data) {
     // SC question
+    cy.findByText(data.questions.SC1.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="sc-1-answer-option-3"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-4"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // MC question
+    cy.findByText(data.questions.MC.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
@@ -484,9 +523,15 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="mc-1-answer-option-3"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-5"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // KPRIM question
+    cy.findByText(data.questions.KP.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -495,11 +540,19 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').click()
-    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-incorrect"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // NR question
+    cy.findByText(data.questions.NR.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-1"]').clear().type('-20')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -507,19 +560,49 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="input-numerical-1"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-1"]').type('100')
+    cy.get('[data-cy="input-numerical-1"]').type(data.questions.NR.answer)
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="input-numerical-1"]')
+      .should('have.value', data.questions.NR.answer)
+      .should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // FT question
+    cy.findByText(data.questions.FT.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-1"]').type('Testinput')
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="free-text-input-1"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-1"]').type('correct')
+    cy.get('[data-cy="free-text-input-1"]').type(data.questions.FT.answer)
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="free-text-input-1"]')
+      .should('have.value', data.questions.FT.answer)
+      .should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // SE QUESTION
+    cy.findByText(data.questions.SE.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[id="selection-1-field-2"]').click()
+    cy.get('[id="react-select-selection-1-field-2-option-0"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
+    cy.get('[id="selection-1-field-1"]').click()
+    cy.get('[id="react-select-selection-1-field-1-option-0"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
+    cy.get('[id="selection-1-field-3"]').click()
+    cy.get('[id="react-select-selection-1-field-3-option-1"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[id="selection-1-field-1"]')
+      .contains(data.questions.SE.collection.options[1])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-1-field-2"]')
+      .contains(data.questions.SE.collection.options[0])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-1-field-3"]')
+      .contains(data.questions.SE.collection.options[3])
+      .should('have.css', 'pointer-events', 'none')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // skip back and forth
@@ -536,14 +619,17 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-continue"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
 
     // Flashcard
+    cy.findByText(data.questions.FC.content).should('exist')
     cy.get('[data-cy="flashcard-front-1"]').click()
     cy.get('[data-cy="flashcard-response-1-No"]').click()
     cy.get('[data-cy="flashcard-response-1-Yes"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
 
     // Content
+    cy.findByText(data.questions.CT.content).should('exist')
     cy.get('[data-cy="read-content-element-1"]').should('exist')
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
       .contains(messages.pwa.practiceQuiz.markAllAsRead)
@@ -553,12 +639,138 @@ describe('Different practice quiz workflows', function () {
       .click()
 
     // SC question
+    cy.findByText(data.questions.SC1.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
     cy.get('[data-cy="sc-1-answer-option-3"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-4"]').should('be.disabled')
+
+    // finish the practice quiz
+    cy.get('[data-cy="student-stack-continue"]')
+      .contains(messages.shared.generic.finish)
+      .click()
+  }
+
+  // only provide partial answers for all question types that support this
+  function answerRunningPracticeQuizPartial(data) {
+    cy.findByText(data.running.descriptionNew).should('exist')
+    cy.get('[data-cy="start-practice-quiz"]').click()
+
+    // SC question - no partial submissions possible
+    cy.findByText(data.questions.SC1.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // MC question - no partial submissions possible
+    cy.findByText(data.questions.MC.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-5"]').should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // KPRIM question - no partial submissions possible
+    cy.findByText(data.questions.KP.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-incorrect"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').click()
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="toggle-kp-1-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-1-answer-4-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // NR question - no partial submissions possible
+    cy.findByText(data.questions.NR.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-1"]')
+      .clear()
+      .type(data.questions.NR.answer)
+    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="input-numerical-1"]')
+      .should('have.value', data.questions.NR.answer)
+      .should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // FT question - no partial submissions possible
+    cy.findByText(data.questions.FT.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-1"]').type(data.questions.FT.answer)
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="free-text-input-1"]')
+      .should('have.value', data.questions.FT.answer)
+      .should('be.disabled')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // SE QUESTION - partial submissions possible
+    cy.findByText(data.questions.SE.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[id="selection-1-field-1"]').click()
+    cy.get('[id="react-select-selection-1-field-1-option-0"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[id="selection-1-field-1"]')
+      .contains(data.questions.SE.collection.options[0])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-1-field-2"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-1-field-3"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // Flashcard - no partial submissions possible
+    cy.findByText(data.questions.FC.content).should('exist')
+    cy.get('[data-cy="flashcard-front-1"]').click()
+    cy.get('[data-cy="flashcard-response-1-No"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+
+    // Content - no partial submissions possible
+    cy.findByText(data.questions.CT.content).should('exist')
+    cy.get('[data-cy="read-content-element-1"]').should('exist')
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
+      .contains(messages.pwa.practiceQuiz.markAllAsRead)
+      .click()
+    cy.get('[data-cy="student-stack-submit"]')
+      .contains(messages.shared.generic.submit)
+      .click()
+
+    // SC question (required to complete activity)
+    cy.findByText(data.questions.SC1.content).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-4"]').should('be.disabled')
 
     // finish the practice quiz
     cy.get('[data-cy="student-stack-continue"]')
@@ -585,7 +797,7 @@ describe('Different practice quiz workflows', function () {
       // respond to the questions in the draft practice quiz (same functionality as for students when it's running)
       cy.findByText(this.data.running.descriptionNew).should('exist')
       cy.get('[data-cy="start-practice-quiz"]').click()
-      answerRunningPracticeQuiz()
+      answerRunningPracticeQuiz(this.data)
     })
   })
 
@@ -611,7 +823,16 @@ describe('Different practice quiz workflows', function () {
     ).click()
     cy.findByText(this.data.running.descriptionNew).should('exist')
     cy.get('[data-cy="start-practice-quiz"]').click()
-    answerRunningPracticeQuiz()
+    answerRunningPracticeQuiz(this.data)
+  })
+
+  it('Solve the practice quiz with partial answers (where supported)', function () {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.running.displayNameNew}"]`
+    ).click()
+    answerRunningPracticeQuizPartial(this.data)
   })
 
   it('Check that published practice quizzes can still be accessed as a preview', function () {
@@ -633,7 +854,7 @@ describe('Different practice quiz workflows', function () {
       // respond to the questions in the running practice quiz, previous answers should not persist
       cy.findByText(this.data.running.descriptionNew).should('exist')
       cy.get('[data-cy="start-practice-quiz"]').click()
-      answerRunningPracticeQuiz()
+      answerRunningPracticeQuiz(this.data)
     })
   })
 
@@ -804,6 +1025,14 @@ describe('Different practice quiz workflows', function () {
     ).should('not.exist')
   })
 
+  it('Verify that the scheduled practice quiz is not visible to students', function () {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.scheduled.displayName}"]`
+    ).should('not.exist')
+  })
+
   it('Cleanup: Delete all created questions', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
@@ -814,22 +1043,35 @@ describe('Different practice quiz workflows', function () {
       this.data.questions.KP.title,
       this.data.questions.NR.title,
       this.data.questions.FT.title,
+      this.data.questions.SE.title,
       this.data.questions.FC.title,
       this.data.questions.CT.title,
     ]
 
-    cy.wrap(questions).each((title) => {
-      cy.get(`[data-cy="delete-question-${title}"]`).click()
-      cy.get('[data-cy="confirm-question-deletion"]').click()
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    cy.wrap(questions).each((title: string) => {
+      cy.deleteElement({ elementName: title })
     })
   })
 
-  it('Verify that the scheduled practice quiz is not visible to students', function () {
-    cy.loginStudent()
-    cy.get('[data-cy="quizzes"]').click()
-    cy.get(
-      `[data-cy="practice-quiz-${this.data.scheduled.displayName}"]`
-    ).should('not.exist')
+  it('Cleanup: Delete the created answer collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.deleteAnswerCollection({
+      collectionName: this.data.questions.SE.collection.name,
+    })
+  })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 })

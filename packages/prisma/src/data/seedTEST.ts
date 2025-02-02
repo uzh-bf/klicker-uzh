@@ -1,3 +1,4 @@
+import { ActivityType } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -110,6 +111,57 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedCompetencyTree(prisma)
   await seedEmailTemplates(prisma)
 
+  // seed catalog collection for objects that are not assigned to any custom catalog
+  const missingCatalogCollection = await prisma.catalogCollection.upsert({
+    where: {
+      id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+    },
+    create: {
+      id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+      name: '',
+    },
+    update: {},
+  })
+
+  // seed answer collections
+  const answerCollections = await Promise.all(
+    DATA_TEST.ANSWER_COLLECTIONS.map(async (data) => {
+      return prisma.answerCollection.upsert({
+        where: {
+          ownerId_name: {
+            ownerId: USER_ID_TEST,
+            name: data.name,
+          },
+        },
+        create: {
+          name: data.name,
+          description: data.description,
+          access: data.access,
+          owner: {
+            connect: {
+              id: USER_ID_TEST,
+            },
+          },
+          entries: {
+            create: data.entries,
+          },
+          catalogCollection:
+            data.access !== 'PRIVATE'
+              ? {
+                  connect: {
+                    id: missingCatalogCollection.id,
+                  },
+                }
+              : undefined,
+        },
+        update: {},
+        include: {
+          entries: true,
+        },
+      })
+    })
+  )
+
   const courseTest = await prisma.course.upsert(
     prepareCourse({
       id: COURSE_ID_TEST,
@@ -170,11 +222,56 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const questionsTest = (await Promise.all(
-    DATA_TEST.QUESTIONS.map((data) =>
-      prisma.element.upsert(prepareQuestion({ ownerId: USER_ID_TEST, ...data }))
-    )
-  )) as Element[]
+  const questionsTest = await Promise.all(
+    DATA_TEST.QUESTIONS.map((data) => {
+      let collectionId: number | undefined = undefined
+      let correctOptionIds: number[] = []
+
+      if (data.collectionName && data.answerCollectionSolutions) {
+        const collection = answerCollections.find(
+          (ac) => ac.name === data.collectionName
+        )
+
+        if (!collection) {
+          throw new Error(
+            `Answer collection with name ${data.collectionName} not found`
+          )
+        }
+
+        collectionId = collection.id
+        correctOptionIds = data.answerCollectionSolutions.map((solValue) => {
+          const entry = collection.entries.find(
+            (entry) => entry.value === solValue
+          )
+
+          if (typeof entry === 'undefined') {
+            throw new Error(
+              `Option with value ${solValue} not found in answer collection ${collection.name}`
+            )
+          }
+
+          return entry.id
+        })
+      }
+
+      return prisma.element.upsert({
+        ...prepareQuestion({
+          ownerId: USER_ID_TEST,
+          ...data,
+          collectionId,
+          correctOptionIds,
+        }),
+        include: {
+          answerCollection: {
+            include: {
+              entries: true,
+            },
+          },
+          answerCollectionSolutions: true,
+        },
+      })
+    })
+  )
 
   await Promise.all(
     DATA_TEST.LIVE_QUIZZES.map(
@@ -829,6 +926,13 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     },
   })
 
+  // extract the ids of the correct answer options to the selection question
+  const selectionQuestion = questionsTest.find(
+    (q) => q.type === Prisma.ElementType.SELECTION
+  )
+  const selectionResponse =
+    selectionQuestion?.answerCollectionSolutions.map((sol) => sol.id) ?? []
+
   const groupActivityDecisions = groupActivityCompleted.stacks[0]!.elements.map(
     (element) => {
       const baseDecisions = {
@@ -865,6 +969,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         return {
           ...baseDecisions,
           numericalResponse: 10,
+        }
+      } else if (element.elementType === Prisma.ElementType.SELECTION) {
+        return {
+          ...baseDecisions,
+          selectionResponse,
         }
       }
     }
@@ -907,6 +1016,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...baseDecisions,
           numericalResponse: 97,
         }
+      } else if (element.elementType === Prisma.ElementType.SELECTION) {
+        return {
+          ...baseDecisions,
+          selectionResponse,
+        }
       }
     })
 
@@ -946,6 +1060,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         return {
           ...baseDecisions,
           numericalResponse: 10,
+        }
+      } else if (element.elementType === Prisma.ElementType.SELECTION) {
+        return {
+          ...baseDecisions,
+          selectionResponse,
         }
       }
     })
@@ -1227,6 +1346,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
             connectToCourse: true,
+            activityType: ActivityType.PRACTICE_QUIZ,
           }),
         ],
       },
@@ -1266,6 +1386,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
+            activityType: ActivityType.PRACTICE_QUIZ,
           }),
         ],
       },
@@ -1306,6 +1427,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
             courseId: COURSE_ID_TEST,
+            activityType: ActivityType.PRACTICE_QUIZ,
           }),
         ],
       },
@@ -1358,6 +1480,7 @@ Mehr bla bla...
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
             courseId: COURSE_ID_TEST,
+            activityType: ActivityType.MICRO_LEARNING,
           }),
         ],
       },
@@ -1403,6 +1526,7 @@ Mehr bla bla...
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
             courseId: COURSE_ID_TEST,
+            activityType: ActivityType.MICRO_LEARNING,
           }),
         ],
       },
@@ -1444,6 +1568,7 @@ Mehr bla bla...
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
             courseId: COURSE_ID_TEST,
+            activityType: ActivityType.MICRO_LEARNING,
           }),
         ],
       },
@@ -1487,6 +1612,7 @@ Mehr bla bla...
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
             courseId: COURSE_ID_TEST,
+            activityType: ActivityType.MICRO_LEARNING,
           }),
         ],
       },
@@ -1530,6 +1656,7 @@ Once this microlearning is published, it will be immediately accessible
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
             courseId: COURSE_ID_TEST,
+            activityType: ActivityType.MICRO_LEARNING,
           }),
         ],
       },

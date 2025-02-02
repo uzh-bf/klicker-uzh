@@ -7,6 +7,7 @@ import {
   gradeQuestionMC,
   gradeQuestionNumerical,
   gradeQuestionSC,
+  gradeQuestionSelection,
 } from '@klicker-uzh/grading'
 import * as Sentry from '@sentry/node'
 import { strict as assert } from 'assert'
@@ -247,9 +248,16 @@ const serviceBusTrigger = async function (
         )
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
+        const exactSolutionsDefined =
+          typeof parsedSolutions !== 'undefined' &&
+          parsedSolutions.length > 0 &&
+          (typeof parsedSolutions[0] === 'number' ||
+            typeof parsedSolutions[0] === 'string')
+
         const answerCorrect = gradeQuestionNumerical({
           response: response.value,
-          solutionRanges: parsedSolutions,
+          solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
+          exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
         })
 
         if (participantData) {
@@ -360,6 +368,76 @@ const serviceBusTrigger = async function (
             `${instanceKey}:responses`,
             participantData.sub,
             cleanResponseValue
+          )
+          redisMulti.hincrby(
+            `${sessionKey}:b:${sessionBlockId}:lb`,
+            participantData.sub,
+            pointsAwarded
+          )
+          redisMulti.hincrby(
+            `${sessionKey}:lb`,
+            participantData.sub,
+            pointsAwarded
+          )
+          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
+        }
+        break
+      }
+      case 'SELECTION': {
+        response.selection.forEach((answerId: number) => {
+          // skipped input fields should not be considered
+          if (answerId === -1) {
+            return
+          }
+
+          redisMulti.hincrby(`${instanceKey}:results`, String(answerId), 1)
+        })
+        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+
+        if (participantData) {
+          const pointsPercentage = gradeQuestionSelection({
+            numberOfInputs: parseInt(instanceInfo.numberOfInputs),
+            response: response.selection.filter((r: number) => r !== -1), // filter out skipped response fields
+            correctAnswers: parsedSolutions,
+          })
+
+          pointsAwarded = computeAwardedPoints({
+            firstResponseReceivedAt,
+            responseTimestamp,
+            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
+              ? MAX_BONUS_POINTS
+              : parseInt(instanceInfo.maxBonusPoints, 10),
+            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
+              ? TIME_TO_ZERO_BONUS
+              : parseInt(instanceInfo.timeToZeroBonus, 10),
+            defaultPoints: DEFAULT_POINTS,
+            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            pointsPercentage,
+            pointsMultiplier,
+          })
+
+          xpAwarded = computeAwardedXp({
+            pointsPercentage,
+          })
+
+          if (
+            pointsPercentage !== null &&
+            pointsPercentage === 1 &&
+            !firstResponseReceivedAt
+          ) {
+            // if we are processing a first response, set the timestamp on the instance
+            // this will allow us to award points for response timing
+            redisExec.hset(
+              `${instanceKey}:info`,
+              'firstResponseReceivedAt',
+              responseTimestamp
+            )
+          }
+
+          redisMulti.hset(
+            `${instanceKey}:responses`,
+            participantData.sub,
+            response.selection.filter((r: number) => r !== -1) // filter out skipped response fields
           )
           redisMulti.hincrby(
             `${sessionKey}:b:${sessionBlockId}:lb`,

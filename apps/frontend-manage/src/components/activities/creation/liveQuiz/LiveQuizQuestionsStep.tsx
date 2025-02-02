@@ -20,6 +20,7 @@ const acceptedTypes = [
   ElementType.FreeText,
   // ElementType.Flashcard,
   // ElementType.Content,
+  ElementType.Selection,
 ]
 
 function LiveQuizQuestionsStep({

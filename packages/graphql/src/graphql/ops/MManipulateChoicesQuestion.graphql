@@ -40,7 +40,6 @@ mutation ManipulateChoicesQuestion(
           value
         }
       }
-
       tags {
         id
         name

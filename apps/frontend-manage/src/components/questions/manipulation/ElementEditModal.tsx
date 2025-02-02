@@ -10,15 +10,19 @@ import {
   ManipulateFlashcardElementDocument,
   ManipulateFreeTextQuestionDocument,
   ManipulateNumericalQuestionDocument,
+  ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import ElementExplanationField from './ElementExplanationField'
+import ElementFailureToast from './ElementFailureToast'
 import ElementFormErrors from './ElementFormErrors'
 import ElementInformationFields from './ElementInformationFields'
 import ElementTypeMonitor from './ElementTypeMonitor'
@@ -30,6 +34,7 @@ import {
   prepareFlashcardArgs,
   prepareFreeTextArgs,
   prepareNumericalArgs,
+  prepareSelectionArgs,
 } from './helpers'
 import AnswerFeedbackSetting from './options/AnswerFeedbackSetting'
 import ChoicesOptions from './options/ChoicesOptions'
@@ -38,6 +43,8 @@ import FreeTextOptions from './options/FreeTextOptions'
 import NumericalOptions from './options/NumericalOptions'
 import OptionsLabel from './options/OptionsLabel'
 import SampleSolutionSetting from './options/SampleSolutionSetting'
+import SelectionOptions from './options/SelectionOptions'
+import { ElementFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
 import useValidationSchema from './useValidationSchema'
 
@@ -50,30 +57,46 @@ export enum ElementEditMode {
 interface ElementEditModalProps {
   isOpen: boolean
   handleSetIsOpen: (open: boolean) => void
-  questionId?: number
+  triggerSuccessToast: () => void
+  elementId?: number
   mode: ElementEditMode
 }
 
 function ElementEditModal({
   isOpen,
   handleSetIsOpen,
-  questionId,
+  triggerSuccessToast,
+  elementId,
   mode,
 }: ElementEditModalProps): React.ReactElement {
-  // TODO: styling of tooltips - some are too wide
   const t = useTranslations()
-  const questionManipulationSchema = useValidationSchema()
 
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
+  const [failureToast, setFailureToast] = useState(false)
+  const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
+    { id: number; value: string }[]
+  >([])
   const [elementDataTypename, setElementDataTypename] =
     useState<ElementData['__typename']>('ChoicesElementData')
+
+  const questionManipulationSchema = useValidationSchema({
+    numberOfAnswerOptions: answerCollectionEntries.length,
+  })
+
+  const [autoSavedElement, setAutoSavedElement] =
+    useLocalStorage<ElementFormTypes>(
+      typeof elementId === 'undefined' || isDuplication
+        ? 'autosave-element-creation'
+        : `autosave-element-${elementId}`,
+      undefined
+    )
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleQuestionDocument,
     {
-      variables: { id: questionId! },
-      skip: typeof questionId === 'undefined',
+      variables: { id: elementId! },
+      skip: typeof elementId === 'undefined' || !isOpen,
     }
   )
 
@@ -92,6 +115,9 @@ function ElementEditModal({
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
+  const [manipulateSelectionQuestion] = useMutation(
+    ManipulateSelectionQuestionDocument
+  )
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
 
   const initialValues = useElementFormInitialValues({
@@ -100,7 +126,17 @@ function ElementEditModal({
     isDuplication,
   })
 
-  if (!initialValues || Object.keys(initialValues).length === 0) {
+  // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
+  // (otherwise, saving the question will directly trigger another save)
+  const formikInitialValues = useMemo(() => {
+    if (!initialValues) {
+      return undefined
+    }
+    return isDuplication ? initialValues : (autoSavedElement ?? initialValues)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isDuplication, initialValues])
+
+  if (!formikInitialValues || Object.keys(formikInitialValues).length === 0) {
     return <div />
   }
 
@@ -108,7 +144,7 @@ function ElementEditModal({
     <Formik
       validateOnMount
       enableReinitialize
-      initialValues={initialValues}
+      initialValues={formikInitialValues}
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         setSubmitting(true)
@@ -116,7 +152,7 @@ function ElementEditModal({
         switch (values.type) {
           case ElementType.Content: {
             const args = prepareContentArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -130,13 +166,17 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateContentElement
-            if (data?.__typename !== 'ContentElement' || !data.id) return
+            if (data?.__typename !== 'ContentElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
 
           case ElementType.Flashcard: {
             const args = prepareFlashcardArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -150,7 +190,11 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateFlashcardElement
-            if (data?.__typename !== 'FlashcardElement' || !data.id) return
+            if (data?.__typename !== 'FlashcardElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
 
@@ -158,7 +202,7 @@ function ElementEditModal({
           case ElementType.Mc:
           case ElementType.Kprim: {
             const args = prepareChoicesArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -172,12 +216,16 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateChoicesQuestion
-            if (data?.__typename !== 'ChoicesElement' || !data.id) return
+            if (data?.__typename !== 'ChoicesElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
           case ElementType.Numerical: {
             const args = prepareNumericalArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -191,12 +239,16 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateNumericalQuestion
-            if (data?.__typename !== 'NumericalElement' || !data.id) return
+            if (data?.__typename !== 'NumericalElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
           case ElementType.FreeText: {
             const args = prepareFreeTextArgs({
-              questionId,
+              elementId,
               isDuplication,
               values,
             })
@@ -210,7 +262,34 @@ function ElementEditModal({
             })
 
             const data = result.data?.manipulateFreeTextQuestion
-            if (data?.__typename !== 'FreeTextElement' || !data.id) return
+            if (data?.__typename !== 'FreeTextElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
+            break
+          }
+          case ElementType.Selection: {
+            const args = prepareSelectionArgs({
+              elementId,
+              isDuplication,
+              values,
+            })
+
+            const result = await manipulateSelectionQuestion({
+              variables: args,
+              refetchQueries: [
+                { query: GetUserQuestionsDocument },
+                { query: GetUserTagsDocument },
+              ],
+            })
+
+            const data = result.data?.manipulateSelectionQuestion
+            if (data?.__typename !== 'SelectionElement' || !data.id) {
+              setFailureToast(true)
+              return
+            }
+
             break
           }
 
@@ -219,18 +298,36 @@ function ElementEditModal({
         }
 
         if (mode === ElementEditMode.EDIT && updateInstances) {
-          if (questionId !== null && typeof questionId !== 'undefined') {
+          if (elementId !== null && typeof elementId !== 'undefined') {
             await updateElementInstances({
-              variables: { elementId: questionId },
+              variables: { elementId: elementId },
             })
           }
         }
 
+        // remove local storage entry
+        if (autoSavedElement) {
+          localStorage.removeItem(
+            typeof elementId === 'undefined' || isDuplication
+              ? 'autosave-element-creation'
+              : `autosave-element-${elementId}`
+          )
+        }
+
+        // close modal, set success toast
         setSubmitting(false)
+        triggerSuccessToast()
         handleSetIsOpen(false)
       }}
     >
-      {({ errors, isSubmitting, values, isValid, setFieldValue }) => {
+      {({
+        values,
+        errors,
+        isSubmitting,
+        isValid,
+        setFieldValue,
+        validateForm,
+      }) => {
         if (loadingQuestion) {
           return null
         }
@@ -268,15 +365,21 @@ function ElementEditModal({
               <Button
                 className={{ root: 'border-uzh-grey-80 mt-2' }}
                 onClick={() => handleSetIsOpen(false)}
-                data={{ cy: 'close-question-modal' }}
+                data={{ cy: 'close-element-modal' }}
               >
                 <Button.Label>{t('shared.generic.close')}</Button.Label>
               </Button>
             }
           >
+            <AutoSaveMonitor
+              values={values}
+              initialValuesString={JSON.stringify(formikInitialValues)}
+              setAutoSavedElement={setAutoSavedElement}
+            />
             <ElementTypeMonitor
               elementType={values.type ?? ElementType.Sc}
               setElementDataTypename={setElementDataTypename}
+              validateForm={validateForm}
             />
             <div className="flex flex-row gap-12">
               <div className="max-w-5xl flex-1">
@@ -318,16 +421,23 @@ function ElementEditModal({
                   {values.type === ElementType.FreeText && (
                     <FreeTextOptions values={values} />
                   )}
+
+                  {values.type === ElementType.Selection && (
+                    <SelectionOptions
+                      values={values}
+                      setAnswerCollectionEntries={setAnswerCollectionEntries}
+                    />
+                  )}
                 </Form>
 
                 {Object.keys(errors).length !== 0 && (
                   <ElementFormErrors errors={errors} />
                 )}
               </div>
-
               <StudentElementPreview
                 values={values}
                 elementDataTypename={elementDataTypename}
+                answerCollectionEntries={answerCollectionEntries}
               />
             </div>
 
@@ -337,6 +447,10 @@ function ElementEditModal({
                 setUpdateInstances={setUpdateInstances}
               />
             )}
+            <ElementFailureToast
+              open={failureToast}
+              onClose={() => setFailureToast(false)}
+            />
           </Modal>
         )
       }}

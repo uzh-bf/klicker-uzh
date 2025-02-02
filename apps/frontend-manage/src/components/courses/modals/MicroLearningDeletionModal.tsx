@@ -23,14 +23,13 @@ function MicroLearningDeletionModal({
   courseId,
 }: MicroLearningDeletionModalProps) {
   const t = useTranslations()
-  const {
-    data: summaryData,
-    loading: summaryLoading,
-    refetch,
-  } = useQuery(GetMicroLearningSummaryDocument, {
-    variables: { id: activityId },
-    skip: !open,
-  })
+  const { data: summaryData, loading: summaryLoading } = useQuery(
+    GetMicroLearningSummaryDocument,
+    {
+      variables: { id: activityId },
+      skip: !open,
+    }
+  )
 
   const [deleteMicroLearning, { loading: deletingMicroLearning }] = useMutation(
     DeleteMicroLearningDocument,
@@ -53,13 +52,6 @@ function MicroLearningDeletionModal({
     deleteResponses: false,
     deleteAnonymousResponses: false,
   })
-
-  // manually re-trigger the query when the modal is opened
-  useEffect(() => {
-    if (open) {
-      refetch()
-    }
-  }, [open])
 
   useEffect(() => {
     if (summaryData?.getMicroLearningSummary) {

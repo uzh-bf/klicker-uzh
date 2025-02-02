@@ -34,6 +34,22 @@ function ElementChart({
         textSize={textSize.text}
       />
     )
+  } else if (chartType === ChartType.WORD_CLOUD) {
+    return (
+      <ElementWordcloud
+        instance={instanceEvaluation}
+        showSolution={showSolution}
+        textSize={{ min: textSize.min, max: textSize.max }}
+      />
+    )
+  } else if (chartType === ChartType.BAR_CHART) {
+    return (
+      <ElementBarChart
+        instance={instanceEvaluation}
+        showSolution={showSolution}
+        textSize={textSize}
+      />
+    )
   } else if (
     chartType === ChartType.HISTOGRAM &&
     instanceEvaluation.__typename === 'NumericalElementInstanceEvaluation'
@@ -50,28 +66,13 @@ function ElementChart({
         type={instanceEvaluation.type}
         responses={responses}
         solutionRanges={instanceEvaluation.results.solutionRanges ?? []}
+        exactSolutions={instanceEvaluation.results.exactSolutions ?? []}
         statistics={instanceEvaluation.statistics}
         minValue={instanceEvaluation.results.minValue}
         maxValue={instanceEvaluation.results.maxValue}
         showSolution={showSolution}
         showStatistics={showStatistics}
         textSize={textSize.text}
-      />
-    )
-  } else if (chartType === ChartType.WORD_CLOUD) {
-    return (
-      <ElementWordcloud
-        instance={instanceEvaluation}
-        showSolution={showSolution}
-        textSize={{ min: textSize.min, max: textSize.max }}
-      />
-    )
-  } else if (chartType === ChartType.BAR_CHART) {
-    return (
-      <ElementBarChart
-        instance={instanceEvaluation}
-        showSolution={showSolution}
-        textSize={textSize}
       />
     )
   } else {

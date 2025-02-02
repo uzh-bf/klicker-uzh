@@ -85,7 +85,7 @@ function CourseOverviewHeader({
           dataModal={{ cy: 'course-join-modal' }}
           dataCloseButton={{ cy: 'course-join-modal-close' }}
         />
-        {user?.featurePreview ? (
+        {user?.publicPreview ? (
           <Button
             onClick={() => {
               window.open(`/analytics/${course.id}/activity`, '_blank')
@@ -210,9 +210,9 @@ function CourseOverviewHeader({
       />
 
       <Toast
+        type="success"
         openExternal={copyToast}
         onCloseExternal={() => setCopyToast(false)}
-        type="success"
         className={{ root: 'w-[24rem]' }}
       >
         {t('manage.course.linkLTICopied')}

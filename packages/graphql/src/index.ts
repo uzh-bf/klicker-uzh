@@ -10,6 +10,7 @@ import './schema/groupActivity.js'
 import './schema/microLearning.js'
 import './schema/participant.js'
 import './schema/question.js'
+import './schema/resource.js'
 import './schema/user.js'
 
 import './schema/mutation.js'

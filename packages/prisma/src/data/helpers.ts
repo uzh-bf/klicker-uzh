@@ -1,3 +1,4 @@
+import { ActivityType } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -26,6 +27,8 @@ export async function prepareUser({
   shortname: string
   catalystIndividual?: boolean
   catalystInstitutional?: boolean
+  publicPreview?: boolean
+  privatePreview?: boolean
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -139,10 +142,15 @@ export async function prepareParticipant({
 }
 
 export function prepareQuestion({
-  choices,
+  originalId,
+  name,
+  type,
+  ownerId,
   content,
+  choices,
   options,
-  ...args
+  collectionId,
+  correctOptionIds,
 }: {
   originalId: string
   name: string
@@ -155,7 +163,20 @@ export function prepareQuestion({
     correct?: boolean
   }[]
   options?: any
+  collectionId?: number
+  correctOptionIds?: number[]
 }) {
+  const args = {
+    originalId,
+    name,
+    type,
+    owner: {
+      connect: {
+        id: ownerId,
+      },
+    },
+  }
+
   if (choices) {
     const preparedChoices = choices.map((choice, ix) => ({
       ix,
@@ -176,8 +197,40 @@ export function prepareQuestion({
     return {
       where: {
         ownerId_originalId: {
-          ownerId: args.ownerId,
-          originalId: args.originalId,
+          ownerId: ownerId,
+          originalId: originalId,
+        },
+      },
+      create: data,
+      update: data,
+    }
+  }
+
+  if (
+    typeof collectionId !== 'undefined' &&
+    typeof correctOptionIds !== 'undefined'
+  ) {
+    const data = {
+      ...args,
+      content,
+      options,
+      answerCollection: {
+        connect: {
+          id: collectionId,
+        },
+      },
+      answerCollectionSolutions: {
+        connect: correctOptionIds.map((id) => ({
+          id,
+        })),
+      },
+    }
+
+    return {
+      where: {
+        ownerId_originalId: {
+          ownerId: ownerId,
+          originalId: originalId,
         },
       },
       create: data,
@@ -194,8 +247,8 @@ export function prepareQuestion({
   return {
     where: {
       ownerId_originalId: {
-        ownerId: args.ownerId,
-        originalId: args.originalId,
+        ownerId: ownerId,
+        originalId: originalId,
       },
     },
     create: data,
@@ -238,7 +291,6 @@ export function prepareGroupActivityStack({
             elementData: processElementData(el),
             options: {
               pointsMultiplier: ix / 3 > 0.9 ? 1 : 2, // first three questions get multiplier 2, the rest 1
-              resetTimeDays: 5,
             },
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
@@ -287,6 +339,7 @@ export function prepareStackVariety({
   elementInstanceType,
   courseId,
   connectToCourse = false,
+  activityType,
   migrationIdOffset,
 }: {
   flashcards: Prisma.Element[]
@@ -296,6 +349,7 @@ export function prepareStackVariety({
   elementInstanceType: Prisma.ElementInstanceType
   courseId: string
   connectToCourse?: boolean
+  activityType: ActivityType
   migrationIdOffset: number
 }) {
   return [
@@ -313,7 +367,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: el.type,
             elementData: processElementData(el),
-            options: { resetTimeDays: 7 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { resetTimeDays: 7 }
+                : {},
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
             instanceStatistics: {
@@ -345,7 +402,10 @@ export function prepareStackVariety({
           type: elementInstanceType,
           elementType: el.type,
           elementData: processElementData(el),
-          options: { resetTimeDays: 6 },
+          options:
+            activityType === ActivityType.PRACTICE_QUIZ
+              ? { resetTimeDays: 6 }
+              : {},
           results: getInitialElementResults(el),
           anonymousResults: getInitialElementResults(el),
           instanceStatistics: {
@@ -377,7 +437,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: el.type,
             elementData: processElementData(el),
-            options: { pointsMultiplier: 1, resetTimeDays: 5 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { pointsMultiplier: 1, resetTimeDays: 5 }
+                : { pointsMultiplier: 1 },
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
             instanceStatistics: {
@@ -411,7 +474,10 @@ export function prepareStackVariety({
           type: elementInstanceType,
           elementType: el.type,
           elementData: processElementData(el),
-          options: { pointsMultiplier: 4, resetTimeDays: 8 },
+          options:
+            activityType === ActivityType.PRACTICE_QUIZ
+              ? { pointsMultiplier: 4, resetTimeDays: 8 }
+              : { pointsMultiplier: 4 },
           results: getInitialElementResults(el),
           anonymousResults: getInitialElementResults(el),
           instanceStatistics: {
@@ -448,7 +514,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: el.type,
             elementData: processElementData(el),
-            options: { pointsMultiplier: 4, resetTimeDays: 7 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { resetTimeDays: 7 }
+                : {},
             results: getInitialElementResults(el),
             anonymousResults: getInitialElementResults(el),
             instanceStatistics: {
@@ -492,7 +561,10 @@ export function prepareStackVariety({
           type: elementInstanceType,
           elementType: el.type,
           elementData: processElementData(el),
-          options: { pointsMultiplier: 2, resetTimeDays: 6 },
+          options:
+            activityType === ActivityType.PRACTICE_QUIZ
+              ? { resetTimeDays: 6 }
+              : {},
           results: getInitialElementResults(el),
           anonymousResults: getInitialElementResults(el),
           instanceStatistics: {
@@ -532,7 +604,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: flashcards[0]!.type,
             elementData: processElementData(flashcards[0]!),
-            options: { resetTimeDays: 5 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { resetTimeDays: 5 }
+                : {},
             results: getInitialElementResults(flashcards[0]!),
             anonymousResults: getInitialElementResults(flashcards[0]!),
             instanceStatistics: {
@@ -554,7 +629,10 @@ export function prepareStackVariety({
             type: elementInstanceType,
             elementType: questions[0]!.type,
             elementData: processElementData(questions[0]!),
-            options: { pointsMultiplier: 3, resetTimeDays: 6 },
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { pointsMultiplier: 3, resetTimeDays: 6 }
+                : { pointsMultiplier: 3 },
             results: getInitialElementResults(questions[0]!),
             anonymousResults: getInitialElementResults(questions[0]!),
             instanceStatistics: {

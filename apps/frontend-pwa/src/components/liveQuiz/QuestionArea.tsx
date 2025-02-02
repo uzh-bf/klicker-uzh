@@ -139,6 +139,13 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       handleNewResponse(type, instanceId, String(parseFloat(input.response)))
+    } else if (
+      ElementType.Selection === type &&
+      input.type === ElementType.Selection &&
+      typeof input.response !== 'undefined'
+    ) {
+      // submit responses as an array of answer ids that were selected
+      handleNewResponse(type, instanceId, Object.values(input.response))
     }
   }
 

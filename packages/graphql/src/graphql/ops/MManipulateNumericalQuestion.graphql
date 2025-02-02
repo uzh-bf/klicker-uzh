@@ -40,6 +40,7 @@ mutation ManipulateNumericalQuestion(
           min
           max
         }
+        exactSolutions
       }
       tags {
         id

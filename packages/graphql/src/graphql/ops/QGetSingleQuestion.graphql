@@ -55,6 +55,7 @@ query GetSingleQuestion($id: Int!) {
           min
           max
         }
+        exactSolutions
       }
 
       tags {
@@ -80,6 +81,32 @@ query GetSingleQuestion($id: Int!) {
           maxLength
         }
         solutions
+      }
+
+      tags {
+        id
+        name
+        order
+      }
+    }
+
+    ... on SelectionElement {
+      id
+      version
+      name
+      status
+      type
+      content
+      explanation
+      pointsMultiplier
+
+      options {
+        hasSampleSolution
+        numberOfInputs
+        answerCollection {
+          id
+        }
+        answerCollectionSolutionIds
       }
 
       tags {

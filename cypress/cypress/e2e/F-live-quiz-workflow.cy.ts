@@ -64,6 +64,31 @@ describe('Different live-quiz workflows', function () {
       content: this.data.FT2.content,
       ...this.data.FT2.options,
     })
+
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
+      access: messages.manage.resources.accessPRIVATE,
+      accessCy: 'private',
+    })
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: this.data.SE1.title,
+      content: this.data.SE1.content,
+      numberOfInputs: this.data.SE1.inputs,
+      collectionName: this.data.collection.name,
+    })
+    cy.createQuestionSE({
+      title: this.data.SE2.title,
+      content: this.data.SE2.content,
+      numberOfInputs: this.data.SE2.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SE2.solutions.includes(i)
+      ),
+    })
   })
 
   // ! Part 1: Live Quiz Creation
@@ -745,6 +770,7 @@ describe('Different live-quiz workflows', function () {
             this.data.KP1.title,
             this.data.NR1.title,
             this.data.FT1.title,
+            this.data.SE1.title,
           ],
         },
         {
@@ -754,6 +780,7 @@ describe('Different live-quiz workflows', function () {
             this.data.KP2.title,
             this.data.NR2.title,
             this.data.FT2.title,
+            this.data.SE2.title,
           ],
         },
       ],
@@ -849,6 +876,14 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="free-text-input-5"]').type(this.data.FT1.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').should('not.be.disabled')
+    cy.get('[id="selection-6-field-2"]').click()
+    cy.get('[id="react-select-selection-6-field-2-option-2"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
 
     // provide feedback while moderation is enabled
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
@@ -920,23 +955,45 @@ describe('Different live-quiz workflows', function () {
   it('Answer questions in second block from student view', function () {
     cy.loginStudent()
     cy.findByText(this.data.course2.quiz.displayName).click()
+
+    // SC question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+
+    // MC question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-1"]').click()
-    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+
+    // KP question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="input-numerical-4"]').clear().type(this.data.NR2.answer)
+
+    // NR question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-4"]').clear().type(this.data.NR1.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="free-text-input-5"]').type(this.data.FT2.answer)
+
+    // FT question - skipping not permitted, partial answers not possible
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-5"]').type(this.data.FT1.answer)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    // SE question - submit partial answer (only submit selection for one of two inputs)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
   })
@@ -1021,7 +1078,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('@publicLinkQuestion7').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.KP2.content).should('exist')
+    cy.findByText(this.data.MC2.content).should('exist')
 
     // check out leaderboard
     cy.get('@publicLinkLeaderboard').then((link) => {
@@ -1075,6 +1132,8 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.FT1.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SE1.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.SC2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.MC2.content).should('exist')
@@ -1084,12 +1143,17 @@ describe('Different live-quiz workflows', function () {
     cy.findByText(this.data.NR2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.FT2.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SE2.content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.NR2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.SC2.content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(this.data.SE1.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.FT1.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
@@ -1210,17 +1274,36 @@ describe('Different live-quiz workflows', function () {
       this.data.KP1.title,
       this.data.NR1.title,
       this.data.FT1.title,
+      this.data.SE1.title,
       this.data.SC2.title,
       this.data.MC2.title,
       this.data.KP2.title,
       this.data.NR2.title,
       this.data.FT2.title,
+      this.data.SE2.title,
     ]
     cy.wrap(questions).each((question: string) => {
-      cy.get(`[data-cy="element-item-${question}"]`).should('exist')
-      cy.get(`[data-cy="delete-question-${question}"]`).click()
-      cy.get('[data-cy="confirm-question-deletion"]').click()
-      cy.get(`[data-cy="element-item-${question}"]`).should('not.exist')
+      cy.deleteElement({ elementName: question })
+    })
+  })
+
+  it('Cleanup: Delete the created answer collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
+  })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
 })

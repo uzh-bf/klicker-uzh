@@ -90,6 +90,7 @@ function useElementFormInitialValues({
         type: ElementType.Numerical,
         options: {
           hasSampleSolution: options.hasSampleSolution ?? false,
+          solutionType: options.exactSolutions ? 'exact' : 'range',
           accuracy: options.accuracy,
           unit: options.unit,
           restrictions: options.restrictions
@@ -104,6 +105,7 @@ function useElementFormInitialValues({
                 max: range.max,
               }))
             : undefined,
+          exactSolutions: options.exactSolutions ?? undefined,
         },
       }
     } else if (question.__typename === 'FreeTextElement') {
@@ -122,6 +124,21 @@ function useElementFormInitialValues({
           solutions: options.solutions,
         },
       }
+    } else if (question.__typename === 'SelectionElement') {
+      const options = question.options
+
+      return {
+        ...sharedAttributes,
+        type: ElementType.Selection,
+        options: {
+          hasSampleSolution: options.hasSampleSolution ?? false,
+          numberOfInputs: String(options.numberOfInputs),
+          answerCollection: options.answerCollection
+            ? String(options.answerCollection?.id)
+            : '',
+          correctAnswers: options.answerCollectionSolutionIds ?? undefined,
+        },
+      }
     } else if (question.__typename === 'FlashcardElement') {
       return {
         ...sharedAttributes,
@@ -136,7 +153,7 @@ function useElementFormInitialValues({
     }
 
     return undefined
-  }, [question, mode])
+  }, [mode, question, isDuplication])
 }
 
 export default useElementFormInitialValues

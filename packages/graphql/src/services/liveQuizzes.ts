@@ -20,6 +20,7 @@ import type {
   ElementResultsContent,
   ElementResultsFlashcard,
   ElementResultsOpen,
+  ElementResultsSelection,
 } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
@@ -81,6 +82,7 @@ async function getCachedBlockResults({
         | ElementResultsOpen
         | ElementResultsFlashcard
         | ElementResultsContent
+        | ElementResultsSelection
     }
   > = {}
 
@@ -110,6 +112,7 @@ async function getCachedBlockResults({
       | ElementResultsOpen
       | ElementResultsFlashcard
       | ElementResultsContent
+      | ElementResultsSelection
       | undefined
 
     if (
@@ -156,10 +159,14 @@ async function getCachedBlockResults({
           let grading: number | undefined
           if (solutions && solutions.length > 0) {
             if (instance.elementType === ElementType.NUMERICAL) {
+              const exactSolutionsDefined =
+                typeof solutions[0] === 'number' ||
+                typeof solutions[0] === 'string'
               grading =
                 gradeQuestionNumerical({
                   response,
-                  solutionRanges: solutions,
+                  solutionRanges: exactSolutionsDefined ? undefined : solutions,
+                  exactSolutions: exactSolutionsDefined ? solutions : undefined,
                 }) ?? undefined
             } else if (instance.elementType === ElementType.FREE_TEXT) {
               grading =
@@ -193,6 +200,22 @@ async function getCachedBlockResults({
         responses,
         total: parseInt(results.participants),
       } as ElementResultsOpen
+    }
+    if (instance.elementType === ElementType.SELECTION) {
+      const selections = Object.entries(
+        omitBy(results, (_, key) => key === 'participants')
+      ).reduce<Record<string, number>>(
+        (acc, [answerId, count]) => {
+          acc[answerId] = (acc[answerId] ?? 0) + parseInt(count)
+          return acc
+        },
+        { ...(instance.anonymousResults as ElementResultsSelection).selections }
+      )
+
+      anonymousResults = {
+        selections,
+        total: parseInt(results.participants),
+      } as ElementResultsSelection
     }
 
     instanceResults[instance.id] = {
@@ -320,6 +343,14 @@ export async function manipulateLiveQuiz(
     where: {
       id: { in: elements },
       ownerId: ctx.user.sub,
+    },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionSolutions: true,
     },
   })
 
@@ -966,9 +997,13 @@ export async function activateLiveQuizBlock(
       case ElementType.NUMERICAL: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          solutions: elementData.options.hasSampleSolution
-            ? JSON.stringify(elementData.options.solutionRanges)
-            : undefined,
+          solutions:
+            elementData.options.exactSolutions &&
+            elementData.options.exactSolutions.length > 0
+              ? JSON.stringify(elementData.options.exactSolutions)
+              : elementData.options.solutionRanges
+                ? JSON.stringify(elementData.options.solutionRanges)
+                : undefined,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -985,6 +1020,21 @@ export async function activateLiveQuizBlock(
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
+        })
+        break
+      }
+
+      case ElementType.SELECTION: {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: JSON.stringify(
+            elementData.options.answerCollectionSolutionIds
+          ),
+          numberOfInputs: elementData.options.numberOfInputs,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+          ...(instance.results as ElementResultsSelection).selections,
         })
         break
       }
@@ -1576,18 +1626,45 @@ export async function getLiveQuizSummary(
           elements: true,
         },
       },
+      activeBlock: {
+        include: {
+          elements: true,
+        },
+      },
     },
   })
 
   if (!liveQuiz) return null
 
-  const storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
+  // get responses for completed blocks
+  let storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
     acc_b += block.elements.reduce((acc_i, instance) => {
       acc_i += instance.results.total + instance.anonymousResults.total
       return acc_i
     }, 0)
     return acc_b
   }, 0)
+
+  // get results for active blocks
+  if (liveQuiz.activeBlock) {
+    const cachedResults = await getCachedBlockResults({
+      ctx,
+      activeBlock: liveQuiz.activeBlock,
+    })
+
+    if (cachedResults) {
+      const { instanceResults } = cachedResults
+      const cachedResponses = liveQuiz.activeBlock.elements.reduce(
+        (acc, instance) => {
+          acc += instanceResults[instance.id]?.anonymousResults.total ?? 0
+          return acc
+        },
+        0
+      )
+
+      storedResponses += cachedResponses
+    }
+  }
 
   return {
     numOfResponses: storedResponses,
@@ -1610,7 +1687,15 @@ export async function cancelLiveQuiz(
       activeBlock: true,
       blocks: {
         include: {
-          elements: { include: { element: true } },
+          elements: {
+            include: {
+              element: {
+                include: {
+                  answerCollection: { include: { entries: true } },
+                },
+              },
+            },
+          },
           activeInLiveQuiz: true,
         },
       },
@@ -1674,17 +1759,19 @@ export async function cancelLiveQuiz(
         },
       }),
 
-      ...instances.map((instance) =>
-        ctx.prisma.elementInstance.update({
+      ...instances.map((instance) => {
+        const initialResults = getInitialElementResults(instance.element)
+
+        return ctx.prisma.elementInstance.update({
           where: {
             id: instance.id,
           },
           data: {
-            results: getInitialElementResults(instance.element),
-            anonymousResults: getInitialElementResults(instance.element),
+            results: initialResults,
+            anonymousResults: initialResults,
           },
         })
-      ),
+      }),
     ])
 
     const keys = await ctx.redisExec.keys(`lq:${id}:*`)

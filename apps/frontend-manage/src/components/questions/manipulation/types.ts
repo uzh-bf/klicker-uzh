@@ -41,12 +41,14 @@ export interface ElementFormTypesNumerical extends SharedQuestionFormProps {
       min?: number | string | null
       max?: number | string | null
     } | null
+    solutionType?: 'range' | 'exact'
     solutionRanges?:
       | {
           min?: number | string | null
           max?: number | string | null
         }[]
       | null
+    exactSolutions?: (number | string)[] | null
   }
 }
 
@@ -59,6 +61,17 @@ export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
       maxLength?: number | string | null
     } | null
     solutions?: string[] | null
+  }
+}
+
+export interface ElementFormTypesSelection extends SharedQuestionFormProps {
+  type: ElementType.Selection
+  explanation?: string | null
+  options: {
+    hasSampleSolution: boolean
+    numberOfInputs: string
+    answerCollection: string
+    correctAnswers?: number[] | null
   }
 }
 
@@ -77,3 +90,4 @@ export type ElementFormTypes =
   | ElementFormTypesFreeText
   | ElementFormTypesFlashcard
   | ElementFormTypesContent
+  | ElementFormTypesSelection

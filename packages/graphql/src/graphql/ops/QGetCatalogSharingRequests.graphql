@@ -1,0 +1,10 @@
+query GetCatalogSharingRequests {
+  getCatalogSharingRequests {
+    permissionId
+    objectName
+    objectType
+    userId
+    userShortname
+    userEmail
+  }
+}

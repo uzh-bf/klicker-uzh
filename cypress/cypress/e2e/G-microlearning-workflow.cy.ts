@@ -76,6 +76,28 @@ describe('Different microlearning workflows', function () {
       title: this.data.questions.CT.title,
       content: this.data.questions.CT.content,
     })
+
+    // create answer collection
+    cy.get('[data-cy="resources"]').click()
+    cy.createAnswerCollection({
+      name: this.data.questions.SE.collection.name,
+      description: this.data.questions.SE.collection.description,
+      entries: this.data.questions.SE.collection.options,
+      access: messages.manage.resources.accessPRIVATE,
+      accessCy: 'private',
+    })
+
+    // create selection question
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: this.data.questions.SE.title,
+      content: this.data.questions.SE.content,
+      numberOfInputs: this.data.questions.SE.inputs,
+      collectionName: this.data.questions.SE.collection.name,
+      correctAnswers: this.data.questions.SE.collection.options.filter((_, i) =>
+        this.data.questions.SE.solutions.includes(i)
+      ),
+    })
   })
 
   // ! Part 1: Microlearning Creation
@@ -166,7 +188,6 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add displayname and description to stacks
-
     cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]')
       .click()
@@ -580,6 +601,7 @@ describe('Different microlearning workflows', function () {
             this.data.questions.KP.title,
             this.data.questions.NR.title,
             this.data.questions.FT.title,
+            this.data.questions.SE.title,
             this.data.questions.FC.title,
             this.data.questions.CT.title,
           ],
@@ -589,11 +611,13 @@ describe('Different microlearning workflows', function () {
   })
 
   // ! Part 2: Running Microlearning and Answer Workflows / Student Frontend
-  function answerMicroLearningPreview() {
+  function answerMicroLearningPreview(data) {
     cy.get('[data-cy="start-microlearning"]').click()
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer')
+    cy.get('[data-cy="free-text-input-2"]')
+      .click()
+      .type(data.questions.FT.answerPreview1)
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
 
@@ -609,7 +633,9 @@ describe('Different microlearning workflows', function () {
 
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-2"]').click().type('Free text answer 2')
+    cy.get('[data-cy="free-text-input-2"]')
+      .click()
+      .type(data.questions.FT.answerPreview2)
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="student-stack-continue"]').click()
   }
@@ -630,7 +656,7 @@ describe('Different microlearning workflows', function () {
         )
 
         // verify that the microlearning can be answered through the activity preview
-        answerMicroLearningPreview()
+        answerMicroLearningPreview(this.data)
       }
     )
   })
@@ -666,7 +692,7 @@ describe('Different microlearning workflows', function () {
         )
 
         // verify that the microlearning can be answered through the activity preview
-        answerMicroLearningPreview()
+        answerMicroLearningPreview(this.data)
       }
     )
   })
@@ -979,6 +1005,87 @@ describe('Different microlearning workflows', function () {
     )
   })
 
+  function enterValidCompleteInputs(data) {
+    // enter valid response for all questions to check correct input validation afterwards
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
+    cy.get('[data-cy="input-numerical-4"]')
+      .clear()
+      .type(data.questions.NR.answer)
+    cy.get('[data-cy="free-text-input-5"]').type(data.questions.FT.answer)
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[2]
+    )
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[0]
+    )
+    cy.get('[id="selection-6-field-2"]').click()
+    cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
+    cy.get('[id="selection-6-field-2"]').contains(
+      data.questions.SE.collection.options[1]
+    )
+    cy.get('[id="selection-6-field-3"]').click()
+    cy.get('[id="react-select-selection-6-field-3-option-0"]').click()
+    cy.get('[id="selection-6-field-3"]').contains(
+      data.questions.SE.collection.options[2]
+    )
+    cy.get('[data-cy="flashcard-front-7"]').click()
+    cy.get('[data-cy="flashcard-response-7-No"]').click()
+    cy.get('[data-cy="flashcard-response-7-Yes"]').click()
+    cy.get('[data-cy="read-content-element-8"]').click()
+  }
+
+  function verifyPersistentCompleteInputs(data) {
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+
+    cy.get('[data-cy="mc-2-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-5"]').should('be.disabled')
+
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+
+    cy.get('[data-cy="input-numerical-4"]')
+      .should('have.value', data.questions.NR.answer)
+      .should('be.disabled')
+
+    cy.get('[data-cy="free-text-input-5"]')
+      .should('have.value', data.questions.FT.answer)
+      .should('be.disabled')
+
+    cy.get('[id="selection-6-field-1"]')
+      .contains(data.questions.SE.collection.options[0])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-2"]')
+      .contains(data.questions.SE.collection.options[1])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-3"]')
+      .contains(data.questions.SE.collection.options[2])
+      .should('have.css', 'pointer-events', 'none')
+
+    cy.get('[data-cy="flashcard-response-7-No"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-7-Partially"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-7-Yes"]').should('be.disabled')
+  }
+
   it('Respond to all questions in the microlearning covering all element types', function () {
     cy.loginStudent()
 
@@ -988,19 +1095,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="start-microlearning"]').click()
 
     // enter valid response for all questions to check correct input validation afterwards
-    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
-    cy.get('[data-cy="sc-1-answer-option-2"]').click()
-    cy.get('[data-cy="mc-2-answer-option-2"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
-    cy.get('[data-cy="input-numerical-4"]').clear().type('0.55')
-    cy.get('[data-cy="free-text-input-5"]').type('Testinput')
-    cy.get('[data-cy="flashcard-front-6"]').click()
-    cy.get('[data-cy="flashcard-response-6-No"]').click()
-    cy.get('[data-cy="flashcard-response-6-Yes"]').click()
-    cy.get('[data-cy="read-content-element-7"]').click()
+    enterValidCompleteInputs(this.data)
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
 
     // test inputs to MC question (2)
@@ -1014,18 +1109,125 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-4"]').clear().type('10.45')
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="input-numerical-4"]').clear().type('100')
+    cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="input-numerical-4"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-4"]').type('100')
+    cy.get('[data-cy="input-numerical-4"]').type(this.data.questions.NR.answer)
 
     // test inputs to FT question (5)
     cy.get('[data-cy="free-text-input-5"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-5"]').type('correct')
+    cy.get('[data-cy="free-text-input-5"]').type(this.data.questions.FT.answer)
 
     // submit responses
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.wait(500)
+
+    // verify that the entered answers persist and inputs are disabled
+    verifyPersistentCompleteInputs(this.data)
+
+    // verify that the results persist across a reload
+    cy.reload()
+    verifyPersistentCompleteInputs(this.data)
+
+    // verify that the entered answers are correctly refetched from the backend after a reload and cookie reset
+    cy.clearAllLocalStorage()
+    cy.clearAllSessionStorage()
+    cy.reload()
+    cy.wait(1000)
+    verifyPersistentCompleteInputs(this.data)
+
+    // finish the microlearning
+    cy.get('[data-cy="student-stack-continue"]')
+      .contains(messages.shared.generic.finish)
+      .click()
+  })
+
+  function enterValidPartialInputs(data) {
+    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').click()
+    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
+    cy.get('[data-cy="input-numerical-4"]')
+      .clear()
+      .type(data.questions.NR.answer)
+    cy.get('[data-cy="free-text-input-5"]').type(data.questions.FT.answer)
+    cy.get('[id="selection-6-field-1"]').click()
+    cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
+    cy.get('[id="selection-6-field-1"]').contains(
+      data.questions.SE.collection.options[2]
+    )
+    cy.get('[data-cy="flashcard-front-7"]').click()
+    cy.get('[data-cy="flashcard-response-7-No"]').click()
+    cy.get('[data-cy="flashcard-response-7-Yes"]').click()
+    cy.get('[data-cy="read-content-element-8"]').click()
+  }
+
+  function verifyPersistentPartialInputs(data) {
+    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+
+    cy.get('[data-cy="mc-2-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="mc-2-answer-option-5"]').should('be.disabled')
+
+    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+
+    cy.get('[data-cy="input-numerical-4"]')
+      .should('have.value', data.questions.NR.answer)
+      .should('be.disabled')
+
+    cy.get('[data-cy="free-text-input-5"]')
+      .should('have.value', data.questions.FT.answer)
+      .should('be.disabled')
+
+    cy.get('[id="selection-6-field-1"]')
+      .contains(data.questions.SE.collection.options[2])
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-2"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+    cy.get('[id="selection-6-field-3"]')
+      .contains(messages.shared.questions.seSelectOption)
+      .should('have.css', 'pointer-events', 'none')
+
+    cy.get('[data-cy="flashcard-response-7-No"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-7-Partially"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-7-Yes"]').should('be.disabled')
+  }
+
+  it('Answer to the microlearning with partial responses (where supported)', function () {
+    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME2') })
+
+    cy.get(
+      `[data-cy="microlearning-${this.data.completed.displayName}"]`
+    ).click()
+    cy.get('[data-cy="start-microlearning"]').click()
+
+    // enter responses for all questions (partial responses where supported)
+    enterValidPartialInputs(this.data)
+
+    // submit responses
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.wait(500)
+
+    // verify that the entered answers persist and inputs are disabled
+    verifyPersistentPartialInputs(this.data)
+
+    //
     cy.get('[data-cy="student-stack-continue"]')
       .contains(messages.shared.generic.finish)
       .click() // finish quiz
@@ -1154,6 +1356,7 @@ describe('Different microlearning workflows', function () {
       this.data.questions.KP.title,
       this.data.questions.NR.title,
       this.data.questions.FT.title,
+      this.data.questions.SE.title,
       this.data.questions.FC.title,
       this.data.questions.CT.title,
     ]
@@ -1182,5 +1385,27 @@ describe('Different microlearning workflows', function () {
     cy.get(
       `[data-cy="practice-quiz-actions-${this.data.conversion.pqName}"]`
     ).should('not.exist')
+  })
+
+  it('Cleanup: Delete the created answer collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.deleteAnswerCollection({
+      collectionName: this.data.questions.SE.collection.name,
+    })
+  })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
+    cy.task('verifyDeletionAnswerCollections').then((result) => {
+      // check if the verification was successful
+      if (result === null || result === false) {
+        throw new Error(
+          'The database contains answer collections beyond the seeded ones.'
+        )
+      }
+
+      // dummy action
+      cy.visit(Cypress.env('URL_MANAGE'))
+    })
   })
 })

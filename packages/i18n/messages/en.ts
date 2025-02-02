@@ -11,6 +11,11 @@ export default {
       numInvalidValue:
         'The entered value is not a number or is not in the specified range.',
       ftPlaceholder: 'Your answer...',
+      seSelectOption: 'Select an answer option...',
+      seSelectNCorrectOptions:
+        'Please choose <b>{number} correct answer options</b> from the provided selection.',
+      seCorrectAnswerN: 'Answer {number}',
+      noMatchingOptionFound: 'No matching option found.',
     },
     DRAFT: {
       statusLabel: 'Draft',
@@ -59,6 +64,12 @@ export default {
       short: 'FC',
       typeLabel: 'Flashcard (FC)',
     },
+    SELECTION: {
+      short: 'SE',
+      typeLabel: 'Selection (SE)',
+      text: 'Please select the correct answer from the list.',
+      richtext: 'Please select the <b>correct answer</b> from the list.',
+    },
     login: {
       installButton: 'Install Now',
     },
@@ -92,6 +103,7 @@ export default {
       cancel: 'Cancel',
       confirm: 'Confirm',
       close: 'Close',
+      approve: 'Approve',
       sendAnswer: 'Send answer',
       begin: 'Begin',
       finish: 'Finish',
@@ -233,7 +245,15 @@ export default {
       activity: 'Activity',
       featurePreview: 'Feature Preview',
       new: 'New',
+      search: 'Search',
+      accept: 'Accept',
+      decline: 'Decline',
+      user: 'User',
       correctness: 'Correctness',
+      answerCollection: 'Answer Collection',
+      users: 'Users',
+      unknown: 'Unknown',
+      entries: 'entries',
     },
     contentInput: {
       boldStyle:
@@ -375,7 +395,7 @@ KlickerUZH offers you as a course participant a significant amount of functional
 
 #### Polls and Live Quizzes
 
-![Live Quiz _on the left_](/img/live_quiz/lq_student_view.png)
+![Live Quiz _on the left_](/img/06_live_quiz.png)
 
 During the lecture, you have the possibility to answer the questions asked by the lecturers on [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) or in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
 
@@ -383,7 +403,7 @@ No login is required to answer the questions. With a login you can participate i
 
 #### Live Q&A and Real-time Feedback
 
-![Live Q&A and Real-time Feedback _on the right_](/img/live_quiz/lq_student_view.png)
+![Live Q&A and Real-time Feedback _on the right_](/img/06_live_quiz.png)
 
 Do you have a question or would you like to give direct feedback on the lecture? With the Live Q&A you can ask the lecturers or assistants a question directly during the lecture - even if you are participating in the lecture from home. In addition, with the KlickerUZH you have the possibility to give the lecturers direct feedback on the speed and difficulty of the lecture during the lecture.
 
@@ -391,7 +411,7 @@ Participation is possible at [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortn
 
 #### Practice Quizzes, Microlearning, and Flashcards
 
-![Practice Quiz in OLAT](/img/practice_quiz/pq_olat_view.png)
+![Practice Quiz in OLAT](/img/07_practice_quiz.png)
 
 Practice quizzes, and microlearning and flashcards allow you to repeat the course content outside of the lecture time and receive direct feedback on your solution. Practice quizzes and flashcards are always and arbitrarily often available, microlearning on the other hand only once and in a limited time frame (e.g., once per week). All elements are directly accessible via the KlickerUZH app, or via the link provided by your lecturers (also anonymously). Flash cards are still being implemented and will be available after around 5 weeks of the fall term 2023.
 
@@ -405,7 +425,7 @@ Within a group, you can compare your points with those of your fellow students; 
 
 #### Challenge
 
-![Gamification](/img/leaderboard/course_leaderboard.png)
+![Gamification](/img/08_gamification.png)
 
 All activities in the KlickerUZH are, if activated by the lecturers, part of a gamified challenge. As part of the challenge, you collect points for the course leaderboard (if you participate while logged in), experience points, and achievements.
 
@@ -428,7 +448,7 @@ Depending on the technical set up of your course, you can proceed as follows:
 
 Open the KlickerUZH module in the OLAT course of your lecture. To manage your KlickerUZH account or create a new one, click on "Manage account" within the KlickerUZH module.
 
-![](/img/account/create_account.png)
+![](/img/01_create_account.png)
 
 If you already possess a KlickerUZH account, simply visit any of the KlickerUZH activities in the LMS course and you should be logged in automatically. In case you are not logged in automatically, you can log in using the button on the top right.
 
@@ -438,7 +458,7 @@ If no KlickerUZH account exists for you yet, you will be greeted by a welcome pa
 
 If you already have a KlickerUZH account (e.g., from other courses), open the KlickerUZH app and click "Join course" below the course overview. Enter the 9-digit PIN you received from your lecturers. You are now part of the course and can participate in all activities.
 
-![](/img/account/join_course.png)
+![](/img/05_join_course.png)
 
 If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g., _{pwa_url}/course/XYZ/join?pin=111111111_). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
 
@@ -600,6 +620,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not part of the leaderboards in this course, your points will not be saved. To collect points in the future, join the leaderboard through the course overview.',
       missingParticipation:
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
+      correctAnswerOptions: 'Correct answer options',
+      topNAnswers: 'Top {number} answers',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',
@@ -783,6 +805,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       analytics: 'Analytics',
       liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
+      resources: 'Resources',
+      catalog: 'Catalog',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
@@ -794,6 +818,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sortBy: 'Sort by...',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
+      questionPreview: 'Question Preview: {question}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -953,13 +978,20 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CREATETitle: 'Create question',
       EDITTitle: 'Edit question',
       DUPLICATETitle: 'Duplicate question',
-      questionType: 'Question type',
-      questionStatus: 'Status',
+      elementType: 'Element type',
       selectQuestionType: 'Select question type',
       selectQuestionStatus: 'Select status',
-      questionTitle: 'Question title',
+      questionStatus: 'Status',
+      elementTitle: 'Element title',
+      recoverData: 'Data Recovery',
+      temporaryStorageCreation:
+        'The element creation process was aborted without saving. Please choose if you want to recover the last automatic data backup or discard this information.',
+      temporaryStorageEditing:
+        'The element editing process was aborted without saving. Please choose if you want to recover the last automatic data backup or discard this information.',
+      discard: 'Discard',
+      loadData: 'Load data',
       titleTooltip:
-        'Enter a short, summary title for the question. This is only used for better overview.',
+        'Enter a short, summary title for the element. This is only used for better overview.',
       tagsTooltip:
         'Add tags to your question to improve organization and reusability (similar to previous folders).',
       tagFormatting:
@@ -981,7 +1013,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Enter optional settings for the open question here. Note that the answer to open questions is graded without checking for upper and lower case.',
       NUMERICALOptionsTooltip:
         'Enter optional settings for the numerical question here. Please note that the range of numbers for numerical questions is limited to the interval [-1e30,1e30] for technical reasons. Should you require to use larger numbers, please use a free text question instead.',
-
+      SELECTIONOptionsTooltip:
+        'Please select the answer collection from which the students should select the correct answers.',
+      SEAnswerCollectionRequired:
+        'To create selection questions, you need access to at least one answer collection! You can either create one yourself under the <link>"Resources"</link> tab or import an existing collection from other users there.',
+      answerCollection: 'Answer collection',
+      selectCollection: 'Select collection...',
+      numberOfInputs: 'Number of inputs',
+      correctAnswerOptions: 'Correct answer options',
+      correctAnswerOptionsTooltip:
+        'Please select the correct answer options from the list of answer options. The number of correct answer options must correspond to the number of input fields.',
+      selectAnswerOptions: 'Select answer options...',
+      noMatchingOptionFound: 'No matching option found',
       LISTDisplay: 'Display as list',
       GRIDDisplay: 'Display as grid',
       feedbackPlaceholder: 'Enter feedback…',
@@ -990,7 +1033,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       solutionRanges: 'Solution ranges',
       solutionRangesTooltip:
         'Enter the intervals that should be considered correct here.',
+      exactSolutions: 'Exact solutions',
+      exactSolutionsTooltip:
+        'Enter the exact solutions that should be considered correct here.',
+      solutionTypeNumerical: 'Solution Type',
+      solutionTypeNumericalTooltip:
+        'Choose between the option of solution ranges and exact solutions for this question',
       addSolutionRange: 'Add new solution range',
+      addExactSolution: 'Add new exact solution',
       maximumLength: 'Maximum length',
       answerLength: 'Answer length',
       possibleSolutionN: 'Possible solution {number}',
@@ -1008,6 +1058,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       updateInstances: 'Update question instances in KlickerUZH elements',
       updateInstancesExplanation:
         'Use this setting to update the question in all planned quizzes, practice quizzes and microlearnings. The content of questions in running and completed elements will not be updated. Changed multipliers will also be applied to the created instances.',
+      questionSavedSuccessfully: 'The question has been saved successfully.',
+      questionSavedFailed:
+        'An error occurred while saving the question. Please check the error messages in the form and review the entries.',
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',
@@ -1112,7 +1165,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
-        'Live quizzes can only contain single choice, multiple choice, kprim, numerical and free text questions.',
+        'Live quizzes can only contain single choice, multiple choice, kprim, numerical, free-text, and selection questions.',
       liveQuizTimeRestriction: 'Please enter a valid time restriction.',
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
@@ -1257,7 +1310,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityMissingCourse:
         'Group activities must be assigned to a course.',
       groupActivityTypes:
-        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical, and free-text questions.',
+        'A group activity can only contain content elements, single choice, multiple choice, kprim, numerical, free-text, and selection questions.',
       groupActivityCreated:
         'Your group activity <b>{name}</b> has been created successfully.',
       groupActivityEdited:
@@ -1333,13 +1386,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       FTMaxLength:
         'The maximum length of a free text question response has to be at least 1.',
       solutionRequired:
-        'Please enter at least one solution of deactivate the sample solution.',
+        'Please enter at least one solution or deactivate the sample solution.',
       NRMinLessThanMaxSol:
         'The minimum value of a solution interval must be less than its maximum value.',
       NRMinLessThanMax:
         'The minimum value must be less than the maximum value.',
+      NROneValueRequired:
+        'For solution ranges at least one boundary value must be entered.',
       NRPrecision: 'The number of decimal places must be at least 0.',
+      chooseSolutionType:
+        'Please choose a solution type for your numerical question or deactivate the sample solution.',
       solutionRangeRequired: 'Please enter at least one valid solution range.',
+      exactSolutionRequired: 'Please enter at least one exact solution.',
       NumberQuestionsRequired: 'At least one answer option must be given',
       NumberQuestionsRequiredKPRIM:
         'There must be exactly four answer options for Kprim questions',
@@ -1349,6 +1407,19 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Numerical quantities cannot be smaller than -1e30 for technical reasons.',
       NROverflow:
         'Numerical quantities cannot be larger than 1e30 for technical reasons.',
+      NRSolutionRangesWithinRestrictions:
+        'The solution ranges must lie within the specified restrictions.',
+      NRExactSolutionsWithinRestrictions:
+        'The exact solutions must lie within the specified restrictions.',
+      SEnumberOfInputsRequired: 'Please specify the number of input fields.',
+      SEnumberOfInputsMin: 'The number of inputs must be at least 1.',
+      SEnumberOfInputsMax:
+        'The number of input fields must be at most the number of options in the answer collection - 1.',
+      SEanswerCollectionRequired: 'Please select an answer collection.',
+      SEcorrectAnswersRequired:
+        'Please select the correct answer options from your collection.',
+      SEcorrectAnswersMatchInputs:
+        'The number of correct answers must be larger or equal to the number of input fields.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',
@@ -1479,8 +1550,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noChartsAvailable: 'There exists no chart for this question type yet',
       count: 'Count',
       value: 'Value',
+      selection: 'Selection',
       histogramRange: 'Range',
       histogramBins: 'Bins',
+      correctLabel: 'Correct',
+      correctLabelValue: 'Correct: {value}',
       resetSorting: 'Reset sorting',
       noFeedbacksMatchFilter:
         'No feedbacks match the current filter settings...',
@@ -1804,6 +1878,150 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
     },
+    resources: {
+      mediaLibrary: 'Media Library',
+      mediaLibraryAvailableSoon:
+        'Your media library will be available here soon, allowing you to access all your uploaded resources.',
+      answerCollections: 'Answer Collections',
+      answerCollectionsDescription:
+        'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. Additionally, you can import public answer collections from other users or request access to them.',
+      newAnswerCollection: 'New Answer Collection',
+      addSharedAnswerCollection: 'Add Shared Answer Collection',
+      answerOptionUsedAsSolution:
+        'Answer options marked with the warning symbol are already used as correct solutions in a question by you or other users (in case of a shared collection). Please keep this in mind when editing the answer. The option cannot be deleted.',
+      name: 'Name',
+      nameTooltip:
+        'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',
+      access: 'Access',
+      accessTooltip:
+        'Choose whether this answer collection should only be visible to you or can also be imported by other users. With "restricted" access, other users can only request access to your answer collection.',
+      accessPUBLIC: 'Public',
+      accessRESTRICTED: 'Restricted',
+      accessPRIVATE: 'Private',
+      catalogCollection: 'Catalog Collection',
+      catalogCollectionTooltip:
+        'Here you can select a catalog collection in which your answer collection should be visible. Only users with access to the corresponding catalog collection can import your answer collection there or request access to it. If you do not select a catalog collection, the collection is visible to all users.',
+      noCatalogCollectionSelected: 'No catalog collection selected',
+      descriptionTooltip:
+        'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
+      descriptionPlaceholder:
+        'Describe the content and purpose of the answer collection...',
+      answerEntry: 'Answer Entry {index}',
+      addValue: 'Add Value',
+      nameRequired: 'Please enter a name for the answer collection.',
+      descriptionRequired:
+        'Please enter a description for the answer collection.',
+      valueRequired: 'Please enter a value for the answer entry.',
+      minTwoEntriesRequired:
+        'At least two answer entries are required to create an answer collection.',
+      uniqueValuesRequired:
+        'All options in an answer collection need to have a unique value. Please make sure that no two answers options coincide.',
+      infoAccessPUBLIC:
+        'Public Answer Collections can be viewed by all users and imported via the catalog. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
+      infoAccessPRIVATE:
+        'Private answer collections are only visible to you and cannot be viewed by other users or imported via the catalog. You can grant access to individual users or user groups after creating the collection.',
+      infoAccessRESTRICTED:
+        'Restricted answer collections can be requested by other users in the catalog and imported after your approval. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
+      collectionCreationSuccess:
+        'The answer collection was created successfully.',
+      collectionCreationError:
+        'An error occurred while creating the answer collection. Please make sure that the name of the collection is unique and try again.',
+      availableAnswerCollections: 'Available Answer Collections',
+      noAnswerCollections:
+        'No answer collections have been created or imported form the catalog yet.',
+      numOfAnswers: '{number} Answers',
+      byOwner: 'by {owner}',
+      clickToViewEdit: 'Click to view / edit',
+      clickToCancelRequest: 'Click to cancel request',
+      answerCollection: 'Answer Collection: {name}',
+      saveChanges: 'Save changes',
+      infoAccessChangeLimited:
+        'This answer collection is already used by other users. Therefore, you can only relax the access rules further or no longer restrict them after a complete publication.',
+      successfulCollectionEdit:
+        'The changes to the answer collection have been saved successfully.',
+      answerOptions: 'Answer Options',
+      addAnswerOption: 'Add Answer Option',
+      requestAccessMessage:
+        'Here you can request access to the answer collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared answer collection in your questions.',
+      importCollectionMessage:
+        'Here you can import a copy of the answer collection "<b>{name}</b>" (by {owner}) to your own account. After the import is completed, you can directly use the imported answer collection or modify it as needed. Changes to the original answer collection will not affect your imported copy.',
+      showAnswers: 'Show Answers',
+      importCollection: 'Import Answer Collection',
+      requestAccess: 'Request Access',
+      importError:
+        'An error occurred while importing the answer collection. Please try again or contact the support.',
+      requestError:
+        'An error occurred while requesting the answer collection. Please try again or contact the support.',
+      viewCollection: 'View Collection',
+      requestedAccess: 'Requested Access',
+      deleteCollection: 'Delete collection',
+      deletionDisabledInUse:
+        'This collection is used by at least one of your questions. Therefore, you cannot delete the collection. To delete the collection, please first remove it from all questions that use it.',
+      removeCollection: 'Remove collection',
+      removalDisabledInUse:
+        'This collection is used by at least one of your questions. Therefore, you cannot remove the collection.',
+      deleteAnswerCollection: 'Delete Answer Collection',
+      confirmCollectionDeletion:
+        'Are you sure you want to delete the answer collection "{name}" from your profile? For shared answer collections, access for other users remains as long as they use the collection.',
+      confirmDeletion: 'Confirm deletion',
+      deletionSuccessful: 'The answer collection was successfully deleted.',
+      deletionFailed:
+        'An error occurred while deleting the answer collection. Please try again or contact the support.',
+      removeAnswerCollection: 'Remove Answer Collection',
+      confirmCollectionRemoval:
+        'Are you sure you want to remove the answer collection "{name}" from your profile?',
+      confirmRemoval: 'Confirm removal',
+      removalSuccessful: 'The answer collection was successfully removed.',
+      removalFailed:
+        'An error occurred while removing the answer collection. Please try again or contact the support.',
+      cancelSharingRequest: 'Cancel Sharing Request',
+      confirmCancelRequest:
+        'Please confirm that you want to cancel the sharing request for the answer collection "{name}". You can request access to the answer collection again later.',
+      confirmCancellation: 'Confirm cancellation',
+      cancellationSuccessful: 'The access request was successfully withdrawn.',
+      cancellationFailed:
+        'An error occurred while withdrawing the access request. Please try again or contact the support.',
+    },
+    catalog: {
+      userGroups: 'User Groups',
+      userGroupsComingSoon:
+        'Here you will soon see the user groups you manage, as well as user groups to which you have been assigned.',
+      accessTypes: 'Access Types',
+      objectType: 'Object Type',
+      all: 'All',
+      sharingRequests: 'Sharing Requests',
+      unresolved: 'Unresolved',
+      objectTypeANSWER_COLLECTION: 'Answer Collection',
+      noPublicRestrictedCollections:
+        'No public or restricted objects were found for the entered search criteria and filters. Objects for which access has already been requested or confirmed cannot be selected anymore.',
+      requestAccess: 'Request Access',
+      importObject: 'Import Object',
+      accessRequested: 'Access requested',
+      accessGranted: 'Access granted',
+      answerCollectionRequestSuccess:
+        'The access to the selected answer collection was successfully requested.',
+      importPublicResource: 'Import Public Resource',
+      answerCollectionImportSuccess:
+        'A copy of the answer collection was successfully imported into your account.',
+      requestPublicResource:
+        "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
+      sharingRequestsExplanation:
+        'Please review the following access requests for your shared objects. Accepting a sharing request will grant the requesting user access to the corresponding object without creating a copy. Any modifications other users with write access to your objects make are directly visible to all users of the object.',
+      approveSharingRequest: 'Approve sharing request',
+      specifyAccessLevel:
+        'Please select an access level for sharing the object {objectName} (type: {objectType}) with the user {userShortname}. Please note that when granting write access, any changes other users make to your object are directly visible to all users with access to it. The official documentation of the sharing features provides further information.',
+      accessLevel: 'Access Level',
+      accessLevelREAD: 'Read Access',
+      accessLevelWRITE: 'Write Access',
+      approvalSuccessful: 'The sharing request was successfully approved.',
+      approvalFailed:
+        'An error occurred while approving the sharing request. Please try again or contact the support.',
+      declineSuccessful: 'The sharing request was successfully declined.',
+      declineFailed:
+        'An error occurred while declining the sharing request. Please try again or contact the support.',
+      noCatalogCollectionSelectedWarning:
+        'If you do not assign your shared object (with an access status other than "Private") to a specific catalog collection, all other users can find it in the catalog and import it / request access to it.',
+    },
     groupActivity: {
       activityMissingOrNotCompleted:
         'The group activity you are looking for does not exist or has not yet been completed. Please note that group activities can only be evaluated after their official end date.',
@@ -1853,6 +2071,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     analytics: {
       selectAnalyticsDashboard: 'Please select an analytics dashboard',
+      activity: 'Activity',
+      performance: 'Performance & Progress',
+      quizzes: 'Quizzes',
+      olderCourses: 'Older courses...',
       activityDashboard: 'Activity Dashboard',
       performanceDashboard: 'Performance and Progress Dashboard',
       quizDashboard: 'Quiz Dashboard',

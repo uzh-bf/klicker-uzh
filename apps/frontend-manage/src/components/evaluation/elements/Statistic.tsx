@@ -21,7 +21,7 @@ function Statistic({
   size,
 }: StatisticProps): React.ReactElement {
   return (
-    <div className="mb-2 flex justify-between border-b-2">
+    <div className="mb-1 flex justify-between border-b-2">
       <span
         className={twMerge(
           'flex flex-row items-center',

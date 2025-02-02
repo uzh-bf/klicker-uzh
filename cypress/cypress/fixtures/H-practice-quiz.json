@@ -49,13 +49,32 @@
           { "min": "0", "max": "25" },
           { "min": "75", "max": "100" }
         ]
-      }
+      },
+      "answer": "0.55"
     },
     "FT": {
       "title": "FT l3k7g4d9",
       "content": "FT Question PQ",
       "options": {
         "maxLength": "100"
+      },
+      "answer": "Testinput"
+    },
+    "SE": {
+      "title": "SE 1f6bf5c9-13a0-4cbc-abb7-bb77fe7381f1",
+      "content": "SE Question PQ",
+      "inputs": 3,
+      "solutions": [0, 1, 2, 4],
+      "collection": {
+        "name": "SE Collection PQ",
+        "description": "SE Collection PQ Description",
+        "options": [
+          "SE PQ Option 1",
+          "SE PQ Option 2",
+          "SE PQ Option 3",
+          "SE PQ Option 4",
+          "SE PQ Option 5"
+        ]
       }
     },
     "FC": {

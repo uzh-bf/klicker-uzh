@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client'
 import { faPieChart } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CheckFeaturePreviewAvailableDocument,
+  CheckPublicPreviewAvailableDocument,
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
@@ -43,8 +43,7 @@ function EvaluationNavigation({
   feedbacksAvailable,
 }: EvaluationNavigationProps) {
   const t = useTranslations()
-
-  const { data, loading } = useQuery(CheckFeaturePreviewAvailableDocument)
+  const { data, loading } = useQuery(CheckPublicPreviewAvailableDocument)
 
   // automatically switch the active stack based on the active instance
   useStackInstanceUpdates({
@@ -75,7 +74,7 @@ function EvaluationNavigation({
       )}
       <div className="flex flex-row items-center gap-4">
         {!loading &&
-        data?.checkFeaturePreviewAvailable &&
+        data?.checkPublicPreviewAvailable &&
         type === 'Asynchronous' ? (
           <Button
             className={{ root: 'flex h-8 flex-row gap-2' }}

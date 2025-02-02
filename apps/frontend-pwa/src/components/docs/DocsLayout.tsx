@@ -4,7 +4,6 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Navigation } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { twMerge } from 'tailwind-merge'
 import Layout from '../Layout'
 
 interface BasicCourseData {
@@ -41,16 +40,6 @@ function DocsLayout({
     return <div>{t('shared.generic.systemError')}</div>
   }
 
-  const menuClassName = (active: boolean) => {
-    return {
-      label: twMerge(
-        'text-sm bg-left-bottom bg-gradient-to-r from-white to-white bg-[length:0%_2px] bg-no-repeat group-hover:bg-[length:100%_2px] transition-all duration-500 ease-out',
-        active && 'text-red underline underline-offset-[0.25rem] decoration-2'
-      ),
-      root: 'group text-white hover:bg-inherit transition-all duration-300 ease-in-out',
-    }
-  }
-
   return (
     <Layout
       course={data.basicCourseInformation}
@@ -58,57 +47,49 @@ function DocsLayout({
     >
       <div className="mx-auto w-full max-w-4xl">
         <Navigation
-          style={{
-            root: {
-              backgroundColor: `${data.basicCourseInformation.color}`,
+          className={{ root: 'w-full !rounded-b-none bg-slate-200' }}
+          items={[
+            {
+              type: 'button',
+              key: 'course-information',
+              label: t('pwa.courses.courseInformation'),
+              onClick: () =>
+                router.push(`/course/${data.basicCourseInformation!.id}/docs`),
+              active: router.pathname === '/course/[courseId]/docs',
             },
-          }}
-          className={{ root: `w-full !rounded-b-none` }}
-        >
-          <Navigation.ButtonItem
-            label={t('pwa.courses.courseInformation')}
-            className={menuClassName(
-              router.pathname === '/course/[courseId]/docs'
-            )}
-            onClick={() =>
-              router.push(`/course/${data.basicCourseInformation!.id}/docs`)
-            }
-          />
-          <Navigation.ButtonItem
-            label={t('pwa.studentDocs.featuresTitle')}
-            className={menuClassName(
-              router.pathname === '/course/[courseId]/docs/features'
-            )}
-            onClick={() =>
-              router.push(
-                `/course/${data.basicCourseInformation!.id}/docs/features`
-              )
-            }
-          />
-          <Navigation.ButtonItem
-            label={t('pwa.studentDocs.firstLoginTitle')}
-            className={menuClassName(
-              router.pathname === '/course/[courseId]/docs/login'
-            )}
-            onClick={() =>
-              router.push(
-                `/course/${data.basicCourseInformation!.id}/docs/login`
-              )
-            }
-          />
-          <Navigation.ButtonItem
-            label={t('pwa.studentDocs.appSetupTitle')}
-            className={menuClassName(
-              router.pathname === '/course/[courseId]/docs/appSetup'
-            )}
-            onClick={() =>
-              router.push(
-                `/course/${data.basicCourseInformation!.id}/docs/appSetup`
-              )
-            }
-          />
-        </Navigation>
-        <div className="prose prose-img:m-0 max-w-none rounded-b border p-4">
+            {
+              type: 'button',
+              key: 'features-overview',
+              label: t('pwa.studentDocs.featuresTitle'),
+              onClick: () =>
+                router.push(
+                  `/course/${data.basicCourseInformation!.id}/docs/features`
+                ),
+              active: router.pathname === '/course/[courseId]/docs/features',
+            },
+            {
+              type: 'button',
+              key: 'first-login-account',
+              label: t('pwa.studentDocs.firstLoginTitle'),
+              onClick: () =>
+                router.push(
+                  `/course/${data.basicCourseInformation!.id}/docs/login`
+                ),
+              active: router.pathname === '/course/[courseId]/docs/login',
+            },
+            {
+              type: 'button',
+              key: 'app-setup',
+              label: t('pwa.studentDocs.appSetupTitle'),
+              onClick: () =>
+                router.push(
+                  `/course/${data.basicCourseInformation!.id}/docs/appSetup`
+                ),
+              active: router.pathname === '/course/[courseId]/docs/appSetup',
+            },
+          ]}
+        />
+        <div className="prose prose-img:m-0 max-w-none rounded-b border border-slate-200 p-4">
           {typeof children === 'function'
             ? children(data.basicCourseInformation!)
             : children}

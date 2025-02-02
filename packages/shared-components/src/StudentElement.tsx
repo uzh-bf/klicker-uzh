@@ -11,6 +11,7 @@ import ContentElement from './ContentElement'
 import Flashcard from './Flashcard'
 import FreeTextQuestion from './FreeTextQuestion'
 import NumericalQuestion from './NumericalQuestion'
+import SelectionQuestion from './SelectionQuestion'
 
 export type ElementChoicesType =
   | ElementType.Sc
@@ -48,6 +49,12 @@ export type InstanceStackStudentResponseType =
       valid?: boolean
       evaluation?: InstanceEvaluation
     }
+  | {
+      type: ElementType.Selection
+      response?: Record<number, number>
+      valid?: boolean
+      evaluation?: InstanceEvaluation
+    }
 
 export type StackStudentResponseType = Record<
   number,
@@ -59,6 +66,7 @@ interface StudentElementBaseProps {
   elementIx: number
   hideReadButton?: boolean
   disabledInput?: boolean
+  preview?: boolean
 }
 
 interface StudentElementStackProps extends StudentElementBaseProps {
@@ -89,6 +97,7 @@ function StudentElement({
   setSingleStudentResponse,
   hideReadButton = false,
   disabledInput = false,
+  preview = false,
 }: StudentElementStackProps | StudentElementSingleProps) {
   const evaluation = stackStorage?.[element.id]?.evaluation
 
@@ -271,6 +280,57 @@ function StudentElement({
         }
         elementIx={elementIx}
         disabled={disabledInput}
+      />
+    )
+  } else if (element.elementData.__typename === 'SelectionElementData') {
+    return (
+      <SelectionQuestion
+        key={element.id}
+        content={element.elementData.content}
+        options={element.elementData.options}
+        response={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.response as Record<number, number>)
+            : (singleStudentResponse.response as Record<number, number>)
+        }
+        valid={
+          typeof studentResponse !== 'undefined'
+            ? (studentResponse[element.id]?.valid as boolean)
+            : (singleStudentResponse.valid as boolean)
+        }
+        setResponse={(newValue, valid) => {
+          typeof setStudentResponse !== 'undefined'
+            ? setStudentResponse((response) => {
+                return {
+                  ...response,
+                  [element.id]: {
+                    ...response[element.id],
+                    type: ElementType.Selection,
+                    response: newValue,
+                    valid: valid,
+                  },
+                }
+              })
+            : setSingleStudentResponse((response) => {
+                return {
+                  ...response,
+                  type: ElementType.Selection,
+                  response: newValue,
+                  valid: valid,
+                }
+              })
+        }}
+        existingResponse={
+          stackStorage?.[element.id]?.response as Record<number, number>
+        }
+        evaluation={
+          evaluation && evaluation.__typename === 'SelectionInstanceEvaluation'
+            ? evaluation
+            : undefined
+        }
+        elementIx={elementIx}
+        disabled={disabledInput}
+        preview={preview}
       />
     )
   } else if (element.elementData.__typename === 'ContentElementData') {

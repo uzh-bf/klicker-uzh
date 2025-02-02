@@ -90,6 +90,7 @@ function NumericalQuestion({
               options={{
                 ...options,
                 solutionRanges: evaluation.solutionRanges,
+                exactSolutions: evaluation.exactSolutions,
               }}
               evaluation={evaluation}
               reference={existingResponse}

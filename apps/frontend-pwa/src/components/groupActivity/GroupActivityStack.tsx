@@ -6,6 +6,7 @@ import {
   GroupActivityDetailsDocument,
   GroupActivityResults,
   ResponseCorrectnessType,
+  SelectionElementData,
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
@@ -13,6 +14,7 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
+import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -122,6 +124,30 @@ function GroupActivityStack({
               valid: true,
             },
           }
+        } else if (decision.type === ElementType.Selection) {
+          const instance = stack.elements?.find(
+            (element) => element.id === decision.instanceId
+          )
+          const response = getEmptySelectionResponse({
+            numberOfInputs: instance
+              ? (instance.elementData as SelectionElementData).options
+                  .numberOfInputs
+              : 1,
+          })
+          decision.selectionResponse
+            ? decision.selectionResponse.forEach((answerId, ix) => {
+                response[ix] = answerId
+              })
+            : undefined
+
+          return {
+            ...acc,
+            [decision.instanceId]: {
+              type: decision.type,
+              response,
+              valid: true,
+            },
+          }
         } else if (decision.type === ElementType.Content) {
           return {
             ...acc,
@@ -139,11 +165,11 @@ function GroupActivityStack({
     )
 
     setStudentResponse((prev) => loadedResponses || prev)
-  }, [decisions])
+  }, [decisions, stack.elements])
 
   return (
     <>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-12 md:gap-8">
         {stack.elements &&
           stack.elements.length > 0 &&
           stack.elements.map((element, elementIx) => {
@@ -271,6 +297,17 @@ function GroupActivityStack({
                         instanceId: parseInt(instanceId),
                         type: ElementType.Content,
                         contentReponse: value.response,
+                      }
+                    } else if (value.type === ElementType.Selection) {
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: ElementType.Selection,
+                        selectionResponse: Object.values(
+                          value.response!
+                        ).filter(
+                          (entry) =>
+                            typeof entry !== 'undefined' && entry !== -1
+                        ),
                       }
                     } else {
                       return {

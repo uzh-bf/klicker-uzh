@@ -83,3 +83,21 @@ export function validateFreeTextResponse({
 
   return true
 }
+
+export function validateSelectionResponse({
+  response,
+}: {
+  response?: Record<number, number>
+}) {
+  // ensure that at least one option is selected and that selected answer options are unique
+  if (
+    !response ||
+    Object.values(response).every((value) => value === -1) ||
+    new Set(Object.values(response).filter((r) => r !== -1)).size !==
+      Object.values(response).filter((r) => r !== -1).length
+  ) {
+    return false
+  }
+
+  return true
+}

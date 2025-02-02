@@ -36,12 +36,14 @@ function ElementTableChart({
     ElementType.Kprim,
     ElementType.Numerical,
     ElementType.FreeText,
+    ElementType.Selection,
   ]
 
   const columns = useEvaluationTableColumns({
     showSolution,
     textSize,
     numericValues: instance.type === ElementType.Numerical,
+    selection: instance.type === ElementType.Selection,
   })
   const tableData: EvaluationTableRowType[] = useEvaluationTableData({
     instance,

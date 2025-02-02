@@ -11,6 +11,7 @@ import Question from './Question'
 interface QuestionListProps {
   setSelectedQuestions: (id: number, data: Element) => void
   selectedQuestions: Record<number, Element>
+  triggerSuccessToast: () => void
   questions?: Element[]
   tagfilter?: string[]
   handleTagClick: (tagName: string) => void
@@ -20,6 +21,7 @@ interface QuestionListProps {
 function QuestionList({
   setSelectedQuestions,
   selectedQuestions,
+  triggerSuccessToast,
   questions = [],
   tagfilter = [],
   handleTagClick,
@@ -49,10 +51,10 @@ function QuestionList({
     <div className="bg-uzh-blue-400 space-y-1 md:space-y-2">
       {questions.map((question) => (
         <Question
+          key={`question-list-element-${question.id}`}
           checked={!!selectedQuestions[question.id]}
           id={question.id}
           isArchived={question.isArchived ?? false}
-          key={question.id}
           tags={question.tags || []}
           handleTagClick={handleTagClick}
           title={question.name}
@@ -60,7 +62,7 @@ function QuestionList({
           type={question.type}
           content={question.content}
           hasAnswerFeedbacks={
-            'options' in question
+            'options' in question && 'hasAnswerFeedbacks' in question.options
               ? (question.options.hasAnswerFeedbacks ?? false)
               : true
           }
@@ -70,6 +72,7 @@ function QuestionList({
               : true
           }
           onCheck={() => setSelectedQuestions(question.id, question)}
+          triggerSuccessToast={triggerSuccessToast}
           unsetDeletedQuestion={unsetDeletedQuestion}
           tagfilter={tagfilter}
           createdAt={question.createdAt}

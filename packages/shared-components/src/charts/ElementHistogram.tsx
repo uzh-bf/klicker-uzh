@@ -21,6 +21,7 @@ interface ElementHistogramProps {
   type: ElementType
   responses: { value: number; count: number }[]
   solutionRanges?: { min?: number | null; max?: number | null }[]
+  exactSolutions?: (number | string)[] | null
   statistics?: Statistics | null
   minValue?: number | null
   maxValue?: number | null
@@ -43,6 +44,7 @@ function ElementHistogram({
   type,
   responses,
   solutionRanges,
+  exactSolutions,
   statistics,
   minValue,
   maxValue,
@@ -58,9 +60,18 @@ function ElementHistogram({
   const supportedElementTypes = [ElementType.Numerical]
   const [numBins, setNumBins] = useState('20')
 
+  const showSolutionRanges = showSolution && solutionRanges
+  const showExactSolutions =
+    showSolution && exactSolutions && exactSolutions.length > 0
   const processedData = useEvaluationHistogramData({
     type,
     responses,
+    solutionRanges: showSolutionRanges ? solutionRanges : undefined,
+    exactSolutions: showExactSolutions
+      ? exactSolutions.map((solution) =>
+          typeof solution === 'number' ? solution : parseFloat(solution)
+        )
+      : undefined,
     minValue,
     maxValue,
     binCount: parseInt(numBins),
@@ -212,8 +223,7 @@ function ElementHistogram({
             />
           )}
 
-          {showSolution &&
-            solutionRanges &&
+          {showSolutionRanges &&
             solutionRanges.map(
               (
                 solutionRange: { min?: number | null; max?: number | null },
@@ -232,7 +242,7 @@ function ElementHistogram({
                       ? {
                           fill: CHART_SOLUTION_COLORS.correct,
                           position: 'top',
-                          value: 'Korrekt',
+                          value: t('manage.evaluation.correctLabel'),
                         }
                       : undefined
                   }
@@ -240,6 +250,24 @@ function ElementHistogram({
                 />
               )
             )}
+
+          {showExactSolutions &&
+            exactSolutions.map((solution, idx) => (
+              <ReferenceLine
+                key={`exact-solution-${idx}`}
+                isFront
+                x={parseFloat(String(solution))}
+                stroke={CHART_SOLUTION_COLORS.correct}
+                label={{
+                  fill: CHART_SOLUTION_COLORS.correct,
+                  position: 'top',
+                  value: t('manage.evaluation.correctLabelValue', {
+                    value: solution,
+                  }),
+                }}
+                className={textSize}
+              />
+            ))}
         </BarChart>
       </ResponsiveContainer>
 

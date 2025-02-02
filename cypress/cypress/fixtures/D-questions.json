@@ -65,7 +65,8 @@
       { "min": 40, "max": null },
       { "min": -50, "max": 20 },
       { "min": null, "max": -80 }
-    ]
+    ],
+    "exactSolutions": [-10, 10, 50]
   },
   "FT": {
     "title": "Free Text Question Title",
@@ -80,8 +81,38 @@
       "Sample Solution 3"
     ]
   },
+  "SE": {
+    "title": "Selection Question Title",
+    "content": "Selection Question Text",
+    "explanation": "Selection Question Explanation",
+    "collection": "Private Collection (Vegetables)",
+    "inputs": 2,
+    "solutions": ["Cabbage", "Cucumber"],
+    "solutionsNotChosen": ["Artichoke", "Broccoli", "Dill", "Carrot"],
+    "titleEdited": "Selection Question Title Edited",
+    "contentEdited": "Selection Question Text Edited",
+    "explanationEdited": "Selection Question Explanation Edited",
+    "collectionEdited": "Public Collection (Fruits)",
+    "inputsEdited": 1,
+    "solutionsEdited": ["Apple", "Banana"],
+    "solutionsNotChosenEdited": ["Cherry", "Date", "Elderberry"]
+  },
   "duplication": {
     "title": "Duplication question title",
     "content": "Duplication question content"
+  },
+  "autoSave": {
+    "title": "Auto Save question title",
+    "content": "Auto Save question content",
+    "choices": [
+      { "content": "Choice 1" },
+      { "content": "Choice 2" },
+      { "content": "Choice 3", "correct": true },
+      { "content": "Choice 4" }
+    ],
+    "titleEdited": "Auto Save question title new",
+    "contentEdited": "Auto Save question content new",
+    "contentEdited2": "Auto Save question content new 2",
+    "titleEditedDuplicated": "Auto Save question title new (Copy)"
   }
 }

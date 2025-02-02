@@ -24,14 +24,13 @@ function GroupActivityEndingModal({
   courseId,
 }: GroupActivityEndingModalProps) {
   const t = useTranslations()
-  const {
-    data: summaryData,
-    loading: summaryLoading,
-    refetch,
-  } = useQuery(GetGroupActivitySummaryDocument, {
-    variables: { id: activityId },
-    skip: !open,
-  })
+  const { data: summaryData, loading: summaryLoading } = useQuery(
+    GetGroupActivitySummaryDocument,
+    {
+      variables: { id: activityId },
+      skip: !open,
+    }
+  )
 
   const [endGroupActivity, { loading: endingGroupActivity }] = useMutation(
     EndGroupActivityDocument,
@@ -56,13 +55,6 @@ function GroupActivityEndingModal({
     startedInstances: false,
     submissions: true,
   })
-
-  // manually re-trigger the query when the modal is opened
-  useEffect(() => {
-    if (open) {
-      refetch()
-    }
-  }, [open])
 
   useEffect(() => {
     if (summaryData?.getGroupActivitySummary) {

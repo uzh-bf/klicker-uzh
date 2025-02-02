@@ -1,0 +1,6 @@
+mutation EditAnswerCollectionEntry($id: Int!, $value: String!) {
+  editAnswerCollectionEntry(id: $id, value: $value) {
+    id
+    value
+  }
+}

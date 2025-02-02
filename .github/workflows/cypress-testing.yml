@@ -69,7 +69,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.14.3
+          version: 9.15.4
           run_install: false
 
       - name: Get pnpm store directory
@@ -139,7 +139,7 @@ jobs:
 
       - name: Upload service logs
         if: always() # This ensures logs are uploaded even if the previous step fails
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: service-logs
           path: service.log

@@ -1,0 +1,3 @@
+mutation RemoveAnswerCollection($collectionId: Int!) {
+  removeAnswerCollection(collectionId: $collectionId)
+}

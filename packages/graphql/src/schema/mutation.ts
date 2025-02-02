@@ -11,6 +11,7 @@ import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
+import * as ResourcesService from '../services/resources.js'
 import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
@@ -56,8 +57,16 @@ import {
   OptionsChoicesInput,
   OptionsFreeTextInput,
   OptionsNumericalInput,
+  OptionsSelectionInput,
   Tag,
 } from './question.js'
+import {
+  AccessLevel,
+  AnswerCollection,
+  AnswerCollectionEntry,
+  CatalogObject,
+  ObjectAccess,
+} from './resource.js'
 import {
   FileUploadSAS,
   LocaleType,
@@ -982,6 +991,29 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      manipulateSelectionQuestion: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Element,
+        args: {
+          id: t.arg.int({ required: false }),
+          status: t.arg({ type: ElementStatus, required: false }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
+          pointsMultiplier: t.arg.int({ required: false }),
+          tags: t.arg.stringList({ required: false }),
+          options: t.arg({
+            type: OptionsSelectionInput,
+          }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.manipulateQuestion(
+            { ...args, type: DB.ElementType.SELECTION },
+            ctx
+          )
+        },
+      }),
+
       updateElementInstances: t.withAuth(asUserFullAccess).field({
         type: [ElementInstance],
         args: {
@@ -1145,6 +1177,153 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return AccountService.changeInitialSettings(args, ctx)
+        },
+      }),
+
+      createAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          name: t.arg.string({ required: true }),
+          access: t.arg({ type: ObjectAccess, required: true }),
+          description: t.arg.string({ required: true }),
+          answers: t.arg.stringList({ required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.createAnswerCollection(args, ctx)
+        },
+      }),
+
+      modifyAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          id: t.arg.int({ required: true }),
+          name: t.arg.string({ required: false }),
+          access: t.arg({ type: ObjectAccess, required: false }),
+          description: t.arg.string({ required: false }),
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.modifyAnswerCollection(args, ctx)
+        },
+      }),
+
+      editAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollectionEntry,
+        args: {
+          id: t.arg.int({ required: true }),
+          value: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.editAnswerCollectionEntry(args, ctx)
+        },
+      }),
+
+      deleteAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Int',
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.deleteAnswerCollectionEntry(args, ctx)
+        },
+      }),
+
+      addAnswerCollectionOption: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: AnswerCollectionEntry,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          value: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.addAnswerCollectionOption(args, ctx)
+        },
+      }),
+
+      importAnswerCollection: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.importAnswerCollection(args, ctx)
+        },
+      }),
+
+      requestAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CatalogObject,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.requestAnswerCollection(args, ctx)
+        },
+      }),
+
+      cancelAnswerCollectionRequest: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.cancelAnswerCollectionRequest(args, ctx)
+        },
+      }),
+
+      removeAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Int',
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.removeAnswerCollection(args, ctx)
+        },
+      }),
+
+      deleteAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Int',
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.deleteAnswerCollection(args, ctx)
+        },
+      }),
+
+      approveObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          permissionId: t.arg.int({ required: true }),
+          userId: t.arg.string({ required: true }),
+          accessLevel: t.arg({ type: AccessLevel, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.resolveObjectSharingRequest(
+            { ...args, approved: true },
+            ctx
+          )
+        },
+      }),
+
+      declineObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          permissionId: t.arg.int({ required: true }),
+          userId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.resolveObjectSharingRequest(
+            { ...args, approved: false },
+            ctx
+          )
         },
       }),
       // #endregion

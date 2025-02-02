@@ -7,6 +7,7 @@ import {
   gradeQuestionMC,
   gradeQuestionNumerical,
   gradeQuestionSC,
+  gradeQuestionSelection,
 } from '../src/index.js'
 
 describe('@klicker-uzh/grading', () => {
@@ -157,6 +158,66 @@ describe('@klicker-uzh/grading', () => {
       response: 95,
     })
     expect(points7).toEqual(1)
+
+    const points8 = gradeQuestionNumerical({
+      solutionRanges: [],
+      response: 0,
+    })
+    expect(points8).toEqual(null)
+
+    const points9 = gradeQuestionNumerical({
+      exactSolutions: [0],
+      response: 0,
+    })
+    expect(points9).toEqual(1)
+
+    const points10 = gradeQuestionNumerical({
+      exactSolutions: [0],
+      response: 1,
+    })
+    expect(points10).toEqual(0)
+
+    const points11 = gradeQuestionNumerical({
+      exactSolutions: [0, 100],
+      response: 0,
+    })
+    expect(points11).toEqual(1)
+
+    const points12 = gradeQuestionNumerical({
+      exactSolutions: [0, 100],
+      response: 100,
+    })
+    expect(points12).toEqual(1)
+
+    const points13 = gradeQuestionNumerical({
+      exactSolutions: [0, 100],
+      response: 50,
+    })
+    expect(points13).toEqual(0)
+
+    const points14 = gradeQuestionNumerical({
+      exactSolutions: [0, 100],
+      response: 1e-30,
+    })
+    expect(points14).toEqual(1)
+
+    const points15 = gradeQuestionNumerical({
+      exactSolutions: [0.1],
+      response: 0.1,
+    })
+    expect(points15).toEqual(1)
+
+    const points16 = gradeQuestionNumerical({
+      exactSolutions: [0.1],
+      response: 0.5,
+    })
+    expect(points16).toEqual(0)
+
+    const points17 = gradeQuestionNumerical({
+      exactSolutions: [],
+      response: 0.1,
+    })
+    expect(points17).toEqual(null)
   })
 
   it('should grade FREE_TEXT questions correctly', () => {
@@ -201,6 +262,90 @@ describe('@klicker-uzh/grading', () => {
       response: 'Test',
     })
     expect(points7).toEqual(null)
+  })
+
+  it('should grade SELECTION questions correctly', () => {
+    // no sample solution
+    const grade1 = gradeQuestionSelection({
+      numberOfInputs: 4,
+      response: [0, 1, 2, 3],
+      correctAnswers: null,
+    })
+    expect(grade1).toEqual(null)
+
+    const grade2 = gradeQuestionSelection({
+      numberOfInputs: 4,
+      response: [0, 1, 2, 3],
+      correctAnswers: [],
+    })
+    expect(grade2).toEqual(null)
+
+    const grade3 = gradeQuestionSelection({
+      numberOfInputs: 4,
+      response: [0, 1, 2, 3],
+      correctAnswers: undefined,
+    })
+    expect(grade3).toEqual(null)
+
+    // all correct
+    const grade4 = gradeQuestionSelection({
+      numberOfInputs: 4,
+      response: [0, 1, 2, 3],
+      correctAnswers: [0, 1, 2, 3],
+    })
+    expect(grade4).toEqual(1)
+
+    const grade5 = gradeQuestionSelection({
+      numberOfInputs: 4,
+      response: [0, 1, 2, 3],
+      correctAnswers: [3, 2, 1, 0],
+    })
+    expect(grade5).toEqual(1)
+
+    const grade6 = gradeQuestionSelection({
+      numberOfInputs: 2,
+      response: [0, 1],
+      correctAnswers: [0, 1, 2],
+    })
+    expect(grade6).toEqual(1)
+
+    // partial correct
+    const grade7 = gradeQuestionSelection({
+      numberOfInputs: 4,
+      response: [0, 1, 2, 4],
+      correctAnswers: [0, 1, 2, 3],
+    })
+    expect(grade7).toEqual(0.75)
+
+    const grade8 = gradeQuestionSelection({
+      numberOfInputs: 6,
+      response: [0, 1, 2, 3, 4, 5],
+      correctAnswers: [0, 1, 7, 8, 9, 10, 11],
+    })
+    expect(grade8).toBeCloseTo(0.33, 2)
+
+    // single one correct
+    const grade9 = gradeQuestionSelection({
+      numberOfInputs: 5,
+      response: [0, 1, 2, 3, 4],
+      correctAnswers: [0, 5, 6, 7, 8, 9],
+    })
+    expect(grade9).toEqual(0.2)
+
+    // no correct
+    const grade10 = gradeQuestionSelection({
+      numberOfInputs: 4,
+      response: [0, 1, 2, 3],
+      correctAnswers: [4, 5, 6, 7],
+    })
+    expect(grade10).toEqual(0)
+
+    const grade11 = gradeQuestionSelection({
+      numberOfInputs: 3,
+      response: [0, 1, 2],
+      correctAnswers: [3, 4, 5, 6, 7],
+    })
+    expect(grade11).toEqual(0)
   })
 
   it('should compute the awarded points correctly for live quizzes', () => {

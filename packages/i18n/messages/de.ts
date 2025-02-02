@@ -11,6 +11,11 @@ export default {
       numInvalidValue:
         'Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.',
       ftPlaceholder: 'Ihre Antwort...',
+      seSelectOption: 'Antwort-Option auswählen...',
+      seSelectNCorrectOptions:
+        'Bitte wählen Sie <b>{number} korrekte Antwort-Optionen</b> aus der vorgegebenen Liste.',
+      seCorrectAnswerN: 'Antwort {number}',
+      noMatchingOptionFound: 'Keine passende Option gefunden.',
     },
     DRAFT: {
       statusLabel: 'Entwurf',
@@ -59,6 +64,13 @@ export default {
       short: 'FC',
       typeLabel: 'Lernkarte (FC)',
     },
+    SELECTION: {
+      short: 'SE',
+      typeLabel: 'Auswahl (SE)',
+      text: 'Bitte wählen Sie die richtigen Antworten aus der Liste.',
+      richtext:
+        'Bitte wählen Sie die <b>richtigen Antworten</b> aus der Liste.',
+    },
     login: {
       installButton: 'Jetzt installieren',
     },
@@ -92,6 +104,7 @@ export default {
       cancel: 'Abbrechen',
       confirm: 'Bestätigen',
       close: 'Schliessen',
+      approve: 'Genehmigen',
       sendAnswer: 'Antwort senden',
       begin: 'Beginnen',
       finish: 'Abschliessen',
@@ -233,7 +246,15 @@ export default {
       activity: 'Aktivität',
       featurePreview: 'Feature-Vorschau',
       new: 'Neu',
+      search: 'Suche',
+      accept: 'Akzeptieren',
+      decline: 'Ablehnen',
+      user: 'Nutzer',
       correctness: 'Korrektheit',
+      answerCollection: 'Antwort-Sammlung',
+      users: 'Nutzer',
+      unknown: 'Unbekannt',
+      entries: 'Einträge',
     },
     contentInput: {
       boldStyle:
@@ -375,7 +396,7 @@ KlickerUZH bietet Ihnen als Kursteilnehmenden eine ganze Reihe von Funktionalit�
 
 #### Umfragen und Live-Quiz
 
-![Live-Quiz _auf der linken Seite_](/img/live_quiz/lq_student_view.png)
+![Live-Quiz _auf der linken Seite_](/img/06_live_quiz.png)
 
 Während der Vorlesung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen auf [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) oder in der KlickerUZH-App (oder, falls vorhanden, in OLAT unter dem Modul "Live Quiz") zu beantworten. Die Resultate werden ohne Verzögerung grafisch dargestellt und können so nach Ablauf der Antwortzeit von den Dozierenden präsentiert und kommentiert werden.
 
@@ -383,7 +404,7 @@ Für die Beantwortung der Fragen ist kein Login erforderlich. Mit einem Login k�
 
 #### Live Q&A und Echtzeit-Feedback
 
-![Live Q&A und Real-time Feedback _rechts_](/img/live_quiz/lq_student_view.png)
+![Live Q&A und Real-time Feedback _rechts_](/img/06_live_quiz.png)
 
 Haben Sie eine Frage oder möchten Sie direktes Feedback zur Vorlesung geben? Mit dem Live-Q&A können Sie den Dozierenden oder Assistierenden direkt während der Vorlesung eine Frage stellen - auch wenn Sie von zu Hause aus an der Vorlesung teilnehmen. Außerdem haben Sie mit dem KlickerUZH die Möglichkeit, den Dozierenden während der Vorlesung direktes Feedback zu Tempo und Schwierigkeitsgrad der Vorlesung zu geben.
 
@@ -391,7 +412,7 @@ Die Teilnahme ist unter [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
 
 #### Practice Quiz, Microlearning und Flashcards
 
-![Übungsquiz in OLAT](/img/practice_quiz/pq_olat_view.png)
+![Übungsquiz in OLAT](/img/practice_quiz/07_practice_quiz.png)
 
 Practice Quizzes, Microlearning und Flashcards ermöglichen es Ihnen, den Kursinhalt außerhalb der Vorlesungszeit zu wiederholen und direktes Feedback zu Ihrer Lösung zu erhalten. Practice Quizzes und Flashcards sind immer und beliebig oft verfügbar, Microlearning dagegen nur einmal und in einem begrenzten Zeitrahmen (z.B. einmal pro Woche). Alle Elemente sind direkt über die KlickerUZH-App oder über den von Ihren Dozierenden zur Verfügung gestellten Link (auch anonym) zugänglich. Die Lernkarten sind noch in der Umsetzung und werden nach ca. 5 Wochen im Herbstsemester 2023 verfügbar sein.
 
@@ -405,7 +426,7 @@ Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen verg
 
 #### Challenge
 
-![Gamification](/img/leaderboard/course_leaderboard.png)
+![Gamification](/img/leaderboard/08_gamification.png)
 
 Alle Aktivitäten im KlickerUZH sind, wenn sie von den Dozierenden aktiviert werden, Teil einer gamifizierten Challenge. Im Rahmen der Challenge sammeln Sie Punkte für die Kursrangliste (wenn Sie im eingeloggten Zustand teilnehmen), Erfahrungspunkte und Erfolge.
 
@@ -428,7 +449,7 @@ Je nachdem, wie Ihr Kurs technisch aufgebaut ist, können Sie wie folgt vorgehen
 
 Öffnen Sie das KlickerUZH-Modul im OLAT-Kurs Ihrer Lehrveranstaltung.  Um Ihr KlickerUZH-Konto zu verwalten oder ein Neues zu erstellen, klicken Sie auf "Konto verwalten" innerhalb des KlickerUZH-Moduls.
 
-![](/img/account/create_account.png)
+![](/img/account/01_create_account.png)
 
 Wenn Sie bereits ein KlickerUZH-Konto besitzen, besuchen Sie einfach eine der KlickerUZH-Aktivitäten im LMS-Kurs und Sie sollten automatisch eingeloggt sein. Falls Sie nicht automatisch eingeloggt sind, können Sie sich über den Button oben rechts einloggen.
 
@@ -438,7 +459,7 @@ Wenn noch kein KlickerUZH-Konto für Sie existiert, werden Sie von einer Willkom
 
 Wenn Sie bereits ein KlickerUZH-Konto haben (z.B. von anderen Kursen), öffnen Sie die KlickerUZH-App und klicken Sie unterhalb der Kursübersicht auf "Kurs beitreten". Geben Sie die 9-stellige PIN ein, die Sie von Ihren Dozierenden erhalten haben. Sie sind nun Teil des Kurses und können an allen Aktivitäten teilnehmen.
 
-![](/img/account/join_course.png)
+![](/img/account/05_join_course.png)
 
 Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden Ihres Kurses erhalten haben (z.B. _{pwa_url}/course/XYZ/join?pin=111111111_). Damit können Sie ein neues KlickerUZH-Konto mit einem (anonymen) Benutzernamen und einem Passwort erstellen. Mit diesen Daten können Sie sich dann einloggen und Ihren persönlichen Avatar erstellen sowie an Aktivitäten teilnehmen.
 
@@ -600,6 +621,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Teil der Leaderboards in diesem Kurs bist, werden deine Punkte nicht gespeichert. Um in Zukunft Punkte zu sammeln, tritt dem Leaderboard auf der Kursübersicht bei.',
       missingParticipation:
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
+      correctAnswerOptions: 'Richtige Antwortoptionen',
+      topNAnswers: 'Top {number} Antworten',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',
@@ -781,6 +804,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       analytics: 'Analytics',
       liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
+      resources: 'Ressourcen',
+      catalog: 'Katalog',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -792,6 +817,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sortBy: 'Sortieren nach..',
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
+      questionPreview: 'Fragevorschau: {question}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -951,13 +977,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       CREATETitle: 'Frage erstellen',
       EDITTitle: 'Frage bearbeiten',
       DUPLICATETitle: 'Frage duplizieren',
-      questionType: 'Fragetyp',
-      selectQuestionType: 'Fragetyp auswählen',
+      elementType: 'Elementtyp',
+      selectQuestionType: 'Elementtyp auswählen',
       selectQuestionStatus: 'Status auswählen',
       questionStatus: 'Status',
-      questionTitle: 'Fragetitel',
+      elementTitle: 'Elementtitel',
+      recoverData: 'Daten-Wiederherstellung',
+      temporaryStorageCreation:
+        'Der Erstellungsprozess wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
+      temporaryStorageEditing:
+        'Der Bearbeitungsprozess wurde ohne Speichern abgebrochen. Möchten Sie das letzte automatische Daten-Backup wiederherstellen oder diese Informationen verwerfen?',
+      discard: 'Verwerfen',
+      loadData: 'Daten laden',
       titleTooltip:
-        'Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.',
+        'Geben Sie einen kurzen, zusammenfassenden Titel für das Element ein. Dieser dient lediglich zur besseren Übersicht.',
       tagsTooltip:
         'Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern).',
       tagFormatting:
@@ -974,12 +1007,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerOption: 'Antwortmöglichkeit',
       answerOptionsTooltip:
         'Erfassen Sie hier die möglichen Antworten, welche von den Studierenden für die Frage ausgewählt werden können.',
+      answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
       FTOptionsTooltip:
         'Nehmen Sie hier optionale Einstellungen für die Freitext-Frage vor. Bitte beachten Sie, dass die Antwort auf Freitext-Fragen nicht auf Gross- und Kleinschreibung geprüft wird.',
       NUMERICALOptionsTooltip:
         'Nehmen Sie hier optionale Einstellungen für die numerische Frage vor. Bitte beachten Sie, dass der Antwortbereich von numerischen Fragen auf das Intervall [-1e30,1e30] begrenzt ist. Sollten Sie grössere Zahlen benötigen, verwenden Sie bitte eine Freitext-Frage.',
-
-      answerOptionPlaceholder: 'Antwortmöglichkeit hier eingeben…',
+      SELECTIONOptionsTooltip:
+        'Wählen Sie hier die Antwort-Sammlung aus welcher die Studierenden die korrekten Antworten auswählen sollen.',
+      SEAnswerCollectionRequired:
+        "Zur Erstellung von Auswahl-Fragen benötigen Sie Zugriff auf mindestens eine Antwort-Sammlung!. Sie können diese entweder unter dem Reiter <link>'Ressourcen'</link> selbst erstellen oder dort eine bestehende Sammlung anderer Nutzer importieren.",
+      selectCollection: 'Sammlung auswählen...',
+      answerCollection: 'Antwort-Sammlung',
+      numberOfInputs: 'Anzahl Eingabefelder',
+      correctAnswerOptions: 'Korrekte Antwortoptionen',
+      correctAnswerOptionsTooltip:
+        'Bitte wählen Sie die korrekten Antwortoptionen aus der Liste der Antwortmöglichkeiten aus. Die Anzahl der korrekten Antwortoptionen muss mindestens der Anzahl Eingabefelder entsprechen',
+      selectAnswerOptions: 'Antwortmöglichkeiten auswählen...',
+      noMatchingOptionFound: 'Keine passende Option gefunden',
       LISTDisplay: 'Anzeige als Liste',
       GRIDDisplay: 'Anzeige als Raster',
       feedbackPlaceholder: 'Feedback eingeben…',
@@ -988,7 +1032,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       solutionRanges: 'Lösungsbereiche',
       solutionRangesTooltip:
         'Geben Sie hier die Intervalle an, die als korrekt gewertet werden sollen.',
+      exactSolutions: 'Exakte Lösungen',
+      exactSolutionsTooltip:
+        'Geben Sie hier die exakten Lösungen an, die als korrekt gewertet werden sollen.',
+      solutionTypeNumerical: 'Art der Lösung',
+      solutionTypeNumericalTooltip:
+        'Wählen Sie zwischen der Option von Lösungsbereichen und exakten Lösungen für diese Frage',
       addSolutionRange: 'Neuen Lösungsbereich hinzufügen',
+      addExactSolution: 'Neue exakte Lösung hinzufügen',
       maximumLength: 'Maximale Länge',
       answerLength: 'Antwort Länge',
       possibleSolutionN: 'Mögliche Lösung {number}',
@@ -1006,6 +1057,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       updateInstances: 'Frage-Instanzen in KlickerUZH-Elementen aktualisieren',
       updateInstancesExplanation:
         'Nutzen sie diese Einstellung, um die Frage in allen geplanten Quizzes, Übungs-Quizzes und Microlearnings anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Elementen wird nicht aktualisiert. Veränderte Multiplikatoren werden auch auf die erstellten Instanzen angewendet.',
+      questionSavedSuccessfully: 'Die Frage wurde erfolgreich gespeichert.',
+      questionSavedFailed:
+        'Beim Speichern der Frage ist ein Fehler aufgetreten. Bitte beachten Sie die Fehlermeldungen im Formular und überprüfen Sie die Eingaben.',
     },
     activityWizard: {
       activityName: 'Bitte geben Sie einen Namen für Ihre Aktivität ein.',
@@ -1113,7 +1167,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveQuizTypes:
-        'Live Quizzes können nur Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
+        'Live Quizzes können nur Single-Choice, Multiple-Choice, Kprim, Numerische, Freitext, und Auswahl-Fragen enthalten.',
       liveQuizTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
       liveQuizMinQuestions:
@@ -1264,7 +1318,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityMissingCourse:
         'Gruppenaktivitäten müssen einem Kurs zugewiesen werden.',
       groupActivityTypes:
-        'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische und Freitext-Fragen enthalten.',
+        'Gruppenaktivitäten können nur Inhaltselemente, Single-Choice, Multiple-Choice, Kprim, Numerische, Freitext, und Auswahl-Fragen enthalten.',
       groupActivityCreated:
         'Ihre Gruppenaktivität <b>{name}</b> wurde erfolgreich erstellt.',
       groupActivityEdited:
@@ -1347,9 +1401,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       NRMinLessThanMaxSol:
         'Das Minimum eines Lösungsintervalls muss kleiner als das Maximum sein.',
       NRMinLessThanMax: 'Das Minimum muss kleiner als das Maximum sein.',
+      NROneValueRequired:
+        'Bei einem Lösungsbereich muss mindestens ein Wert angegeben werden.',
       NRPrecision: 'Die Anzahl Nachkommastellen muss mindestens 0 sein.',
+      chooseSolutionType:
+        'Bitte wählen Sie einen Lösungstyp für Ihre numerische Frage aus oder deaktivieren Sie die Musterlösung.',
       solutionRangeRequired:
         'Bitte geben Sie mindestens einen Lösungsbereich an.',
+      exactSolutionRequired:
+        'Bitte geben Sie mindestens eine exakte Lösung an.',
       NumberQuestionsRequired:
         'Es muss mindestens eine Antwortmöglichkeit gegeben werden',
       NumberQuestionsRequiredKPRIM:
@@ -1360,6 +1420,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Numerische Angaben dürfen aus technischen Gründen nicht kleiner als -1e30 sein.',
       NROverflow:
         'Numerische Angaben dürfen aus technischen Gründen nicht größer als 1e30 sein.',
+      NRSolutionRangesWithinRestrictions:
+        'Die Lösungsbereiche müssen innerhalb der angegebenen Einschränkungen liegen.',
+      NRExactSolutionsWithinRestrictions:
+        'Die exakten Lösungen müssen innerhalb der angegebenen Einschränkungen liegen.',
+      SEnumberOfInputsRequired:
+        'Bitte geben Sie die Anzahl der Eingabefelder an.',
+      SEnumberOfInputsMin:
+        'Die Anzahl der Eingabefelder muss mindestens 1 sein.',
+      SEnumberOfInputsMax:
+        'Die Anzahl der Eingabefelder darf maximal der Anzahl Optionen in der Antwort-Sammlung - 1 entsprechen.',
+      SEanswerCollectionRequired: 'Bitte wählen Sie eine Antwort-Sammlung aus.',
+      SEcorrectAnswersRequired:
+        'Bitte wählen Sie die korrekten Antwortmöglichkeiten aus Ihrer Sammlung aus.',
+      SEcorrectAnswersMatchInputs:
+        'Die Anzahl der korrekten Antworten muss mindestens der Anzahl der Eingabefelder entsprechen.',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Live Quizzes',
@@ -1491,8 +1566,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noChartsAvailable: 'There exists no chart for this question type yet',
       count: 'Anzahl',
       value: 'Wert',
+      selection: 'Auswahl',
       histogramRange: 'Bereich',
       histogramBins: 'Unterteilungen',
+      correctLabel: 'Korrekt',
+      correctLabelValue: 'Korrekt: {value}',
       resetSorting: 'Sortierung zurücksetzen',
       noFeedbacksMatchFilter:
         'Keine Feedbacks stimmen mit den aktuellen Filtereinstellungen überein...',
@@ -1815,6 +1893,151 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
       confirmScheduling: 'Geplante Veröffentlichung bestätigen',
     },
+    resources: {
+      mediaLibrary: 'Mediathek',
+      mediaLibraryAvailableSoon:
+        'Bald wird hier Ihre Mediathek verfügbar sein und Ihnen ermöglichen, hochgeladene Ressourcen einzusehen.',
+      answerCollections: 'Antwort-Sammlungen',
+      answerCollectionsDescription:
+        'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Zusätzlich können Sie hier öffentliche Antwort-Sammlungen anderer Nutzer importieren bzw. Zugriff auf diese anfragen.',
+      newAnswerCollection: 'Neue Antwort-Sammlung',
+      addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
+      answerOptionUsedAsSolution:
+        'Antwort-Optionen, welche mit dem Warnsymbold gekennzeichnet sind, werden bereits durch Sie oder andere Nutzer (im Fall einer geteilten Sammlung) in einer Frage als korrekte Lösung verwendet. Bitte beachten Sie dies beim Bearbeiten der Antwort. Die Option kann nicht gelöscht werden.',
+      name: 'Name',
+      nameTooltip:
+        'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
+      access: 'Zugriff',
+      accessTooltip:
+        "Wählen Sie aus, ob diese Antwort-Sammlung nur für Sie sichtbar sein soll oder auch durch andere Nutzer importiert werden kann. Bei einem 'eingeschränkten' Zugriff können andere Nutzer den Zugriff auf Ihre Antwort-Sammlung nur anfragen.",
+      accessPUBLIC: 'Öffentlich',
+      accessPRIVATE: 'Privat',
+      accessRESTRICTED: 'Eingeschränkt',
+      catalogCollection: 'Katalog-Sammlung',
+      catalogCollectionTooltip:
+        'Hier können Sie eine Katalog-Sammlung wählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll. Nur Nutzer mit Zugriff auf die entsprechende Katalog-Sammlung können Ihre Antwort-Sammlung dort importieren oder Zugriff darauf anfragen. Wählen Sie keine Katalog-Sammlung, ist die Sammlung für alle Nutzer sichtbar.',
+      noCatalogCollectionSelected: 'Keine Katalog-Sammlung ausgewählt',
+      descriptionTooltip:
+        'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
+      descriptionPlaceholder:
+        'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung...',
+      answerEntry: 'Antwort-Eintrag {index}',
+      addValue: 'Wert hinzufügen',
+      nameRequired: 'Bitte geben Sie einen Namen für die Antwort-Sammlung an.',
+      descriptionRequired:
+        'Bitte geben Sie eine Beschreibung für die Antwort-Sammlung an.',
+      valueRequired: 'Bitte geben Sie einen Wert für den Eintrag an.',
+      minTwoEntriesRequired:
+        'Bitte fügen Sie mindestens zwei Einträge zu Ihrer Sammlung hinzu.',
+      uniqueValuesRequired:
+        'Alle Optionen in einer Antwort-Sammlung müssen einen einzigartigen Wert haben. Bitte stellen Sie sicher, dass keine zwei Antwortoptionen übereinstimmen.',
+      infoAccessPUBLIC:
+        'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und über den Katalog importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
+      infoAccessPRIVATE:
+        'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder über den Katalog importiert werden. Sie können nach Erstellung der Sammlung einzelnen Nutzern oder Nutzergruppen Zugriff gewähren.',
+      infoAccessRESTRICTED:
+        'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
+      collectionCreationSuccess:
+        'Die Antwort-Sammlung wurde erfolgreich erstellt.',
+      collectionCreationError:
+        'Beim Erstellen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass der Name der Sammlung einzigartig ist und versuchen Sie es erneut.',
+      availableAnswerCollections: 'Verfügbare Antwort-Sammlungen',
+      noAnswerCollections:
+        'Es wurden noch keine Antwort-Sammlungen erstellt oder aus dem Katalog importiert.',
+      numOfAnswers: '{number} Antworten',
+      byOwner: 'von {owner}',
+      clickToViewEdit: 'Ansehen / Editieren',
+      clickToCancelRequest: 'Anfrage zurückziehen',
+      answerCollection: 'Antwort-Sammlung: {name}',
+      saveChanges: 'Änderungen speichern',
+      infoAccessChangeLimited:
+        'Diese Antwort-Sammlung wird bereits von anderen Nutzern verwendet. Sie können die Zugriffsregeln daher nur weiter lockern oder nach einer vollständigen Veröffentlichung nicht mehr einschränken.',
+      successfulCollectionEdit:
+        'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
+      answerOptions: 'Antwort-Optionen',
+      addAnswerOption: 'Antwort-Option hinzufügen',
+      requestAccessMessage:
+        "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' (von {owner}) beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
+      importCollectionMessage:
+        'Hier können Sie eine Kopie der Antwort-Sammlung "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie die importierte Antwort-Sammlung direkt verwenden oder bei Bedarf anpassen. Änderungen an der ursprünglichen Antwort-Sammlung haben keinen Einfluss auf Ihre importierte Kopie.',
+      showAnswers: 'Antworten anzeigen',
+      importCollection: 'Antwort-Sammlung importieren',
+      requestAccess: 'Zugriff beantragen',
+      importError:
+        'Beim Importieren der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      requestError:
+        'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      viewCollection: 'Sammlung ansehen',
+      requestedAccess: 'Zugriff beantragt',
+      deleteCollection: 'Sammlung löschen',
+      deletionDisabledInUse:
+        'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht löschen. Um die Sammlung zu löschen, entfernen Sie sie bitte zuerst aus allen Fragen, die sie verwenden.',
+      removeCollection: 'Sammlung entfernen',
+      removalDisabledInUse:
+        'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht entfernen.',
+      deleteAnswerCollection: 'Antwort-Sammlung löschen',
+      confirmCollectionDeletion:
+        'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil löschen möchten? Bei geteilten Antwort-Sammlungen bleibt der Zugriff für andere Nutzer bestehen, solange diese die Sammlung verwenden.',
+      confirmDeletion: 'Löschung bestätigen',
+      deletionSuccessful: 'Die Antwort-Sammlung wurde erfolgreich gelöscht.',
+      deletionFailed:
+        'Beim Löschen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      removeAnswerCollection: 'Antwort-Sammlung entfernen',
+      confirmCollectionRemoval:
+        'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil entfernen möchten?',
+      confirmRemoval: 'Entfernung bestätigen',
+      removalSuccessful: 'Die Antwort-Sammlung wurde erfolgreich entfernt.',
+      removalFailed:
+        'Beim Entfernen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
+      confirmCancelRequest:
+        'Bitte bestätigen Sie, dass Sie die Zugriffs-Anfrage für die Antwort-Sammlung "{name}" zurückziehen möchten. Sie können später erneut Zugriff auf die Antwort-Sammlung beantragen.',
+      confirmCancellation: 'Rückzug bestätigen',
+      cancellationSuccessful:
+        'Die Zugriffs-Anfrage wurde erfolgreich zurückgezogen.',
+      cancellationFailed:
+        'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+    },
+    catalog: {
+      userGroups: 'Nutzergruppen',
+      userGroupsComingSoon:
+        'Hier werden bald die von Ihnen gemanagten Nutzergruppen, sowie Nutzergruppen zu welchen Sie zugewiesen wurden, angezeigt.',
+      accessTypes: 'Zugriffs-Typen',
+      objectType: 'Objekt-Typ',
+      all: 'Alle',
+      sharingRequests: 'Zugriffs-Anfragen',
+      unresolved: 'Unbearbeitet',
+      objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
+      noPublicRestrictedCollections:
+        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden. Object, für welche bereits Zugriff angefragt oder bestätigt wurde, können nicht mehr ausgewählt werden.',
+      requestAccess: 'Zugriff beantragen',
+      importObject: 'Objekt importieren',
+      accessRequested: 'Zugriff beantragt',
+      accessGranted: 'Zugriff gewährt',
+      importPublicResource: 'Öffentliche Ressource importieren',
+      answerCollectionRequestSuccess:
+        'Der Zugriff auf die ausgewählte Antwort-Sammlung wurde erfolgreich benatragt.',
+      answerCollectionImportSuccess:
+        'Eine Kopie der Antwort-Sammlung wurde erfolgreich in Ihr Konto importiert.',
+      requestPublicResource:
+        "Durch das Bentragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den erteilten Berechtigungen. Gewährte Berechtigungen können jederzeit vom Besitzer widerrufen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die 'Importieren' Option.",
+      sharingRequestsExplanation:
+        'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
+      approveSharingRequest: 'Zugriffsanfrage akzeptieren',
+      specifyAccessLevel:
+        'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Schreiberechten, dass alle Änderungen anderer Nutzer an Ihrem Objekt direkt für alle Nutzer mit Zugriff auf dieses sichtbar sein werden. Die offizielle Dokumentation der Sharing-Funktionen enthält weiterführende Informationen.',
+      accessLevel: 'Zugriffslevel',
+      accessLevelREAD: 'Lesezugriff',
+      accessLevelWRITE: 'Schreibzugriff',
+      approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich akzeptiert.',
+      approvalFailed:
+        'Beim Akzeptieren der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      declineSuccessful: 'Die Zugriffsanfrage wurde erfolgreich abgelehnt.',
+      declineFailed:
+        'Beim Ablehnen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      noCatalogCollectionSelectedWarning:
+        "Wenn Sie Ihr geteiltes Objekt (mit einem anderen Zugriffsstatus als 'Privat') nicht einer bestimmten Katalog-Sammlung zuweisen, können alle anderen Nutzer dieses im Katalog finden und darüber importieren / Zugriff beantragen.",
+    },
     groupActivity: {
       activityMissingOrNotCompleted:
         'Die von Ihnen gesuchte Gruppenaktivität existiert nicht oder ist noch nicht beendet. Bitte beachten Sie, dass Gruppenaktivitäten erst nach ihrem offiziellen Enddatum bewertet werden können.',
@@ -1865,6 +2088,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     analytics: {
       selectAnalyticsDashboard: 'Bitte wählen Sie ein Analyse-Dashboard aus',
+      activity: 'Aktivität',
+      performance: 'Leistung & Fortschritt',
+      quizzes: 'Quizzes',
+      olderCourses: 'Ältere Kurse...',
       activityDashboard: 'Aktivitäts-Dashboard',
       performanceDashboard: 'Leistungs- und Fortschritts-Dashboard',
       quizDashboard: 'Quiz-Dashboard',

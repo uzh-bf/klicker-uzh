@@ -4,6 +4,17 @@ schema {
   subscription: Subscription
 }
 
+enum AccessLevel {
+  ADMIN
+  READ
+  WRITE
+}
+
+enum AccessType {
+  OWNER
+  SHARED
+}
+
 type Achievement {
   descriptionDE: String
   descriptionEN: String
@@ -82,6 +93,31 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
+type AnswerCollection {
+  access: ObjectAccess!
+  accessType: AccessType!
+  catalogCollectionId: String
+  description: String!
+  entries: [AnswerCollectionEntry!]
+  id: Int!
+  isAccessGranted: Boolean
+  isEditable: Boolean
+  isImported: Boolean
+  isOwner: Boolean
+  isRemovable: Boolean
+  name: String!
+  numSharedUsers: Int
+  ownerShortname: String
+  sharingLevel: AccessLevel
+  sharingStatus: PermissionStatus
+}
+
+type AnswerCollectionEntry {
+  id: Int!
+  numSolutionUsages: Int
+  value: String!
+}
+
 type ArchivedElement {
   id: Int!
   isArchived: Boolean!
@@ -120,6 +156,22 @@ type AwardEntry {
   participant: Participant
   participantGroup: ParticipantGroup
   type: String!
+}
+
+type CatalogObject {
+  access: ObjectAccess!
+  id: Int
+  isOwner: Boolean!
+  isRequested: Boolean!
+  isShared: Boolean!
+  name: String!
+  objectType: CatalogObjectType!
+  ownerShortname: String
+  uuid: String
+}
+
+enum CatalogObjectType {
+  ANSWER_COLLECTION
 }
 
 type Choice {
@@ -363,7 +415,7 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar Date
 
-union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement
+union Element = ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
 
 type ElementBlock {
   elements: [ElementInstance!]
@@ -389,7 +441,7 @@ enum ElementBlockStatus {
   SCHEDULED
 }
 
-union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData
+union ElementData = ChoicesElementData | ContentElementData | FlashcardElementData | FreeTextElementData | NumericalElementData | SelectionElementData
 
 enum ElementDisplayMode {
   GRID
@@ -413,7 +465,7 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
-union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation
+union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation | SelectionElementInstanceEvaluation
 
 input ElementInstanceInput {
   elementId: Int!
@@ -474,6 +526,7 @@ enum ElementType {
   MC
   NUMERICAL
   SC
+  SELECTION
 }
 
 type Feedback {
@@ -725,6 +778,7 @@ type GroupActivityDecision {
   freeTextResponse: String
   instanceId: Int!
   numericalResponse: Float
+  selectionResponse: [Int!]
   type: ElementType!
 }
 
@@ -819,7 +873,7 @@ type GroupMessage {
   updatedAt: Date!
 }
 
-union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation
+union InstanceEvaluation = ChoicesInstanceEvaluation | ContentInstanceEvaluation | FlashcardInstanceEvaluation | FreeTextInstanceEvaluation | NumericalInstanceEvaluation | SelectionInstanceEvaluation
 
 type InstanceFeedback {
   activityType: ActivityType!
@@ -986,9 +1040,12 @@ type MicroLearning {
 type Mutation {
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
+  addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
+  approveObjectSharingRequest(accessLevel: AccessLevel!, permissionId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
+  cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
@@ -997,6 +1054,7 @@ type Mutation {
   changeParticipantLocale(locale: LocaleType!): Participant
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
+  createAnswerCollection(access: ObjectAccess!, answers: [String!]!, catalogCollectionId: String, description: String!, name: String!): AnswerCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -1007,6 +1065,9 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
+  declineObjectSharingRequest(permissionId: Int!, userId: String!): Boolean!
+  deleteAnswerCollection(collectionId: Int!): Int
+  deleteAnswerCollectionEntry(id: Int!): Int
   deleteCourse(id: String!): Course
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
@@ -1018,6 +1079,7 @@ type Mutation {
   deleteQuestion(id: Int!): Element
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
+  editAnswerCollectionEntry(id: Int!, value: String!): AnswerCollectionEntry
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
   editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
@@ -1036,6 +1098,7 @@ type Mutation {
   generateLoginToken: User
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, id: Int!): GroupActivityInstance
+  importAnswerCollection(collectionId: Int!): Boolean!
   joinCourse(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
@@ -1054,8 +1117,10 @@ type Mutation {
   manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateSelectionQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
+  modifyAnswerCollection(access: ObjectAccess, catalogCollectionId: String, description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!): Feedback
   publishFeedback(id: Int!, isPublished: Boolean!): Feedback
@@ -1064,7 +1129,9 @@ type Mutation {
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   publishScheduledActivities: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  removeAnswerCollection(collectionId: Int!): Int
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
+  requestAnswerCollection(collectionId: Int!): CatalogObject
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
@@ -1139,6 +1206,7 @@ type NumericalElementResult {
 
 type NumericalElementResults {
   anonymousAnswers: Int!
+  exactSolutions: [Float!]
   maxValue: Float
   minValue: Float
   responseValues: [NumericalElementResult!]!
@@ -1154,6 +1222,7 @@ type NumericalElementSolutions {
 type NumericalInstanceEvaluation {
   correctness: Float
   elementType: ElementType!
+  exactSolutions: [Float!]
   explanation: String
   feedbacks: [QuestionFeedback!]
   instanceId: Int!
@@ -1173,6 +1242,7 @@ type NumericalInstanceEvaluation {
 
 type NumericalQuestionOptions {
   accuracy: Int
+  exactSolutions: [Float!]
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
   placeholder: String
@@ -1198,6 +1268,21 @@ type NumericalSolutionRange {
   min: Float
 }
 
+enum ObjectAccess {
+  PRIVATE
+  PUBLIC
+  RESTRICTED
+}
+
+type ObjectSharingRequest {
+  objectName: String!
+  objectType: CatalogObjectType!
+  permissionId: Int!
+  userEmail: String!
+  userId: String!
+  userShortname: String!
+}
+
 input OptionsChoicesInput {
   choices: [ChoiceInput!]
   displayMode: ElementDisplayMode
@@ -1216,12 +1301,20 @@ input OptionsFreeTextInput {
 
 input OptionsNumericalInput {
   accuracy: Int
+  exactSolutions: [Float!]
   feedback: String
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
   restrictions: NumericalRestrictionsInput
   solutionRanges: [SolutionRangeInput!]
   unit: String
+}
+
+input OptionsSelectionInput {
+  answerCollection: Int
+  correctAnswers: [Int!]
+  hasSampleSolution: Boolean
+  numberOfInputs: Int
 }
 
 enum ParameterType {
@@ -1354,6 +1447,11 @@ type PerformanceRates {
   partialRate: Float!
 }
 
+enum PermissionStatus {
+  GRANTED
+  REQUESTED
+}
+
 type PracticeQuiz {
   availableFrom: Date
   course: Course
@@ -1389,21 +1487,26 @@ type PushSubscription {
 type Query {
   artificialInstance(elementId: Int!): ElementInstance
   basicCourseInformation(courseId: String!): StudentCourse
-  checkFeaturePreviewAvailable: Boolean!
   checkParticipantNameAvailable(username: String!): Boolean!
+  checkPrivatePreviewAvailable: Boolean!
+  checkPublicPreviewAvailable: Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
   checkValidCoursePin(pin: Int!): String
   cockpitQuiz(id: String!): LiveQuiz
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlLiveQuiz(id: String!): LiveQuiz
+  countCatalogSharingRequests: Int!
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getAnswerCollections: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
+  getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
+  getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseGroups(courseId: String!): Course
@@ -1425,6 +1528,7 @@ type Query {
   getPracticeQuizList: [Course!]
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
+  getSingleAnswerCollectionCatalog(collectionId: Int!): AnswerCollection
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
@@ -1482,7 +1586,104 @@ enum ResponseCorrectnessType {
 
 input ResponseInput {
   choices: [Int!]
+  selection: [Int!]
   value: String
+}
+
+type SelectionElement {
+  content: String!
+  createdAt: Date
+  explanation: String
+  id: Int!
+  isArchived: Boolean
+  isDeleted: Boolean
+  name: String!
+  options: SelectionQuestionOptions!
+  pointsMultiplier: Int!
+  status: ElementStatus!
+  tags: [Tag!]
+  type: ElementType!
+  updatedAt: Date
+  version: Int!
+}
+
+type SelectionElementData {
+  content: String!
+  elementId: Int!
+  explanation: String
+  id: ID!
+  name: String!
+  options: SelectionQuestionOptions!
+  pointsMultiplier: Int!
+  type: ElementType!
+}
+
+type SelectionElementInstanceEvaluation {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: SelectionElementResults!
+  type: ElementType!
+}
+
+type SelectionElementResult {
+  answerId: Int!
+  count: Int!
+  value: String!
+}
+
+type SelectionElementResults {
+  anonymousAnswers: Int!
+  answerSolutionIds: [Int!]
+  numberOfInputs: Int
+  selectionResponses: [SelectionElementResult!]!
+  totalAnswers: Int!
+}
+
+type SelectionInstanceEvaluation {
+  answerSolutionIds: [Int!]
+  correctness: Float
+  elementType: ElementType!
+  explanation: String
+  feedbacks: [QuestionFeedback!]
+  instanceId: Int!
+  lastResponse: SingleQuestionResponseSelection
+  newPointsFrom: Date
+  newXpFrom: Date
+  numAnswers: Int
+  percentile: Float
+  pointsAwarded: Float
+  pointsMultiplier: Int!
+  score: Float!
+  selectionResponses: [SingleSelectionResponse!]
+  xp: Int
+  xpAwarded: Int
+}
+
+type SelectionQuestionOptions {
+  answerCollection: SelectionQuestionOptionsCollection
+  answerCollectionSolutionIds: [Int!]
+  hasAnswerFeedbacks: Boolean
+  hasSampleSolution: Boolean
+  numberOfInputs: Int
+}
+
+type SelectionQuestionOptionsCollection {
+  entries: [SelectionQuestionOptionsCollectionEntry!]
+  id: Int!
+}
+
+type SelectionQuestionOptionsCollectionEntry {
+  id: Int!
+  value: String!
+}
+
+type SharingRequestResponse {
+  collectionId: Int!
+  userId: String!
 }
 
 type SingleChoiceResponse {
@@ -1512,7 +1713,17 @@ type SingleQuestionResponseFlashcard {
   correctness: FlashcardCorrectness!
 }
 
+type SingleQuestionResponseSelection {
+  selection: [Int!]!
+}
+
 type SingleQuestionResponseValue {
+  value: String!
+}
+
+type SingleSelectionResponse {
+  answerId: Int!
+  count: Int!
   value: String!
 }
 
@@ -1551,6 +1762,7 @@ input StackResponseInput {
   freeTextResponse: String
   instanceId: Int!
   numericalResponse: Float
+  selectionResponse: [Int!]
   type: ElementType!
 }
 
@@ -1611,13 +1823,14 @@ type User {
   catalyst: Boolean!
   catalystTier: String
   email: String!
-  featurePreview: Boolean!
   firstLogin: Boolean!
   id: ID!
   locale: LocaleType!
   loginToken: String
   loginTokenExpiresAt: Date
   mediaFiles: [MediaFile!]
+  privatePreview: Boolean!
+  publicPreview: Boolean!
   sendProjectUpdates: Boolean!
   shortname: String!
 }

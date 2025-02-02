@@ -24,9 +24,7 @@ function ElementFormErrors({
       <div>{t('manage.formErrors.resolveErrors')}</div>
       <ul className="ml-4 list-disc">
         {errors.name && (
-          <li>{`${t('manage.questionForms.questionTitle')}: ${
-            errors.name
-          }`}</li>
+          <li>{`${t('manage.questionForms.elementTitle')}: ${errors.name}`}</li>
         )}
         {errors.tags && (
           <li>{`${t('manage.questionPool.tags')}: ${errors.tags}`}</li>
@@ -92,11 +90,38 @@ function ElementFormErrors({
           )}
         {'options' in errors &&
           errors.options &&
+          'solutionType' in errors.options &&
+          errors.options.solutionType && (
+            <li>{`${t('manage.questionForms.solutionTypeNumerical')}: ${
+              errors.options.solutionType
+            }`}</li>
+          )}
+        {'options' in errors &&
+          errors.options &&
           'solutionRanges' in errors.options &&
           errors.options.solutionRanges &&
-          typeof errors.options.solutionRanges === 'string' && (
+          (typeof errors.options.solutionRanges === 'string' ? (
             <li>{`${t('manage.questionForms.solutionRanges')}: ${
               errors.options.solutionRanges
+            }`}</li>
+          ) : (
+            (errors.options.solutionRanges as string[]).map(
+              (rangeError, ix) => (
+                <li
+                  key={`solution-range-error-${ix}`}
+                >{`${t('manage.questionForms.solutionRanges')} ${ix + 1}: ${
+                  rangeError
+                }`}</li>
+              )
+            )
+          ))}
+        {'options' in errors &&
+          errors.options &&
+          'exactSolutions' in errors.options &&
+          errors.options.exactSolutions &&
+          typeof errors.options.exactSolutions === 'string' && (
+            <li>{`${t('manage.questionForms.exactSolutions')}: ${
+              errors.options.exactSolutions
             }`}</li>
           )}
 
@@ -154,6 +179,28 @@ function ElementFormErrors({
             <li>{`${t(
               'manage.questionForms.possibleSolutions'
             )}: ${errors.options.solutions}`}</li>
+          )}
+
+        {/* error messages specific to NR questions */}
+        {'options' in errors &&
+          errors.options &&
+          'answerCollection' in errors.options &&
+          errors.options.answerCollection && (
+            <li>{`${t('manage.questionForms.answerCollection')}: ${errors.options.answerCollection}`}</li>
+          )}
+
+        {'options' in errors &&
+          errors.options &&
+          'numberOfInputs' in errors.options &&
+          errors.options.numberOfInputs && (
+            <li>{`${t('manage.questionForms.numberOfInputs')}: ${errors.options.numberOfInputs}`}</li>
+          )}
+
+        {'options' in errors &&
+          errors.options &&
+          'correctAnswers' in errors.options &&
+          errors.options.correctAnswers && (
+            <li>{`${t('manage.questionForms.correctAnswerOptions')}: ${errors.options.correctAnswers}`}</li>
           )}
       </ul>
     </UserNotification>

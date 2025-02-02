@@ -386,7 +386,7 @@ function PracticeQuizElement({
                       cy: `duplicate-practice-quiz-${practiceQuiz.name}`,
                     },
                   }),
-                  user?.featurePreview
+                  user?.publicPreview
                     ? {
                         label: (
                           <ActivityAnalyticsLink

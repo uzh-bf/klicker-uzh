@@ -44,14 +44,35 @@
           { "min": "0", "max": "25" },
           { "min": "75", "max": "100" }
         ]
-      }
+      },
+      "answer": "0.55"
     },
     "FT": {
       "title": "FT Question Micro",
       "content": "FT Question Micro Content",
       "options": {
         "maxLength": "100"
-      }
+      },
+      "answer": "Answer FT Question",
+      "answerPreview1": "Answer FT Question Preview 1",
+      "answerPreview2": "Answer FT Question Preview 2"
+    },
+    "SE": {
+      "collection": {
+        "name": "SE Collection ML",
+        "description": "SE Collection ML Description",
+        "options": [
+          "SE ML Option 1",
+          "SE ML Option 2",
+          "SE ML Option 3",
+          "SE ML Option 4",
+          "SE ML Option 5"
+        ]
+      },
+      "title": "SE Question ML",
+      "content": "SE cb23e8ed-0499-4011-b1d4-cfcdaad0b25a",
+      "inputs": 3,
+      "solutions": [0, 1, 3]
     },
     "FC": {
       "title": "FC Question Micro",

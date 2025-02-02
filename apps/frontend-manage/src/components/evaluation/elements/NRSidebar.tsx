@@ -109,10 +109,22 @@ function NRSidebar({
               {t('manage.evaluation.correctSolutionRanges')}:
             </div>
             {instance.results.solutionRanges.map((range, innerIndex) => (
-              <div key={innerIndex}>
+              <div key={`solution-range-${innerIndex}`}>
                 [{range?.min ?? '-∞'},{range?.max ?? '+∞'}]
               </div>
             ))}
+          </div>
+        )}
+        {showSolution && instance.results.exactSolutions && (
+          <div className={textSize.textLg}>
+            <div className="mt-4 font-bold">
+              {t('manage.evaluation.correctExactSolutions')}:
+            </div>
+            <ul>
+              {instance.results.exactSolutions.map((solution, innerIndex) => (
+                <li key={`innerIndex-${innerIndex}`}>{solution}</li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

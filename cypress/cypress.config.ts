@@ -2,7 +2,6 @@ import { PrismaClient } from '@klicker-uzh/prisma'
 import { defineConfig } from 'cypress'
 
 export default defineConfig({
-  // TODO: no watch mode in CI
   watchForFileChanges: true,
   projectId: 'y436dx',
   env: {
@@ -11,7 +10,10 @@ export default defineConfig({
     URL_MANAGE: 'http://127.0.0.1:3002',
     URL_CONTROL: 'http://127.0.0.1:3003',
     LECTURER_EMAIL: 'lecturer@df.uzh.ch',
-    LECTURER_IDENTIFIER: 'lecturer',
+    LECTURER_SHORTNAME: 'lecturer',
+    LECTURER_IND_SHORTNAME: 'pro1',
+    LECTURER_INST_SHORTNAME: 'pro2',
+    LECTURER_INST2_SHORTNAME: 'pro3',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
     STUDENT_USERNAME2: 'testuser2',
@@ -139,6 +141,26 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async verifyDeletionAnswerCollections() {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const count = await prisma.answerCollection.count()
+            return count === 3 // 3 seeded answer collections that should not be removed through workflows
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
         async removeSoftDeletedMicrolearning({ mlName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
@@ -225,6 +247,41 @@ export default defineConfig({
             }
 
             return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async updateLecturerPermissions({
+          publicPreview,
+          privatePreview,
+        }: {
+          publicPreview: boolean
+          privatePreview: boolean
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const user = await prisma.user.update({
+              where: {
+                shortname: 'lecturer',
+              },
+              data: {
+                publicPreview,
+                privatePreview,
+              },
+            })
+
+            return !!user
           } finally {
             await prisma.$disconnect()
           }
