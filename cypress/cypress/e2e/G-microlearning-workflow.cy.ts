@@ -80,9 +80,9 @@ describe('Different microlearning workflows', function () {
     // create answer collection
     cy.get('[data-cy="resources"]').click()
     cy.createAnswerCollection({
-      name: this.data.questions.SE.collection.name,
-      description: this.data.questions.SE.collection.description,
-      entries: this.data.questions.SE.collection.options,
+      name: this.data.questions.collection.name,
+      description: this.data.questions.collection.description,
+      entries: this.data.questions.collection.options,
       access: messages.manage.resources.accessPRIVATE,
       accessCy: 'private',
     })
@@ -93,10 +93,24 @@ describe('Different microlearning workflows', function () {
       title: this.data.questions.SE.title,
       content: this.data.questions.SE.content,
       numberOfInputs: this.data.questions.SE.inputs,
-      collectionName: this.data.questions.SE.collection.name,
-      correctAnswers: this.data.questions.SE.collection.options.filter((_, i) =>
+      collectionName: this.data.questions.collection.name,
+      correctAnswers: this.data.questions.collection.options.filter((_, i) =>
         this.data.questions.SE.solutions.includes(i)
       ),
+    })
+
+    // create a case study question
+    cy.createQuestionCS({
+      title: this.data.questions.CS.title,
+      content: this.data.questions.CS.content,
+      explanation: this.data.questions.CS.explanation,
+      collectionName: this.data.questions.collection.name,
+      selectedItems: this.data.questions.collection.options.filter((_, i) =>
+        this.data.questions.CS.selectedItems.includes(i)
+      ),
+      criteria: this.data.questions.CS.criteria,
+      cases: this.data.questions.CS.cases,
+      solutions: this.data.questions.CS.solutions,
     })
   })
 
@@ -602,6 +616,7 @@ describe('Different microlearning workflows', function () {
             this.data.questions.NR.title,
             this.data.questions.FT.title,
             this.data.questions.SE.title,
+            this.data.questions.CS.title,
             this.data.questions.FC.title,
             this.data.questions.CT.title,
           ],
@@ -1005,43 +1020,128 @@ describe('Different microlearning workflows', function () {
     )
   })
 
+  function computeCaseStudySlidedValue({ criterion, answer }) {
+    const criterionMin = criterion.min
+    const criterionMax = criterion.max
+    const criterionStep = criterion.step
+    const midValue = criterionMin + (criterionMax - criterionMin) / 2
+    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
+    const slidedValue = Math.max(
+      Math.min(midValue + signedSteps * criterionStep, criterionMax),
+      criterionMin
+    )
+
+    return slidedValue
+  }
+
+  function enterCaseStudyInputs(data) {
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // move sliders to answer values
+              const answer = criterionAnswer as { click: string; steps: number }
+              cy.get(
+                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              )
+                .click()
+                .type(answer.click.repeat(answer.steps))
+
+              // verify that correct value is set
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
+  }
+
   function enterValidCompleteInputs(data) {
     // enter valid response for all questions to check correct input validation afterwards
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
+
     cy.get('[data-cy="sc-1-answer-option-2"]').click()
+
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
+
     cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
+
     cy.get('[data-cy="input-numerical-4"]')
       .clear()
       .type(data.questions.NR.answer)
+
     cy.get('[data-cy="free-text-input-5"]').type(data.questions.FT.answer)
+
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
     cy.get('[id="selection-6-field-1"]').contains(
-      data.questions.SE.collection.options[2]
+      data.questions.collection.options[2]
     )
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
     cy.get('[id="selection-6-field-1"]').contains(
-      data.questions.SE.collection.options[0]
+      data.questions.collection.options[0]
     )
     cy.get('[id="selection-6-field-2"]').click()
     cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
     cy.get('[id="selection-6-field-2"]').contains(
-      data.questions.SE.collection.options[1]
+      data.questions.collection.options[1]
     )
     cy.get('[id="selection-6-field-3"]').click()
     cy.get('[id="react-select-selection-6-field-3-option-0"]').click()
     cy.get('[id="selection-6-field-3"]').contains(
-      data.questions.SE.collection.options[2]
+      data.questions.collection.options[2]
     )
-    cy.get('[data-cy="flashcard-front-7"]').click()
-    cy.get('[data-cy="flashcard-response-7-No"]').click()
-    cy.get('[data-cy="flashcard-response-7-Yes"]').click()
-    cy.get('[data-cy="read-content-element-8"]').click()
+
+    enterCaseStudyInputs(data)
+
+    cy.get('[data-cy="flashcard-front-8"]').click()
+    cy.get('[data-cy="flashcard-response-8-No"]').click()
+    cy.get('[data-cy="flashcard-response-8-Yes"]').click()
+
+    cy.get('[data-cy="read-content-element-9"]').click()
+  }
+
+  function verifyPersistentCaseStudyInputs(data) {
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // verify that correct value is still set
+              const answer = criterionAnswer as { click: string; steps: number }
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+
+              // try to move slider and verify that value remains the same
+              cy.get(
+                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              )
+                .click()
+                .type('{leftarrow}')
+              cy.get(
+                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
   }
 
   function verifyPersistentCompleteInputs(data) {
@@ -1072,18 +1172,20 @@ describe('Different microlearning workflows', function () {
       .should('be.disabled')
 
     cy.get('[id="selection-6-field-1"]')
-      .contains(data.questions.SE.collection.options[0])
+      .contains(data.questions.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-2"]')
-      .contains(data.questions.SE.collection.options[1])
+      .contains(data.questions.collection.options[1])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-3"]')
-      .contains(data.questions.SE.collection.options[2])
+      .contains(data.questions.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
 
-    cy.get('[data-cy="flashcard-response-7-No"]').should('be.disabled')
-    cy.get('[data-cy="flashcard-response-7-Partially"]').should('be.disabled')
-    cy.get('[data-cy="flashcard-response-7-Yes"]').should('be.disabled')
+    verifyPersistentCaseStudyInputs(data)
+
+    cy.get('[data-cy="flashcard-response-8-No"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-8-Partially"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-8-Yes"]').should('be.disabled')
   }
 
   it('Respond to all questions in the microlearning covering all element types', function () {
@@ -1156,15 +1258,19 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(data.questions.NR.answer)
     cy.get('[data-cy="free-text-input-5"]').type(data.questions.FT.answer)
+
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-2"]').click()
     cy.get('[id="selection-6-field-1"]').contains(
-      data.questions.SE.collection.options[2]
+      data.questions.collection.options[2]
     )
-    cy.get('[data-cy="flashcard-front-7"]').click()
-    cy.get('[data-cy="flashcard-response-7-No"]').click()
-    cy.get('[data-cy="flashcard-response-7-Yes"]').click()
-    cy.get('[data-cy="read-content-element-8"]').click()
+
+    enterCaseStudyInputs(data)
+
+    cy.get('[data-cy="flashcard-front-8"]').click()
+    cy.get('[data-cy="flashcard-response-8-No"]').click()
+    cy.get('[data-cy="flashcard-response-8-Yes"]').click()
+    cy.get('[data-cy="read-content-element-9"]').click()
   }
 
   function verifyPersistentPartialInputs(data) {
@@ -1195,7 +1301,7 @@ describe('Different microlearning workflows', function () {
       .should('be.disabled')
 
     cy.get('[id="selection-6-field-1"]')
-      .contains(data.questions.SE.collection.options[2])
+      .contains(data.questions.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-2"]')
       .contains(messages.shared.questions.seSelectOption)
@@ -1204,9 +1310,11 @@ describe('Different microlearning workflows', function () {
       .contains(messages.shared.questions.seSelectOption)
       .should('have.css', 'pointer-events', 'none')
 
-    cy.get('[data-cy="flashcard-response-7-No"]').should('be.disabled')
-    cy.get('[data-cy="flashcard-response-7-Partially"]').should('be.disabled')
-    cy.get('[data-cy="flashcard-response-7-Yes"]').should('be.disabled')
+    verifyPersistentCaseStudyInputs(data)
+
+    cy.get('[data-cy="flashcard-response-8-No"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-8-Partially"]').should('be.disabled')
+    cy.get('[data-cy="flashcard-response-8-Yes"]').should('be.disabled')
   }
 
   it('Answer to the microlearning with partial responses (where supported)', function () {
@@ -1357,6 +1465,7 @@ describe('Different microlearning workflows', function () {
       this.data.questions.NR.title,
       this.data.questions.FT.title,
       this.data.questions.SE.title,
+      this.data.questions.CS.title,
       this.data.questions.FC.title,
       this.data.questions.CT.title,
     ]
@@ -1391,7 +1500,7 @@ describe('Different microlearning workflows', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.deleteAnswerCollection({
-      collectionName: this.data.questions.SE.collection.name,
+      collectionName: this.data.questions.collection.name,
     })
   })
 
