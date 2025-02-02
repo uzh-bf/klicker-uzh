@@ -152,92 +152,84 @@ function ElementStack({
               elementType === ElementType.Flashcard &&
               evaluation.__typename === 'FlashcardInstanceEvaluation'
             ) {
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: evaluation.lastResponse.correctness,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.correctness,
               }
+
+              return acc
             } else if (
               elementType === ElementType.Content &&
               evaluation.__typename === 'ContentInstanceEvaluation'
             ) {
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: evaluation.lastResponse.viewed,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.viewed,
               }
+
+              return acc
             } else if (
               (elementType === ElementType.Sc ||
                 elementType === ElementType.Mc) &&
               evaluation.__typename === 'ChoicesInstanceEvaluation'
             ) {
               const storedChoices = evaluation.lastResponse.choices
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: storedChoices.reduce<Record<number, boolean>>(
-                    (acc, choice) => {
-                      return {
-                        ...acc,
-                        [choice]: true,
-                      }
-                    },
-                    {}
-                  ),
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: storedChoices.reduce<Record<number, boolean>>(
+                  (choiceAcc, choice) => {
+                    choiceAcc[choice] = true
+                    return choiceAcc
+                  },
+                  {}
+                ),
               }
+
+              return acc
             } else if (
               elementType === ElementType.Kprim &&
               evaluation.__typename === 'ChoicesInstanceEvaluation'
             ) {
               const storedChoices = evaluation.lastResponse.choices
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: {
-                    0: storedChoices.includes(0),
-                    1: storedChoices.includes(1),
-                    2: storedChoices.includes(2),
-                    3: storedChoices.includes(3),
-                  },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: {
+                  0: storedChoices.includes(0),
+                  1: storedChoices.includes(1),
+                  2: storedChoices.includes(2),
+                  3: storedChoices.includes(3),
                 },
               }
+
+              return acc
             } else if (
               (elementType === ElementType.Numerical ||
                 elementType === ElementType.FreeText) &&
               (evaluation.__typename === 'FreeTextInstanceEvaluation' ||
                 evaluation.__typename === 'NumericalInstanceEvaluation')
             ) {
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: evaluation.lastResponse.value,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.value,
               }
+
+              return acc
             } else if (
               elementType === ElementType.Selection &&
               evaluation.__typename === 'SelectionInstanceEvaluation'
             ) {
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: evaluation.lastResponse.selection,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.selection,
               }
+
+              return acc
             } else if (
               elementType === ElementType.CaseStudy &&
               evaluation.__typename === 'CaseStudyInstanceEvaluation'
@@ -261,14 +253,13 @@ function ElementStack({
                   {}
                 )
 
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: lastResponseObject,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: lastResponseObject,
               }
+
+              return acc
             }
 
             return acc
