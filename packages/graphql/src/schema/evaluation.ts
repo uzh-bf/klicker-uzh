@@ -64,7 +64,7 @@ export interface IChoicesElementEvaluationResults {
   }[]
 }
 
-export interface IChoicesElementInstanceEvaluation
+export interface IChoicesActivityEvaluationData
   extends IElementInstanceEvaluation {
   results: IChoicesElementEvaluationResults
 }
@@ -98,7 +98,7 @@ export interface IStatistics {
   sd: number
 }
 
-export interface INumericalElementInstanceEvaluation
+export interface INumericalActivityEvaluationData
   extends IElementInstanceEvaluation {
   results: INumericalElementEvaluationResults
   statistics?: IStatistics
@@ -116,7 +116,7 @@ export interface IFreeElementEvaluationResults {
   }[]
 }
 
-export interface IFreeElementInstanceEvaluation
+export interface IFreeTextActivityEvaluationData
   extends IElementInstanceEvaluation {
   results: IFreeElementEvaluationResults
 }
@@ -133,7 +133,7 @@ export interface ISelectionElementEvaluationResults {
   }[]
 }
 
-export interface ISelectionElementInstanceEvaluation
+export interface ISelectionActivityEvaluationData
   extends IElementInstanceEvaluation {
   results: ISelectionElementEvaluationResults
 }
@@ -146,7 +146,7 @@ export interface IFlashcardElementEvaluationResults {
   incorrectCount: number
 }
 
-export interface IFlashcardElementInstanceEvaluation
+export interface IFlashcardActivityEvaluationData
   extends IElementInstanceEvaluation {
   results: IFlashcardElementEvaluationResults
 }
@@ -156,7 +156,7 @@ export interface IContentElementEvaluationResults {
   anonymousAnswers: number
 }
 
-export interface IContentElementInstanceEvaluation
+export interface IContentActivityEvaluationData
   extends IElementInstanceEvaluation {
   results: IContentElementEvaluationResults
 }
@@ -216,12 +216,12 @@ const sharedElementEvaluation = (t) => ({
   hasAnswerFeedbacks: t.exposeBoolean('hasAnswerFeedbacks'),
 })
 
-export const ChoicesElementInstanceEvaluationRef =
-  builder.objectRef<IChoicesElementInstanceEvaluation>(
-    'ChoicesElementInstanceEvaluation'
+export const ChoicesActivityEvaluationDataRef =
+  builder.objectRef<IChoicesActivityEvaluationData>(
+    'ChoicesActivityEvaluationData'
   )
-export const ChoicesElementInstanceEvaluation =
-  ChoicesElementInstanceEvaluationRef.implement({
+export const ChoicesActivityEvaluationData =
+  ChoicesActivityEvaluationDataRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
       results: t.expose('results', {
@@ -269,12 +269,12 @@ export const Statistics = builder
     }),
   })
 
-export const NumericalElementInstanceEvaluationRef =
-  builder.objectRef<INumericalElementInstanceEvaluation>(
-    'NumericalElementInstanceEvaluation'
+export const NumericalActivityEvaluationDataRef =
+  builder.objectRef<INumericalActivityEvaluationData>(
+    'NumericalActivityEvaluationData'
   )
-export const NumericalElementInstanceEvaluation =
-  NumericalElementInstanceEvaluationRef.implement({
+export const NumericalActivityEvaluationData =
+  NumericalActivityEvaluationDataRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
       statistics: t.expose('statistics', { type: Statistics, nullable: true }),
@@ -328,12 +328,12 @@ export const NumericalElementResult = NumericalElementResultRef.implement({
 })
 
 // ----- FREE TEXT ELEMENT EVALUATION INTERFACE -----
-export const FreeElementInstanceEvaluationRef =
-  builder.objectRef<IFreeElementInstanceEvaluation>(
-    'FreeElementInstanceEvaluation'
+export const FreeTextActivityEvaluationDataRef =
+  builder.objectRef<IFreeTextActivityEvaluationData>(
+    'FreeTextActivityEvaluationData'
   )
-export const FreeElementInstanceEvaluation =
-  FreeElementInstanceEvaluationRef.implement({
+export const FreeTextActivityEvaluationData =
+  FreeTextActivityEvaluationDataRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
       results: t.expose('results', {
@@ -369,12 +369,12 @@ export const FreeElementResult = FreeElementResultRef.implement({
 })
 
 // ----- SELECTION ELEMENT EVALUATION INTERFACE -----
-export const SelectionElementInstanceEvaluationRef =
-  builder.objectRef<ISelectionElementInstanceEvaluation>(
-    'SelectionElementInstanceEvaluation'
+export const SelectionActivityEvaluationDataRef =
+  builder.objectRef<ISelectionActivityEvaluationData>(
+    'SelectionActivityEvaluationData'
   )
-export const SelectionElementInstanceEvaluation =
-  SelectionElementInstanceEvaluationRef.implement({
+export const SelectionActivityEvaluationData =
+  SelectionActivityEvaluationDataRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
       results: t.expose('results', {
@@ -411,12 +411,12 @@ export const SelectionElementResult = SelectionElementResultRef.implement({
 })
 
 // ----- FLASHCARD ELEMENT EVALUATION INTERFACE -----
-export const FlashcardElementInstanceEvaluationRef =
-  builder.objectRef<IFlashcardElementInstanceEvaluation>(
-    'FlashcardElementInstanceEvaluation'
+export const FlashcardActivityEvaluationDataRef =
+  builder.objectRef<IFlashcardActivityEvaluationData>(
+    'FlashcardActivityEvaluationData'
   )
-export const FlashcardElementInstanceEvaluation =
-  FlashcardElementInstanceEvaluationRef.implement({
+export const FlashcardActivityEvaluationData =
+  FlashcardActivityEvaluationDataRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
       results: t.expose('results', {
@@ -440,12 +440,12 @@ export const FlashcardElementResults = FlashcardElementResultsRef.implement({
 })
 
 // ----- CONTENT ELEMENT EVALUATION INTERFACE -----
-export const ContentElementInstanceEvaluationRef =
-  builder.objectRef<IContentElementInstanceEvaluation>(
-    'ContentElementInstanceEvaluation'
+export const ContentActivityEvaluationDataRef =
+  builder.objectRef<IContentActivityEvaluationData>(
+    'ContentActivityEvaluationData'
   )
-export const ContentElementInstanceEvaluation =
-  ContentElementInstanceEvaluationRef.implement({
+export const ContentActivityEvaluationData =
+  ContentActivityEvaluationDataRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
       results: t.expose('results', {
@@ -468,29 +468,29 @@ export const ElementInstanceEvaluation = builder.unionType(
   'ElementInstanceEvaluation',
   {
     types: [
-      ChoicesElementInstanceEvaluation,
-      NumericalElementInstanceEvaluation,
-      FreeElementInstanceEvaluation,
-      FlashcardElementInstanceEvaluation,
-      ContentElementInstanceEvaluation,
-      SelectionElementInstanceEvaluation,
+      ChoicesActivityEvaluationData,
+      NumericalActivityEvaluationData,
+      FreeTextActivityEvaluationData,
+      FlashcardActivityEvaluationData,
+      ContentActivityEvaluationData,
+      SelectionActivityEvaluationData,
     ],
     resolveType: (element) => {
       switch (element.type) {
         case DB.ElementType.SC:
         case DB.ElementType.MC:
         case DB.ElementType.KPRIM:
-          return ChoicesElementInstanceEvaluation
+          return ChoicesActivityEvaluationData
         case DB.ElementType.NUMERICAL:
-          return NumericalElementInstanceEvaluation
+          return NumericalActivityEvaluationData
         case DB.ElementType.FREE_TEXT:
-          return FreeElementInstanceEvaluation
+          return FreeTextActivityEvaluationData
         case DB.ElementType.FLASHCARD:
-          return FlashcardElementInstanceEvaluation
+          return FlashcardActivityEvaluationData
         case DB.ElementType.CONTENT:
-          return ContentElementInstanceEvaluation
+          return ContentActivityEvaluationData
         case DB.ElementType.SELECTION:
-          return SelectionElementInstanceEvaluation
+          return SelectionActivityEvaluationData
       }
     },
   }

@@ -1,4 +1,4 @@
-import { FreeElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { FreeTextActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
@@ -7,7 +7,7 @@ import { TextSizeType } from '../textSizes'
 import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
 
 interface FTSidebarProps {
-  instance: FreeElementInstanceEvaluation
+  instance: FreeTextActivityEvaluationData
   textSize: TextSizeType
   showSolution: boolean
   type: ActivityEvaluationType

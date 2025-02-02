@@ -40,7 +40,7 @@ function ElementEvaluation({
         />
       </div>
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        {currentInstance.__typename === 'ChoicesElementInstanceEvaluation' && (
+        {currentInstance.__typename === 'ChoicesActivityEvaluationData' && (
           <ChoicesEvaluation
             instanceEvaluation={currentInstance}
             textSize={textSize}
@@ -49,8 +49,7 @@ function ElementEvaluation({
             type={type}
           />
         )}
-        {currentInstance.__typename ===
-          'NumericalElementInstanceEvaluation' && (
+        {currentInstance.__typename === 'NumericalActivityEvaluationData' && (
           <NREvaluation
             instanceEvaluation={currentInstance}
             textSize={textSize}
@@ -59,7 +58,7 @@ function ElementEvaluation({
             type={type}
           />
         )}
-        {currentInstance.__typename === 'FreeElementInstanceEvaluation' && (
+        {currentInstance.__typename === 'FreeTextActivityEvaluationData' && (
           <FTEvaluation
             instanceEvaluation={currentInstance}
             textSize={textSize}
@@ -68,8 +67,7 @@ function ElementEvaluation({
             type={type}
           />
         )}
-        {currentInstance.__typename ===
-          'SelectionElementInstanceEvaluation' && (
+        {currentInstance.__typename === 'SelectionActivityEvaluationData' && (
           <SEEvaluation
             instanceEvaluation={currentInstance}
             textSize={textSize}
@@ -77,11 +75,10 @@ function ElementEvaluation({
             showSolution={showSolution}
           />
         )}
-        {currentInstance.__typename ===
-          'FlashcardElementInstanceEvaluation' && (
+        {currentInstance.__typename === 'FlashcardActivityEvaluationData' && (
           <FCEvaluation evaluation={currentInstance} />
         )}
-        {currentInstance.__typename === 'ContentElementInstanceEvaluation' && (
+        {currentInstance.__typename === 'ContentActivityEvaluationData' && (
           <CTEvaluation evaluation={currentInstance} />
         )}
       </div>

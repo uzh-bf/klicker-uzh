@@ -6,7 +6,7 @@ fragment EvaluationResults on ActivityEvaluation {
     stackOrder
 
     instances {
-      ... on ChoicesElementInstanceEvaluation {
+      ... on ChoicesActivityEvaluationData {
         __typename
         id
         type
@@ -29,7 +29,7 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
-      ... on NumericalElementInstanceEvaluation {
+      ... on NumericalActivityEvaluationData {
         __typename
         id
         type
@@ -68,7 +68,7 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
-      ... on FreeElementInstanceEvaluation {
+      ... on FreeTextActivityEvaluationData {
         __typename
         id
         type
@@ -92,7 +92,7 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
-      ... on SelectionElementInstanceEvaluation {
+      ... on SelectionActivityEvaluationData {
         __typename
         id
         type
@@ -116,7 +116,7 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
-      ... on FlashcardElementInstanceEvaluation {
+      ... on FlashcardActivityEvaluationData {
         __typename
         id
         type
@@ -136,7 +136,7 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
-      ... on ContentElementInstanceEvaluation {
+      ... on ContentActivityEvaluationData {
         __typename
         id
         type

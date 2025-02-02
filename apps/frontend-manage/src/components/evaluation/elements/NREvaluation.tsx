@@ -1,4 +1,4 @@
-import { NumericalElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { NumericalActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useState } from 'react'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
@@ -14,7 +14,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 
 interface NREvaluationProps {
-  instanceEvaluation: NumericalElementInstanceEvaluation
+  instanceEvaluation: NumericalActivityEvaluationData
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean

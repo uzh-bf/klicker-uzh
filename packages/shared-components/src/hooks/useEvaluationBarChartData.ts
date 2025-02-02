@@ -10,7 +10,7 @@ function useEvaluationBarChartData({
   instance,
 }: UseEvaluationBarChartDataProps) {
   const labeledData = useMemo(() => {
-    if (instance.__typename === 'ChoicesElementInstanceEvaluation') {
+    if (instance.__typename === 'ChoicesActivityEvaluationData') {
       const results = instance.results
       return results.choices.map((choice, idx) => ({
         count: choice.count,

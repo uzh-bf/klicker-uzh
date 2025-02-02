@@ -1,4 +1,4 @@
-import { ChoicesElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { ChoicesActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
@@ -13,7 +13,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 
 interface ChoicesEvaluationProps {
-  instanceEvaluation: ChoicesElementInstanceEvaluation
+  instanceEvaluation: ChoicesActivityEvaluationData
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean

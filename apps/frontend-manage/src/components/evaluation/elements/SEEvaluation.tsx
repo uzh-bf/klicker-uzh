@@ -1,10 +1,10 @@
-import { SelectionElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { SelectionActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
 
 interface SEEvaluationProps {
-  instanceEvaluation: SelectionElementInstanceEvaluation
+  instanceEvaluation: SelectionActivityEvaluationData
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean

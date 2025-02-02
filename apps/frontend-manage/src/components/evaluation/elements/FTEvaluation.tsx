@@ -1,4 +1,4 @@
-import { FreeElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { FreeTextActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface FTEvaluationProps {
-  instanceEvaluation: FreeElementInstanceEvaluation
+  instanceEvaluation: FreeTextActivityEvaluationData
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
