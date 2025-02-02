@@ -158,6 +158,17 @@ type AwardEntry {
   type: String!
 }
 
+type CaseStudyActivityEvaluationData {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: CaseStudyElementResults!
+  type: ElementType!
+}
+
 type CaseStudyCase {
   description: String!
   id: String!
@@ -256,6 +267,39 @@ type CaseStudyElementOptions {
   criteria: [CaseStudyCriterion!]!
   hasSampleSolution: Boolean
   items: [ElementOptionsAnswerCollectionEntry!]
+}
+
+type CaseStudyElementResultCase {
+  caseId: String!
+  items: [CaseStudyElementResultItem!]!
+}
+
+type CaseStudyElementResultCriterion {
+  criterionId: String!
+  max: Float!
+  min: Float!
+  name: String!
+  responses: [CaseStudyElementResultResponse!]!
+  solutionMax: Float
+  solutionMin: Float
+  statistics: Statistics
+  unit: String
+}
+
+type CaseStudyElementResultItem {
+  criteria: [CaseStudyElementResultCriterion!]!
+  itemId: Int!
+}
+
+type CaseStudyElementResultResponse {
+  count: Int!
+  value: Float!
+}
+
+type CaseStudyElementResults {
+  anonymousAnswers: Int!
+  caseResults: [CaseStudyElementResultCase!]!
+  totalAnswers: Int!
 }
 
 type CaseStudyInstanceEvaluation {
@@ -600,7 +644,7 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
-union ElementInstanceEvaluation = ChoicesActivityEvaluationData | ContentActivityEvaluationData | FlashcardActivityEvaluationData | FreeTextActivityEvaluationData | NumericalActivityEvaluationData | SelectionActivityEvaluationData
+union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActivityEvaluationData | ContentActivityEvaluationData | FlashcardActivityEvaluationData | FreeTextActivityEvaluationData | NumericalActivityEvaluationData | SelectionActivityEvaluationData
 
 input ElementInstanceInput {
   elementId: Int!

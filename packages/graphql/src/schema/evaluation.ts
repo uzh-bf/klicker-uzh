@@ -138,6 +138,41 @@ export interface ISelectionActivityEvaluationData
   results: ISelectionElementEvaluationResults
 }
 
+export interface ICaseStudyElementEvaluationResults {
+  totalAnswers: number
+  anonymousAnswers: number
+  caseResults: {
+    caseId: string
+    items: {
+      itemId: number
+      criteria: {
+        // general criterion information (always provided)
+        criterionId: string
+        name: string
+        min: number
+        max: number
+        unit?: string | null
+
+        // sample solutions (not required)
+        solutionMin?: number | null
+        solutionMax?: number | null
+
+        // student responses and statistics computed based on it
+        statistics?: IStatistics
+        responses: {
+          value: number
+          count: number
+        }[]
+      }[]
+    }[]
+  }[]
+}
+
+export interface ICaseStudyActivityEvaluationData
+  extends IElementInstanceEvaluation {
+  results: ICaseStudyElementEvaluationResults
+}
+
 export interface IFlashcardElementEvaluationResults {
   totalAnswers: number
   anonymousAnswers: number
@@ -166,6 +201,7 @@ export const FlashcardCorrectness = builder.enumType('FlashcardCorrectness', {
 })
 
 // ----- ACTIVITY EVALUATION INTERFACE -----
+// #region
 export const ActivityEvaluationRef =
   builder.objectRef<IActivityEvaluation>('ActivityEvaluation')
 export const ActivityEvaluation = ActivityEvaluationRef.implement({
@@ -188,8 +224,10 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
     }),
   }),
 })
+// #endregion
 
 // ----- STACK EVALUATION INTERFACE -----
+// #region
 export const StackEvaluationRef =
   builder.objectRef<IStackEvaluation>('StackEvaluation')
 export const StackEvaluation = StackEvaluationRef.implement({
@@ -205,7 +243,23 @@ export const StackEvaluation = StackEvaluationRef.implement({
   }),
 })
 
+export const Statistics = builder
+  .objectRef<IStatistics>('Statistics')
+  .implement({
+    fields: (t) => ({
+      max: t.exposeFloat('max'),
+      min: t.exposeFloat('min'),
+      mean: t.exposeFloat('mean'),
+      median: t.exposeFloat('median'),
+      q1: t.exposeFloat('q1'),
+      q3: t.exposeFloat('q3'),
+      sd: t.exposeFloat('sd'),
+    }),
+  })
+// #endregion
+
 // ----- CHOICES ELEMENT EVALUATION INTERFACE -----
+// #region
 const sharedElementEvaluation = (t) => ({
   id: t.exposeInt('id'),
   type: t.expose('type', { type: ElementType }),
@@ -253,22 +307,10 @@ export const ChoiceElementResults = ChoiceElementResultsRef.implement({
     feedback: t.exposeString('feedback', { nullable: true }),
   }),
 })
+// #endregion
 
 // ----- NUMERICAL ELEMENT EVALUATION INTERFACE -----
-export const Statistics = builder
-  .objectRef<IStatistics>('Statistics')
-  .implement({
-    fields: (t) => ({
-      max: t.exposeFloat('max'),
-      min: t.exposeFloat('min'),
-      mean: t.exposeFloat('mean'),
-      median: t.exposeFloat('median'),
-      q1: t.exposeFloat('q1'),
-      q3: t.exposeFloat('q3'),
-      sd: t.exposeFloat('sd'),
-    }),
-  })
-
+// #region
 export const NumericalActivityEvaluationDataRef =
   builder.objectRef<INumericalActivityEvaluationData>(
     'NumericalActivityEvaluationData'
@@ -326,8 +368,10 @@ export const NumericalElementResult = NumericalElementResultRef.implement({
     correct: t.exposeBoolean('correct', { nullable: true }),
   }),
 })
+// #endregion
 
 // ----- FREE TEXT ELEMENT EVALUATION INTERFACE -----
+// #region
 export const FreeTextActivityEvaluationDataRef =
   builder.objectRef<IFreeTextActivityEvaluationData>(
     'FreeTextActivityEvaluationData'
@@ -367,8 +411,103 @@ export const FreeElementResult = FreeElementResultRef.implement({
     correct: t.exposeBoolean('correct', { nullable: true }),
   }),
 })
+// #endregion
+
+// ----- CASE STUDY ELEMENT EVALUATION INTERFACE -----
+// #region
+export const CaseStudyActivityEvaluationDataRef =
+  builder.objectRef<ICaseStudyActivityEvaluationData>(
+    'CaseStudyActivityEvaluationData'
+  )
+export const CaseStudyActivityEvaluationData =
+  CaseStudyActivityEvaluationDataRef.implement({
+    fields: (t) => ({
+      ...sharedElementEvaluation(t),
+      results: t.expose('results', {
+        type: CaseStudyElementResults,
+      }),
+    }),
+  })
+
+export const CaseStudyElementResultsRef =
+  builder.objectRef<ICaseStudyElementEvaluationResults>(
+    'CaseStudyElementResults'
+  )
+export const CaseStudyElementResults = CaseStudyElementResultsRef.implement({
+  fields: (t) => ({
+    totalAnswers: t.exposeInt('totalAnswers'),
+    anonymousAnswers: t.exposeInt('anonymousAnswers'),
+    caseResults: t.expose('caseResults', {
+      type: [CaseStudyElementResultCase],
+    }),
+  }),
+})
+
+export const CaseStudyElementResultCaseRef = builder.objectRef<
+  ICaseStudyElementEvaluationResults['caseResults'][0]
+>('CaseStudyElementResultCase')
+export const CaseStudyElementResultCase =
+  CaseStudyElementResultCaseRef.implement({
+    fields: (t) => ({
+      caseId: t.exposeString('caseId'),
+      items: t.expose('items', {
+        type: [CaseStudyElementResultItem],
+      }),
+    }),
+  })
+
+export const CaseStudyElementResultItemRef = builder.objectRef<
+  ICaseStudyElementEvaluationResults['caseResults'][0]['items'][0]
+>('CaseStudyElementResultItem')
+export const CaseStudyElementResultItem =
+  CaseStudyElementResultItemRef.implement({
+    fields: (t) => ({
+      itemId: t.exposeInt('itemId'),
+      criteria: t.expose('criteria', {
+        type: [CaseStudyElementResultCriterion],
+      }),
+    }),
+  })
+
+export const CaseStudyElementResultCriterionRef = builder.objectRef<
+  ICaseStudyElementEvaluationResults['caseResults'][0]['items'][0]['criteria'][0]
+>('CaseStudyElementResultCriterion')
+export const CaseStudyElementResultCriterion =
+  CaseStudyElementResultCriterionRef.implement({
+    fields: (t) => ({
+      // general criterion information (always provided)
+      criterionId: t.exposeString('criterionId'),
+      name: t.exposeString('name'),
+      min: t.exposeFloat('min'),
+      max: t.exposeFloat('max'),
+      unit: t.exposeString('unit', { nullable: true }),
+
+      // sample solutions (not required)
+      solutionMin: t.exposeFloat('solutionMin', { nullable: true }),
+      solutionMax: t.exposeFloat('solutionMax', { nullable: true }),
+
+      // student responses and statistics computed based on it
+      statistics: t.expose('statistics', { type: Statistics, nullable: true }),
+      responses: t.expose('responses', {
+        type: [CaseStudyElementResultResponse],
+      }),
+    }),
+  })
+
+export const CaseStudyElementResultResponseRef = builder.objectRef<
+  ICaseStudyElementEvaluationResults['caseResults'][0]['items'][0]['criteria'][0]['responses'][0]
+>('CaseStudyElementResultResponse')
+export const CaseStudyElementResultResponse =
+  CaseStudyElementResultResponseRef.implement({
+    fields: (t) => ({
+      value: t.exposeFloat('value'),
+      count: t.exposeInt('count'),
+    }),
+  })
+// #endregion
 
 // ----- SELECTION ELEMENT EVALUATION INTERFACE -----
+// #region
 export const SelectionActivityEvaluationDataRef =
   builder.objectRef<ISelectionActivityEvaluationData>(
     'SelectionActivityEvaluationData'
@@ -409,8 +548,10 @@ export const SelectionElementResult = SelectionElementResultRef.implement({
     count: t.exposeInt('count'),
   }),
 })
+// #endregion
 
 // ----- FLASHCARD ELEMENT EVALUATION INTERFACE -----
+// #region
 export const FlashcardActivityEvaluationDataRef =
   builder.objectRef<IFlashcardActivityEvaluationData>(
     'FlashcardActivityEvaluationData'
@@ -462,8 +603,10 @@ export const ContentElementResults = ContentElementResultsRef.implement({
     anonymousAnswers: t.exposeInt('anonymousAnswers'),
   }),
 })
+// #endregion
 
 // ----- ELEMENT EVALUATION INTERFACE -----
+// #region
 export const ElementInstanceEvaluation = builder.unionType(
   'ElementInstanceEvaluation',
   {
@@ -474,6 +617,7 @@ export const ElementInstanceEvaluation = builder.unionType(
       FlashcardActivityEvaluationData,
       ContentActivityEvaluationData,
       SelectionActivityEvaluationData,
+      CaseStudyActivityEvaluationData,
     ],
     resolveType: (element) => {
       switch (element.type) {
@@ -491,7 +635,10 @@ export const ElementInstanceEvaluation = builder.unionType(
           return ContentActivityEvaluationData
         case DB.ElementType.SELECTION:
           return SelectionActivityEvaluationData
+        case DB.ElementType.CASE_STUDY:
+          return CaseStudyActivityEvaluationData
       }
     },
   }
 )
+// #endregion

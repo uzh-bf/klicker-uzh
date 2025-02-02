@@ -116,6 +116,44 @@ fragment EvaluationResults on ActivityEvaluation {
         }
       }
 
+      ... on CaseStudyActivityEvaluationData {
+        __typename
+        id
+        type
+        name
+        content
+        explanation
+
+        hasSampleSolution
+        hasAnswerFeedbacks
+
+        results {
+          totalAnswers
+          anonymousAnswers
+          caseResults {
+            caseId
+            items {
+              itemId
+              criteria {
+                criterionId
+                name
+                min
+                max
+                unit
+
+                solutionMin
+                solutionMax
+
+                responses {
+                  value
+                  count
+                }
+              }
+            }
+          }
+        }
+      }
+
       ... on FlashcardActivityEvaluationData {
         __typename
         id
