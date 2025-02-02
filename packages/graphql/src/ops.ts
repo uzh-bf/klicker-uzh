@@ -312,7 +312,9 @@ export type CaseStudyElementOptions = {
 export type CaseStudyElementResultCase = {
   __typename?: 'CaseStudyElementResultCase';
   caseId: Scalars['String']['output'];
+  description: Scalars['String']['output'];
   items: Array<CaseStudyElementResultItem>;
+  name: Scalars['String']['output'];
 };
 
 export type CaseStudyElementResultCriterion = {
@@ -332,6 +334,7 @@ export type CaseStudyElementResultItem = {
   __typename?: 'CaseStudyElementResultItem';
   criteria: Array<CaseStudyElementResultCriterion>;
   itemId: Scalars['Int']['output'];
+  name: Scalars['String']['output'];
 };
 
 export type CaseStudyElementResultResponse = {

@@ -3420,12 +3420,16 @@ function combineCaseStudyResults({
 
     return {
       caseId: caseObj.id,
+      name: caseObj.title,
+      description: caseObj.description,
+
       items:
         options.items?.map((item) => {
           const itemSolutions = caseSolutions?.find((s) => s.itemId === item.id)
 
           return {
             itemId: item.id,
+            name: item.value,
             criteria: options.criteria.map((criterion) => {
               const criterionSolution = itemSolutions?.criteriaSolutions.find(
                 (c) => c.criterionId === criterion.id

@@ -143,8 +143,13 @@ export interface ICaseStudyElementEvaluationResults {
   anonymousAnswers: number
   caseResults: {
     caseId: string
+    name: string
+    description: string
+
     items: {
       itemId: number
+      name: string
+
       criteria: {
         // general criterion information (always provided)
         criterionId: string
@@ -450,6 +455,8 @@ export const CaseStudyElementResultCase =
   CaseStudyElementResultCaseRef.implement({
     fields: (t) => ({
       caseId: t.exposeString('caseId'),
+      name: t.exposeString('name'),
+      description: t.exposeString('description'),
       items: t.expose('items', {
         type: [CaseStudyElementResultItem],
       }),
@@ -463,6 +470,7 @@ export const CaseStudyElementResultItem =
   CaseStudyElementResultItemRef.implement({
     fields: (t) => ({
       itemId: t.exposeInt('itemId'),
+      name: t.exposeString('name'),
       criteria: t.expose('criteria', {
         type: [CaseStudyElementResultCriterion],
       }),

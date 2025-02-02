@@ -271,7 +271,9 @@ type CaseStudyElementOptions {
 
 type CaseStudyElementResultCase {
   caseId: String!
+  description: String!
   items: [CaseStudyElementResultItem!]!
+  name: String!
 }
 
 type CaseStudyElementResultCriterion {
@@ -289,6 +291,7 @@ type CaseStudyElementResultCriterion {
 type CaseStudyElementResultItem {
   criteria: [CaseStudyElementResultCriterion!]!
   itemId: Int!
+  name: String!
 }
 
 type CaseStudyElementResultResponse {
