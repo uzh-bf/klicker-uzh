@@ -421,19 +421,19 @@ export const SelectionInstanceEvaluation = builder
 
 export const SingleQuestionResponseCaseStudyCriterion = builder
   .objectRef<
-    SingleQuestionResponseCaseStudyType['assessment']['itemResponses'][0]['criterionResponses'][0]
+    SingleQuestionResponseCaseStudyType['assessment'][0]['itemResponses'][0]['criterionResponses'][0]
   >('SingleQuestionResponseCaseStudyCriterion')
   .implement({
     fields: (t) => ({
       criterionId: t.exposeString('criterionId'),
-      value: t.exposeFloat('value'),
+      response: t.exposeFloat('response'),
       correct: t.exposeBoolean('correct', { nullable: true }),
     }),
   })
 
 export const SingleQuestionResponseCaseStudyItem = builder
   .objectRef<
-    SingleQuestionResponseCaseStudyType['assessment']['itemResponses'][0]
+    SingleQuestionResponseCaseStudyType['assessment'][0]['itemResponses'][0]
   >('SingleQuestionResponseCaseStudyItem')
   .implement({
     fields: (t) => ({
@@ -444,10 +444,10 @@ export const SingleQuestionResponseCaseStudyItem = builder
     }),
   })
 
-export const SingleQuestionResponseCaseStudyCases = builder
+export const SingleQuestionResponseCaseStudyCase = builder
   .objectRef<
-    SingleQuestionResponseCaseStudyType['assessment']
-  >('SingleQuestionResponseCaseStudyCases')
+    SingleQuestionResponseCaseStudyType['assessment'][0]
+  >('SingleQuestionResponseCaseStudyCase')
   .implement({
     fields: (t) => ({
       caseId: t.exposeString('caseId'),
@@ -464,7 +464,7 @@ export const SingleQuestionResponseCaseStudy = builder
   .implement({
     fields: (t) => ({
       assessment: t.expose('assessment', {
-        type: SingleQuestionResponseCaseStudyCases,
+        type: [SingleQuestionResponseCaseStudyCase],
       }),
     }),
   })

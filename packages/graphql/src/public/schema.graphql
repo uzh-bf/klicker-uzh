@@ -1854,10 +1854,10 @@ type SingleNumericalResponse {
 }
 
 type SingleQuestionResponseCaseStudy {
-  assessment: SingleQuestionResponseCaseStudyCases!
+  assessment: [SingleQuestionResponseCaseStudyCase!]!
 }
 
-type SingleQuestionResponseCaseStudyCases {
+type SingleQuestionResponseCaseStudyCase {
   caseId: String!
   itemResponses: [SingleQuestionResponseCaseStudyItem!]!
 }
@@ -1865,7 +1865,7 @@ type SingleQuestionResponseCaseStudyCases {
 type SingleQuestionResponseCaseStudyCriterion {
   correct: Boolean
   criterionId: String!
-  value: Float!
+  response: Float!
 }
 
 type SingleQuestionResponseCaseStudyItem {

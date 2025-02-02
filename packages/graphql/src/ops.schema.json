@@ -27199,9 +27199,17 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "kind": "OBJECT",
-                "name": "SingleQuestionResponseCaseStudyCases",
-                "ofType": null
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "SingleQuestionResponseCaseStudyCase",
+                    "ofType": null
+                  }
+                }
               }
             },
             "isDeprecated": false,
@@ -27215,7 +27223,7 @@
       },
       {
         "kind": "OBJECT",
-        "name": "SingleQuestionResponseCaseStudyCases",
+        "name": "SingleQuestionResponseCaseStudyCase",
         "description": null,
         "isOneOf": null,
         "fields": [
@@ -27300,7 +27308,7 @@
             "deprecationReason": null
           },
           {
-            "name": "value",
+            "name": "response",
             "description": null,
             "args": [],
             "type": {

@@ -1387,6 +1387,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     update: {},
   })
 
+  // extract all questions that are valid to be used in asynchronous activities (practice quizzes / microlearnings)
+  const asyncActivityQuestions = questionsTest.filter(
+    (q) =>
+      q.type === ElementType.CONTENT ||
+      q.type === ElementType.FLASHCARD ||
+      q.type === ElementType.FREE_TEXT ||
+      q.options.hasSampleSolution
+  )
+
   const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
     where: {
@@ -1408,13 +1417,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareStackVariety({
             migrationIdOffset: 600,
             flashcards: flashcards,
-            questions: questionsTest.filter(
-              (q) =>
-                q.type === ElementType.CONTENT ||
-                q.type === ElementType.FLASHCARD ||
-                q.type === ElementType.FREE_TEXT ||
-                q.options.hasSampleSolution
-            ),
+            questions: asyncActivityQuestions,
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.PRACTICE_QUIZ,
             elementInstanceType: Prisma.ElementInstanceType.PRACTICE_QUIZ,
@@ -1549,9 +1552,7 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 900,
             flashcards: flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: asyncActivityQuestions,
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1597,9 +1598,7 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 1000,
             flashcards: flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: asyncActivityQuestions,
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1641,9 +1640,7 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 1100,
             flashcards: flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: asyncActivityQuestions,
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1685,11 +1682,9 @@ Mehr bla bla...
           ...prepareStackVariety({
             migrationIdOffset: 1200,
             flashcards: flashcards,
-            questions: questionsTest.filter(
-              (q) =>
-                q.type !== Prisma.ElementType.FREE_TEXT &&
-                q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: asyncActivityQuestions.filter(
+              (q) => q.type !== Prisma.ElementType.FREE_TEXT
+            ),
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,
@@ -1733,9 +1728,7 @@ Once this microlearning is published, it will be immediately accessible
           ...prepareStackVariety({
             migrationIdOffset: 1300,
             flashcards: flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: asyncActivityQuestions,
             contentElements: contentElements,
             stackType: Prisma.ElementStackType.MICROLEARNING,
             elementInstanceType: Prisma.ElementInstanceType.MICROLEARNING,

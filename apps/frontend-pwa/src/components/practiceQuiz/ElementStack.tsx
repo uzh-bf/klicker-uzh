@@ -10,6 +10,7 @@ import {
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
+  CaseStudyStudentResponseType,
   StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -235,6 +236,37 @@ function ElementStack({
                   ...commonAttributes,
                   type: elementType,
                   response: evaluation.lastResponse.selection,
+                },
+              }
+            } else if (
+              elementType === ElementType.CaseStudy &&
+              evaluation.__typename === 'CaseStudyInstanceEvaluation'
+            ) {
+              const lastResponseObject =
+                evaluation.lastResponse.assessment.reduce<CaseStudyStudentResponseType>(
+                  (caseAcc, caseObj) => {
+                    caseAcc[caseObj.caseId] = caseObj.itemResponses.reduce<
+                      CaseStudyStudentResponseType['']
+                    >((itemAcc, item) => {
+                      itemAcc[item.itemId] = item.criterionResponses.reduce<
+                        CaseStudyStudentResponseType['']['']
+                      >((criterionAcc, criterion) => {
+                        criterionAcc[criterion.criterionId] = criterion.response
+                        return criterionAcc
+                      }, {})
+                      return itemAcc
+                    }, {})
+                    return caseAcc
+                  },
+                  {}
+                )
+
+              return {
+                ...acc,
+                [evaluation.instanceId]: {
+                  ...commonAttributes,
+                  type: elementType,
+                  response: lastResponseObject,
                 },
               }
             }
