@@ -490,6 +490,98 @@ export const QUESTIONS = [
     collectionName: ANSWER_COLLECTIONS[0]!.name,
     answerCollectionItems: ['Apple', 'Date', 'Grape', 'Mango'],
   },
+  {
+    originalId: '9',
+    name: 'Testfrage CASE STUDY (single criterion & sample solution)',
+    content:
+      'Which fruits best mix into a fruit salad? You will be asked to assess different items based on tastiness. The corresponding scenario, which should be considered during the assessment will be described in the separate cases.',
+    explanation:
+      'All sample solutions should only be considered as subjective opinions, every taste is different.',
+    type: ElementType.CASE_STUDY,
+    options: {
+      hasSampleSolution: true,
+      cases: [
+        {
+          id: 'oNthfOWJfBbKGjU70MihG',
+          order: 0,
+          title: 'General Case',
+          solutions: [
+            {
+              item: 'Apple', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 7, min: 3, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Date', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 8, min: 6, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Grape', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 7, min: 4, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Mango', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 8, min: 4, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+          ],
+          description:
+            'In this case, you are asked to create the tastiest combination of available fruits. You do not have to consider any specific requirements.\n',
+        },
+        {
+          id: 'FCnD8rvbi_CjEkEfMM2FP',
+          order: 1,
+          title: 'Gourmet Case',
+          solutions: [
+            {
+              item: 'Apple', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 10, min: 5, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Date', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 9, min: 8, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Grape', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 4, min: 3, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Mango', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 6, min: 2, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+          ],
+          description:
+            'In addition to the previously described scenario, you are now asked to not only rate the elements, but also keep in mind how these assessments might be affected by being considered in a gourmet restaurant context.\n',
+        },
+      ],
+      criteria: [
+        {
+          id: 'HHRO0raJuc',
+          max: 10,
+          min: 1,
+          name: 'Tastiness',
+          step: 1,
+          order: 0,
+        },
+      ],
+    },
+    collectionName: ANSWER_COLLECTIONS[0]!.name,
+    answerCollectionItems: ['Apple', 'Date', 'Grape', 'Mango'],
+  },
 ]
 
 export const LIVE_QUIZZES = [
