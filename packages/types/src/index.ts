@@ -181,11 +181,11 @@ export type SingleQuestionResponseCaseStudy = {
       itemId: number
       criterionResponses: {
         criterionId: string
-        value: number
+        response: number
         correct?: boolean
       }[]
     }[]
-  }
+  }[]
 }
 
 export type SingleQuestionResponseFlashcard = {

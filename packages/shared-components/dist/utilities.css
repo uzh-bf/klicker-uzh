@@ -293,6 +293,11 @@
   min-width: 0px
 }
 
+.min-w-max {
+  min-width: -moz-max-content;
+  min-width: max-content
+}
+
 .max-w-none {
   max-width: none
 }

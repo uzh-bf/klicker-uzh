@@ -180,7 +180,7 @@ fragment StackFeedbackEvaluations on StackFeedback {
             itemId
             criterionResponses {
               criterionId
-              value
+              response
               correct
             }
           }

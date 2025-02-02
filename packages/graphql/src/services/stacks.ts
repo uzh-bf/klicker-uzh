@@ -56,6 +56,7 @@ import type {
   SelectionElementData,
   SingleCaseStudyResponse,
   SingleQuestionResponse,
+  SingleQuestionResponseCaseStudy,
   SingleQuestionResponseChoices,
   SingleQuestionResponseContent,
   SingleQuestionResponseFlashcard,
@@ -3992,6 +3993,63 @@ function getPreviousEvaluationSelection({
   }
 }
 
+function getPreviousEvaluationCaseStudy({
+  instanceId,
+  elementData,
+  multiplier,
+  results,
+  anonymousResults,
+  lastResponse,
+}: {
+  instanceId: number
+  elementData: CaseStudyElementData
+  multiplier: number | undefined
+  results: ElementResultsCaseStudy
+  anonymousResults: ElementResultsCaseStudy
+  lastResponse: SingleQuestionResponseCaseStudy
+}) {
+  const correctness = evaluateCaseStudyAnswerCorrectness({
+    elementData,
+    response: lastResponse,
+  })
+
+  const instanceEvaluation = evaluateCaseStudyElementResponse({
+    elementData,
+    results,
+    anonymousResults,
+    correctness,
+    multiplier,
+  })
+
+  // if evaluation cannot be computed, return early
+  if (!instanceEvaluation) {
+    return {
+      evaluation: undefined,
+      newStatus: StackFeedbackStatus.UNANSWERED,
+      stackScore: undefined,
+    }
+  }
+
+  return {
+    evaluation: {
+      ...instanceEvaluation,
+      ...elementData,
+      instanceId,
+      pointsAwarded: instanceEvaluation.score,
+      xpAwarded: instanceEvaluation.xp ?? undefined,
+      correctness,
+      lastResponse,
+    },
+    newStatus:
+      correctness === 1
+        ? StackFeedbackStatus.CORRECT
+        : correctness === 0
+          ? StackFeedbackStatus.INCORRECT
+          : StackFeedbackStatus.PARTIAL,
+    stackScore: instanceEvaluation.score,
+  }
+}
+
 export async function getPreviousStackEvaluation(
   { stackId }: { stackId: number },
   ctx: Context
@@ -4160,6 +4218,30 @@ export async function getPreviousStackEvaluation(
             anonymousResults: element.anonymousResults,
             lastResponse: element.responses[0]
               .lastResponse as SingleQuestionResponseSelection,
+          })
+
+        if (evaluation) {
+          acc.evaluations.push(evaluation)
+          acc.stackFeedback = combineStackStatus({
+            prevStatus: acc.stackFeedback,
+            newStatus,
+          })
+          acc.stackScore = (acc.stackScore ?? 0) + (stackScore ?? 0)
+        }
+      } else if (
+        element.elementData.type === ElementType.CASE_STUDY &&
+        'assessments' in element.results &&
+        'assessments' in element.anonymousResults
+      ) {
+        const { evaluation, newStatus, stackScore } =
+          getPreviousEvaluationCaseStudy({
+            instanceId: element.id,
+            elementData: element.elementData,
+            multiplier: element.options.pointsMultiplier,
+            results: element.results,
+            anonymousResults: element.anonymousResults,
+            lastResponse: element.responses[0]
+              .lastResponse as SingleQuestionResponseCaseStudy,
           })
 
         if (evaluation) {

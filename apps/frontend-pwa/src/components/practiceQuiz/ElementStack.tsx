@@ -10,6 +10,7 @@ import {
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
+  CaseStudyStudentResponseType,
   StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -151,92 +152,114 @@ function ElementStack({
               elementType === ElementType.Flashcard &&
               evaluation.__typename === 'FlashcardInstanceEvaluation'
             ) {
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: evaluation.lastResponse.correctness,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.correctness,
               }
+
+              return acc
             } else if (
               elementType === ElementType.Content &&
               evaluation.__typename === 'ContentInstanceEvaluation'
             ) {
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: evaluation.lastResponse.viewed,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.viewed,
               }
+
+              return acc
             } else if (
               (elementType === ElementType.Sc ||
                 elementType === ElementType.Mc) &&
               evaluation.__typename === 'ChoicesInstanceEvaluation'
             ) {
               const storedChoices = evaluation.lastResponse.choices
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: storedChoices.reduce<Record<number, boolean>>(
-                    (acc, choice) => {
-                      return {
-                        ...acc,
-                        [choice]: true,
-                      }
-                    },
-                    {}
-                  ),
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: storedChoices.reduce<Record<number, boolean>>(
+                  (choiceAcc, choice) => {
+                    choiceAcc[choice] = true
+                    return choiceAcc
+                  },
+                  {}
+                ),
               }
+
+              return acc
             } else if (
               elementType === ElementType.Kprim &&
               evaluation.__typename === 'ChoicesInstanceEvaluation'
             ) {
               const storedChoices = evaluation.lastResponse.choices
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: {
-                    0: storedChoices.includes(0),
-                    1: storedChoices.includes(1),
-                    2: storedChoices.includes(2),
-                    3: storedChoices.includes(3),
-                  },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: {
+                  0: storedChoices.includes(0),
+                  1: storedChoices.includes(1),
+                  2: storedChoices.includes(2),
+                  3: storedChoices.includes(3),
                 },
               }
+
+              return acc
             } else if (
               (elementType === ElementType.Numerical ||
                 elementType === ElementType.FreeText) &&
               (evaluation.__typename === 'FreeTextInstanceEvaluation' ||
                 evaluation.__typename === 'NumericalInstanceEvaluation')
             ) {
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: evaluation.lastResponse.value,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.value,
               }
+
+              return acc
             } else if (
               elementType === ElementType.Selection &&
               evaluation.__typename === 'SelectionInstanceEvaluation'
             ) {
-              return {
-                ...acc,
-                [evaluation.instanceId]: {
-                  ...commonAttributes,
-                  type: elementType,
-                  response: evaluation.lastResponse.selection,
-                },
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: evaluation.lastResponse.selection,
               }
+
+              return acc
+            } else if (
+              elementType === ElementType.CaseStudy &&
+              evaluation.__typename === 'CaseStudyInstanceEvaluation'
+            ) {
+              const lastResponseObject =
+                evaluation.lastResponse.assessment.reduce<CaseStudyStudentResponseType>(
+                  (caseAcc, caseObj) => {
+                    caseAcc[caseObj.caseId] = caseObj.itemResponses.reduce<
+                      CaseStudyStudentResponseType['']
+                    >((itemAcc, item) => {
+                      itemAcc[item.itemId] = item.criterionResponses.reduce<
+                        CaseStudyStudentResponseType['']['']
+                      >((criterionAcc, criterion) => {
+                        criterionAcc[criterion.criterionId] = criterion.response
+                        return criterionAcc
+                      }, {})
+                      return itemAcc
+                    }, {})
+                    return caseAcc
+                  },
+                  {}
+                )
+
+              acc[evaluation.instanceId] = {
+                ...commonAttributes,
+                type: elementType,
+                response: lastResponseObject,
+              }
+
+              return acc
             }
 
             return acc
