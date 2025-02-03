@@ -37,7 +37,7 @@ function MCKPRIMEvaluation({ evaluation }: Props) {
               : 0
           }
           max={100}
-          formatter={(v) => v.toFixed() + '%'}
+          formatter={(v) => (v as number).toFixed() + '%'}
         />
       ))}
     </div>
