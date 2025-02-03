@@ -3420,16 +3420,12 @@ function combineCaseStudyResults({
 
     return {
       caseId: caseObj.id,
-      name: caseObj.title,
-      description: caseObj.description,
-
       items:
         options.items?.map((item) => {
           const itemSolutions = caseSolutions?.find((s) => s.itemId === item.id)
 
           return {
             itemId: item.id,
-            name: item.value,
             criteria: options.criteria.map((criterion) => {
               const criterionSolution = itemSolutions?.criteriaSolutions.find(
                 (c) => c.criterionId === criterion.id
@@ -3641,6 +3637,20 @@ function computeCaseStudyEvaluation({
 }) {
   return {
     ...common,
+    cases: options.cases.map((caseObj) => ({
+      id: caseObj.id,
+      name: caseObj.title,
+      description: caseObj.description,
+    })),
+    items:
+      options.items?.map((item) => ({
+        id: item.id,
+        name: item.value,
+      })) ?? [],
+    criteria: options.criteria.map((criterion) => ({
+      id: criterion.id,
+      name: criterion.name,
+    })),
     results: {
       totalAnswers: results.total + anonymousResults.total,
       anonymousAnswers: anonymousResults.total,

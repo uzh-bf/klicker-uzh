@@ -143,13 +143,8 @@ export interface ICaseStudyElementEvaluationResults {
   anonymousAnswers: number
   caseResults: {
     caseId: string
-    name: string
-    description: string
-
     items: {
       itemId: number
-      name: string
-
       criteria: {
         // general criterion information (always provided)
         criterionId: string
@@ -175,6 +170,19 @@ export interface ICaseStudyElementEvaluationResults {
 
 export interface ICaseStudyActivityEvaluationData
   extends IElementInstanceEvaluation {
+  cases: {
+    id: string
+    name: string
+    description: string
+  }[]
+  items: {
+    id: number
+    name: string
+  }[]
+  criteria: {
+    id: string
+    name: string
+  }[]
   results: ICaseStudyElementEvaluationResults
 }
 
@@ -428,6 +436,15 @@ export const CaseStudyActivityEvaluationData =
   CaseStudyActivityEvaluationDataRef.implement({
     fields: (t) => ({
       ...sharedElementEvaluation(t),
+      cases: t.expose('cases', {
+        type: [CaseStudyElementResultCaseInfo],
+      }),
+      items: t.expose('items', {
+        type: [CaseStudyElementResultItemInfo],
+      }),
+      criteria: t.expose('criteria', {
+        type: [CaseStudyElementResultCriterionInfo],
+      }),
       results: t.expose('results', {
         type: CaseStudyElementResults,
       }),
@@ -448,6 +465,40 @@ export const CaseStudyElementResults = CaseStudyElementResultsRef.implement({
   }),
 })
 
+export const CaseStudyElementResultCaseInfoRef = builder.objectRef<
+  ICaseStudyActivityEvaluationData['cases'][0]
+>('CaseStudyElementResultCaseInfo')
+export const CaseStudyElementResultCaseInfo =
+  CaseStudyElementResultCaseInfoRef.implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+      description: t.exposeString('description'),
+    }),
+  })
+
+export const CaseStudyElementResultItemInfoRef = builder.objectRef<
+  ICaseStudyActivityEvaluationData['items'][0]
+>('CaseStudyElementResultItemInfo')
+export const CaseStudyElementResultItemInfo =
+  CaseStudyElementResultItemInfoRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      name: t.exposeString('name'),
+    }),
+  })
+
+export const CaseStudyElementResultCriterionInfoRef = builder.objectRef<
+  ICaseStudyActivityEvaluationData['criteria'][0]
+>('CaseStudyElementResultCriterionInfo')
+export const CaseStudyElementResultCriterionInfo =
+  CaseStudyElementResultCriterionInfoRef.implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+    }),
+  })
+
 export const CaseStudyElementResultCaseRef = builder.objectRef<
   ICaseStudyElementEvaluationResults['caseResults'][0]
 >('CaseStudyElementResultCase')
@@ -455,8 +506,6 @@ export const CaseStudyElementResultCase =
   CaseStudyElementResultCaseRef.implement({
     fields: (t) => ({
       caseId: t.exposeString('caseId'),
-      name: t.exposeString('name'),
-      description: t.exposeString('description'),
       items: t.expose('items', {
         type: [CaseStudyElementResultItem],
       }),
@@ -470,7 +519,6 @@ export const CaseStudyElementResultItem =
   CaseStudyElementResultItemRef.implement({
     fields: (t) => ({
       itemId: t.exposeInt('itemId'),
-      name: t.exposeString('name'),
       criteria: t.expose('criteria', {
         type: [CaseStudyElementResultCriterion],
       }),

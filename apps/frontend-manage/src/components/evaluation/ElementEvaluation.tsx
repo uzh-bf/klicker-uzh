@@ -2,6 +2,7 @@ import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { twMerge } from 'tailwind-merge'
 import { ActivityEvaluationType } from './ActivityEvaluation'
+import CSEvaluation from './elements/CSEvaluation'
 import CTEvaluation from './elements/CTEvaluation'
 import ChoicesEvaluation from './elements/ChoicesEvaluation'
 import FCEvaluation from './elements/FCEvaluation'
@@ -32,13 +33,15 @@ function ElementEvaluation({
 }: ElementEvaluationProps) {
   return (
     <div className={twMerge('flex h-full flex-col', className)}>
-      <div className="flex-none">
-        <QuestionCollapsible
-          activeInstance={activeInstance}
-          currentInstance={currentInstance}
-          proseSize={textSize.prose}
-        />
-      </div>
+      {currentInstance.__typename !== 'CaseStudyActivityEvaluationData' && (
+        <div className="flex-none">
+          <QuestionCollapsible
+            activeInstance={activeInstance}
+            content={currentInstance.content}
+            proseSize={textSize.prose}
+          />
+        </div>
+      )}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {currentInstance.__typename === 'ChoicesActivityEvaluationData' && (
           <ChoicesEvaluation
@@ -73,6 +76,16 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+          />
+        )}
+        {currentInstance.__typename === 'CaseStudyActivityEvaluationData' && (
+          <CSEvaluation
+            instanceEvaluation={currentInstance}
+            activeInstance={activeInstance}
+            textSize={textSize}
+            chartType={chartType}
+            showSolution={showSolution}
+            type={type}
           />
         )}
         {currentInstance.__typename === 'FlashcardActivityEvaluationData' && (

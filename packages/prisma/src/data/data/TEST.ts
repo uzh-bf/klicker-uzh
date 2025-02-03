@@ -502,7 +502,7 @@ export const QUESTIONS = [
       hasSampleSolution: true,
       cases: [
         {
-          id: 'oNthfOWJfBbKGjU70MihG',
+          id: 'ul0GA4e_00',
           order: 0,
           title: 'General Case',
           solutions: [
@@ -535,7 +535,7 @@ export const QUESTIONS = [
             'In this case, you are asked to create the tastiest combination of available fruits. You do not have to consider any specific requirements.\n',
         },
         {
-          id: 'FCnD8rvbi_CjEkEfMM2FP',
+          id: 'LWhNmJskXb',
           order: 1,
           title: 'Gourmet Case',
           solutions: [
@@ -581,6 +581,53 @@ export const QUESTIONS = [
     },
     collectionName: ANSWER_COLLECTIONS[0]!.name,
     answerCollectionItems: ['Apple', 'Date', 'Grape', 'Mango'],
+  },
+  {
+    originalId: '9',
+    name: 'Testfrage CASE STUDY (single criterion, single case & sample solution)',
+    content:
+      'Which fruits best mix into a fruit salad? You will be asked to assess different items based on tastiness. The corresponding scenario, which should be considered during the assessment will be described in the separate cases.',
+    explanation:
+      'All sample solutions should only be considered as subjective opinions, every taste is different.',
+    type: ElementType.CASE_STUDY,
+    options: {
+      hasSampleSolution: true,
+      cases: [
+        {
+          id: 'Vp1UJsdGbN',
+          order: 0,
+          title: 'General Case',
+          solutions: [
+            {
+              item: 'Apple', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 7, min: 3, criterionId: 'F2lbLOXNyD' },
+              ],
+            },
+            {
+              item: 'Date', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 8, min: 6, criterionId: 'F2lbLOXNyD' },
+              ],
+            },
+          ],
+          description:
+            'In this case, you are asked to create the tastiest combination of available fruits. You do not have to consider any specific requirements.\n',
+        },
+      ],
+      criteria: [
+        {
+          id: 'F2lbLOXNyD',
+          max: 10,
+          min: 1,
+          name: 'Tastiness',
+          step: 1,
+          order: 0,
+        },
+      ],
+    },
+    collectionName: ANSWER_COLLECTIONS[0]!.name,
+    answerCollectionItems: ['Apple', 'Date'],
   },
 ]
 

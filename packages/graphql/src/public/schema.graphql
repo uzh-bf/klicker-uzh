@@ -159,11 +159,14 @@ type AwardEntry {
 }
 
 type CaseStudyActivityEvaluationData {
+  cases: [CaseStudyElementResultCaseInfo!]!
   content: String!
+  criteria: [CaseStudyElementResultCriterionInfo!]!
   explanation: String
   hasAnswerFeedbacks: Boolean!
   hasSampleSolution: Boolean!
   id: Int!
+  items: [CaseStudyElementResultItemInfo!]!
   name: String!
   results: CaseStudyElementResults!
   type: ElementType!
@@ -271,8 +274,12 @@ type CaseStudyElementOptions {
 
 type CaseStudyElementResultCase {
   caseId: String!
-  description: String!
   items: [CaseStudyElementResultItem!]!
+}
+
+type CaseStudyElementResultCaseInfo {
+  description: String!
+  id: String!
   name: String!
 }
 
@@ -288,9 +295,18 @@ type CaseStudyElementResultCriterion {
   unit: String
 }
 
+type CaseStudyElementResultCriterionInfo {
+  id: String!
+  name: String!
+}
+
 type CaseStudyElementResultItem {
   criteria: [CaseStudyElementResultCriterion!]!
   itemId: Int!
+}
+
+type CaseStudyElementResultItemInfo {
+  id: Int!
   name: String!
 }
 
