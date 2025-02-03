@@ -16,18 +16,15 @@ import {
 import { TextSizeType } from '../textSizes'
 import { CaseStudyScatterPlotData } from './CSEvaluationScatter'
 
-function CSTwoDimScatterPlot({
+function CSOneDimScatterPlot({
   scatterData,
   selectedCases,
   cases,
   criteria,
   textSize,
   xCriterion,
-  yCriterion,
   xLower,
   xUpper,
-  yLower,
-  yUpper,
 }: {
   scatterData: CaseStudyScatterPlotData
   selectedCases: string[]
@@ -35,14 +32,11 @@ function CSTwoDimScatterPlot({
   criteria: CaseStudyElementResultCriterionInfo[]
   textSize: TextSizeType
   xCriterion: string
-  yCriterion: string
   xLower: number
   xUpper: number
-  yLower: number
-  yUpper: number
 }) {
   return (
-    <ResponsiveContainer width="99%" height="99%">
+    <ResponsiveContainer width="99%" height="50%">
       <ScatterChart
         margin={{
           top: 40,
@@ -65,14 +59,9 @@ function CSTwoDimScatterPlot({
         />
         <YAxis
           type="number"
-          dataKey="y"
-          domain={[yLower, yUpper]}
-          label={{
-            value: criteria.find((c) => c.id === yCriterion)?.name,
-            angle: -90,
-            position: 'left',
-            offset: 0,
-          }}
+          dataKey="caseId"
+          domain={[0, selectedCases.length - 1]}
+          tickFormatter={(tick) => cases[tick]?.name || ''}
           className={textSize.textLg}
         />
         <Tooltip
@@ -85,19 +74,22 @@ function CSTwoDimScatterPlot({
               <div className="rounded-md border-2 border-black bg-white p-2">
                 <p className="font-bold">{data.itemLabel}</p>
                 <p>{`${data.xCriterionName}: ${data.x.toFixed(2)}`}</p>
-                <p>{`${data.yCriterionName}: ${data.y.toFixed(2)}`}</p>
               </div>
             )
           }}
         />
-        {selectedCases.map((caseId) => {
+        {selectedCases.map((caseId, index) => {
           const caseIx = cases.findIndex((c) => c.id === caseId)
 
           return (
             <Scatter
               key={caseId}
               name={cases[caseIx]?.name}
-              data={scatterData[caseId]}
+              data={scatterData[caseId].map((data) => ({
+                ...data,
+                x: data.x,
+                caseId: index,
+              }))}
               fill={CHART_COLORS[caseIx % 12]}
               shape={(props: any) => (
                 <circle cx={props.cx} cy={props.cy} r={6} fill={props.fill} />
@@ -117,4 +109,4 @@ function CSTwoDimScatterPlot({
   )
 }
 
-export default CSTwoDimScatterPlot
+export default CSOneDimScatterPlot

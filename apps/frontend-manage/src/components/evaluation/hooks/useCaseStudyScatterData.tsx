@@ -3,7 +3,7 @@ import {
   CaseStudyElementResultCriterionInfo,
   CaseStudyElementResultItemInfo,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 import { CSResultsEvaluationObject } from '../elements/CSEvaluation'
 import {
   AggregationType,
@@ -19,6 +19,7 @@ function useCaseStudyScatterData({
   xCriterion,
   yCriterion,
   aggregationType,
+  setInitialLoading,
 }: {
   results: CSResultsEvaluationObject
   cases: CaseStudyElementResultCaseInfo[]
@@ -28,6 +29,7 @@ function useCaseStudyScatterData({
   xCriterion: string | null
   yCriterion: string | null
   aggregationType: AggregationType
+  setInitialLoading: Dispatch<SetStateAction<boolean>>
 }) {
   return useMemo(() => {
     // if no cases are selected, return early
@@ -37,7 +39,7 @@ function useCaseStudyScatterData({
       (criteria.length > 1 && yCriterion === null)
     ) {
       return {
-        scatterData: undefined,
+        scatterData: null,
         xLower: 0,
         xUpper: 0,
         yLower: 0,
@@ -50,9 +52,9 @@ function useCaseStudyScatterData({
         const caseObject = cases.find((c) => c.id === caseId)
 
         caseAcc[caseId] = items.flatMap((item) => {
-          const xCriterionObject = results[caseId][item.id][xCriterion]
+          const xCriterionObject = results[caseId]?.[item.id]?.[xCriterion]
           const yCriterionObject = yCriterion
-            ? results[caseId][item.id][yCriterion]
+            ? results[caseId]?.[item.id]?.[yCriterion]
             : undefined
 
           const xValue = xCriterionObject?.statistics?.[aggregationType]
@@ -80,15 +82,16 @@ function useCaseStudyScatterData({
       {}
     )
 
+    setInitialLoading(false)
     return {
       scatterData: data,
-      xLower: results[selectedCases[0]][items[0].id][xCriterion]?.min,
-      xUpper: results[selectedCases[0]][items[0].id][xCriterion]?.max,
+      xLower: results[selectedCases[0]]?.[items[0].id]?.[xCriterion]?.min,
+      xUpper: results[selectedCases[0]]?.[items[0].id]?.[xCriterion]?.max,
       yLower: yCriterion
-        ? results[selectedCases[0]][items[0].id][yCriterion]?.min
+        ? results[selectedCases[0]]?.[items[0].id]?.[yCriterion]?.min
         : 0,
       yUpper: yCriterion
-        ? results[selectedCases[0]][items[0].id][yCriterion]?.max
+        ? results[selectedCases[0]]?.[items[0].id]?.[yCriterion]?.max
         : 0,
     }
   }, [

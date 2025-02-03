@@ -4,6 +4,7 @@ import {
   CaseStudyElementResultItemInfo,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import {
   ResizableHandle,
@@ -18,6 +19,7 @@ import useCaseStudyScatterData from '../hooks/useCaseStudyScatterData'
 import { TextSizeType } from '../textSizes'
 import { CSResultsEvaluationObject } from './CSEvaluation'
 import CSEvaluationScatterSidebar from './CSEvaluationScatterSidebar'
+import CSOneDimScatterPlot from './CSOneDimScatterPlot'
 import CSTwoDimScatterPlot from './CSTwoDimScatterPlot'
 
 export enum AggregationType {
@@ -61,15 +63,20 @@ function CSEvaluationScatter({
 }: CSEvaluationScatterProps) {
   const t = useTranslations()
 
-  const [selectedCases, setSelectedCases] = useState<string[]>([cases[0].id])
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [selectedCases, setSelectedCases] = useState<string[]>([])
   const [xCriterion, setXCriterion] = useState<string | null>(null)
   const [yCriterion, setYCriterion] = useState<string | null>(null)
   const [aggregationType, setAggregationType] = useState<AggregationType>(
     AggregationType.MEAN
   )
 
-  // initialize axes based on criteria
+  // initialize axes based on criteria and selected cases based on passed props
   useEffect(() => {
+    if (cases.length > 0 && selectedCases.length === 0) {
+      setSelectedCases([cases[0].id])
+    }
+
     if (criteria.length > 0) {
       setXCriterion(String(criteria[0].id))
     }
@@ -78,7 +85,7 @@ function CSEvaluationScatter({
     } else {
       setYCriterion(null)
     }
-  }, [criteria])
+  }, [cases, criteria])
 
   // compute data for scatter plot
   const { scatterData, xLower, xUpper, yLower, yUpper } =
@@ -91,6 +98,7 @@ function CSEvaluationScatter({
       xCriterion,
       yCriterion,
       aggregationType,
+      setInitialLoading,
     })
 
   return (
@@ -99,13 +107,22 @@ function CSEvaluationScatter({
       key={`panel-group-${evaluationId}`}
       direction="horizontal"
     >
-      <ResizablePanel defaultSize={70} minSize={50} className="px-4">
-        {/* // TODO: extract to separate component?! */}
-        {criteria.length === 1 && scatterData ? (
-          <div>
-            {/* // TODO */}
-            1-DIM PLOT RECHARTS
-          </div>
+      <ResizablePanel
+        defaultSize={70}
+        minSize={50}
+        className="flex items-center justify-center px-4"
+      >
+        {criteria.length === 1 && scatterData && xCriterion ? (
+          <CSOneDimScatterPlot
+            scatterData={scatterData}
+            selectedCases={selectedCases}
+            cases={cases}
+            criteria={criteria}
+            textSize={textSize}
+            xCriterion={xCriterion}
+            xLower={xLower}
+            xUpper={xUpper}
+          />
         ) : criteria.length > 1 && xCriterion && yCriterion && scatterData ? (
           <CSTwoDimScatterPlot
             cases={cases}
@@ -120,7 +137,7 @@ function CSEvaluationScatter({
             yUpper={yUpper}
             textSize={textSize}
           />
-        ) : (
+        ) : !initialLoading && selectedCases.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <UserNotification
               type="warning"
@@ -128,6 +145,8 @@ function CSEvaluationScatter({
               className={{ root: 'py-auto text-lg' }}
             />
           </div>
+        ) : (
+          <Loader />
         )}
       </ResizablePanel>
       <ResizableHandle withHandle className="w-0.5" />

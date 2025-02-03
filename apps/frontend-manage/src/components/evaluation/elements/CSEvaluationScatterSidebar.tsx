@@ -116,6 +116,7 @@ function CSEvaluationScatterSidebar({
                 root: 'ml-2 mt-5 rotate-90 self-center rounded-full p-1',
               }}
               onClick={() => {
+                if (!xCriterion || !yCriterion) return
                 const temp = xCriterion
                 setXCriterion(yCriterion)
                 setYCriterion(temp)

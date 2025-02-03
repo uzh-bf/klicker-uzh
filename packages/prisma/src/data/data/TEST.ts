@@ -492,7 +492,7 @@ export const QUESTIONS = [
   },
   {
     originalId: '9',
-    name: 'Testfrage CASE STUDY (single criterion & sample solution)',
+    name: 'Testfrage CASE STUDY (single criterion, 3 cases & sample solution)',
     content:
       'Which fruits best mix into a fruit salad? You will be asked to assess different items based on tastiness. The corresponding scenario, which should be considered during the assessment will be described in the separate cases.',
     explanation:
@@ -560,12 +560,45 @@ export const QUESTIONS = [
             {
               item: 'Mango', // to be replaced with itemId
               criteriaSolutions: [
-                { max: 6, min: 2, criterionId: 'HHRO0raJuc' },
+                { max: 9, min: 5, criterionId: 'HHRO0raJuc' },
               ],
             },
           ],
           description:
             'In addition to the previously described scenario, you are now asked to not only rate the elements, but also keep in mind how these assessments might be affected by being considered in a gourmet restaurant context.\n',
+        },
+        {
+          id: '7MrczE4ABS',
+          order: 1,
+          title: 'Connaisseur Case',
+          solutions: [
+            {
+              item: 'Apple', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 10, min: 6, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Date', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 8, min: 7, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Grape', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 5, min: 4, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+            {
+              item: 'Mango', // to be replaced with itemId
+              criteriaSolutions: [
+                { max: 7, min: 3, criterionId: 'HHRO0raJuc' },
+              ],
+            },
+          ],
+          description:
+            'In this case, you are asked to create the tastiest combination of available fruits. You do not have to consider any specific requirements.\n',
         },
       ],
       criteria: [
@@ -583,7 +616,7 @@ export const QUESTIONS = [
     answerCollectionItems: ['Apple', 'Date', 'Grape', 'Mango'],
   },
   {
-    originalId: '9',
+    originalId: '10',
     name: 'Testfrage CASE STUDY (single criterion, single case & sample solution)',
     content:
       'Which fruits best mix into a fruit salad? You will be asked to assess different items based on tastiness. The corresponding scenario, which should be considered during the assessment will be described in the separate cases.',
