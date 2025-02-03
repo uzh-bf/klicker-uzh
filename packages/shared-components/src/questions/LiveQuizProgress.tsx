@@ -46,7 +46,9 @@ export function LiveQuizProgress({
         value={activeIndex}
         max={numItems}
         formatter={(val) =>
-          val <= 0 ? '0%' : `${((val / numItems) * 100) >> 0}%`
+          (val as number) <= 0
+            ? '0%'
+            : `${(((val as number) / numItems) * 100) >> 0}%`
         }
         isMaxVisible={true}
       />
