@@ -39,7 +39,7 @@ function CSEvaluationHistogramChart({
   const t = useTranslations()
 
   return (
-    <div className="mt-1 h-[calc(100%-4rem)] w-full">
+    <div className="mt-1 h-full w-full">
       <ResponsiveContainer width="99%" height="99%">
         <BarChart
           data={histogramData}

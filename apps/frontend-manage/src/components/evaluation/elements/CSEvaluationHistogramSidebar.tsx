@@ -105,6 +105,7 @@ function CSEvaluationHistogramSidebar({
           root: 'w-full',
           select: { root: 'w-full', trigger: 'w-full' },
         }}
+        disabled={criteria.length === 1}
       />
       <UserNotification
         message={t('manage.evaluation.caseStudyHistogramSelection')}

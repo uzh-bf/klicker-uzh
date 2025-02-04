@@ -128,9 +128,11 @@ function CSEvaluationHistogram({
         selectedCriterion ? (
           histogramData.length > 0 ? (
             <div className="flex h-full w-full flex-col items-center gap-2 py-4">
-              <Button onClick={onHistogramArrowUp}>
-                <FontAwesomeIcon icon={faArrowUp} />
-              </Button>
+              {criteria.length > 1 && (
+                <Button onClick={onHistogramArrowUp}>
+                  <FontAwesomeIcon icon={faArrowUp} />
+                </Button>
+              )}
               <CSEvaluationHistogramChart
                 histogramData={histogramData}
                 solutionData={showSolution ? solutionData : undefined}
@@ -139,9 +141,11 @@ function CSEvaluationHistogram({
                 criterionMax={criterionMax}
                 textSize={textSize}
               />
-              <Button onClick={onHistogramArrowDown}>
-                <FontAwesomeIcon icon={faArrowDown} />
-              </Button>
+              {criteria.length > 1 && (
+                <Button onClick={onHistogramArrowDown}>
+                  <FontAwesomeIcon icon={faArrowDown} />
+                </Button>
+              )}
             </div>
           ) : (
             <UserNotification
