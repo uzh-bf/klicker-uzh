@@ -103,7 +103,7 @@ function CaseStudyCollectionSelection({
       <div>
         <FormLabel
           required
-          label={t('manage.questionForms.caseStudyItems')}
+          label={t('shared.generic.caseStudyItems')}
           tooltip={t('manage.questionForms.caseStudyItemsTooltip')}
           labelType="small"
         />

@@ -153,6 +153,7 @@ fragment EvaluationResults on ActivityEvaluation {
                 name
                 min
                 max
+                step
                 unit
 
                 solutionMin

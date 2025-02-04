@@ -4,10 +4,12 @@ import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
 } from '@klicker-uzh/graphql/dist/ops'
-import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
-import { Button, Checkbox, H3, SelectField } from '@uzh-bf/design-system'
+import { Button, H3, SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { TextSizeType } from '../textSizes'
+import CSCaseSelection from './CSCaseSelection'
 import { AggregationType } from './CSEvaluationScatter'
 
 function CSEvaluationScatterSidebar({
@@ -21,6 +23,7 @@ function CSEvaluationScatterSidebar({
   setYCriterion,
   aggregationType,
   setAggregationType,
+  textSize,
 }: {
   cases: CaseStudyElementResultCaseInfo[]
   criteria: CaseStudyElementResultCriterionInfo[]
@@ -32,45 +35,22 @@ function CSEvaluationScatterSidebar({
   setYCriterion: Dispatch<SetStateAction<string | null>>
   aggregationType: AggregationType
   setAggregationType: Dispatch<SetStateAction<AggregationType>>
+  textSize: TextSizeType
 }) {
   const t = useTranslations()
 
   return (
     <div className="flex flex-col gap-6 px-4 py-2">
-      <div>
-        <H3>{t('shared.generic.cases')}</H3>
-        <div className="flex flex-col gap-1.5">
-          {cases.map((caseItem, caseIx) => (
-            <div
-              key={`settings-select-case-${caseItem.id}`}
-              className="flex flex-row gap-2"
-            >
-              <Checkbox
-                checked={selectedCases.includes(caseItem.id)}
-                onCheck={() =>
-                  setSelectedCases((prev) =>
-                    prev.includes(caseItem.id)
-                      ? prev.filter((id) => id !== caseItem.id)
-                      : [...prev, caseItem.id]
-                  )
-                }
-                style={{
-                  root: {
-                    backgroundColor: selectedCases.includes(caseItem.id)
-                      ? CHART_COLORS[caseIx % 12]
-                      : '',
-                  },
-                }}
-                disabled={cases.length === 1}
-                className={{ root: 'text-white' }}
-              />
-              <div>{`${caseIx + 1}. ${caseItem.name}`}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <CSCaseSelection
+        cases={cases}
+        selectedCases={selectedCases}
+        setSelectedCases={setSelectedCases}
+        textSize={textSize}
+      />
       <div className="flex flex-col">
-        <H3 className={{ root: 'mb-0' }}>{t('shared.generic.settings')}</H3>
+        <H3 className={{ root: twMerge('mb-0', textSize.textLg) }}>
+          {t('shared.generic.settings')}
+        </H3>
         <div className="flex w-full flex-row">
           <div className="w-full">
             <SelectField

@@ -117,11 +117,12 @@ function CSEvaluation({
       </Tabs>
       {chartType === ChartType.HISTOGRAM && (
         <CSEvaluationHistogram
+          evaluationId={instanceEvaluation.id}
           results={resultsObject}
           cases={instanceEvaluation.cases}
           items={instanceEvaluation.items}
+          criteria={instanceEvaluation.criteria}
           textSize={textSize}
-          chartType={chartType}
           showSolution={showSolution}
           type={type}
         />
@@ -134,7 +135,6 @@ function CSEvaluation({
           items={instanceEvaluation.items}
           criteria={instanceEvaluation.criteria}
           textSize={textSize}
-          chartType={chartType}
           showSolution={showSolution}
           type={type}
         />

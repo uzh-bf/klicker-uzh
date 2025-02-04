@@ -3,7 +3,6 @@ import {
   CaseStudyElementResultCriterionInfo,
   CaseStudyElementResultItemInfo,
 } from '@klicker-uzh/graphql/dist/ops'
-import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import {
@@ -45,7 +44,6 @@ interface CSEvaluationScatterProps {
   items: CaseStudyElementResultItemInfo[]
   criteria: CaseStudyElementResultCriterionInfo[]
   textSize: TextSizeType
-  chartType: ChartType
   showSolution: boolean
   type: ActivityEvaluationType
 }
@@ -57,7 +55,6 @@ function CSEvaluationScatter({
   items,
   criteria,
   textSize,
-  chartType,
   showSolution,
   type,
 }: CSEvaluationScatterProps) {
@@ -85,7 +82,7 @@ function CSEvaluationScatter({
     } else {
       setYCriterion(null)
     }
-  }, [cases, criteria])
+  }, [cases, criteria, selectedCases.length])
 
   // compute data for scatter plot
   const { scatterData, xLower, xUpper, yLower, yUpper } =
@@ -103,7 +100,7 @@ function CSEvaluationScatter({
 
   return (
     <ResizablePanelGroup
-      autoSaveId="evaluation-choices"
+      autoSaveId="evaluation-case-study"
       key={`panel-group-${evaluationId}`}
       direction="horizontal"
     >
@@ -168,6 +165,7 @@ function CSEvaluationScatter({
           setYCriterion={setYCriterion}
           aggregationType={aggregationType}
           setAggregationType={setAggregationType}
+          textSize={textSize}
         />
       </ResizablePanel>
     </ResizablePanelGroup>
