@@ -413,8 +413,14 @@ const serviceBusTrigger = async function (
             timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
               ? TIME_TO_ZERO_BONUS
               : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: DEFAULT_POINTS,
-            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
+              ? DEFAULT_POINTS
+              : parseInt(instanceInfo.defaultPoints, 10),
+            defaultCorrectPoints: isNaN(
+              parseInt(instanceInfo.defaultCorrectPoints, 10)
+            )
+              ? DEFAULT_CORRECT_POINTS
+              : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsPercentage,
             pointsMultiplier,
           })
@@ -490,9 +496,7 @@ const serviceBusTrigger = async function (
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         if (participantData) {
-          context.log(solutions)
-
-          const answerCorrect = gradeQuestionCaseStudy({
+          const pointsPercentage = gradeQuestionCaseStudy({
             response: response.assessment,
             solutions: parsedSolutions,
           })
@@ -500,7 +504,6 @@ const serviceBusTrigger = async function (
           pointsAwarded = computeAwardedPoints({
             firstResponseReceivedAt,
             responseTimestamp,
-            getsMaxPoints: Boolean(answerCorrect),
             maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
               ? MAX_BONUS_POINTS
               : parseInt(instanceInfo.maxBonusPoints, 10),
@@ -515,13 +518,18 @@ const serviceBusTrigger = async function (
             )
               ? DEFAULT_CORRECT_POINTS
               : parseInt(instanceInfo.defaultCorrectPoints, 10),
+            pointsPercentage,
             pointsMultiplier,
           })
           xpAwarded = computeAwardedXp({
-            pointsPercentage: answerCorrect ?? 0,
+            pointsPercentage,
           })
 
-          if (answerCorrect && !firstResponseReceivedAt) {
+          if (
+            pointsPercentage !== null &&
+            pointsPercentage === 1 &&
+            !firstResponseReceivedAt
+          ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
