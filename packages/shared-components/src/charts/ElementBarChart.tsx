@@ -116,7 +116,7 @@ function ElementBarChart({
             className={textSize.text3Xl}
             id="bar-chart-block"
           />
-          {instance.__typename === 'ChoicesElementInstanceEvaluation' &&
+          {instance.__typename === 'ChoicesActivityEvaluationData' &&
             instance.results.choices.map((choice, index) => (
               <Cell
                 fill={

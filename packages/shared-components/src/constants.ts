@@ -82,6 +82,7 @@ export enum ChartType {
   HISTOGRAM = 'histogram',
   WORD_CLOUD = 'wordCloud',
   TABLE = 'table',
+  SCATTER = 'scatterPlot',
 }
 
 export type ChartLabels =
@@ -90,6 +91,7 @@ export type ChartLabels =
   | 'manage.evaluation.wordCloud'
   | 'manage.evaluation.histogram'
   | 'manage.evaluation.barChart'
+  | 'manage.evaluation.scatterPlot'
 
 export const ACTIVE_CHART_TYPES: Record<
   ElementType,
@@ -118,6 +120,13 @@ export const ACTIVE_CHART_TYPES: Record<
   ],
   [ElementType.Selection]: [
     { label: 'manage.evaluation.table', value: ChartType.TABLE },
+  ],
+  [ElementType.CaseStudy]: [
+    { label: 'manage.evaluation.scatterPlot', value: ChartType.SCATTER },
+    {
+      label: 'manage.evaluation.histogram',
+      value: ChartType.HISTOGRAM,
+    },
   ],
   [ElementType.Flashcard]: [
     { label: 'manage.evaluation.unset', value: ChartType.UNSET },

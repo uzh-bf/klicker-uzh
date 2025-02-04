@@ -8,7 +8,7 @@ interface UseEvaluationTableColumnsProps {
 function useEvaluationTableData({
   instance,
 }: UseEvaluationTableColumnsProps): EvaluationTableRowType[] {
-  if (instance.__typename === 'ChoicesElementInstanceEvaluation') {
+  if (instance.__typename === 'ChoicesActivityEvaluationData') {
     const results = instance.results
     return results.choices.map((choice) => {
       return {
@@ -19,7 +19,7 @@ function useEvaluationTableData({
           results.totalAnswers > 0 ? choice.count / results.totalAnswers : 0,
       }
     })
-  } else if (instance.__typename === 'NumericalElementInstanceEvaluation') {
+  } else if (instance.__typename === 'NumericalActivityEvaluationData') {
     // TODO: check why multiple identical numbers are treated as different values - e.g. 70 for Excel question
     const results = instance.results
 
@@ -32,7 +32,7 @@ function useEvaluationTableData({
           results.totalAnswers > 0 ? response.count / results.totalAnswers : 0,
       }
     })
-  } else if (instance.__typename === 'FreeElementInstanceEvaluation') {
+  } else if (instance.__typename === 'FreeTextActivityEvaluationData') {
     const results = instance.results
     return results.responses.map((response) => {
       return {
@@ -43,7 +43,7 @@ function useEvaluationTableData({
           results.totalAnswers > 0 ? response.count / results.totalAnswers : 0,
       }
     })
-  } else if (instance.__typename === 'SelectionElementInstanceEvaluation') {
+  } else if (instance.__typename === 'SelectionActivityEvaluationData') {
     const results = instance.results
     const solutionIds = instance.results.answerSolutionIds
 

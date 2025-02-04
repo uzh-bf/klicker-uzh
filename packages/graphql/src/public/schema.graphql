@@ -158,6 +158,20 @@ type AwardEntry {
   type: String!
 }
 
+type CaseStudyActivityEvaluationData {
+  cases: [CaseStudyElementResultCaseInfo!]!
+  content: String!
+  criteria: [CaseStudyElementResultCriterionInfo!]!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  items: [CaseStudyElementResultItemInfo!]!
+  name: String!
+  results: CaseStudyElementResults!
+  type: ElementType!
+}
+
 type CaseStudyCase {
   description: String!
   id: String!
@@ -258,6 +272,55 @@ type CaseStudyElementOptions {
   items: [ElementOptionsAnswerCollectionEntry!]
 }
 
+type CaseStudyElementResultCase {
+  caseId: String!
+  items: [CaseStudyElementResultItem!]!
+}
+
+type CaseStudyElementResultCaseInfo {
+  description: String!
+  id: String!
+  name: String!
+}
+
+type CaseStudyElementResultCriterion {
+  criterionId: String!
+  max: Float!
+  min: Float!
+  name: String!
+  responses: [CaseStudyElementResultResponse!]!
+  solutionMax: Float
+  solutionMin: Float
+  statistics: Statistics
+  unit: String
+}
+
+type CaseStudyElementResultCriterionInfo {
+  id: String!
+  name: String!
+}
+
+type CaseStudyElementResultItem {
+  criteria: [CaseStudyElementResultCriterion!]!
+  itemId: Int!
+}
+
+type CaseStudyElementResultItemInfo {
+  id: Int!
+  name: String!
+}
+
+type CaseStudyElementResultResponse {
+  count: Int!
+  value: Float!
+}
+
+type CaseStudyElementResults {
+  anonymousAnswers: Int!
+  caseResults: [CaseStudyElementResultCase!]!
+  totalAnswers: Int!
+}
+
 type CaseStudyInstanceEvaluation {
   assessments: [SingleCaseStudyResponse!]
   correctness: Float
@@ -337,6 +400,17 @@ input ChoiceInput {
   value: String!
 }
 
+type ChoicesActivityEvaluationData {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: ChoicesElementResults!
+  type: ElementType!
+}
+
 type ChoicesElement {
   content: String!
   createdAt: Date
@@ -362,17 +436,6 @@ type ChoicesElementData {
   name: String!
   options: ChoiceElementOptions!
   pointsMultiplier: Int!
-  type: ElementType!
-}
-
-type ChoicesElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  results: ChoicesElementResults!
   type: ElementType!
 }
 
@@ -417,6 +480,17 @@ type ConfusionTimestep {
   speed: Int!
 }
 
+type ContentActivityEvaluationData {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: ContentElementResults!
+  type: ElementType!
+}
+
 type ContentElement {
   content: String!
   createdAt: Date
@@ -440,17 +514,6 @@ type ContentElementData {
   id: ID!
   name: String!
   pointsMultiplier: Int!
-  type: ElementType!
-}
-
-type ContentElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  results: ContentElementResults!
   type: ElementType!
 }
 
@@ -600,7 +663,7 @@ type ElementInstance {
   type: ElementInstanceType!
 }
 
-union ElementInstanceEvaluation = ChoicesElementInstanceEvaluation | ContentElementInstanceEvaluation | FlashcardElementInstanceEvaluation | FreeElementInstanceEvaluation | NumericalElementInstanceEvaluation | SelectionElementInstanceEvaluation
+union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActivityEvaluationData | ContentActivityEvaluationData | FlashcardActivityEvaluationData | FreeTextActivityEvaluationData | NumericalActivityEvaluationData | SelectionActivityEvaluationData
 
 input ElementInstanceInput {
   elementId: Int!
@@ -702,6 +765,17 @@ type FileUploadSAS {
   uploadSasURL: String!
 }
 
+type FlashcardActivityEvaluationData {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: FlashcardElementResults!
+  type: ElementType!
+}
+
 enum FlashcardCorrectness {
   CORRECT
   INCORRECT
@@ -740,17 +814,6 @@ type FlashcardElementData {
   type: ElementType!
 }
 
-type FlashcardElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  results: FlashcardElementResults!
-  type: ElementType!
-}
-
 type FlashcardElementResults {
   anonymousAnswers: Int!
   correctCount: Int!
@@ -777,17 +840,6 @@ type FlashcardInstanceEvaluation {
   xpAwarded: Int
 }
 
-type FreeElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  results: FreeElementResults!
-  type: ElementType!
-}
-
 type FreeElementResult {
   correct: Boolean
   count: Int!
@@ -800,6 +852,17 @@ type FreeElementResults {
   responses: [FreeElementResult!]!
   solutions: [String!]
   totalAnswers: Int!
+}
+
+type FreeTextActivityEvaluationData {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: FreeElementResults!
+  type: ElementType!
 }
 
 type FreeTextElement {
@@ -1305,6 +1368,18 @@ type Mutation {
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
+type NumericalActivityEvaluationData {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: NumericalElementResults!
+  statistics: Statistics
+  type: ElementType!
+}
+
 type NumericalElement {
   content: String!
   createdAt: Date
@@ -1330,18 +1405,6 @@ type NumericalElementData {
   name: String!
   options: NumericalElementOptions!
   pointsMultiplier: Int!
-  type: ElementType!
-}
-
-type NumericalElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  results: NumericalElementResults!
-  statistics: Statistics
   type: ElementType!
 }
 
@@ -1746,6 +1809,17 @@ input ResponseInput {
   value: String
 }
 
+type SelectionActivityEvaluationData {
+  content: String!
+  explanation: String
+  hasAnswerFeedbacks: Boolean!
+  hasSampleSolution: Boolean!
+  id: Int!
+  name: String!
+  results: SelectionElementResults!
+  type: ElementType!
+}
+
 type SelectionElement {
   content: String!
   createdAt: Date
@@ -1771,17 +1845,6 @@ type SelectionElementData {
   name: String!
   options: SelectionElementOptions!
   pointsMultiplier: Int!
-  type: ElementType!
-}
-
-type SelectionElementInstanceEvaluation {
-  content: String!
-  explanation: String
-  hasAnswerFeedbacks: Boolean!
-  hasSampleSolution: Boolean!
-  id: Int!
-  name: String!
-  results: SelectionElementResults!
   type: ElementType!
 }
 

@@ -1,6 +1,5 @@
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Prose } from '@uzh-bf/design-system'
 import { useEffect, useState } from 'react'
@@ -8,11 +7,11 @@ import { twMerge } from 'tailwind-merge'
 
 function QuestionCollapsible({
   activeInstance,
-  currentInstance,
+  content,
   proseSize,
 }: {
   activeInstance: number
-  currentInstance: ElementInstanceEvaluation
+  content: string
   proseSize: string
 }) {
   const [questionElem, setQuestionElem] = useState<HTMLDivElement | null>(null)
@@ -60,7 +59,7 @@ function QuestionCollapsible({
                 proseSize
               ),
             }}
-            content={currentInstance.content}
+            content={content}
           />
         </Prose>
       </div>

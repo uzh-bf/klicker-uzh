@@ -31,7 +31,7 @@ function SCEvaluation({ evaluation }: Props) {
           key={`choice-statistic-${choice.ix}-${choice.count}`}
           value={(choice.count / (evaluation.numAnswers ?? 1)) * 100}
           max={100}
-          formatter={(v) => v.toFixed() + '%'}
+          formatter={(v) => (v as number).toFixed() + '%'}
         />
       ))}
     </div>

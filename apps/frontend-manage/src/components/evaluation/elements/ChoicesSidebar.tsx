@@ -1,4 +1,4 @@
-import { ChoicesElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { ChoicesActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import { useLocalStorage } from '@uidotdev/usehooks'
@@ -8,7 +8,7 @@ import { TextSizeType } from '../textSizes'
 import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
 
 interface ChoicesSidebarProps {
-  instance: ChoicesElementInstanceEvaluation
+  instance: ChoicesActivityEvaluationData
   textSize: TextSizeType
   showSolution: boolean
   type: ActivityEvaluationType

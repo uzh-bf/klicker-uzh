@@ -52,7 +52,7 @@ function ElementChart({
     )
   } else if (
     chartType === ChartType.HISTOGRAM &&
-    instanceEvaluation.__typename === 'NumericalElementInstanceEvaluation'
+    instanceEvaluation.__typename === 'NumericalActivityEvaluationData'
   ) {
     const responses = instanceEvaluation.results.responseValues.map(
       (response) => ({

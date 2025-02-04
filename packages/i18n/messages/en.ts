@@ -1684,6 +1684,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       wordCloud: 'Word Cloud',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
+      scatterPlot: 'Scatter Plot',
       unset: 'Unset',
       noStatistics:
         'Because of missing answers, no statistics are available yet.',
@@ -1697,6 +1698,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
       histogramNotSupported:
         'Histograms are not supported for this question type.',
+      criterionXAxis: 'Criterion X-Axis',
+      criterionYAxis: 'Criterion Y-Axis',
+      aggregation: 'Aggregation',
+      caseStudySelectCasesCriteria:
+        'Please select at least one case and corresponding criteria to display the evaluation.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

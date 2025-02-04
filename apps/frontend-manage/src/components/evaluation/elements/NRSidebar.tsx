@@ -1,4 +1,4 @@
-import { NumericalElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import { NumericalActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
 import {
   ChartType,
   STATISTICS_ORDER,
@@ -15,7 +15,7 @@ import { ShowStatisticsType } from './NREvaluation'
 import Statistic from './Statistic'
 
 interface NRSidebarProps {
-  instance: NumericalElementInstanceEvaluation
+  instance: NumericalActivityEvaluationData
   chartType: ChartType
   textSize: TextSizeType
   showSolution: boolean

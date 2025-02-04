@@ -72,6 +72,7 @@ import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
+import { ICaseStudyElementEvaluationResults } from 'src/schema/evaluation.js'
 import type { Context } from '../lib/context.js'
 import type {
   CaseStudyCaseResponse,
@@ -3405,6 +3406,87 @@ function reduceCaseStudyResults({
   return combinedResponses
 }
 
+function combineCaseStudyResults({
+  results,
+  anonymousResults,
+  options,
+}: {
+  results: ElementResultsCaseStudy
+  anonymousResults: ElementResultsCaseStudy
+  options: ElementOptionsCaseStudy
+}): ICaseStudyElementEvaluationResults['caseResults'] {
+  return options.cases.map((caseObj) => {
+    const caseSolutions = caseObj.solutions
+
+    return {
+      caseId: caseObj.id,
+      items:
+        options.items?.map((item) => {
+          const itemSolutions = caseSolutions?.find((s) => s.itemId === item.id)
+
+          return {
+            itemId: item.id,
+            criteria: options.criteria.map((criterion) => {
+              const criterionSolution = itemSolutions?.criteriaSolutions.find(
+                (c) => c.criterionId === criterion.id
+              )
+              const criterionResults =
+                results.assessments[caseObj.id]?.[item.id]?.[criterion.id]
+              const criterionAnonymousResults =
+                anonymousResults.assessments[caseObj.id]?.[item.id]?.[
+                  criterion.id
+                ]
+
+              // merge the results and anonymous results into a single object
+              const mergedResults = Object.entries({
+                ...criterionResults,
+                ...criterionAnonymousResults,
+              }).reduce<{
+                [valueHash: string]: {
+                  value: number
+                  count: number
+                  correct?: boolean
+                }
+              }>((acc, [key, entry]) => {
+                // if the key already exists in acc, sum up the counts
+                if (acc[key]) {
+                  acc[key] = {
+                    value: acc[key]!.value,
+                    count: acc[key]!.count + entry.count,
+                    correct: acc[key]!.correct ?? entry.correct,
+                  }
+                } else {
+                  acc[key] = entry
+                }
+                return acc
+              }, {})
+
+              // extract values from merged results
+              const responses = Object.values(mergedResults)
+
+              return {
+                criterionId: criterion.id,
+                name: criterion.name,
+                min: criterion.min,
+                max: criterion.max,
+                unit: criterion.unit,
+
+                solutionMin: criterionSolution?.min,
+                solutionMax: criterionSolution?.max,
+
+                statistics:
+                  responses && responses.length > 0
+                    ? (computeNumericalStatistics(responses) ?? undefined)
+                    : undefined,
+                responses,
+              }
+            }),
+          }
+        }) ?? [],
+    }
+  })
+}
+
 function computeChoicesEvaluation({
   options,
   results,
@@ -3453,7 +3535,7 @@ function computeNumericalStatistics(
         min: min(valueArray),
         q1: quantileSeq(valueArray, 0.25) as number,
         q3: quantileSeq(valueArray, 0.75) as number,
-        sd: std(valueArray) as number[],
+        sd: std(valueArray) as unknown as number, // since arrays are guaranteed to be flat -> return type always number
       }
     : null
 }
@@ -3537,6 +3619,45 @@ function computeSelectionEvaluation({
         results,
         anonymousResults,
         answerOptions: options.answerCollection!,
+      }),
+    },
+  }
+}
+
+function computeCaseStudyEvaluation({
+  options,
+  results,
+  anonymousResults,
+  common,
+}: {
+  options: ElementOptionsCaseStudy
+  results: ElementResultsCaseStudy
+  anonymousResults: ElementResultsCaseStudy
+  common: CommonEvaluationProps
+}) {
+  return {
+    ...common,
+    cases: options.cases.map((caseObj) => ({
+      id: caseObj.id,
+      name: caseObj.title,
+      description: caseObj.description,
+    })),
+    items:
+      options.items?.map((item) => ({
+        id: item.id,
+        name: item.value,
+      })) ?? [],
+    criteria: options.criteria.map((criterion) => ({
+      id: criterion.id,
+      name: criterion.name,
+    })),
+    results: {
+      totalAnswers: results.total + anonymousResults.total,
+      anonymousAnswers: anonymousResults.total,
+      caseResults: combineCaseStudyResults({
+        results,
+        anonymousResults,
+        options,
       }),
     },
   }
@@ -3655,6 +3776,17 @@ function computeInstanceEvaluation({
     'selections' in instance.anonymousResults
   ) {
     return computeSelectionEvaluation({
+      options: instance.elementData.options,
+      results: instance.results,
+      anonymousResults: instance.anonymousResults,
+      common: commonInstanceData,
+    })
+  } else if (
+    instanceType === ElementType.CASE_STUDY &&
+    'assessments' in instance.results &&
+    'assessments' in instance.anonymousResults
+  ) {
+    return computeCaseStudyEvaluation({
       options: instance.elementData.options,
       results: instance.results,
       anonymousResults: instance.anonymousResults,
