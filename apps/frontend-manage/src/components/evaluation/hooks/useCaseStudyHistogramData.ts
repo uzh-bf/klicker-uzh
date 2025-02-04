@@ -38,7 +38,7 @@ function countResponsesInBin({
     result.responses.filter((response) => {
       return (
         response.value >= binValue - binWidth / 2 &&
-        (binValue + binWidth / 2 === criterionMax
+        (criterionMax - binValue < (2 * binWidth) / 3
           ? response.value <= criterionMax
           : response.value < binValue + binWidth / 2)
       )
@@ -242,7 +242,10 @@ function useCaseStudyHistogramData({
       })
 
       // if any of the results is missing, return missing data
-      if (resultObjects.some((result) => result === null)) {
+      if (
+        resultObjects.some((result) => result === null) ||
+        resultObjects.length === 0
+      ) {
         return missingData
       }
 
@@ -270,7 +273,10 @@ function useCaseStudyHistogramData({
       })
 
       // if any of the results is missing, return missing data
-      if (resultObjects.some((result) => result === null)) {
+      if (
+        resultObjects.some((result) => result === null) ||
+        resultObjects.length === 0
+      ) {
         return missingData
       }
 

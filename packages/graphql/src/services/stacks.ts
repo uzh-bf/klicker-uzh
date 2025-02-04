@@ -3438,10 +3438,10 @@ function combineCaseStudyResults({
                 ]
 
               // merge the results and anonymous results into a single object
-              const mergedResults = Object.entries({
-                ...criterionResults,
-                ...criterionAnonymousResults,
-              }).reduce<{
+              const mergedResults = [
+                ...Object.entries(criterionResults ?? {}),
+                ...Object.entries(criterionAnonymousResults ?? {}),
+              ].reduce<{
                 [valueHash: string]: {
                   value: number
                   count: number
