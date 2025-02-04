@@ -137,6 +137,7 @@ function CSEvaluationHistogram({
                 histogramKeys={histogramKeys}
                 criterionMin={criterionMin}
                 criterionMax={criterionMax}
+                textSize={textSize}
               />
               <Button onClick={onHistogramArrowDown}>
                 <FontAwesomeIcon icon={faArrowDown} />

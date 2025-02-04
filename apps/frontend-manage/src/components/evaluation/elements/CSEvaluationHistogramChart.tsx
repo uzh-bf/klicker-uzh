@@ -1,14 +1,19 @@
-import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
+import {
+  CHART_COLORS,
+  CHART_SOLUTION_COLORS,
+} from '@klicker-uzh/shared-components/src/constants'
 import { useTranslations } from 'next-intl'
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
+import { TextSizeType } from '../textSizes'
 
 function CSEvaluationHistogramChart({
   histogramData,
@@ -16,6 +21,7 @@ function CSEvaluationHistogramChart({
   histogramKeys,
   criterionMin,
   criterionMax,
+  textSize,
 }: {
   histogramData: {
     value: number
@@ -28,6 +34,7 @@ function CSEvaluationHistogramChart({
   histogramKeys: string[]
   criterionMin: number
   criterionMax: number
+  textSize: TextSizeType
 }) {
   const t = useTranslations()
 
@@ -70,12 +77,24 @@ function CSEvaluationHistogramChart({
                       {t('manage.evaluation.histogramRange')}:{' '}
                       {payload[0]!.payload.label}
                     </div>
-                    {payload[0]!.payload.count && (
+                    {typeof payload[0]!.payload.count !== 'undefined' && (
                       <div className="text-primary-100 font-bold">
                         {t('manage.evaluation.count')}:{' '}
                         {payload[0]!.payload.count}
                       </div>
                     )}
+                    {typeof payload[0]!.payload.count === 'undefined' &&
+                      histogramKeys.map((dataKey) => {
+                        const itemName = dataKey.split('-')[0]
+                        return (
+                          <div
+                            key={`histogram-key-${dataKey}`}
+                            className="text-primary-100 font-bold"
+                          >
+                            {itemName}: {payload[0]!.payload[dataKey]}
+                          </div>
+                        )
+                      })}
                   </div>
                 )
               }
@@ -94,47 +113,37 @@ function CSEvaluationHistogramChart({
             )
           })}
 
-          {/* // TODO: if enabled, show solution ranges for different criteria / items here */}
-          {/* {showSolutionRanges &&
-            solutionRanges.map(
-              (
-                solutionRange: { min?: number | null; max?: number | null },
-                index: number
-              ) => (
+          {solutionData &&
+            histogramKeys.map((dataKey) => {
+              const solutionRange = solutionData[dataKey]
+              if (!solutionRange) return null
+
+              const ix = parseInt(dataKey.split('-')[1])
+              const areaColor =
+                histogramKeys.length === 1
+                  ? CHART_SOLUTION_COLORS.correct
+                  : CHART_COLORS[ix % 12]
+
+              return (
                 <ReferenceArea
-                  key={index}
+                  key={`solution-reference-area-${dataKey}`}
                   x1={solutionRange.min ?? undefined}
                   x2={solutionRange.max ?? undefined}
-                  stroke={CHART_SOLUTION_COLORS.correct}
-                  fill={CHART_SOLUTION_COLORS.correct}
+                  stroke={areaColor}
+                  fill={areaColor}
                   enableBackground="#FFFFFF"
-                  opacity={1}
-                  label={
-                    !basic
-                      ? {
-                          fill: CHART_SOLUTION_COLORS.correct,
-                          position: 'top',
-                          value: t('manage.evaluation.correctLabel'),
-                        }
-                      : undefined
-                  }
-                  className={textSize}
+                  opacity={0.4}
+                  label={{
+                    fill: CHART_SOLUTION_COLORS.correct,
+                    position: 'top',
+                    value: t('manage.evaluation.correctLabel'),
+                  }}
+                  className={textSize.text}
                 />
               )
-            )} */}
+            })}
         </BarChart>
       </ResponsiveContainer>
-      {/* {hideBins ? null : (
-        <div className="float-right mr-4 flex flex-row items-center gap-2">
-          <NumberField
-            precision={0}
-            id="histogramBins"
-            label={t('manage.evaluation.histogramBins')}
-            value={numBins}
-            onChange={(value) => setNumBins(value)}
-          />
-        </div>
-      )} */}
     </div>
   )
 }

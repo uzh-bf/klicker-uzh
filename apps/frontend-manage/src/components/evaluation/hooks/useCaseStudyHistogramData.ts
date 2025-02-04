@@ -60,7 +60,7 @@ function combineResultsIntoHistogramData({
   const criterionMin = firstResult.result.min
   const criterionMax = firstResult.result.max
   const binCount = Math.min(
-    50,
+    30,
     (criterionMax - criterionMin) / firstResult.result.step
   )
 
@@ -180,7 +180,7 @@ function useCaseStudyHistogramData({
       const criterionMin = resultObject.min
       const criterionMax = resultObject.max
       const binCount = Math.min(
-        50,
+        30,
         (criterionMax - criterionMin) / resultObject.step
       )
 
