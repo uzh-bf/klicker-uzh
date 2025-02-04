@@ -275,6 +275,7 @@ export default {
       entries: 'entries',
       content: 'Content',
       instructions: 'Instructions',
+      caseStudyItems: 'Case study items',
     },
     contentInput: {
       boldStyle:
@@ -1056,7 +1057,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please select the correct answer options from the list of answer options. The number of correct answer options must correspond to the number of input fields.',
       selectAnswerOptions: 'Select answer options...',
       noMatchingOptionFound: 'No matching option found',
-      caseStudyItems: 'Case study items',
       changeOfAnswerCollection: 'Change of answer collection',
       confirmCollectionChange:
         'Are you sure you want to change the answer collection? The previously selected elements of the case study and all defined sample solutions will be lost due to this change.',
@@ -1703,6 +1703,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       aggregation: 'Aggregation',
       caseStudySelectCasesCriteria:
         'Please select at least one case and corresponding criteria to display the evaluation.',
+      caseStudyHistogramSelection:
+        'You can either select multiple cases or multiple case study elements to compare the corresponding results. A combination of multiple cases and multiple case study elements cannot be displayed.',
+      caseStudySelectCasesItemsCriteria:
+        'Please select at least one case, one case study item and criteria to display the evaluation.',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

@@ -292,6 +292,7 @@ type CaseStudyElementResultCriterion {
   solutionMax: Float
   solutionMin: Float
   statistics: Statistics
+  step: Float!
   unit: String
 }
 

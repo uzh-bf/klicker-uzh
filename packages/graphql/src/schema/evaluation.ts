@@ -151,6 +151,7 @@ export interface ICaseStudyElementEvaluationResults {
         name: string
         min: number
         max: number
+        step: number
         unit?: string | null
 
         // sample solutions (not required)
@@ -536,6 +537,7 @@ export const CaseStudyElementResultCriterion =
       name: t.exposeString('name'),
       min: t.exposeFloat('min'),
       max: t.exposeFloat('max'),
+      step: t.exposeFloat('step'),
       unit: t.exposeString('unit', { nullable: true }),
 
       // sample solutions (not required)

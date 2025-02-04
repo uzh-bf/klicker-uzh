@@ -276,6 +276,7 @@ export default {
       entries: 'Einträge',
       content: 'Inhalt',
       instructions: 'Anweisungen',
+      caseStudyItems: 'Fallstudien-Elemente',
     },
     contentInput: {
       boldStyle:
@@ -1055,7 +1056,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie die korrekten Antwortoptionen aus der Liste der Antwortmöglichkeiten aus. Die Anzahl der korrekten Antwortoptionen muss mindestens der Anzahl Eingabefelder entsprechen',
       selectAnswerOptions: 'Antwortmöglichkeiten auswählen...',
       noMatchingOptionFound: 'Keine passende Option gefunden',
-      caseStudyItems: 'Fallstudien-Elemente',
       changeOfAnswerCollection: 'Wechsel der Antwort-Sammlung',
       confirmCollectionChange:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung wechseln möchten? Die bisher ausgewählten Elemente der Fallstudie und alle definierten Musterlösungen gehen durch diesen Wechsel verloren.',
@@ -1727,6 +1727,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       aggregation: 'Aggregation',
       caseStudySelectCasesCriteria:
         'Bitte wählen Sie mindestens einen Fall und entsprechende Kriterien aus, um die Auswertung anzuzeigen.',
+      caseStudyHistogramSelection:
+        'Sie können entweder mehrere Fälle oder mehrere Fallstudien-Elemente auswählen, um die entsprechenden Resultate zu vergleichen. Eine Kombination von mehreren Fällen und mehreren Fallstudien-Elementen kann nicht dargestellt werden.',
+      caseStudySelectCasesItemsCriteria:
+        'Bitte wählen Sie mindestens einen Fall, ein Fallstudien-Element und Kriterien aus, um eine Auswertung anzuzeigen.',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',

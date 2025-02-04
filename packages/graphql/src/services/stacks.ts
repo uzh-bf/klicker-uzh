@@ -3469,6 +3469,7 @@ function combineCaseStudyResults({
                 name: criterion.name,
                 min: criterion.min,
                 max: criterion.max,
+                step: criterion.step,
                 unit: criterion.unit,
 
                 solutionMin: criterionSolution?.min,
