@@ -1038,6 +1038,29 @@ export async function activateLiveQuizBlock(
         })
         break
       }
+
+      case ElementType.CASE_STUDY: {
+        // convert solutions to object for faster access
+        const validSolutions = elementData.options.cases.every(
+          (caseItem) => caseItem.solutions
+        )
+        const solutions =
+          elementData.options.hasSampleSolution && validSolutions
+            ? elementData.options.cases.map((caseItem) => ({
+                caseId: caseItem.id,
+                itemSolutions: caseItem.solutions,
+              }))
+            : undefined
+
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: solutions ? JSON.stringify(solutions) : undefined,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+        break
+      }
     }
   })
 
@@ -1692,6 +1715,7 @@ export async function cancelLiveQuiz(
               element: {
                 include: {
                   answerCollection: { include: { entries: true } },
+                  answerCollectionItems: true,
                 },
               },
             },
