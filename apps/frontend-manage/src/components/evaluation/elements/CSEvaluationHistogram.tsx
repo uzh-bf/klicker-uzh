@@ -6,7 +6,11 @@ import {
   CaseStudyElementResultItemInfo,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  useArrowNavigation,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -50,7 +54,26 @@ function CSEvaluationHistogram({
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [selectedCriterion, setSelectedCriterion] = useState<string>('')
 
-  // TODO: add navigation with up / down arrow components to switch criterion
+  const onHistogramArrowUp = () => {
+    const idx = criteria.findIndex(
+      (criterion) => criterion.id === selectedCriterion
+    )
+    setSelectedCriterion(
+      criteria[(idx - 1 + criteria.length) % criteria.length].id
+    )
+  }
+  const onHistogramArrowDown = () => {
+    const idx = criteria.findIndex(
+      (criterion) => criterion.id === selectedCriterion
+    )
+    setSelectedCriterion(criteria[(idx + 1) % criteria.length].id)
+  }
+
+  // allow switching between criteria and corresponding histograms using up/down arrow keys
+  useArrowNavigation({
+    onArrowUp: onHistogramArrowUp,
+    onArrowDown: onHistogramArrowDown,
+  })
 
   // initialize axes based on criteria and selected cases based on passed props
   useEffect(() => {
@@ -105,16 +128,7 @@ function CSEvaluationHistogram({
         selectedCriterion ? (
           histogramData.length > 0 ? (
             <div className="flex h-full w-full flex-col items-center gap-2 py-4">
-              <Button
-                onClick={() => {
-                  const idx = criteria.findIndex(
-                    (criterion) => criterion.id === selectedCriterion
-                  )
-                  setSelectedCriterion(
-                    criteria[(idx - 1 + criteria.length) % criteria.length].id
-                  )
-                }}
-              >
+              <Button onClick={onHistogramArrowUp}>
                 <FontAwesomeIcon icon={faArrowUp} />
               </Button>
               <CSEvaluationHistogramChart
@@ -124,14 +138,7 @@ function CSEvaluationHistogram({
                 criterionMin={criterionMin}
                 criterionMax={criterionMax}
               />
-              <Button
-                onClick={() => {
-                  const idx = criteria.findIndex(
-                    (criterion) => criterion.id === selectedCriterion
-                  )
-                  setSelectedCriterion(criteria[(idx + 1) % criteria.length].id)
-                }}
-              >
+              <Button onClick={onHistogramArrowDown}>
                 <FontAwesomeIcon icon={faArrowDown} />
               </Button>
             </div>
