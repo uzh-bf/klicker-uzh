@@ -6,6 +6,7 @@ import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import {
   CartesianGrid,
   LabelList,
+  Legend,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -45,10 +46,10 @@ function CSTwoDimScatterPlot({
     <ResponsiveContainer width="99%" height="99%">
       <ScatterChart
         margin={{
-          top: 40,
-          right: 50,
-          bottom: 35,
-          left: 30,
+          top: 20,
+          right: 10,
+          bottom: 40,
+          left: 20,
         }}
       >
         <CartesianGrid />
@@ -61,7 +62,7 @@ function CSTwoDimScatterPlot({
             position: 'bottom',
             offset: 5,
           }}
-          className={textSize.textLg}
+          className={textSize.textXl}
         />
         <YAxis
           type="number"
@@ -73,7 +74,7 @@ function CSTwoDimScatterPlot({
             position: 'left',
             offset: 0,
           }}
-          className={textSize.textLg}
+          className={textSize.textXl}
         />
         <Tooltip
           cursor={{ strokeDasharray: '3 3' }}
@@ -112,6 +113,16 @@ function CSTwoDimScatterPlot({
             </Scatter>
           )
         })}
+        <Legend
+          align="right"
+          verticalAlign="top"
+          wrapperStyle={{
+            fontSize: '1.125rem',
+            lineHeight: '1.75rem',
+            paddingTop: '10px',
+          }}
+          className={textSize.textLg}
+        />
       </ScatterChart>
     </ResponsiveContainer>
   )

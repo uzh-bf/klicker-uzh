@@ -103,6 +103,7 @@ function CSEvaluationHistogram({
     histogramKeys,
     criterionMin,
     criterionMax,
+    criterionName,
   } = useCaseStudyHistogramData({
     results,
     cases,
@@ -139,6 +140,7 @@ function CSEvaluationHistogram({
                 histogramKeys={histogramKeys}
                 criterionMin={criterionMin}
                 criterionMax={criterionMax}
+                criterionName={criterionName}
                 textSize={textSize}
               />
               {criteria.length > 1 && (

@@ -276,6 +276,7 @@ export default {
       content: 'Content',
       instructions: 'Instructions',
       caseStudyItems: 'Case study items',
+      results: 'Results',
     },
     contentInput: {
       boldStyle:

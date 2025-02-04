@@ -121,6 +121,7 @@ function combineResultsIntoHistogramData({
     histogramKeys: results.map((result) => result.dataKey),
     criterionMin,
     criterionMax,
+    criterionName: firstResult.result.name,
   }
 }
 
@@ -150,6 +151,7 @@ function useCaseStudyHistogramData({
   histogramKeys: string[]
   criterionMin: number
   criterionMax: number
+  criterionName: string
 } {
   return useMemo(() => {
     const missingData = {
@@ -158,6 +160,7 @@ function useCaseStudyHistogramData({
       histogramKeys: [], // keys for data access, containing index for color choice ("count" for single, "caseName-0" / "itemName-0", etc. for multiple cases / items)
       criterionMin: 0,
       criterionMax: 0,
+      criterionName: '',
     }
 
     if (
@@ -223,6 +226,7 @@ function useCaseStudyHistogramData({
         histogramKeys: ['count'],
         criterionMin,
         criterionMax,
+        criterionName: resultObject.name,
       }
     } else if (selectedCases.length > 1) {
       const resultObjects = selectedCases.map((caseId) => {

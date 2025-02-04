@@ -277,6 +277,7 @@ export default {
       content: 'Inhalt',
       instructions: 'Anweisungen',
       caseStudyItems: 'Fallstudien-Elemente',
+      results: 'Resultate',
     },
     contentInput: {
       boldStyle:

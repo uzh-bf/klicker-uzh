@@ -6,6 +6,7 @@ import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import {
   CartesianGrid,
   LabelList,
+  Legend,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -13,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { twMerge } from 'tailwind-merge'
 import { TextSizeType } from '../textSizes'
 import { CaseStudyScatterPlotData } from './CSEvaluationScatter'
 
@@ -39,7 +41,7 @@ function CSOneDimScatterPlot({
     <ResponsiveContainer width="99%" height="50%">
       <ScatterChart
         margin={{
-          top: 40,
+          top: 20,
           right: 50,
           bottom: 35,
           left: 30,
@@ -104,6 +106,17 @@ function CSOneDimScatterPlot({
             </Scatter>
           )
         })}
+        <Legend
+          align="right"
+          verticalAlign="top"
+          wrapperStyle={{
+            fontSize: '1.125rem',
+            lineHeight: '1.75rem',
+            paddingTop: '10px',
+            paddingBottom: twMerge(selectedCases.length > 1 && '35px'),
+          }}
+          className={textSize.textLg}
+        />
       </ScatterChart>
     </ResponsiveContainer>
   )

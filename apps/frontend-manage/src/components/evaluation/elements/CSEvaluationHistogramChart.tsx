@@ -7,6 +7,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   ReferenceArea,
   ResponsiveContainer,
   Tooltip,
@@ -21,6 +22,7 @@ function CSEvaluationHistogramChart({
   histogramKeys,
   criterionMin,
   criterionMax,
+  criterionName,
   textSize,
 }: {
   histogramData: {
@@ -34,6 +36,7 @@ function CSEvaluationHistogramChart({
   histogramKeys: string[]
   criterionMin: number
   criterionMax: number
+  criterionName: string
   textSize: TextSizeType
 }) {
   const t = useTranslations()
@@ -44,16 +47,21 @@ function CSEvaluationHistogramChart({
         <BarChart
           data={histogramData}
           margin={{
-            bottom: 16,
-            left: -24,
-            right: 24,
-            top: 24,
+            bottom: 30,
+            left: 10,
+            right: 30,
+            top: histogramKeys.length > 1 ? 0 : 20,
           }}
         >
           <XAxis
             dataKey="value"
             type="number"
             domain={[criterionMin, criterionMax]}
+            label={{
+              value: criterionName,
+              position: 'bottom',
+            }}
+            className={textSize.textXl}
           />
           <YAxis
             domain={[
@@ -66,6 +74,13 @@ function CSEvaluationHistogramChart({
                 return rounded + 1
               },
             ]}
+            label={{
+              value: t('manage.evaluation.count'),
+              angle: -90,
+              position: 'left',
+              offset: -10,
+            }}
+            className={textSize.textXl}
           />
           <CartesianGrid strokeDasharray="5 5" />
           <Tooltip
@@ -142,6 +157,25 @@ function CSEvaluationHistogramChart({
                 />
               )
             })}
+          {histogramKeys.length > 1 && (
+            <Legend
+              align="right"
+              verticalAlign="top"
+              wrapperStyle={{
+                fontSize: '1.125rem',
+                lineHeight: '1.75rem',
+              }}
+              formatter={(value) => {
+                if (value === 'count') {
+                  return null
+                }
+
+                // remove trailing index
+                return value.split('-')[0]
+              }}
+              className={textSize.textLg}
+            />
+          )}
         </BarChart>
       </ResponsiveContainer>
     </div>
