@@ -1307,6 +1307,7 @@ interface VerifyCaseStudyInputsArgs {
     }
   }
   criteria: { min: number; max: number; step: number }[]
+  verifyValues?: boolean
   verifyDisabled?: boolean
 }
 
@@ -1316,19 +1317,22 @@ Cypress.Commands.add(
     elementIx,
     answers,
     criteria,
+    verifyValues = true,
     verifyDisabled = false,
   }: VerifyCaseStudyInputsArgs) => {
     cy.caseStudyLoop({
       object: answers,
       callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
         // verify that correct value is still set
-        const slidedValue = computeCaseStudySlidedValue({
-          criterion: criteria[criterionIx],
-          answer: innerValue,
-        })
-        cy.get(
-          `[data-cy="cs-slider-nr-value-${elementIx + 1}-${caseIx + 1}-${itemIx + 1}-${criterionIx + 1}"]`
-        ).should('have.value', slidedValue)
+        if (verifyValues) {
+          const slidedValue = computeCaseStudySlidedValue({
+            criterion: criteria[criterionIx],
+            answer: innerValue,
+          })
+          cy.get(
+            `[data-cy="cs-slider-nr-value-${elementIx + 1}-${caseIx + 1}-${itemIx + 1}-${criterionIx + 1}"]`
+          ).should('have.value', slidedValue)
+        }
 
         // verify that the disabled attribute is set on the slider
         if (verifyDisabled) {

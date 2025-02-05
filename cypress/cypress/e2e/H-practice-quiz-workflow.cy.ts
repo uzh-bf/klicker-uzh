@@ -522,20 +522,6 @@ describe('Different practice quiz workflows', function () {
 
   // ! Part 2: Running Practice Quiz
   // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
-  function computeCaseStudySlidedValue({ criterion, answer }) {
-    const criterionMin = criterion.min
-    const criterionMax = criterion.max
-    const criterionStep = criterion.step
-    const midValue = criterionMin + (criterionMax - criterionMin) / 2
-    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
-    const slidedValue = Math.max(
-      Math.min(midValue + signedSteps * criterionStep, criterionMax),
-      criterionMin
-    )
-
-    return slidedValue
-  }
-
   function answerRunningPracticeQuiz(data) {
     // SC question
     cy.findByText(data.questions.SC1.content).should('exist')

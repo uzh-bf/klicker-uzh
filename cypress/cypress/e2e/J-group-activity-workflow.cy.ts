@@ -457,20 +457,6 @@ describe('Create and solve a group activity', function () {
   })
 
   // ! Part 2: Running Group Activity & Participation
-  function computeCaseStudySlidedValue({ criterion, answer }) {
-    const criterionMin = criterion.min
-    const criterionMax = criterion.max
-    const criterionStep = criterion.step
-    const midValue = criterionMin + (criterionMax - criterionMin) / 2
-    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
-    const slidedValue = Math.max(
-      Math.min(midValue + signedSteps * criterionStep, criterionMax),
-      criterionMin
-    )
-
-    return slidedValue
-  }
-
   function answerGroupActivity(data) {
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
@@ -516,35 +502,14 @@ describe('Create and solve a group activity', function () {
       data.questions.collection.options[4]
     )
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // full answer is required
-              cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-
-              // move sliders to answer values
-              const answer = criterionAnswer as { click: string; steps: number }
-              cy.get(
-                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              )
-                .click()
-                .type(answer.click.repeat(answer.steps))
-
-              // verify that correct value is set
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-            }
-          )
-        })
-      }
-    )
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      initialValidation: cy
+        .get('[data-cy="submit-group-activity"]')
+        .should('be.disabled'), // full answer required
+    })
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="sc-8-answer-option-1"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('not.be.disabled')
@@ -576,35 +541,14 @@ describe('Create and solve a group activity', function () {
     )
     cy.get('[id="selection-6-field-2"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // full answer is required
-              cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-
-              // move sliders to answer values
-              const answer = criterionAnswer as { click: string; steps: number }
-              cy.get(
-                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              )
-                .click()
-                .type(answer.click.repeat(answer.steps))
-
-              // verify that correct value is set
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-            }
-          )
-        })
-      }
-    )
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      initialValidation: cy
+        .get('[data-cy="submit-group-activity"]')
+        .should('be.disabled'), // full answer required
+    })
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="sc-8-answer-option-1"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('not.be.disabled')
@@ -635,18 +579,13 @@ describe('Create and solve a group activity', function () {
       'pointer-events',
       'none'
     )
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(([criterionIx, _]) => {
-            // verify that the disabled attribute is set on the slider
-            cy.get(
-              `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-            ).should('have.attr', 'data-disabled')
-          })
-        })
-      }
-    )
+    cy.verifyCaseStudyInputs({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      verifyValues: false,
+      verifyDisabled: true,
+    })
     cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
   }
 
@@ -686,25 +625,11 @@ describe('Create and solve a group activity', function () {
     cy.get('[id="selection-6-field-3"]')
       .contains(data.questions.collection.options[4])
       .should('have.css', 'pointer-events', 'none')
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // verify that correct value is still set
-              const answer = criterionAnswer as { click: string; steps: number }
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-            }
-          )
-        })
-      }
-    )
+    cy.verifyCaseStudyInputs({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+    })
     cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-8-answer-option-2"]').should('be.disabled')
   }
@@ -740,25 +665,12 @@ describe('Create and solve a group activity', function () {
     cy.get('[id="selection-6-field-3"]')
       .contains(messages.shared.questions.seSelectOption)
       .should('have.css', 'pointer-events', 'none')
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // verify that correct value is still set
-              const answer = criterionAnswer as { click: string; steps: number }
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-            }
-          )
-        })
-      }
-    )
+    cy.verifyCaseStudyInputs({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      verifyDisabled: true,
+    })
     cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="sc-8-answer-option-2"]').should('be.disabled')
   }
