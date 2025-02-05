@@ -520,6 +520,8 @@ describe('Different practice quiz workflows', function () {
     ).should('not.exist')
   })
 
+  // ! Part 2: Running Practice Quiz
+  // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
   function computeCaseStudySlidedValue({ criterion, answer }) {
     const criterionMin = criterion.min
     const criterionMax = criterion.max
@@ -534,8 +536,6 @@ describe('Different practice quiz workflows', function () {
     return slidedValue
   }
 
-  // ! Part 2: Running Practice Quiz
-  // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
   function answerRunningPracticeQuiz(data) {
     // SC question
     cy.findByText(data.questions.SC1.content).should('exist')

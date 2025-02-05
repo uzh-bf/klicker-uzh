@@ -73,6 +73,7 @@ describe('Different live-quiz workflows', function () {
       access: messages.manage.resources.accessPRIVATE,
       accessCy: 'private',
     })
+
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
       title: this.data.SE1.title,
@@ -88,6 +89,31 @@ describe('Different live-quiz workflows', function () {
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SE2.solutions.includes(i)
       ),
+    })
+
+    cy.createQuestionCS({
+      title: this.data.CS1.title,
+      content: this.data.CS1.content,
+      explanation: this.data.CS1.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CS1.selectedItems.includes(i)
+      ),
+      criteria: this.data.CS1.criteria,
+      cases: this.data.CS1.cases,
+      solutions: this.data.CS1.solutions,
+    })
+    cy.createQuestionCS({
+      title: this.data.CS2.title,
+      content: this.data.CS2.content,
+      explanation: this.data.CS2.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CS2.selectedItems.includes(i)
+      ),
+      criteria: this.data.CS2.criteria,
+      cases: this.data.CS2.cases,
+      solutions: this.data.CS2.solutions,
     })
   })
 
@@ -708,6 +734,20 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! Part 3: Full Live Quiz Execution Cycle
+  function computeCaseStudySlidedValue({ criterion, answer }) {
+    const criterionMin = criterion.min
+    const criterionMax = criterion.max
+    const criterionStep = criterion.step
+    const midValue = criterionMin + (criterionMax - criterionMin) / 2
+    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
+    const slidedValue = Math.max(
+      Math.min(midValue + signedSteps * criterionStep, criterionMax),
+      criterionMin
+    )
+
+    return slidedValue
+  }
+
   it('Create and start a live quiz with all question types (with and without sample solution) to test the entire execution cycle', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -771,6 +811,7 @@ describe('Different live-quiz workflows', function () {
             this.data.NR1.title,
             this.data.FT1.title,
             this.data.SE1.title,
+            this.data.CS1.title,
           ],
         },
         {
@@ -781,6 +822,7 @@ describe('Different live-quiz workflows', function () {
             this.data.NR2.title,
             this.data.FT2.title,
             this.data.SE2.title,
+            this.data.CS2.title,
           ],
         },
       ],
@@ -879,9 +921,36 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
-    cy.get('[data-cy="student-submit-answer"]').should('not.be.disabled')
+    cy.get('[data-cy="student-submit-answer"]').should('not.be.disabled') // partial responses allowed
     cy.get('[id="selection-6-field-2"]').click()
     cy.get('[id="react-select-selection-6-field-2-option-2"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    Object.entries(this.data.CS1.answers).forEach(([caseIx, caseAnswer]) => {
+      Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+        Object.entries(itemAnswer).forEach(([criterionIx, criterionAnswer]) => {
+          // full answer is required
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+
+          // move sliders to answer values
+          const answer = criterionAnswer as { click: string; steps: number }
+          cy.get(
+            `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+          )
+            .click()
+            .type(answer.click.repeat(answer.steps))
+
+          // verify that correct value is set
+          const slidedValue = computeCaseStudySlidedValue({
+            criterion: this.data.CS1.criteria[criterionIx],
+            answer,
+          })
+          cy.get(
+            `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+          ).should('have.value', slidedValue)
+        })
+      })
+    })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
@@ -996,6 +1065,35 @@ describe('Different live-quiz workflows', function () {
     cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+
+    // CS question - skipping not permitted, partial answers not possible
+    Object.entries(this.data.CS2.answers).forEach(([caseIx, caseAnswer]) => {
+      Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+        Object.entries(itemAnswer).forEach(([criterionIx, criterionAnswer]) => {
+          // full answer is required
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+
+          // move sliders to answer values
+          const answer = criterionAnswer as { click: string; steps: number }
+          cy.get(
+            `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+          )
+            .click()
+            .type(answer.click.repeat(answer.steps))
+
+          // verify that correct value is set
+          const slidedValue = computeCaseStudySlidedValue({
+            criterion: this.data.CS2.criteria[criterionIx],
+            answer,
+          })
+          cy.get(
+            `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+          ).should('have.value', slidedValue)
+        })
+      })
+    })
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
   })
 
   it('Verify that the feedbacks and the given feedback response are visible to the student', function () {
@@ -1042,10 +1140,15 @@ describe('Different live-quiz workflows', function () {
       .then((text) => {
         cy.wrap(text).as('publicLinkQuestion0')
       })
-    cy.get('[data-cy="open-embedding-link-question-7"]')
+    cy.get('[data-cy="open-embedding-link-question-6"]')
       .invoke('text')
       .then((text) => {
-        cy.wrap(text).as('publicLinkQuestion7')
+        cy.wrap(text).as('publicLinkQuestion6')
+      })
+    cy.get('[data-cy="open-embedding-link-question-8"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('publicLinkQuestion8')
       })
     cy.get('[data-cy="open-embedding-link-leaderboard"]')
       .invoke('text')
@@ -1075,7 +1178,11 @@ describe('Different live-quiz workflows', function () {
       cy.visit(String(link))
     })
     cy.findByText(this.data.SC1.content).should('exist')
-    cy.get('@publicLinkQuestion7').then((link) => {
+    cy.get('@publicLinkQuestion6').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.CS1.content).should('exist')
+    cy.get('@publicLinkQuestion8').then((link) => {
       cy.visit(String(link))
     })
     cy.findByText(this.data.MC2.content).should('exist')
@@ -1134,6 +1241,8 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.SE1.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.CS1.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.SC2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.MC2.content).should('exist')
@@ -1145,20 +1254,19 @@ describe('Different live-quiz workflows', function () {
     cy.findByText(this.data.FT2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.SE2.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.CS2.content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
     cy.findByText(this.data.NR2.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
     cy.findByText(this.data.SC2.content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(this.data.CS1.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.SE1.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.FT1.content).should('exist')
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
     cy.findByText(this.data.MC1.title).should('exist')
 
     // test navigation through blocks
@@ -1275,12 +1383,14 @@ describe('Different live-quiz workflows', function () {
       this.data.NR1.title,
       this.data.FT1.title,
       this.data.SE1.title,
+      this.data.CS1.title,
       this.data.SC2.title,
       this.data.MC2.title,
       this.data.KP2.title,
       this.data.NR2.title,
       this.data.FT2.title,
       this.data.SE2.title,
+      this.data.CS2.title,
     ]
     cy.wrap(questions).each((question: string) => {
       cy.deleteElement({ elementName: question })
