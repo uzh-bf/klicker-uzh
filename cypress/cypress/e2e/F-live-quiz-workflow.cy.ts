@@ -950,6 +950,11 @@ describe('Different live-quiz workflows', function () {
           ).should('have.value', slidedValue)
         })
       })
+
+      // switch to the next case
+      if (parseInt(caseIx) !== this.data.CS1.cases.length - 1) {
+        cy.get('[data-cy="switch-next-case"]').click()
+      }
     })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
@@ -1091,6 +1096,11 @@ describe('Different live-quiz workflows', function () {
           ).should('have.value', slidedValue)
         })
       })
+
+      // switch to the next case
+      if (parseInt(caseIx) !== this.data.CS2.cases.length - 1) {
+        cy.get('[data-cy="switch-next-case"]').click()
+      }
     })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)

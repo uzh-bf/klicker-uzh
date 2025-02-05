@@ -89,6 +89,7 @@ interface StudentElementBaseProps {
   elementIx: number
   hideReadButton?: boolean
   disabledInput?: boolean
+  sequential?: boolean
   preview?: boolean
 }
 
@@ -120,6 +121,7 @@ function StudentElement({
   setSingleStudentResponse,
   hideReadButton = false,
   disabledInput = false,
+  sequential = false, // chose cases of case study element sequentially to student
   preview = false,
 }: StudentElementStackProps | StudentElementSingleProps) {
   const evaluation = stackStorage?.[element.id]?.evaluation
@@ -323,7 +325,7 @@ function StudentElement({
     return (
       <CaseStudyQuestion
         key={element.id}
-        sequential={false} // sequential setting is only relevant for live-quiz applications
+        sequential={sequential}
         content={element.elementData.content}
         options={element.elementData.options}
         response={

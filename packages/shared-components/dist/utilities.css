@@ -100,6 +100,10 @@
   margin-left: 0.5rem
 }
 
+.mr-1 {
+  margin-right: 0.25rem
+}
+
 .mr-1\.5 {
   margin-right: 0.375rem
 }
@@ -134,6 +138,10 @@
 
 .mt-3 {
   margin-top: 0.75rem
+}
+
+.mt-4 {
+  margin-top: 1rem
 }
 
 .mt-6 {
@@ -356,6 +364,10 @@
   flex-direction: column
 }
 
+.flex-wrap {
+  flex-wrap: wrap
+}
+
 .items-end {
   align-items: flex-end
 }
@@ -498,6 +510,10 @@
   border-width: 0px
 }
 
+.border-2 {
+  border-width: 2px
+}
+
 .border-b {
   border-bottom-width: 1px
 }
@@ -548,6 +564,11 @@
 .border-slate-400 {
   --tw-border-opacity: 1;
   border-color: rgb(148 163 184 / var(--tw-border-opacity, 1))
+}
+
+.border-uzh-blue-80 {
+  --tw-border-opacity: 1;
+  border-color: rgb(51 83 183 / var(--tw-border-opacity, 1))
 }
 
 .border-uzh-grey-100 {
@@ -678,9 +699,19 @@
   background-color: transparent
 }
 
+.bg-uzh-blue-80 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(51 83 183 / var(--tw-bg-opacity, 1))
+}
+
 .bg-uzh-grey-20 {
   --tw-bg-opacity: 1;
   background-color: rgb(237 239 241 / var(--tw-bg-opacity, 1))
+}
+
+.bg-uzh-grey-60 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(200 206 212 / var(--tw-bg-opacity, 1))
 }
 
 .bg-white {
@@ -750,6 +781,11 @@
   padding-right: 0.5rem
 }
 
+.px-2\.5 {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem
+}
+
 .px-3 {
   padding-left: 0.75rem;
   padding-right: 0.75rem
@@ -758,6 +794,11 @@
 .px-4 {
   padding-left: 1rem;
   padding-right: 1rem
+}
+
+.py-0\.5 {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem
 }
 
 .py-1 {
