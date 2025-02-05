@@ -146,6 +146,13 @@ function QuestionArea({
     ) {
       // submit responses as an array of answer ids that were selected
       handleNewResponse(type, instanceId, Object.values(input.response))
+    } else if (
+      ElementType.CaseStudy === type &&
+      input.type === ElementType.CaseStudy &&
+      typeof input.response !== 'undefined'
+    ) {
+      // submit responses as an object with case, item and criterion ids as nested keys
+      handleNewResponse(type, instanceId, input.response)
     }
   }
 

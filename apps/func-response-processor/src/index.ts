@@ -2,6 +2,7 @@ import { app, InvocationContext } from '@azure/functions'
 import {
   computeAwardedPoints,
   computeAwardedXp,
+  gradeQuestionCaseStudy,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
   gradeQuestionMC,
@@ -67,7 +68,6 @@ const serviceBusTrigger = async function (
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
   try {
-    const MD5 = createHash('md5')
     const sessionKey = `lq:${queueItem.sessionId}`
     const instanceKey = `${sessionKey}:i:${queueItem.instanceId}`
     const responseTimestamp = queueItem.responseTimestamp
@@ -238,6 +238,7 @@ const serviceBusTrigger = async function (
       }
       // TODO: points based on distance to correct range?
       case 'NUMERICAL': {
+        const MD5 = createHash('md5')
         MD5.update(response.value)
         const responseHash = MD5.digest('hex')
         redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
@@ -316,6 +317,8 @@ const serviceBusTrigger = async function (
       // TODO: future -> distance in embedding space?
       case 'FREE_TEXT': {
         const cleanResponseValue = toLowerCase(response.value.trim())
+
+        const MD5 = createHash('md5')
         MD5.update(cleanResponseValue)
         const responseHash = MD5.digest('hex')
         redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
@@ -410,8 +413,14 @@ const serviceBusTrigger = async function (
             timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
               ? TIME_TO_ZERO_BONUS
               : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: DEFAULT_POINTS,
-            defaultCorrectPoints: DEFAULT_CORRECT_POINTS,
+            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
+              ? DEFAULT_POINTS
+              : parseInt(instanceInfo.defaultPoints, 10),
+            defaultCorrectPoints: isNaN(
+              parseInt(instanceInfo.defaultCorrectPoints, 10)
+            )
+              ? DEFAULT_CORRECT_POINTS
+              : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsPercentage,
             pointsMultiplier,
           })
@@ -451,6 +460,102 @@ const serviceBusTrigger = async function (
           )
           redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
         }
+        break
+      }
+      case 'CASE_STUDY': {
+        Object.entries(response.assessment).forEach(([caseId, caseData]) => {
+          Object.entries(caseData).forEach(([itemId, itemData]) => {
+            Object.entries(itemData).forEach(
+              ([criterionId, criterionResponse]) => {
+                if (
+                  criterionResponse === null ||
+                  typeof criterionResponse !== 'number'
+                ) {
+                  return
+                }
+
+                // compute the hash of the response
+                const MD5 = createHash('md5')
+                MD5.update(String(criterionResponse))
+                const responseHash = MD5.digest('hex')
+                const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
+
+                // add the response hash / valid combination and/or increment the corresponding count
+                redisMulti.hincrby(`${instanceKey}:results`, combinedHash, 1)
+                redisMulti.hset(
+                  `${instanceKey}:responseHashes`,
+                  combinedHash,
+                  String(criterionResponse)
+                )
+              }
+            )
+          })
+        })
+
+        // increment participant count
+        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+
+        if (participantData) {
+          const pointsPercentage = gradeQuestionCaseStudy({
+            response: response.assessment,
+            solutions: parsedSolutions,
+          })
+
+          pointsAwarded = computeAwardedPoints({
+            firstResponseReceivedAt,
+            responseTimestamp,
+            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
+              ? MAX_BONUS_POINTS
+              : parseInt(instanceInfo.maxBonusPoints, 10),
+            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
+              ? TIME_TO_ZERO_BONUS
+              : parseInt(instanceInfo.timeToZeroBonus, 10),
+            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
+              ? DEFAULT_POINTS
+              : parseInt(instanceInfo.defaultPoints, 10),
+            defaultCorrectPoints: isNaN(
+              parseInt(instanceInfo.defaultCorrectPoints, 10)
+            )
+              ? DEFAULT_CORRECT_POINTS
+              : parseInt(instanceInfo.defaultCorrectPoints, 10),
+            pointsPercentage,
+            pointsMultiplier,
+          })
+          xpAwarded = computeAwardedXp({
+            pointsPercentage,
+          })
+
+          if (
+            pointsPercentage !== null &&
+            pointsPercentage === 1 &&
+            !firstResponseReceivedAt
+          ) {
+            // if we are processing a first response, set the timestamp on the instance
+            // this will allow us to award points for response timing
+            redisExec.hset(
+              `${instanceKey}:info`,
+              'firstResponseReceivedAt',
+              responseTimestamp
+            )
+          }
+          redisMulti.hset(
+            `${instanceKey}:responses`,
+            participantData.sub,
+            JSON.stringify(response.assessment)
+          )
+          redisMulti.hincrby(
+            `${sessionKey}:b:${sessionBlockId}:lb`,
+            participantData.sub,
+            pointsAwarded
+          )
+          redisMulti.hincrby(
+            `${sessionKey}:lb`,
+            participantData.sub,
+            pointsAwarded
+          )
+          redisMulti.hincrby(`${sessionKey}:xp`, participantData.sub, xpAwarded)
+        }
+
         break
       }
     }

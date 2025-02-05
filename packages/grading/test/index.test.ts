@@ -394,6 +394,13 @@ describe('@klicker-uzh/grading', () => {
         ],
       },
     ]
+    const minScenarioCorrectObject = {
+      iLVwZltIbP: {
+        '1': {
+          lnmcuMWRcw: 5,
+        },
+      },
+    }
     const minScenarioIncorrect = [
       {
         caseId: 'iLVwZltIbP',
@@ -405,6 +412,13 @@ describe('@klicker-uzh/grading', () => {
         ],
       },
     ]
+    const minScenarioIncorrectObject = {
+      iLVwZltIbP: {
+        '1': {
+          lnmcuMWRcw: -5,
+        },
+      },
+    }
     const minScenarioLowerBoundary = [
       {
         caseId: 'iLVwZltIbP',
@@ -416,6 +430,13 @@ describe('@klicker-uzh/grading', () => {
         ],
       },
     ]
+    const minScenarioLowerBoundaryObject = {
+      iLVwZltIbP: {
+        '1': {
+          lnmcuMWRcw: 0.1,
+        },
+      },
+    }
     const minScenarioUpperBoundary = [
       {
         caseId: 'iLVwZltIbP',
@@ -460,17 +481,35 @@ describe('@klicker-uzh/grading', () => {
     })
     expect(grade4).toEqual(1)
 
+    const grade4Obj = gradeQuestionCaseStudy({
+      response: minScenarioCorrectObject,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade4Obj).toEqual(1)
+
     const grade5 = gradeQuestionCaseStudy({
       response: minScenarioIncorrect,
       solutions: minScenarioSolutions,
     })
     expect(grade5).toEqual(0)
 
+    const grade5Obj = gradeQuestionCaseStudy({
+      response: minScenarioIncorrectObject,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade5Obj).toEqual(0)
+
     const grade6 = gradeQuestionCaseStudy({
       response: minScenarioLowerBoundary,
       solutions: minScenarioSolutions,
     })
     expect(grade6).toEqual(1)
+
+    const grade6Obj = gradeQuestionCaseStudy({
+      response: minScenarioLowerBoundaryObject,
+      solutions: minScenarioSolutions,
+    })
+    expect(grade6Obj).toEqual(1)
 
     const grade7 = gradeQuestionCaseStudy({
       response: minScenarioUpperBoundary,

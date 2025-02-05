@@ -132,6 +132,15 @@ function Index({ id }: { id: string }) {
           response: { selection: answer },
         }),
       }
+    } else if (type === ElementType.CaseStudy) {
+      requestOptions = {
+        ...requestOptions,
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { assessment: answer },
+        }),
+      }
     } else {
       return null
     }

@@ -698,11 +698,11 @@ export const LIVE_QUIZZES = [
     timeToZeroBonus: 200,
     blocks: [
       {
-        questions: [0, 1, 2, 3, 4, 5, 6],
+        questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],
         timeLimit: undefined,
       },
       {
-        questions: [0, 1, 2, 3, 4, 5, 6],
+        questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],
         timeLimit: undefined,
       },
     ],
@@ -718,11 +718,11 @@ export const LIVE_QUIZZES = [
     status: PublicationStatus.SCHEDULED,
     blocks: [
       {
-        questions: [0, 1, 2, 3, 4, 5, 6],
+        questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],
         timeLimit: undefined,
       },
       {
-        questions: [0, 1, 2, 3, 4, 5, 6],
+        questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],
         timeLimit: 30,
       },
     ],

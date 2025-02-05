@@ -166,13 +166,15 @@ export function gradeQuestionSelection({
 }
 
 interface GradeQuestionCaseStudyArgs {
-  response: {
-    caseId: string
-    itemResponses: {
-      itemId: number
-      criterionResponses: { criterionId: string; response: number }[]
-    }[]
-  }[]
+  response:
+    | {
+        caseId: string
+        itemResponses: {
+          itemId: number
+          criterionResponses: { criterionId: string; response: number }[]
+        }[]
+      }[]
+    | CaseStudyResponseObject
   solutions?:
     | {
         caseId: string
@@ -199,24 +201,26 @@ export function gradeQuestionCaseStudy({
   if (!solutions || solutions.length === 0) return null
 
   // convert response into an object for faster access
-  const responseMap = response.reduce<CaseStudyResponseObject>(
-    (acc, { caseId, itemResponses }) => {
-      acc[caseId] = itemResponses.reduce<CaseStudyResponseObject['']>(
-        (acc, { itemId, criterionResponses }) => {
-          acc[itemId] = criterionResponses.reduce<
-            CaseStudyResponseObject[''][0]
-          >((acc, { criterionId, response }) => {
-            acc[criterionId] = response
-            return acc
-          }, {})
+  const responseMap = !Array.isArray(response)
+    ? response
+    : response.reduce<CaseStudyResponseObject>(
+        (acc, { caseId, itemResponses }) => {
+          acc[caseId] = itemResponses.reduce<CaseStudyResponseObject['']>(
+            (acc, { itemId, criterionResponses }) => {
+              acc[itemId] = criterionResponses.reduce<
+                CaseStudyResponseObject[''][0]
+              >((acc, { criterionId, response }) => {
+                acc[criterionId] = response
+                return acc
+              }, {})
+              return acc
+            },
+            {}
+          )
           return acc
         },
         {}
       )
-      return acc
-    },
-    {}
-  )
 
   const { totalAssessmentCases, totalCorrectCases } = solutions.reduce<{
     totalAssessmentCases: number

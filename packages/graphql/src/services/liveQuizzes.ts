@@ -16,6 +16,8 @@ import {
 } from '@klicker-uzh/prisma'
 import type {
   BlockInput,
+  CaseStudyCaseSolution,
+  ElementResultsCaseStudy,
   ElementResultsChoices,
   ElementResultsContent,
   ElementResultsFlashcard,
@@ -122,12 +124,15 @@ async function getCachedBlockResults({
     ) {
       const choices = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
-      ).reduce<Record<string, number>>((acc, [responseHash, count]) => {
-        return {
-          ...acc,
-          [responseHash]: (acc[responseHash] ?? 0) + parseInt(count),
-        }
-      }, {})
+      ).reduce<ElementResultsChoices['choices']>(
+        (acc, [responseHash, count]) => {
+          return {
+            ...acc,
+            [responseHash]: (acc[responseHash] ?? 0) + parseInt(count),
+          }
+        },
+        {}
+      )
 
       anonymousResults = {
         choices,
@@ -139,7 +144,7 @@ async function getCachedBlockResults({
     ) {
       const responses = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
-      ).reduce<Record<string, { value: string; count: number }>>(
+      ).reduce<ElementResultsOpen['responses']>(
         (responses_acc, [responseHash, count]) => {
           let solutions = []
           try {
@@ -200,8 +205,7 @@ async function getCachedBlockResults({
         responses,
         total: parseInt(results.participants),
       } as ElementResultsOpen
-    }
-    if (instance.elementType === ElementType.SELECTION) {
+    } else if (instance.elementType === ElementType.SELECTION) {
       const selections = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
       ).reduce<Record<string, number>>(
@@ -216,6 +220,120 @@ async function getCachedBlockResults({
         selections,
         total: parseInt(results.participants),
       } as ElementResultsSelection
+    } else if (instance.elementType === ElementType.CASE_STUDY) {
+      const assessments = Object.entries(
+        omitBy(results, (_, key) => key === 'participants')
+      ).reduce<ElementResultsCaseStudy['assessments']>(
+        (assessmentsAcc, [combinedHash, answerCount]) => {
+          let solutions: {
+            caseId: string
+            itemSolutions: CaseStudyCaseSolution[]
+          }[] = []
+          try {
+            solutions =
+              'hasSampleSolution' in instance.elementData.options &&
+              instance.elementData.options.hasSampleSolution
+                ? JSON.parse(info.solutions)
+                : []
+          } catch (e) {
+            console.log(
+              'An error occured while parsing the solutions array from the cache:'
+            )
+            console.error(e)
+          }
+
+          const responseValue: number | undefined =
+            responseHashes[combinedHash] ?? undefined
+
+          if (responseValue === null || typeof responseValue === 'undefined') {
+            console.log('An error occured while parsing the response value:')
+            console.error('responseValue: ', responseValue)
+            return assessmentsAcc
+          }
+
+          // split up combined hash into caseId, itemId, criterionId and responseHash
+          const [caseId, itemId, criterionId, responseHash] =
+            combinedHash.split(':')
+
+          // if any of the ids or the hash are invalid, skip this response
+          if (
+            !caseId ||
+            !itemId ||
+            !criterionId ||
+            !responseHash ||
+            !responseValue
+          ) {
+            console.log('An error occured while parsing the combinedHash:')
+            console.error('combinedHash: ', combinedHash)
+            return assessmentsAcc
+          }
+
+          // verify that the corresponding case-item-criterion combination exists in the results
+          if (
+            typeof assessmentsAcc[caseId]?.[itemId]?.[criterionId] ===
+            'undefined'
+          ) {
+            console.log(
+              'An error occured while verifying the case-item-criterion combination:'
+            )
+            console.error('caseId', caseId)
+            console.error('itemId', itemId)
+            console.error('criterionId', criterionId)
+            return assessmentsAcc
+          }
+
+          // TODO: the grading process could potentially be sped up by iterating over the solutions array
+          // only once and selecting all corresponding responses based on the combinedHash
+          let grading: number | undefined
+          if (solutions && solutions.length > 0) {
+            const caseSolutions = solutions.find(
+              (solution) => solution.caseId === caseId
+            )
+            if (caseSolutions) {
+              const itemSolution = caseSolutions.itemSolutions.find(
+                (itemSolution) => itemSolution.itemId === parseInt(itemId)
+              )
+              if (itemSolution) {
+                const criterionSolution = itemSolution.criteriaSolutions.find(
+                  (criterionSolution) =>
+                    criterionSolution.criterionId === criterionId
+                )
+                if (criterionSolution) {
+                  grading =
+                    responseValue >= criterionSolution.min &&
+                    responseValue <= criterionSolution.max
+                      ? 1
+                      : 0
+                }
+              }
+            }
+          }
+
+          assessmentsAcc[caseId][itemId][criterionId] = {
+            ...assessmentsAcc[caseId][itemId][criterionId],
+            [responseHash]: {
+              value: responseValue,
+              count: parseInt(answerCount),
+              correct:
+                typeof grading !== 'undefined'
+                  ? grading === 1
+                    ? true
+                    : false
+                  : undefined,
+            },
+          }
+
+          return assessmentsAcc
+        },
+        {
+          ...(instance.anonymousResults as ElementResultsCaseStudy).assessments,
+        }
+      )
+
+      anonymousResults = {
+        assessments,
+        total: parseInt(results.participants),
+      } as ElementResultsCaseStudy
     }
 
     instanceResults[instance.id] = {
@@ -1038,6 +1156,29 @@ export async function activateLiveQuizBlock(
         })
         break
       }
+
+      case ElementType.CASE_STUDY: {
+        // convert solutions to object for faster access
+        const validSolutions = elementData.options.cases.every(
+          (caseItem) => caseItem.solutions
+        )
+        const solutions =
+          elementData.options.hasSampleSolution && validSolutions
+            ? elementData.options.cases.map((caseItem) => ({
+                caseId: caseItem.id,
+                itemSolutions: caseItem.solutions,
+              }))
+            : undefined
+
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: solutions ? JSON.stringify(solutions) : undefined,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+        break
+      }
     }
   })
 
@@ -1692,6 +1833,7 @@ export async function cancelLiveQuiz(
               element: {
                 include: {
                   answerCollection: { include: { entries: true } },
+                  answerCollectionItems: true,
                 },
               },
             },
