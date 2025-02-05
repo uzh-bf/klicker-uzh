@@ -51,7 +51,7 @@ function SELECTIONAnswerOptions({
   }, [options.answerCollection?.entries, selectedValues])
 
   return (
-    <div>
+    <div className="text-base">
       <div className="mb-3">
         {t.rich('shared.questions.seSelectNCorrectOptions', {
           number: options.numberOfInputs,

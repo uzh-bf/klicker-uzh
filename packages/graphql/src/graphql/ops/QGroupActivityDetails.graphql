@@ -70,6 +70,16 @@ query GroupActivityDetails($activityId: String!, $groupId: String!) {
         numericalResponse
         contentResponse
         selectionResponse
+        caseStudyResponse {
+          caseId
+          itemResponses {
+            itemId
+            criterionResponses {
+              criterionId
+              response
+            }
+          }
+        }
       }
 
       resultsComputedAt

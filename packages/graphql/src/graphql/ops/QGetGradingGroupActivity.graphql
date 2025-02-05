@@ -46,6 +46,16 @@ query GetGradingGroupActivity($id: String!) {
         numericalResponse
         contentResponse
         selectionResponse
+        caseStudyResponse {
+          caseId
+          itemResponses {
+            itemId
+            criterionResponses {
+              criterionId
+              response
+            }
+          }
+        }
       }
 
       resultsComputedAt

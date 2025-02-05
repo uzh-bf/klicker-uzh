@@ -983,6 +983,7 @@ type GroupActivityClueInstance {
 }
 
 type GroupActivityDecision {
+  caseStudyResponse: [SingleQuestionResponseCaseStudyCase!]
   choicesResponse: [Int!]
   contentResponse: Boolean
   freeTextResponse: String

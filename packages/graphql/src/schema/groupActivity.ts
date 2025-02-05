@@ -19,6 +19,7 @@ import {
   ElementStackRef,
   PublicationStatus,
 } from './practiceQuiz.js'
+import { SingleQuestionResponseCaseStudyCase } from './question.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),
@@ -100,6 +101,10 @@ export const GroupActivityDecision = GroupActivityDecisionRef.implement({
     numericalResponse: t.exposeFloat('numericalResponse', { nullable: true }),
     contentResponse: t.exposeBoolean('contentResponse', { nullable: true }),
     selectionResponse: t.exposeIntList('selectionResponse', { nullable: true }),
+    caseStudyResponse: t.expose('caseStudyResponse', {
+      type: [SingleQuestionResponseCaseStudyCase],
+      nullable: true,
+    }),
   }),
 })
 

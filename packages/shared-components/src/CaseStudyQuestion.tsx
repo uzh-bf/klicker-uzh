@@ -47,14 +47,14 @@ function CaseStudyQuestion({
   const solutions = useCaseStudySolutionsObject({ evaluation })
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row">
+    <div className="flex flex-col gap-4 text-base md:flex-row">
       <div className="flex-1">
         {content !== '<br>' && (
           <div className={twMerge(!!evaluation && 'mb-3')}>
-            <div className="mb-1 mt-3 text-lg font-bold italic">
-              {t('shared.questions.csCaseStudyInstructions')}
+            <div className="mb-1 mt-3 text-lg font-bold">
+              {t('shared.generic.instructions')}
             </div>
-            <Markdown content={content} />
+            <Markdown content={content} className={{ root: 'text-base' }} />
           </div>
         )}
 

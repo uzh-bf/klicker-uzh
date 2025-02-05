@@ -40,6 +40,7 @@ import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import {
   type RespondToElementStackInput,
+  updateCaseStudyResults,
   updateChoicesResults,
   updateFreeTextResults,
   updateNumericalResults,
@@ -1451,7 +1452,7 @@ export async function submitGroupActivityDecisions(
   {
     activityId,
     responses,
-  }: Partial<RespondToElementStackInput> & { activityId: number },
+  }: Pick<RespondToElementStackInput, 'responses'> & { activityId: number },
   ctx: ContextWithUser
 ) {
   const groupActivityInstance =
@@ -1551,6 +1552,14 @@ export async function submitGroupActivityDecisions(
           updatedResults = updateSelectionResults({
             previousResults: instance.results,
             response: { selection: inputResponse.selectionResponse },
+          })
+        } else if (
+          inputResponse.type === ElementType.CASE_STUDY &&
+          'assessments' in instance.results
+        ) {
+          updatedResults = updateCaseStudyResults({
+            previousResults: instance.results,
+            response: { assessment: inputResponse.caseStudyResponse },
           })
         } else {
           console.log('Element type not supported for group activity')

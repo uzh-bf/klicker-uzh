@@ -14,6 +14,16 @@ mutation GradeGroupActivitySubmission(
       numericalResponse
       contentResponse
       selectionResponse
+      caseStudyResponse {
+        caseId
+        itemResponses {
+          itemId
+          criterionResponses {
+            criterionId
+            response
+          }
+        }
+      }
     }
 
     resultsComputedAt

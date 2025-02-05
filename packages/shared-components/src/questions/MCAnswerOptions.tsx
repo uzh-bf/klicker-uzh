@@ -34,7 +34,7 @@ export function MCAnswerOptions({
 
   return (
     <>
-      <div className="mb-2">
+      <div className="mb-2 text-base">
         {t.rich(`shared.${ElementType.Mc}.richtext`, {
           b: (text) => <span className="font-bold">{text}</span>,
         })}

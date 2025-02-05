@@ -1851,7 +1851,7 @@ function convertCaseStudySolutionsObject({
   return caseStudySolutions
 }
 
-function updateCaseStudyResults({
+export function updateCaseStudyResults({
   previousResults,
   response,
   solutions,

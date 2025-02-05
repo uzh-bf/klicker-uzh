@@ -11019,6 +11019,26 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "caseStudyResponse",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "SingleQuestionResponseCaseStudyCase",
+                  "ofType": null
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "choicesResponse",
             "description": null,
             "args": [],

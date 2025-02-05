@@ -1,4 +1,4 @@
-import { ActivityType } from '@klicker-uzh/types'
+import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
   getInitialElementResults,
   getInitialInstanceStatistics,
@@ -330,6 +330,35 @@ export function prepareGroupActivityStack({
         }
       : undefined,
   }
+}
+
+export function computeRandomCaseStudyDecisions({
+  options,
+}: {
+  options: ElementOptionsCaseStudy
+}) {
+  return options.cases.map((caseItem) => {
+    const itemResponses = options.items?.map((item) => {
+      const criterionResponses = options.criteria.map((criterion) => ({
+        criterionId: criterion.id,
+        response:
+          Math.round(
+            (Math.random() * (criterion.max - criterion.min) + criterion.min) *
+              100
+          ) / 100,
+      }))
+
+      return {
+        itemId: item.id,
+        criterionResponses,
+      }
+    })
+
+    return {
+      caseId: caseItem.id,
+      itemResponses,
+    }
+  })
 }
 
 export function prepareStackVariety({

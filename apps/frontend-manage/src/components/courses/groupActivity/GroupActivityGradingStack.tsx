@@ -12,6 +12,7 @@ import {
   SelectionElementData,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
+  CaseStudyStudentResponseType,
   StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
@@ -136,6 +137,33 @@ function GroupActivityGradingStack({
               response[ix] = answerId
             })
           : undefined
+
+        return {
+          [elementId]: {
+            type: type,
+            response,
+            valid: true,
+          },
+        }
+      } else if (type === ElementType.CaseStudy) {
+        const response =
+          decision.caseStudyResponse?.reduce<CaseStudyStudentResponseType>(
+            (caseAcc, caseItem) => {
+              caseAcc[caseItem.caseId] = caseItem.itemResponses.reduce<
+                CaseStudyStudentResponseType['']
+              >((itemAcc, item) => {
+                itemAcc[String(item.itemId)] = item.criterionResponses.reduce<
+                  CaseStudyStudentResponseType['']['']
+                >((criterionAcc, criterion) => {
+                  criterionAcc[criterion.criterionId] = criterion.response
+                  return criterionAcc
+                }, {})
+                return itemAcc
+              }, {})
+              return caseAcc
+            },
+            {}
+          )
 
         return {
           [elementId]: {
