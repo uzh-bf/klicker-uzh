@@ -1191,6 +1191,20 @@ Cypress.Commands.add(
   }
 )
 
+function computeCaseStudySlidedValue({ criterion, answer }) {
+  const criterionMin = criterion.min
+  const criterionMax = criterion.max
+  const criterionStep = criterion.step
+  const midValue = criterionMin + (criterionMax - criterionMin) / 2
+  const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
+  const slidedValue = Math.max(
+    Math.min(midValue + signedSteps * criterionStep, criterionMax),
+    criterionMin
+  )
+
+  return slidedValue
+}
+
 interface CaseStudyLoopArgs {
   object: any
   callback: ({
@@ -1220,6 +1234,65 @@ Cypress.Commands.add(
           })
         })
       })
+    })
+  }
+)
+
+interface AnswerCaseStudyArgs {
+  elementIx: number
+  answers: {
+    [caseIx: string]: {
+      [itemIx: string]: {
+        [criterionIx: string]: { click: string; steps: number }
+      }
+    }
+  }
+  cases: { id: string }[]
+  criteria: { min: number; max: number; step: number }[]
+  initialValidation?: any
+  sequentialUI?: boolean
+}
+
+Cypress.Commands.add(
+  'answerCaseStudy',
+  ({
+    elementIx,
+    answers,
+    cases,
+    criteria,
+    initialValidation,
+    sequentialUI = false,
+  }: AnswerCaseStudyArgs) => {
+    Object.entries(answers).forEach(([caseIx, caseAnswer]) => {
+      Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+        Object.entries(itemAnswer).forEach(([criterionIx, answer]) => {
+          // optional initial validation statement
+          {
+            initialValidation
+          }
+
+          // move sliders to answer values
+          cy.get(
+            `[data-cy="cs-slider-${elementIx + 1}-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+          )
+            .click()
+            .type(answer.click.repeat(answer.steps))
+
+          // verify that correct value is set
+          const slidedValue = computeCaseStudySlidedValue({
+            criterion: criteria[criterionIx],
+            answer,
+          })
+          cy.get(
+            `[data-cy="cs-slider-nr-value-${elementIx + 1}-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+          ).should('have.value', slidedValue)
+        })
+      })
+
+      // switch to the next case, if sequential UI is enabled
+      if (sequentialUI && parseInt(caseIx) !== cases.length - 1) {
+        cy.get('[data-cy="switch-next-case"]').click()
+      }
     })
   }
 )
@@ -1352,6 +1425,14 @@ declare global {
         stack,
       }: CreateGroupActivityArgs): Chainable<void>
       caseStudyLoop({ object, callback }: CaseStudyLoopArgs): Chainable<void>
+      answerCaseStudy({
+        elementIx,
+        answers,
+        cases,
+        criteria,
+        initialValidation,
+        sequentialUI,
+      }: AnswerCaseStudyArgs): Chainable<void>
     }
   }
 }

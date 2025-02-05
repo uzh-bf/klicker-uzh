@@ -734,20 +734,6 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! Part 3: Full Live Quiz Execution Cycle
-  function computeCaseStudySlidedValue({ criterion, answer }) {
-    const criterionMin = criterion.min
-    const criterionMax = criterion.max
-    const criterionStep = criterion.step
-    const midValue = criterionMin + (criterionMax - criterionMin) / 2
-    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
-    const slidedValue = Math.max(
-      Math.min(midValue + signedSteps * criterionStep, criterionMax),
-      criterionMin
-    )
-
-    return slidedValue
-  }
-
   it('Create and start a live quiz with all question types (with and without sample solution) to test the entire execution cycle', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -926,35 +912,15 @@ describe('Different live-quiz workflows', function () {
     cy.get('[id="react-select-selection-6-field-2-option-2"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    Object.entries(this.data.CS1.answers).forEach(([caseIx, caseAnswer]) => {
-      Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-        Object.entries(itemAnswer).forEach(([criterionIx, criterionAnswer]) => {
-          // full answer is required
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-
-          // move sliders to answer values
-          const answer = criterionAnswer as { click: string; steps: number }
-          cy.get(
-            `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-          )
-            .click()
-            .type(answer.click.repeat(answer.steps))
-
-          // verify that correct value is set
-          const slidedValue = computeCaseStudySlidedValue({
-            criterion: this.data.CS1.criteria[criterionIx],
-            answer,
-          })
-          cy.get(
-            `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-          ).should('have.value', slidedValue)
-        })
-      })
-
-      // switch to the next case
-      if (parseInt(caseIx) !== this.data.CS1.cases.length - 1) {
-        cy.get('[data-cy="switch-next-case"]').click()
-      }
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: this.data.CS1.answers,
+      cases: this.data.CS1.cases,
+      criteria: this.data.CS1.criteria,
+      initialValidation: cy
+        .get('[data-cy="student-submit-answer"]')
+        .should('be.disabled'),
+      sequentialUI: true,
     })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
@@ -1072,35 +1038,15 @@ describe('Different live-quiz workflows', function () {
     cy.wait(500)
 
     // CS question - skipping not permitted, partial answers not possible
-    Object.entries(this.data.CS2.answers).forEach(([caseIx, caseAnswer]) => {
-      Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-        Object.entries(itemAnswer).forEach(([criterionIx, criterionAnswer]) => {
-          // full answer is required
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-
-          // move sliders to answer values
-          const answer = criterionAnswer as { click: string; steps: number }
-          cy.get(
-            `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-          )
-            .click()
-            .type(answer.click.repeat(answer.steps))
-
-          // verify that correct value is set
-          const slidedValue = computeCaseStudySlidedValue({
-            criterion: this.data.CS2.criteria[criterionIx],
-            answer,
-          })
-          cy.get(
-            `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-          ).should('have.value', slidedValue)
-        })
-      })
-
-      // switch to the next case
-      if (parseInt(caseIx) !== this.data.CS2.cases.length - 1) {
-        cy.get('[data-cy="switch-next-case"]').click()
-      }
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: this.data.CS2.answers,
+      cases: this.data.CS2.cases,
+      criteria: this.data.CS2.criteria,
+      initialValidation: cy
+        .get('[data-cy="student-submit-answer"]')
+        .should('be.disabled'),
+      sequentialUI: true,
     })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
