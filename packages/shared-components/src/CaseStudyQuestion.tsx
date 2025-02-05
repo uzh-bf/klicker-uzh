@@ -70,7 +70,7 @@ function CaseStudyQuestion({
               currentCase={options.cases[caseIndex]!}
               items={options.items}
               criteria={options.criteria}
-              disabled={disabled}
+              disabled={disabled || !!existingResponse}
               caseResponse={
                 currentSingleCaseId
                   ? (existingResponse?.[currentSingleCaseId] ??
@@ -108,7 +108,7 @@ function CaseStudyQuestion({
                 items={options.items}
                 criteria={options.criteria}
                 solutions={solutions?.[currentCase.id]}
-                disabled={disabled}
+                disabled={disabled || !!existingResponse}
                 caseResponse={
                   existingResponse?.[currentCase.id] ??
                   response?.[currentCase.id]
