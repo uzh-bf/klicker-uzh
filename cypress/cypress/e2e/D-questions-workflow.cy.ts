@@ -2245,31 +2245,30 @@ describe('Create different types of elements (with and without sample solution) 
 
     cy.get('[data-cy="configure-sample-solution"]').click()
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // correct answers for all criteria & items are required
-    Object.entries(this.data.CS.solutions).forEach(([caseIx, caseValue]) => {
-      Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
-        Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
-          const value = criterionValue as { lower: number; upper: number }
+    cy.caseStudyLoop({
+      object: this.data.CS.solutions,
+      callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
+        const value = innerValue as { lower: number; upper: number }
 
-          cy.get('[data-cy="save-new-question"]').should('be.disabled')
-          cy.get(
-            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-          )
-            .click()
-            .type(String(value.lower))
-          cy.get(
-            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-          )
-            .click()
-            .type(String(value.upper))
+        cy.get('[data-cy="save-new-question"]').should('be.disabled')
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+        )
+          .click()
+          .type(String(value.lower))
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+        )
+          .click()
+          .type(String(value.upper))
 
-          cy.get(
-            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-          ).should('have.value', String(value.lower))
-          cy.get(
-            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-          ).should('have.value', String(value.upper))
-        })
-      })
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+        ).should('have.value', String(value.lower))
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+        ).should('have.value', String(value.upper))
+      },
     })
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
@@ -2282,19 +2281,18 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.CS.title
     )
 
-    Object.entries(this.data.CS.solutions).forEach(([caseIx, caseValue]) => {
-      Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
-        Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
-          const value = criterionValue as { lower: number; upper: number }
+    cy.caseStudyLoop({
+      object: this.data.CS.solutions,
+      callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
+        const value = innerValue as { lower: number; upper: number }
 
-          cy.get(
-            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-          ).should('have.value', String(value.lower))
-          cy.get(
-            `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-          ).should('have.value', String(value.upper))
-        })
-      })
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+        ).should('have.value', String(value.lower))
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+        ).should('have.value', String(value.upper))
+      },
     })
 
     cy.get('[data-cy="close-element-modal"]').click()
@@ -2627,35 +2625,24 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // solution required
 
     // add new sample solutions
-    Object.entries(this.data.CS.solutionsEdited).forEach(
-      ([caseIx, caseValue]) => {
-        Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
-          Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
-            const value = criterionValue as { lower: number; upper: number }
+    cy.caseStudyLoop({
+      object: this.data.CS.solutionsEdited,
+      callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
+        const value = innerValue as { lower: number; upper: number }
 
-            cy.get('[data-cy="save-new-question"]').should('be.disabled')
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-            )
-              .click()
-              .type(String(value.lower))
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-            )
-              .click()
-              .type(String(value.upper))
-
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-            ).should('have.value', String(value.lower))
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-            ).should('have.value', String(value.upper))
-          })
-        })
-      }
-    )
-
+        cy.get('[data-cy="save-new-question"]').should('be.disabled')
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+        )
+          .click()
+          .type(String(value.lower))
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+        )
+          .click()
+          .type(String(value.upper))
+      },
+    })
     cy.get('[data-cy="save-new-question"]').click()
   })
 
@@ -2724,22 +2711,19 @@ describe('Create different types of elements (with and without sample solution) 
       }
     )
 
-    Object.entries(this.data.CS.solutionsEdited).forEach(
-      ([caseIx, caseValue]) => {
-        Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
-          Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
-            const value = criterionValue as { lower: number; upper: number }
+    cy.caseStudyLoop({
+      object: this.data.CS.solutionsEdited,
+      callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
+        const value = innerValue as { lower: number; upper: number }
 
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-            ).should('have.value', String(value.lower))
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-            ).should('have.value', String(value.upper))
-          })
-        })
-      }
-    )
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
+        ).should('have.value', String(value.lower))
+        cy.get(
+          `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
+        ).should('have.value', String(value.upper))
+      },
+    })
 
     cy.get('[data-cy="close-element-modal"]').click()
   })

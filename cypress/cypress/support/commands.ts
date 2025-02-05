@@ -1191,6 +1191,39 @@ Cypress.Commands.add(
   }
 )
 
+interface CaseStudyLoopArgs {
+  object: any
+  callback: ({
+    caseIx,
+    itemIx,
+    criterionIx,
+    innerValue,
+  }: {
+    caseIx: number
+    itemIx: number
+    criterionIx: number
+    innerValue: any
+  }) => void
+}
+
+Cypress.Commands.add(
+  'caseStudyLoop',
+  ({ object, callback }: CaseStudyLoopArgs) => {
+    Object.entries(object).forEach(([caseIx, caseValue]) => {
+      Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
+        Object.entries(itemValue).forEach(([criterionIx, innerValue]) => {
+          callback({
+            caseIx: Number(caseIx),
+            itemIx: Number(itemIx),
+            criterionIx: Number(criterionIx),
+            innerValue,
+          })
+        })
+      })
+    })
+  }
+)
+
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -1318,6 +1351,7 @@ declare global {
         clues,
         stack,
       }: CreateGroupActivityArgs): Chainable<void>
+      caseStudyLoop({ object, callback }: CaseStudyLoopArgs): Chainable<void>
     }
   }
 }
