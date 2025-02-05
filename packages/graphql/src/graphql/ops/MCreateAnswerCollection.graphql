@@ -15,12 +15,17 @@ mutation CreateAnswerCollection(
     id
     name
     access
-    description
     accessType
+    sharingStatus
+    sharingLevel
+    description
     ownerShortname
-    entries {
-      id
-      value
-    }
+    numSharedUsers
+    numOfEntries
+
+    isOwner
+    isEditable
+    isImported
+    isAccessGranted
   }
 }

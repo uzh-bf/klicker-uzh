@@ -832,6 +832,25 @@ export const Query = builder.queryType({
         },
       }),
 
+      getAnswerCollectionsInfo: asUser.field({
+        nullable: true,
+        type: [AnswerCollection],
+        resolve(_, __, ctx) {
+          return ResourcesService.getAnswerCollectionsInfo(ctx)
+        },
+      }),
+
+      getSingleAnswerCollection: asUser.field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getSingleAnswerCollection(args, ctx)
+        },
+      }),
+
       countCatalogSharingRequests: asUser.int({
         nullable: false,
         resolve(_, __, ctx) {

@@ -68,10 +68,14 @@ export async function createAnswerCollection(
           : undefined,
     },
     include: {
-      entries: true,
-      owner: {
+      _count: {
         select: {
-          shortname: true,
+          entries: true,
+          permissions: {
+            where: {
+              permissionStatus: DB.PermissionStatus.GRANTED,
+            },
+          },
         },
       },
     },
@@ -79,12 +83,16 @@ export async function createAnswerCollection(
 
   return {
     ...newCollection,
-    ownerShortname: newCollection.owner?.shortname,
     accessType: AccessType.OWNER,
+    numSharedUsers: newCollection._count?.permissions,
+    numOfEntries: newCollection._count.entries,
+    isOwner: true,
+    isEditable: true,
+    isImported: newCollection.originalId !== null,
+    isAccessGranted: false,
   }
 }
 
-// TODO: split up to only fetch entries on modal opening
 export async function getAnswerCollections(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
@@ -172,23 +180,182 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
     return []
   }
 
+  return [
+    ...user.answerCollections.map((collection) => ({
+      ...collection,
+      accessType: AccessType.OWNER,
+    })),
+    ...user.sharedObjects.flatMap((object) =>
+      object.answerCollection
+        ? { ...object.answerCollection, accessType: AccessType.SHARED }
+        : []
+    ),
+  ]
+}
+
+export async function getSingleAnswerCollection(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      entries: {
+        include: {
+          _count: {
+            select: {
+              itemUsages: true,
+            },
+          },
+        },
+        orderBy: {
+          value: 'asc',
+        },
+      },
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+        },
+      },
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+      _count: {
+        select: {
+          linkedElements: {
+            where: {
+              ownerId: ctx.user.sub,
+            },
+          },
+          permissions: {
+            where: {
+              permissionStatus: DB.PermissionStatus.GRANTED,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  const catalogCollectionId =
+    collection.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
+      ? null // return null if collection is not linked to any catalog
+      : collection.catalogCollectionId
+
+  // return owned collection (editable, etc. if the ownerId is the user's id)
+  if (collection.ownerId === ctx.user.sub) {
+    return {
+      ...collection,
+      accessType: AccessType.OWNER,
+      numSharedUsers: collection._count?.permissions,
+      catalogCollectionId,
+      entries: collection.entries.map((entry) => ({
+        ...entry,
+        numSolutionUsages: entry._count?.itemUsages,
+      })),
+      isOwner: true,
+      isEditable: true,
+      isRemovable: collection._count?.linkedElements === 0,
+    }
+  } else {
+    return {
+      ...collection,
+      accessType: AccessType.SHARED,
+      sharingStatus: DB.PermissionStatus.GRANTED, // need to be granted for query above to succeed
+      sharingLevel:
+        collection.permissions[0]?.accessLevel ?? DB.AccessLevel.READ,
+      ownerShortname: collection.owner?.shortname,
+      catalogCollectionId,
+      isOwner: false,
+      isEditable: false,
+      isRemovable: collection._count?.linkedElements === 0,
+    }
+  }
+}
+
+export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      answerCollections: {
+        include: {
+          _count: {
+            select: {
+              entries: true,
+              permissions: {
+                where: {
+                  permissionStatus: DB.PermissionStatus.GRANTED,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      },
+      sharedObjects: {
+        where: {
+          answerCollectionId: {
+            not: null,
+          },
+        },
+        include: {
+          answerCollection: {
+            include: {
+              _count: {
+                select: {
+                  entries: true,
+                },
+              },
+              owner: {
+                select: {
+                  shortname: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!user) {
+    return []
+  }
+
   const ownedCollections = user.answerCollections.map((collection) => ({
     ...collection,
     accessType: AccessType.OWNER,
     numSharedUsers: collection._count?.permissions,
-    catalogCollectionId:
-      collection.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
-        ? null // return null if collection is not linked to any catalog
-        : collection.catalogCollectionId,
-    entries: collection.entries.map((entry) => ({
-      ...entry,
-      numSolutionUsages: entry._count?.itemUsages,
-    })),
+    numOfEntries: collection._count.entries,
     isOwner: true,
     isEditable: true,
     isImported: collection.originalId !== null,
     isAccessGranted: false,
-    isRemovable: collection._count?.linkedElements === 0,
   }))
 
   const sharedCollections = user.sharedObjects.flatMap((object) => {
@@ -201,22 +368,14 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
     return {
       ...collection,
       accessType: AccessType.SHARED,
+      numOfEntries: collection._count.entries,
       sharingStatus: object.permissionStatus,
       sharingLevel: object.accessLevel,
       ownerShortname: collection.owner?.shortname,
-      catalogCollectionId:
-        collection.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
-          ? null // return null if collection is not linked to any catalog
-          : collection.catalogCollectionId,
-      entries:
-        object.permissionStatus === DB.PermissionStatus.GRANTED
-          ? collection.entries
-          : undefined,
       isOwner: false,
       isEditable: false,
       isImported: false,
       isAccessGranted: object.permissionStatus === DB.PermissionStatus.GRANTED,
-      isRemovable: collection._count?.linkedElements === 0,
     }
   })
 
@@ -316,6 +475,12 @@ export async function modifyAnswerCollection(
         })
       })
     }
+
+    // invalidate the answer collection
+    ctx.emitter.emit('invalidate', {
+      typename: 'AnswerCollection',
+      id: id,
+    })
 
     return {
       ...updateResult,
@@ -504,6 +669,12 @@ async function incrementCollectionVersion(
         increment: 1,
       },
     },
+  })
+
+  // invalidate the answer collection
+  ctx.emitter.emit('invalidate', {
+    typename: 'AnswerCollection',
+    id: collectionId,
   })
 
   return collection
@@ -1080,6 +1251,12 @@ export async function resolveObjectSharingRequest(
   }
 
   // TODO: send email to user that requested access about the approval / (and denial?)
+
+  // invalidate the corresponding permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permissionId,
+  })
 
   return true
 }

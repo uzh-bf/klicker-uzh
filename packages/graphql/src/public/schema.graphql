@@ -106,6 +106,7 @@ type AnswerCollection {
   isOwner: Boolean
   isRemovable: Boolean
   name: String!
+  numOfEntries: Int
   numSharedUsers: Int
   ownerShortname: String
   sharingLevel: AccessLevel
@@ -1723,6 +1724,7 @@ type Query {
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getAnswerCollections: [AnswerCollection!]
+  getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
@@ -1748,6 +1750,7 @@ type Query {
   getPracticeQuizList: [Course!]
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
+  getSingleAnswerCollection(id: Int!): AnswerCollection
   getSingleAnswerCollectionCatalog(collectionId: Int!): AnswerCollection
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz

@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
   CancelAnswerCollectionRequestDocument,
-  GetAnswerCollectionsDocument,
+  GetAnswerCollectionsInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -31,25 +31,7 @@ function RequestCancellationModal({
       optimisticResponse: {
         cancelAnswerCollectionRequest: true,
       },
-      update: (cache, { data }) => {
-        const res = data?.cancelAnswerCollectionRequest
-        if (res === null || typeof res === 'undefined') return
-
-        const prevQuery = cache.readQuery({
-          query: GetAnswerCollectionsDocument,
-        })
-        const collections = prevQuery?.getAnswerCollections
-        if (!collections) return
-
-        cache.writeQuery({
-          query: GetAnswerCollectionsDocument,
-          data: {
-            getAnswerCollections: collections.filter(
-              (c) => c.id !== collection.id
-            ),
-          },
-        })
-      },
+      refetchQueries: [GetAnswerCollectionsInfoDocument],
     }
   )
 

@@ -46,6 +46,7 @@ export const AnswerCollectionEntry = AnswerCollectionEntryRef.implement({
 interface IAnswerCollection extends DB.AnswerCollection {
   accessType: AccessTypeEnum
   entries?: DB.AnswerCollectionEntry[]
+  numOfEntries?: number
   sharingStatus?: DB.PermissionStatus
   sharingLevel?: DB.AccessLevel
   ownerShortname?: string
@@ -70,6 +71,8 @@ export const AnswerCollection = AnswerCollectionRef.implement({
       type: [AnswerCollectionEntryRef],
       nullable: true,
     }),
+    numOfEntries: t.exposeInt('numOfEntries', { nullable: true }),
+
     sharingStatus: t.expose('sharingStatus', {
       type: PermissionStatus,
       nullable: true,

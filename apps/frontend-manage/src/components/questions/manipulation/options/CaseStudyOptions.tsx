@@ -29,7 +29,9 @@ function CaseStudyOptions({
   const [selectedItems, setSelectedItems] = useState<
     { id: number; name: string }[]
   >([])
-  const { data, loading } = useQuery(GetAnswerCollectionsDocument)
+  const { data, loading } = useQuery(GetAnswerCollectionsDocument, {
+    fetchPolicy: 'network-only',
+  })
 
   // combine all collections that are accessible to the user
   const collections = useFormCollections({

@@ -8,7 +8,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateAnswerCollectionDocument,
-  GetAnswerCollectionsDocument,
+  GetAnswerCollectionsInfoDocument,
   ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -94,15 +94,15 @@ function AnswerCollectionCreationForm({
               if (!data?.createAnswerCollection) return
 
               const queryData = cache.readQuery({
-                query: GetAnswerCollectionsDocument,
+                query: GetAnswerCollectionsInfoDocument,
               })
-              const previousCollections = queryData?.getAnswerCollections
+              const previousCollections = queryData?.getAnswerCollectionsInfo
               if (!previousCollections) return
 
               cache.writeQuery({
-                query: GetAnswerCollectionsDocument,
+                query: GetAnswerCollectionsInfoDocument,
                 data: {
-                  getAnswerCollections: [
+                  getAnswerCollectionsInfo: [
                     ...previousCollections,
                     data.createAnswerCollection,
                   ],
