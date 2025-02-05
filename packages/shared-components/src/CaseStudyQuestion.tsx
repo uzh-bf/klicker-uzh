@@ -93,6 +93,7 @@ function CaseStudyQuestion({
                       caseIndex === index && 'bg-uzh-blue-80 text-white',
                       caseValidity[index] && 'bg-green-700 text-white'
                     )}
+                    key={`case-breadcrumb-${index}`}
                   >
                     {caseValidity[index] ? (
                       <span className="mr-1">✓</span>
