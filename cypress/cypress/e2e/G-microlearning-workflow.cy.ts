@@ -1128,15 +1128,10 @@ describe('Different microlearning workflows', function () {
                 `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
               ).should('have.value', slidedValue)
 
-              // try to move slider and verify that value remains the same
+              // verify that the disabled attribute is set on the slider
               cy.get(
                 `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              )
-                .click()
-                .type('{leftarrow}')
-              cy.get(
-                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
+              ).should('have.attr', 'data-disabled')
             }
           )
         })

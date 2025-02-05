@@ -638,21 +638,12 @@ describe('Create and solve a group activity', function () {
     Object.entries(data.questions.CS.answers).forEach(
       ([caseIx, caseAnswer]) => {
         Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // verify that correct value is still set
-              const answer = criterionAnswer as { click: string; steps: number }
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-
-              // verify that the disabled attribute is set on the slider
-              cy.get(
-                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.attr', 'data-disabled')
-            }
-          )
+          Object.entries(itemAnswer).forEach(([criterionIx, _]) => {
+            // verify that the disabled attribute is set on the slider
+            cy.get(
+              `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+            ).should('have.attr', 'data-disabled')
+          })
         })
       }
     )

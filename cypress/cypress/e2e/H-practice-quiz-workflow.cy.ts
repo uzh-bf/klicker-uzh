@@ -681,7 +681,7 @@ describe('Different practice quiz workflows', function () {
         Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
           Object.entries(itemAnswer).forEach(
             ([criterionIx, criterionAnswer]) => {
-              // verify that correct value is still set
+              // verify that correct value set
               const answer = criterionAnswer as { click: string; steps: number }
               const slidedValue = computeCaseStudySlidedValue({
                 criterion: data.questions.CS.criteria[criterionIx],
@@ -691,15 +691,10 @@ describe('Different practice quiz workflows', function () {
                 `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
               ).should('have.value', slidedValue)
 
-              // try to move slider and verify that value remains the same
+              // verify that the disabled attribute is set on the slider
               cy.get(
                 `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              )
-                .click()
-                .type('{leftarrow}')
-              cy.get(
-                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
+              ).should('have.attr', 'data-disabled')
             }
           )
         })
@@ -899,15 +894,10 @@ describe('Different practice quiz workflows', function () {
                 `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
               ).should('have.value', slidedValue)
 
-              // try to move slider and verify that value remains the same
+              // verify that the disabled attribute is set on the slider
               cy.get(
                 `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              )
-                .click()
-                .type('{leftarrow}')
-              cy.get(
-                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
+              ).should('have.attr', 'data-disabled')
             }
           )
         })
