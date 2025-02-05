@@ -1247,9 +1247,9 @@ interface AnswerCaseStudyArgs {
       }
     }
   }
-  cases: { id: string }[]
   criteria: { min: number; max: number; step: number }[]
   initialValidation?: any
+  cases?: { id: string }[]
   sequentialUI?: boolean
 }
 
@@ -1258,9 +1258,9 @@ Cypress.Commands.add(
   ({
     elementIx,
     answers,
-    cases,
     criteria,
     initialValidation,
+    cases,
     sequentialUI = false,
   }: AnswerCaseStudyArgs) => {
     Object.entries(answers).forEach(([caseIx, caseAnswer]) => {
@@ -1290,9 +1290,53 @@ Cypress.Commands.add(
       })
 
       // switch to the next case, if sequential UI is enabled
-      if (sequentialUI && parseInt(caseIx) !== cases.length - 1) {
+      if (sequentialUI && parseInt(caseIx) !== (cases?.length ?? 1) - 1) {
         cy.get('[data-cy="switch-next-case"]').click()
       }
+    })
+  }
+)
+
+interface VerifyCaseStudyInputsArgs {
+  elementIx: number
+  answers: {
+    [caseIx: string]: {
+      [itemIx: string]: {
+        [criterionIx: string]: { click: string; steps: number }
+      }
+    }
+  }
+  criteria: { min: number; max: number; step: number }[]
+  verifyDisabled?: boolean
+}
+
+Cypress.Commands.add(
+  'verifyCaseStudyInputs',
+  ({
+    elementIx,
+    answers,
+    criteria,
+    verifyDisabled = false,
+  }: VerifyCaseStudyInputsArgs) => {
+    cy.caseStudyLoop({
+      object: answers,
+      callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
+        // verify that correct value is still set
+        const slidedValue = computeCaseStudySlidedValue({
+          criterion: criteria[criterionIx],
+          answer: innerValue,
+        })
+        cy.get(
+          `[data-cy="cs-slider-nr-value-${elementIx + 1}-${caseIx + 1}-${itemIx + 1}-${criterionIx + 1}"]`
+        ).should('have.value', slidedValue)
+
+        // verify that the disabled attribute is set on the slider
+        if (verifyDisabled) {
+          cy.get(
+            `[data-cy="cs-slider-${elementIx + 1}-${caseIx + 1}-${itemIx + 1}-${criterionIx + 1}"]`
+          ).should('have.attr', 'data-disabled')
+        }
+      },
     })
   }
 )
@@ -1433,6 +1477,12 @@ declare global {
         initialValidation,
         sequentialUI,
       }: AnswerCaseStudyArgs): Chainable<void>
+      verifyCaseStudyInputs({
+        elementIx,
+        answers,
+        criteria,
+        verifyDisabled,
+      }: VerifyCaseStudyInputsArgs): Chainable<void>
     }
   }
 }

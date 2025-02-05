@@ -1020,49 +1020,6 @@ describe('Different microlearning workflows', function () {
     )
   })
 
-  function computeCaseStudySlidedValue({ criterion, answer }) {
-    const criterionMin = criterion.min
-    const criterionMax = criterion.max
-    const criterionStep = criterion.step
-    const midValue = criterionMin + (criterionMax - criterionMin) / 2
-    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
-    const slidedValue = Math.max(
-      Math.min(midValue + signedSteps * criterionStep, criterionMax),
-      criterionMin
-    )
-
-    return slidedValue
-  }
-
-  function enterCaseStudyInputs(data) {
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // move sliders to answer values
-              const answer = criterionAnswer as { click: string; steps: number }
-              cy.get(
-                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              )
-                .click()
-                .type(answer.click.repeat(answer.steps))
-
-              // verify that correct value is set
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-            }
-          )
-        })
-      }
-    )
-  }
-
   function enterValidCompleteInputs(data) {
     // enter valid response for all questions to check correct input validation afterwards
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
@@ -1103,40 +1060,17 @@ describe('Different microlearning workflows', function () {
       data.questions.collection.options[2]
     )
 
-    enterCaseStudyInputs(data)
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+    })
 
     cy.get('[data-cy="flashcard-front-8"]').click()
     cy.get('[data-cy="flashcard-response-8-No"]').click()
     cy.get('[data-cy="flashcard-response-8-Yes"]').click()
 
     cy.get('[data-cy="read-content-element-9"]').click()
-  }
-
-  function verifyPersistentCaseStudyInputs(data) {
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // verify that correct value is still set
-              const answer = criterionAnswer as { click: string; steps: number }
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-
-              // verify that the disabled attribute is set on the slider
-              cy.get(
-                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.attr', 'data-disabled')
-            }
-          )
-        })
-      }
-    )
   }
 
   function verifyPersistentCompleteInputs(data) {
@@ -1176,7 +1110,12 @@ describe('Different microlearning workflows', function () {
       .contains(data.questions.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
 
-    verifyPersistentCaseStudyInputs(data)
+    cy.verifyCaseStudyInputs({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      verifyDisabled: true,
+    })
 
     cy.get('[data-cy="flashcard-response-8-No"]').should('be.disabled')
     cy.get('[data-cy="flashcard-response-8-Partially"]').should('be.disabled')
@@ -1260,7 +1199,11 @@ describe('Different microlearning workflows', function () {
       data.questions.collection.options[2]
     )
 
-    enterCaseStudyInputs(data)
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+    })
 
     cy.get('[data-cy="flashcard-front-8"]').click()
     cy.get('[data-cy="flashcard-response-8-No"]').click()
@@ -1305,7 +1248,12 @@ describe('Different microlearning workflows', function () {
       .contains(messages.shared.questions.seSelectOption)
       .should('have.css', 'pointer-events', 'none')
 
-    verifyPersistentCaseStudyInputs(data)
+    cy.verifyCaseStudyInputs({
+      elementIx: 6,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      verifyDisabled: true,
+    })
 
     cy.get('[data-cy="flashcard-response-8-No"]').should('be.disabled')
     cy.get('[data-cy="flashcard-response-8-Partially"]').should('be.disabled')
