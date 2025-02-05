@@ -2141,7 +2141,7 @@ describe('Create different types of elements (with and without sample solution) 
     )
 
     cy.get('[data-cy="student-element-preview"]')
-      .findByText(messages.shared.questions.csCaseStudyInstructions)
+      .findByText(messages.shared.generic.instructions)
       .should('exist')
     cy.get('[data-cy="student-element-preview"]') // instructions should be visible in preview
       .findByText(this.data.CS.content)

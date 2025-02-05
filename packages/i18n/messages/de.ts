@@ -16,7 +16,6 @@ export default {
         'Bitte wählen Sie <b>{number} korrekte Antwort-Optionen</b> aus der vorgegebenen Liste.',
       seCorrectAnswerN: 'Antwort {number}',
       noMatchingOptionFound: 'Keine passende Option gefunden.',
-      csCaseStudyInstructions: 'Fallstudie: Instruktionen',
     },
     DRAFT: {
       statusLabel: 'Entwurf',

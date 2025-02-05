@@ -68,9 +68,9 @@ describe('Create and solve a group activity', function () {
     // create answer collection
     cy.get('[data-cy="resources"]').click()
     cy.createAnswerCollection({
-      name: this.data.questions.SE.collection.name,
-      description: this.data.questions.SE.collection.description,
-      entries: this.data.questions.SE.collection.options,
+      name: this.data.questions.collection.name,
+      description: this.data.questions.collection.description,
+      entries: this.data.questions.collection.options,
       access: messages.manage.resources.accessPRIVATE,
       accessCy: 'private',
     })
@@ -81,7 +81,21 @@ describe('Create and solve a group activity', function () {
       title: this.data.questions.SE.title,
       content: this.data.questions.SE.content,
       numberOfInputs: this.data.questions.SE.inputs,
-      collectionName: this.data.questions.SE.collection.name,
+      collectionName: this.data.questions.collection.name,
+    })
+
+    // create case study question
+    cy.createQuestionCS({
+      title: this.data.questions.CS.title,
+      content: this.data.questions.CS.content,
+      explanation: this.data.questions.CS.explanation,
+      collectionName: this.data.questions.collection.name,
+      selectedItems: this.data.questions.collection.options.filter((_, i) =>
+        this.data.questions.CS.selectedItems.includes(i)
+      ),
+      criteria: this.data.questions.CS.criteria,
+      cases: this.data.questions.CS.cases,
+      solutions: this.data.questions.CS.solutions,
     })
   })
 
@@ -214,6 +228,7 @@ describe('Create and solve a group activity', function () {
             this.data.questions.NR.title,
             this.data.questions.FT.title,
             this.data.questions.SE.title,
+            this.data.questions.CS.title,
           ],
         },
       ],
@@ -426,8 +441,11 @@ describe('Create and solve a group activity', function () {
       .should('contain', this.data.questions.SE.title.substring(0, 20))
     cy.get(`[data-cy="element-6-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.SC.title.substring(0, 20))
+      .should('contain', this.data.questions.CS.title.substring(0, 20))
     cy.get(`[data-cy="element-7-stack-0"]`)
+      .should('exist')
+      .should('contain', this.data.questions.SC.title.substring(0, 20))
+    cy.get(`[data-cy="element-8-stack-0"]`)
       .should('exist')
       .should('contain', this.data.questions.CT.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
@@ -439,70 +457,160 @@ describe('Create and solve a group activity', function () {
   })
 
   // ! Part 2: Running Group Activity & Participation
+  function computeCaseStudySlidedValue({ criterion, answer }) {
+    const criterionMin = criterion.min
+    const criterionMax = criterion.max
+    const criterionStep = criterion.step
+    const midValue = criterionMin + (criterionMax - criterionMin) / 2
+    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
+    const slidedValue = Math.max(
+      Math.min(midValue + signedSteps * criterionStep, criterionMax),
+      criterionMin
+    )
+
+    return slidedValue
+  }
+
   function answerGroupActivity(data) {
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-4"]').type(data.running.answers.numerical)
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-5"]')
       .click()
       .type(data.running.answers.freeText)
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
     cy.get('[id="selection-6-field-1"]').contains(
-      data.questions.SE.collection.options[0]
+      data.questions.collection.options[0]
     )
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
     cy.get('[id="selection-6-field-1"]').contains(
-      data.questions.SE.collection.options[2]
+      data.questions.collection.options[2]
     )
     cy.get('[id="selection-6-field-2"]').click()
     // option numbers smaller than ix since only available objects are shown in select component (0 removed here)
     cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
     cy.get('[id="selection-6-field-2"]').contains(
-      data.questions.SE.collection.options[0]
+      data.questions.collection.options[0]
     )
     cy.get('[id="selection-6-field-3"]').click()
     cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
     cy.get('[id="selection-6-field-3"]').contains(
-      data.questions.SE.collection.options[3]
+      data.questions.collection.options[3]
     )
     cy.get('[id="selection-6-field-3"]').click()
     cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
     cy.get('[id="selection-6-field-3"]').contains(
-      data.questions.SE.collection.options[4]
+      data.questions.collection.options[4]
     )
-    cy.get('[data-cy="sc-7-answer-option-1"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // full answer is required
+              cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+
+              // move sliders to answer values
+              const answer = criterionAnswer as { click: string; steps: number }
+              cy.get(
+                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              )
+                .click()
+                .type(answer.click.repeat(answer.steps))
+
+              // verify that correct value is set
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+    cy.get('[data-cy="sc-8-answer-option-1"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('not.be.disabled')
   }
 
   function answerGroupActivityPartial(data) {
     // answer all questions in the group activity with partial inputs (where supported)
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-2"]').click()
     cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
     cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-4"]').type(data.running.answers.numerical)
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-5"]')
       .click()
       .type(data.running.answers.freeText)
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[id="selection-6-field-1"]').click()
     cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
     cy.get('[id="selection-6-field-1"]').contains(
-      data.questions.SE.collection.options[0]
+      data.questions.collection.options[0]
     )
     cy.get('[id="selection-6-field-2"]').click()
-    cy.get('[data-cy="sc-7-answer-option-1"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // full answer is required
+              cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+
+              // move sliders to answer values
+              const answer = criterionAnswer as { click: string; steps: number }
+              cy.get(
+                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              )
+                .click()
+                .type(answer.click.repeat(answer.steps))
+
+              // verify that correct value is set
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
+    cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
+    cy.get('[data-cy="sc-8-answer-option-1"]').click()
+    cy.get('[data-cy="submit-group-activity"]').should('not.be.disabled')
   }
 
-  function checkInputsDisabled() {
+  function checkInputsDisabled(data) {
     cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
     cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
@@ -527,7 +635,28 @@ describe('Create and solve a group activity', function () {
       'pointer-events',
       'none'
     )
-    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // verify that correct value is still set
+              const answer = criterionAnswer as { click: string; steps: number }
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+
+              // verify that the disabled attribute is set on the slider
+              cy.get(
+                `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.attr', 'data-disabled')
+            }
+          )
+        })
+      }
+    )
+    cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
   }
 
   function checkPersistentAnswers(data) {
@@ -558,17 +687,35 @@ describe('Create and solve a group activity', function () {
       .contains(data.running.answers.freeText)
 
     cy.get('[id="selection-6-field-1"]')
-      .contains(data.questions.SE.collection.options[2])
+      .contains(data.questions.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-2"]')
-      .contains(data.questions.SE.collection.options[0])
+      .contains(data.questions.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-3"]')
-      .contains(data.questions.SE.collection.options[4])
+      .contains(data.questions.collection.options[4])
       .should('have.css', 'pointer-events', 'none')
-
-    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-7-answer-option-2"]').should('be.disabled')
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // verify that correct value is still set
+              const answer = criterionAnswer as { click: string; steps: number }
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
+    cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-8-answer-option-2"]').should('be.disabled')
   }
 
   function checkPersistentAnswersPartial(data) {
@@ -594,7 +741,7 @@ describe('Create and solve a group activity', function () {
       .should('be.disabled')
       .contains(data.running.answers.freeText)
     cy.get('[id="selection-6-field-1"]')
-      .contains(data.questions.SE.collection.options[0])
+      .contains(data.questions.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-6-field-2"]')
       .contains(messages.shared.questions.seSelectOption)
@@ -602,8 +749,27 @@ describe('Create and solve a group activity', function () {
     cy.get('[id="selection-6-field-3"]')
       .contains(messages.shared.questions.seSelectOption)
       .should('have.css', 'pointer-events', 'none')
-    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-7-answer-option-2"]').should('be.disabled')
+    Object.entries(data.questions.CS.answers).forEach(
+      ([caseIx, caseAnswer]) => {
+        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
+          Object.entries(itemAnswer).forEach(
+            ([criterionIx, criterionAnswer]) => {
+              // verify that correct value is still set
+              const answer = criterionAnswer as { click: string; steps: number }
+              const slidedValue = computeCaseStudySlidedValue({
+                criterion: data.questions.CS.criteria[criterionIx],
+                answer,
+              })
+              cy.get(
+                `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+              ).should('have.value', slidedValue)
+            }
+          )
+        })
+      }
+    )
+    cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-8-answer-option-2"]').should('be.disabled')
   }
 
   function checkGradingVisualization(
@@ -846,7 +1012,7 @@ describe('Create and solve a group activity', function () {
     ).click()
 
     // check that the same answers are visible to the student
-    checkInputsDisabled()
+    checkInputsDisabled(this.data)
     checkPersistentAnswers(this.data)
     cy.get('[data-cy="submit-group-activity"]').should('not.exist')
   })
@@ -865,7 +1031,7 @@ describe('Create and solve a group activity', function () {
     ).click()
 
     // submission should not be possible and inputs should be disabled
-    checkInputsDisabled()
+    checkInputsDisabled(this.data)
     cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
 
@@ -1359,6 +1525,7 @@ describe('Create and solve a group activity', function () {
       this.data.questions.NR.title,
       this.data.questions.FT.title,
       this.data.questions.SE.title,
+      this.data.questions.CS.title,
       this.data.questions.CT.title,
     ]
 
@@ -1371,7 +1538,7 @@ describe('Create and solve a group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.deleteAnswerCollection({
-      collectionName: this.data.questions.SE.collection.name,
+      collectionName: this.data.questions.collection.name,
     })
   })
 
