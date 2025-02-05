@@ -134,6 +134,7 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       },
       sharedObjects: {
         where: {
+          permissionStatus: DB.PermissionStatus.GRANTED,
           answerCollectionId: {
             not: null,
           },
@@ -187,7 +188,11 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
     })),
     ...user.sharedObjects.flatMap((object) =>
       object.answerCollection
-        ? { ...object.answerCollection, accessType: AccessType.SHARED }
+        ? {
+            ...object.answerCollection,
+            accessType: AccessType.SHARED,
+            sharingStatus: DB.PermissionStatus.GRANTED,
+          }
         : []
     ),
   ]
