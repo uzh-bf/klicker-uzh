@@ -646,60 +646,21 @@ describe('Different practice quiz workflows', function () {
     // CS Question
     cy.findByText(data.questions.CS.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // full answer is required
-              cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-
-              // move sliders to answer values
-              const answer = criterionAnswer as { click: string; steps: number }
-              cy.get(
-                `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              )
-                .click()
-                .type(answer.click.repeat(answer.steps))
-
-              // verify that correct value is set
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-            }
-          )
-        })
-      }
-    )
+    cy.answerCaseStudy({
+      elementIx: 0,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      initialValidation: cy
+        .get('[data-cy="student-stack-submit"]')
+        .should('be.disabled'),
+    })
     cy.get('[data-cy="student-stack-submit"]').click()
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // verify that correct value set
-              const answer = criterionAnswer as { click: string; steps: number }
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-
-              // verify that the disabled attribute is set on the slider
-              cy.get(
-                `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.attr', 'data-disabled')
-            }
-          )
-        })
-      }
-    )
+    cy.verifyCaseStudyInputs({
+      elementIx: 0,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      verifyDisabled: true,
+    })
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // skip back and forth
@@ -849,60 +810,21 @@ describe('Different practice quiz workflows', function () {
     // CS Question - no partial submissions possible
     cy.findByText(data.questions.CS.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // full answer is required
-              cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-
-              // move sliders to answer values
-              const answer = criterionAnswer as { click: string; steps: number }
-              cy.get(
-                `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              )
-                .click()
-                .type(answer.click.repeat(answer.steps))
-
-              // verify that correct value is set
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-            }
-          )
-        })
-      }
-    )
+    cy.answerCaseStudy({
+      elementIx: 0,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      initialValidation: cy
+        .get('[data-cy="student-stack-submit"]')
+        .should('be.disabled'), // full answer required
+    })
     cy.get('[data-cy="student-stack-submit"]').click()
-    Object.entries(data.questions.CS.answers).forEach(
-      ([caseIx, caseAnswer]) => {
-        Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-          Object.entries(itemAnswer).forEach(
-            ([criterionIx, criterionAnswer]) => {
-              // verify that correct value is still set
-              const answer = criterionAnswer as { click: string; steps: number }
-              const slidedValue = computeCaseStudySlidedValue({
-                criterion: data.questions.CS.criteria[criterionIx],
-                answer,
-              })
-              cy.get(
-                `[data-cy="cs-slider-nr-value-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.value', slidedValue)
-
-              // verify that the disabled attribute is set on the slider
-              cy.get(
-                `[data-cy="cs-slider-1-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-              ).should('have.attr', 'data-disabled')
-            }
-          )
-        })
-      }
-    )
+    cy.verifyCaseStudyInputs({
+      elementIx: 0,
+      answers: data.questions.CS.answers,
+      criteria: data.questions.CS.criteria,
+      verifyDisabled: true,
+    })
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // Flashcard - no partial submissions possible
