@@ -15,6 +15,7 @@ import {
 } from './constants.js'
 import * as DATA_TEST from './data/TEST.js'
 import {
+  computeRandomCaseStudyDecisions,
   prepareContentElements,
   prepareCourse,
   prepareFlashcardsFromFile,
@@ -723,9 +724,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 0,
             flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
           }),
@@ -770,9 +769,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 100,
             flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
           }),
@@ -817,9 +814,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 200,
             flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
           }),
@@ -864,9 +859,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 300,
             flashcards,
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: questionsTest,
             contentElements,
             courseId: COURSE_ID_TEST,
           }),
@@ -911,9 +904,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 400,
             flashcards: [flashcards[0]!],
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: questionsTest,
             contentElements: [contentElements[0]!],
             courseId: COURSE_ID_TEST,
           }),
@@ -965,9 +956,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...prepareGroupActivityStack({
             migrationIdOffset: 500,
             flashcards: [flashcards[0]!],
-            questions: questionsTest.filter(
-              (q) => q.type !== Prisma.ElementType.CASE_STUDY
-            ), // TODO: once supported, include case study elements
+            questions: questionsTest,
             contentElements: [contentElements[0]!],
             courseId: COURSE_ID_TEST,
           }),
@@ -1043,6 +1032,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...baseDecisions,
           selectionResponse,
         }
+      } else if (element.elementType === Prisma.ElementType.CASE_STUDY) {
+        const caseStudyResponse = computeRandomCaseStudyDecisions({
+          options: element.elementData.options as ElementOptionsCaseStudy,
+        })
+
+        return {
+          ...baseDecisions,
+          caseStudyResponse,
+        }
       }
     }
   )
@@ -1089,6 +1087,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           ...baseDecisions,
           selectionResponse,
         }
+      } else if (element.elementType === Prisma.ElementType.CASE_STUDY) {
+        const caseStudyResponse = computeRandomCaseStudyDecisions({
+          options: element.elementData.options as ElementOptionsCaseStudy,
+        })
+
+        return {
+          ...baseDecisions,
+          caseStudyResponse,
+        }
       }
     })
 
@@ -1133,6 +1140,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         return {
           ...baseDecisions,
           selectionResponse,
+        }
+      } else if (element.elementType === Prisma.ElementType.CASE_STUDY) {
+        const caseStudyResponse = computeRandomCaseStudyDecisions({
+          options: element.elementData.options as ElementOptionsCaseStudy,
+        })
+
+        return {
+          ...baseDecisions,
+          caseStudyResponse,
         }
       }
     })

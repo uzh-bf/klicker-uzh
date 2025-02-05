@@ -1,5 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
+  CaseStudyCaseResponse,
   ElementStack,
   ElementType,
   GroupActivityDecision,
@@ -10,6 +11,7 @@ import {
   SubmitGroupActivityDecisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
+  CaseStudyStudentResponseType,
   StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -79,51 +81,45 @@ function GroupActivityStack({
           decision.type === ElementType.Sc ||
           decision.type === ElementType.Mc
         ) {
-          return {
-            ...acc,
-            [decision.instanceId]: {
-              type: decision.type,
-              response: decision.choicesResponse?.reduce<
-                Record<number, boolean>
-              >((acc, choice) => ({ ...acc, [choice]: true }), {}),
-              valid: true,
-            },
+          acc[decision.instanceId] = {
+            type: decision.type,
+            response: decision.choicesResponse?.reduce<Record<number, boolean>>(
+              (acc, choice) => ({ ...acc, [choice]: true }),
+              {}
+            ),
+            valid: true,
           }
+          return acc
         } else if (decision.type === ElementType.Kprim) {
           const responseObj = Array.from({ length: 4 }, (_, i) => i).reduce<
             Record<number, boolean>
           >((acc, choice) => ({ ...acc, [choice]: false }), {})
 
-          return {
-            ...acc,
-            [decision.instanceId]: {
-              type: decision.type,
-              response: decision.choicesResponse?.reduce<
-                Record<number, boolean>
-              >((acc, choice) => ({ ...acc, [choice]: true }), responseObj),
-              valid: true,
-            },
+          acc[decision.instanceId] = {
+            type: decision.type,
+            response: decision.choicesResponse?.reduce<Record<number, boolean>>(
+              (acc, choice) => ({ ...acc, [choice]: true }),
+              responseObj
+            ),
+            valid: true,
           }
+          return acc
         } else if (decision.type === ElementType.Numerical) {
-          return {
-            ...acc,
-            [decision.instanceId]: {
-              type: decision.type,
-              response: decision.numericalResponse
-                ? String(decision.numericalResponse)
-                : undefined,
-              valid: true,
-            },
+          acc[decision.instanceId] = {
+            type: decision.type,
+            response: decision.numericalResponse
+              ? String(decision.numericalResponse)
+              : undefined,
+            valid: true,
           }
+          return acc
         } else if (decision.type === ElementType.FreeText) {
-          return {
-            ...acc,
-            [decision.instanceId]: {
-              type: decision.type,
-              response: decision.freeTextResponse ?? undefined,
-              valid: true,
-            },
+          acc[decision.instanceId] = {
+            type: decision.type,
+            response: decision.freeTextResponse ?? undefined,
+            valid: true,
           }
+          return acc
         } else if (decision.type === ElementType.Selection) {
           const instance = stack.elements?.find(
             (element) => element.id === decision.instanceId
@@ -140,26 +136,48 @@ function GroupActivityStack({
               })
             : undefined
 
-          return {
-            ...acc,
-            [decision.instanceId]: {
-              type: decision.type,
-              response,
-              valid: true,
-            },
+          acc[decision.instanceId] = {
+            type: decision.type,
+            response,
+            valid: true,
           }
+          return acc
+        } else if (decision.type === ElementType.CaseStudy) {
+          const decisionsObject =
+            decision.caseStudyResponse?.reduce<CaseStudyStudentResponseType>(
+              (caseAcc, caseItem) => {
+                caseAcc[caseItem.caseId] = caseItem.itemResponses.reduce<
+                  CaseStudyStudentResponseType['']
+                >((itemAcc, item) => {
+                  itemAcc[String(item.itemId)] = item.criterionResponses.reduce<
+                    CaseStudyStudentResponseType['']['']
+                  >((criterionAcc, criterion) => {
+                    criterionAcc[criterion.criterionId] = criterion.response
+                    return criterionAcc
+                  }, {})
+                  return itemAcc
+                }, {})
+                return caseAcc
+              },
+              {}
+            )
+
+          acc[decision.instanceId] = {
+            type: decision.type,
+            response: decisionsObject ?? undefined,
+            valid: true,
+          }
+          return acc
         } else if (decision.type === ElementType.Content) {
-          return {
-            ...acc,
-            [decision.instanceId]: {
-              type: decision.type,
-              response: decision.contentResponse ?? undefined,
-              valid: true,
-            },
+          acc[decision.instanceId] = {
+            type: decision.type,
+            response: decision.contentResponse ?? undefined,
+            valid: true,
           }
-        } else {
           return acc
         }
+
+        return acc
       },
       {}
     )
@@ -308,6 +326,45 @@ function GroupActivityStack({
                           (entry) =>
                             typeof entry !== 'undefined' && entry !== -1
                         ),
+                      }
+                    } else if (value.type === ElementType.CaseStudy) {
+                      const caseStudyResponse: CaseStudyCaseResponse[] =
+                        Object.entries(value.response!).map(
+                          ([caseId, caseResponse]) => {
+                            return {
+                              caseId,
+                              itemResponses: Object.entries(caseResponse).map(
+                                ([itemId, itemResponse]) => {
+                                  return {
+                                    itemId: parseInt(itemId),
+                                    criterionResponses: Object.entries(
+                                      itemResponse
+                                    ).flatMap(
+                                      ([criterionId, criterionResponse]) => {
+                                        if (
+                                          typeof criterionResponse ===
+                                          'undefined'
+                                        ) {
+                                          return []
+                                        }
+
+                                        return {
+                                          criterionId: criterionId,
+                                          response: criterionResponse,
+                                        }
+                                      }
+                                    ),
+                                  }
+                                }
+                              ),
+                            }
+                          }
+                        )
+
+                      return {
+                        instanceId: parseInt(instanceId),
+                        type: value.type,
+                        caseStudyResponse,
                       }
                     } else {
                       return {

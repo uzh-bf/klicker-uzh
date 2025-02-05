@@ -434,11 +434,12 @@ export type ElementInstanceResults =
 export type GroupActivityDecision = {
   instanceId: number
   type: ElementType
-  freeTextResponse?: string | null
-  choicesResponse?: number[] | null
+  freeTextResponse?: SingleQuestionResponseValue['value'] | null
+  choicesResponse?: SingleQuestionResponseChoices['choices'] | null
   numericalResponse?: number | null
-  contentResponse?: boolean | null
-  selectionResponse?: number[] | null
+  contentResponse?: SingleQuestionResponseContent['viewed'] | null
+  selectionResponse?: SingleQuestionResponseSelection['selection'] | null
+  caseStudyResponse?: SingleQuestionResponseCaseStudy['assessment'] | null
 }
 export type GroupActivityDecisions = GroupActivityDecision[]
 

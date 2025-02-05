@@ -35,7 +35,7 @@ export function NUMERICALAnswerOptions({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1 text-base">
       <div className="flex flex-row gap-6">
         {typeof min === 'number' && !isNaN(min) && (
           <div data-cy="input-numerical-minimum">

@@ -34,7 +34,7 @@ export function SCAnswerOptions({
 
   return (
     <>
-      <div className="mb-2">
+      <div className="mb-2 text-base">
         {t.rich(`shared.${ElementType.Sc}.richtext`, {
           b: (text) => <span className="font-bold">{text}</span>,
         })}
