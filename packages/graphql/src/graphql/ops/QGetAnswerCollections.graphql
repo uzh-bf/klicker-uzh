@@ -2,20 +2,8 @@ query GetAnswerCollections {
   getAnswerCollections {
     id
     name
-    access
     accessType
     sharingStatus
-    sharingLevel
-    description
-    ownerShortname
-    numSharedUsers
-    catalogCollectionId
-
-    isOwner
-    isEditable
-    isImported
-    isAccessGranted
-    isRemovable
 
     entries {
       id

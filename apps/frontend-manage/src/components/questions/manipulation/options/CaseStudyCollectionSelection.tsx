@@ -19,7 +19,7 @@ function CaseStudyCollectionSelection({
   hasSampleSolution,
   setAnswerCollectionEntries,
 }: {
-  collections: AnswerCollection[]
+  collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
   setAnswerCollectionEntries: Dispatch<

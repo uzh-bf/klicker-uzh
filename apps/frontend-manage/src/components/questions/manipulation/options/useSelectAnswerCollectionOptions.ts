@@ -7,7 +7,7 @@ function useSelectAnswerCollectionOptions({
   setAnswerCollectionEntries,
 }: {
   collectionId: string
-  collections: AnswerCollection[]
+  collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >

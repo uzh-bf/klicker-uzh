@@ -8,7 +8,12 @@ import { useMemo } from 'react'
 function useFormCollections({
   dbCollections,
 }: {
-  dbCollections?: AnswerCollection[] | null
+  dbCollections?:
+    | Pick<
+        AnswerCollection,
+        'id' | 'name' | 'accessType' | 'sharingStatus' | 'entries'
+      >[]
+    | null
 }) {
   return useMemo(
     () =>

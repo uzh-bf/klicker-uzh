@@ -1,4 +1,5 @@
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H3, Modal, Toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -7,12 +8,12 @@ import AnswerCollectionMetaForm from './AnswerCollectionMetaForm'
 import AnswerCollectionOption from './AnswerCollectionOption'
 
 function AnswerCollectionEditModal({
-  collection,
+  collectionId,
   open,
   onClose,
   onDelete,
 }: {
-  collection: AnswerCollection
+  collectionId: number
   open: boolean
   onClose: () => void
   onDelete: () => void
@@ -20,6 +21,14 @@ function AnswerCollectionEditModal({
   const t = useTranslations()
   const [successToast, setSuccessToast] = useState(false)
   const [optionsEditingDisabled, setOptionsEditingDisabled] = useState(false)
+  const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
+    variables: { id: collectionId },
+  })
+
+  const collection = data?.getSingleAnswerCollection
+  if (loading || !collection) {
+    return null
+  }
 
   return (
     <Modal

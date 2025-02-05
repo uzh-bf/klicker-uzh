@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetAnswerCollectionsInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -14,7 +14,9 @@ import RequestCancellationSuccessToast from './answerCollections/RequestCancella
 
 function AnswerCollections() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetAnswerCollectionsDocument)
+  const { data, loading } = useQuery(GetAnswerCollectionsInfoDocument, {
+    fetchPolicy: 'network-only',
+  })
 
   // action toast states
   const [deletionSuccess, setDeletionSuccess] = useState(false)
@@ -24,7 +26,6 @@ function AnswerCollections() {
   const [cancellationSuccess, setCancellationSuccess] = useState(false)
   const [cancellationFailure, setCancellationFailure] = useState(false)
 
-  // TODO: combine answer collections into one list (requested / shared / own)
   return (
     <div className="h-full w-full">
       <H2>{t('manage.resources.answerCollections')}</H2>
@@ -33,7 +34,7 @@ function AnswerCollections() {
       </div>
       <AnswerCollectionCreation />
       <AnswerCollectionList
-        collections={data?.getAnswerCollections ?? []}
+        collections={data?.getAnswerCollectionsInfo ?? []}
         loading={loading}
         setDeletionSuccess={setDeletionSuccess}
         setDeletionFailure={setDeletionFailure}

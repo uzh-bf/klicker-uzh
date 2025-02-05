@@ -116,11 +116,11 @@ function AnswerCollectionItem({
               </div>
             )}
           </div>
-          {typeof collection.entries !== 'undefined' &&
-          collection.entries !== null ? (
+          {typeof collection.numOfEntries !== 'undefined' &&
+          collection.numOfEntries !== null ? (
             <div className="text-sm text-gray-500">
               {t('manage.resources.numOfAnswers', {
-                number: collection.entries!.length ?? 0,
+                number: collection.numOfEntries ?? 0,
               })}
             </div>
           ) : null}
@@ -159,7 +159,7 @@ function AnswerCollectionItem({
       {isEditable ? (
         <>
           <AnswerCollectionEditModal
-            collection={collection}
+            collectionId={collection.id}
             open={editModal}
             onClose={() => setEditModal(false)}
             onDelete={() => setDeletionModal(true)}
@@ -176,7 +176,7 @@ function AnswerCollectionItem({
       {accessGranted ? (
         <>
           <AnswerCollectionViewingModal
-            collection={collection}
+            collectionId={collection.id}
             open={viewingModal}
             onClose={() => setViewingModal(false)}
             onRemove={() => setRemovalModal(true)}

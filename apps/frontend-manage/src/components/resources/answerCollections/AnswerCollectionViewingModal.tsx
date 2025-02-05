@@ -1,7 +1,8 @@
+import { useQuery } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
+import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -9,17 +10,25 @@ import { twMerge } from 'tailwind-merge'
 import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 
 function AnswerCollectionViewingModal({
-  collection,
+  collectionId,
   open,
   onClose,
   onRemove,
 }: {
-  collection: AnswerCollection
+  collectionId: number
   open: boolean
   onClose: () => void
   onRemove: () => void
 }) {
   const t = useTranslations()
+  const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
+    variables: { id: collectionId },
+  })
+
+  const collection = data?.getSingleAnswerCollection
+  if (loading || !collection) {
+    return null
+  }
 
   return (
     <Modal

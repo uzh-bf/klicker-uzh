@@ -3,7 +3,7 @@ import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
-  GetAnswerCollectionsDocument,
+  GetAnswerCollectionsInfoDocument,
   RemoveAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
@@ -29,23 +29,7 @@ function CollectionRemovalModal({
     optimisticResponse: {
       removeAnswerCollection: collection.id,
     },
-    update: (cache, { data }) => {
-      const res = data?.removeAnswerCollection
-      if (res === null || typeof res === 'undefined') return
-
-      const prevQuery = cache.readQuery({
-        query: GetAnswerCollectionsDocument,
-      })
-      const collections = prevQuery?.getAnswerCollections
-      if (!collections) return
-
-      cache.writeQuery({
-        query: GetAnswerCollectionsDocument,
-        data: {
-          getAnswerCollections: collections.filter((c) => c.id !== res),
-        },
-      })
-    },
+    refetchQueries: [GetAnswerCollectionsInfoDocument],
   })
 
   return (

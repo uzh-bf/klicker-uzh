@@ -1,0 +1,24 @@
+query GetSingleAnswerCollection($id: Int!) {
+  getSingleAnswerCollection(id: $id) {
+    id
+    name
+    access
+    accessType
+    sharingStatus
+    sharingLevel
+    description
+    ownerShortname
+    numSharedUsers
+    catalogCollectionId
+
+    isOwner
+    isEditable
+    isRemovable
+
+    entries {
+      id
+      value
+      numSolutionUsages
+    }
+  }
+}

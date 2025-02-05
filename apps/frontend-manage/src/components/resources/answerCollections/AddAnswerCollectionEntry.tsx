@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AddAnswerCollectionOptionDocument,
   AnswerCollectionEntry,
-  GetAnswerCollectionsDocument,
+  GetAnswerCollectionsInfoDocument,
+  GetSingleAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -70,31 +71,33 @@ function AddAnswerCollectionEntry({
           update: (cache, { data }) => {
             if (!data?.addAnswerCollectionOption) return
 
-            const queryData = cache.readQuery({
-              query: GetAnswerCollectionsDocument,
+            // update the currently displayed collection
+            const collectionQuery = cache.readQuery({
+              query: GetSingleAnswerCollectionDocument,
+              variables: {
+                id: collectionId,
+              },
             })
-            const previousCollections = queryData?.getAnswerCollections
-            if (!previousCollections) return
+            const collection = collectionQuery?.getSingleAnswerCollection
+            if (!collection) return
 
             cache.writeQuery({
-              query: GetAnswerCollectionsDocument,
+              query: GetSingleAnswerCollectionDocument,
+              variables: {
+                id: collectionId,
+              },
               data: {
-                getAnswerCollections: previousCollections.map((collection) => {
-                  if (collection.id === collectionId) {
-                    return {
-                      ...collection,
-                      entries: [
-                        ...(collection.entries ?? []),
-                        data.addAnswerCollectionOption!,
-                      ],
-                    }
-                  }
-
-                  return collection
-                }),
+                getSingleAnswerCollection: {
+                  ...collection,
+                  entries: [
+                    ...(collection.entries ?? []),
+                    data.addAnswerCollectionOption!,
+                  ],
+                },
               },
             })
           },
+          refetchQueries: [GetAnswerCollectionsInfoDocument],
         })
         setFieldOpen(false)
         setOptionsEditingDisabled(false)

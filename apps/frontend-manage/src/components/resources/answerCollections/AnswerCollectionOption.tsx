@@ -6,7 +6,8 @@ import {
   AnswerCollectionEntry,
   DeleteAnswerCollectionEntryDocument,
   EditAnswerCollectionEntryDocument,
-  GetAnswerCollectionsDocument,
+  GetAnswerCollectionsInfoDocument,
+  GetSingleAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -65,32 +66,27 @@ function AnswerCollectionOption({
             update: (cache, { data }) => {
               if (!data?.deleteAnswerCollectionEntry) return
 
-              const queryData = cache.readQuery({
-                query: GetAnswerCollectionsDocument,
+              const collectionData = cache.readQuery({
+                query: GetSingleAnswerCollectionDocument,
+                variables: { id: collectionId },
               })
-              const previousCollections = queryData?.getAnswerCollections
-              if (!previousCollections) return
+              const collection = collectionData?.getSingleAnswerCollection
+              if (!collection) return
 
               cache.writeQuery({
-                query: GetAnswerCollectionsDocument,
+                query: GetSingleAnswerCollectionDocument,
+                variables: { id: collectionId },
                 data: {
-                  getAnswerCollections: previousCollections.map(
-                    (collection) => {
-                      if (collection.id === collectionId) {
-                        return {
-                          ...collection,
-                          entries: collection.entries?.filter(
-                            (e) => e.id !== entry.id
-                          ),
-                        }
-                      }
-
-                      return collection
-                    }
-                  ),
+                  getSingleAnswerCollection: {
+                    ...collection,
+                    entries: collection.entries?.filter(
+                      (e) => e.id !== entry.id
+                    ),
+                  },
                 },
               })
             },
+            refetchQueries: [GetAnswerCollectionsInfoDocument],
           })
         }}
       >
@@ -137,33 +133,27 @@ function AnswerCollectionOption({
                   update: (cache, { data }) => {
                     if (!data?.editAnswerCollectionEntry) return
 
-                    const queryData = cache.readQuery({
-                      query: GetAnswerCollectionsDocument,
+                    const collectionData = cache.readQuery({
+                      query: GetSingleAnswerCollectionDocument,
+                      variables: { id: collectionId },
                     })
-                    const previousCollections = queryData?.getAnswerCollections
-                    if (!previousCollections) return
+                    const collection = collectionData?.getSingleAnswerCollection
+                    if (!collection) return
 
                     cache.writeQuery({
-                      query: GetAnswerCollectionsDocument,
+                      query: GetSingleAnswerCollectionDocument,
+                      variables: { id: collectionId },
                       data: {
-                        getAnswerCollections: previousCollections.map(
-                          (collection) => {
-                            if (collection.id === collectionId) {
-                              return {
-                                ...collection,
-                                entries: collection.entries?.map((e) => {
-                                  if (e.id === entry.id) {
-                                    return { ...e, value: values.value }
-                                  }
-
-                                  return e
-                                }),
-                              }
+                        getSingleAnswerCollection: {
+                          ...collection,
+                          entries: collection.entries?.map((e) => {
+                            if (e.id === entry.id) {
+                              return { ...e, value: values.value }
                             }
 
-                            return collection
-                          }
-                        ),
+                            return e
+                          }),
+                        },
                       },
                     })
                   },

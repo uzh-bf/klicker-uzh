@@ -1,0 +1,19 @@
+query GetAnswerCollectionsInfo {
+  getAnswerCollectionsInfo {
+    id
+    name
+    access
+    accessType
+    sharingStatus
+    sharingLevel
+    description
+    ownerShortname
+    numSharedUsers
+    numOfEntries
+
+    isOwner
+    isEditable
+    isImported
+    isAccessGranted
+  }
+}

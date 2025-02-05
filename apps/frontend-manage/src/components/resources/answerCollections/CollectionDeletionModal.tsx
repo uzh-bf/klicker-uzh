@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
   DeleteAnswerCollectionDocument,
-  GetAnswerCollectionsDocument,
+  GetAnswerCollectionsInfoDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -29,23 +29,7 @@ function CollectionDeletionModal({
     optimisticResponse: {
       deleteAnswerCollection: collection.id,
     },
-    update: (cache, { data }) => {
-      const res = data?.deleteAnswerCollection
-      if (res === null || typeof res === 'undefined') return
-
-      const prevQuery = cache.readQuery({
-        query: GetAnswerCollectionsDocument,
-      })
-      const collections = prevQuery?.getAnswerCollections
-      if (!collections) return
-
-      cache.writeQuery({
-        query: GetAnswerCollectionsDocument,
-        data: {
-          getAnswerCollections: collections.filter((c) => c.id !== res) ?? [],
-        },
-      })
-    },
+    refetchQueries: [GetAnswerCollectionsInfoDocument],
   })
 
   return (
