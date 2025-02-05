@@ -52,6 +52,8 @@ function CaseStudyQuestion({
 
   // initialize the case validity array based on the existing response
   useEffect(() => {
+    if (!response) return
+
     setCaseValidity(
       options.cases.map((currentCase) => {
         const currentResponse = response[currentCase.id]

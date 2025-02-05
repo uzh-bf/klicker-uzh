@@ -2,8 +2,8 @@ import {
   ElementData,
   ElementInstance,
   ElementInstanceType,
-  ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { ElementFormTypes } from './types'
 
@@ -19,15 +19,6 @@ function useArtificialElementInstance({
   const instance = useMemo(() => {
     // verify that the element data typename is set
     if (!elementDataTypename) {
-      return undefined
-    }
-
-    // for selection and case study questions, verify that the answer collection are set
-    if (
-      (values.type === ElementType.Selection ||
-        values.type === ElementType.CaseStudy) &&
-      (!answerCollectionEntries || answerCollectionEntries.length === 0)
-    ) {
       return undefined
     }
 
@@ -133,10 +124,10 @@ function useArtificialElementInstance({
                   'cases' in values.options && values.options.cases
                     ? values.options.cases.map((caseItem) => ({
                         id: caseItem.id,
-                        title: caseItem.title,
+                        title: caseItem.title ?? '',
                         description: caseItem.description,
                       }))
-                    : [],
+                    : [{ id: nanoid(), title: '', description: '' }],
               }
             : undefined,
       },
