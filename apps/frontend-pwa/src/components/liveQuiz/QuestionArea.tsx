@@ -217,12 +217,12 @@ function QuestionArea({
             onExpire={onExpire}
           />
           <StudentElement
+            sequential
+            hideReadButton
             element={currentInstance}
             elementIx={activeInstance}
             singleStudentResponse={studentResponse}
             setSingleStudentResponse={setStudentResponse}
-            hideReadButton
-            // disabledInput={submitting} // TODO: add to avoid double submission
           />
         </div>
       )}

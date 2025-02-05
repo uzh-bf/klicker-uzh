@@ -666,6 +666,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noActiveQuestion: 'Keine Frage aktiv.',
       allQuestionsAnswered:
         'Sie haben bereits alle aktiven Fragen beantwortet.',
+      previousCase: 'Vorheriger Fall',
+      nextCase: 'Nächster Fall',
     },
     feedbacks: {
       title: 'Feedback-Kanal',

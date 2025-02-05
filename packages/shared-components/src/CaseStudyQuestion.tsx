@@ -1,10 +1,13 @@
+import { faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type {
   CaseStudyElementOptions,
   CaseStudyInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CSEvaluation from './evaluation/CSEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
@@ -41,10 +44,26 @@ function CaseStudyQuestion({
 }: CaseStudyQuestionProps) {
   const t = useTranslations()
   const [caseIndex, setCaseIndex] = useState(0)
+  const [caseValidity, setCaseValidity] = useState<boolean[]>([])
   const currentSingleCaseId = options.cases[caseIndex]?.id
 
   // convert case study solutions to object for efficient access
   const solutions = useCaseStudySolutionsObject({ evaluation })
+
+  // initialize the case validity array based on the existing response
+  useEffect(() => {
+    setCaseValidity(
+      options.cases.map((currentCase) => {
+        const currentResponse = response[currentCase.id]
+
+        if (!currentResponse) return false
+
+        return validateCaseStudyResponse({
+          response: { [currentCase.id]: currentResponse },
+        })
+      })
+    )
+  }, [options.cases])
 
   return (
     <div className="flex flex-col gap-4 text-base md:flex-row">
@@ -62,8 +81,27 @@ function CaseStudyQuestion({
           <QuestionExplanation explanation={evaluation.explanation} />
         )}
 
-        {sequential ? (
+        {sequential && options.cases.length > 1 ? (
           <div>
+            <div className="-mb-2 mt-4 flex w-full flex-row flex-wrap gap-4">
+              {options.cases.map((_, index) => {
+                return (
+                  <div
+                    onClick={() => setCaseIndex(index)}
+                    className={twMerge(
+                      'bg-uzh-grey-60 rounded-full px-2.5 py-0.5 text-sm font-bold hover:cursor-pointer',
+                      caseIndex === index && 'bg-uzh-blue-80 text-white',
+                      caseValidity[index] && 'bg-green-700 text-white'
+                    )}
+                  >
+                    {caseValidity[index] ? (
+                      <span className="mr-1">✓</span>
+                    ) : null}
+                    <span>{`${t('shared.generic.case')} ${index + 1}`}</span>
+                  </div>
+                )
+              })}
+            </div>
             <CSCase
               elementIx={elementIx}
               caseIndex={caseIndex}
@@ -80,7 +118,7 @@ function CaseStudyQuestion({
               setCaseResponse={(newValue: CaseStudyStudentResponseType['']) => {
                 if (!currentSingleCaseId) return
 
-                // TODO: potentially additionally validate the validity of the single step to enable / disable navigation between cases
+                // validate student response to entire case study
                 const valid = validateCaseStudyResponse({
                   response: {
                     ...response,
@@ -94,9 +132,52 @@ function CaseStudyQuestion({
                   },
                   valid
                 )
+
+                // validate student response to current case
+                const caseValid = validateCaseStudyResponse({
+                  response: {
+                    [currentSingleCaseId]: newValue,
+                  },
+                })
+                setCaseValidity((prev) => {
+                  const newValidity = [...prev]
+                  newValidity[caseIndex] = caseValid
+                  return newValidity
+                })
               }}
             />
-            {/* // TODO: add navigation logic to jump between cases */}
+            <div className="flex flex-row justify-between">
+              <Button
+                onClick={() => setCaseIndex((prev) => Math.max(0, prev - 1))}
+                disabled={caseIndex === 0}
+                className={{
+                  root: 'border-uzh-blue-80 h-8 border-2',
+                }}
+                data={{ cy: 'switch-previous-case' }}
+              >
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faArrowLeft} />
+                </Button.Icon>
+                <Button.Label>{t('pwa.liveQuiz.previousCase')}</Button.Label>
+              </Button>
+              <Button
+                onClick={() =>
+                  setCaseIndex((prev) =>
+                    Math.min(options.cases.length - 1, prev + 1)
+                  )
+                }
+                disabled={caseIndex === options.cases.length - 1}
+                className={{
+                  root: 'border-uzh-blue-80 h-8 border-2',
+                }}
+                data={{ cy: 'switch-next-case' }}
+              >
+                <Button.Label>{t('pwa.liveQuiz.nextCase')}</Button.Label>
+                <Button.Icon>
+                  <FontAwesomeIcon icon={faArrowRight} />
+                </Button.Icon>
+              </Button>
+            </div>
           </div>
         ) : (
           options.cases.map((currentCase, index) => (

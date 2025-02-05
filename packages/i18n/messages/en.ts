@@ -664,6 +664,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     liveQuiz: {
       noActiveQuestion: 'No question active.',
       allQuestionsAnswered: 'You have already answered all active questions.',
+      previousCase: 'Previous case',
+      nextCase: 'Next case',
     },
     feedbacks: {
       title: 'Feedback Channel',
