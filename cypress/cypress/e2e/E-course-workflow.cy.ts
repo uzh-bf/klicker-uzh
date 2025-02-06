@@ -195,22 +195,38 @@ describe('Test course creation and editing functionalities', function () {
       Cypress.env('STUDENT_USERNAME9'),
       Cypress.env('STUDENT_USERNAME10'),
     ]) {
-      cy.loginStudentPassword({ username: studentUsername })
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+      cy.visit(Cypress.env('URL_STUDENT'))
+      cy.get('@coursePin').then((coursePin) => {
+        cy.origin(
+          Cypress.env('URL_STUDENT'),
+          {
+            args: {
+              username: studentUsername,
+              password: Cypress.env('STUDENT_PASSWORD'),
+              courseName: this.data.course2.displayName,
+              coursePin: String(coursePin),
+            },
+          },
+          ({ username, password, courseName, coursePin }) => {
+            cy.get('[data-cy="username-field"]').click().type(username)
+            cy.get('[data-cy="password-field"]').click().type(password)
+            cy.get('[data-cy="submit-login"]').click()
 
-      // join the course
-      cy.get('[data-cy="join-new-course"]').click()
-      cy.get('@coursePin').then((pin) => {
-        cy.get('[data-cy="join-course-pin-field"]').type(String(pin))
+            // join the course
+            cy.get('[data-cy="join-new-course"]').click()
+            cy.get('[data-cy="join-course-pin-field"]').type(coursePin)
+            cy.get('[data-cy="join-course-submit-form"]').click()
+
+            // join the random assignment pool
+            cy.get(`[data-cy="course-button-${courseName}"]`).click()
+            cy.get('[data-cy="student-course-create-group"]').click()
+            cy.get('[data-cy="enter-random-group-pool"]').click()
+            cy.get('[data-cy="leave-random-group-pool"]').should('exist')
+          }
+        )
       })
-      cy.get('[data-cy="join-course-submit-form"]').click()
-
-      // join the random assignment pool
-      cy.get(
-        `[data-cy="course-button-${this.data.course2.displayName}"]`
-      ).click()
-      cy.get('[data-cy="student-course-create-group"]').click()
-      cy.get('[data-cy="enter-random-group-pool"]').click()
-      cy.findByText(messages.pwa.courses.leaveRandomGroupPool).should('exist')
     }
   })
 
@@ -226,34 +242,76 @@ describe('Test course creation and editing functionalities', function () {
       })
 
     // student 11 joins course and creates a group by himself
-    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME11') })
-    cy.get('[data-cy="join-new-course"]').click()
-    cy.get('@coursePin').then((pin) => {
-      cy.get('[data-cy="join-course-pin-field"]').type(String(pin))
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('@coursePin').then((coursePin) => {
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME11'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            courseName: this.data.course2.displayName,
+            groupName: this.data.course2.group1,
+            coursePin: String(coursePin),
+          },
+        },
+        ({ username, password, courseName, groupName, coursePin }) => {
+          cy.get('[data-cy="username-field"]').click().type(username)
+          cy.get('[data-cy="password-field"]').click().type(password)
+          cy.get('[data-cy="submit-login"]').click()
+
+          // join the course
+          cy.get('[data-cy="join-new-course"]').click()
+          cy.get('[data-cy="join-course-pin-field"]').type(coursePin)
+          cy.get('[data-cy="join-course-submit-form"]').click()
+
+          // create group
+          cy.get(`[data-cy="course-button-${courseName}"]`).click()
+          cy.get('[data-cy="student-course-create-group"]').click()
+          cy.get('[data-cy="group-creation-name-input"]').type(groupName)
+          cy.get('[data-cy="create-new-participant-group"]').click()
+          cy.wait(1000)
+        }
+      )
     })
-    cy.get('[data-cy="join-course-submit-form"]').click()
-    cy.get(`[data-cy="course-button-${this.data.course2.displayName}"]`).click()
-    cy.get('[data-cy="student-course-create-group"]').click()
-    cy.get('[data-cy="group-creation-name-input"]').type(
-      this.data.course2.group1
-    )
-    cy.get('[data-cy="create-new-participant-group"]').click()
-    cy.wait(1000)
 
     // student 12 joins course and creates a group by himself
-    cy.loginStudentPassword({ username: Cypress.env('STUDENT_USERNAME12') })
-    cy.get('[data-cy="join-new-course"]').click()
-    cy.get('@coursePin').then((pin) => {
-      cy.get('[data-cy="join-course-pin-field"]').type(String(pin))
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('@coursePin').then((coursePin) => {
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME12'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            courseName: this.data.course2.displayName,
+            groupName: this.data.course2.group2,
+            coursePin: String(coursePin),
+          },
+        },
+        ({ username, password, courseName, groupName, coursePin }) => {
+          cy.get('[data-cy="username-field"]').click().type(username)
+          cy.get('[data-cy="password-field"]').click().type(password)
+          cy.get('[data-cy="submit-login"]').click()
+
+          // join the course
+          cy.get('[data-cy="join-new-course"]').click()
+          cy.get('[data-cy="join-course-pin-field"]').type(coursePin)
+          cy.get('[data-cy="join-course-submit-form"]').click()
+
+          // create group
+          cy.get(`[data-cy="course-button-${courseName}"]`).click()
+          cy.get('[data-cy="student-course-create-group"]').click()
+          cy.get('[data-cy="group-creation-name-input"]').type(groupName)
+          cy.get('[data-cy="create-new-participant-group"]').click()
+          cy.wait(1000)
+        }
+      )
     })
-    cy.get('[data-cy="join-course-submit-form"]').click()
-    cy.get(`[data-cy="course-button-${this.data.course2.displayName}"]`).click()
-    cy.get('[data-cy="student-course-create-group"]').click()
-    cy.get('[data-cy="group-creation-name-input"]').type(
-      this.data.course2.group2
-    )
-    cy.get('[data-cy="create-new-participant-group"]').click()
-    cy.wait(1000)
   })
 
   it('Trigger the random group assignment for the gamified course', function () {

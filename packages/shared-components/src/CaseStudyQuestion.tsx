@@ -75,7 +75,11 @@ function CaseStudyQuestion({
             <div className="mb-1 mt-3 text-lg font-bold">
               {t('shared.generic.instructions')}
             </div>
-            <Markdown content={content} className={{ root: 'text-base' }} />
+            <Markdown
+              content={content}
+              data={{ cy: `case-study-question-content` }}
+              className={{ root: 'text-base' }}
+            />
           </div>
         )}
 

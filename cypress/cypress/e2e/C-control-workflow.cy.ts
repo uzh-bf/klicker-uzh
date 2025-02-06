@@ -37,6 +37,7 @@ describe('Test functionalities of frontend-control application', function () {
 
   it('Generate a token to log into the control-frontend application, execute quiz', function () {
     cy.loginLecturer()
+    cy.viewport('macbook-16')
 
     cy.get('[data-cy="user-menu"]').click()
     cy.get('[data-cy="token-generation-page"]').click()
@@ -49,32 +50,55 @@ describe('Test functionalities of frontend-control application', function () {
         cy.wrap($token).as('token')
       })
 
-    // login into the control-frontend application
-    cy.loginControlApp()
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_CONTROL'))
+    cy.get('@token').then((token) => {
+      cy.origin(
+        Cypress.env('URL_CONTROL'),
+        { args: { token, data: this.data } },
+        ({ token, data }) => {
+          // login into the control-frontend application
+          cy.get('[data-cy="login-logo"]').should('exist')
+          cy.get('[data-cy="shortname-field"]').type(
+            Cypress.env('LECTURER_SHORTNAME')
+          )
+          cy.get('[data-cy="token-field"]').type(String(token))
+          cy.get('[data-cy="submit-login"]').click()
 
-    // check ppt links and start the quiz
-    cy.get('[data-cy="unassigned-live-quizzes"]').click()
-    cy.get(`[data-cy="ppt-link-${this.data.quizName}"]`).should('exist').click()
-    cy.get('[data-cy="close-embedding-modal"]').click()
-    cy.findByText(this.data.quizName).click()
-    cy.get('[data-cy="confirm-start-live-quiz"]').click()
+          // check ppt links and start the quiz
+          cy.get('[data-cy="unassigned-live-quizzes"]').click()
+          cy.get(`[data-cy="ppt-link-${data.quizName}"]`)
+            .should('exist')
+            .click()
+          cy.get('[data-cy="close-embedding-modal"]').click()
+          cy.get(`[data-cy="start-live-quiz-${data.quizName}"]`).click()
+          cy.get('[data-cy="confirm-start-live-quiz"]').click()
 
-    // test the mobile menu of the control app
-    cy.viewport('iphone-6')
-    cy.get('[data-cy="ppt-button"]').click()
-    cy.get('[data-cy="close-embedding-modal"]').click()
-    cy.get('[data-cy="home-button"]').click()
-    cy.get('[data-cy="unassigned-live-quizzes"]').click()
-    cy.findByText(this.data.quizName).click()
-    cy.get('[data-cy="back-button"]').click()
-    cy.findByText(this.data.quizName).click()
-    cy.viewport('macbook-16')
+          // test the mobile menu of the control app
+          cy.viewport('iphone-6')
+          cy.get('[data-cy="ppt-button"]').click()
+          cy.get('[data-cy="close-embedding-modal"]').click()
+          cy.get('[data-cy="home-button"]').click()
+          cy.get('[data-cy="unassigned-live-quizzes"]').click()
+          cy.get(`[data-cy="running-live-quiz-${data.quizName}"]`).click()
+          cy.get('[data-cy="back-button"]').click()
+          cy.get(`[data-cy="running-live-quiz-${data.quizName}"]`).click()
+          cy.viewport('macbook-16')
 
-    // open and close block, end the quiz
-    cy.get('[data-cy="activate-next-block"]').click()
-    cy.get('[data-cy="deactivate-block"]').click()
-    cy.get('[data-cy="end-live-quiz"]').click()
-    cy.findByText(this.data.quizName).should('not.exist')
+          // open and close block, end the quiz
+          cy.get('[data-cy="activate-next-block"]').click()
+          cy.get('[data-cy="deactivate-block"]').click()
+          cy.get('[data-cy="end-live-quiz"]').click()
+          cy.get(`[data-cy="start-live-quiz-${data.quizName}"]`).should(
+            'not.exist'
+          )
+          cy.get(`[data-cy="running-live-quiz-${data.quizName}"]`).should(
+            'not.exist'
+          )
+        }
+      )
+    })
   })
 
   // ! Cleanup

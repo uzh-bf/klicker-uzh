@@ -627,32 +627,34 @@ describe('Different microlearning workflows', function () {
 
   // ! Part 2: Running Microlearning and Answer Workflows / Student Frontend
   function answerMicroLearningPreview(data) {
-    cy.get('[data-cy="start-microlearning"]').click()
-    cy.get('[data-cy="sc-0-answer-option-0"]').click()
-    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-1"]')
-      .click()
-      .type(data.questions.FT.answerPreview1)
-    cy.get('[data-cy="student-stack-submit"]').click()
-    cy.get('[data-cy="student-stack-continue"]').click()
+    cy.origin(Cypress.env('URL_STUDENT'), { args: { data } }, ({ data }) => {
+      cy.get('[data-cy="start-microlearning"]').click()
+      cy.get('[data-cy="sc-0-answer-option-0"]').click()
+      cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+      cy.get('[data-cy="free-text-input-1"]')
+        .click()
+        .type(data.questions.FT.answerPreview1)
+      cy.get('[data-cy="student-stack-submit"]').click()
+      cy.get('[data-cy="student-stack-continue"]').click()
 
-    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
-    cy.get('[data-cy="flashcard-front-0"]').click()
-    cy.get('[data-cy="flashcard-response-0-No"]').click()
-    cy.get('[data-cy="flashcard-response-0-Yes"]').click()
-    cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should(
-      'not.be.disabled'
-    )
-    cy.get('[data-cy="read-content-element-1"]').click()
-    cy.get('[data-cy="student-stack-submit"]').click()
+      cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should('be.disabled')
+      cy.get('[data-cy="flashcard-front-0"]').click()
+      cy.get('[data-cy="flashcard-response-0-No"]').click()
+      cy.get('[data-cy="flashcard-response-0-Yes"]').click()
+      cy.get('[data-cy="practice-quiz-mark-all-as-read"]').should(
+        'not.be.disabled'
+      )
+      cy.get('[data-cy="read-content-element-1"]').click()
+      cy.get('[data-cy="student-stack-submit"]').click()
 
-    cy.get('[data-cy="sc-0-answer-option-0"]').click()
-    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-1"]')
-      .click()
-      .type(data.questions.FT.answerPreview2)
-    cy.get('[data-cy="student-stack-submit"]').click()
-    cy.get('[data-cy="student-stack-continue"]').click()
+      cy.get('[data-cy="sc-0-answer-option-0"]').click()
+      cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+      cy.get('[data-cy="free-text-input-1"]')
+        .click()
+        .type(data.questions.FT.answerPreview2)
+      cy.get('[data-cy="student-stack-submit"]').click()
+      cy.get('[data-cy="student-stack-continue"]').click()
+    })
   }
 
   it('Check if the drafted microlearning can be accessed by the lecturer through the activity preview', function () {
@@ -965,7 +967,9 @@ describe('Different microlearning workflows', function () {
         )
 
         // verify that the scheduled microlearning is visible to lecturers
-        cy.get('[data-cy="start-microlearning"]').should('exist')
+        cy.origin(Cypress.env('URL_STUDENT'), () => {
+          cy.get('[data-cy="start-microlearning"]').should('exist')
+        })
       }
     )
   })

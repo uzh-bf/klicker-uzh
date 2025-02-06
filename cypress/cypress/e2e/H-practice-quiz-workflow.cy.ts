@@ -704,6 +704,62 @@ describe('Different practice quiz workflows', function () {
       .click()
   }
 
+  function answerRunningPracticeQuizPreview(data) {
+    cy.origin(Cypress.env('URL_STUDENT'), { args: { data } }, ({ data }) => {
+      // start practice quiz and answer the first few questions - remaining logic is
+      // the same as on student side (no need for explicit testing)
+      cy.get('[data-cy="start-practice-quiz"]').click()
+
+      // SC question
+      cy.get('[data-cy="choices-question-content"]').contains(
+        data.questions.SC1.content
+      )
+      cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+      cy.get('[data-cy="sc-0-answer-option-1"]').click()
+      cy.get('[data-cy="student-stack-submit"]').click()
+      cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
+      cy.get('[data-cy="sc-0-answer-option-1"]').should('be.disabled')
+      cy.get('[data-cy="sc-0-answer-option-2"]').should('be.disabled')
+      cy.get('[data-cy="sc-0-answer-option-3"]').should('be.disabled')
+      cy.get('[data-cy="student-stack-continue"]').click()
+
+      // MC question
+      cy.get('[data-cy="choices-question-content"]').contains(
+        data.questions.MC.content
+      )
+      cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+      cy.get('[data-cy="mc-0-answer-option-1"]').click()
+      cy.get('[data-cy="mc-0-answer-option-2"]').click()
+      cy.get('[data-cy="student-stack-submit"]').click()
+      cy.get('[data-cy="mc-0-answer-option-0"]').should('be.disabled')
+      cy.get('[data-cy="mc-0-answer-option-1"]').should('be.disabled')
+      cy.get('[data-cy="mc-0-answer-option-2"]').should('be.disabled')
+      cy.get('[data-cy="mc-0-answer-option-3"]').should('be.disabled')
+      cy.get('[data-cy="mc-0-answer-option-4"]').should('be.disabled')
+      cy.get('[data-cy="student-stack-continue"]').click()
+
+      // KPRIM question
+      cy.get('[data-cy="choices-question-content"]').contains(
+        data.questions.KP.content
+      )
+      cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+      cy.get('[data-cy="toggle-kp-0-answer-0-correct"]').click()
+      cy.get('[data-cy="toggle-kp-0-answer-1-incorrect"]').click()
+      cy.get('[data-cy="toggle-kp-0-answer-2-incorrect"]').click()
+      cy.get('[data-cy="toggle-kp-0-answer-3-correct"]').click()
+      cy.get('[data-cy="student-stack-submit"]').click()
+      cy.get('[data-cy="toggle-kp-0-answer-0-correct"]').should('be.disabled')
+      cy.get('[data-cy="toggle-kp-0-answer-0-incorrect"]').should('be.disabled')
+      cy.get('[data-cy="toggle-kp-0-answer-1-correct"]').should('be.disabled')
+      cy.get('[data-cy="toggle-kp-0-answer-1-incorrect"]').should('be.disabled')
+      cy.get('[data-cy="toggle-kp-0-answer-2-correct"]').should('be.disabled')
+      cy.get('[data-cy="toggle-kp-0-answer-2-incorrect"]').should('be.disabled')
+      cy.get('[data-cy="toggle-kp-0-answer-3-correct"]').should('be.disabled')
+      cy.get('[data-cy="toggle-kp-0-answer-3-incorrect"]').should('be.disabled')
+      cy.get('[data-cy="student-stack-continue"]').click()
+    })
+  }
+
   // only provide partial answers for all question types that support this
   function answerRunningPracticeQuizPartial(data) {
     cy.findByText(data.running.descriptionNew).should('exist')
@@ -862,9 +918,7 @@ describe('Different practice quiz workflows', function () {
       )
 
       // respond to the questions in the draft practice quiz (same functionality as for students when it's running)
-      cy.findByText(this.data.running.descriptionNew).should('exist')
-      cy.get('[data-cy="start-practice-quiz"]').click()
-      answerRunningPracticeQuiz(this.data)
+      answerRunningPracticeQuizPreview(this.data)
     })
   })
 
@@ -919,9 +973,7 @@ describe('Different practice quiz workflows', function () {
       )
 
       // respond to the questions in the running practice quiz, previous answers should not persist
-      cy.findByText(this.data.running.descriptionNew).should('exist')
-      cy.get('[data-cy="start-practice-quiz"]').click()
-      answerRunningPracticeQuiz(this.data)
+      answerRunningPracticeQuizPreview(this.data)
     })
   })
 
@@ -1028,7 +1080,9 @@ describe('Different practice quiz workflows', function () {
         )
 
         // verify that the scheduled practice quiz is visible to lecturers
-        cy.get('[data-cy="start-practice-quiz"]').should('exist')
+        cy.origin(Cypress.env('URL_STUDENT'), () =>
+          cy.get('[data-cy="start-practice-quiz"]').should('exist')
+        )
       }
     )
   })

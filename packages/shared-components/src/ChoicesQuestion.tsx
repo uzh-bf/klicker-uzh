@@ -52,7 +52,10 @@ function ChoicesQuestion({
               'bg-primary-10 prose prose-p:!m-0 prose-img:!m-0 mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6'
             )}
           >
-            <Markdown content={content} />
+            <Markdown
+              content={content}
+              data={{ cy: `choices-question-content` }}
+            />
           </div>
         )}
 

@@ -44,6 +44,7 @@ function PoolNotification({ courseId }: { courseId: string }) {
       <Button
         onClick={async () => await leaveRandomCourseGroupPool()}
         loading={loading}
+        data={{ cy: 'leave-random-group-pool' }}
       >
         {t('pwa.courses.leaveRandomGroupPool')}
       </Button>

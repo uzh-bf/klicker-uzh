@@ -127,19 +127,6 @@ Cypress.Commands.add(
   }
 )
 
-Cypress.Commands.add('loginControlApp', () => {
-  cy.visit(Cypress.env('URL_CONTROL'))
-  cy.clearAllCookies()
-  cy.clearAllLocalStorage()
-  cy.viewport('macbook-16')
-  cy.get('[data-cy="login-logo"]').should('exist')
-  cy.get('[data-cy="shortname-field"]').type(Cypress.env('LECTURER_SHORTNAME'))
-  cy.get('@token').then((token) => {
-    cy.get('[data-cy="token-field"]').type(String(token))
-  })
-  cy.get('[data-cy="submit-login"]').click()
-})
-
 interface AnswerCollectionArgs {
   name: string
   accessCy: string
@@ -1355,7 +1342,6 @@ declare global {
       loginInstitutionalCatalyst2(): Chainable<void>
       loginStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
-      loginControlApp(): Chainable<void>
       createAnswerCollection({
         name,
         accessCy,

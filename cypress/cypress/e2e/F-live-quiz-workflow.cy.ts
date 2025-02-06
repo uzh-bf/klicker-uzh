@@ -1126,7 +1126,9 @@ describe('Different live-quiz workflows', function () {
     cy.clearAllLocalStorage()
     cy.wait(500)
     cy.reload()
-    cy.get('button[data-cy="tos-checkbox"]').should('exist')
+    cy.origin(Cypress.env('URL_AUTH'), () => {
+      cy.get('button[data-cy="tos-checkbox"]').should('exist')
+    })
 
     // check out generic evaluation
     cy.get('@publicLinkEvaluation').then((link) => {
