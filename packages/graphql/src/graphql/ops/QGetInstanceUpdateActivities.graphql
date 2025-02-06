@@ -1,0 +1,13 @@
+query GetInstanceUpdateActivities(
+  $elementId: Int!
+  $hasSampleSolution: Boolean
+) {
+  getInstanceUpdateActivities(
+    elementId: $elementId
+    hasSampleSolution: $hasSampleSolution
+  ) {
+    activityName
+    activityType
+    status
+  }
+}

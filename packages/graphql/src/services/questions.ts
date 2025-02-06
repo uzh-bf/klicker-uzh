@@ -5,10 +5,11 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
+import { ActivityType } from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
-import { prop, sortBy, swapIndices } from 'remeda'
+import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
 import type { ContextWithUser } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs, {
@@ -578,6 +579,154 @@ export async function getFileUploadSas(
   }
 }
 
+export async function getInstanceUpdateActivities(
+  {
+    elementId,
+    hasSampleSolution,
+  }: { elementId: number; hasSampleSolution?: boolean | null },
+  ctx: ContextWithUser
+) {
+  // fetch meta information on all activities that would be affected by the element update
+  // fetch the question and return null, if the question does not exist
+  const element = await ctx.prisma.element.findUnique({
+    where: {
+      id: elementId,
+    },
+    include: {
+      elementInstances: {
+        include: {
+          elementStack: {
+            include: {
+              microLearning: {
+                where: {
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                    ],
+                  },
+                },
+              },
+              practiceQuiz: {
+                where: {
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                    ],
+                  },
+                },
+              },
+              groupActivity: {
+                where: {
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                    ],
+                  },
+                },
+              },
+            },
+          },
+          elementBlock: {
+            include: {
+              // ? where clause is not accepted by prisma for unknown reasons
+              liveQuiz: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!element) {
+    return []
+  }
+
+  // element instances in practice quizzes and microlearnings are only updated
+  // with sample solution defined (except for CT, FC and FT elements)
+  const asynchronousActivityValid =
+    element.type === DB.ElementType.FLASHCARD ||
+    element.type === DB.ElementType.CONTENT ||
+    element.type === DB.ElementType.FREE_TEXT ||
+    hasSampleSolution
+
+  // combine instances that are to be updated
+  const instancesToBeUpdated = element.elementInstances.reduce<
+    {
+      activityName: string
+      activityType: ActivityType
+      status: DB.PublicationStatus
+    }[]
+  >((acc, instance) => {
+    if (
+      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
+      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.SCHEDULED
+    ) {
+      acc.push({
+        activityName: instance.elementBlock.liveQuiz.name,
+        activityType: ActivityType.LIVE_QUIZ,
+        status: instance.elementBlock.liveQuiz.status,
+      })
+
+      return acc
+    } else if (
+      (instance.elementStack?.microLearning?.status ===
+        DB.PublicationStatus.DRAFT ||
+        instance.elementStack?.microLearning?.status ===
+          DB.PublicationStatus.SCHEDULED) &&
+      asynchronousActivityValid
+    ) {
+      acc.push({
+        activityName: instance.elementStack.microLearning.name,
+        activityType: ActivityType.MICRO_LEARNING,
+        status: instance.elementStack.microLearning.status,
+      })
+
+      return acc
+    } else if (
+      (instance.elementStack?.practiceQuiz?.status ===
+        DB.PublicationStatus.DRAFT ||
+        instance.elementStack?.practiceQuiz?.status ===
+          DB.PublicationStatus.SCHEDULED) &&
+      asynchronousActivityValid
+    ) {
+      acc.push({
+        activityName: instance.elementStack.practiceQuiz.name,
+        activityType: ActivityType.PRACTICE_QUIZ,
+        status: instance.elementStack.practiceQuiz.status,
+      })
+
+      return acc
+    } else if (
+      instance.elementStack?.groupActivity?.status ===
+        DB.PublicationStatus.DRAFT ||
+      instance.elementStack?.groupActivity?.status ===
+        DB.PublicationStatus.SCHEDULED
+    ) {
+      acc.push({
+        activityName: instance.elementStack.groupActivity.name,
+        activityType: ActivityType.GROUP_ACTIVITY,
+        status: instance.elementStack.groupActivity.status,
+      })
+
+      return acc
+    }
+
+    return acc
+  }, [])
+
+  return uniqueBy(
+    sortBy(
+      instancesToBeUpdated,
+      [prop('activityType'), 'desc'],
+      [prop('activityName'), 'asc']
+    ),
+    prop('activityName')
+  )
+}
+
 export async function updateElementInstances(
   { elementId }: { elementId: number },
   ctx: ContextWithUser
@@ -676,17 +825,16 @@ export async function updateElementInstances(
       instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
       instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.SCHEDULED
     ) {
-      return [
-        ...acc,
-        {
-          instanceId: instance.id,
-          multiplier: instance.elementBlock.liveQuiz.pointsMultiplier,
-          liveQuizId: instance.elementBlock.liveQuizId,
-          practiceQuizId: undefined,
-          microLearningId: undefined,
-          groupActivityId: undefined,
-        },
-      ]
+      acc.push({
+        instanceId: instance.id,
+        multiplier: instance.elementBlock.liveQuiz.pointsMultiplier,
+        liveQuizId: instance.elementBlock.liveQuizId,
+        practiceQuizId: undefined,
+        microLearningId: undefined,
+        groupActivityId: undefined,
+      })
+
+      return acc
     } else if (
       (instance.elementStack?.microLearning?.status ===
         DB.PublicationStatus.DRAFT ||
@@ -694,17 +842,16 @@ export async function updateElementInstances(
           DB.PublicationStatus.SCHEDULED) &&
       asynchronousActivityValid
     ) {
-      return [
-        ...acc,
-        {
-          instanceId: instance.id,
-          multiplier: instance.elementStack.microLearning.pointsMultiplier,
-          liveQuizId: undefined,
-          practiceQuizId: undefined,
-          microLearningId: instance.elementStack.microLearning.id,
-          groupActivityId: undefined,
-        },
-      ]
+      acc.push({
+        instanceId: instance.id,
+        multiplier: instance.elementStack.microLearning.pointsMultiplier,
+        liveQuizId: undefined,
+        practiceQuizId: undefined,
+        microLearningId: instance.elementStack.microLearning.id,
+        groupActivityId: undefined,
+      })
+
+      return acc
     } else if (
       (instance.elementStack?.practiceQuiz?.status ===
         DB.PublicationStatus.DRAFT ||
@@ -712,34 +859,32 @@ export async function updateElementInstances(
           DB.PublicationStatus.SCHEDULED) &&
       asynchronousActivityValid
     ) {
-      return [
-        ...acc,
-        {
-          instanceId: instance.id,
-          multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
-          liveQuizId: undefined,
-          practiceQuizId: instance.elementStack.practiceQuiz.id,
-          microLearningId: undefined,
-          groupActivityId: undefined,
-        },
-      ]
+      acc.push({
+        instanceId: instance.id,
+        multiplier: instance.elementStack.practiceQuiz.pointsMultiplier,
+        liveQuizId: undefined,
+        practiceQuizId: instance.elementStack.practiceQuiz.id,
+        microLearningId: undefined,
+        groupActivityId: undefined,
+      })
+
+      return acc
     } else if (
       instance.elementStack?.groupActivity?.status ===
         DB.PublicationStatus.DRAFT ||
       instance.elementStack?.groupActivity?.status ===
         DB.PublicationStatus.SCHEDULED
     ) {
-      return [
-        ...acc,
-        {
-          instanceId: instance.id,
-          multiplier: instance.elementStack.groupActivity.pointsMultiplier,
-          liveQuizId: undefined,
-          practiceQuizId: undefined,
-          microLearningId: undefined,
-          groupActivityId: instance.elementStack.groupActivity.id,
-        },
-      ]
+      acc.push({
+        instanceId: instance.id,
+        multiplier: instance.elementStack.groupActivity.pointsMultiplier,
+        liveQuizId: undefined,
+        practiceQuizId: undefined,
+        microLearningId: undefined,
+        groupActivityId: instance.elementStack.groupActivity.id,
+      })
+
+      return acc
     }
 
     return acc

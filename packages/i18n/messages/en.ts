@@ -20,6 +20,18 @@ export default {
     DRAFT: {
       statusLabel: 'Draft',
     },
+    SCHEDULED: {
+      statusLabel: 'Scheduled',
+    },
+    PUBLISHED: {
+      statusLabel: 'Published',
+    },
+    ENDED: {
+      statusLabel: 'Ended',
+    },
+    GRADED: {
+      statusLabel: 'Graded',
+    },
     REVIEW: {
       statusLabel: 'Review',
     },
@@ -276,6 +288,12 @@ export default {
       instructions: 'Instructions',
       caseStudyItems: 'Case study items',
       results: 'Results',
+    },
+    types: {
+      LIVE_QUIZ: 'Live Quiz',
+      PRACTICE_QUIZ: 'Practice Quiz',
+      MICRO_LEARNING: 'Microlearning',
+      GROUP_ACTIVITY: 'Group Activity',
     },
     contentInput: {
       boldStyle:
@@ -1129,7 +1147,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Drag an image here to upload or click to open file explorer.',
       updateInstances: 'Update question instances in KlickerUZH elements',
       updateInstancesExplanation:
-        'Use this setting to update the instances of this question in all planned live quizzes, practice quizzes, microlearnings, and group activities. The content of questions in ongoing and completed activities will not be updated. Changed multipliers will be applied to the created instances. Please note that when deactivating the sample solution, only content elements, flashcards, and free text questions in practice quizzes and microlearnings will be updated.',
+        'Use this setting to update the instances of this question in all planned live quizzes, practice quizzes, microlearnings, and group activities shown below. The content of questions in ongoing and completed activities will not be updated. Changed multipliers will be applied to the created instances. Please note that when deactivating the sample solution, only content elements, flashcards, and free text questions in practice quizzes and microlearnings will be updated.',
       questionSavedSuccessfully: 'The question has been saved successfully.',
       questionSavedFailed:
         'An error occurred while saving the question. Please check the error messages in the form and review the entries.',
