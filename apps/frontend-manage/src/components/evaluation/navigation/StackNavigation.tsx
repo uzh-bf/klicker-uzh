@@ -45,31 +45,34 @@ function StackNavigation({
 
   return (
     <div className="flex flex-row">
-      <Button
-        basic
-        onClick={() => {
-          const newActiveStack =
-            typeof activeStack === 'number' ? Math.max(activeStack - 1, 0) : 0
-          setActiveStack(newActiveStack)
-          setActiveInstance(stackInstanceMap[newActiveStack][0].value)
-        }}
-        disabled={
-          stacks.length <= 2 * width + 1 ||
-          (typeof activeStack === 'number' && activeStack - width <= 0)
-        }
-        data={{ cy: 'evaluate-previous-block' }}
-      >
-        <div
-          className={twMerge(
-            'hover:bg-primary-20 flex h-full flex-row items-center px-2',
-            (stacks.length <= 2 * width + 1 ||
-              (typeof activeStack === 'number' && activeStack - width <= 0)) &&
-              'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
-          )}
+      {visibleStacks.length > 0 && (
+        <Button
+          basic
+          onClick={() => {
+            const newActiveStack =
+              typeof activeStack === 'number' ? Math.max(activeStack - 1, 0) : 0
+            setActiveStack(newActiveStack)
+            setActiveInstance(stackInstanceMap[newActiveStack][0].value)
+          }}
+          disabled={
+            stacks.length <= 2 * width + 1 ||
+            (typeof activeStack === 'number' && activeStack - width <= 0)
+          }
+          data={{ cy: 'evaluate-previous-block' }}
         >
-          <FontAwesomeIcon icon={faChevronLeft} size="lg" />
-        </div>
-      </Button>
+          <div
+            className={twMerge(
+              'hover:bg-primary-20 flex h-full flex-row items-center px-2',
+              (stacks.length <= 2 * width + 1 ||
+                (typeof activeStack === 'number' &&
+                  activeStack - width <= 0)) &&
+                'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
+            )}
+          >
+            <FontAwesomeIcon icon={faChevronLeft} size="lg" />
+          </div>
+        </Button>
+      )}
 
       {visibleStacks.map((stack) => (
         <Button
@@ -94,35 +97,38 @@ function StackNavigation({
         </Button>
       ))}
 
-      <Button
-        basic
-        onClick={() => {
-          const newActiveStack =
-            typeof activeStack === 'number'
-              ? Math.min(activeStack + 1, stacks.length)
-              : 0
-          setActiveStack(newActiveStack)
-          setActiveInstance(stackInstanceMap[newActiveStack][0].value)
-        }}
-        disabled={
-          stacks.length <= 2 * width + 1 ||
-          (typeof activeStack === 'number' &&
-            activeStack + width >= stacks.length - 1)
-        }
-        data={{ cy: 'evaluate-next-block' }}
-      >
-        <div
-          className={twMerge(
-            'hover:bg-primary-20 flex h-full flex-row items-center px-2',
-            (stacks.length <= 2 * width + 1 ||
-              (typeof activeStack === 'number' &&
-                activeStack + width >= stacks.length - 1)) &&
-              'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
-          )}
+      {visibleStacks.length > 0 && (
+        <Button
+          basic
+          onClick={() => {
+            const newActiveStack =
+              typeof activeStack === 'number'
+                ? Math.min(activeStack + 1, stacks.length)
+                : 0
+            setActiveStack(newActiveStack)
+            setActiveInstance(stackInstanceMap[newActiveStack][0].value)
+          }}
+          disabled={
+            stacks.length <= 2 * width + 1 ||
+            (typeof activeStack === 'number' &&
+              activeStack + width >= stacks.length - 1)
+          }
+          data={{ cy: 'evaluate-next-block' }}
         >
-          <FontAwesomeIcon icon={faChevronRight} size="lg" />
-        </div>
-      </Button>
+          <div
+            className={twMerge(
+              'hover:bg-primary-20 flex h-full flex-row items-center px-2',
+              (stacks.length <= 2 * width + 1 ||
+                (typeof activeStack === 'number' &&
+                  activeStack + width >= stacks.length - 1)) &&
+                'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
+            )}
+          >
+            <FontAwesomeIcon icon={faChevronRight} size="lg" />
+          </div>
+        </Button>
+      )}
+
       {type === 'LiveQuiz' && leaderboardAvailable && (
         <Button
           basic

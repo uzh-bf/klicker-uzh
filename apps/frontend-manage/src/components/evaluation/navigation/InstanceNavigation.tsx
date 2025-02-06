@@ -10,7 +10,7 @@ interface InstanceNavigationProps {
   activeInstance: number
   setActiveInstance: (instance: number) => void
   numOfInstances: number
-  instanceSelection: { label: string; value: number }[]
+  instanceSelection?: { label: string; value: number }[]
 }
 
 function InstanceNavigation({
@@ -59,11 +59,13 @@ function InstanceNavigation({
       <div className="ml-2 font-bold">{t('shared.generic.element')}:</div>
 
       <Select
-        items={instanceSelection.map((instance) => ({
-          label: instance.label,
-          value: String(instance.value),
-          data: { cy: `evaluation-select-instance-${instance.label}` },
-        }))}
+        items={
+          instanceSelection?.map((instance) => ({
+            label: instance.label,
+            value: String(instance.value),
+            data: { cy: `evaluation-select-instance-${instance.label}` },
+          })) ?? []
+        }
         onChange={(newValue) => {
           setActiveInstance(Number(newValue))
         }}

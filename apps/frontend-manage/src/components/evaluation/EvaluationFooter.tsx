@@ -14,7 +14,7 @@ import { TextSizeType } from './textSizes'
 
 interface EvaluationFooterProps {
   type: 'LiveQuiz' | 'Asynchronous'
-  currentInstance: ElementInstanceEvaluation
+  currentInstance?: ElementInstanceEvaluation
   activeStack: ActiveStackType
   textSize: TextSizeType
   setTextSize: Dispatch<{
@@ -44,14 +44,14 @@ function EvaluationFooter({
       {typeof activeStack === 'number' && (
         <div className="m-0 flex flex-row items-center justify-between py-2.5">
           <div className="text-lg" data-cy="live-quiz-total-participants">
-            {currentInstance.results.anonymousAnswers > 0 &&
+            {(currentInstance?.results.anonymousAnswers ?? 0) > 0 &&
             type === 'Asynchronous'
               ? t('manage.evaluation.totalParticipantsInclAnon', {
-                  number: currentInstance.results.totalAnswers,
-                  anonymous: currentInstance.results.anonymousAnswers,
+                  number: currentInstance?.results.totalAnswers,
+                  anonymous: currentInstance?.results.anonymousAnswers,
                 })
               : t('manage.evaluation.totalParticipants', {
-                  number: currentInstance.results.totalAnswers,
+                  number: currentInstance?.results.totalAnswers,
                 })}
           </div>
           <div className="flex flex-row items-center gap-7">
@@ -87,14 +87,15 @@ function EvaluationFooter({
               <FontAwesomeIcon icon={faFont} size="lg" />
               {t('manage.evaluation.fontSize')}
             </div>
-            {currentInstance.hasSampleSolution && (
+            {currentInstance?.hasSampleSolution && (
               <Switch
                 checked={showSolution}
                 label={t('manage.evaluation.showSolution')}
                 onCheckedChange={(newValue) => setShowSolution(newValue)}
               />
             )}
-            {ACTIVE_CHART_TYPES[currentInstance.type].length > 1 ? (
+            {currentInstance?.type &&
+            ACTIVE_CHART_TYPES[currentInstance.type].length > 1 ? (
               <Select
                 contentPosition="popper"
                 className={{
