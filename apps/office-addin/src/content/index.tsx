@@ -1,19 +1,18 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import App from './components/App'
-
-declare const document, Office
 
 let isOfficeInitialized = false
 let newlyInserted = false
 
-const render = (Component) => {
-  ReactDOM.render(
-    <Component
+function render(isOfficeInitialized: boolean, newlyInserted: boolean) {
+  const container = document.getElementById('container')
+  const root = createRoot(container!)
+
+  root.render(
+    <App
       isOfficeInitialized={isOfficeInitialized}
       newlyInserted={newlyInserted}
-    />,
-    document.getElementById('container')
+    />
   )
 }
 
@@ -23,9 +22,11 @@ Office.initialize = function (reason) {
   if (reason === Office.InitializationReason.Inserted) {
     newlyInserted = true
   }
+
   isOfficeInitialized = true
-  render(App)
+
+  render(isOfficeInitialized, newlyInserted)
 }
 
 // HACK: enable for browser-based dev
-// render(App);
+// render()
