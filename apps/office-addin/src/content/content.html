@@ -13,17 +13,35 @@
 
     <title>KlickerUZH</title>
 
-    <!-- Office JavaScript API -->
+    <script>
+      window.global = window
+    </script>
+
+    <script type="text/javascript">
+      // Cache the history method values.
+      window._historyCache = {
+        replaceState: window.history.replaceState,
+        pushState: window.history.pushState,
+      }
+    </script>
+
     <script
       type="text/javascript"
-      src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"
+      src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"
     ></script>
 
-    <!-- Template styles -->
-    <link href="output.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript">
+      // Restore the history method values after loading Office.js
+      window.history.replaceState = window._historyCache.replaceState
+      window.history.pushState = window._historyCache.pushState
+    </script>
+
+    <link rel="stylesheet" href="styles.css" />
   </head>
 
   <body class="ms-font-m ms-Fabric">
     <div id="container"></div>
+
+    <script type="module" src="content.js"></script>
   </body>
 </html>

@@ -1,17 +1,13 @@
 import { Button, FormikTextField } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import React from 'react'
 import * as yup from 'yup'
 
-/* global window*/
-
-declare const Office
-
 export interface URLFormProps {
-  slideID: string
+  slideID: number
+  setSelectedURL: (url: string) => void
 }
 
-export function URLForm({ slideID }: URLFormProps) {
+export function URLForm({ slideID, setSelectedURL }: URLFormProps) {
   return (
     <Formik
       initialValues={{
@@ -29,13 +25,14 @@ export function URLForm({ slideID }: URLFormProps) {
           ),
       })}
       onSubmit={async (values) => {
-        // window.localStorage.setItem("selectedURL" + slideID, values.url);
         Office.context.document.settings.set(
           'selectedURL' + slideID,
           values.url
         )
+
         Office.context.document.settings.saveAsync()
-        window.location.replace(values.url)
+
+        setSelectedURL(values.url)
       }}
     >
       <Form className="flex w-full flex-row gap-4">

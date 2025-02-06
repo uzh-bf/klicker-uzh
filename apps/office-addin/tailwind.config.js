@@ -1,6 +1,6 @@
-const { TailwindColorsUZH } = require('@uzh-bf/design-system/dist/constants')
+import { TailwindColorsUZH } from '@uzh-bf/design-system/dist/constants'
 
-module.exports = {
+export default {
   content: ['./src/**/*.{js,ts,jsx,tsx}', './src/*.html'],
   theme: {
     extend: {
