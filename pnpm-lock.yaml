@@ -1307,6 +1307,9 @@ importers:
       rollup:
         specifier: ~4.34.2
         version: 4.34.4
+      rollup-plugin-copy:
+        specifier: ~3.5.0
+        version: 3.5.0
       rollup-plugin-delete:
         specifier: ~2.1.0
         version: 2.1.0(rollup@4.34.4)
@@ -14721,6 +14724,7 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qrcode-generator@1.4.4:

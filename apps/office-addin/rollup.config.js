@@ -6,6 +6,7 @@ import typescript from '@rollup/plugin-typescript'
 import fs from 'fs/promises'
 import devCerts from 'office-addin-dev-certs'
 import { defineConfig } from 'rollup'
+import copy from 'rollup-plugin-copy'
 import livereload from 'rollup-plugin-livereload'
 import postcss from 'rollup-plugin-postcss'
 import serve from 'rollup-plugin-serve-proxy'
@@ -13,7 +14,7 @@ import serve from 'rollup-plugin-serve-proxy'
 // Custom plugin to handle manifest.xml like vite-plugin-office-addin
 function officeAddinPlugin({
   devUrl = 'https://localhost:3000',
-  prodUrl = 'https://www.contoso.com',
+  prodUrl = 'https://www.klicker.uzh.ch',
   manifestPaths = ['src/manifest-content.xml', 'src/manifest-taskpane.xml'],
 } = {}) {
   return {
@@ -46,22 +47,12 @@ function officeAddinPlugin({
         'src/taskpane/taskpane.html',
         'utf-8'
       )
-      const commandsHtml = await fs.readFile(
-        'src/commands/commands.html',
-        'utf-8'
-      )
       const contentHtml = await fs.readFile('src/content/content.html', 'utf-8')
 
       this.emitFile({
         type: 'asset',
         fileName: 'taskpane.html',
         source: taskpaneHtml,
-      })
-
-      this.emitFile({
-        type: 'asset',
-        fileName: 'commands.html',
-        source: commandsHtml,
       })
 
       this.emitFile({
@@ -92,7 +83,6 @@ export default defineConfig(async ({}) => {
   return {
     input: {
       taskpane: 'src/taskpane/index.tsx',
-      commands: 'src/commands/commands.ts',
       content: 'src/content/index.tsx',
     },
     output: {
@@ -153,10 +143,18 @@ export default defineConfig(async ({}) => {
       }),
       officeAddinPlugin({
         devUrl: 'https://localhost:3000',
-        prodUrl: 'https://www.contoso.com',
+        prodUrl: 'https://www.klicker.uzh.ch',
         manifestPaths: [
           'src/manifest-content.xml',
           'src/manifest-taskpane.xml',
+        ],
+      }),
+      copy({
+        targets: [
+          {
+            src: 'assets/*',
+            dest: 'dist/assets',
+          },
         ],
       }),
       !isProd &&

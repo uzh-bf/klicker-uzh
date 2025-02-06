@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { getSlideID } from '../office-utils/powerPointAPI'
 import { URLForm } from './URLForm'
 
+import '../../styles.css'
+
 export interface AppProps {
   isOfficeInitialized: boolean
   newlyInserted: boolean
