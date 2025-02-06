@@ -1232,6 +1232,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microlearningUseCase:
         '<link>Microlearnings</link> can be solved by students within a specified timespan. They are particularly suitable for reviewing learning content and preparing for exams.',
       minOneElementPerStack: 'Every stack must contain at least one element.',
+      minOneElementPerBlock: 'Every block must contain at least one element.',
       minOneQuestionGroupActivity:
         'A group activity must contain at least one question.',
       liveQuizGamified:

@@ -1236,6 +1236,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '<link>Microlearnings</link> können durch Studierende in einem zeitlich limitierten Rahmen bearbeitet werden. Sie eignen sich besonders für die Wiederholung von Lerninhalten und die Vorbereitung auf Prüfungen.',
       minOneElementPerStack:
         'Jeder Stack muss mindestens ein Element enthalten.',
+      minOneElementPerBlock:
+        'Jeder Block muss mindestens ein Element enthalten.',
       minOneQuestionGroupActivity:
         'Eine Gruppenaktivität muss mindestens eine Frage enthalten.',
       liveQuizGamified:
