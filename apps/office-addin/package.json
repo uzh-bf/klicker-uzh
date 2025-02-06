@@ -52,7 +52,6 @@
     "build": "rollup -c --environment BUILD:production",
     "clean:cache": "node scripts/clean-cache.js",
     "dev": "rollup -c -w --environment BUILD:development",
-    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "prettier": "office-addin-lint prettier",
     "preview": "cross-env NODE_ENV=production rollup -c",
     "start:content": "office-addin-debugging start src/manifest-content.xml",
