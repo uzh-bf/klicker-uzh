@@ -34,6 +34,19 @@ import LiveQuizQuestionsStep from './LiveQuizQuestionsStep'
 import LiveQuizSettingsStep from './LiveQuizSettingsStep'
 import submitLiveQuizForm from './submitLiveQuizForm'
 
+// TODO: update accepted types in live quiz to include flashcards and content elements
+const acceptedTypes = [
+  ElementType.Sc,
+  ElementType.Mc,
+  ElementType.Kprim,
+  ElementType.Numerical,
+  ElementType.FreeText,
+  // ElementType.Flashcard,
+  // ElementType.Content,
+  ElementType.Selection,
+  ElementType.CaseStudy,
+]
+
 export interface LiveQuizWizardStepProps {
   editMode: boolean
   formRef: any
@@ -141,23 +154,18 @@ function LiveQuizWizard({
   const questionsValidationSchema = yup.object().shape({
     blocks: yup.array().of(
       yup.object().shape({
-        questionIds: yup.array().of(yup.number()),
-        titles: yup.array().of(yup.string()),
-        types: yup
+        elements: yup
           .array()
+          .min(1, t('manage.activityWizard.minOneElementPerBlock'))
           .of(
-            yup
-              .string()
-              .oneOf(
-                [
-                  ElementType.Sc,
-                  ElementType.Mc,
-                  ElementType.Kprim,
-                  ElementType.Numerical,
-                  ElementType.FreeText,
-                ],
-                t('manage.activityWizard.liveQuizTypes')
-              )
+            yup.object().shape({
+              id: yup.number(),
+              title: yup.string(),
+              type: yup
+                .string()
+                .oneOf(acceptedTypes, t('manage.activityWizard.liveQuizTypes')),
+              hasSampleSolution: yup.boolean().nullable(),
+            })
           ),
         timeLimit: yup
           .number()
@@ -421,6 +429,7 @@ function LiveQuizWizard({
             resetSelection={resetSelection}
             formRef={formRef}
             formData={formData}
+            acceptedTypes={acceptedTypes}
             continueDisabled={false}
             activeStep={activeStep}
             stepValidity={stepValidity}

@@ -139,12 +139,15 @@ describe('Different live-quiz workflows', function () {
   it('Create a live quiz with two questions and test all settings', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
     cy.get('[data-cy="insert-live-quiz-name"]').type(
       this.data.course1.quiz.name
     )
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled')
     cy.get('[data-cy="insert-live-display-name"]').type(
       this.data.course1.quiz.displayName
     )
@@ -159,6 +162,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // course settings
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled') // not settings required
     cy.get('[data-cy="select-course"]')
       .should('exist')
       .contains(messages.manage.activityWizard.liveQuizNoCourse)
@@ -313,6 +317,11 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // add two questions in separate blocks, move blocks and add time limit of 10 for first and 20 for second block
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled') // empty element block cannot be submitted
+    cy.get('[data-cy="delete-block-0"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled') // live quiz without blocks can be created
+    cy.get('[data-cy="drop-elements-add-block"]').click()
+    cy.get('[data-cy="next-or-submit"]').should('be.disabled') // recover previous state
     cy.createStacks({
       stacks: [
         { elements: [this.data.SC1.title] },
@@ -1117,7 +1126,9 @@ describe('Different live-quiz workflows', function () {
     cy.clearAllLocalStorage()
     cy.wait(500)
     cy.reload()
-    cy.get('button[data-cy="tos-checkbox"]').should('exist')
+    cy.origin(Cypress.env('URL_AUTH'), () => {
+      cy.get('button[data-cy="tos-checkbox"]').should('exist')
+    })
 
     // check out generic evaluation
     cy.get('@publicLinkEvaluation').then((link) => {

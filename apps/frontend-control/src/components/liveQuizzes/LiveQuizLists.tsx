@@ -41,7 +41,7 @@ function LiveQuizLists({
                 icon={faPlay}
                 label={quiz.name}
                 className={{ icon: 'mr-1', root: 'flex-1' }}
-                data={{ cy: `start-live-quiz-${quiz.name}` }}
+                data={{ cy: `running-live-quiz-${quiz.name}` }}
               />
               <Button
                 onClick={() => {

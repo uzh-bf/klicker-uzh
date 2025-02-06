@@ -7,27 +7,16 @@ import LiveQuizCreationBlock from './LiveQuizCreationBlock'
 import { LiveQuizWizardStepProps } from './LiveQuizWizard'
 
 interface LiveQuizQuestionsStepProps extends LiveQuizWizardStepProps {
+  acceptedTypes: ElementType[]
   selection: Record<number, Element>
   resetSelection: () => void
 }
-
-// TODO: update accepted types in live quiz to include flashcards and content elements
-const acceptedTypes = [
-  ElementType.Sc,
-  ElementType.Mc,
-  ElementType.Kprim,
-  ElementType.Numerical,
-  ElementType.FreeText,
-  // ElementType.Flashcard,
-  // ElementType.Content,
-  ElementType.Selection,
-  ElementType.CaseStudy,
-]
 
 function LiveQuizQuestionsStep({
   editMode,
   formRef,
   formData,
+  acceptedTypes,
   continueDisabled,
   activeStep,
   stepValidity,
