@@ -67,7 +67,7 @@ export function MCAnswerOptions({
                 }
                 active={value?.[choice.ix]}
                 data={{
-                  cy: `mc-${elementIx + 1}-answer-option-${choice.ix + 1}`,
+                  cy: `mc-${elementIx}-answer-option-${choice.ix}`,
                 }}
                 disabled={disabled}
               >

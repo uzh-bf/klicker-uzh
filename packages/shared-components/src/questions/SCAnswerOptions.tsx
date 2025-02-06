@@ -71,7 +71,7 @@ export function SCAnswerOptions({
                 }
                 active={value?.[choice.ix]}
                 data={{
-                  cy: `sc-${elementIx + 1}-answer-option-${choice.ix + 1}`,
+                  cy: `sc-${elementIx}-answer-option-${choice.ix}`,
                 }}
                 disabled={disabled}
               >

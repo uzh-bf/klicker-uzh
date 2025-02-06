@@ -36,7 +36,7 @@ export function FREETextAnswerOptions({
         }
         maxLengthUnit={t('shared.generic.characters')}
         placeholder={placeholder || t('shared.questions.ftPlaceholder')}
-        data={{ cy: `free-text-input-${elementIx + 1}` }}
+        data={{ cy: `free-text-input-${elementIx}` }}
         className={{
           input:
             'focus:border-primary-80 rounded focus:border focus:border-solid',

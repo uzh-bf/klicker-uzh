@@ -90,7 +90,7 @@ function FlashcardFront({
   return (
     <DynamicMarkdown
       withProse
-      data={{ cy: `flashcard-front-${elementIx + 1}` }}
+      data={{ cy: `flashcard-front-${elementIx}` }}
       content={content}
       className={{
         root: twMerge(
@@ -213,7 +213,7 @@ function FlashcardButton({
         e?.stopPropagation()
         setResponse()
       }}
-      data={{ cy: `flashcard-response-${elementIx + 1}-${text}` }}
+      data={{ cy: `flashcard-response-${elementIx}-${text}` }}
     >
       <FontAwesomeIcon icon={icon} />
       {text}

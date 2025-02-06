@@ -68,7 +68,7 @@ export function NUMERICALAnswerOptions({
               !valid && 'border-red-600'
             ),
           }}
-          data={{ cy: `input-numerical-${elementIx + 1}` }}
+          data={{ cy: `input-numerical-${elementIx}` }}
         />
       </div>
       {!valid && (

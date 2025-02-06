@@ -734,20 +734,6 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! Part 3: Full Live Quiz Execution Cycle
-  function computeCaseStudySlidedValue({ criterion, answer }) {
-    const criterionMin = criterion.min
-    const criterionMax = criterion.max
-    const criterionStep = criterion.step
-    const midValue = criterionMin + (criterionMax - criterionMin) / 2
-    const signedSteps = (answer.click === '{leftarrow}' ? -1 : 1) * answer.steps
-    const slidedValue = Math.max(
-      Math.min(midValue + signedSteps * criterionStep, criterionMax),
-      criterionMin
-    )
-
-    return slidedValue
-  }
-
   it('Create and start a live quiz with all question types (with and without sample solution) to test the entire execution cycle', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -875,19 +861,19 @@ describe('Different live-quiz workflows', function () {
     cy.loginStudent()
     cy.findByText(this.data.course2.quiz.displayName).click()
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-1"]').click()
-    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="mc-1-answer-option-0"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
@@ -911,50 +897,30 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
     cy.get('[data-cy="mobile-menu-questions"]').click()
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-4"]').clear().type(this.data.NR1.answer)
+    cy.get('[data-cy="input-numerical-3"]').clear().type(this.data.NR1.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-5"]').type(this.data.FT1.answer)
+    cy.get('[data-cy="free-text-input-4"]').type(this.data.FT1.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[id="selection-6-field-1"]').click()
-    cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
+    cy.get('[id="selection-5-field-0"]').click()
+    cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').should('not.be.disabled') // partial responses allowed
-    cy.get('[id="selection-6-field-2"]').click()
-    cy.get('[id="react-select-selection-6-field-2-option-2"]').click()
+    cy.get('[id="selection-5-field-1"]').click()
+    cy.get('[id="react-select-selection-5-field-1-option-2"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
-    Object.entries(this.data.CS1.answers).forEach(([caseIx, caseAnswer]) => {
-      Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-        Object.entries(itemAnswer).forEach(([criterionIx, criterionAnswer]) => {
-          // full answer is required
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-
-          // move sliders to answer values
-          const answer = criterionAnswer as { click: string; steps: number }
-          cy.get(
-            `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-          )
-            .click()
-            .type(answer.click.repeat(answer.steps))
-
-          // verify that correct value is set
-          const slidedValue = computeCaseStudySlidedValue({
-            criterion: this.data.CS1.criteria[criterionIx],
-            answer,
-          })
-          cy.get(
-            `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-          ).should('have.value', slidedValue)
-        })
-      })
-
-      // switch to the next case
-      if (parseInt(caseIx) !== this.data.CS1.cases.length - 1) {
-        cy.get('[data-cy="switch-next-case"]').click()
-      }
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: this.data.CS1.answers,
+      cases: this.data.CS1.cases,
+      criteria: this.data.CS1.criteria,
+      initialValidation: cy
+        .get('[data-cy="student-submit-answer"]')
+        .should('be.disabled'),
+      sequentialUI: true,
     })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
@@ -1032,75 +998,55 @@ describe('Different live-quiz workflows', function () {
 
     // SC question - skipping not permitted, partial answers not possible
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
     // MC question - skipping not permitted, partial answers not possible
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-1"]').click()
-    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="mc-1-answer-option-0"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
     // KP question - skipping not permitted, partial answers not possible
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
     // NR question - skipping not permitted, partial answers not possible
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-4"]').clear().type(this.data.NR1.answer)
+    cy.get('[data-cy="input-numerical-3"]').clear().type(this.data.NR1.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
     // FT question - skipping not permitted, partial answers not possible
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-5"]').type(this.data.FT1.answer)
+    cy.get('[data-cy="free-text-input-4"]').type(this.data.FT1.answer)
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
     // SE question - submit partial answer (only submit selection for one of two inputs)
     cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-    cy.get('[id="selection-6-field-1"]').click()
-    cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
+    cy.get('[id="selection-5-field-0"]').click()
+    cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
 
     // CS question - skipping not permitted, partial answers not possible
-    Object.entries(this.data.CS2.answers).forEach(([caseIx, caseAnswer]) => {
-      Object.entries(caseAnswer).forEach(([itemIx, itemAnswer]) => {
-        Object.entries(itemAnswer).forEach(([criterionIx, criterionAnswer]) => {
-          // full answer is required
-          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-
-          // move sliders to answer values
-          const answer = criterionAnswer as { click: string; steps: number }
-          cy.get(
-            `[data-cy="cs-slider-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-          )
-            .click()
-            .type(answer.click.repeat(answer.steps))
-
-          // verify that correct value is set
-          const slidedValue = computeCaseStudySlidedValue({
-            criterion: this.data.CS2.criteria[criterionIx],
-            answer,
-          })
-          cy.get(
-            `[data-cy="cs-slider-nr-value-7-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
-          ).should('have.value', slidedValue)
-        })
-      })
-
-      // switch to the next case
-      if (parseInt(caseIx) !== this.data.CS2.cases.length - 1) {
-        cy.get('[data-cy="switch-next-case"]').click()
-      }
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: this.data.CS2.answers,
+      cases: this.data.CS2.cases,
+      criteria: this.data.CS2.criteria,
+      initialValidation: cy
+        .get('[data-cy="student-submit-answer"]')
+        .should('be.disabled'),
+      sequentialUI: true,
     })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
