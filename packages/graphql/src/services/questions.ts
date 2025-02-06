@@ -612,6 +612,16 @@ export async function updateElementInstances(
                   },
                 },
               },
+              groupActivity: {
+                where: {
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                    ],
+                  },
+                },
+              },
             },
           },
           elementBlock: {
@@ -635,6 +645,15 @@ export async function updateElementInstances(
     return []
   }
 
+  // check if a sample solution is defined or if the element type does not require sample solutions
+  // in asynchronous activities to avoid updating and invalidating corresponding instances
+  const asynchronousActivityValid =
+    element.type === DB.ElementType.FLASHCARD ||
+    element.type === DB.ElementType.CONTENT ||
+    element.type === DB.ElementType.FREE_TEXT ||
+    ('hasSampleSolution' in element.options &&
+      element.options.hasSampleSolution)
+
   // get all instances and the corresponding element multipliers
   const instanceData: {
     instanceId: number
@@ -642,6 +661,7 @@ export async function updateElementInstances(
     liveQuizId: string | undefined
     practiceQuizId: string | undefined
     microLearningId: string | undefined
+    groupActivityId: string | undefined
   }[] = element.elementInstances.reduce<
     {
       instanceId: number
@@ -649,6 +669,7 @@ export async function updateElementInstances(
       liveQuizId: string | undefined
       practiceQuizId: string | undefined
       microLearningId: string | undefined
+      groupActivityId: string | undefined
     }[]
   >((acc, instance) => {
     if (
@@ -663,13 +684,15 @@ export async function updateElementInstances(
           liveQuizId: instance.elementBlock.liveQuizId,
           practiceQuizId: undefined,
           microLearningId: undefined,
+          groupActivityId: undefined,
         },
       ]
     } else if (
-      instance.elementStack?.microLearning?.status ===
+      (instance.elementStack?.microLearning?.status ===
         DB.PublicationStatus.DRAFT ||
-      instance.elementStack?.microLearning?.status ===
-        DB.PublicationStatus.SCHEDULED
+        instance.elementStack?.microLearning?.status ===
+          DB.PublicationStatus.SCHEDULED) &&
+      asynchronousActivityValid
     ) {
       return [
         ...acc,
@@ -679,13 +702,15 @@ export async function updateElementInstances(
           liveQuizId: undefined,
           practiceQuizId: undefined,
           microLearningId: instance.elementStack.microLearning.id,
+          groupActivityId: undefined,
         },
       ]
     } else if (
-      instance.elementStack?.practiceQuiz?.status ===
+      (instance.elementStack?.practiceQuiz?.status ===
         DB.PublicationStatus.DRAFT ||
-      instance.elementStack?.practiceQuiz?.status ===
-        DB.PublicationStatus.SCHEDULED
+        instance.elementStack?.practiceQuiz?.status ===
+          DB.PublicationStatus.SCHEDULED) &&
+      asynchronousActivityValid
     ) {
       return [
         ...acc,
@@ -695,6 +720,24 @@ export async function updateElementInstances(
           liveQuizId: undefined,
           practiceQuizId: instance.elementStack.practiceQuiz.id,
           microLearningId: undefined,
+          groupActivityId: undefined,
+        },
+      ]
+    } else if (
+      instance.elementStack?.groupActivity?.status ===
+        DB.PublicationStatus.DRAFT ||
+      instance.elementStack?.groupActivity?.status ===
+        DB.PublicationStatus.SCHEDULED
+    ) {
+      return [
+        ...acc,
+        {
+          instanceId: instance.id,
+          multiplier: instance.elementStack.groupActivity.pointsMultiplier,
+          liveQuizId: undefined,
+          practiceQuizId: undefined,
+          microLearningId: undefined,
+          groupActivityId: instance.elementStack.groupActivity.id,
         },
       ]
     }
@@ -711,6 +754,7 @@ export async function updateElementInstances(
           liveQuizId,
           practiceQuizId,
           microLearningId,
+          groupActivityId,
         }) => {
           const oldInstance = await ctx.prisma.elementInstance.findUnique({
             where: { id: instanceId },
@@ -754,6 +798,11 @@ export async function updateElementInstances(
             ctx.emitter.emit('invalidate', {
               typename: 'MicroLearning',
               id: microLearningId,
+            })
+          } else if (typeof groupActivityId !== 'undefined') {
+            ctx.emitter.emit('invalidate', {
+              typename: 'GroupActivity',
+              id: groupActivityId,
             })
           }
 
