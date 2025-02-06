@@ -35,7 +35,7 @@ function CSCase({
         <div>
           <div
             className="mb-1 text-lg font-bold"
-            data-cy={`case-${caseIndex + 1}-title`}
+            data-cy={`case-${caseIndex}-title`}
           >
             {`${caseIndex + 1}. ${currentCase.title}`}
           </div>
@@ -46,7 +46,7 @@ function CSCase({
           >
             <Markdown
               content={currentCase.description}
-              data={{ cy: `case-${caseIndex + 1}-description` }}
+              data={{ cy: `case-${caseIndex}-description` }}
             />
           </div>
         </div>

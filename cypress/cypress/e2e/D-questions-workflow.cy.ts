@@ -2148,12 +2148,12 @@ describe('Create different types of elements (with and without sample solution) 
       .should('exist')
 
     // check if case information is visible
-    cy.get('[data-cy="case-1-title"]').contains(this.data.CS.cases[0].title)
-    cy.get('[data-cy="case-1-description"]').contains(
+    cy.get('[data-cy="case-0-title"]').contains(this.data.CS.cases[0].title)
+    cy.get('[data-cy="case-0-description"]').contains(
       this.data.CS.cases[0].description
     )
-    cy.get('[data-cy="case-2-title"]').contains(this.data.CS.cases[1].title)
-    cy.get('[data-cy="case-2-description"]').contains(
+    cy.get('[data-cy="case-1-title"]').contains(this.data.CS.cases[1].title)
+    cy.get('[data-cy="case-1-description"]').contains(
       this.data.CS.cases[1].description
     )
 
