@@ -19,7 +19,7 @@ import { SubscribeToMoreOptions, useQuery } from '@apollo/client'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { H3 } from '@uzh-bf/design-system'
+import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
 import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
@@ -211,17 +211,23 @@ function Index({ id }: { id: string }) {
           {!activeBlock ? (
             beforeFirstBlock &&
             description !== null &&
-            typeof description !== 'undefined' ? (
+            typeof description !== 'undefined' &&
+            description !== '' ? (
               <div data-cy="live-quiz-description">
                 <H3>{displayName}</H3>
                 <Markdown content={description} />
+                <UserNotification type="info" className={{ root: 'mt-4' }}>
+                  {t('pwa.liveQuiz.noActiveQuestion')}
+                </UserNotification>
               </div>
             ) : isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
                 <LiveQuizLeaderboard quizId={id} />
               </div>
             ) : (
-              <div>{t('pwa.liveQuiz.noActiveQuestion')}</div>
+              <UserNotification type="info">
+                {t('pwa.liveQuiz.noActiveQuestion')}
+              </UserNotification>
             )
           ) : (
             <QuestionArea
