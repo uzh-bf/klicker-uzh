@@ -13,7 +13,7 @@ import serve from 'rollup-plugin-serve-proxy'
 
 // Custom plugin to handle manifest.xml like vite-plugin-office-addin
 function officeAddinPlugin({
-  devUrl = 'https://localhost:3000',
+  devUrl = 'https://localhost:3020',
   prodUrl = 'https://www.klicker.uzh.ch',
   manifestPaths = ['src/manifest-content.xml', 'src/manifest-taskpane.xml'],
 } = {}) {
@@ -142,7 +142,7 @@ export default defineConfig(async ({}) => {
         },
       }),
       officeAddinPlugin({
-        devUrl: 'https://localhost:3000',
+        devUrl: 'https://localhost:3020',
         prodUrl: 'https://www.klicker.uzh.ch',
         manifestPaths: [
           'src/manifest-content.xml',
@@ -161,7 +161,7 @@ export default defineConfig(async ({}) => {
         serve({
           contentBase: ['dist'],
           host: 'localhost',
-          port: 3000,
+          port: 3020,
           https: httpsOptions,
           headers: {
             'Access-Control-Allow-Origin': '*',

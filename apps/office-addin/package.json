@@ -51,8 +51,8 @@
   },
   "scripts": {
     "build": "rollup -c --environment BUILD:production",
+    "build:dev": "rollup -c -w --environment BUILD:development",
     "clean:cache": "node scripts/clean-cache.js",
-    "dev": "rollup -c -w --environment BUILD:development",
     "prettier": "office-addin-lint prettier",
     "preview": "cross-env NODE_ENV=production rollup -c",
     "start:content": "office-addin-debugging start src/manifest-content.xml",
@@ -74,7 +74,7 @@
   "config": {
     "app_to_debug": "powerpoint",
     "app_type_to_debug": "desktop",
-    "dev_server_port": 3000
+    "dev_server_port": 3020
   },
   "type": "module"
 }
