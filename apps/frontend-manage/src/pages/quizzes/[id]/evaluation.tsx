@@ -31,7 +31,9 @@ function Evaluation() {
     !data?.liveQuizEvaluation ||
     !data?.liveQuizLeaderboard ||
     (data.liveQuizEvaluation.results.length === 0 &&
-      data.liveQuizLeaderboard.length === 0)
+      data.liveQuizLeaderboard.length === 0 &&
+      data.liveQuizEvaluation.feedbacks?.length === 0 &&
+      data.liveQuizEvaluation.confusionFeedbacks?.length === 0)
   ) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center">

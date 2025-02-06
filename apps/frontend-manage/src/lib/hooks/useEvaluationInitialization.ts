@@ -8,6 +8,7 @@ function useEvaluationInitialization({
   questionIx,
   showLeaderboard,
   showSolution,
+  missingInstanceResults,
   type,
 }: {
   setActiveInstance: Dispatch<SetStateAction<number>>
@@ -18,6 +19,7 @@ function useEvaluationInitialization({
   questionIx?: string | null
   showLeaderboard?: boolean
   showSolution?: boolean
+  missingInstanceResults?: boolean
   type: ActivityEvaluationType
 }) {
   useEffect(() => {
@@ -26,6 +28,8 @@ function useEvaluationInitialization({
         setActiveInstance(parseInt(questionIx))
       } else if (showLeaderboard) {
         setActiveStack('leaderboard')
+      } else if (missingInstanceResults) {
+        setActiveStack('feedbacks')
       }
       if (showSolution) {
         setShowSolution(true)

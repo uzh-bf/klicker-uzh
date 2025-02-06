@@ -68,6 +68,7 @@ function ActivityEvaluation({
     questionIx: router.query.questionIx as string | null,
     showLeaderboard: router.query.leaderboard === 'true',
     showSolution: router.query.showSolution === 'true',
+    missingInstanceResults: instanceResults.length === 0,
     type,
   })
 
@@ -115,7 +116,7 @@ function ActivityEvaluation({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col">
-        {typeof activeStack === 'number' && (
+        {instanceResults.length > 0 && typeof activeStack === 'number' && (
           <ElementEvaluation
             currentInstance={instanceResults[activeInstance]}
             activeInstance={activeInstance}
