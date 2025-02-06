@@ -100,7 +100,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="quizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${this.data.PQ.displayName}"]`).click()
     cy.get('[data-cy="start-practice-quiz"]').click()
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.wait(500)
     cy.get('[data-cy="student-stack-continue"]').click()
@@ -114,7 +114,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get(`[data-cy="bookmarks-course-${this.data.course}"]`).click()
     cy.get('[data-cy="start-practice-quiz"]').click()
     cy.findByText(this.data.question2.content).should('exist')
-    cy.get('[data-cy="mc-1-answer-option-2"]').click()
+    cy.get('[data-cy="mc-0-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
   })
 
@@ -229,8 +229,8 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     cy.get('[data-cy="cancel-flag-element"]').click()
 
     // solve the microlearning
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
-    cy.get('[data-cy="mc-2-answer-option-2"]').click()
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.wait(500)
     cy.get('[data-cy="student-stack-continue"]').click()

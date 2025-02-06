@@ -299,8 +299,8 @@ describe('Create different types of elements (with and without sample solution) 
 
   it('Check that values of single choice question are stored and loaded correctly', function () {
     cy.get(`[data-cy="edit-question-${this.data.SC.title}"]`).click()
-    cy.get('[data-cy="sc-1-answer-option-1"]').should('exist')
-    cy.get('[data-cy="sc-1-answer-option-2"]').should('exist')
+    cy.get('[data-cy="sc-0-answer-option-0"]').should('exist')
+    cy.get('[data-cy="sc-0-answer-option-1"]').should('exist')
 
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
@@ -606,8 +606,8 @@ describe('Create different types of elements (with and without sample solution) 
       messages.shared.READY.statusLabel
     )
     cy.get(`[data-cy="edit-question-${this.data.MC.title}"]`).click()
-    cy.get('[data-cy="mc-1-answer-option-1"]').should('exist')
-    cy.get('[data-cy="mc-1-answer-option-2"]').should('exist')
+    cy.get('[data-cy="mc-0-answer-option-0"]').should('exist')
+    cy.get('[data-cy="mc-0-answer-option-1"]').should('exist')
   })
 
   it('Check that values of multiple choice question are stored and loaded correctly', function () {
@@ -1451,7 +1451,7 @@ describe('Create different types of elements (with and without sample solution) 
     )
 
     cy.get(`[data-cy="edit-question-${this.data.FT.title}"]`).click()
-    cy.get('[data-cy="free-text-input-1"]').should('exist')
+    cy.get('[data-cy="free-text-input-0"]').should('exist')
   })
 
   it('Check that values of Free Text question are stored and loaded correctly', function () {
@@ -1675,11 +1675,11 @@ describe('Create different types of elements (with and without sample solution) 
 
     // check that inputs are available
     for (let i = 1; i < this.data.SE.inputs; i++) {
-      cy.get(`[id="selection-1-field-${i + 1}"]`).should('exist')
+      cy.get(`[id="selection-0-field-${i}"]`).should('exist')
     }
 
     // check that all options are available
-    cy.get('[id="selection-1-field-1"]').click()
+    cy.get('[id="selection-0-field-0"]').click()
     cy.wrap(this.data.SE.solutions).each((value: string) => {
       cy.findByText(value).should('exist')
     })
@@ -2163,35 +2163,35 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.CS.criteria[0].min +
       (this.data.CS.criteria[0].max - this.data.CS.criteria[0].min) / 2
     const slidedValue = midValue + steps * this.data.CS.criteria[0].step
-    cy.get('[data-cy="cs-slider-nr-value-1-1-1-1"]').should('have.value', '')
-    cy.get('[data-cy="cs-slider-1-1-1-1"]')
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should('have.value', '')
+    cy.get('[data-cy="cs-slider-0-0-0-0"]')
       .click()
       .type('{rightarrow}{leftarrow}')
-    cy.get('[data-cy="cs-slider-nr-value-1-1-1-1"]').should(
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should(
       'have.value',
       String(midValue)
     )
-    cy.get('[data-cy="cs-slider-1-1-1-1"]')
+    cy.get('[data-cy="cs-slider-0-0-0-0"]')
       .click()
       .type('{rightarrow}'.repeat(steps))
-    cy.get('[data-cy="cs-slider-nr-value-1-1-1-1"]').should(
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should(
       'have.value',
       String(slidedValue)
     )
 
     // check that moving a slider all the way to one end works to be expected
-    cy.get('[data-cy="cs-slider-nr-value-1-1-1-2"]').should('have.value', '')
-    cy.get('[data-cy="cs-slider-1-1-1-2"]')
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should('have.value', '')
+    cy.get('[data-cy="cs-slider-0-0-0-1"]')
       .click()
       .type('{leftarrow}'.repeat(260))
-    cy.get('[data-cy="cs-slider-nr-value-1-1-1-2"]').should(
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should(
       'have.value',
       String(this.data.CS.criteria[1].min)
     )
-    cy.get('[data-cy="cs-slider-1-1-1-2"]')
+    cy.get('[data-cy="cs-slider-0-0-0-1"]')
       .click()
       .type('{rightarrow}'.repeat(600))
-    cy.get('[data-cy="cs-slider-nr-value-1-1-1-2"]').should(
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should(
       'have.value',
       String(this.data.CS.criteria[1].max)
     )
@@ -2205,7 +2205,7 @@ describe('Create different types of elements (with and without sample solution) 
       ) {
         for (let itemIx = 0; itemIx < this.data.CS.items.length; itemIx++) {
           cy.get(
-            `[data-cy="cs-slider-nr-value-1-${caseIx + 1}-${itemIx + 1}-${criterionIx + 1}"]`
+            `[data-cy="cs-slider-nr-value-0-${caseIx}-${itemIx}-${criterionIx}"]`
           ).should('exist')
         }
       }

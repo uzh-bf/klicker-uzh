@@ -71,7 +71,7 @@ function CSCase({
                   {/* only show compact version on smaller devices */}
                   <div
                     className="-mb-1 block md:hidden"
-                    data-cy={`cs-slider-value-${elementIx + 1}-${caseIndex + 1}-${itemIx + 1}-${criterionIx + 1}`}
+                    data-cy={`cs-slider-value-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`}
                   >
                     {criterion.unit
                       ? `${caseResponse[item.id]?.[criterion.id] ?? '-'} ${criterion.unit}`
@@ -114,7 +114,7 @@ function CSCase({
                       unit: 'h-8 px-2',
                     }} // only show on larger devices
                     data={{
-                      cy: `cs-slider-nr-value-${elementIx + 1}-${caseIndex + 1}-${itemIx + 1}-${criterionIx + 1}`,
+                      cy: `cs-slider-nr-value-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`,
                     }}
                   />
                 </div>

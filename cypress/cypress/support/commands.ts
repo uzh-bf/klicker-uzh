@@ -1273,7 +1273,7 @@ Cypress.Commands.add(
 
           // move sliders to answer values
           cy.get(
-            `[data-cy="cs-slider-${elementIx + 1}-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+            `[data-cy="cs-slider-${elementIx}-${parseInt(caseIx)}-${parseInt(itemIx)}-${parseInt(criterionIx)}"]`
           )
             .click()
             .type(answer.click.repeat(answer.steps))
@@ -1284,7 +1284,7 @@ Cypress.Commands.add(
             answer,
           })
           cy.get(
-            `[data-cy="cs-slider-nr-value-${elementIx + 1}-${parseInt(caseIx) + 1}-${parseInt(itemIx) + 1}-${parseInt(criterionIx) + 1}"]`
+            `[data-cy="cs-slider-nr-value-${elementIx}-${parseInt(caseIx)}-${parseInt(itemIx)}-${parseInt(criterionIx)}"]`
           ).should('have.value', slidedValue)
         })
       })
@@ -1330,14 +1330,14 @@ Cypress.Commands.add(
             answer: innerValue,
           })
           cy.get(
-            `[data-cy="cs-slider-nr-value-${elementIx + 1}-${caseIx + 1}-${itemIx + 1}-${criterionIx + 1}"]`
+            `[data-cy="cs-slider-nr-value-${elementIx}-${caseIx}-${itemIx}-${criterionIx}"]`
           ).should('have.value', slidedValue)
         }
 
         // verify that the disabled attribute is set on the slider
         if (verifyDisabled) {
           cy.get(
-            `[data-cy="cs-slider-${elementIx + 1}-${caseIx + 1}-${itemIx + 1}-${criterionIx + 1}"]`
+            `[data-cy="cs-slider-${elementIx}-${caseIx}-${itemIx}-${criterionIx}"]`
           ).should('have.attr', 'data-disabled')
         }
       },

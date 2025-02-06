@@ -63,7 +63,7 @@ function CSSlider({
           ),
         }}
         dataThumb={{
-          cy: `cs-slider-${elementIx + 1}-${caseIndex + 1}-${itemIx + 1}-${criterionIx + 1}`,
+          cy: `cs-slider-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`,
         }}
       />
     </div>

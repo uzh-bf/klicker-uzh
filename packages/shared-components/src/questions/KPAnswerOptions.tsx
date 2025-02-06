@@ -72,7 +72,7 @@ export function KPAnswerOptions({
                 active={value?.[choice.ix] === true}
                 onClick={() => onChange({ ...value, [choice.ix]: true })}
                 data={{
-                  cy: `toggle-kp-${elementIx + 1}-answer-${choice.ix + 1}-correct`,
+                  cy: `toggle-kp-${elementIx}-answer-${choice.ix}-correct`,
                 }}
                 disabled={disabled}
               >
@@ -89,9 +89,7 @@ export function KPAnswerOptions({
                 active={value?.[choice.ix] === false}
                 onClick={() => onChange({ ...value, [choice.ix]: false })}
                 data={{
-                  cy: `toggle-kp-${elementIx + 1}-answer-${
-                    choice.ix + 1
-                  }-incorrect`,
+                  cy: `toggle-kp-${elementIx}-answer-${choice.ix}-incorrect`,
                 }}
                 disabled={disabled}
               >

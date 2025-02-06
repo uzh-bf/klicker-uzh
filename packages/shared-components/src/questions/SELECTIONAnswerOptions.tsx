@@ -79,8 +79,8 @@ function SELECTIONAnswerOptions({
                 labelType="small"
               />
               <Select
-                id={`selection-${elementIx + 1}-field-${Number(inputIndex) + 1}`}
-                instanceId={`selection-${elementIx + 1}-field-${Number(inputIndex) + 1}`}
+                id={`selection-${elementIx}-field-${Number(inputIndex)}`}
+                instanceId={`selection-${elementIx}-field-${Number(inputIndex)}`}
                 isDisabled={disabled}
                 value={
                   typeof selectedValue !== 'undefined' && selectedValue !== -1

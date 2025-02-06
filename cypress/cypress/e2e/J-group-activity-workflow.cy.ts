@@ -459,46 +459,46 @@ describe('Create and solve a group activity', function () {
   // ! Part 2: Running Group Activity & Participation
   function answerGroupActivity(data) {
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-2"]').click()
-    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
+    cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-3-incorrect"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-4"]').type(data.running.answers.numerical)
+    cy.get('[data-cy="input-numerical-3"]').type(data.running.answers.numerical)
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-5"]')
+    cy.get('[data-cy="free-text-input-4"]')
       .click()
       .type(data.running.answers.freeText)
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[id="selection-6-field-1"]').click()
-    cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(
+    cy.get('[id="selection-5-field-0"]').click()
+    cy.get('[id="react-select-selection-5-field-0-option-0"]').click()
+    cy.get('[id="selection-5-field-0"]').contains(
       data.questions.collection.options[0]
     )
-    cy.get('[id="selection-6-field-1"]').click()
-    cy.get('[id="react-select-selection-6-field-1-option-1"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(
+    cy.get('[id="selection-5-field-0"]').click()
+    cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
+    cy.get('[id="selection-5-field-0"]').contains(
       data.questions.collection.options[2]
     )
-    cy.get('[id="selection-6-field-2"]').click()
+    cy.get('[id="selection-5-field-1"]').click()
     // option numbers smaller than ix since only available objects are shown in select component (0 removed here)
-    cy.get('[id="react-select-selection-6-field-2-option-0"]').click()
-    cy.get('[id="selection-6-field-2"]').contains(
+    cy.get('[id="react-select-selection-5-field-1-option-0"]').click()
+    cy.get('[id="selection-5-field-1"]').contains(
       data.questions.collection.options[0]
     )
-    cy.get('[id="selection-6-field-3"]').click()
-    cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
-    cy.get('[id="selection-6-field-3"]').contains(
+    cy.get('[id="selection-5-field-2"]').click()
+    cy.get('[id="react-select-selection-5-field-2-option-1"]').click()
+    cy.get('[id="selection-5-field-2"]').contains(
       data.questions.collection.options[3]
     )
-    cy.get('[id="selection-6-field-3"]').click()
-    cy.get('[id="react-select-selection-6-field-3-option-1"]').click()
-    cy.get('[id="selection-6-field-3"]').contains(
+    cy.get('[id="selection-5-field-2"]').click()
+    cy.get('[id="react-select-selection-5-field-2-option-1"]').click()
+    cy.get('[id="selection-5-field-2"]').contains(
       data.questions.collection.options[4]
     )
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
@@ -511,35 +511,35 @@ describe('Create and solve a group activity', function () {
         .should('be.disabled'), // full answer required
     })
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="sc-8-answer-option-1"]').click()
+    cy.get('[data-cy="sc-7-answer-option-0"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('not.be.disabled')
   }
 
   function answerGroupActivityPartial(data) {
     // answer all questions in the group activity with partial inputs (where supported)
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-2"]').click()
-    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
+    cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-3-incorrect"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-4"]').type(data.running.answers.numerical)
+    cy.get('[data-cy="input-numerical-3"]').type(data.running.answers.numerical)
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-5"]')
+    cy.get('[data-cy="free-text-input-4"]')
       .click()
       .type(data.running.answers.freeText)
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[id="selection-6-field-1"]').click()
-    cy.get('[id="react-select-selection-6-field-1-option-0"]').click()
-    cy.get('[id="selection-6-field-1"]').contains(
+    cy.get('[id="selection-5-field-0"]').click()
+    cy.get('[id="react-select-selection-5-field-0-option-0"]').click()
+    cy.get('[id="selection-5-field-0"]').contains(
       data.questions.collection.options[0]
     )
-    cy.get('[id="selection-6-field-2"]').click()
+    cy.get('[id="selection-5-field-1"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.answerCaseStudy({
       elementIx: 6,
@@ -550,31 +550,31 @@ describe('Create and solve a group activity', function () {
         .should('be.disabled'), // full answer required
     })
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="sc-8-answer-option-1"]').click()
+    cy.get('[data-cy="sc-7-answer-option-0"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('not.be.disabled')
   }
 
   function checkInputsDisabled(data) {
-    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-4"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-5"]').should('be.disabled')
-    cy.get('[id="selection-6-field-1"]').should(
+    cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-3"]').should('be.disabled')
+    cy.get('[data-cy="free-text-input-4"]').should('be.disabled')
+    cy.get('[id="selection-5-field-0"]').should(
       'have.css',
       'pointer-events',
       'none'
     )
-    cy.get('[id="selection-6-field-2"]').should(
+    cy.get('[id="selection-5-field-1"]').should(
       'have.css',
       'pointer-events',
       'none'
     )
-    cy.get('[id="selection-6-field-3"]').should(
+    cy.get('[id="selection-5-field-2"]').should(
       'have.css',
       'pointer-events',
       'none'
@@ -586,43 +586,43 @@ describe('Create and solve a group activity', function () {
       verifyValues: false,
       verifyDisabled: true,
     })
-    cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-0"]').should('be.disabled')
   }
 
   function checkPersistentAnswers(data) {
-    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
+    cy.get('[data-cy="sc-0-answer-option-1"]').should('be.disabled')
 
-    cy.get('[data-cy="mc-2-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-4"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-5"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-0"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-4"]').should('be.disabled')
 
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-3-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-0-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-3-incorrect"]').should('be.disabled')
 
-    cy.get('[data-cy="input-numerical-4"]')
+    cy.get('[data-cy="input-numerical-3"]')
       .should('be.disabled')
       .should('have.value', data.running.answers.numerical)
 
-    cy.get('[data-cy="free-text-input-5"]')
+    cy.get('[data-cy="free-text-input-4"]')
       .should('be.disabled')
       .contains(data.running.answers.freeText)
 
-    cy.get('[id="selection-6-field-1"]')
+    cy.get('[id="selection-5-field-0"]')
       .contains(data.questions.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
-    cy.get('[id="selection-6-field-2"]')
+    cy.get('[id="selection-5-field-1"]')
       .contains(data.questions.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
-    cy.get('[id="selection-6-field-3"]')
+    cy.get('[id="selection-5-field-2"]')
       .contains(data.questions.collection.options[4])
       .should('have.css', 'pointer-events', 'none')
     cy.verifyCaseStudyInputs({
@@ -630,39 +630,39 @@ describe('Create and solve a group activity', function () {
       answers: data.questions.CS.answers,
       criteria: data.questions.CS.criteria,
     })
-    cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-8-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-0"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
   }
 
   function checkPersistentAnswersPartial(data) {
-    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-1-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-4"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-5"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-3-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-4-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-2-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-4"]')
+    cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
+    cy.get('[data-cy="sc-0-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-0"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-3"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-4"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-2-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-0-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-3-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-3"]')
       .should('be.disabled')
       .should('have.value', data.running.answers.numerical)
-    cy.get('[data-cy="free-text-input-5"]')
+    cy.get('[data-cy="free-text-input-4"]')
       .should('be.disabled')
       .contains(data.running.answers.freeText)
-    cy.get('[id="selection-6-field-1"]')
+    cy.get('[id="selection-5-field-0"]')
       .contains(data.questions.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
-    cy.get('[id="selection-6-field-2"]')
+    cy.get('[id="selection-5-field-1"]')
       .contains(messages.shared.questions.seSelectOption)
       .should('have.css', 'pointer-events', 'none')
-    cy.get('[id="selection-6-field-3"]')
+    cy.get('[id="selection-5-field-2"]')
       .contains(messages.shared.questions.seSelectOption)
       .should('have.css', 'pointer-events', 'none')
     cy.verifyCaseStudyInputs({
@@ -671,8 +671,8 @@ describe('Create and solve a group activity', function () {
       criteria: data.questions.CS.criteria,
       verifyDisabled: true,
     })
-    cy.get('[data-cy="sc-8-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-8-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-0"]').should('be.disabled')
+    cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
   }
 
   function checkGradingVisualization(
@@ -1295,15 +1295,15 @@ describe('Create and solve a group activity', function () {
 
     // answer the questions
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="sc-1-answer-option-1"]').click()
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-2"]').click()
-    cy.get('[data-cy="mc-2-answer-option-3"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
+    cy.get('[data-cy="mc-1-answer-option-2"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').click()
-    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-3-incorrect"]').click()
     cy.get('[data-cy="submit-group-activity"]').click()
     cy.wait(2000)
   })
@@ -1350,13 +1350,13 @@ describe('Create and solve a group activity', function () {
     ).click()
 
     // check that the inputs are disabled
-    cy.get('[data-cy="sc-1-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="mc-2-answer-option-3"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-1-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-2-correct"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-3-incorrect"]').should('be.disabled')
-    cy.get('[data-cy="toggle-kp-3-answer-4-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
+    cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').should('be.disabled')
+    cy.get('[data-cy="toggle-kp-2-answer-3-incorrect"]').should('be.disabled')
   })
 
   it('Login as another student and check that the group activity cannot be started anymore', function () {
