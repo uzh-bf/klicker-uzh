@@ -330,5 +330,48 @@
     "contentEdited": "Auto Save question content new",
     "contentEdited2": "Auto Save question content new 2",
     "titleEditedDuplicated": "Auto Save question title new (Copy)"
+  },
+  "update": {
+    "title1": "Single Choice Question Title 1",
+    "title2": "Single Choice Question Title 2",
+    "title3": "Single Choice Question Title 3",
+    "content1": "Single Choice Question Content 1",
+    "content2": "Single Choice Question Content 2",
+    "content3": "Single Choice Question Content 3",
+    "choices1": [
+      { "content": "Choice 1", "feedback": "Feedback 1" },
+      { "content": "Choice 2", "feedback": "Feedback 2" },
+      { "content": "Choice 3", "feedback": "Feedback 3", "correct": true },
+      { "content": "Choice 4", "feedback": "Feedback 4" }
+    ],
+    "choices2": [
+      { "content": "Choice NEW 1", "feedback": "Feedback NEW 1" },
+      { "content": "Choice NEW 2", "feedback": "Feedback NEW 2" },
+      {
+        "content": "Choice NEW 3",
+        "feedback": "Feedback NEW 3",
+        "correct": true
+      },
+      { "content": "Choice NEW 4", "feedback": "Feedback NEW 4" }
+    ],
+    "choices3": [
+      { "content": "Choice Very NEW 1" },
+      { "content": "Choice Very NEW 2" },
+      { "content": "Choice Very NEW 3" },
+      { "content": "Choice Very NEW 4" }
+    ],
+    "course": "Testkurs",
+    "liveQuiz1": "Live Quiz 1",
+    "liveQuiz2": "Live Quiz 2",
+    "liveQuiz3": "Live Quiz 3",
+    "practiceQuiz1": "Practice Quiz 1",
+    "practiceQuiz2": "Practice Quiz 2",
+    "practiceQuiz3": "Practice Quiz 3",
+    "microlearning1": "Microlearning 1",
+    "microlearning2": "Microlearning 2",
+    "microlearning3": "Microlearning 3",
+    "groupActivity1": "Group Activity 1",
+    "groupActivity2": "Group Activity 2",
+    "groupActivity3": "Group Activity 3"
   }
 }

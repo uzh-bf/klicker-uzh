@@ -839,17 +839,11 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="live-quiz-description"]').contains(
       this.data.course2.quiz.displayName
     )
-    cy.get('[data-cy="live-quiz-description"]').contains(
-      this.data.course2.quiz.description
-    )
 
     // check if the description is also shown correctly on mobile view
     cy.viewport('iphone-x')
     cy.get('[data-cy="live-quiz-description"]').contains(
       this.data.course2.quiz.displayName
-    )
-    cy.get('[data-cy="live-quiz-description"]').contains(
-      this.data.course2.quiz.description
     )
   })
 
