@@ -54,6 +54,7 @@
   "scripts": {
     "build": "rollup -c --environment BUILD:production",
     "build:dev": "rollup -c -w --environment BUILD:development",
+    "check": "tsc --noEmit",
     "clean:cache": "node scripts/clean-cache.js",
     "prettier": "office-addin-lint prettier",
     "preview": "cross-env NODE_ENV=production rollup -c",
