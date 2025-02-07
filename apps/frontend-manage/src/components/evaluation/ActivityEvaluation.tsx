@@ -19,6 +19,7 @@ import { useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ElementEvaluation from './ElementEvaluation'
 import EvaluationFooter from './EvaluationFooter'
+import EvaluationUnavailableNotification from './EvaluationUnavailableNotification'
 import EvaluationConfusion from './feedbacks/EvaluationConfusion'
 import EvaluationFeedbacks from './feedbacks/EvaluationFeedbacks'
 import useChartTypeUpdate from './hooks/useChartTypeUpdate'
@@ -83,6 +84,13 @@ function ActivityEvaluation({
     setChartType,
   })
 
+  if (
+    typeof activeStack === 'number' &&
+    typeof instanceResults[activeInstance] === 'undefined'
+  ) {
+    return <EvaluationUnavailableNotification />
+  }
+
   return (
     <>
       <Head>
@@ -123,7 +131,7 @@ function ActivityEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={
-              instanceResults[activeInstance].hasSampleSolution
+              instanceResults[activeInstance]?.hasSampleSolution
                 ? showSolution
                 : false
             }

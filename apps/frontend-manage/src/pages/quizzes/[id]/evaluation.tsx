@@ -2,9 +2,9 @@ import { useQuery } from '@apollo/client'
 import ActivityEvaluation from '@components/evaluation/ActivityEvaluation'
 import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import EvaluationUnavailableNotification from '~/components/evaluation/EvaluationUnavailableNotification'
 
 function Evaluation() {
   const router = useRouter()
@@ -35,16 +35,7 @@ function Evaluation() {
       data.liveQuizEvaluation.feedbacks?.length === 0 &&
       data.liveQuizEvaluation.confusionFeedbacks?.length === 0)
   ) {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center">
-        <UserNotification
-          className={{
-            root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
-          }}
-          message={t('manage.evaluation.evaluationNotYetAvailable')}
-        />
-      </div>
-    )
+    return <EvaluationUnavailableNotification />
   }
 
   const evaluation = data.liveQuizEvaluation

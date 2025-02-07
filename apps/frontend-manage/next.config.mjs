@@ -9,8 +9,8 @@ let nextConfig = {
   async redirects() {
     return [
       {
-        source: '/sessions/:id',
-        destination: '/quizzes/:id',
+        source: '/sessions/:id*',
+        destination: '/quizzes/:id*',
         permanent: true,
       },
     ]
