@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.24...v3.3.0-alpha.25) (2025-02-07)
+
+
+### Features
+
+* add support for case study elements in group activities ([#4496](https://github.com/uzh-bf/klicker-uzh/issues/4496)) ([c469cda](https://github.com/uzh-bf/klicker-uzh/commit/c469cda7a8c4417b49cc4c57c35ab841fe47321e))
+* add support for case study elements in live quizzes ([#4494](https://github.com/uzh-bf/klicker-uzh/issues/4494)) ([43322e8](https://github.com/uzh-bf/klicker-uzh/commit/43322e81a7fab1c778edd4b3eb970196806de391))
+* implement frontend components for case study element student view ([#4484](https://github.com/uzh-bf/klicker-uzh/issues/4484)) ([b783a81](https://github.com/uzh-bf/klicker-uzh/commit/b783a81bd71eae6d0ab33baeff450b2c49e48c3e))
+* implement support for case study elements in practice quizzes, corresponding grading logic, and evaluation computation ([#4486](https://github.com/uzh-bf/klicker-uzh/issues/4486)) ([8db0541](https://github.com/uzh-bf/klicker-uzh/commit/8db05415f6cee50f2824f3aee44276cc13564018))
+* support new case study elements on activity evaluation for asynchronous activities with scatter plots ([#4492](https://github.com/uzh-bf/klicker-uzh/issues/4492)) ([1409952](https://github.com/uzh-bf/klicker-uzh/commit/1409952666eee73f294b8149ea13c7d0ac2d3f79))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** fix redirect from /sessions to /quizzes evaluation and resolve bug with undefined evaluation instance ([#4507](https://github.com/uzh-bf/klicker-uzh/issues/4507)) ([035c81d](https://github.com/uzh-bf/klicker-uzh/commit/035c81d4b630037fd609b7a84031a2fd6b5b8665))
+* **apps/frontend-manage:** make sure that live quiz evaluation is shown for past completed live quizzes with feedbacks only ([#4503](https://github.com/uzh-bf/klicker-uzh/issues/4503)) ([edcbafb](https://github.com/uzh-bf/klicker-uzh/commit/edcbafb8df9de368734eb069932c9d879dafd670))
+* **apps/frontend-manage:** remove loading states in element edit modal causeed by missing answer collection ([58887c9](https://github.com/uzh-bf/klicker-uzh/commit/58887c99e3b56caa745eac881cc57a6c9c99fcfb))
+* **apps/frontend-pwa:** ensure that inputs on case study element are correctly disabled after answer submission ([#4499](https://github.com/uzh-bf/klicker-uzh/issues/4499)) ([8b8908e](https://github.com/uzh-bf/klicker-uzh/commit/8b8908e62067fa1f94018273c05b71a4ead8cd0b))
+* **apps/office-addin:** update manifest version and fix URL replacement ([723bf20](https://github.com/uzh-bf/klicker-uzh/commit/723bf202fbac9cd8511849b222e02e97f9cdc808))
+* **packages/graphql:** ensure that results and anonymous results are correctly combined for case study element instances ([9f37966](https://github.com/uzh-bf/klicker-uzh/commit/9f37966d9cffd4c6b01267194d72ec15f8ff26c2))
+* resolve caching issues related to answer collections and separate querying logic for improved efficiency ([#4498](https://github.com/uzh-bf/klicker-uzh/issues/4498)) ([661f871](https://github.com/uzh-bf/klicker-uzh/commit/661f87198f51958a21eb49572458e249fdc9e790))
+* resolve issues with live quiz wizard validation, update student UI components, and upgrade cypress ([#4502](https://github.com/uzh-bf/klicker-uzh/issues/4502)) ([16ccdf6](https://github.com/uzh-bf/klicker-uzh/commit/16ccdf6fd0cb01feda8ba3e0c34cb973b9059eb5))
+
+
+### Other
+
+* **apps/frontend-manage:** add missing legends and axis labels to case study evaluation views ([ee515e0](https://github.com/uzh-bf/klicker-uzh/commit/ee515e0d83bdb319c6cda9ce25a1317df8f51a4d))
+
+
+### Enhancements
+
+* add element instance structure and extend seed for case study elements ([#4483](https://github.com/uzh-bf/klicker-uzh/issues/4483)) ([7496832](https://github.com/uzh-bf/klicker-uzh/commit/7496832beb42ef8ea45b21b909c23d06bc906b51))
+* add evaluation components and computation logic for case study elements in practice quizzes ([#4487](https://github.com/uzh-bf/klicker-uzh/issues/4487)) ([c628725](https://github.com/uzh-bf/klicker-uzh/commit/c6287259828c97774c59a900d9db1d7973bf9339))
+* add histogram evaluation plots for case study elements ([#4493](https://github.com/uzh-bf/klicker-uzh/issues/4493)) ([89d3a67](https://github.com/uzh-bf/klicker-uzh/commit/89d3a67aa10aa97cc86724a8b246f1e1f0243da9))
+* add list of activities affected by element instance update to UI and resolve logic issues ([#4504](https://github.com/uzh-bf/klicker-uzh/issues/4504)) ([90230a5](https://github.com/uzh-bf/klicker-uzh/commit/90230a52d0dd3d4168b8359cf555790e8b1fbdfa))
+* add manipulation functionality (creation and editing) for case-study elements ([#4481](https://github.com/uzh-bf/klicker-uzh/issues/4481)) ([9c65728](https://github.com/uzh-bf/klicker-uzh/commit/9c6572859a5a05c84172ad883c70f8c7bd60a32f))
+* add support for case study elements to microlearnings and enable reloading evaluation ([#4490](https://github.com/uzh-bf/klicker-uzh/issues/4490)) ([a74a738](https://github.com/uzh-bf/klicker-uzh/commit/a74a738180936409913081761005cd884a5a0c26))
+* **apps/frontend-manage:** add frontend components for case study sample solution definition ([#4478](https://github.com/uzh-bf/klicker-uzh/issues/4478)) ([597b290](https://github.com/uzh-bf/klicker-uzh/commit/597b2909bd71b9129a5d5789563cce9d18384c29))
+* **apps/frontend-manage:** implement element preview for case study elements on modal ([#4485](https://github.com/uzh-bf/klicker-uzh/issues/4485)) ([2234b0f](https://github.com/uzh-bf/klicker-uzh/commit/2234b0f85fc7210e465805533287a39241daa307))
+* **apps/frontend-manage:** introduce validation logic and error parsing for case study elements ([#4479](https://github.com/uzh-bf/klicker-uzh/issues/4479)) ([13afc8a](https://github.com/uzh-bf/klicker-uzh/commit/13afc8a281a577008995973ba9c7cceb776a6725))
+* **apps/frontend-pwa:** show cases of case study sequentially in live quiz ([#4500](https://github.com/uzh-bf/klicker-uzh/issues/4500)) ([efc26de](https://github.com/uzh-bf/klicker-uzh/commit/efc26de7e3b20e18db7bdc4458fca0c439d2f6ca))
+* **cypress:** extend test coverage to include element instance updates ([#4506](https://github.com/uzh-bf/klicker-uzh/issues/4506)) ([b34f1b2](https://github.com/uzh-bf/klicker-uzh/commit/b34f1b292dae3b842f62eb2a2db0d8a64841c997))
+* define type structure for case study element and implement element modal UI (no sample solution) ([#4477](https://github.com/uzh-bf/klicker-uzh/issues/4477)) ([05ca31b](https://github.com/uzh-bf/klicker-uzh/commit/05ca31bf73b67b392ed347f32e51010a8d3ce8ae))
+
 ## [3.3.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.23...v3.3.0-alpha.24) (2025-02-06)
 
 
