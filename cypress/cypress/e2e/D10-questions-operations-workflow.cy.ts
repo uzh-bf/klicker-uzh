@@ -157,6 +157,7 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Verify that local storage is correctly cleared after creating a question', function () {
+    cy.loginLecturer()
     cy.get('[data-cy="create-question"]').click()
 
     // create SC question with content
@@ -350,6 +351,7 @@ describe('Create different types of elements (with and without sample solution) 
   })
 
   it('Cleanup: Delete the auto-saved element', function () {
+    cy.loginLecturer()
     cy.deleteElement({ elementName: this.data.autoSave.titleEdited })
   })
   // #endregion
@@ -913,6 +915,8 @@ describe('Create different types of elements (with and without sample solution) 
   // ! Verification
   // #region
   it('Verify that all answer collections have been deleted successfully', function () {
+    cy.loginLecturer()
+
     // validate that no collections except from the seeded ones remain
     cy.task('verifyDeletionAnswerCollections').then((result) => {
       // check if the verification was successful
