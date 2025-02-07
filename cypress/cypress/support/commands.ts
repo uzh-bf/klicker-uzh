@@ -192,7 +192,7 @@ interface CreateChoicesQuestionArgs {
   title: string
   content: string
   explanation?: string
-  choices: { content: string; correct?: boolean }[]
+  choices: { content: string; feedback?: string; correct?: boolean }[]
   multiplier?: string
 }
 
@@ -249,6 +249,19 @@ Cypress.Commands.add(
         if (choice.correct) {
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
+      })
+    }
+
+    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
+      cy.get('[data-cy="configure-answer-feedbacks"]').click()
+
+      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+          .realClick()
+          .type(choice.feedback)
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
+          choice.feedback
+        )
       })
     }
 
