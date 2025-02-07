@@ -52,7 +52,12 @@ import {
   PracticeQuiz,
   StackFeedback,
 } from './practiceQuiz.js'
-import { Element, ElementInstance, Tag } from './question.js'
+import {
+  Element,
+  ElementInstance,
+  InstanceUpdateActivityInfo,
+  Tag,
+} from './question.js'
 import {
   AnswerCollection,
   CatalogObject,
@@ -505,6 +510,18 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return QuestionService.getSingleQuestion(args, ctx)
+        },
+      }),
+
+      getInstanceUpdateActivities: asUser.field({
+        nullable: true,
+        type: [InstanceUpdateActivityInfo],
+        args: {
+          elementId: t.arg.int({ required: true }),
+          hasSampleSolution: t.arg.boolean({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.getInstanceUpdateActivities(args, ctx)
         },
       }),
 

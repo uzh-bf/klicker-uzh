@@ -1,33 +1,34 @@
 import * as DB from '@klicker-uzh/prisma'
-import type {
-  CaseStudySolution as CaseStudySolutionType,
-  ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
-  ElementOptionsChoices as ElementOptionsChoicesType,
-  ElementOptionsFreeText as ElementOptionsFreeTextType,
-  ElementOptionsNumerical as ElementOptionsNumericalType,
-  ElementOptionsSelection as ElementOptionsSelectionType,
-  IInstanceEvaluationCaseStudy,
-  IInstanceEvaluationChoices,
-  IInstanceEvaluationContent,
-  IInstanceEvaluationFlashcard,
-  IInstanceEvaluationFreeText,
-  IInstanceEvaluationNumerical,
-  IInstanceEvaluationSelection,
-  IQuestionFeedback,
-  SingleCaseStudyResponse as SingleCaseStudyResponseType,
-  SingleChoiceResponse as SingleChoiceResponseType,
-  SingleFreeTextResponse as SingleFreeTextResponseType,
-  SingleNumericalResponse as SingleNumericalRepsonseType,
-  SingleQuestionResponseCaseStudy as SingleQuestionResponseCaseStudyType,
-  SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
-  SingleQuestionResponseContent as SingleQuestionResponseContentType,
-  SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
-  SingleQuestionResponseSelection as SingleQuestionResponseSelectionType,
-  SingleQuestionResponseValue as SingleQuestionResponseValueType,
-  SingleSelectionResponse as SingleSelectionResponseType,
+import {
+  ActivityType as ActivityTypeEnum,
+  type CaseStudySolution as CaseStudySolutionType,
+  type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
+  type ElementOptionsChoices as ElementOptionsChoicesType,
+  type ElementOptionsFreeText as ElementOptionsFreeTextType,
+  type ElementOptionsNumerical as ElementOptionsNumericalType,
+  type ElementOptionsSelection as ElementOptionsSelectionType,
+  type IInstanceEvaluationCaseStudy,
+  type IInstanceEvaluationChoices,
+  type IInstanceEvaluationContent,
+  type IInstanceEvaluationFlashcard,
+  type IInstanceEvaluationFreeText,
+  type IInstanceEvaluationNumerical,
+  type IInstanceEvaluationSelection,
+  type IQuestionFeedback,
+  type SingleCaseStudyResponse as SingleCaseStudyResponseType,
+  type SingleChoiceResponse as SingleChoiceResponseType,
+  type SingleFreeTextResponse as SingleFreeTextResponseType,
+  type SingleNumericalResponse as SingleNumericalRepsonseType,
+  type SingleQuestionResponseCaseStudy as SingleQuestionResponseCaseStudyType,
+  type SingleQuestionResponseChoices as SingleQuestionResponseChoicesType,
+  type SingleQuestionResponseContent as SingleQuestionResponseContentType,
+  type SingleQuestionResponseFlashcard as SingleQuestionResponseFlashcardType,
+  type SingleQuestionResponseSelection as SingleQuestionResponseSelectionType,
+  type SingleQuestionResponseValue as SingleQuestionResponseValueType,
+  type SingleSelectionResponse as SingleSelectionResponseType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { ElementFeedbackRef } from './analytics.js'
+import { ActivityType, ElementFeedbackRef } from './analytics.js'
 import {
   CaseStudyCaseSolution,
   CaseStudyElementOptions,
@@ -44,7 +45,7 @@ import {
   SelectionElementOptions,
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
-import { CaseStudyCaseResponse } from './practiceQuiz.js'
+import { CaseStudyCaseResponse, PublicationStatus } from './practiceQuiz.js'
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -749,6 +750,22 @@ export const ElementInstance = ElementInstanceRef.implement({
     }),
   }),
 })
+
+export interface IInstanceUpdateActivityInfo {
+  activityName: string
+  activityType: ActivityTypeEnum
+  status: DB.PublicationStatus
+}
+export const InstanceUpdateActivityInfoRef =
+  builder.objectRef<IInstanceUpdateActivityInfo>('InstanceUpdateActivityInfo')
+export const InstanceUpdateActivityInfo =
+  InstanceUpdateActivityInfoRef.implement({
+    fields: (t) => ({
+      activityName: t.exposeString('activityName'),
+      activityType: t.expose('activityType', { type: ActivityType }),
+      status: t.expose('status', { type: PublicationStatus }),
+    }),
+  })
 
 export interface ITag
   extends Omit<DB.Tag, 'originalId' | 'ownerId' | 'createdAt' | 'updatedAt'> {}

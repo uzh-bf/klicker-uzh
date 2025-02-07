@@ -485,8 +485,14 @@ function ElementEditModal({
               />
             </div>
 
-            {mode === ElementEditMode.EDIT && (
+            {mode === ElementEditMode.EDIT && elementId && (
               <InstanceUpdateSwitch
+                elementId={elementId}
+                hasSampleSolution={
+                  'options' in values && 'hasSampleSolution' in values.options
+                    ? values.options.hasSampleSolution
+                    : undefined
+                }
                 updateInstances={updateInstances}
                 setUpdateInstances={setUpdateInstances}
               />
