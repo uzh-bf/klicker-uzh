@@ -216,7 +216,7 @@ function ActivityEvaluation({
           (activeStack === 'feedbacks' ||
             activeStack === 'confusion' ||
             activeStack === 'leaderboard') &&
-            'h-14'
+            'h-[2.3rem]'
         )}
       >
         <EvaluationFooter
