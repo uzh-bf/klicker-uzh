@@ -30,10 +30,7 @@ function officeAddinPlugin({
         )
 
         // Get the output filename based on the input path
-        const fileName = manifestPath
-          .split('/')
-          .pop()
-          .replace('manifest-', 'manifest.')
+        const fileName = manifestPath.split('/').pop()
 
         this.emitFile({
           type: 'asset',
