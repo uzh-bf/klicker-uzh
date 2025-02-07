@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.23...v3.3.0-alpha.24) (2025-02-06)
+
+
+### Enhancements
+
+* **apps/office-addin-v2:** rework office adding for improved stability, add redirect from sessions to quizzes for manage frontend ([#4505](https://github.com/uzh-bf/klicker-uzh/issues/4505)) ([e4bf983](https://github.com/uzh-bf/klicker-uzh/commit/e4bf98352646d9ff239f49d3d9b5d81b5db15e82))
+
 ## [3.3.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.22...v3.3.0-alpha.23) (2025-01-27)
 
 

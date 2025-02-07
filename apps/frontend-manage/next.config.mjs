@@ -6,6 +6,15 @@ let nextConfig = {
   ...getNextBaseConfig({
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
   }),
+  async redirects() {
+    return [
+      {
+        source: '/sessions/:id',
+        destination: '/quizzes/:id',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 if (process.env.NODE_ENV !== 'test') {
