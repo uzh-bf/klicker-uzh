@@ -24,7 +24,7 @@ function officeAddinPlugin({
       for (const manifestPath of manifestPaths) {
         // Read and process manifest.xml
         const manifestContent = await fs.readFile(manifestPath, 'utf-8')
-        const processedManifest = manifestContent.replace(
+        const processedManifest = manifestContent.replaceAll(
           devUrl,
           process.env.BUILD === 'production' ? prodUrl : devUrl
         )
