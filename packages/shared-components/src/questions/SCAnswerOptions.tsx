@@ -86,7 +86,11 @@ export function SCAnswerOptions({
                 </Button.Label>
               </Button>
               {hasFeedback && (
-                <ChoiceFeedback feedback={feedbacks[choice.ix]!} />
+                <ChoiceFeedback
+                  elementIx={elementIx}
+                  choiceIx={choice.ix}
+                  feedback={feedbacks[choice.ix]!}
+                />
               )}
             </div>
           )

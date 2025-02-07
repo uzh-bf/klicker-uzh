@@ -57,6 +57,7 @@ function InstanceUpdateSwitch({
               <div
                 key={`instance-update-list-${activity.activityName}`}
                 className="border-b border-gray-200"
+                data-cy={`instance-update-list-activity-${activity.activityName}`}
               >
                 <div className="flex items-center gap-2 py-0.5">
                   <span

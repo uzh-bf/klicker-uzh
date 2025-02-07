@@ -6,10 +6,16 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface ChoiceFeedbackProps {
+  elementIx: number
+  choiceIx: number
   feedback: QuestionFeedback
 }
 
-function ChoiceFeedback({ feedback }: ChoiceFeedbackProps) {
+function ChoiceFeedback({
+  elementIx,
+  choiceIx,
+  feedback,
+}: ChoiceFeedbackProps) {
   return (
     <div
       className={twMerge(
@@ -26,7 +32,10 @@ function ChoiceFeedback({ feedback }: ChoiceFeedbackProps) {
       >
         <FontAwesomeIcon icon={feedback.correct ? faCheck : faX} />
       </div>
-      <div className="py-2 text-gray-700">
+      <div
+        className="py-2 text-gray-700"
+        data-cy={`sc-${elementIx}-feedback-${choiceIx}`}
+      >
         <Markdown content={feedback.feedback ?? undefined} />
       </div>
     </div>
