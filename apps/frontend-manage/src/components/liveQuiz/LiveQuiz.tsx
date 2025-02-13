@@ -8,6 +8,7 @@ import {
   faCode,
   faPencil,
   faPlay,
+  faQrcode,
   faTrash,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
@@ -30,6 +31,7 @@ import { WizardMode } from '../activities/ElementCreation'
 import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
+import LiveQuizQRModal from './cockpit/LiveQuizQRModal'
 
 function LiveQuiz({
   quiz,
@@ -108,6 +110,7 @@ function LiveQuiz({
   const [showDetails, setShowDetails] = useState<boolean>(false)
   const [selectedLiveQuiz, setSelectedLiveQuiz] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
+  const [qrModalOpen, setQrModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
 
@@ -183,6 +186,27 @@ function LiveQuiz({
                           (instance) =>
                             typeof instance !== 'undefined' && instance !== null
                         )}
+                    />
+                  </>
+                )}
+
+                {quiz.status !== PublicationStatus.Ended && (
+                  <>
+                    <Button
+                      basic
+                      onClick={() => setQrModalOpen(true)}
+                      className={{
+                        root: 'hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm',
+                      }}
+                      data={{ cy: `show-qr-modal-${quiz.name}` }}
+                    >
+                      <FontAwesomeIcon icon={faQrcode} size="sm" />
+                      {t('manage.general.qrCode')}
+                    </Button>
+                    <LiveQuizQRModal
+                      quizId={quiz.id}
+                      open={qrModalOpen}
+                      setOpen={setQrModalOpen}
                     />
                   </>
                 )}

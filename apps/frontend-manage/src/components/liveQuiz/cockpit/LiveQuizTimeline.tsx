@@ -2,6 +2,7 @@ import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import {
   faCode,
   faPlay,
+  faQrcode,
   faStop,
   faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
@@ -48,6 +49,7 @@ function LiveQuizTimeline({
   const { locale } = useRouter()
 
   const [cancelLiveQuizModal, setCancelLiveQuizModal] = useState(false)
+  const [qrModal, setQRModal] = useState(false)
   const [inCooldown, setInCooldown] = useState<boolean>(false)
 
   // logic: keep track of the current and previous block
@@ -134,7 +136,16 @@ function LiveQuizTimeline({
                 elements={blocks.flatMap((block) => block.elements ?? [])}
               />
             )}
-            <LiveQuizQRModal quizId={quizId} />
+            <Button
+              className={{ root: 'h-8 sm:w-max' }}
+              onClick={() => setQRModal(true)}
+              data={{ cy: `qr-modal-${quizId}` }}
+            >
+              <Button.Icon>
+                <FontAwesomeIcon icon={faQrcode} />
+              </Button.Icon>
+              {t('manage.general.qrCode')}
+            </Button>
             <a
               className="flex-1"
               href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${quizId}`}
@@ -287,6 +298,7 @@ function LiveQuizTimeline({
           />
         </>
       )}
+      <LiveQuizQRModal quizId={quizId} open={qrModal} setOpen={setQRModal} />
     </div>
   )
 }

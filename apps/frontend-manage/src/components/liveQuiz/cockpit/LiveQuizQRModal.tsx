@@ -1,17 +1,22 @@
 import { useQuery } from '@apollo/client'
-import { faQrcode } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import QR from '@pages/qr/[...args]'
 import { Button, H3, Modal, Prose } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-function LiveQuizQRModal({ quizId }: { quizId: string }): React.ReactElement {
+function LiveQuizQRModal({
+  quizId,
+  open,
+  setOpen,
+}: {
+  quizId: string
+  open: boolean
+  setOpen: Dispatch<SetStateAction<boolean>>
+}): React.ReactElement {
   const t = useTranslations()
-  const [modalOpen, setModalOpen] = useState(false)
 
   const { data } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -23,21 +28,9 @@ function LiveQuizQRModal({ quizId }: { quizId: string }): React.ReactElement {
 
   return (
     <Modal
-      title="QR Code"
-      trigger={
-        <Button
-          className={{ root: '!mr-0 w-[41%] sm:w-max' }}
-          onClick={() => setModalOpen(true)}
-          data={{ cy: `qr-modal-trigger-${shortname}` }}
-        >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faQrcode} />
-          </Button.Icon>
-          {t('manage.general.qrCode')}
-        </Button>
-      }
-      open={modalOpen}
-      onClose={() => setModalOpen(false)}
+      title={t('manage.general.qrCode')}
+      open={open}
+      onClose={() => setOpen(false)}
       className={{
         content: 'h-max max-h-full !w-max max-w-6xl overflow-y-auto',
       }}
