@@ -117,6 +117,7 @@ function LiveQuizTimeline({
           <div className="flex w-full flex-row flex-wrap gap-2 sm:w-max">
             <Button
               onClick={() => setEmbedModalOpen(true)}
+              disabled={isFeedbackQuiz}
               className={{ root: 'h-8' }}
               data={{ cy: 'embed-evaluation-cockpit' }}
             >
