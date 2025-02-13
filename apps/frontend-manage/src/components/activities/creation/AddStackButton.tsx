@@ -109,10 +109,10 @@ function AddStackButton({
             </Button.Icon>
             <Button.Label>
               {type === 'block'
-                ? t('manage.activityWizard.newStackSelected', {
+                ? t('manage.activityWizard.newBlockSelected', {
                     count: Object.keys(selection).length,
                   })
-                : t('manage.activityWizard.newBlockSelected', {
+                : t('manage.activityWizard.newStackSelected', {
                     count: Object.keys(selection).length,
                   })}
             </Button.Label>

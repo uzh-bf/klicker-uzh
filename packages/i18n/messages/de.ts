@@ -1187,11 +1187,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       timeLimitTooltip: 'Zeit-Limit für Block {blockIx} in Sekunden',
       newBlock: 'Neuer Block',
       newStack: 'Neuer Stack',
-      newBlockSelected: '1 Block mit {count} Fragen anfügen',
+      newBlockSelected: '1 Block mit {count} Elementen hinzufügen',
       newStackSelected: '1 Stack mit {count} Elementen hinzufügen',
       pasteSelection: '{count} Fragen hinzufügen',
       pasteSelectionElements: '{count} Elemente hinzufügen',
-      pasteSingleElementsBlock: '{count} Blocks mit 1 Frage anfügen',
+      pasteSingleElementsBlock: '{count} Blöcke mit 1 Element anfügen',
       pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
