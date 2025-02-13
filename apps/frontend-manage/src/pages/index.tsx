@@ -467,7 +467,6 @@ function Index() {
           setShowRecoveryPrompt(false)
           setIsQuestionCreationModalOpen(true)
         }}
-        editMode={false}
       />
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal />

@@ -197,6 +197,7 @@ function Question({
             </Button>
             {showRecoveryPrompt && (
               <RecoveryPrompt
+                editMode
                 open={showRecoveryPrompt}
                 onRecovery={() => {
                   setShowRecoveryPrompt(false)
@@ -207,7 +208,6 @@ function Question({
                   setShowRecoveryPrompt(false)
                   setIsModificationModalOpen(true)
                 }}
-                editMode={false}
               />
             )}
             {isModificationModalOpen && (

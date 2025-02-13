@@ -7,12 +7,12 @@ function RecoveryPrompt({
   open,
   onRecovery,
   onDiscard,
-  editMode,
+  editMode = false,
 }: {
   open: boolean
   onRecovery: () => void
   onDiscard: () => void
-  editMode: boolean
+  editMode?: boolean
 }) {
   const t = useTranslations()
 
