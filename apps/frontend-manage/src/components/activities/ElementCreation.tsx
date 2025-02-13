@@ -108,7 +108,9 @@ function ElementCreation({
     loading: loadingCourses,
     error: errorCourses,
     data: dataCourses,
-  } = useQuery(GetActiveUserCoursesDocument)
+  } = useQuery(GetActiveUserCoursesDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
 
   const courseSelection = useMemo(
     (): ElementSelectCourse[] =>
