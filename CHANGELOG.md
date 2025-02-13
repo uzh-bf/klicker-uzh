@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.25...v3.3.0-alpha.26) (2025-02-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that course selection in wizards updates correctly ([b70c718](https://github.com/uzh-bf/klicker-uzh/commit/b70c7185ffee5815c67ba231d4f5779c6a55bf43))
+* **apps/frontend-manage:** fix translations in stack and block creation step ([49b4920](https://github.com/uzh-bf/klicker-uzh/commit/49b4920a45fd82998c0a381fb33d6901e9919223))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add QR modal to live quiz list for embedding ([#4508](https://github.com/uzh-bf/klicker-uzh/issues/4508)) ([7038636](https://github.com/uzh-bf/klicker-uzh/commit/7038636e117bc2871975624e638ac3bb3f1b74b7))
+
 ## [3.3.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.24...v3.3.0-alpha.25) (2025-02-07)
 
 
