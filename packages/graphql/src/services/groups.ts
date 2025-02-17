@@ -2083,6 +2083,23 @@ export async function finalizeGroupActivityGrading(
     (instance) => instance.results
   )
 
+  // create a map between participants and achievements
+  const participantAchievementMap = gradedInstances.reduce<
+    Record<string, { leaderboard: boolean; achievements: number[] }>
+  >((acc, instance) => {
+    instance.group.participants.forEach((participant) => {
+      acc[participant.id] = {
+        achievements: [9],
+        leaderboard: participant.leaderboards.length > 0,
+      }
+      if (instance.results!.passed) {
+        acc[participant.id]!.achievements.push(8)
+      }
+    })
+
+    return acc
+  }, {})
+
   await ctx.prisma.$transaction(async (prisma) => {
     // increment groupActivityScore on participantGroup
     for (const instance of gradedInstances) {
@@ -2097,23 +2114,6 @@ export async function finalizeGroupActivityGrading(
         },
       })
     }
-
-    // create a map between participants and achievements
-    const participantAchievementMap = gradedInstances.reduce<
-      Record<string, { leaderboard: boolean; achievements: number[] }>
-    >((acc, instance) => {
-      instance.group.participants.forEach((participant) => {
-        acc[participant.id] = {
-          achievements: [9],
-          leaderboard: participant.leaderboards.length > 0,
-        }
-        if (instance.results!.passed) {
-          acc[participant.id]!.achievements.push(8)
-        }
-      })
-
-      return acc
-    }, {})
 
     // award the achievements to the participants
     for (const [participantId, results] of Object.entries(
@@ -2201,7 +2201,7 @@ export async function finalizeGroupActivityGrading(
       }
 
       // update the student timeline entry with the awarded points and / or XP
-      upsertDailyTimelineEntry({
+      await upsertDailyTimelineEntry({
         prisma,
         participantId,
         courseId: updatedGroupActivity.courseId,
