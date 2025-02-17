@@ -22,6 +22,7 @@ import {
   PrismaClient,
   type QuestionResponse as PrismaQuestionResponse,
   ResponseCorrectness,
+  TimelineEntryType,
   UserRole,
 } from '@klicker-uzh/prisma'
 import type {
@@ -2620,6 +2621,59 @@ async function updateLeaderboardOnQuestionResponse({
   })
 }
 
+async function upsertDailyTimelineEntry({
+  prisma,
+  participantId,
+  courseId,
+  xpAwarded,
+  pointsAwarded,
+}: {
+  prisma: PrismaTransactionClient
+  participantId: string
+  courseId: string
+  xpAwarded: number
+  pointsAwarded: number | null
+}) {
+  const currentDate = dayjs().startOf('day').toDate()
+
+  await prisma.timelineEntry.upsert({
+    where: {
+      participantId_courseId_timestamp_type: {
+        participantId,
+        courseId,
+        timestamp: currentDate,
+        type: TimelineEntryType.DAILY,
+      },
+    },
+    create: {
+      type: TimelineEntryType.DAILY,
+      timestamp: currentDate,
+      collectedPoints: pointsAwarded ?? 0,
+      collectedXp: xpAwarded,
+      computedAt: new Date(),
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+      participant: {
+        connect: {
+          id: participantId,
+        },
+      },
+    },
+    update: {
+      collectedPoints: {
+        increment: pointsAwarded ?? 0,
+      },
+      collectedXp: {
+        increment: xpAwarded,
+      },
+      computedAt: new Date(),
+    },
+  })
+}
+
 export async function respondToQuestion(
   {
     courseId,
@@ -2854,6 +2908,20 @@ export async function respondToQuestion(
           prisma,
           participantId: ctx.user.sub,
           courseId,
+          pointsAwarded,
+        })
+      }
+
+      // if either XP or points are awarded, update the daily student timeline entry
+      if (
+        xpAwarded > 0 ||
+        (typeof pointsAwarded === 'number' && pointsAwarded !== null)
+      ) {
+        await upsertDailyTimelineEntry({
+          prisma,
+          participantId: ctx.user.sub,
+          courseId,
+          xpAwarded,
           pointsAwarded,
         })
       }
