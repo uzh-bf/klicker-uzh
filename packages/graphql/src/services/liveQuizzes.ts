@@ -13,6 +13,7 @@ import {
   ElementType,
   LeaderboardType,
   PublicationStatus,
+  TimelineEntryType,
 } from '@klicker-uzh/prisma'
 import type {
   BlockInput,
@@ -1614,6 +1615,59 @@ export async function endLiveQuiz(
               })
             )
         )
+
+        // TODO: once the entire group activity grading finalziation is refactored to a proper transaction, use the upsertDailyTimelineEntry function here (from the stacks service)
+        // update the student timeline entry with the awarded points and / or XP
+        // (XP awarded for live quizzes outside of courses will not be considered for the timeline at the moment)
+        if (quiz.courseId !== null) {
+          const currentDate = dayjs().startOf('day').toDate()
+          promises = promises
+            .concat(
+              existingParticipants.filter(
+                // check if either points or XP were awarded to the participant under consideration
+                ({ score, xp, hasParticipation }) =>
+                  typeof xp !== 'undefined' ||
+                  (typeof score !== 'undefined' && hasParticipation)
+              )
+            )
+            .map(({ id, score, xp, hasParticipation }) =>
+              ctx.prisma.timelineEntry.upsert({
+                where: {
+                  participantId_courseId_timestamp_type: {
+                    participantId: id,
+                    courseId: quiz.courseId!,
+                    timestamp: currentDate,
+                    type: TimelineEntryType.DAILY,
+                  },
+                },
+                create: {
+                  type: TimelineEntryType.DAILY,
+                  timestamp: currentDate,
+                  collectedPoints: hasParticipation ? score : undefined,
+                  collectedXp: xp,
+                  computedAt: new Date(),
+                  course: {
+                    connect: {
+                      id: quiz.courseId!,
+                    },
+                  },
+                  participant: {
+                    connect: {
+                      id,
+                    },
+                  },
+                },
+                update: {
+                  collectedPoints:
+                    hasParticipation && typeof score === 'number'
+                      ? { increment: score }
+                      : undefined,
+                  collectedXp: typeof xp === 'number' ? { increment: xp } : 0,
+                  computedAt: new Date(),
+                },
+              })
+            )
+        }
 
         // award new achievements
         promises = promises.concat(
