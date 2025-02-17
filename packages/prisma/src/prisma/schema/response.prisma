@@ -129,3 +129,30 @@ model ElementFeedback {
 
   @@unique([participantId, elementInstanceId])
 }
+
+enum TimelineEntryType {
+  DAILY
+  WEEKLY
+}
+
+model TimelineEntry {
+  id Int @id @default(autoincrement())
+
+  type       TimelineEntryType
+  timestamp  DateTime          @db.Date
+  computedAt DateTime          @default(now()) @db.Date
+
+  collectedPoints Float @default(0)
+  collectedXp     Float @default(0)
+
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  courseId String? @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, courseId, timestamp, type])
+}
