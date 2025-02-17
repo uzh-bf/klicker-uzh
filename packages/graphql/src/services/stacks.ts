@@ -2634,20 +2634,18 @@ export async function upsertDailyTimelineEntry({
   xpAwarded?: number
   pointsAwarded?: number
 }) {
-  const currentDate = dayjs().startOf('day').toDate()
-
   await prisma.timelineEntry.upsert({
     where: {
       participantId_courseId_timestamp_type: {
         participantId,
         courseId,
-        timestamp: currentDate,
+        timestamp: new Date(),
         type: TimelineEntryType.DAILY,
       },
     },
     create: {
       type: TimelineEntryType.DAILY,
-      timestamp: currentDate,
+      timestamp: new Date(),
       collectedPoints: pointsAwarded,
       collectedXp: xpAwarded,
       computedAt: new Date(),
