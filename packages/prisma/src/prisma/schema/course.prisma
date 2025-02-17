@@ -45,6 +45,7 @@ model Course {
   activityProgresses         ActivityProgress[]
   responses                  QuestionResponse[]
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
+  timelineEntries            TimelineEntry[]
 
   permissions Permission[]
 

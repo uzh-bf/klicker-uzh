@@ -22,6 +22,7 @@ import {
   PrismaClient,
   type QuestionResponse as PrismaQuestionResponse,
   ResponseCorrectness,
+  TimelineEntryType,
   UserRole,
 } from '@klicker-uzh/prisma'
 import type {
@@ -2620,6 +2621,59 @@ async function updateLeaderboardOnQuestionResponse({
   })
 }
 
+export async function upsertDailyTimelineEntry({
+  prisma,
+  participantId,
+  courseId,
+  xpAwarded,
+  pointsAwarded,
+}: {
+  prisma: PrismaTransactionClient
+  participantId: string
+  courseId: string
+  xpAwarded?: number
+  pointsAwarded?: number
+}) {
+  const currentDate = dayjs().startOf('day').toDate()
+
+  await prisma.timelineEntry.upsert({
+    where: {
+      participantId_courseId_timestamp_type: {
+        participantId,
+        courseId,
+        timestamp: currentDate,
+        type: TimelineEntryType.DAILY,
+      },
+    },
+    create: {
+      type: TimelineEntryType.DAILY,
+      timestamp: currentDate,
+      collectedPoints: pointsAwarded,
+      collectedXp: xpAwarded,
+      computedAt: new Date(),
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+      participant: {
+        connect: {
+          id: participantId,
+        },
+      },
+    },
+    update: {
+      collectedPoints:
+        typeof pointsAwarded === 'number'
+          ? { increment: pointsAwarded }
+          : undefined,
+      collectedXp:
+        typeof xpAwarded === 'number' ? { increment: xpAwarded } : undefined,
+      computedAt: new Date(),
+    },
+  })
+}
+
 export async function respondToQuestion(
   {
     courseId,
@@ -2855,6 +2909,20 @@ export async function respondToQuestion(
           participantId: ctx.user.sub,
           courseId,
           pointsAwarded,
+        })
+      }
+
+      // if either XP or points are awarded, update the daily student timeline entry
+      if (
+        xpAwarded > 0 ||
+        (typeof pointsAwarded === 'number' && pointsAwarded !== null)
+      ) {
+        await upsertDailyTimelineEntry({
+          prisma,
+          participantId: ctx.user.sub,
+          courseId,
+          xpAwarded,
+          pointsAwarded: pointsAwarded ?? undefined,
         })
       }
     }
