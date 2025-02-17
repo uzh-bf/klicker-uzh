@@ -1540,7 +1540,7 @@ export async function endLiveQuiz(
       // execute XP and points in the same transaction to prevent issues when one fails
       // the live quiz update later on should never fail, but we need the return value (keep separate)
       await ctx.prisma.$transaction(async (prisma) => {
-        // Process XP updates
+        // process XP updates
         for (const participant of existingParticipants) {
           if (typeof participant.xp !== 'undefined') {
             await prisma.participant.update({
@@ -1554,14 +1554,15 @@ export async function endLiveQuiz(
           }
         }
 
-        // Process course-related updates only if quiz has leaderboard and courseId
+        // if the live quiz is part of a course, update the course leaderboard
+        // with the accumulated points and award achievements
         if (quizLB && quiz.courseId) {
           for (const participant of existingParticipants) {
-            // Update course leaderboard entries
             if (
               typeof participant.score !== 'undefined' &&
               participant.hasParticipation
             ) {
+              // award points, if the student is a participant in the course
               await prisma.leaderboardEntry.upsert({
                 where: {
                   type_participantId_courseId: {
@@ -1600,7 +1601,7 @@ export async function endLiveQuiz(
               })
             }
 
-            // Update daily timeline entries
+            // update daily timeline entries
             if (
               typeof participant.xp !== 'undefined' ||
               (typeof participant.score !== 'undefined' &&
@@ -1617,7 +1618,7 @@ export async function endLiveQuiz(
               })
             }
 
-            // Update achievements
+            // award achievements if participant has achieved high scores / ...
             if (typeof newAchievements[participant.id] !== 'undefined') {
               await prisma.participant.update({
                 where: { id: participant.id },
