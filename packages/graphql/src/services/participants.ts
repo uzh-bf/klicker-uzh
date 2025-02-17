@@ -1,11 +1,13 @@
 import {
   PublicationStatus,
+  TimelineEntryType,
   UserRole,
   type ElementFeedback,
 } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { PrismaTransactionClient } from './stacks.js'
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
@@ -794,4 +796,56 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
     .filter((course) => course.practiceQuizzes.length !== 0)
 
   return courses
+}
+
+// helper function to upsert daily timeline entry
+export async function upsertDailyTimelineEntry({
+  prisma,
+  participantId,
+  courseId,
+  xpAwarded,
+  pointsAwarded,
+}: {
+  prisma: PrismaTransactionClient
+  participantId: string
+  courseId: string
+  xpAwarded?: number
+  pointsAwarded?: number
+}) {
+  await prisma.timelineEntry.upsert({
+    where: {
+      participantId_courseId_timestamp_type: {
+        participantId,
+        courseId,
+        timestamp: new Date(),
+        type: TimelineEntryType.DAILY,
+      },
+    },
+    create: {
+      type: TimelineEntryType.DAILY,
+      timestamp: new Date(),
+      collectedPoints: pointsAwarded,
+      collectedXp: xpAwarded,
+      computedAt: new Date(),
+      course: {
+        connect: {
+          id: courseId,
+        },
+      },
+      participant: {
+        connect: {
+          id: participantId,
+        },
+      },
+    },
+    update: {
+      collectedPoints:
+        typeof pointsAwarded === 'number'
+          ? { increment: pointsAwarded }
+          : undefined,
+      collectedXp:
+        typeof xpAwarded === 'number' ? { increment: xpAwarded } : undefined,
+      computedAt: new Date(),
+    },
+  })
 }

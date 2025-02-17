@@ -39,7 +39,8 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
-import { computeStackEvaluation, upsertDailyTimelineEntry } from './stacks.js'
+import { upsertDailyTimelineEntry } from './participants.js'
+import { computeStackEvaluation } from './stacks.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
