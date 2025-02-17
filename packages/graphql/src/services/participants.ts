@@ -30,6 +30,7 @@ export async function updateParticipantProfile(
   }
 
   if (typeof email === 'string') {
+    // @ts-ignore - default export is not types correctly and otherwise leads to graphql package test failure
     if (!isEmail.default(email)) {
       return null
     }
