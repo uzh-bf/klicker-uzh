@@ -9,6 +9,7 @@ import {
   type Participant,
   type ParticipantGroup,
   PublicationStatus,
+  TimelineEntryType,
 } from '@klicker-uzh/prisma'
 import {
   ElementInstanceResults,
@@ -2119,18 +2120,22 @@ export async function finalizeGroupActivityGrading(
   // award the achievements to the participants
   Object.entries(participantAchievementMap).forEach(
     ([participantId, results]) => {
+      // keep track of the total number of points and XP awarded (for student timeline update)
+      let pointsAwarded: number | undefined = undefined
+      let xpAwarded: number | undefined = undefined
+
       results.achievements.forEach((id) => {
         // create the participant achievement instance
         promises.push(
           ctx.prisma.participantAchievementInstance.upsert({
             where: {
               participantId_achievementId: {
-                participantId: participantId,
+                participantId,
                 achievementId: id,
               },
             },
             create: {
-              participantId: participantId,
+              participantId,
               achievementId: id,
               achievedAt: new Date(),
               achievedCount: 1,
@@ -2157,6 +2162,8 @@ export async function finalizeGroupActivityGrading(
               },
             })
           )
+
+          xpAwarded = (xpAwarded ?? 0) + 250
         }
 
         // participants with achievement id 8 should get 1000 xp and 500 points in the leaderboard
@@ -2173,13 +2180,18 @@ export async function finalizeGroupActivityGrading(
               },
             })
           )
+
+          // update total number of XP awarded
+          xpAwarded = (xpAwarded ?? 0) + 1000
+
+          // if the student is part of the leaderboard, increment the score by 500
           if (results.leaderboard) {
             promises.push(
               ctx.prisma.leaderboardEntry.update({
                 where: {
                   type_participantId_courseId: {
                     type: 'COURSE',
-                    participantId: participantId,
+                    participantId,
                     courseId: updatedGroupActivity.courseId,
                   },
                 },
@@ -2190,9 +2202,54 @@ export async function finalizeGroupActivityGrading(
                 },
               })
             )
+
+            // update total number of points awarded
+            pointsAwarded = (pointsAwarded ?? 0) + 500
           }
         }
       })
+
+      // TODO: once the entire group activity grading finalziation is refactored to a proper transaction, use the upsertDailyTimelineEntry function here (from the stacks service)
+      // update the student timeline entry with the awarded points and / or XP
+      const currentDate = dayjs().startOf('day').toDate()
+      promises.push(
+        ctx.prisma.timelineEntry.upsert({
+          where: {
+            participantId_courseId_timestamp_type: {
+              participantId,
+              courseId: updatedGroupActivity.courseId,
+              timestamp: currentDate,
+              type: TimelineEntryType.DAILY,
+            },
+          },
+          create: {
+            type: TimelineEntryType.DAILY,
+            timestamp: currentDate,
+            collectedPoints: pointsAwarded,
+            collectedXp: xpAwarded,
+            computedAt: new Date(),
+            course: {
+              connect: {
+                id: updatedGroupActivity.courseId,
+              },
+            },
+            participant: {
+              connect: {
+                id: participantId,
+              },
+            },
+          },
+          update: {
+            collectedPoints:
+              typeof pointsAwarded === 'number'
+                ? { increment: pointsAwarded }
+                : undefined,
+            collectedXp:
+              typeof xpAwarded === 'number' ? { increment: xpAwarded } : 0,
+            computedAt: new Date(),
+          },
+        })
+      )
     }
   )
 

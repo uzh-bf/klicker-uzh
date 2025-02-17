@@ -2621,7 +2621,7 @@ async function updateLeaderboardOnQuestionResponse({
   })
 }
 
-async function upsertDailyTimelineEntry({
+export async function upsertDailyTimelineEntry({
   prisma,
   participantId,
   courseId,
@@ -2631,8 +2631,8 @@ async function upsertDailyTimelineEntry({
   prisma: PrismaTransactionClient
   participantId: string
   courseId: string
-  xpAwarded: number
-  pointsAwarded: number | null
+  xpAwarded?: number
+  pointsAwarded?: number
 }) {
   const currentDate = dayjs().startOf('day').toDate()
 
@@ -2648,7 +2648,7 @@ async function upsertDailyTimelineEntry({
     create: {
       type: TimelineEntryType.DAILY,
       timestamp: currentDate,
-      collectedPoints: pointsAwarded ?? 0,
+      collectedPoints: pointsAwarded,
       collectedXp: xpAwarded,
       computedAt: new Date(),
       course: {
@@ -2663,12 +2663,11 @@ async function upsertDailyTimelineEntry({
       },
     },
     update: {
-      collectedPoints: {
-        increment: pointsAwarded ?? 0,
-      },
-      collectedXp: {
-        increment: xpAwarded,
-      },
+      collectedPoints:
+        typeof pointsAwarded === 'number'
+          ? { increment: pointsAwarded }
+          : undefined,
+      collectedXp: typeof xpAwarded === 'number' ? { increment: xpAwarded } : 0,
       computedAt: new Date(),
     },
   })
@@ -2922,7 +2921,7 @@ export async function respondToQuestion(
           participantId: ctx.user.sub,
           courseId,
           xpAwarded,
-          pointsAwarded,
+          pointsAwarded: pointsAwarded ?? undefined,
         })
       }
     }
