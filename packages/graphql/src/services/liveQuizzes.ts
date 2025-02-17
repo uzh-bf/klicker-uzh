@@ -13,7 +13,6 @@ import {
   ElementType,
   LeaderboardType,
   PublicationStatus,
-  TimelineEntryType,
 } from '@klicker-uzh/prisma'
 import type {
   BlockInput,
@@ -40,7 +39,7 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
-import { computeStackEvaluation } from './stacks.js'
+import { computeStackEvaluation, upsertDailyTimelineEntry } from './stacks.js'
 
 // TODO: rework scheduling for serverless
 const scheduledJobs: Record<string, any> = {}
@@ -1410,7 +1409,6 @@ export async function endLiveQuiz(
     const quizLB = await ctx.redisExec.hgetall(`lq:${id}:lb`)
     const quizXP = await ctx.redisExec.hgetall(`lq:${id}:xp`)
 
-    let promises: any[] = []
     const participants: Record<string, any> = {}
 
     Object.entries(quizXP).forEach(([id, xp]) => {
@@ -1539,37 +1537,38 @@ export async function endLiveQuiz(
         })
       }
 
-      // update xp of existing participants
-      promises = promises.concat(
-        existingParticipants
-          .filter(({ xp }) => typeof xp !== 'undefined')
-          .map(({ id, xp }) =>
-            ctx.prisma.participant.update({
-              where: { id },
+      // execute XP and points in the same transaction to prevent issues when one fails
+      // the live quiz update later on should never fail, but we need the return value (keep separate)
+      await ctx.prisma.$transaction(async (prisma) => {
+        // process XP updates
+        for (const participant of existingParticipants) {
+          if (typeof participant.xp !== 'undefined') {
+            await prisma.participant.update({
+              where: { id: participant.id },
               data: {
                 xp: {
-                  increment: Number(xp),
+                  increment: Number(participant.xp),
                 },
               },
             })
-          )
-      )
+          }
+        }
 
-      // if the live quiz is part of a course, update the course leaderboard with the accumulated points and award achievements
-      if (quizLB && quiz.courseId) {
-        promises = promises.concat(
-          existingParticipants
-            .filter(
-              ({ score, hasParticipation }) =>
-                typeof score !== 'undefined' && hasParticipation
-            )
-            .map(({ id, score }) =>
-              ctx.prisma.leaderboardEntry.upsert({
+        // if the live quiz is part of a course, update the course leaderboard
+        // with the accumulated points and award achievements
+        if (quizLB && quiz.courseId) {
+          for (const participant of existingParticipants) {
+            if (
+              typeof participant.score !== 'undefined' &&
+              participant.hasParticipation
+            ) {
+              // award points, if the student is a participant in the course
+              await prisma.leaderboardEntry.upsert({
                 where: {
                   type_participantId_courseId: {
                     type: LeaderboardType.COURSE,
-                    courseId: quiz.courseId!,
-                    participantId: id,
+                    courseId: quiz.courseId,
+                    participantId: participant.id,
                   },
                 },
                 include: {
@@ -1578,145 +1577,79 @@ export async function endLiveQuiz(
                 },
                 create: {
                   type: LeaderboardType.COURSE,
-                  course: {
-                    connect: {
-                      id: quiz.courseId!,
-                    },
-                  },
-                  participant: {
-                    connect: {
-                      id,
-                    },
-                  },
+                  course: { connect: { id: quiz.courseId } },
+                  participant: { connect: { id: participant.id } },
                   participation: {
                     connectOrCreate: {
                       where: {
                         courseId_participantId: {
-                          courseId: quiz.courseId!,
-                          participantId: id,
+                          courseId: quiz.courseId,
+                          participantId: participant.id,
                         },
                       },
                       create: {
-                        course: {
-                          connect: {
-                            id: quiz.courseId!,
-                          },
-                        },
-                        participant: {
-                          connect: {
-                            id,
-                          },
-                        },
+                        course: { connect: { id: quiz.courseId } },
+                        participant: { connect: { id: participant.id } },
                       },
                     },
                   },
-                  score: score!,
+                  score: participant.score,
                 },
                 update: {
-                  score: {
-                    increment: score,
-                  },
+                  score: { increment: participant.score },
                 },
               })
-            )
-        )
+            }
 
-        // TODO: once the entire group activity grading finalziation is refactored to a proper transaction, use the upsertDailyTimelineEntry function here (from the stacks service)
-        // update the student timeline entry with the awarded points and / or XP
-        // (XP awarded for live quizzes outside of courses will not be considered for the timeline at the moment)
-        if (quiz.courseId !== null) {
-          const currentDate = dayjs().startOf('day').toDate()
-          promises = promises
-            .concat(
-              existingParticipants.filter(
-                // check if either points or XP were awarded to the participant under consideration
-                ({ score, xp, hasParticipation }) =>
-                  typeof xp !== 'undefined' ||
-                  (typeof score !== 'undefined' && hasParticipation)
-              )
-            )
-            .map(({ id, score, xp, hasParticipation }) =>
-              ctx.prisma.timelineEntry.upsert({
-                where: {
-                  participantId_courseId_timestamp_type: {
-                    participantId: id,
-                    courseId: quiz.courseId!,
-                    timestamp: currentDate,
-                    type: TimelineEntryType.DAILY,
-                  },
-                },
-                create: {
-                  type: TimelineEntryType.DAILY,
-                  timestamp: currentDate,
-                  collectedPoints: hasParticipation ? score : undefined,
-                  collectedXp: xp,
-                  computedAt: new Date(),
-                  course: {
-                    connect: {
-                      id: quiz.courseId!,
-                    },
-                  },
-                  participant: {
-                    connect: {
-                      id,
-                    },
-                  },
-                },
-                update: {
-                  collectedPoints:
-                    hasParticipation && typeof score === 'number'
-                      ? { increment: score }
-                      : undefined,
-                  collectedXp:
-                    typeof xp === 'number' ? { increment: xp } : undefined,
-                  computedAt: new Date(),
-                },
+            // update daily timeline entries
+            if (
+              typeof participant.xp !== 'undefined' ||
+              (typeof participant.score !== 'undefined' &&
+                participant.hasParticipation)
+            ) {
+              await upsertDailyTimelineEntry({
+                prisma,
+                participantId: participant.id,
+                courseId: quiz.courseId,
+                xpAwarded: participant.xp,
+                pointsAwarded: participant.hasParticipation
+                  ? participant.score
+                  : undefined,
               })
-            )
-        }
+            }
 
-        // award new achievements
-        promises = promises.concat(
-          existingParticipants
-            .filter(({ id }) => typeof newAchievements[id] !== 'undefined')
-            .map(({ id }) =>
-              ctx.prisma.participant.update({
-                where: { id },
+            // award achievements if participant has achieved high scores / ...
+            if (typeof newAchievements[participant.id] !== 'undefined') {
+              await prisma.participant.update({
+                where: { id: participant.id },
                 data: {
                   achievements: {
                     upsert: {
                       where: {
                         participantId_achievementId: {
-                          participantId: id,
-                          achievementId: newAchievements[id]!,
+                          participantId: participant.id,
+                          achievementId: newAchievements[participant.id]!,
                         },
                       },
                       create: {
                         achievedAt: new Date(),
                         achievedCount: 1,
                         achievement: {
-                          connect: {
-                            id: newAchievements[id]!,
-                          },
+                          connect: { id: newAchievements[participant.id]! },
                         },
                       },
                       update: {
-                        achievedCount: {
-                          increment: 1,
-                        },
+                        achievedCount: { increment: 1 },
                       },
                     },
                   },
                 },
               })
-            )
-        )
-      }
+            }
+          }
+        }
+      })
     }
-
-    // execute XP and points in the same transaction to prevent issues when one fails
-    // the live quiz update later on should never fail, but we need the return value (keep separate)
-    await ctx.prisma.$transaction(promises)
 
     const keys = await ctx.redisExec.keys(`lq:${id}:*`)
     const pipe = ctx.redisExec.multi()

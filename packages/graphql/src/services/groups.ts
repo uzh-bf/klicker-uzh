@@ -9,7 +9,6 @@ import {
   type Participant,
   type ParticipantGroup,
   PublicationStatus,
-  TimelineEntryType,
 } from '@klicker-uzh/prisma'
 import {
   ElementInstanceResults,
@@ -46,6 +45,7 @@ import {
   updateFreeTextResults,
   updateNumericalResults,
   updateSelectionResults,
+  upsertDailyTimelineEntry,
 } from './stacks.js'
 
 const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
@@ -2079,26 +2079,9 @@ export async function finalizeGroupActivityGrading(
   }
 
   // distribute points and achievements to the participants
-  let promises: any[] = []
   const gradedInstances = updatedGroupActivity.activityInstances.filter(
     (instance) => instance.results
   )
-
-  // increment groupActivityScore on participantGroup
-  gradedInstances.forEach((instance) => {
-    promises.push(
-      ctx.prisma.participantGroup.update({
-        where: {
-          id: instance.groupId,
-        },
-        data: {
-          groupActivityScore: {
-            increment: instance.results!.points,
-          },
-        },
-      })
-    )
-  })
 
   // create a map between participants and achievements
   const participantAchievementMap = gradedInstances.reduce<
@@ -2117,145 +2100,116 @@ export async function finalizeGroupActivityGrading(
     return acc
   }, {})
 
-  // award the achievements to the participants
-  Object.entries(participantAchievementMap).forEach(
-    ([participantId, results]) => {
+  await ctx.prisma.$transaction(async (prisma) => {
+    // increment groupActivityScore on participantGroup
+    for (const instance of gradedInstances) {
+      await prisma.participantGroup.update({
+        where: {
+          id: instance.groupId,
+        },
+        data: {
+          groupActivityScore: {
+            increment: instance.results!.points,
+          },
+        },
+      })
+    }
+
+    // award the achievements to the participants
+    for (const [participantId, results] of Object.entries(
+      participantAchievementMap
+    )) {
       // keep track of the total number of points and XP awarded (for student timeline update)
       let pointsAwarded: number | undefined = undefined
       let xpAwarded: number | undefined = undefined
 
-      results.achievements.forEach((id) => {
+      for (const id of results.achievements) {
         // create the participant achievement instance
-        promises.push(
-          ctx.prisma.participantAchievementInstance.upsert({
-            where: {
-              participantId_achievementId: {
-                participantId,
-                achievementId: id,
-              },
-            },
-            create: {
+        await prisma.participantAchievementInstance.upsert({
+          where: {
+            participantId_achievementId: {
               participantId,
               achievementId: id,
-              achievedAt: new Date(),
-              achievedCount: 1,
             },
-            update: {
-              achievedCount: {
-                increment: 1,
-              },
+          },
+          create: {
+            participantId,
+            achievementId: id,
+            achievedAt: new Date(),
+            achievedCount: 1,
+          },
+          update: {
+            achievedCount: {
+              increment: 1,
             },
-          })
-        )
+          },
+        })
 
         // participants with achievement id 9 should get 250 xp
         if (id === 9) {
-          promises.push(
-            ctx.prisma.participant.update({
-              where: {
-                id: participantId,
+          await prisma.participant.update({
+            where: {
+              id: participantId,
+            },
+            data: {
+              xp: {
+                increment: 250,
               },
-              data: {
-                xp: {
-                  increment: 250,
-                },
-              },
-            })
-          )
+            },
+          })
 
           xpAwarded = (xpAwarded ?? 0) + 250
         }
 
         // participants with achievement id 8 should get 1000 xp and 500 points in the leaderboard
         if (id === 8) {
-          promises.push(
-            ctx.prisma.participant.update({
-              where: {
-                id: participantId,
+          await prisma.participant.update({
+            where: {
+              id: participantId,
+            },
+            data: {
+              xp: {
+                increment: 1000,
               },
-              data: {
-                xp: {
-                  increment: 1000,
-                },
-              },
-            })
-          )
+            },
+          })
 
           // update total number of XP awarded
           xpAwarded = (xpAwarded ?? 0) + 1000
 
           // if the student is part of the leaderboard, increment the score by 500
           if (results.leaderboard) {
-            promises.push(
-              ctx.prisma.leaderboardEntry.update({
-                where: {
-                  type_participantId_courseId: {
-                    type: 'COURSE',
-                    participantId,
-                    courseId: updatedGroupActivity.courseId,
-                  },
+            await prisma.leaderboardEntry.update({
+              where: {
+                type_participantId_courseId: {
+                  type: 'COURSE',
+                  participantId,
+                  courseId: updatedGroupActivity.courseId,
                 },
-                data: {
-                  score: {
-                    increment: 500,
-                  },
+              },
+              data: {
+                score: {
+                  increment: 500,
                 },
-              })
-            )
+              },
+            })
 
             // update total number of points awarded
             pointsAwarded = (pointsAwarded ?? 0) + 500
           }
         }
-      })
+      }
 
-      // TODO: once the entire group activity grading finalziation is refactored to a proper transaction, use the upsertDailyTimelineEntry function here (from the stacks service)
       // update the student timeline entry with the awarded points and / or XP
-      const currentDate = dayjs().startOf('day').toDate()
-      promises.push(
-        ctx.prisma.timelineEntry.upsert({
-          where: {
-            participantId_courseId_timestamp_type: {
-              participantId,
-              courseId: updatedGroupActivity.courseId,
-              timestamp: currentDate,
-              type: TimelineEntryType.DAILY,
-            },
-          },
-          create: {
-            type: TimelineEntryType.DAILY,
-            timestamp: currentDate,
-            collectedPoints: pointsAwarded,
-            collectedXp: xpAwarded,
-            computedAt: new Date(),
-            course: {
-              connect: {
-                id: updatedGroupActivity.courseId,
-              },
-            },
-            participant: {
-              connect: {
-                id: participantId,
-              },
-            },
-          },
-          update: {
-            collectedPoints:
-              typeof pointsAwarded === 'number'
-                ? { increment: pointsAwarded }
-                : undefined,
-            collectedXp:
-              typeof xpAwarded === 'number'
-                ? { increment: xpAwarded }
-                : undefined,
-            computedAt: new Date(),
-          },
-        })
-      )
+      await upsertDailyTimelineEntry({
+        prisma,
+        participantId,
+        courseId: updatedGroupActivity.courseId,
+        pointsAwarded,
+        xpAwarded,
+      })
     }
-  )
-
-  await ctx.prisma.$transaction(promises)
+  })
 
   return updatedGroupActivity
 }
