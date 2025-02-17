@@ -1112,6 +1112,13 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateWeeklyTimelineEntries: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return ParticipantService.updateWeeklyTimelineEntries(ctx)
+        },
+      }),
+
       toggleArchiveCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,

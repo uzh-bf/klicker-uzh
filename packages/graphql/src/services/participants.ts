@@ -879,6 +879,8 @@ export async function updateWeeklyTimelineEntries(ctx: Context) {
       },
     },
   })
+
+  return true
 }
 
 export async function updateWeeklyTimelineEntriesCourse(
