@@ -2245,7 +2245,9 @@ export async function finalizeGroupActivityGrading(
                 ? { increment: pointsAwarded }
                 : undefined,
             collectedXp:
-              typeof xpAwarded === 'number' ? { increment: xpAwarded } : 0,
+              typeof xpAwarded === 'number'
+                ? { increment: xpAwarded }
+                : undefined,
             computedAt: new Date(),
           },
         })

@@ -2667,7 +2667,8 @@ export async function upsertDailyTimelineEntry({
         typeof pointsAwarded === 'number'
           ? { increment: pointsAwarded }
           : undefined,
-      collectedXp: typeof xpAwarded === 'number' ? { increment: xpAwarded } : 0,
+      collectedXp:
+        typeof xpAwarded === 'number' ? { increment: xpAwarded } : undefined,
       computedAt: new Date(),
     },
   })

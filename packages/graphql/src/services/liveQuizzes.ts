@@ -1428,7 +1428,12 @@ export async function endLiveQuiz(
     // quizXP should always be around as soon as there are logged-in participants (check first)
     // quizLB only for live quizzes that are compatible with points collection (check second)
     if (quizXP) {
-      let existingParticipants = (
+      let existingParticipants: {
+        id: string
+        score?: number
+        xp?: number
+        hasParticipation?: boolean
+      }[] = (
         await Promise.allSettled(
           Object.entries(participants).map(async ([id, { score, xp }]) => {
             const participant = await ctx.prisma.participant.findUnique({
@@ -1605,7 +1610,7 @@ export async function endLiveQuiz(
                       },
                     },
                   },
-                  score: score,
+                  score: score!,
                 },
                 update: {
                   score: {
@@ -1662,7 +1667,8 @@ export async function endLiveQuiz(
                     hasParticipation && typeof score === 'number'
                       ? { increment: score }
                       : undefined,
-                  collectedXp: typeof xp === 'number' ? { increment: xp } : 0,
+                  collectedXp:
+                    typeof xp === 'number' ? { increment: xp } : undefined,
                   computedAt: new Date(),
                 },
               })
