@@ -869,6 +869,16 @@ export async function updateWeeklyTimelineEntries(ctx: Context) {
       ctx
     )
   }
+
+  // remove all daily timeline entries older than 2 weeks
+  await ctx.prisma.timelineEntry.deleteMany({
+    where: {
+      type: TimelineEntryType.DAILY,
+      timestamp: {
+        lt: dayjs().utc().subtract(30, 'days').toDate(),
+      },
+    },
+  })
 }
 
 export async function updateWeeklyTimelineEntriesCourse(
