@@ -1,12 +1,15 @@
 import {
   PublicationStatus,
+  TimelineEntry,
   TimelineEntryType,
   UserRole,
   type ElementFeedback,
 } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
+import dayjs from 'dayjs'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { sendTeamsNotifications } from '../lib/util.js'
 import { PrismaTransactionClient } from './stacks.js'
 
 interface UpdateParticipantProfileArgs {
@@ -848,4 +851,242 @@ export async function upsertDailyTimelineEntry({
       computedAt: new Date(),
     },
   })
+}
+
+// cronjob function to aggregate daily timeline entries into weekly ones once per day (for the ongoing and last week)
+export async function updateWeeklyTimelineEntries(ctx: Context) {
+  // get all course ids
+  const courses = await ctx.prisma.course.findMany({
+    select: {
+      id: true,
+    },
+  })
+
+  // iterate over all courses and update weekly timeline entries
+  for (const course of courses) {
+    await updateWeeklyTimelineEntriesCourse(
+      { courseId: course.id, cronjob: true },
+      ctx
+    )
+  }
+}
+
+export async function updateWeeklyTimelineEntriesCourse(
+  { courseId, cronjob }: { courseId: string; cronjob: boolean },
+  ctx: Context
+) {
+  // get start date of current week (monday) in UTC
+  const startDateCurrentWeek = dayjs()
+    .utc()
+    .startOf('week')
+    .add(1, 'day')
+    .toDate()
+
+  // get start date of previous week (monday) in UTC
+  const startDateLastWeek = dayjs()
+    .utc()
+    .startOf('week')
+    .subtract(6, 'days')
+    .toDate()
+
+  // fetch all timeline entries (weekly and daily) within the restrictions for the current course
+  // if the function is not called from within a cronjob, make sure that the user is the owner of the course
+  const ownerId = ctx.user?.sub
+  const courseTimelineLastWeek = await ctx.prisma.course.findUnique({
+    where: ownerId && !cronjob ? { id: courseId, ownerId } : { id: courseId },
+    include: {
+      timelineEntries: {
+        where: {
+          OR: [
+            {
+              type: TimelineEntryType.DAILY,
+              timestamp: {
+                gte: startDateLastWeek,
+                lt: startDateCurrentWeek,
+              },
+            },
+            {
+              type: TimelineEntryType.WEEKLY,
+              timestamp: startDateLastWeek,
+            },
+          ],
+        },
+      },
+    },
+  })
+  const courseTimelineCurrentWeek = await ctx.prisma.course.findUnique({
+    where: ownerId && !cronjob ? { id: courseId, ownerId } : { id: courseId },
+    include: {
+      timelineEntries: {
+        where: {
+          OR: [
+            {
+              type: TimelineEntryType.DAILY,
+              timestamp: {
+                gte: startDateCurrentWeek,
+                lte: new Date(),
+              },
+            },
+            {
+              type: TimelineEntryType.WEEKLY,
+              timestamp: startDateCurrentWeek,
+            },
+          ],
+        },
+      },
+    },
+  })
+
+  // if no course was found, return early
+  if (!courseTimelineLastWeek || !courseTimelineCurrentWeek) {
+    await sendTeamsNotifications(
+      'graphql/updateWeeklyTimelineEntriesCourse',
+      `COURSE NOT FOUND: The course with id ${courseId} could not be found in the database for the computation of weekly timeline entries.`
+    )
+
+    return false
+  }
+
+  // collect all timeline entry updates to be executed in transaction
+  const updates: any[] = []
+  let numUpdatesLastWeek = 0
+  let numUpdatesCurrentWeek = 0
+  const lastWeekDailys = courseTimelineLastWeek.timelineEntries.filter(
+    (entry) => entry.type === TimelineEntryType.DAILY
+  )
+  const currentWeekDailys = courseTimelineCurrentWeek.timelineEntries.filter(
+    (entry) => entry.type === TimelineEntryType.DAILY
+  )
+
+  // update last weeks timeline entries, if the aggregated values are not correct
+  if (lastWeekDailys.length > 0) {
+    const lastWeekUpdates = await updateWeeklyTimelineEntriesFromDailys({
+      entries: courseTimelineLastWeek.timelineEntries,
+      dailyEntries: lastWeekDailys,
+      timestamp: startDateLastWeek,
+      courseId,
+    })
+
+    if (lastWeekUpdates.length > 0) {
+      updates.push(...lastWeekUpdates)
+      numUpdatesLastWeek = lastWeekUpdates.length
+    }
+  }
+
+  // update current weeks timeline entries, if the aggregated values are different from the stored ones
+  if (currentWeekDailys.length > 0) {
+    const currentWeekUpdates = await updateWeeklyTimelineEntriesFromDailys({
+      entries: courseTimelineCurrentWeek.timelineEntries,
+      dailyEntries: currentWeekDailys,
+      timestamp: startDateCurrentWeek,
+      courseId,
+    })
+
+    if (currentWeekUpdates.length > 0) {
+      updates.push(...currentWeekUpdates)
+      numUpdatesCurrentWeek = currentWeekUpdates.length
+    }
+  }
+
+  // execute all weekly timeline updates in a single transaction and log the number of updateså
+  if (updates.length > 0) {
+    await ctx.prisma.$transaction(async (prisma) => {
+      for (const update of updates) {
+        await prisma.timelineEntry.upsert(update)
+      }
+    })
+
+    await sendTeamsNotifications(
+      'graphql/updateWeeklyTimelineEntriesCourse',
+      `Successfully updated ${updates.length} weekly timeline entries for course ${courseId} (${numUpdatesLastWeek} for last week, ${numUpdatesCurrentWeek} for the current week).`
+    )
+  }
+
+  return true
+}
+
+async function updateWeeklyTimelineEntriesFromDailys({
+  entries,
+  dailyEntries,
+  timestamp,
+  courseId,
+}: {
+  entries: TimelineEntry[]
+  dailyEntries: TimelineEntry[]
+  timestamp: Date
+  courseId: string
+}) {
+  // aggreagte the daily timeline entries into a single entry for each participant
+  const reducedDailyEntries = dailyEntries.reduce<{
+    [participantId: string]: { collectedPoints: number; collectedXp: number }
+  }>((acc, entry) => {
+    if (!acc[entry.participantId]) {
+      acc[entry.participantId] = {
+        collectedPoints: 0,
+        collectedXp: 0,
+      }
+    }
+
+    acc[entry.participantId]!.collectedPoints += entry.collectedPoints
+    acc[entry.participantId]!.collectedXp += entry.collectedXp
+
+    return acc
+  }, {})
+
+  if (Object.keys(reducedDailyEntries).length === 0) {
+    return []
+  }
+
+  // loop over all entries and check if the aggregated values are different from the stored ones
+  return Object.entries(reducedDailyEntries).flatMap(
+    ([participantId, values]) => {
+      const storedEntry = entries.find(
+        (entry) =>
+          entry.type === TimelineEntryType.WEEKLY &&
+          entry.timestamp.getTime() === timestamp.getTime() &&
+          entry.participantId === participantId
+      )
+
+      if (
+        !storedEntry ||
+        storedEntry.collectedPoints !== values.collectedPoints ||
+        storedEntry.collectedXp !== values.collectedXp
+      ) {
+        return {
+          where: {
+            participantId_courseId_timestamp_type: {
+              participantId,
+              courseId,
+              timestamp: timestamp,
+              type: TimelineEntryType.WEEKLY,
+            },
+          },
+          create: {
+            type: TimelineEntryType.WEEKLY,
+            timestamp: timestamp,
+            collectedPoints: values.collectedPoints,
+            collectedXp: values.collectedXp,
+            computedAt: new Date(),
+            course: {
+              connect: {
+                id: courseId,
+              },
+            },
+            participant: {
+              connect: {
+                id: participantId,
+              },
+            },
+          },
+          update: {
+            collectedPoints: values.collectedPoints,
+            collectedXp: values.collectedXp,
+            computedAt: new Date(),
+          },
+        }
+      } else {
+        return []
+      }
+    }
+  )
 }

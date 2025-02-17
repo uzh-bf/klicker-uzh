@@ -1,6 +1,10 @@
-import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation } from '@apollo/client'
+import {
+  LeaderboardEntry,
+  UpdateWeeklyTimelineEntriesCourseDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
-import { Tabs, UserNotification } from '@uzh-bf/design-system'
+import { Button, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { TableCell } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 
@@ -12,6 +16,7 @@ export type InvididualLeaderboardEntry = Omit<
 interface IndividualLeaderboardProps {
   leaderboard?: InvididualLeaderboardEntry[] | null
   courseName: string
+  courseId: string
   numOfParticipants?: number | null
   numOfActiveParticipants?: number | null
   averageActiveScore?: number | null
@@ -20,11 +25,16 @@ interface IndividualLeaderboardProps {
 function IndividualLeaderboard({
   leaderboard,
   courseName,
+  courseId,
   numOfParticipants,
   numOfActiveParticipants,
   averageActiveScore,
 }: IndividualLeaderboardProps) {
   const t = useTranslations()
+  const [updateWeeklyTimelineEntriesCourse] = useMutation(
+    UpdateWeeklyTimelineEntriesCourseDocument,
+    { variables: { courseId } }
+  )
 
   return (
     <Tabs.TabContent value="ind-leaderboard" className={{ root: 'h-full p-2' }}>
@@ -32,6 +42,10 @@ function IndividualLeaderboard({
         message={t('manage.course.emailsInLeaderboardExport')}
         className={{ root: 'mb-3' }}
       />
+      {/* // TODO: move this button somehwere else, once the filters for weekly leaderboard, etc. are shown */}
+      <Button onClick={() => updateWeeklyTimelineEntriesCourse()}>
+        TRIGGER UPDATE
+      </Button>
       <DataTable
         isPaginated
         columns={[
