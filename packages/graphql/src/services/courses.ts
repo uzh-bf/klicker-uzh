@@ -1,16 +1,18 @@
 import {
   ElementOrderType,
   LeaderboardType,
+  PublicationStatus,
+  TimelineEntryType,
+  UserRole,
   type Participant,
   type ParticipantGroup,
-  PublicationStatus,
-  UserRole,
 } from '@klicker-uzh/prisma'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
+import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
-import type { ILeaderboardEntry } from 'src/schema/course.js'
+import { type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
 
@@ -207,7 +209,124 @@ export async function getCourseOverviewData(
             participantGroups: true,
           },
         },
-        courseLeaderboard: true,
+      },
+    })
+
+    const course = ctx.prisma.course.findUnique({
+      where: { id: courseId },
+    })
+
+    if (participation) {
+      const allGroupEntries = participation.course.participantGroups.reduce<{
+        mapped: (ParticipantGroup & { score: number; isMember: boolean })[]
+        sum: number
+        count: number
+      }>(
+        (acc, group, ix) => {
+          const score = group.averageMemberScore + group.groupActivityScore
+          return {
+            mapped: [
+              ...acc.mapped,
+              {
+                ...group,
+                score,
+                isMember: participation.participant.participantGroups.some(
+                  (g) => g.id === group.id
+                ),
+              },
+            ],
+            count: acc.count + 1,
+            sum: acc.sum + score,
+          }
+        },
+        {
+          mapped: [],
+          count: 0,
+          sum: 0,
+        }
+      )
+
+      const sortedGroupEntries = sortBy(
+        allGroupEntries.mapped,
+        [prop('score'), 'desc'],
+        [prop('name'), 'asc']
+      )
+
+      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
+        return { ...entry, rank: ix + 1 }
+      })
+
+      const groupCreationPoolEntry =
+        await ctx.prisma.groupAssignmentPoolEntry.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+        })
+
+      return {
+        id: `${courseId}-${participation.participant.id}`,
+        course: participation.course,
+        participant: participation.participant,
+        participation,
+        groupLeaderboard: filteredGroupEntries,
+        groupLeaderboardStatistics: {
+          participantCount: allGroupEntries.count,
+          averageScore:
+            allGroupEntries.count > 0
+              ? allGroupEntries.sum / allGroupEntries.count
+              : 0,
+        },
+        inRandomGroupPool: groupCreationPoolEntry !== null,
+      }
+    }
+  }
+
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      awards: {
+        include: {
+          participant: true,
+          participantGroup: true,
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  let participant: Participant | null = null
+  if (ctx.user?.sub) {
+    participant = await ctx.prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+    })
+  }
+
+  return {
+    id: `${courseId}-${participant?.id}`,
+    course,
+    participant,
+    participation: null,
+  }
+}
+
+export async function getStudentCourseLeaderboard(
+  { courseId, mode }: { courseId: string; mode: string },
+  ctx: ContextWithUser
+) {
+  if (ctx.user?.sub && mode === 'course') {
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      include: {
+        participant: true,
       },
     })
 
@@ -273,44 +392,10 @@ export async function getCourseOverviewData(
         }
       )
 
-      const allGroupEntries = participation.course.participantGroups.reduce<{
-        mapped: (ParticipantGroup & { score: number; isMember: boolean })[]
-        sum: number
-        count: number
-      }>(
-        (acc, group, ix) => {
-          const score = group.averageMemberScore + group.groupActivityScore
-          return {
-            mapped: [
-              ...acc.mapped,
-              {
-                ...group,
-                score,
-                isMember: participation.participant.participantGroups.some(
-                  (g) => g.id === group.id
-                ),
-              },
-            ],
-            count: acc.count + 1,
-            sum: acc.sum + score,
-          }
-        },
-        {
-          mapped: [],
-          count: 0,
-          sum: 0,
-        }
-      )
-
       const sortedEntries = sortBy(
         allEntries.mapped,
         [prop('score'), 'desc'],
         [prop('username'), 'asc']
-      )
-      const sortedGroupEntries = sortBy(
-        allGroupEntries.mapped,
-        [prop('score'), 'desc'],
-        [prop('name'), 'asc']
       )
 
       const filteredEntries = sortedEntries.flatMap((entry, ix) => {
@@ -318,71 +403,186 @@ export async function getCourseOverviewData(
           return { ...entry, rank: ix + 1 }
         return []
       })
-      const filteredGroupEntries = sortedGroupEntries.flatMap((entry, ix) => {
-        return { ...entry, rank: ix + 1 }
-      })
-
-      const groupCreationPoolEntry =
-        await ctx.prisma.groupAssignmentPoolEntry.findUnique({
-          where: {
-            courseId_participantId: {
-              courseId,
-              participantId: ctx.user.sub,
-            },
-          },
-        })
 
       return {
-        id: `${courseId}-${participation.participant.id}`,
-        course: participation.course,
-        participant: participation.participant,
-        participation,
         leaderboard: filteredEntries,
         leaderboardStatistics: {
           participantCount: allEntries.count,
           averageScore:
             allEntries.count > 0 ? allEntries.sum / allEntries.count : 0,
         },
-        groupLeaderboard: filteredGroupEntries,
-        groupLeaderboardStatistics: {
-          participantCount: allGroupEntries.count,
-          averageScore:
-            allGroupEntries.count > 0
-              ? allGroupEntries.sum / allGroupEntries.count
-              : 0,
-        },
-        inRandomGroupPool: groupCreationPoolEntry !== null,
       }
+    }
+  } else if (ctx.user?.sub && mode === 'biweekly') {
+    const detailsEarliest = dayjs().subtract(13, 'days').startOf('day').toDate()
+    const detailsLatest = dayjs().subtract(14, 'days').toDate()
+
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        // fetch live quizzes where the leaderboard entries are not part of the timeline entries
+        liveQuizzes: {
+          include: {
+            leaderboard: true,
+          },
+          where: {
+            finishedAt: {
+              lte: detailsEarliest,
+              gt: detailsLatest,
+            },
+          },
+        },
+        practiceQuizzes: {
+          include: {
+            responseDetails: {
+              where: {
+                createdAt: {
+                  lte: detailsEarliest,
+                  gt: detailsLatest,
+                },
+              },
+            },
+          },
+        },
+        microLearnings: {
+          include: {
+            responseDetails: {
+              where: {
+                createdAt: {
+                  lte: detailsEarliest,
+                  gt: detailsLatest,
+                },
+              },
+            },
+          },
+        },
+        participations: {
+          where: {
+            isActive: true,
+          },
+          include: {
+            participant: true,
+          },
+        },
+        timelineEntries: {
+          where: {
+            type: TimelineEntryType.DAILY,
+            timestamp: {
+              gt: dayjs().subtract(14, 'days').toDate(),
+            },
+          },
+        },
+      },
+    })
+
+    if (!course) return null
+
+    // initialize the leaderboard entries form the active course participations
+    const leaderboardScores = course?.participations.reduce<{
+      [participantId: string]: {
+        participantId: string
+        username: string
+        avatar: string | null
+        score: number
+        isSelf?: boolean
+      }
+    }>((acc, entry) => {
+      acc[entry.participant.id] = {
+        participantId: entry.participant.id,
+        username: entry.participant.username,
+        avatar: entry.participant.avatar,
+        score: 0,
+        isSelf: ctx.user?.sub === entry.participant.id,
+      }
+
+      return acc
+    }, {})
+
+    // loop through the timeline entries and update the leaderboard scores
+    course?.timelineEntries.forEach((entry) => {
+      if (leaderboardScores[entry.participantId]) {
+        leaderboardScores[entry.participantId]!.score += entry.collectedPoints
+      }
+    })
+
+    // combine all details, loop through them and update the leaderboard scores
+    course.practiceQuizzes.forEach((quiz) => {
+      quiz.responseDetails.forEach((detail) => {
+        if (leaderboardScores[detail.participantId]) {
+          leaderboardScores[detail.participantId]!.score +=
+            detail.pointsAwarded ?? 0
+        }
+      })
+    })
+    course.microLearnings.forEach((ml) => {
+      ml.responseDetails.forEach((detail) => {
+        if (leaderboardScores[detail.participantId]) {
+          leaderboardScores[detail.participantId]!.score +=
+            detail.pointsAwarded ?? 0
+        }
+      })
+    })
+
+    // loop over all live quiz leaderboard entries and update the leaderboard scores
+    course.liveQuizzes.forEach((lq) => {
+      lq.leaderboard.forEach((lbEntry) => {
+        if (leaderboardScores[lbEntry.participantId]) {
+          leaderboardScores[lbEntry.participantId]!.score += lbEntry.score
+        }
+      })
+    })
+
+    // sort the leaderboard entries and add rank, level, and compute statistics
+    const { leaderboardEntries, count, sum } = Object.values(leaderboardScores)
+      .sort((a, b) => b.score - a.score)
+      .reduce<{
+        leaderboardEntries: {
+          id: number
+          participantId: string
+          username: string
+          avatar: string | null
+          score: number
+          rank: number
+          isSelf?: boolean
+          level?: number
+        }[]
+        count: number
+        sum: number
+      }>(
+        (acc, scoreEntry, ix) => {
+          acc.leaderboardEntries.push({
+            id: Math.floor(random(1000000000)),
+            participantId: scoreEntry.participantId,
+            username: scoreEntry.username,
+            avatar: scoreEntry.avatar,
+            score: scoreEntry.score,
+            isSelf: scoreEntry.isSelf,
+            rank: ix + 1,
+            level: levelFromXp(scoreEntry.score),
+          })
+          acc.count += 1
+          acc.sum += scoreEntry.score
+
+          return acc
+        },
+        { leaderboardEntries: [], count: 0, sum: 0 }
+      )
+
+    return {
+      leaderboard: leaderboardEntries,
+      leaderboardStatistics: {
+        participantCount: count,
+        averageScore: count > 0 ? sum / count : 0,
+      },
     }
   }
 
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
-    include: {
-      awards: {
-        include: {
-          participant: true,
-          participantGroup: true,
-        },
-      },
-    },
-  })
-
-  if (!course) return null
-
-  let participant: Participant | null = null
-  if (ctx.user?.sub) {
-    participant = await ctx.prisma.participant.findUnique({
-      where: { id: ctx.user.sub },
-    })
-  }
-
   return {
-    id: `${courseId}-${participant?.id}`,
-    course,
-    participant,
-    participation: null,
     leaderboard: [],
+    leaderboardStatistics: {
+      participantCount: 0,
+      averageScore: 0,
+    },
   }
 }
 

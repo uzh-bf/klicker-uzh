@@ -13,7 +13,7 @@ interface ParticipantProps {
   rank?: number | string
   isHighlighted?: boolean
   onClick?: () => void
-  level?: number
+  level?: number | null
   className?: string
 }
 

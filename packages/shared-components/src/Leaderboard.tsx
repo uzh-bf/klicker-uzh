@@ -12,7 +12,7 @@ export interface LeaderboardCombinedEntry {
   avatar?: string | null
   score?: number
   rank: number
-  level?: number
+  level?: number | null
   isSelf?: boolean | null
 }
 

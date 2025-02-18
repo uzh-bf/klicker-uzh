@@ -563,6 +563,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       leaveRandomGroupPool: 'Leave Pool',
       code: 'Code',
       individualLeaderboard: 'Individual Leaderboard',
+      biWeekly: 'Bi-weekly',
       groupLeaderboard: 'Group Leaderboard',
       individualLeaderboardUpdate:
         'The individual leaderboard will be updated hourly.',

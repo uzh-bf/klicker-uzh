@@ -2,6 +2,7 @@ import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
 import {
   GetCourseGroupActivitiesDocument,
   GetCourseOverviewDataDocument,
+  GetStudentCourseLeaderboardDocument,
   JoinCourseDocument,
   LeaveCourseDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -14,6 +15,11 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Tabs, UserNotification } from '@uzh-bf/design-system'
+import {
+  Label,
+  RadioGroup,
+  RadioGroupItem,
+} from '@uzh-bf/design-system/dist/future'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -45,6 +51,9 @@ function CourseOverview({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
   const [isLeaveCourseModalOpen, setIsLeaveCourseModalOpen] = useState(false)
+  const [leaderboardType, setLeaderboardType] = useState<'course' | 'biweekly'>(
+    'course'
+  )
 
   useParticipantToken({
     participantToken,
@@ -54,6 +63,13 @@ function CourseOverview({
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
   })
+
+  const { data: dataLeaderboard, loading: loadingLeaderboard } = useQuery(
+    GetStudentCourseLeaderboardDocument,
+    {
+      variables: { courseId, mode: leaderboardType },
+    }
+  )
 
   const [groupActivityQueryRef, { subscribeToMore: subscribeActivityList }] =
     useBackgroundQuery(GetCourseGroupActivitiesDocument, {
@@ -88,12 +104,13 @@ function CourseOverview({
     !data?.getCourseOverviewData ||
     !data.getCourseOverviewData.course ||
     loading
-  )
+  ) {
     return (
       <Layout displayName={t('shared.generic.leaderboard')}>
         <Loader />
       </Layout>
     )
+  }
 
   if (error) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
@@ -103,8 +120,6 @@ function CourseOverview({
     course,
     participant,
     participation,
-    leaderboard,
-    leaderboardStatistics,
     groupLeaderboard,
     groupLeaderboardStatistics,
     inRandomGroupPool,
@@ -114,8 +129,11 @@ function CourseOverview({
     (group) => group.score > 0
   )
 
-  const top10Participants = leaderboard
-    ? leaderboard.map((entry) => entry.participantId)
+  const top10Participants = dataLeaderboard?.getStudentCourseLeaderboard
+    ?.leaderboard
+    ? dataLeaderboard?.getStudentCourseLeaderboard?.leaderboard.map(
+        (entry) => entry.participantId
+      )
     : []
 
   const openProfileModal = (id: string, isSelf: boolean) => {
@@ -209,70 +227,117 @@ function CourseOverview({
                   <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
                     <div className="flex flex-1 flex-col justify-between gap-6">
                       <div>
-                        <H3 className={{ root: 'mb-4' }}>
-                          {t('pwa.courses.individualLeaderboard')}
-                        </H3>
+                        <div className="flex w-full flex-col justify-between md:flex-row">
+                          <H3 className={{ root: 'mb-1' }}>
+                            {t('pwa.courses.individualLeaderboard')}
+                          </H3>
 
-                        {participant?.id && participation?.isActive && (
-                          <Leaderboard
-                            leaderboard={leaderboard ?? []}
-                            onJoin={joinCourse}
-                            onLeave={() => setIsLeaveCourseModalOpen(true)}
-                            participant={participant ?? undefined}
-                            onParticipantClick={openProfileModal}
-                            podiumImgSrc={{
-                              rank1: Rank1Img,
-                              rank2: Rank2Img,
-                              rank3: Rank3Img,
-                            }}
-                            topKOnly={10}
-                          />
-                        )}
-                        {participant?.id && !participation?.isActive && (
-                          <div className="space-y-4">
-                            <Podium leaderboard={[]} />
-                            <div className="max-w-none rounded border border-slate-300 bg-slate-100 p-2 text-sm text-slate-600">
-                              <Markdown
-                                withProse
-                                withLinkButtons={false}
-                                content={t(
-                                  'pwa.general.joinLeaderboardNotice',
-                                  {
-                                    username: participant.username,
-                                    courseName: course.displayName,
-                                  }
-                                )}
-                              />
-                              <Button
-                                fluid
-                                className={{ root: 'bg-white' }}
-                                onClick={() => joinCourse()}
-                                data={{ cy: 'student-course-join-leaderboard' }}
-                              >
-                                {t.rich('pwa.courses.joinLeaderboardCourse', {
-                                  name: course.displayName,
-                                  b: (text) => (
-                                    <span className="font-bold">{text}</span>
-                                  ),
-                                })}
-                              </Button>
+                          <RadioGroup
+                            value={leaderboardType}
+                            onValueChange={(newValue) =>
+                              setLeaderboardType(
+                                newValue as 'course' | 'biweekly'
+                              )
+                            }
+                            disabled={loadingLeaderboard}
+                            className="mb-3 flex flex-row justify-end gap-3 md:mt-1.5 md:flex-col md:gap-0.5"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="course" id="course" />
+                              <Label htmlFor="course">
+                                {t('shared.generic.course')}
+                              </Label>
                             </div>
-                          </div>
-                        )}
-
-                        <div className="mb-2 mt-4 text-right text-sm text-slate-600">
-                          <div>
-                            {t('shared.leaderboard.participantCount', {
-                              number: leaderboardStatistics?.participantCount,
-                            })}
-                          </div>
-                          <div>
-                            {t('shared.leaderboard.averagePoints', {
-                              number:
-                                leaderboardStatistics?.averageScore?.toFixed(2),
-                            })}
-                          </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="biweekly" id="biweekly" />
+                              <Label htmlFor="biweekly">
+                                {t('pwa.courses.biWeekly')}
+                              </Label>
+                            </div>
+                          </RadioGroup>
                         </div>
+
+                        {!dataLeaderboard?.getStudentCourseLeaderboard ||
+                        loadingLeaderboard ? (
+                          <Loader />
+                        ) : (
+                          <>
+                            {participant?.id && participation?.isActive && (
+                              <Leaderboard
+                                leaderboard={
+                                  dataLeaderboard?.getStudentCourseLeaderboard
+                                    ?.leaderboard ?? []
+                                }
+                                onJoin={joinCourse}
+                                onLeave={() => setIsLeaveCourseModalOpen(true)}
+                                participant={participant ?? undefined}
+                                onParticipantClick={openProfileModal}
+                                podiumImgSrc={{
+                                  rank1: Rank1Img,
+                                  rank2: Rank2Img,
+                                  rank3: Rank3Img,
+                                }}
+                                topKOnly={10}
+                              />
+                            )}
+                            {participant?.id && !participation?.isActive && (
+                              <div className="space-y-4">
+                                <Podium leaderboard={[]} />
+                                <div className="max-w-none rounded border border-slate-300 bg-slate-100 p-2 text-sm text-slate-600">
+                                  <Markdown
+                                    withProse
+                                    withLinkButtons={false}
+                                    content={t(
+                                      'pwa.general.joinLeaderboardNotice',
+                                      {
+                                        username: participant.username,
+                                        courseName: course.displayName,
+                                      }
+                                    )}
+                                  />
+                                  <Button
+                                    fluid
+                                    className={{ root: 'bg-white' }}
+                                    onClick={() => joinCourse()}
+                                    data={{
+                                      cy: 'student-course-join-leaderboard',
+                                    }}
+                                  >
+                                    {t.rich(
+                                      'pwa.courses.joinLeaderboardCourse',
+                                      {
+                                        name: course.displayName,
+                                        b: (text) => (
+                                          <span className="font-bold">
+                                            {text}
+                                          </span>
+                                        ),
+                                      }
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="mb-2 mt-4 text-right text-sm text-slate-600">
+                              <div>
+                                {t('shared.leaderboard.participantCount', {
+                                  number:
+                                    dataLeaderboard?.getStudentCourseLeaderboard
+                                      ?.leaderboardStatistics?.participantCount,
+                                })}
+                              </div>
+                              <div>
+                                {t('shared.leaderboard.averagePoints', {
+                                  number:
+                                    dataLeaderboard?.getStudentCourseLeaderboard?.leaderboardStatistics?.averageScore?.toFixed(
+                                      2
+                                    ),
+                                })}
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       <div className="rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
