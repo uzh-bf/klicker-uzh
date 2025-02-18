@@ -45,20 +45,6 @@ query GetCourseOverviewData($courseId: String!) {
         }
       }
     }
-    leaderboard {
-      id
-      participantId
-      username
-      avatar
-      score
-      isSelf
-      rank
-      level
-    }
-    leaderboardStatistics {
-      participantCount
-      averageScore
-    }
     groupLeaderboard {
       id
       name

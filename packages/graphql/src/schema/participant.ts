@@ -277,8 +277,6 @@ export interface IParticipantLearningData {
   participant?: IParticipant | null
   participation?: IParticipation | null
   course?: ICourse | null
-  leaderboard?: ILeaderboardEntry[]
-  leaderboardStatistics?: ILeaderboardStatistics
   groupLeaderboard?: IGroupLeaderboardEntry[]
   groupLeaderboardStatistics?: ILeaderboardStatistics
   groupActivityInstances?: IGroupActivityInstance[]
@@ -307,16 +305,6 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
       nullable: true,
     }),
 
-    leaderboard: t.expose('leaderboard', {
-      type: [LeaderboardEntryRef],
-      nullable: true,
-    }),
-
-    leaderboardStatistics: t.expose('leaderboardStatistics', {
-      type: LeaderboardStatistics,
-      nullable: true,
-    }),
-
     groupLeaderboard: t.expose('groupLeaderboard', {
       type: [GroupLeaderboardEntry],
       nullable: true,
@@ -333,6 +321,24 @@ export const ParticipantLearningData = ParticipantLearningDataRef.implement({
     }),
 
     inRandomGroupPool: t.exposeBoolean('inRandomGroupPool', { nullable: true }),
+  }),
+})
+
+export interface IStudentCourseLeaderboard {
+  leaderboard: ILeaderboardEntry[]
+  leaderboardStatistics: ILeaderboardStatistics
+}
+export const StudentCourseLeaderboardRef =
+  builder.objectRef<IStudentCourseLeaderboard>('StudentCourseLeaderboard')
+export const StudentCourseLeaderboard = StudentCourseLeaderboardRef.implement({
+  fields: (t) => ({
+    leaderboard: t.expose('leaderboard', {
+      type: [LeaderboardEntryRef],
+    }),
+
+    leaderboardStatistics: t.expose('leaderboardStatistics', {
+      type: LeaderboardStatistics,
+    }),
   }),
 })
 

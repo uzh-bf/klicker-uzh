@@ -1145,7 +1145,7 @@ type LeaderboardEntry {
   id: Int!
   isSelf: Boolean
   lastBlockOrder: Int
-  level: Int!
+  level: Int
   participant: Participant
   participantId: String!
   participation: Participation
@@ -1625,8 +1625,6 @@ type ParticipantLearningData {
   groupLeaderboardStatistics: LeaderboardStatistics
   id: String!
   inRandomGroupPool: Boolean
-  leaderboard: [LeaderboardEntry!]
-  leaderboardStatistics: LeaderboardStatistics
   participant: Participant
   participantToken: String
   participation: Participation
@@ -1768,6 +1766,7 @@ type Query {
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
+  getStudentCourseLeaderboard(courseId: String!, mode: String!): StudentCourseLeaderboard
   groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
@@ -2037,6 +2036,11 @@ type StudentCourse {
   id: ID!
   owner: User!
   pinCode: Int
+}
+
+type StudentCourseLeaderboard {
+  leaderboard: [LeaderboardEntry!]!
+  leaderboardStatistics: LeaderboardStatistics!
 }
 
 type Subscription {

@@ -564,6 +564,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       leaveRandomGroupPool: 'Pool verlassen',
       code: 'Code',
       individualLeaderboard: 'Individuelles Leaderboard',
+      biWeekly: 'Zweiwöchentlich',
       groupLeaderboard: 'Gruppenleaderboard',
       individualLeaderboardUpdate:
         'Das individuelle Leaderboard wird stündlich aktualisiert.',

@@ -46,6 +46,7 @@ import {
   ParticipantLearningData,
   ParticipantWithAchievements,
   Participation,
+  StudentCourseLeaderboard,
 } from './participant.js'
 import {
   ActivitySummary,
@@ -602,6 +603,18 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return CourseService.getCourseOverviewData(args, ctx)
+        },
+      }),
+
+      getStudentCourseLeaderboard: asParticipant.field({
+        nullable: true,
+        type: StudentCourseLeaderboard,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          mode: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getStudentCourseLeaderboard(args, ctx)
         },
       }),
 

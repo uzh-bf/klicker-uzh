@@ -1,0 +1,18 @@
+query GetStudentCourseLeaderboard($courseId: String!, $mode: String!) {
+  getStudentCourseLeaderboard(courseId: $courseId, mode: $mode) {
+    leaderboard {
+      id
+      participantId
+      username
+      avatar
+      score
+      isSelf
+      rank
+      level
+    }
+    leaderboardStatistics {
+      participantCount
+      averageScore
+    }
+  }
+}
