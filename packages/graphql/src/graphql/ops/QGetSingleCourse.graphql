@@ -9,10 +9,8 @@ query GetSingleCourse($courseId: String!) {
     description
     color
     numOfParticipants
-    numOfActiveParticipants
     numOfParticipantGroups
     averageScore
-    averageActiveScore
     startDate
     endDate
 
@@ -67,14 +65,6 @@ query GetSingleCourse($courseId: String!) {
       scheduledEndAt
       pointsMultiplier
       numOfStacks
-    }
-    leaderboard {
-      id
-      score
-      rank
-      username
-      email
-      avatar
     }
   }
 }
