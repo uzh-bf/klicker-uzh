@@ -543,7 +543,6 @@ type ContentInstanceEvaluation {
 }
 
 type Course {
-  averageActiveScore: Float
   averageScore: Float
   awards: [AwardEntry!]
   color: String!
@@ -559,13 +558,11 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
-  leaderboard: [LeaderboardEntry!]
   liveQuizzes: [LiveQuiz!]
   maxGroupSize: Int!
   microLearnings: [MicroLearning!]
   name: String!
   notificationEmail: String
-  numOfActiveParticipants: Int
   numOfParticipantGroups: Int
   numOfParticipants: Int
   owner: User
@@ -586,6 +583,12 @@ type CourseActivityAnalytics {
   participantCourseAnalytics: [ParticipantCourseActivity!]!
   totalParticipants: Int!
   weeklyActivity: [ParticipantActivityTimestamp!]!
+}
+
+type CourseLeaderboard {
+  averageActiveScore: Float!
+  leaderboard: [LeaderboardEntry!]!
+  numOfActiveParticipants: Int!
 }
 
 type CoursePerformanceAnalytics {
@@ -1740,6 +1743,7 @@ type Query {
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseGroups(courseId: String!): Course
+  getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, endDate: String, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]

@@ -1,0 +1,28 @@
+query GetCourseLeaderboard(
+  $courseId: String!
+  $courseSelection: Boolean!
+  $weeklySelection: Boolean!
+  $customSelection: Boolean!
+  $startDate: String
+  $endDate: String
+) {
+  getCourseLeaderboard(
+    courseId: $courseId
+    courseSelection: $courseSelection
+    weeklySelection: $weeklySelection
+    customSelection: $customSelection
+    startDate: $startDate
+    endDate: $endDate
+  ) {
+    numOfActiveParticipants
+    averageActiveScore
+    leaderboard {
+      id
+      score
+      rank
+      username
+      email
+      avatar
+    }
+  }
+}

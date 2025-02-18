@@ -19,10 +19,8 @@ import { type IUser, UserRef } from './user.js'
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
-  numOfActiveParticipants?: number
   numOfParticipantGroups?: number
   averageScore?: number
-  averageActiveScore?: number
   isGroupDeadlinePassed?: boolean
   liveQuizzes?: ILiveQuiz[]
   practiceQuizzes?: IPracticeQuiz[]
@@ -30,7 +28,6 @@ export interface ICourse extends DB.Course {
   participantGroups?: IParticipantGroup[]
   groupAssignmentPoolEntries?: IGroupAssignmentPoolEntryRef[]
   groupActivities?: IGroupActivity[]
-  leaderboard?: ILeaderboardEntry[]
   awards?: IAwardEntry[]
   owner?: IUser
 }
@@ -51,18 +48,11 @@ export const Course = builder.objectType(CourseRef, {
     numOfParticipants: t.exposeInt('numOfParticipants', {
       nullable: true,
     }),
-    numOfActiveParticipants: t.exposeInt('numOfActiveParticipants', {
-      nullable: true,
-    }),
     numOfParticipantGroups: t.exposeInt('numOfParticipantGroups', {
       nullable: true,
     }),
 
     averageScore: t.exposeFloat('averageScore', {
-      nullable: true,
-    }),
-
-    averageActiveScore: t.exposeFloat('averageActiveScore', {
       nullable: true,
     }),
 
@@ -117,10 +107,6 @@ export const Course = builder.objectType(CourseRef, {
       type: [GroupActivityRef],
       nullable: true,
     }),
-    leaderboard: t.expose('leaderboard', {
-      type: [LeaderboardEntryRef],
-      nullable: true,
-    }),
     awards: t.expose('awards', {
       type: [AwardEntryRef],
       nullable: true,
@@ -129,6 +115,23 @@ export const Course = builder.objectType(CourseRef, {
       type: UserRef,
       nullable: true,
     }),
+  }),
+})
+
+export interface CourseLeaderboard {
+  leaderboard: ILeaderboardEntry[]
+  numOfActiveParticipants: number
+  averageActiveScore: number
+}
+export const CourseLeaderboardRef =
+  builder.objectRef<CourseLeaderboard>('CourseLeaderboard')
+export const CourseLeaderboard = CourseLeaderboardRef.implement({
+  fields: (t) => ({
+    leaderboard: t.expose('leaderboard', {
+      type: [LeaderboardEntryRef],
+    }),
+    numOfActiveParticipants: t.exposeInt('numOfActiveParticipants'),
+    averageActiveScore: t.exposeFloat('averageActiveScore'),
   }),
 })
 
@@ -185,7 +188,7 @@ export interface ILeaderboardEntry
   rank: number
   lastBlockOrder?: number
   isSelf?: boolean
-  level: number
+  level?: number
   participant?: IParticipant
   participation?: IParticipation
   courseId?: string | null
@@ -208,7 +211,7 @@ export const LeaderboardEntry = LeaderboardEntryRef.implement({
     isSelf: t.exposeBoolean('isSelf', {
       nullable: true,
     }),
-    level: t.exposeInt('level'),
+    level: t.exposeInt('level', { nullable: true }),
 
     participant: t.expose('participant', {
       type: ParticipantRef,

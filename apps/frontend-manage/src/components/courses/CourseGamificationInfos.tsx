@@ -4,14 +4,10 @@ import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import GroupsLeaderboard from './GroupsLeaderboard'
 import GroupsList from './GroupsList'
-import IndividualLeaderboard, {
-  type InvididualLeaderboardEntry,
-} from './IndividualLeaderboard'
+import IndividualLeaderboard from './IndividualLeaderboard'
 
 interface CourseGamificationInfosProps {
-  course: Omit<Course, 'leaderboard' | 'liveQuizzes'> & {
-    leaderboard?: InvididualLeaderboardEntry[] | null
-  }
+  course: Omit<Course, 'liveQuizzes'>
   tabValue: string
   setTabValue: (newValue: string) => void
 }
@@ -72,12 +68,11 @@ function CourseGamificationInfos({
         />
       </Tabs.TabList>
       <IndividualLeaderboard
-        leaderboard={course.leaderboard}
         courseName={course.name}
         courseId={course.id}
+        courseStart={course.startDate}
+        courseEnd={course.endDate}
         numOfParticipants={course.numOfParticipants}
-        numOfActiveParticipants={course.numOfActiveParticipants}
-        averageActiveScore={course.averageActiveScore}
       />
       <GroupsLeaderboard />
       <GroupsList

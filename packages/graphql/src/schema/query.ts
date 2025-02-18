@@ -21,6 +21,7 @@ import {
 } from './analytics.js'
 import {
   Course,
+  CourseLeaderboard,
   CourseSummary,
   LeaderboardEntry,
   StudentCourse,
@@ -488,6 +489,22 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return CourseService.getCourseData(args, ctx)
+        },
+      }),
+
+      getCourseLeaderboard: asUser.field({
+        nullable: true,
+        type: CourseLeaderboard,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          courseSelection: t.arg.boolean({ required: true }),
+          weeklySelection: t.arg.boolean({ required: true }),
+          customSelection: t.arg.boolean({ required: true }),
+          startDate: t.arg.string({ required: false }),
+          endDate: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return CourseService.getCourseLeaderboard(args, ctx)
         },
       }),
 
