@@ -63,7 +63,11 @@ function ElementTableChart({
         <DataTable
           isPaginated
           isResetSortingEnabled
-          initialSorting={[{ id: 'count', desc: true }]}
+          initialSorting={[
+            { id: 'count', desc: true },
+            // default ordering by value after count to fix order for elements with identical counts
+            { id: 'value', desc: false },
+          ]}
           columns={columns}
           data={tableData}
           csvFilename={`${instance.name}_results`}
