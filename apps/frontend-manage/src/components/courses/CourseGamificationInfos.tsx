@@ -74,6 +74,7 @@ function CourseGamificationInfos({
       <IndividualLeaderboard
         leaderboard={course.leaderboard}
         courseName={course.name}
+        courseId={course.id}
         numOfParticipants={course.numOfParticipants}
         numOfActiveParticipants={course.numOfActiveParticipants}
         averageActiveScore={course.averageActiveScore}

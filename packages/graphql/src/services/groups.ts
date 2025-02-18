@@ -38,6 +38,7 @@ import {
 } from '../lib/randomizedGroups.js'
 import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+import { upsertDailyTimelineEntry } from './participants.js'
 import {
   type RespondToElementStackInput,
   updateCaseStudyResults,
@@ -45,7 +46,6 @@ import {
   updateFreeTextResults,
   updateNumericalResults,
   updateSelectionResults,
-  upsertDailyTimelineEntry,
 } from './stacks.js'
 
 const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25

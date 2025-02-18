@@ -1097,6 +1097,28 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      updateWeeklyTimelineEntriesCourse: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ParticipantService.updateWeeklyTimelineEntriesCourse(
+            {
+              courseId: args.courseId,
+              cronjob: false,
+            },
+            ctx
+          )
+        },
+      }),
+
+      updateWeeklyTimelineEntries: t.boolean({
+        resolve(_, __, ctx) {
+          checkCronToken(ctx)
+          return ParticipantService.updateWeeklyTimelineEntries(ctx)
+        },
+      }),
+
       toggleArchiveCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,

@@ -22,7 +22,6 @@ import {
   PrismaClient,
   type QuestionResponse as PrismaQuestionResponse,
   ResponseCorrectness,
-  TimelineEntryType,
   UserRole,
 } from '@klicker-uzh/prisma'
 import type {
@@ -80,8 +79,9 @@ import type {
   CaseStudyElementOptions,
   ResponseInput,
 } from '../ops.js'
+import { upsertDailyTimelineEntry } from './participants.js'
 
-type PrismaTransactionClient = Omit<
+export type PrismaTransactionClient = Omit<
   PrismaClient<Prisma.PrismaClientOptions, never>,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
@@ -2617,57 +2617,6 @@ async function updateLeaderboardOnQuestionResponse({
       score: {
         increment: pointsAwarded,
       },
-    },
-  })
-}
-
-export async function upsertDailyTimelineEntry({
-  prisma,
-  participantId,
-  courseId,
-  xpAwarded,
-  pointsAwarded,
-}: {
-  prisma: PrismaTransactionClient
-  participantId: string
-  courseId: string
-  xpAwarded?: number
-  pointsAwarded?: number
-}) {
-  await prisma.timelineEntry.upsert({
-    where: {
-      participantId_courseId_timestamp_type: {
-        participantId,
-        courseId,
-        timestamp: new Date(),
-        type: TimelineEntryType.DAILY,
-      },
-    },
-    create: {
-      type: TimelineEntryType.DAILY,
-      timestamp: new Date(),
-      collectedPoints: pointsAwarded,
-      collectedXp: xpAwarded,
-      computedAt: new Date(),
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participant: {
-        connect: {
-          id: participantId,
-        },
-      },
-    },
-    update: {
-      collectedPoints:
-        typeof pointsAwarded === 'number'
-          ? { increment: pointsAwarded }
-          : undefined,
-      collectedXp:
-        typeof xpAwarded === 'number' ? { increment: xpAwarded } : undefined,
-      computedAt: new Date(),
     },
   })
 }

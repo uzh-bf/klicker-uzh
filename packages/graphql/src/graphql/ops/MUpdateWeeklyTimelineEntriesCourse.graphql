@@ -1,0 +1,3 @@
+mutation UpdateWeeklyTimelineEntriesCourse($courseId: String!) {
+  updateWeeklyTimelineEntriesCourse(courseId: $courseId)
+}
