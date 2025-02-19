@@ -44,7 +44,7 @@ function Ellipsis({
           withMarkdown ? (
             <Prose
               className={{
-                root: 'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6 hover:text-white',
+                root: 'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6',
               }}
             >
               <Markdown
