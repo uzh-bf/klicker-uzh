@@ -472,6 +472,12 @@ export async function getStudentCourseLeaderboard(
             timestamp: {
               gt: dayjs().subtract(14, 'days').toDate(),
             },
+            participation: {
+              isActive: true,
+            },
+          },
+          include: {
+            participation: true,
           },
         },
       },
@@ -502,8 +508,9 @@ export async function getStudentCourseLeaderboard(
 
     // loop through the timeline entries and update the leaderboard scores
     course?.timelineEntries.forEach((entry) => {
-      if (leaderboardScores[entry.participantId]) {
-        leaderboardScores[entry.participantId]!.score += entry.collectedPoints
+      if (leaderboardScores[entry.participation.participantId]) {
+        leaderboardScores[entry.participation.participantId]!.score +=
+          entry.collectedPoints
       }
     })
 
@@ -1135,24 +1142,36 @@ export async function getCourseLeaderboard(
     // feth all timeline entries from the database
     const startDateUTC = convertDateToUTCDatetime(startDate)
     const endDateUTC = convertDateToUTCDatetime(endDate)
-    const dbTimelineEntries = await ctx.prisma.timelineEntry.findMany({
-      where: {
-        courseId,
-        type: TimelineEntryType.WEEKLY,
-        timestamp: weeklySelection
-          ? startDateUTC
-          : {
-              gte: startDateUTC!,
-              lte: endDateUTC!,
-            },
-      },
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
       include: {
-        participant: true,
-      },
-      orderBy: {
-        collectedPoints: 'desc',
+        timelineEntries: {
+          where: {
+            type: TimelineEntryType.WEEKLY,
+            timestamp: weeklySelection
+              ? startDateUTC
+              : {
+                  gte: startDateUTC!,
+                  lte: endDateUTC!,
+                },
+            participation: {
+              isActive: true,
+            },
+          },
+          include: {
+            participation: {
+              include: {
+                participant: true,
+              },
+            },
+          },
+          orderBy: {
+            collectedPoints: 'desc',
+          },
+        },
       },
     })
+    const dbTimelineEntries = course?.timelineEntries ?? []
 
     if (weeklySelection || (customSelection && startDate === endDate)) {
       // directly return the timeline entries as a leaderboard
@@ -1169,10 +1188,10 @@ export async function getCourseLeaderboard(
             id: entry.id,
             score: entry.collectedPoints,
             rank: acc.count,
-            email: entry.participant.email,
-            username: entry.participant.username,
-            avatar: entry.participant.avatar,
-            participantId: entry.participantId,
+            email: entry.participation.participant.email,
+            username: entry.participation.participant.username,
+            avatar: entry.participation.participant.avatar,
+            participantId: entry.participation.participantId,
           })
 
           // update last update timestamp if necessary
@@ -1215,14 +1234,14 @@ export async function getCourseLeaderboard(
         return acc
       }
 
-      const key = entry.participantId
+      const key = entry.participation.participantId
       if (!acc[key]) {
         acc[key] = {
           id: entry.id,
           participantId: key,
-          email: entry.participant.email,
-          username: entry.participant.username,
-          avatar: entry.participant.avatar,
+          email: entry.participation.participant.email,
+          username: entry.participation.participant.username,
+          avatar: entry.participation.participant.avatar,
           collectedPoints: 0,
           collectedXp: 0,
           lastUpdated: entry.timestamp,

@@ -148,11 +148,14 @@ model TimelineEntry {
   course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   courseId String? @db.Uuid
 
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([participantId, courseId, timestamp, type])
+  @@unique([participationId, courseId, timestamp, type])
+  @@index([courseId, type, timestamp])
+  @@index([participationId, type, timestamp])
+  @@index([type, timestamp])
 }

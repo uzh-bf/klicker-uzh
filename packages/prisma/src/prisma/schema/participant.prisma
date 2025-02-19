@@ -52,7 +52,6 @@ model Participant {
   coursePerformances              ParticipantPerformance[]
   groupAssignmentPoolEntries      GroupAssignmentPoolEntry[]
   messages                        GroupMessage[]
-  timelineEntries                 TimelineEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,6 +115,7 @@ model Participation {
   courseLeaderboardId Int?              @unique
 
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
+  timelineEntries     TimelineEntry[]
 
   responses               QuestionResponse[]
   detailResponses         QuestionResponseDetail[]

@@ -1,4 +1,5 @@
 import {
+  Participation,
   PublicationStatus,
   TimelineEntry,
   TimelineEntryType,
@@ -817,10 +818,25 @@ export async function upsertDailyTimelineEntry({
   xpAwarded?: number
   pointsAwarded?: number
 }) {
+  // find course participation of participant
+  const participation = await prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId,
+      },
+    },
+  })
+
+  // return early if participation does not exist
+  if (!participation) {
+    return
+  }
+
   await prisma.timelineEntry.upsert({
     where: {
-      participantId_courseId_timestamp_type: {
-        participantId,
+      participationId_courseId_timestamp_type: {
+        participationId: participation.id,
         courseId,
         timestamp: new Date(),
         type: TimelineEntryType.DAILY,
@@ -829,7 +845,7 @@ export async function upsertDailyTimelineEntry({
     create: {
       type: TimelineEntryType.DAILY,
       timestamp: new Date(),
-      collectedPoints: pointsAwarded,
+      collectedPoints: participation.isActive ? pointsAwarded : 0,
       collectedXp: xpAwarded,
       computedAt: new Date(),
       course: {
@@ -837,9 +853,9 @@ export async function upsertDailyTimelineEntry({
           id: courseId,
         },
       },
-      participant: {
+      participation: {
         connect: {
-          id: participantId,
+          id: participation.id,
         },
       },
     },
@@ -925,6 +941,9 @@ export async function updateWeeklyTimelineEntriesCourse(
             },
           ],
         },
+        include: {
+          participation: true,
+        },
       },
     },
   })
@@ -946,6 +965,9 @@ export async function updateWeeklyTimelineEntriesCourse(
               timestamp: startDateCurrentWeek,
             },
           ],
+        },
+        include: {
+          participation: true,
         },
       },
     },
@@ -1025,8 +1047,8 @@ async function updateWeeklyTimelineEntriesFromDailys({
   timestamp,
   courseId,
 }: {
-  entries: TimelineEntry[]
-  dailyEntries: TimelineEntry[]
+  entries: (TimelineEntry & { participation?: Participation })[]
+  dailyEntries: (TimelineEntry & { participation?: Participation })[]
   timestamp: Date
   courseId: string
 }) {
@@ -1034,15 +1056,20 @@ async function updateWeeklyTimelineEntriesFromDailys({
   const reducedDailyEntries = dailyEntries.reduce<{
     [participantId: string]: { collectedPoints: number; collectedXp: number }
   }>((acc, entry) => {
-    if (!acc[entry.participantId]) {
-      acc[entry.participantId] = {
+    const participantId = entry.participation?.participantId
+    if (!participantId) {
+      return acc
+    }
+
+    if (!acc[participantId]) {
+      acc[participantId] = {
         collectedPoints: 0,
         collectedXp: 0,
       }
     }
 
-    acc[entry.participantId]!.collectedPoints += entry.collectedPoints
-    acc[entry.participantId]!.collectedXp += entry.collectedXp
+    acc[participantId]!.collectedPoints += entry.collectedPoints
+    acc[participantId]!.collectedXp += entry.collectedXp
 
     return acc
   }, {})
@@ -1058,7 +1085,7 @@ async function updateWeeklyTimelineEntriesFromDailys({
         (entry) =>
           entry.type === TimelineEntryType.WEEKLY &&
           entry.timestamp.getTime() === timestamp.getTime() &&
-          entry.participantId === participantId
+          entry.participation?.participantId === participantId
       )
 
       if (
@@ -1124,14 +1151,12 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
                       timestamp: {
                         lt: dayjs().subtract(14, 'days').toDate(),
                       },
-                      participantId: ctx.user.sub,
                     },
                     {
                       type: TimelineEntryType.DAILY,
                       timestamp: {
                         gte: dayjs().subtract(14, 'days').toDate(),
                       },
-                      participantId: ctx.user.sub,
                     },
                   ],
                 },
