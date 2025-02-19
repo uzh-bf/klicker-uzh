@@ -39,10 +39,10 @@ function LeaveLeaderboardModal({
       className={{ content: 'w-[40rem] !pt-0' }}
     >
       <div>
-        <H2>{t('pwa.courses.leaveCourseTitle')}</H2>
-        <div>{t('pwa.courses.leaveCourseConfirmation')}</div>
+        <H2>{t('pwa.courses.leaveLeaderboardTitle')}</H2>
+        <div>{t('pwa.courses.leaveLeaderboardConfirmation')}</div>
         <div className="mb-2 mt-6 text-sm italic">
-          {t('pwa.courses.leaveCourseInformation')}
+          {t('pwa.courses.leaveLeaderboardInformation')}
         </div>
       </div>
     </Modal>

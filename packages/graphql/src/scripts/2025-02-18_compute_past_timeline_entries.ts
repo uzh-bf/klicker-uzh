@@ -31,6 +31,7 @@ async function run() {
       include: {
         microLearning: true,
         practiceQuiz: true,
+        participation: true,
       },
     })
 
@@ -39,6 +40,7 @@ async function run() {
       [dayCourse: string]: {
         date: string
         courseId: string
+        participationId: number
         collectedPoints: number
         collectedXp: number
       }
@@ -62,11 +64,19 @@ async function run() {
 
       // initialize empty day entry
       if (!acc[key]) {
-        acc[key] = { date: day, courseId, collectedPoints: 0, collectedXp: 0 }
+        acc[key] = {
+          date: day,
+          courseId,
+          participationId: detail.participationId,
+          collectedPoints: 0,
+          collectedXp: 0,
+        }
       }
 
       // add points and XP
-      acc[key].collectedPoints += detail.pointsAwarded ?? 0
+      acc[key].collectedPoints += detail.participation.isActive
+        ? (detail.pointsAwarded ?? 0)
+        : 0
       acc[key].collectedXp += detail.xpAwarded
 
       return acc
@@ -80,13 +90,19 @@ async function run() {
       },
       include: {
         liveQuiz: true,
+        sessionParticipation: true,
       },
     })
 
     // add live quiz points to the corresponding day where the quiz was finished (finishedAt date)
     for (const entry of lqLeaderboardEntries) {
-      // if the live quiz is still running, continue
-      if (!entry.liveQuiz?.finishedAt) {
+      // if the live quiz is still running or the participation is not active, continue
+      if (
+        !entry.liveQuiz?.finishedAt ||
+        entry.sessionParticipationId === null ||
+        !entry.sessionParticipation ||
+        !entry.sessionParticipation.isActive
+      ) {
         continue
       }
 
@@ -113,6 +129,7 @@ async function run() {
         dailyData[key] = {
           date: day,
           courseId,
+          participationId: entry.sessionParticipationId,
           collectedPoints: 0,
           collectedXp: 0,
         }
@@ -127,6 +144,7 @@ async function run() {
       [weekCourse: string]: {
         date: string
         courseId: string
+        participationId: number
         collectedPoints: number
         collectedXp: number
       }
@@ -145,6 +163,7 @@ async function run() {
         acc[key] = {
           date: weekStart,
           courseId,
+          participationId: data.participationId,
           collectedPoints: 0,
           collectedXp: 0,
         }
@@ -161,8 +180,8 @@ async function run() {
         // create daily timeline entry
         await prisma.timelineEntry.upsert({
           where: {
-            participantId_courseId_timestamp_type: {
-              participantId: participant.id,
+            participationId_courseId_timestamp_type: {
+              participationId: data.participationId,
               courseId: data.courseId,
               timestamp: dayjs.utc(data.date).toDate(),
               type: TimelineEntryType.DAILY,
@@ -179,9 +198,9 @@ async function run() {
                 id: data.courseId,
               },
             },
-            participant: {
+            participation: {
               connect: {
-                id: participant.id,
+                id: data.participationId,
               },
             },
           },
@@ -198,8 +217,8 @@ async function run() {
         // create weekly timeline entry
         await prisma.timelineEntry.upsert({
           where: {
-            participantId_courseId_timestamp_type: {
-              participantId: participant.id,
+            participationId_courseId_timestamp_type: {
+              participationId: data.participationId,
               courseId: data.courseId,
               timestamp: dayjs.utc(data.date).toDate(),
               type: TimelineEntryType.WEEKLY,
@@ -216,9 +235,9 @@ async function run() {
                 id: data.courseId,
               },
             },
-            participant: {
+            participation: {
               connect: {
-                id: participant.id,
+                id: data.participationId,
               },
             },
           },

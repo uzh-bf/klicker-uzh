@@ -18180,7 +18180,7 @@
             "deprecationReason": null
           },
           {
-            "name": "leaveCourse",
+            "name": "leaveCourseLeaderboard",
             "description": null,
             "args": [
               {

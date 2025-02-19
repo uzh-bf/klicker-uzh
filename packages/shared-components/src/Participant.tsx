@@ -82,8 +82,8 @@ export function ParticipantOther(props: ParticipantProps) {
 
 interface ParticipantSelfProps extends ParticipantProps {
   isActive: boolean
-  onJoinCourse?: () => void
-  onLeaveCourse?: () => void
+  onJoinLeaderboard?: () => void
+  onLeaveLeaderboard?: () => void
 }
 
 export function ParticipantSelf(props: ParticipantSelfProps) {
@@ -91,24 +91,24 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
 
   return (
     <Participant isHighlighted {...props}>
-      {props.isActive && typeof props.onLeaveCourse !== 'undefined' && (
+      {props.isActive && typeof props.onLeaveLeaderboard !== 'undefined' && (
         <Button
           className={{ root: 'text-sm' }}
           onClick={(e) => {
             e?.stopPropagation()
-            props?.onLeaveCourse?.()
+            props?.onLeaveLeaderboard?.()
           }}
           data={{ cy: 'leave-leaderboard' }}
         >
           {t('shared.generic.leave')}
         </Button>
       )}
-      {!props.isActive && typeof props.onJoinCourse !== 'undefined' && (
+      {!props.isActive && typeof props.onJoinLeaderboard !== 'undefined' && (
         <Button
           className={{ root: 'text-sm' }}
           onClick={(e) => {
             e?.stopPropagation()
-            props.onJoinCourse!()
+            props.onJoinLeaderboard!()
           }}
           data={{ cy: 'join-leaderboard' }}
         >

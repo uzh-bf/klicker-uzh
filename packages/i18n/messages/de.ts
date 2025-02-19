@@ -291,6 +291,7 @@ export default {
       instructions: 'Anweisungen',
       caseStudyItems: 'Fallstudien-Elemente',
       results: 'Resultate',
+      never: 'Nie',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -596,10 +597,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.',
       awards: 'Auszeichnungen',
       open: 'offen',
-      leaveCourseTitle: 'Leaderboard verlassen',
-      leaveCourseConfirmation:
+      leaveLeaderboardTitle: 'Leaderboard verlassen',
+      leaveLeaderboardConfirmation:
         'Möchten Sie das Leaderboard wirklich verlassen?',
-      leaveCourseInformation:
+      leaveLeaderboardInformation:
         'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
