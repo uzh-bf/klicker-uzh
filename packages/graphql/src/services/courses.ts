@@ -104,9 +104,16 @@ export async function joinCourse(
 
   if (!participation) return null
 
-  const lbEntry = await ctx.prisma.leaderboardEntry.create({
-    data: {
-      type: 'COURSE',
+  const lbEntry = await ctx.prisma.leaderboardEntry.upsert({
+    where: {
+      type_participantId_courseId: {
+        type: LeaderboardType.COURSE,
+        participantId: ctx.user.sub,
+        courseId,
+      },
+    },
+    create: {
+      type: LeaderboardType.COURSE,
       participant: {
         connect: {
           id: ctx.user.sub,
@@ -124,6 +131,7 @@ export async function joinCourse(
       },
       score: 0,
     },
+    update: {},
   })
 
   return {
@@ -152,6 +160,16 @@ export async function leaveCourse(
     },
     data: {
       isActive: false,
+    },
+  })
+
+  await ctx.prisma.leaderboardEntry.delete({
+    where: {
+      type_participantId_courseId: {
+        type: LeaderboardType.COURSE,
+        participantId: ctx.user.sub,
+        courseId,
+      },
     },
   })
 
