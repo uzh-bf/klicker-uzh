@@ -164,8 +164,22 @@ export async function leaveCourseLeaderboard(
     },
   })
 
+  // delete all course leaderboard entries linked to the participation
   await ctx.prisma.leaderboardEntry.deleteMany({
     where: { participation: { id: participation.id } },
+  })
+
+  // delete all session leaderboard entries linked to the participation
+  await ctx.prisma.leaderboardEntry.deleteMany({
+    where: { sessionParticipationId: participation.id },
+  })
+
+  // reset collected points on timeline entries linked to this participation
+  await ctx.prisma.timelineEntry.updateMany({
+    where: { participationId: participation.id },
+    data: {
+      collectedPoints: 0,
+    },
   })
 
   // TODO: reset collected points and points dates on questionresponse and questionresponsedetail
