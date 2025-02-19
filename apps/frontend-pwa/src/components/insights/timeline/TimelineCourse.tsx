@@ -1,10 +1,8 @@
 import { CourseStudentTimeline } from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
 import TimelineCourseChart from './TimelineCourseChart'
 import TimelineCourseInformation from './TimelineCourseInformation'
 
 function TimelineCourse({ course }: { course: CourseStudentTimeline }) {
-  const t = useTranslations()
   const totalPoints =
     course.timelineEntries && course.timelineEntries.length > 0
       ? course.timelineEntries[course.timelineEntries.length - 1].totalPoints

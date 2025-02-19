@@ -587,6 +587,7 @@ type CourseActivityAnalytics {
 
 type CourseLeaderboard {
   averageActiveScore: Float!
+  computedAt: Date
   leaderboard: [LeaderboardEntry!]!
   numOfActiveParticipants: Int!
 }

@@ -122,6 +122,7 @@ export interface CourseLeaderboard {
   leaderboard: ILeaderboardEntry[]
   numOfActiveParticipants: number
   averageActiveScore: number
+  computedAt?: Date
 }
 export const CourseLeaderboardRef =
   builder.objectRef<CourseLeaderboard>('CourseLeaderboard')
@@ -132,6 +133,7 @@ export const CourseLeaderboard = CourseLeaderboardRef.implement({
     }),
     numOfActiveParticipants: t.exposeInt('numOfActiveParticipants'),
     averageActiveScore: t.exposeFloat('averageActiveScore'),
+    computedAt: t.expose('computedAt', { type: 'Date', nullable: true }),
   }),
 })
 

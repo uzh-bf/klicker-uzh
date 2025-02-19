@@ -14,6 +14,7 @@ import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import { type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
 
 // custom date parser
@@ -1131,17 +1132,14 @@ export async function getCourseLeaderboard(
     if (customSelection && (!startDate || !endDate)) return null
 
     // feth all timeline entries from the database
-    const startDateUTC = startDate
-      ? dayjs(startDate, 'DD.MM.YYYY').utc().toDate()
-      : undefined
-    const endDateUTC = endDate
-      ? dayjs(endDate, 'DD.MM.YYYY').utc().toDate()
-      : undefined
+    const startDateUTC = convertDateToUTCDatetime(startDate)
+    const endDateUTC = convertDateToUTCDatetime(endDate)
     const dbTimelineEntries = await ctx.prisma.timelineEntry.findMany({
       where: {
         courseId,
+        type: TimelineEntryType.WEEKLY,
         timestamp: weeklySelection
-          ? startDateUTC!
+          ? startDateUTC
           : {
               gte: startDateUTC!,
               lte: endDateUTC!,
@@ -1151,19 +1149,17 @@ export async function getCourseLeaderboard(
         participant: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        collectedPoints: 'desc',
       },
     })
 
     if (weeklySelection || (customSelection && startDate === endDate)) {
       // directly return the timeline entries as a leaderboard
-      const sortedTimelineEntries = dbTimelineEntries.sort(
-        (a, b) => b.collectedPoints - a.collectedPoints
-      )
-      const { lbEntries, sum, count } = sortedTimelineEntries.reduce<{
+      const { lbEntries, sum, count, lastUpdated } = dbTimelineEntries.reduce<{
         lbEntries: ILeaderboardEntry[]
         sum: number
         count: number
+        lastUpdated?: Date
       }>(
         (acc, entry) => {
           acc.sum += entry.collectedPoints
@@ -1178,18 +1174,25 @@ export async function getCourseLeaderboard(
             participantId: entry.participantId,
           })
 
+          // update last update timestamp if necessary
+          if (!acc.lastUpdated || entry.computedAt > acc.lastUpdated) {
+            acc.lastUpdated = entry.computedAt
+          }
+
           return acc
         },
         {
           lbEntries: [] as ILeaderboardEntry[],
           sum: 0,
           count: 0,
+          lastUpdated: undefined,
         }
       )
 
       return {
         numOfActiveParticipants: lbEntries.length,
         averageActiveScore: count > 0 ? sum / count : 0,
+        computedAt: lastUpdated,
         leaderboard: lbEntries,
       }
     }
@@ -1204,6 +1207,7 @@ export async function getCourseLeaderboard(
         avatar: string | null
         collectedPoints: number
         collectedXp: number
+        lastUpdated: Date
       }
     }>((acc, entry) => {
       if (entry.collectedPoints === 0) {
@@ -1220,10 +1224,16 @@ export async function getCourseLeaderboard(
           avatar: entry.participant.avatar,
           collectedPoints: 0,
           collectedXp: 0,
+          lastUpdated: entry.timestamp,
         }
       }
       acc[key].collectedPoints += entry.collectedPoints
       acc[key].collectedXp += entry.collectedXp
+
+      if (entry.computedAt > acc[key].lastUpdated) {
+        acc[key].lastUpdated = entry.computedAt
+      }
+
       return acc
     }, {})
 
@@ -1236,35 +1246,45 @@ export async function getCourseLeaderboard(
       }
     )
 
-    const { leaderboardEntries, sum, count } = sortedTimelineEntries.reduce<{
-      leaderboardEntries: ILeaderboardEntry[]
-      sum: number
-      count: number
-    }>(
-      (acc, entry, index) => {
-        acc.sum += entry.collectedPoints
-        acc.count += 1
-        acc.leaderboardEntries.push({
-          id: entry.id,
-          score: entry.collectedPoints,
-          rank: index + 1,
-          email: entry.email,
-          username: entry.username,
-          avatar: entry.avatar,
-          participantId: entry.participantId,
-        })
-        return acc
-      },
-      {
-        leaderboardEntries: [],
-        sum: 0,
-        count: 0,
-      }
-    )
+    const { leaderboardEntries, sum, count, lastUpdated } =
+      sortedTimelineEntries.reduce<{
+        leaderboardEntries: ILeaderboardEntry[]
+        sum: number
+        count: number
+        lastUpdated
+      }>(
+        (acc, entry, index) => {
+          acc.sum += entry.collectedPoints
+          acc.count += 1
+          acc.leaderboardEntries.push({
+            id: entry.id,
+            score: entry.collectedPoints,
+            rank: index + 1,
+            email: entry.email,
+            username: entry.username,
+            avatar: entry.avatar,
+            participantId: entry.participantId,
+          })
+
+          // update last update timestamp if necessary
+          if (!acc.lastUpdated || entry.lastUpdated > acc.lastUpdated) {
+            acc.lastUpdated = entry.lastUpdated
+          }
+
+          return acc
+        },
+        {
+          leaderboardEntries: [],
+          sum: 0,
+          count: 0,
+          lastUpdated: undefined,
+        }
+      )
 
     return {
       numOfActiveParticipants: count,
       averageActiveScore: count > 0 ? sum / count : 0,
+      computedAt: lastUpdated,
       leaderboard: leaderboardEntries,
     }
   }

@@ -14,8 +14,6 @@ query GetCourseLeaderboard(
     startDate: $startDate
     endDate: $endDate
   ) {
-    numOfActiveParticipants
-    averageActiveScore
     leaderboard {
       id
       score
@@ -24,5 +22,9 @@ query GetCourseLeaderboard(
       email
       avatar
     }
+
+    numOfActiveParticipants
+    averageActiveScore
+    computedAt
   }
 }

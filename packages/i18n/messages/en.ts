@@ -214,6 +214,7 @@ export default {
       respond: 'Respond',
       responses: 'Responses',
       update: 'Update',
+      recompute: 'Recompute',
       ok: 'OK',
       language: 'Language',
       english: 'English',
@@ -1882,6 +1883,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       assignRandomGroups: 'Assign random groups',
       emailsInLeaderboardExport:
         'To see the email addresses of the students in addition to the usernames, please export the table below using the CSV export function. Participants without points are only listed on the leaderboard for the entire course (not on weekly leaderboards).',
+      lastModified: 'Last modified',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
       quickSelection: 'Quick selection',
