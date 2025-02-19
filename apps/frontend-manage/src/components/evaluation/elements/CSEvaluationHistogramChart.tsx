@@ -41,6 +41,21 @@ function CSEvaluationHistogramChart({
   textSize: TextSizeType
 }) {
   const t = useTranslations()
+  const { minValue, maxValue } = histogramData.reduce(
+    (acc, { value }) => {
+      if (value < acc.minValue) {
+        acc.minValue = value
+      }
+      if (value > acc.maxValue) {
+        acc.maxValue = value
+      }
+      return acc
+    },
+    { minValue: Number.MAX_VALUE, maxValue: Number.MIN_VALUE }
+  )
+
+  // compute the precision of the x-axis such that always at least 5 ticks are shown
+  const precision = -Math.floor(Math.log10((maxValue - minValue) / 5))
 
   return (
     <div className="mt-1 h-full w-full">
@@ -62,15 +77,10 @@ function CSEvaluationHistogramChart({
               value: criterionName,
               position: 'bottom',
             }}
-            ticks={histogramData.map((d) => d.value)}
-            tickFormatter={(tick: number) => {
-              const dataPoint = histogramData.find((d) => d.value === tick)
-              return dataPoint
-                ? dataPoint.exactBinMatch
-                  ? String(tick)
-                  : dataPoint.label
-                : String(tick)
-            }}
+            ticks={histogramData.map(
+              (d) => Math.round(d.value * 10 ** precision) / 10 ** precision
+            )}
+            tickFormatter={(tick: number) => `  ${tick}  `}
             className={textSize.textXl}
           />
           <YAxis
