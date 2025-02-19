@@ -183,7 +183,7 @@ function useCaseStudyHistogramData({
       const criterionMin = resultObject.min - resultObject.step / 2
       const criterionMax = resultObject.max + resultObject.step / 2
       const binCount = Math.min(
-        30,
+        25,
         (resultObject.max - resultObject.min) / resultObject.step + 1
       )
 
