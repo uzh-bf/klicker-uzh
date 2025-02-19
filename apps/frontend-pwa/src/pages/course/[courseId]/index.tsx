@@ -4,7 +4,7 @@ import {
   GetCourseOverviewDataDocument,
   GetStudentCourseLeaderboardDocument,
   JoinCourseDocument,
-  LeaveCourseDocument,
+  LeaveCourseLeaderboardDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
@@ -51,7 +51,10 @@ function CourseOverview({
   const [selectedTab, setSelectedTab] = useState('global')
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
-  const [isLeaveCourseModalOpen, setIsLeaveCourseModalOpen] = useState(false)
+  const [
+    isLeaveCourseLeaderboardModalOpen,
+    setIsLeaveCourseLeaderboardModalOpen,
+  ] = useState(false)
   const [leaderboardType, setLeaderboardType] = useState<'course' | 'biweekly'>(
     'course'
   )
@@ -84,7 +87,7 @@ function CourseOverview({
     ],
   })
 
-  const [leaveCourse] = useMutation(LeaveCourseDocument, {
+  const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
     variables: { courseId },
     refetchQueries: [
       { query: GetCourseOverviewDataDocument, variables: { courseId } },
@@ -275,7 +278,9 @@ function CourseOverview({
                                     ?.leaderboard ?? []
                                 }
                                 onJoin={joinCourse}
-                                onLeave={() => setIsLeaveCourseModalOpen(true)}
+                                onLeave={() =>
+                                  setIsLeaveCourseLeaderboardModalOpen(true)
+                                }
                                 participant={participant ?? undefined}
                                 onParticipantClick={openProfileModal}
                                 podiumImgSrc={{
@@ -511,11 +516,11 @@ function CourseOverview({
             )}
           </div>
           <LeaveLeaderboardModal
-            isModalOpen={isLeaveCourseModalOpen}
-            setIsModalOpen={setIsLeaveCourseModalOpen}
+            isModalOpen={isLeaveCourseLeaderboardModalOpen}
+            setIsModalOpen={setIsLeaveCourseLeaderboardModalOpen}
             onConfirm={() => {
-              leaveCourse()
-              setIsLeaveCourseModalOpen(false)
+              leaveCourseLeaderboard()
+              setIsLeaveCourseLeaderboardModalOpen(false)
             }}
           />
         </>

@@ -123,8 +123,8 @@ function Leaderboard({
               points={entry.score}
               rank={entry.rank}
               level={entry.level}
-              onJoinCourse={onJoin}
-              onLeaveCourse={onLeave}
+              onJoinLeaderboard={onJoin}
+              onLeaveLeaderboard={onLeave}
               onClick={
                 onParticipantClick && typeof entry.participantId !== 'undefined'
                   ? () => onParticipantClick(entry.participantId!, true)
@@ -159,8 +159,8 @@ function Leaderboard({
             points={selfEntry.score}
             rank={selfEntry.rank}
             level={selfEntry.level}
-            onJoinCourse={onJoin}
-            onLeaveCourse={onLeave}
+            onJoinLeaderboard={onJoin}
+            onLeaveLeaderboard={onLeave}
           />
         )}
       </div>

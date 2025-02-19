@@ -1,9 +1,0 @@
-mutation LeaveCourse($courseId: String!) {
-  leaveCourse(courseId: $courseId) {
-    id
-    participation {
-      id
-      isActive
-    }
-  }
-}

@@ -1341,7 +1341,7 @@ type Mutation {
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
   joinRandomCourseGroupPool(courseId: String!): Boolean!
-  leaveCourse(courseId: String!): LeaveCourseParticipation
+  leaveCourseLeaderboard(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID

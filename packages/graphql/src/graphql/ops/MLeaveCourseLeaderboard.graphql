@@ -1,0 +1,9 @@
+mutation LeaveCourseLeaderboard($courseId: String!) {
+  leaveCourseLeaderboard(courseId: $courseId) {
+    id
+    participation {
+      id
+      isActive
+    }
+  }
+}

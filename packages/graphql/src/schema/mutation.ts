@@ -501,14 +501,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      leaveCourse: t.withAuth(asParticipant).field({
+      leaveCourseLeaderboard: t.withAuth(asParticipant).field({
         nullable: true,
         type: LeaveCourseParticipation,
         args: {
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return CourseService.leaveCourse(args, ctx)
+          return CourseService.leaveCourseLeaderboard(args, ctx)
         },
       }),
 
