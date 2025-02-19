@@ -177,6 +177,47 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
   }),
 })
 
+export interface ICourseStudentTimeline {
+  courseId: string
+  courseName: string
+  courseStart: Date
+  courseEnd: Date
+  timelineEntries: {
+    timestamp: Date
+    collectedPoints: number
+    collectedXp: number
+    totalPoints: number
+    totalXp: number
+  }[]
+}
+export const CourseStudentTimelineEntryRef = builder.objectRef<
+  ICourseStudentTimeline['timelineEntries'][0]
+>('CourseStudentTimelineEntry')
+export const CourseStudentTimelineEntry =
+  CourseStudentTimelineEntryRef.implement({
+    fields: (t) => ({
+      timestamp: t.expose('timestamp', { type: 'Date' }),
+      collectedPoints: t.exposeFloat('collectedPoints'),
+      collectedXp: t.exposeFloat('collectedXp'),
+      totalPoints: t.exposeFloat('totalPoints'),
+      totalXp: t.exposeFloat('totalXp'),
+    }),
+  })
+
+export const CourseStudentTimelineRef =
+  builder.objectRef<ICourseStudentTimeline>('CourseStudentTimeline')
+export const CourseStudentTimeline = CourseStudentTimelineRef.implement({
+  fields: (t) => ({
+    courseId: t.exposeID('courseId'),
+    courseName: t.exposeString('courseName'),
+    courseStart: t.expose('courseStart', { type: 'Date' }),
+    courseEnd: t.expose('courseEnd', { type: 'Date' }),
+    timelineEntries: t.expose('timelineEntries', {
+      type: [CourseStudentTimelineEntryRef],
+    }),
+  }),
+})
+
 export interface ILeaderboardEntry
   extends Omit<
     DB.LeaderboardEntry,

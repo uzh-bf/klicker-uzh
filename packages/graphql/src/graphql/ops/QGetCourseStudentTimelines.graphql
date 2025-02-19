@@ -1,0 +1,15 @@
+query GetCourseStudentTimelines {
+  getCourseStudentTimelines {
+    courseId
+    courseName
+    courseStart
+    courseEnd
+    timelineEntries {
+      timestamp
+      collectedPoints
+      collectedXp
+      totalPoints
+      totalXp
+    }
+  }
+}

@@ -9,7 +9,6 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
-  H4,
   SelectField,
   Tabs,
   UserNotification,
@@ -83,8 +82,103 @@ function IndividualLeaderboard({
   return (
     <Tabs.TabContent value="ind-leaderboard" className={{ root: 'h-full p-2' }}>
       <div className="mb-3 flex flex-col">
-        <H4>{t('manage.course.leaderboardData')}</H4>
-        <div className="mb-1 flex flex-row flex-wrap items-center gap-x-3">
+        <div className="mb-0.5 flex flex-row items-end gap-3">
+          <SelectField
+            label={t('manage.course.leaderboardType')}
+            labelType="small"
+            value={leaderboardType}
+            tooltip={t('manage.course.leaderboardTypeTooltip')}
+            onChange={(newValue) => {
+              setLeaderboardType(newValue as 'course' | 'weekly' | 'custom')
+
+              if (newValue === 'course' || newValue === 'custom') {
+                setWeeklyStartDate(undefined)
+                setCustomStartDate(undefined)
+                setCustomEndDate(undefined)
+              } else if (newValue === 'weekly') {
+                setWeeklyStartDate(weeklyDates[0])
+                setCustomStartDate(undefined)
+                setCustomEndDate(undefined)
+              }
+            }}
+            items={[
+              { value: 'course', label: t('manage.course.entireCourse') },
+              { value: 'weekly', label: t('manage.course.weekly') },
+              { value: 'custom', label: t('manage.course.custom') },
+            ]}
+            className={{ select: { trigger: 'h-8 w-48' } }}
+          />
+          {leaderboardType === 'weekly' && (
+            <SelectField
+              label={t('manage.course.timeRange')}
+              labelType="small"
+              value={weeklyStartDate}
+              onChange={(newValue) => {
+                setWeeklyStartDate(newValue)
+              }}
+              items={weeklyDates.map((date) => ({
+                value: date,
+                label: `${date} - ${dayjs(date, 'DD.MM.YYYY').add(6, 'day').format('DD.MM.YYYY')}`,
+              }))}
+              className={{ select: { trigger: 'h-8 w-56' } }}
+            />
+          )}
+          {leaderboardType === 'custom' && (
+            <>
+              <SelectField
+                label={t('shared.generic.startDate')}
+                labelType="small"
+                value={customStartDate}
+                onChange={(newValue) => {
+                  setCustomStartDate(newValue)
+                }}
+                items={weeklyDates.map((date) => ({
+                  value: date,
+                  label: date,
+                }))}
+                className={{ select: { trigger: 'h-8 w-32' } }}
+              />
+              <SelectField
+                label={t('shared.generic.endDate')}
+                labelType="small"
+                value={customEndDate}
+                onChange={(newValue) => {
+                  setCustomEndDate(newValue)
+                }}
+                items={weeklyDates
+                  .filter((_, index) => {
+                    const startIndex = customStartDate
+                      ? weeklyDates.findIndex(
+                          (date) => date === customStartDate
+                        )
+                      : 0
+                    return index >= startIndex
+                  })
+                  .map((date) => ({
+                    value: date,
+                    label: dayjs(date, 'DD.MM.YYYY')
+                      .add(6, 'day')
+                      .format('DD.MM.YYYY'),
+                  }))}
+                className={{ select: { trigger: 'h-8 w-32' } }}
+              />
+            </>
+          )}
+          {leaderboardType !== 'course' && (
+            <Button
+              onClick={() => updateWeeklyTimelineEntriesCourse()}
+              className={{ root: 'h-8 shadow-none' }}
+              disabled={updateLoading}
+            >
+              <FontAwesomeIcon
+                icon={faSync}
+                className={updateLoading ? 'animate-spin' : ''}
+              />
+              {t('shared.generic.update')}
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-row flex-wrap items-center gap-x-3">
           <div className="min-w-max">{t('manage.course.quickSelection')}:</div>
           <Button
             basic
@@ -129,105 +223,6 @@ function IndividualLeaderboard({
               className={{ root: 'text-primary-100 h-8 hover:underline' }}
             >
               {t('manage.course.lastTwoWeeks')}
-            </Button>
-          )}
-        </div>
-        <div className="flex flex-row items-end gap-3">
-          <SelectField
-            label={t('manage.course.leaderboardType')}
-            labelType="small"
-            value={leaderboardType}
-            tooltip={t('manage.course.leaderboardTypeTooltip')}
-            onChange={(newValue) => {
-              setLeaderboardType(newValue as 'course' | 'weekly' | 'custom')
-
-              if (newValue === 'course' || newValue === 'custom') {
-                setWeeklyStartDate(undefined)
-                setCustomStartDate(undefined)
-                setCustomEndDate(undefined)
-              } else if (newValue === 'weekly') {
-                setWeeklyStartDate(weeklyDates[0])
-                setCustomStartDate(undefined)
-                setCustomEndDate(undefined)
-              }
-            }}
-            items={[
-              { value: 'course', label: t('manage.course.entireCourse') },
-              { value: 'weekly', label: t('manage.course.weekly') },
-              { value: 'custom', label: t('manage.course.custom') },
-            ]}
-            className={{ select: { trigger: 'h-8 w-48' } }}
-          />
-          {leaderboardType === 'weekly' && (
-            <SelectField
-              required
-              label={t('manage.course.timeRange')}
-              labelType="small"
-              value={weeklyStartDate}
-              onChange={(newValue) => {
-                setWeeklyStartDate(newValue)
-              }}
-              items={weeklyDates.map((date) => ({
-                value: date,
-                label: `${date} - ${dayjs(date, 'DD.MM.YYYY').add(6, 'day').format('DD.MM.YYYY')}`,
-              }))}
-              className={{ select: { trigger: 'h-8 w-56' } }}
-            />
-          )}
-          {leaderboardType === 'custom' && (
-            <>
-              <SelectField
-                required
-                label={t('shared.generic.startDate')}
-                labelType="small"
-                value={customStartDate}
-                onChange={(newValue) => {
-                  setCustomStartDate(newValue)
-                }}
-                items={weeklyDates.map((date) => ({
-                  value: date,
-                  label: date,
-                }))}
-                className={{ select: { trigger: 'h-8 w-32' } }}
-              />
-              <SelectField
-                required
-                label={t('shared.generic.endDate')}
-                labelType="small"
-                value={customEndDate}
-                onChange={(newValue) => {
-                  setCustomEndDate(newValue)
-                }}
-                items={weeklyDates
-                  .filter((_, index) => {
-                    const startIndex = customStartDate
-                      ? weeklyDates.findIndex(
-                          (date) => date === customStartDate
-                        )
-                      : 0
-                    return index >= startIndex
-                  })
-                  .map((date) => ({
-                    value: date,
-                    label: dayjs(date, 'DD.MM.YYYY')
-                      .add(6, 'day')
-                      .format('DD.MM.YYYY'),
-                  }))}
-                className={{ select: { trigger: 'h-8 w-32' } }}
-              />
-            </>
-          )}
-          {leaderboardType !== 'course' && (
-            <Button
-              onClick={() => updateWeeklyTimelineEntriesCourse()}
-              className={{ root: 'h-8 shadow-none' }}
-              disabled={updateLoading}
-            >
-              <FontAwesomeIcon
-                icon={faSync}
-                className={updateLoading ? 'animate-spin' : ''}
-              />
-              {t('shared.generic.update')}
             </Button>
           )}
         </div>

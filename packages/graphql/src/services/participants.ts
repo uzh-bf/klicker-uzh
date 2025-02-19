@@ -7,6 +7,7 @@ import {
 } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
+import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
@@ -1102,4 +1103,94 @@ async function updateWeeklyTimelineEntriesFromDailys({
       }
     }
   )
+}
+
+export async function getCourseStudentTimelines(ctx: ContextWithUser) {
+  const participant = await ctx.prisma.participant.findUnique({
+    where: {
+      id: ctx.user.sub,
+    },
+    include: {
+      participations: {
+        include: {
+          course: {
+            include: {
+              // fetch weekly entries for older than 14 days and daily entries for the last 14 days
+              timelineEntries: {
+                where: {
+                  OR: [
+                    {
+                      type: TimelineEntryType.WEEKLY,
+                      timestamp: {
+                        lt: dayjs().subtract(14, 'days').toDate(),
+                      },
+                      participantId: ctx.user.sub,
+                    },
+                    {
+                      type: TimelineEntryType.DAILY,
+                      timestamp: {
+                        gte: dayjs().subtract(14, 'days').toDate(),
+                      },
+                      participantId: ctx.user.sub,
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // if no participant or no courses were found, return null
+  if (!participant || participant.participations.length === 0) {
+    return []
+  }
+
+  // reduce the course data and timeline entries to the required information
+  const courses = participant.participations.map((participation) => {
+    const course = participation.course
+
+    // sort timeline entries by timestamp and map to required information
+    const { timelineEntries } = course.timelineEntries
+      .sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1))
+      .reduce<{
+        timelineEntries: {
+          timestamp: Date
+          collectedPoints: number
+          collectedXp: number
+          totalPoints: number
+          totalXp: number
+        }[]
+        totalPoints: number
+        totalXp: number
+      }>(
+        (acc, entry) => {
+          acc.totalPoints += entry.collectedPoints
+          acc.totalXp += entry.collectedXp
+          acc.timelineEntries.push({
+            timestamp: entry.timestamp,
+            collectedPoints: entry.collectedPoints,
+            collectedXp: entry.collectedXp,
+            totalPoints: acc.totalPoints,
+            totalXp: acc.totalXp,
+          })
+
+          return acc
+        },
+        { timelineEntries: [], totalPoints: 0, totalXp: 0 }
+      )
+
+    return {
+      courseId: course.id,
+      courseName: course.displayName,
+      courseStart: course.startDate,
+      courseEnd: course.endDate,
+      timelineEntries,
+    }
+  })
+
+  const sortedCourses = sortBy(courses, [prop('courseEnd'), 'desc'])
+  return sortedCourses
 }

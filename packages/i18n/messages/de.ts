@@ -376,6 +376,8 @@ export default {
       waitingForActivation:
         'Ihr Account wurde erstellt. Bitte überprüfen Sie Ihren Posteingang auf einen Aktivierungslink.',
       myCourses: 'Meine Kurse',
+      insights: 'Einblicke',
+      timeline: 'Zeitachse',
       myBookmarks: 'Meine Bookmarks',
       joinCourse: 'Kurs beitreten',
       setupProfile: 'Profil einrichten',
@@ -401,6 +403,15 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
 `,
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
+    },
+    insights: {
+      noCourseDataAvailable:
+        'Es sind noch keine Kurse mit Zeitachsen-Daten verfügbar. Bitte treten Sie hierfür zuerst einem Kurs bei und nehmen Sie an Aktivitäten teil.',
+      totalPoints: 'Gesamtpunkte',
+      totalXp: 'Gesamte XP',
+      completed: 'Abgeschlossen',
+      upcoming: 'Bevorstehend',
+      ongoing: 'Laufend',
     },
     createAccount: {
       dataProcessingTitle: 'Datenverarbeitung und Datenschutz',
@@ -1905,7 +1916,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Um zusätzlich zu den Nutzernamen auch die hinterlegten E-Mail Adressen der Studierenden einzusehen, exportieren Sie bitte die untenstehende Tablle über die CSV-Export Funktion. Studierende ohne Punkte werden nur auf dem Leaderboard für den ganzen Kurs angezeigt (nicht auf wöchentlichen Leaderboards).',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
-      leaderboardData: 'Leaderboard Daten',
       quickSelection: 'Schnellauswahl',
       entireCourse: 'Gesamter Kurs',
       weekly: 'Wöchentlich',
