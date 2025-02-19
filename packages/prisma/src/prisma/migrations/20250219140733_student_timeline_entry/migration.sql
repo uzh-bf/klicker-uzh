@@ -6,7 +6,7 @@ CREATE TABLE "TimelineEntry" (
     "id" SERIAL NOT NULL,
     "type" "TimelineEntryType" NOT NULL,
     "timestamp" DATE NOT NULL,
-    "computedAt" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "computedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "collectedPoints" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "collectedXp" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "courseId" UUID,

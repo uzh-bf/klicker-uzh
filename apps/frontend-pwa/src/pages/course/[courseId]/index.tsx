@@ -20,6 +20,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@uzh-bf/design-system/dist/future'
+import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -251,7 +252,12 @@ function CourseOverview({
                             <div className="flex items-center space-x-2">
                               <RadioGroupItem value="biweekly" id="biweekly" />
                               <Label htmlFor="biweekly">
-                                {t('pwa.courses.biWeekly')}
+                                {`${t('pwa.courses.biWeekly')} (${(() => {
+                                  const startDate = dayjs().subtract(14, 'day')
+                                  const formatDate = (date: dayjs.Dayjs) =>
+                                    date.format('DD.MM')
+                                  return `${formatDate(startDate)} - ${dayjs().format('DD.MM')}`
+                                })()})`}
                               </Label>
                             </div>
                           </RadioGroup>

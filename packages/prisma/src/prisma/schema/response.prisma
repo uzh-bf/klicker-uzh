@@ -140,7 +140,7 @@ model TimelineEntry {
 
   type       TimelineEntryType
   timestamp  DateTime          @db.Date
-  computedAt DateTime          @default(now()) @db.Date
+  computedAt DateTime          @default(now())
 
   collectedPoints Float @default(0)
   collectedXp     Float @default(0)
