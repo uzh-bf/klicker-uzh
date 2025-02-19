@@ -215,6 +215,7 @@ export default {
       respond: 'Antworten',
       responses: 'Antworten',
       update: 'Update',
+      recompute: 'Neu berechnen',
       ok: 'OK',
       language: 'Sprache',
       english: 'Englisch',
@@ -1914,6 +1915,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       assignRandomGroups: 'Zufällige Gruppen zuweisen',
       emailsInLeaderboardExport:
         'Um zusätzlich zu den Nutzernamen auch die hinterlegten E-Mail Adressen der Studierenden einzusehen, exportieren Sie bitte die untenstehende Tablle über die CSV-Export Funktion. Studierende ohne Punkte werden nur auf dem Leaderboard für den ganzen Kurs angezeigt (nicht auf wöchentlichen Leaderboards).',
+      lastModified: 'Zuletzt verändert',
       participantsLeaderboard: 'Teilnehmende (Rangliste/Total): {number}',
       avgPoints: 'Durchschnittl. Punkte: {points}',
       quickSelection: 'Schnellauswahl',

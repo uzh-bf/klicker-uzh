@@ -6738,6 +6738,18 @@
             "deprecationReason": null
           },
           {
+            "name": "computedAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "leaderboard",
             "description": null,
             "args": [],

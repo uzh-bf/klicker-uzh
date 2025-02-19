@@ -1,11 +1,4 @@
-import { useMutation } from '@apollo/client'
-import { faSync } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetCourseLeaderboardDocument,
-  LeaderboardEntry,
-  UpdateWeeklyTimelineEntriesCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { LeaderboardEntry } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
@@ -56,25 +49,6 @@ function IndividualLeaderboard({
   const [customEndDate, setCustomEndDate] = useState<string | undefined>(
     undefined
   )
-
-  const [updateWeeklyTimelineEntriesCourse, { loading: updateLoading }] =
-    useMutation(UpdateWeeklyTimelineEntriesCourseDocument, {
-      variables: { courseId },
-      refetchQueries: [
-        {
-          query: GetCourseLeaderboardDocument,
-          variables: {
-            courseId,
-            courseSelection: leaderboardType === 'course',
-            weeklySelection: leaderboardType === 'weekly',
-            customSelection: leaderboardType === 'custom',
-            startDate:
-              leaderboardType === 'weekly' ? weeklyStartDate : customStartDate,
-            endDate: customEndDate,
-          },
-        },
-      ],
-    })
 
   // compute all week beginnings between the start and end date
   const weeklyDates = useCourseWeeklyDates({ courseStart, courseEnd })
@@ -163,19 +137,6 @@ function IndividualLeaderboard({
                 className={{ select: { trigger: 'h-8 w-32' } }}
               />
             </>
-          )}
-          {leaderboardType !== 'course' && (
-            <Button
-              onClick={() => updateWeeklyTimelineEntriesCourse()}
-              className={{ root: 'h-8 shadow-none' }}
-              disabled={updateLoading}
-            >
-              <FontAwesomeIcon
-                icon={faSync}
-                className={updateLoading ? 'animate-spin' : ''}
-              />
-              {t('shared.generic.update')}
-            </Button>
           )}
         </div>
         <div className="flex flex-row flex-wrap items-center gap-x-3">
