@@ -31,6 +31,7 @@ async function run() {
       include: {
         microLearning: true,
         practiceQuiz: true,
+        participation: true,
       },
     })
 
@@ -73,7 +74,9 @@ async function run() {
       }
 
       // add points and XP
-      acc[key].collectedPoints += detail.pointsAwarded ?? 0
+      acc[key].collectedPoints += detail.participation.isActive
+        ? (detail.pointsAwarded ?? 0)
+        : 0
       acc[key].collectedXp += detail.xpAwarded
 
       return acc
@@ -87,15 +90,18 @@ async function run() {
       },
       include: {
         liveQuiz: true,
+        sessionParticipation: true,
       },
     })
 
     // add live quiz points to the corresponding day where the quiz was finished (finishedAt date)
     for (const entry of lqLeaderboardEntries) {
-      // if the live quiz is still running, continue
+      // if the live quiz is still running or the participation is not active, continue
       if (
         !entry.liveQuiz?.finishedAt ||
-        entry.sessionParticipationId === null
+        entry.sessionParticipationId === null ||
+        !entry.sessionParticipation ||
+        !entry.sessionParticipation.isActive
       ) {
         continue
       }
