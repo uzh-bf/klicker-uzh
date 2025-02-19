@@ -57,18 +57,23 @@ function combineResultsIntoHistogramData({
 }) {
   // extract criterion min, max and bin width from first result
   const firstResult = results[0]
-  const criterionMin = firstResult.result.min
-  const criterionMax = firstResult.result.max
+  const criterionMin = firstResult.result.min - firstResult.result.step / 2
+  const criterionMax = firstResult.result.max + firstResult.result.step / 2
   const binCount = Math.min(
-    30,
+    25,
     (criterionMax - criterionMin) / firstResult.result.step
   )
+
+  // check if the number of bins exactly corresponds to the number of steps on the slider
+  const exactBinMatch =
+    (criterionMax - criterionMin) / firstResult.result.step <= 25
 
   // initialize the histogram data structure with corresponding empty bins
   const histogramData: {
     value: number
     label: string
-    [dataIx: string]: number | string
+    exactBinMatch: boolean
+    [dataIx: string]: number | string | boolean
   }[] = Array.from({ length: binCount }, (_, i) => ({
     value: round(
       criterionMin +
@@ -77,6 +82,7 @@ function combineResultsIntoHistogramData({
       2
     ),
     label: '',
+    exactBinMatch,
   }))
   const binWidth =
     histogramData.length > 1
@@ -88,10 +94,13 @@ function combineResultsIntoHistogramData({
   const completeHistogramData = histogramData.map((bin) => {
     return {
       value: round(bin.value, 2),
-      label: `${round(bin.value - binWidth / 2, 1)} - ${round(
-        bin.value + binWidth / 2,
-        1
-      )}`,
+      label: exactBinMatch
+        ? String(bin.value)
+        : `${round(bin.value - binWidth / 2, 1)} - ${round(
+            bin.value + binWidth / 2,
+            1
+          )}`,
+      exactBinMatch,
       ...results.reduce(
         (acc, { dataKey, result }) => {
           acc[dataKey] = countResponsesInBin({
@@ -143,7 +152,8 @@ function useCaseStudyHistogramData({
   histogramData: {
     value: number
     label: string
-    [dataIx: string]: string | number // only number will be provided
+    exactBinMatch: boolean
+    [dataIx: string]: number | string | boolean // only number will be provided
   }[]
   solutionData?: {
     [dataIx: string]: { min: number; max: number } | undefined
@@ -180,12 +190,16 @@ function useCaseStudyHistogramData({
         return missingData
       }
 
-      const criterionMin = resultObject.min - resultObject.step / 2
+      const criterionMin = resultObject.min - resultObject.step / 2 // TODO: maybe use +- half bin width here instead if match is not exact
       const criterionMax = resultObject.max + resultObject.step / 2
       const binCount = Math.min(
         25,
-        (resultObject.max - resultObject.min) / resultObject.step + 1
+        (criterionMax - criterionMin) / resultObject.step
       )
+
+      // check if the number of bins exactly corresponds to the number of steps on the slider
+      const exactBinMatch =
+        (criterionMax - criterionMin) / resultObject.step <= 25
 
       // sort responses into bins and count number of responses in each bin
       let dataArray = Array.from({ length: binCount }, (_, i) => ({
@@ -194,7 +208,8 @@ function useCaseStudyHistogramData({
           (criterionMax - criterionMin) * (i / binCount) +
           (criterionMax - criterionMin) / (2 * binCount),
         count: 0,
-        label: '',
+        label: '', // empty label, will be filled in later
+        exactBinMatch,
       }))
       dataArray = dataArray.map((bin) => {
         const binWidth =
@@ -217,7 +232,10 @@ function useCaseStudyHistogramData({
             binValue: bin.value,
             criterionMax,
           }),
-          label: `${labelLower} - ${labelUpper}`,
+          label: exactBinMatch
+            ? String(bin.value)
+            : `${labelLower} - ${labelUpper}`,
+          exactBinMatch,
         }
       })
 

@@ -28,7 +28,8 @@ function CSEvaluationHistogramChart({
   histogramData: {
     value: number
     label: string
-    [dataIx: string]: number | string
+    exactBinMatch: boolean
+    [dataIx: string]: number | string | boolean
   }[]
   solutionData?: {
     [dataIx: string]: { min: number; max: number } | undefined
@@ -61,6 +62,15 @@ function CSEvaluationHistogramChart({
               value: criterionName,
               position: 'bottom',
             }}
+            ticks={histogramData.map((d) => d.value)}
+            tickFormatter={(tick: number) => {
+              const dataPoint = histogramData.find((d) => d.value === tick)
+              return dataPoint
+                ? dataPoint.exactBinMatch
+                  ? String(tick)
+                  : dataPoint.label
+                : String(tick)
+            }}
             className={textSize.textXl}
           />
           <YAxis
@@ -89,8 +99,10 @@ function CSEvaluationHistogramChart({
                 return (
                   <div className="border-uzh-grey-100 rounded-md border border-solid bg-white p-2">
                     <div>
-                      {t('manage.evaluation.histogramRange')}:{' '}
-                      {payload[0]!.payload.label}
+                      {payload[0]!.payload.exactBinMatch
+                        ? t('manage.evaluation.value')
+                        : t('manage.evaluation.histogramRange')}
+                      : {payload[0]!.payload.label}
                     </div>
                     {typeof payload[0]!.payload.count !== 'undefined' && (
                       <div className="text-primary-100 font-bold">
