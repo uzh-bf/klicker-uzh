@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.26...v3.3.0-alpha.27) (2025-02-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** disable animation on case study evaluation scatter plots ([dc37349](https://github.com/uzh-bf/klicker-uzh/commit/dc373494f5f6d24d383b31903ed8b780284dd693))
+* **apps/frontend-manage:** ensure that chart on evaluation view is initialized correctly ([791c347](https://github.com/uzh-bf/klicker-uzh/commit/791c347cb20d4b3c1786e99794f2df9de3158f30))
+* **apps/frontend-manage:** fix number of bins and corresponding labels on case study histogram evaluation plot ([6581f9c](https://github.com/uzh-bf/klicker-uzh/commit/6581f9c20108a147aca760fecee17aa88bb9451f))
+* **apps/frontend-manage:** remove white text style from choices sidebar answer options ([78718f4](https://github.com/uzh-bf/klicker-uzh/commit/78718f461fd490b39a63ba2219bedea0618f1edb))
+* **packages/shared-components:** ensure that selection answer options are cleared after submission ([8612fa3](https://github.com/uzh-bf/klicker-uzh/commit/8612fa31b66dad5f690880dd78f733691074c97d))
+* **packages/shared-components:** resolve issue with table resorting on live quiz evaluation re-fetch ([#4516](https://github.com/uzh-bf/klicker-uzh/issues/4516)) ([5c477fa](https://github.com/uzh-bf/klicker-uzh/commit/5c477fab3beede466f28a0ed3d49b8272c00038a))
+
 ## [3.3.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.25...v3.3.0-alpha.26) (2025-02-13)
 
 

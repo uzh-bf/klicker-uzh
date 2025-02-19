@@ -70,7 +70,10 @@ function SELECTIONAnswerOptions({
           )?.value
 
           return (
-            <div key={inputIndex} className="flex flex-col">
+            <div
+              key={`selection-element-${elementIx}-${inputIndex}-${selectedValue}`}
+              className="flex flex-col"
+            >
               <FormLabel
                 required
                 label={t('shared.questions.seCorrectAnswerN', {

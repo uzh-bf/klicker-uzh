@@ -2,13 +2,11 @@ import { useQuery } from '@apollo/client'
 import ActivityEvaluation from '@components/evaluation/ActivityEvaluation'
 import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import EvaluationUnavailableNotification from '~/components/evaluation/EvaluationUnavailableNotification'
 
 function Evaluation() {
   const router = useRouter()
-  const t = useTranslations()
 
   // fetch evaluation data
   const { data, loading } = useQuery(GetLiveQuizEvaluationDocument, {

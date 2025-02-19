@@ -180,11 +180,11 @@ function useCaseStudyHistogramData({
         return missingData
       }
 
-      const criterionMin = resultObject.min
-      const criterionMax = resultObject.max
+      const criterionMin = resultObject.min - resultObject.step / 2
+      const criterionMax = resultObject.max + resultObject.step / 2
       const binCount = Math.min(
         30,
-        (criterionMax - criterionMin) / resultObject.step
+        (resultObject.max - resultObject.min) / resultObject.step + 1
       )
 
       // sort responses into bins and count number of responses in each bin
@@ -200,6 +200,15 @@ function useCaseStudyHistogramData({
         const binWidth =
           dataArray.length > 1 ? dataArray[1]!.value - dataArray[0]!.value : 1
 
+        const labelLower = Math.max(
+          round(bin.value - binWidth / 2, 1),
+          resultObject.min
+        )
+        const labelUpper = Math.min(
+          round(bin.value + binWidth / 2, 1),
+          resultObject.max
+        )
+
         return {
           value: round(bin.value, 2),
           count: countResponsesInBin({
@@ -208,10 +217,7 @@ function useCaseStudyHistogramData({
             binValue: bin.value,
             criterionMax,
           }),
-          label: `${round(bin.value - binWidth / 2, 1)} - ${round(
-            bin.value + binWidth / 2,
-            1
-          )}`,
+          label: `${labelLower} - ${labelUpper}`,
         }
       })
 

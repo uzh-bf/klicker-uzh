@@ -96,6 +96,7 @@ function CSOneDimScatterPlot({
               shape={(props: any) => (
                 <circle cx={props.cx} cy={props.cy} r={6} fill={props.fill} />
               )}
+              isAnimationActive={false}
             >
               <LabelList
                 dataKey="itemLabel"

@@ -32,7 +32,7 @@ function useChartTypeUpdate({
         setChartType(ACTIVE_CHART_TYPES[activeElementType][0].value)
       }
     }
-  }, [activeInstance])
+  }, [activeInstance, activeElementType])
 }
 
 export default useChartTypeUpdate
