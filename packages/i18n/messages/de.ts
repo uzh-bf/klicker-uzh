@@ -291,6 +291,7 @@ export default {
       instructions: 'Anweisungen',
       caseStudyItems: 'Fallstudien-Elemente',
       results: 'Resultate',
+      never: 'Nie',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',

@@ -290,6 +290,7 @@ export default {
       instructions: 'Instructions',
       caseStudyItems: 'Case study items',
       results: 'Results',
+      never: 'Never',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',

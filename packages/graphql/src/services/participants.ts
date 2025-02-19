@@ -1054,24 +1054,27 @@ async function updateWeeklyTimelineEntriesFromDailys({
 }) {
   // aggreagte the daily timeline entries into a single entry for each participant
   const reducedDailyEntries = dailyEntries.reduce<{
-    [participantId: string]: { collectedPoints: number; collectedXp: number }
+    [participationId: string]: { collectedPoints: number; collectedXp: number }
   }>((acc, entry) => {
-    const participantId = entry.participation?.participantId
-    if (!participantId) {
+    if (
+      entry.participationId === null ||
+      typeof entry.participationId === 'undefined'
+    ) {
       return acc
     }
 
-    if (!acc[participantId]) {
-      acc[participantId] = {
+    const participationId = String(entry.participationId)
+    if (!acc[participationId]) {
+      acc[participationId] = {
         collectedPoints: 0,
         collectedXp: 0,
       }
     }
 
-    acc[participantId]!.collectedPoints += entry.participation?.isActive
+    acc[participationId]!.collectedPoints += entry.participation?.isActive
       ? entry.collectedPoints
       : 0
-    acc[participantId]!.collectedXp += entry.collectedXp
+    acc[participationId]!.collectedXp += entry.collectedXp
 
     return acc
   }, {})
@@ -1082,12 +1085,13 @@ async function updateWeeklyTimelineEntriesFromDailys({
 
   // loop over all entries and check if the aggregated values are different from the stored ones
   return Object.entries(reducedDailyEntries).flatMap(
-    ([participantId, values]) => {
+    ([participationId, values]) => {
+      const pId = parseInt(participationId)
       const storedEntry = entries.find(
         (entry) =>
           entry.type === TimelineEntryType.WEEKLY &&
           entry.timestamp.getTime() === timestamp.getTime() &&
-          entry.participation?.participantId === participantId
+          entry.participationId === pId
       )
 
       if (
@@ -1097,8 +1101,8 @@ async function updateWeeklyTimelineEntriesFromDailys({
       ) {
         return {
           where: {
-            participantId_courseId_timestamp_type: {
-              participantId,
+            participationId_courseId_timestamp_type: {
+              participationId: pId,
               courseId,
               timestamp: timestamp,
               type: TimelineEntryType.WEEKLY,
@@ -1115,9 +1119,9 @@ async function updateWeeklyTimelineEntriesFromDailys({
                 id: courseId,
               },
             },
-            participant: {
+            participation: {
               connect: {
-                id: participantId,
+                id: pId,
               },
             },
           },

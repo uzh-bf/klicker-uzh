@@ -65,14 +65,13 @@ function SuspendedCourseLeaderboard({
     })
 
   const showLastUpdated =
-    data.getCourseLeaderboard?.computedAt &&
-    ((leaderboardType === 'weekly' &&
+    (leaderboardType === 'weekly' &&
       weeklyStartDate &&
       dayjs().isBefore(dayjs(weeklyStartDate, 'DD.MM.YYYY').add(7, 'day'))) ||
-      (leaderboardType === 'custom' &&
-        customEndDate &&
-        (dayjs().isSame(dayjs(customEndDate, 'DD.MM.YYYY'), 'day') ||
-          dayjs().isBefore(dayjs(customEndDate, 'DD.MM.YYYY').add(7, 'day')))))
+    (leaderboardType === 'custom' &&
+      customEndDate &&
+      (dayjs().isSame(dayjs(customEndDate, 'DD.MM.YYYY'), 'day') ||
+        dayjs().isBefore(dayjs(customEndDate, 'DD.MM.YYYY').add(7, 'day'))))
 
   return (
     <DataTable
@@ -117,7 +116,7 @@ function SuspendedCourseLeaderboard({
             {showLastUpdated && (
               <div className="flex flex-col gap-0.5 text-left">
                 <div>
-                  {`${t('manage.course.lastModified')}: ${dayjs(data.getCourseLeaderboard?.computedAt).format('DD.MM.YYYY, HH:mm')}`}
+                  {`${t('manage.course.lastModified')}: ${data.getCourseLeaderboard?.computedAt ? dayjs(data.getCourseLeaderboard?.computedAt).format('DD.MM.YYYY, HH:mm') : t('shared.generic.never')}`}
                 </div>
                 <Button
                   onClick={async () => {
@@ -139,14 +138,16 @@ function SuspendedCourseLeaderboard({
             <div>
               <div>
                 {t('manage.course.participantsLeaderboard', {
-                  number: data.getCourseLeaderboard?.numOfActiveParticipants,
+                  number:
+                    data.getCourseLeaderboard?.numOfActiveParticipants ?? 0,
                 })}
                 /{numOfParticipants}
               </div>
               <div>
                 {t('manage.course.avgPoints', {
                   points:
-                    data.getCourseLeaderboard?.averageActiveScore?.toFixed(2),
+                    data.getCourseLeaderboard?.averageActiveScore?.toFixed(2) ??
+                    0,
                 })}
               </div>
             </div>
