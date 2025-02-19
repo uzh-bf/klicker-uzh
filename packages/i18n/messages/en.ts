@@ -375,6 +375,8 @@ export default {
       waitingForActivation:
         'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
+      insights: 'Insights',
+      timeline: 'Timeline',
       myBookmarks: 'My Bookmarks',
       joinCourse: 'Join Course',
       setupProfile: 'Setup profile',
@@ -400,6 +402,15 @@ Other participants will only see your public **participant profile**, including 
 `,
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
+    },
+    insights: {
+      noCourseDataAvailable:
+        'No courses with timeline data are available yet. Please join a course and participate in activities first.',
+      totalPoints: 'Total Points',
+      totalXp: 'Total XP',
+      completed: 'Completed',
+      upcoming: 'Upcoming',
+      ongoing: 'Ongoing',
     },
     createAccount: {
       dataProcessingTitle: 'Data Processing and Privacy',
@@ -1873,7 +1884,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'To see the email addresses of the students in addition to the usernames, please export the table below using the CSV export function. Participants without points are only listed on the leaderboard for the entire course (not on weekly leaderboards).',
       participantsLeaderboard: 'Participants (leaderboard/total): {number}',
       avgPoints: 'Average points: {points}',
-      leaderboardData: 'Leaderboard data',
       quickSelection: 'Quick selection',
       entireCourse: 'Entire course',
       weekly: 'Weekly',

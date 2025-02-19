@@ -3,6 +3,7 @@ import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
   faChalkboard,
+  faChartLine,
   faCheck,
   faCirclePlus,
   faGraduationCap,
@@ -174,6 +175,7 @@ const Index = function () {
             </div>
           </div>
         )}
+
         <div>
           <H1 className={{ root: 'mb-2 text-xl' }}>
             {t('shared.generic.practice')}
@@ -202,6 +204,7 @@ const Index = function () {
             </LinkButton>
           </div>
         </div>
+
         {activeMicrolearning.length > 0 && (
           <div data-cy="microlearnings">
             <H1 className={{ root: 'mb-2 text-xl' }}>
@@ -239,6 +242,7 @@ const Index = function () {
             </div>
           </div>
         )}
+
         <div>
           <H1 className={{ root: 'mb-2 text-xl' }}>
             {t('pwa.general.myCourses')}
@@ -263,6 +267,22 @@ const Index = function () {
             </LinkButton>
           </div>
         </div>
+
+        <div>
+          <H1 className={{ root: 'mb-2 text-xl' }}>
+            {t('pwa.general.insights')}
+          </H1>
+          <div className="flex flex-col gap-2">
+            <LinkButton
+              icon={faChartLine}
+              href="/insights/timeline"
+              data={{ cy: 'insights-student-timeline' }}
+            >
+              {t('pwa.general.timeline')}
+            </LinkButton>
+          </div>
+        </div>
+
         {userInfo && <UserNotification type="info" message={userInfo} />}
         {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}
       </div>

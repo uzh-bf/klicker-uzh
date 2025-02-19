@@ -22,6 +22,7 @@ import {
 import {
   Course,
   CourseLeaderboard,
+  CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
   StudentCourse,
@@ -680,6 +681,14 @@ export const Query = builder.queryType({
         type: [Course],
         resolve(_, __, ctx) {
           return ParticipantService.getPracticeQuizList(ctx)
+        },
+      }),
+
+      getCourseStudentTimelines: asParticipant.field({
+        nullable: true,
+        type: [CourseStudentTimeline],
+        resolve(_, __, ctx) {
+          return ParticipantService.getCourseStudentTimelines(ctx)
         },
       }),
 

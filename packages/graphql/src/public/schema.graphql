@@ -603,6 +603,22 @@ type CoursePerformanceAnalytics {
   totalParticipants: Int!
 }
 
+type CourseStudentTimeline {
+  courseEnd: Date!
+  courseId: ID!
+  courseName: String!
+  courseStart: Date!
+  timelineEntries: [CourseStudentTimelineEntry!]!
+}
+
+type CourseStudentTimelineEntry {
+  collectedPoints: Float!
+  collectedXp: Float!
+  timestamp: Date!
+  totalPoints: Float!
+  totalXp: Float!
+}
+
 type CourseSummary {
   numOfGroupActivities: Int!
   numOfLeaderboardEntries: Int!
@@ -1745,6 +1761,7 @@ type Query {
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
+  getCourseStudentTimelines: [CourseStudentTimeline!]
   getCourseSummary(courseId: String!): CourseSummary
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getGradingGroupActivity(id: String!): GroupActivity
