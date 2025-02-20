@@ -348,7 +348,6 @@ export async function getCourseOverviewData(
   }
 }
 
-// TODO: typing
 async function computeRollingLeaderboardEntries(
   { courseId, days }: { courseId: string; days: number },
   ctx: ContextWithUser
