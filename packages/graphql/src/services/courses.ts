@@ -112,9 +112,16 @@ export async function joinCourse(
 
   if (!participation) return null
 
-  const lbEntry = await ctx.prisma.leaderboardEntry.create({
-    data: {
-      type: 'COURSE',
+  const lbEntry = await ctx.prisma.leaderboardEntry.upsert({
+    where: {
+      type_participantId_courseId: {
+        type: LeaderboardType.COURSE,
+        participantId: ctx.user.sub,
+        courseId,
+      },
+    },
+    create: {
+      type: LeaderboardType.COURSE,
       participant: {
         connect: {
           id: ctx.user.sub,
@@ -132,6 +139,7 @@ export async function joinCourse(
       },
       score: 0,
     },
+    update: {},
   })
 
   return {
@@ -164,7 +172,18 @@ export async function leaveCourseLeaderboard(
     },
   })
 
-  // delete all course leaderboard entries linked to the participation
+  // delete the course leaderboard entry linked to the participation
+  await ctx.prisma.leaderboardEntry.delete({
+    where: {
+      type_participantId_courseId: {
+        type: LeaderboardType.COURSE,
+        participantId: ctx.user.sub,
+        courseId,
+      },
+    },
+  })
+
+  // TODO: check if this deletion operation has any effect or can be removed
   await ctx.prisma.leaderboardEntry.deleteMany({
     where: { participation: { id: participation.id } },
   })
