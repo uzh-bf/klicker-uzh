@@ -17,7 +17,7 @@ function LanguageChanger({
       ]}
       onChange={onChange}
       className={{
-        trigger: 'w-max',
+        trigger: 'h-8 w-max',
       }}
       data={{ cy: 'select-value-language-changer' }}
     />

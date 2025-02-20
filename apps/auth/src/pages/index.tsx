@@ -36,16 +36,28 @@ function SignInOutButton() {
         <UserNotification
           message={t('auth.signedInAs', { username: session?.user?.email })}
           type="info"
-          className={{ root: '-mt-4' }}
+          className={{ root: '-mt-4 mb-4' }}
         />
-        <br />
-        <a href={process.env.NEXT_PUBLIC_MANAGE_URL}>
-          <Button>MANAGE</Button>
-        </a>
-        <br />
-        <Button onClick={() => signOut()} data={{ cy: 'auth-logout-button' }}>
-          {t('shared.generic.logout')}
-        </Button>
+        <div className="flex w-full flex-row items-center justify-between">
+          <Button
+            onClick={() => signOut()}
+            data={{ cy: 'auth-logout-button' }}
+            className={{
+              root: 'border border-red-500',
+            }}
+          >
+            {t('shared.generic.logout')}
+          </Button>
+          <Button
+            onClick={() => router.push(process.env.NEXT_PUBLIC_MANAGE_URL!)}
+            data={{ cy: 'auth-open-manage-button' }}
+            className={{
+              root: 'border border-green-700',
+            }}
+          >
+            {t('shared.generic.openApplication')}
+          </Button>
+        </div>
       </>
     )
   }
