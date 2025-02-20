@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.27...v3.3.0-alpha.28) (2025-02-20)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that course leaderboard entry is correctly removed on leaderboard leaving ([db5e805](https://github.com/uzh-bf/klicker-uzh/commit/db5e80520424abd54a5e3b614de7e78dfaa84059))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** improve case study evaluation histogram component with extended logic ([#4520](https://github.com/uzh-bf/klicker-uzh/issues/4520)) ([54224e9](https://github.com/uzh-bf/klicker-uzh/commit/54224e96c0a3f8808fbfce11e5648368132ad4eb))
+
 ## [3.3.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.26...v3.3.0-alpha.27) (2025-02-19)
 
 
