@@ -1892,6 +1892,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       weekly: 'Weekly',
       lastWeek: 'Last week',
       lastTwoWeeks: 'Last 2 weeks',
+      rolling7: '7 days (rolling)',
+      rolling14: '14 days (rolling)',
       custom: 'Custom',
       leaderboardType: 'Leaderboard type',
       leaderboardTypeTooltip:

@@ -348,6 +348,182 @@ export async function getCourseOverviewData(
   }
 }
 
+async function computeRollingLeaderboardEntries(
+  { courseId, days }: { courseId: string; days: number },
+  ctx: ContextWithUser
+) {
+  const detailsEarliest = dayjs()
+    .subtract(days - 1, 'days')
+    .startOf('day')
+    .toDate()
+  const detailsLatest = dayjs().subtract(days, 'days').toDate()
+
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      // fetch live quizzes where the leaderboard entries are not part of the timeline entries
+      liveQuizzes: {
+        include: {
+          leaderboard: true,
+        },
+        where: {
+          finishedAt: {
+            lte: detailsEarliest,
+            gt: detailsLatest,
+          },
+        },
+      },
+      practiceQuizzes: {
+        include: {
+          responseDetails: {
+            where: {
+              createdAt: {
+                lte: detailsEarliest,
+                gt: detailsLatest,
+              },
+            },
+          },
+        },
+      },
+      microLearnings: {
+        include: {
+          responseDetails: {
+            where: {
+              createdAt: {
+                lte: detailsEarliest,
+                gt: detailsLatest,
+              },
+            },
+          },
+        },
+      },
+      participations: {
+        where: {
+          isActive: true,
+        },
+        include: {
+          participant: true,
+        },
+      },
+      timelineEntries: {
+        where: {
+          type: TimelineEntryType.DAILY,
+          timestamp: {
+            gt: dayjs().subtract(days, 'days').toDate(),
+          },
+          participation: {
+            isActive: true,
+          },
+        },
+        include: {
+          participation: true,
+        },
+      },
+    },
+  })
+
+  if (!course)
+    return {
+      leaderboardEntries: [],
+      count: 0,
+      sum: 0,
+    }
+
+  // initialize the leaderboard entries form the active course participations
+  const leaderboardScores = course?.participations.reduce<{
+    [participantId: string]: {
+      participantId: string
+      username: string
+      avatar: string | null
+      score: number
+      isSelf?: boolean
+    }
+  }>((acc, entry) => {
+    acc[entry.participant.id] = {
+      participantId: entry.participant.id,
+      username: entry.participant.username,
+      avatar: entry.participant.avatar,
+      score: 0,
+      isSelf: ctx.user?.sub === entry.participant.id,
+    }
+
+    return acc
+  }, {})
+
+  // loop through the timeline entries and update the leaderboard scores
+  course?.timelineEntries.forEach((entry) => {
+    if (leaderboardScores[entry.participation.participantId]) {
+      leaderboardScores[entry.participation.participantId]!.score +=
+        entry.collectedPoints
+    }
+  })
+
+  // combine all details, loop through them and update the leaderboard scores
+  course.practiceQuizzes.forEach((quiz) => {
+    quiz.responseDetails.forEach((detail) => {
+      if (leaderboardScores[detail.participantId]) {
+        leaderboardScores[detail.participantId]!.score +=
+          detail.pointsAwarded ?? 0
+      }
+    })
+  })
+  course.microLearnings.forEach((ml) => {
+    ml.responseDetails.forEach((detail) => {
+      if (leaderboardScores[detail.participantId]) {
+        leaderboardScores[detail.participantId]!.score +=
+          detail.pointsAwarded ?? 0
+      }
+    })
+  })
+
+  // loop over all live quiz leaderboard entries and update the leaderboard scores
+  course.liveQuizzes.forEach((lq) => {
+    lq.leaderboard.forEach((lbEntry) => {
+      if (leaderboardScores[lbEntry.participantId]) {
+        leaderboardScores[lbEntry.participantId]!.score += lbEntry.score
+      }
+    })
+  })
+
+  // sort the leaderboard entries and add rank, level, and compute statistics
+  const { leaderboardEntries, count, sum } = Object.values(leaderboardScores)
+    .sort((a, b) => b.score - a.score)
+    .reduce<{
+      leaderboardEntries: {
+        id: number
+        participantId: string
+        username: string
+        avatar: string | null
+        score: number
+        rank: number
+        isSelf?: boolean
+        level?: number
+      }[]
+      count: number
+      sum: number
+    }>(
+      (acc, scoreEntry, ix) => {
+        acc.leaderboardEntries.push({
+          id: Math.floor(random(1000000000)),
+          participantId: scoreEntry.participantId,
+          username: scoreEntry.username,
+          avatar: scoreEntry.avatar,
+          score: scoreEntry.score,
+          isSelf: scoreEntry.isSelf,
+          rank: ix + 1,
+          level: levelFromXp(scoreEntry.score),
+        })
+        acc.count += 1
+        acc.sum += scoreEntry.score
+
+        return acc
+      },
+      { leaderboardEntries: [], count: 0, sum: 0 }
+    )
+
+  return { leaderboardEntries, count, sum }
+}
+
 export async function getStudentCourseLeaderboard(
   { courseId, mode }: { courseId: string; mode: string },
   ctx: ContextWithUser
@@ -449,166 +625,8 @@ export async function getStudentCourseLeaderboard(
       }
     }
   } else if (ctx.user?.sub && mode === 'biweekly') {
-    const detailsEarliest = dayjs().subtract(13, 'days').startOf('day').toDate()
-    const detailsLatest = dayjs().subtract(14, 'days').toDate()
-
-    const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId },
-      include: {
-        // fetch live quizzes where the leaderboard entries are not part of the timeline entries
-        liveQuizzes: {
-          include: {
-            leaderboard: true,
-          },
-          where: {
-            finishedAt: {
-              lte: detailsEarliest,
-              gt: detailsLatest,
-            },
-          },
-        },
-        practiceQuizzes: {
-          include: {
-            responseDetails: {
-              where: {
-                createdAt: {
-                  lte: detailsEarliest,
-                  gt: detailsLatest,
-                },
-              },
-            },
-          },
-        },
-        microLearnings: {
-          include: {
-            responseDetails: {
-              where: {
-                createdAt: {
-                  lte: detailsEarliest,
-                  gt: detailsLatest,
-                },
-              },
-            },
-          },
-        },
-        participations: {
-          where: {
-            isActive: true,
-          },
-          include: {
-            participant: true,
-          },
-        },
-        timelineEntries: {
-          where: {
-            type: TimelineEntryType.DAILY,
-            timestamp: {
-              gt: dayjs().subtract(14, 'days').toDate(),
-            },
-            participation: {
-              isActive: true,
-            },
-          },
-          include: {
-            participation: true,
-          },
-        },
-      },
-    })
-
-    if (!course) return null
-
-    // initialize the leaderboard entries form the active course participations
-    const leaderboardScores = course?.participations.reduce<{
-      [participantId: string]: {
-        participantId: string
-        username: string
-        avatar: string | null
-        score: number
-        isSelf?: boolean
-      }
-    }>((acc, entry) => {
-      acc[entry.participant.id] = {
-        participantId: entry.participant.id,
-        username: entry.participant.username,
-        avatar: entry.participant.avatar,
-        score: 0,
-        isSelf: ctx.user?.sub === entry.participant.id,
-      }
-
-      return acc
-    }, {})
-
-    // loop through the timeline entries and update the leaderboard scores
-    course?.timelineEntries.forEach((entry) => {
-      if (leaderboardScores[entry.participation.participantId]) {
-        leaderboardScores[entry.participation.participantId]!.score +=
-          entry.collectedPoints
-      }
-    })
-
-    // combine all details, loop through them and update the leaderboard scores
-    course.practiceQuizzes.forEach((quiz) => {
-      quiz.responseDetails.forEach((detail) => {
-        if (leaderboardScores[detail.participantId]) {
-          leaderboardScores[detail.participantId]!.score +=
-            detail.pointsAwarded ?? 0
-        }
-      })
-    })
-    course.microLearnings.forEach((ml) => {
-      ml.responseDetails.forEach((detail) => {
-        if (leaderboardScores[detail.participantId]) {
-          leaderboardScores[detail.participantId]!.score +=
-            detail.pointsAwarded ?? 0
-        }
-      })
-    })
-
-    // loop over all live quiz leaderboard entries and update the leaderboard scores
-    course.liveQuizzes.forEach((lq) => {
-      lq.leaderboard.forEach((lbEntry) => {
-        if (leaderboardScores[lbEntry.participantId]) {
-          leaderboardScores[lbEntry.participantId]!.score += lbEntry.score
-        }
-      })
-    })
-
-    // sort the leaderboard entries and add rank, level, and compute statistics
-    const { leaderboardEntries, count, sum } = Object.values(leaderboardScores)
-      .sort((a, b) => b.score - a.score)
-      .reduce<{
-        leaderboardEntries: {
-          id: number
-          participantId: string
-          username: string
-          avatar: string | null
-          score: number
-          rank: number
-          isSelf?: boolean
-          level?: number
-        }[]
-        count: number
-        sum: number
-      }>(
-        (acc, scoreEntry, ix) => {
-          acc.leaderboardEntries.push({
-            id: Math.floor(random(1000000000)),
-            participantId: scoreEntry.participantId,
-            username: scoreEntry.username,
-            avatar: scoreEntry.avatar,
-            score: scoreEntry.score,
-            isSelf: scoreEntry.isSelf,
-            rank: ix + 1,
-            level: levelFromXp(scoreEntry.score),
-          })
-          acc.count += 1
-          acc.sum += scoreEntry.score
-
-          return acc
-        },
-        { leaderboardEntries: [], count: 0, sum: 0 }
-      )
+    const { leaderboardEntries, count, sum } =
+      await computeRollingLeaderboardEntries({ courseId, days: 14 }, ctx)
 
     return {
       leaderboard: leaderboardEntries,
@@ -1086,16 +1104,20 @@ export async function getCourseLeaderboard(
     courseId,
     courseSelection,
     weeklySelection,
+    rollingSelection,
     customSelection,
     startDate,
     endDate,
+    days,
   }: {
     courseId: string
     courseSelection: boolean
     weeklySelection: boolean
+    rollingSelection: boolean
     customSelection: boolean
     startDate?: string | null
     endDate?: string | null
+    days?: number | null
   },
   ctx: ContextWithUser
 ) {
@@ -1166,6 +1188,20 @@ export async function getCourseLeaderboard(
       numOfActiveParticipants: activeLBEntries.length,
       averageActiveScore,
       leaderboard: activeLBEntries,
+    }
+  } else if (rollingSelection) {
+    // if no number of days is specified, return early
+    if (!days) return null
+
+    // aggregate daily timeline entires and question response details / live quiz leaderboards for remaining hours
+    const { leaderboardEntries, count, sum } =
+      await computeRollingLeaderboardEntries({ courseId, days }, ctx)
+
+    return {
+      numOfActiveParticipants: count,
+      averageActiveScore: count > 0 ? sum / count : 0,
+      computedAt: new Date(),
+      leaderboard: leaderboardEntries,
     }
   } else {
     // verify that all required data is provided

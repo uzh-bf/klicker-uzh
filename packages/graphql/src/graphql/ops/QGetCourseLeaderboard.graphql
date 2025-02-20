@@ -2,17 +2,21 @@ query GetCourseLeaderboard(
   $courseId: String!
   $courseSelection: Boolean!
   $weeklySelection: Boolean!
+  $rollingSelection: Boolean!
   $customSelection: Boolean!
   $startDate: String
   $endDate: String
+  $days: Int
 ) {
   getCourseLeaderboard(
     courseId: $courseId
     courseSelection: $courseSelection
     weeklySelection: $weeklySelection
+    rollingSelection: $rollingSelection
     customSelection: $customSelection
     startDate: $startDate
     endDate: $endDate
+    days: $days
   ) {
     leaderboard {
       id

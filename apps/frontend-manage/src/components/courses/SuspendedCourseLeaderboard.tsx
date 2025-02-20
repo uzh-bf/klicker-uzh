@@ -1,4 +1,5 @@
 import { useMutation, useSuspenseQuery } from '@apollo/client'
+import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faSync } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -27,7 +28,7 @@ function SuspendedCourseLeaderboard({
   courseId: string
   courseName: string
   numOfParticipants: number
-  leaderboardType: 'course' | 'weekly' | 'custom'
+  leaderboardType: 'course' | 'weekly' | '7rolling' | '14rolling' | 'custom'
   weeklyStartDate?: string
   customStartDate?: string
   customEndDate?: string
@@ -38,10 +39,13 @@ function SuspendedCourseLeaderboard({
       courseId,
       courseSelection: leaderboardType === 'course',
       weeklySelection: leaderboardType === 'weekly',
+      rollingSelection:
+        leaderboardType === '7rolling' || leaderboardType === '14rolling',
       customSelection: leaderboardType === 'custom',
       startDate:
         leaderboardType === 'weekly' ? weeklyStartDate : customStartDate,
       endDate: customEndDate,
+      days: leaderboardType === '7rolling' ? 7 : 14,
     },
   })
 
@@ -65,6 +69,8 @@ function SuspendedCourseLeaderboard({
     })
 
   const showLastUpdated =
+    leaderboardType === '7rolling' ||
+    leaderboardType === '14rolling' ||
     (leaderboardType === 'weekly' &&
       weeklyStartDate &&
       dayjs().isBefore(dayjs(weeklyStartDate, 'DD.MM.YYYY').add(7, 'day'))) ||
@@ -115,12 +121,39 @@ function SuspendedCourseLeaderboard({
           >
             {showLastUpdated && (
               <div className="flex flex-col gap-0.5 text-left">
-                <div>
-                  {`${t('manage.course.lastModified')}: ${data.getCourseLeaderboard?.computedAt ? dayjs(data.getCourseLeaderboard?.computedAt).format('DD.MM.YYYY, HH:mm') : t('shared.generic.never')}`}
-                </div>
+                {(leaderboardType === 'weekly' ||
+                  leaderboardType === 'custom') && (
+                  <div>
+                    {`${t('manage.course.lastModified')}: ${data.getCourseLeaderboard?.computedAt ? dayjs(data.getCourseLeaderboard?.computedAt).format('DD.MM.YYYY, HH:mm') : t('shared.generic.never')}`}
+                  </div>
+                )}
+                {(leaderboardType === '7rolling' ||
+                  leaderboardType === '14rolling') && (
+                  <div className="mb-0.5 flex flex-row items-center gap-1">
+                    <FontAwesomeIcon icon={faClock} />
+                    <span>
+                      {data.getCourseLeaderboard?.computedAt
+                        ? `${dayjs(data.getCourseLeaderboard.computedAt)
+                            .subtract(
+                              leaderboardType === '7rolling' ? 7 : 14,
+                              'day'
+                            )
+                            .format(
+                              'DD.MM.YYYY, HH:mm'
+                            )} - ${dayjs(data.getCourseLeaderboard.computedAt).format('DD.MM.YYYY, HH:mm')}`
+                        : t('shared.generic.never')}
+                    </span>
+                  </div>
+                )}
                 <Button
                   onClick={async () => {
-                    await updateWeeklyTimelineEntriesCourse()
+                    if (
+                      leaderboardType === 'weekly' ||
+                      leaderboardType === 'custom'
+                    ) {
+                      await updateWeeklyTimelineEntriesCourse()
+                    }
+
                     await refetch()
                   }}
                   className={{ root: 'h-6 w-max shadow-none' }}
