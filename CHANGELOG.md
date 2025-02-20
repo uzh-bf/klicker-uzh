@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.28...v3.3.0-alpha.29) (2025-02-20)
+
+
+### Bug Fixes
+
+* **apps/docs:** ensure that login button in docs menubar directly leads to manage application ([717b495](https://github.com/uzh-bf/klicker-uzh/commit/717b495344c6200e01eb70130f50e8a2e143d208))
+* link timeline entry with participation and ensure correct aggregation of collected points depending on participation isActive ([#4519](https://github.com/uzh-bf/klicker-uzh/issues/4519)) ([704d9a6](https://github.com/uzh-bf/klicker-uzh/commit/704d9a64251baa1530641660591d5c85ec966246))
+* resolve issues with weekly leaderboard computation and improve data updates ([#4518](https://github.com/uzh-bf/klicker-uzh/issues/4518)) ([9d905e0](https://github.com/uzh-bf/klicker-uzh/commit/9d905e078f67e5170030f0c2f66775c011347438))
+
+
+### Refactors
+
+* **packages/graphql:** refactor live quiz ending and group activity grading finalization into clean transactions ([#4510](https://github.com/uzh-bf/klicker-uzh/issues/4510)) ([33cc508](https://github.com/uzh-bf/klicker-uzh/commit/33cc508fe5b054a1eb759d75d6129316f3638201))
+
+
+### Enhancements
+
+* add first version of student insights timeline and bi-weekly leaderboard ([#4517](https://github.com/uzh-bf/klicker-uzh/issues/4517)) ([f4b20e4](https://github.com/uzh-bf/klicker-uzh/commit/f4b20e43e5c17a68dec8aa60b796b64f125d2941))
+* add lecturer course leaderboards containing collected points rolling over last 7 or 14 days ([#4521](https://github.com/uzh-bf/klicker-uzh/issues/4521)) ([e8baacc](https://github.com/uzh-bf/klicker-uzh/commit/e8baacc70067515fdf3c5519305e19a858f9df09))
+* compute or update weekly timeline entries with daily cronjob ([#4512](https://github.com/uzh-bf/klicker-uzh/issues/4512)) ([aca1b5b](https://github.com/uzh-bf/klicker-uzh/commit/aca1b5bfcb61f222751bea2b164c5128e780e6cb))
+* implement bi-weekly course leaderboard view on student frontend ([#4515](https://github.com/uzh-bf/klicker-uzh/issues/4515)) ([febe5ad](https://github.com/uzh-bf/klicker-uzh/commit/febe5ad877f2cd6f581cd269522faefde77a3e26))
+* implement weekly and bi-weekly custom leaderboard views on lecturer frontend ([#4514](https://github.com/uzh-bf/klicker-uzh/issues/4514)) ([d628418](https://github.com/uzh-bf/klicker-uzh/commit/d6284183855455d1111a9e71ac35a463c53cfa86))
+* set up data structure for student timeline tracking and update corresponding response mutations ([#4509](https://github.com/uzh-bf/klicker-uzh/issues/4509)) ([ae230f3](https://github.com/uzh-bf/klicker-uzh/commit/ae230f3be33d0907f5e98f014cd22c7323010fea))
+
+
+### Other
+
+* **apps/auth:** update already signed in view with improved labeling ([#4522](https://github.com/uzh-bf/klicker-uzh/issues/4522)) ([a963e3a](https://github.com/uzh-bf/klicker-uzh/commit/a963e3a6e07961d9658c8132394a3a223b3595d4))
+
 ## [3.3.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.27...v3.3.0-alpha.28) (2025-02-20)
 
 
