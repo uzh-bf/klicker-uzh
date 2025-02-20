@@ -28,7 +28,8 @@ function CSEvaluationHistogramChart({
   histogramData: {
     value: number
     label: string
-    [dataIx: string]: number | string
+    exactBinMatch: boolean
+    [dataIx: string]: number | string | boolean
   }[]
   solutionData?: {
     [dataIx: string]: { min: number; max: number } | undefined
@@ -40,6 +41,21 @@ function CSEvaluationHistogramChart({
   textSize: TextSizeType
 }) {
   const t = useTranslations()
+  const { minValue, maxValue } = histogramData.reduce(
+    (acc, { value }) => {
+      if (value < acc.minValue) {
+        acc.minValue = value
+      }
+      if (value > acc.maxValue) {
+        acc.maxValue = value
+      }
+      return acc
+    },
+    { minValue: Number.MAX_VALUE, maxValue: Number.MIN_VALUE }
+  )
+
+  // compute the precision of the x-axis such that always at least 5 ticks are shown
+  const precision = -Math.floor(Math.log10((maxValue - minValue) / 5))
 
   return (
     <div className="mt-1 h-full w-full">
@@ -61,6 +77,10 @@ function CSEvaluationHistogramChart({
               value: criterionName,
               position: 'bottom',
             }}
+            ticks={histogramData.map(
+              (d) => Math.round(d.value * 10 ** precision) / 10 ** precision
+            )}
+            tickFormatter={(tick: number) => `  ${tick}  `}
             className={textSize.textXl}
           />
           <YAxis
@@ -89,8 +109,10 @@ function CSEvaluationHistogramChart({
                 return (
                   <div className="border-uzh-grey-100 rounded-md border border-solid bg-white p-2">
                     <div>
-                      {t('manage.evaluation.histogramRange')}:{' '}
-                      {payload[0]!.payload.label}
+                      {payload[0]!.payload.exactBinMatch
+                        ? t('manage.evaluation.value')
+                        : t('manage.evaluation.histogramRange')}
+                      : {payload[0]!.payload.label}
                     </div>
                     {typeof payload[0]!.payload.count !== 'undefined' && (
                       <div className="text-primary-100 font-bold">
