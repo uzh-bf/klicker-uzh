@@ -186,7 +186,7 @@ const config: Config = {
         //   position: 'right',
         // },
         {
-          href: 'https://auth.klicker.uzh.ch',
+          href: 'https://manage.klicker.uzh.ch',
           label: 'Login',
           position: 'right',
         },
