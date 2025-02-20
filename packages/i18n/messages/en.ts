@@ -127,6 +127,7 @@ export default {
       begin: 'Begin',
       finish: 'Finish',
       logout: 'Logout',
+      openApplication: 'Open Application',
       login: 'Login',
       username: 'Username',
       usernameOrEmail: 'Username / E-mail',
