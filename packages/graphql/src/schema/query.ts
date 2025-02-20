@@ -501,9 +501,11 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
           courseSelection: t.arg.boolean({ required: true }),
           weeklySelection: t.arg.boolean({ required: true }),
+          rollingSelection: t.arg.boolean({ required: true }),
           customSelection: t.arg.boolean({ required: true }),
           startDate: t.arg.string({ required: false }),
           endDate: t.arg.string({ required: false }),
+          days: t.arg.int({ required: false }),
         },
         resolve(_, args, ctx) {
           return CourseService.getCourseLeaderboard(args, ctx)

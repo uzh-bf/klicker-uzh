@@ -38,7 +38,7 @@ function IndividualLeaderboard({
   const t = useTranslations()
 
   const [leaderboardType, setLeaderboardType] = useState<
-    'course' | 'weekly' | 'custom'
+    'course' | 'weekly' | '7rolling' | '14rolling' | 'custom'
   >('course')
   const [weeklyStartDate, setWeeklyStartDate] = useState<string | undefined>(
     undefined
@@ -78,9 +78,11 @@ function IndividualLeaderboard({
             items={[
               { value: 'course', label: t('manage.course.entireCourse') },
               { value: 'weekly', label: t('manage.course.weekly') },
+              { value: '7rolling', label: t('manage.course.rolling7') },
+              { value: '14rolling', label: t('manage.course.rolling14') },
               { value: 'custom', label: t('manage.course.custom') },
             ]}
-            className={{ select: { trigger: 'h-8 w-48' } }}
+            className={{ select: { trigger: 'h-8 w-52' } }}
           />
           {leaderboardType === 'weekly' && (
             <SelectField

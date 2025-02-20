@@ -1924,6 +1924,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       weekly: 'Wöchentlich',
       lastWeek: 'Letzte Woche',
       lastTwoWeeks: 'Letzte 2 Wochen',
+      rolling7: '7 Tage (fortlaufend)',
+      rolling14: '14 Tage (fortlaufend)',
       custom: 'Benutzerdefiniert',
       leaderboardType: 'Leaderboard Typ',
       leaderboardTypeTooltip:
