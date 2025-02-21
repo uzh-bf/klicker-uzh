@@ -8,6 +8,7 @@ describe('Different live-quiz workflows', function () {
   })
 
   // ! Part 0: Preparation
+  // #region
   it('Create the questions required in the live quiz test workflows', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
@@ -116,8 +117,10 @@ describe('Different live-quiz workflows', function () {
       solutions: this.data.CS2.solutions,
     })
   })
+  // #endregion
 
   // ! Part 1: Live Quiz Creation
+  // #region
   it('Test adding and deleting blocks to a live quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -666,8 +669,10 @@ describe('Different live-quiz workflows', function () {
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course1.quiz.nameDupl).should('not.exist')
   })
+  // #endregion
 
   // ! Part 2: Live Quiz Control
+  // #region
   it('Start the created live quizzes, abort it, and restart & complete it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
@@ -741,8 +746,10 @@ describe('Different live-quiz workflows', function () {
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
+  // #endregion
 
   // ! Part 3: Full Live Quiz Execution Cycle
+  // #region
   it('Create and start a live quiz with all question types (with and without sample solution) to test the entire execution cycle', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -1283,8 +1290,10 @@ describe('Different live-quiz workflows', function () {
     cy.wait(1000)
     cy.get('[data-cy="next-block-timeline"]').click()
   })
+  // #endregion
 
   // ! Cleanup
+  // #region
   it('Cleanup: Delete the live quiz used for the full cycle test', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="live-quizzes"]`).click()
@@ -1377,4 +1386,5 @@ describe('Different live-quiz workflows', function () {
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
+  // #endregion
 })

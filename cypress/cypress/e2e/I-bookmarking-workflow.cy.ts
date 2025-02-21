@@ -13,6 +13,7 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
   })
 
   // ! Part 0: Preparation - Question Creation
+  // #region
   it('Creates the questions that should be bookmarked and/or flagged', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
@@ -27,8 +28,10 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       choices: this.data.question2.choices,
     })
   })
+  // #endregion
 
   // ! Part 1: Activity Creation
+  // #region
   it('Create a practice quiz with the created questions', function () {
     cy.loginLecturer()
     cy.createPracticeQuiz({
@@ -55,8 +58,10 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       ],
     })
   })
+  // #endregion
 
   // ! Part 2: Flagging and Voting on Practice Quiz
+  // #region
   it('Publish the practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -178,8 +183,10 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       'not.exist'
     )
   })
+  // #endregion
 
   // ! Part 3: Flagging and Voting on Microlearning
+  // #region
   it('Publish the microlearning', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -289,4 +296,5 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       'not.exist'
     )
   })
+  // #endregion
 })

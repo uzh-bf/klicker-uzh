@@ -12,6 +12,7 @@ describe('Different practice quiz workflows', function () {
   })
 
   // ! Part 0: Preparation - Question Creation
+  // #region
   it('Create questions required for practice quiz creation', function () {
     cy.loginLecturer()
 
@@ -106,8 +107,10 @@ describe('Different practice quiz workflows', function () {
       solutions: this.data.questions.CS.solutions,
     })
   })
+  // #endregion
 
   // ! Part 1: Practice Quiz Creation
+  // #region
   it('Test the creation of a practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
@@ -519,8 +522,10 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="practice-quiz-actions-${this.data.running.nameDupl}"]`
     ).should('not.exist')
   })
+  // #endregion
 
   // ! Part 2: Running Practice Quiz
+  // #region
   // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
   function answerRunningPracticeQuiz(data) {
     // SC question
@@ -1024,8 +1029,10 @@ describe('Different practice quiz workflows', function () {
       'not.exist'
     )
   })
+  // #endregion
 
   // ! Part 3: Future Practice Quiz
+  // #region
   it('Publish the future practice quiz and verify scheduled state', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -1196,4 +1203,5 @@ describe('Different practice quiz workflows', function () {
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
+  // #endregion
 })

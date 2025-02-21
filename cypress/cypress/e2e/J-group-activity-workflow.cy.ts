@@ -19,6 +19,7 @@ describe('Create and solve a group activity', function () {
   })
 
   // ! Part 0: Preparation - Question Creation
+  // #region
   it('Create questions required for group activity creation', function () {
     cy.loginLecturer()
 
@@ -98,8 +99,10 @@ describe('Create and solve a group activity', function () {
       solutions: this.data.questions.CS.solutions,
     })
   })
+  // #endregion
 
   // ! Part 1: Group Activity Creation
+  // #region
   it('Create a group activity with the created questions', function () {
     cy.loginLecturer()
 
@@ -455,8 +458,10 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(this.data.running.name).should('exist')
   })
+  // #endregion
 
   // ! Part 2: Running Group Activity & Participation
+  // #region
   function answerGroupActivity(data) {
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-0"]').click()
@@ -872,8 +877,10 @@ describe('Create and solve a group activity', function () {
     ).click()
     cy.get('[data-cy="start-group-activity"]').click()
   })
+  // #endregion
 
   // ! Part 3: Group Activity Ending and Grading
+  // #region
   it('End the running group activity through the corresponding action on the lecturer interface', function () {
     // navigate to course overview
     cy.loginLecturer()
@@ -950,8 +957,10 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="start-group-activity"]').should('not.exist')
     cy.findByText(messages.pwa.groupActivity.groupActivityEnded).should('exist')
   })
+  // #endregion
 
   // ! Part 4: Grading the Group Activity
+  // #region
   it('Grade the submissions to the group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -1225,8 +1234,10 @@ describe('Create and solve a group activity', function () {
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
+  // #endregion
 
   // ! Part 5: Synchronous Group Activity
+  // #region
   it('Publish the synchronous group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -1458,8 +1469,10 @@ describe('Create and solve a group activity', function () {
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
+  // #endregion
 
   // ! Part 6: Miscellaneous
+  // #region
   it('Check if group messages can be sent', function () {
     cy.loginStudent()
     cy.get(`[data-cy="course-button-${this.data.course}"]`).click()
@@ -1503,4 +1516,5 @@ describe('Create and solve a group activity', function () {
       this.data.group.message2
     )
   })
+  // #endregion
 })

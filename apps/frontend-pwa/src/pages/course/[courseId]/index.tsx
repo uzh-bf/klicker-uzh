@@ -80,7 +80,7 @@ function CourseOverview({
       variables: { courseId },
     })
 
-  const [joinCourse] = useMutation(JoinCourseLeaderboardDocument, {
+  const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
     variables: { courseId },
     refetchQueries: [
       {
@@ -262,7 +262,11 @@ function CourseOverview({
                               className="mb-3 flex flex-row justify-end gap-3 md:mt-1.5 md:flex-col md:gap-0.5"
                             >
                               <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="course" id="course" />
+                                <RadioGroupItem
+                                  value="course"
+                                  id="course"
+                                  data-cy="select-course-leaderboard"
+                                />
                                 <Label htmlFor="course">
                                   {t('shared.generic.course')}
                                 </Label>
@@ -271,6 +275,7 @@ function CourseOverview({
                                 <RadioGroupItem
                                   value="biweekly"
                                   id="biweekly"
+                                  data-cy="select-biweekly-leaderboard"
                                 />
                                 <Label htmlFor="biweekly">
                                   {`${t('pwa.courses.biWeekly')} (${(() => {
@@ -299,7 +304,7 @@ function CourseOverview({
                                   dataLeaderboard?.getStudentCourseLeaderboard
                                     ?.leaderboard ?? []
                                 }
-                                onJoin={joinCourse}
+                                onJoin={() => joinCourseLeaderboard()}
                                 onLeave={() =>
                                   setIsLeaveCourseLeaderboardModalOpen(true)
                                 }
@@ -331,7 +336,7 @@ function CourseOverview({
                                   <Button
                                     fluid
                                     className={{ root: 'bg-white' }}
-                                    onClick={() => joinCourse()}
+                                    onClick={() => joinCourseLeaderboard()}
                                     data={{
                                       cy: 'student-course-join-leaderboard',
                                     }}

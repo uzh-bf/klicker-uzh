@@ -19,6 +19,7 @@ describe('Different microlearning workflows', function () {
   })
 
   // ! Part 0: Preparation - Question Creation
+  // #region
   it('Create questions required for microlearning creation', function () {
     cy.loginLecturer()
 
@@ -113,8 +114,10 @@ describe('Different microlearning workflows', function () {
       solutions: this.data.questions.CS.solutions,
     })
   })
+  // #endregion
 
   // ! Part 1: Microlearning Creation
+  // #region
   it('Create a microlearning around the current time', function () {
     // Start creation
     cy.loginLecturer()
@@ -624,8 +627,10 @@ describe('Different microlearning workflows', function () {
       ],
     })
   })
+  // #endregion
 
   // ! Part 2: Running Microlearning and Answer Workflows / Student Frontend
+  // #region
   function answerMicroLearningPreview(data) {
     cy.origin(Cypress.env('URL_STUDENT'), { args: { data } }, ({ data }) => {
       cy.get('[data-cy="start-microlearning"]').click()
@@ -927,8 +932,10 @@ describe('Different microlearning workflows', function () {
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
+  // #endregion
 
   // ! Part 3: Future Microlearning
+  // #region
   it('Publish the future microlearning', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -1007,8 +1014,10 @@ describe('Different microlearning workflows', function () {
       'not.exist'
     )
   })
+  // #endregion
 
   // ! Part 4: Complete Microlearning
+  // #region
   it('Publish the microlearning that contains all question types', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -1335,8 +1344,10 @@ describe('Different microlearning workflows', function () {
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
+  // #endregion
 
   // ! Part 5: Practice Quiz Conversion
+  // #region
   it('Convert the seeded past microlearning into a practice quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -1399,8 +1410,10 @@ describe('Different microlearning workflows', function () {
       messages.shared.generic.draft
     )
   })
+  // #endregion
 
   // ! Cleanup
+  // #region
   it('Cleanup: Delete all created questions', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
@@ -1464,4 +1477,5 @@ describe('Different microlearning workflows', function () {
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
+  // #endregion
 })

@@ -11,6 +11,7 @@ describe('Test course creation and editing functionalities', function () {
   })
 
   // ! Part 1: Course creation
+  // #region
   it('Test the creation of a new course without gamification', function () {
     // log into frontend-manage
     cy.loginLecturer()
@@ -170,8 +171,10 @@ describe('Test course creation and editing functionalities', function () {
       'exist'
     )
   })
+  // #endregion
 
   // ! Part 2: Randomized group creation
+  // #region
   it('Have 10 students join the course and the random assignment pool', function () {
     // get the course PIN from the lecturer view
     cy.loginLecturer()
@@ -374,8 +377,10 @@ describe('Test course creation and editing functionalities', function () {
       'exist'
     )
   })
+  // #endregion
 
   // ! Part 3: Course overview, editing, and archiving
+  // #region
   it('Check the content of the course overview and edit course properties', function () {
     // log into frontend-manage
     cy.loginLecturer()
@@ -531,6 +536,24 @@ describe('Test course creation and editing functionalities', function () {
     // check if the leaderboards exist
     cy.findByText(messages.pwa.courses.individualLeaderboard).should('exist')
     cy.findByText(messages.pwa.courses.groupLeaderboard).should('exist')
+
+    // switch between entire course and biweekly leaderboard
+    cy.get('[data-cy="select-course-leaderboard"]').click()
+    cy.get('[data-cy="select-biweekly-leaderboard"]').click()
+    cy.get('[data-cy="select-course-leaderboard"]').click()
+
+    // leave and re-join the course leaderboard
+    cy.get('[data-cy="leave-leaderboard"]').click()
+    cy.get('[data-cy="cancel-leave-course-leaderboard"]').click()
+    cy.get('[data-cy="leave-leaderboard"]').click()
+    cy.get('[data-cy="confirm-leave-course-leaderboard"]').click()
+    cy.get('[data-cy="student-course-join-leaderboard"]').should('exist')
+    cy.get('[data-cy="select-course-leaderboard"]').should('not.exist')
+    cy.get('[data-cy="select-biweekly-leaderboard"]').should('not.exist')
+    cy.get('[data-cy="student-course-join-leaderboard"]').click()
+    cy.get('[data-cy="leave-leaderboard"]').should('exist')
+    cy.get('[data-cy="select-course-leaderboard"]').should('exist')
+    cy.get('[data-cy="select-biweekly-leaderboard"]').should('exist')
   })
 
   it('Test course archive functionality', function () {
@@ -576,8 +599,10 @@ describe('Test course creation and editing functionalities', function () {
       'exist'
     )
   })
+  // #endregion
 
   // ! Part 4: Course deletion and required confirmations
+  // #region
   it('Create a course with live quiz, practice quiz, and microlearning, and delete it again', function () {
     cy.loginLecturer()
 
@@ -701,8 +726,10 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.deletion.lqName).should('not.exist')
   })
+  // #endregion
 
   // ! Cleanup
+  // #region
   it('Cleanup: Delete all created courses', function () {
     cy.loginLecturer()
     cy.get('[data-cy="courses"]').click()
@@ -731,4 +758,5 @@ describe('Test course creation and editing functionalities', function () {
       'not.exist'
     )
   })
+  // #endregion
 })
