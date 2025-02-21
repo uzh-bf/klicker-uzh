@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   CreateParticipantAccountDocument,
-  // CreateParticipantAndJoinCourseDocument,
   GetBasicCourseInformationDocument,
   JoinCourseWithPinDocument,
   SelfDocument,

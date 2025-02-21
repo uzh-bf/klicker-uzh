@@ -324,14 +324,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      joinCourse: t.withAuth(asParticipant).field({
+      joinCourseLeaderboard: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,
         args: {
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return CourseService.joinCourse(args, ctx)
+          return CourseService.joinCourseLeaderboard(args, ctx)
         },
       }),
 

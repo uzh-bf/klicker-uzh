@@ -18052,7 +18052,7 @@
             "deprecationReason": null
           },
           {
-            "name": "joinCourse",
+            "name": "joinCourseLeaderboard",
             "description": null,
             "args": [
               {

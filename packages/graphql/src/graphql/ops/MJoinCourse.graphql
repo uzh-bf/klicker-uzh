@@ -1,5 +1,5 @@
-mutation JoinCourse($courseId: String!) {
-  joinCourse(courseId: $courseId) {
+mutation JoinCourseLeaderboard($courseId: String!) {
+  joinCourseLeaderboard(courseId: $courseId) {
     id
     participation {
       id

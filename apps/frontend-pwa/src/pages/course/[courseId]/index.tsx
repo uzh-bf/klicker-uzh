@@ -3,7 +3,7 @@ import {
   GetCourseGroupActivitiesDocument,
   GetCourseOverviewDataDocument,
   GetStudentCourseLeaderboardDocument,
-  JoinCourseDocument,
+  JoinCourseLeaderboardDocument,
   LeaveCourseLeaderboardDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
@@ -80,17 +80,23 @@ function CourseOverview({
       variables: { courseId },
     })
 
-  const [joinCourse] = useMutation(JoinCourseDocument, {
+  const [joinCourse] = useMutation(JoinCourseLeaderboardDocument, {
     variables: { courseId },
     refetchQueries: [
-      { query: GetCourseOverviewDataDocument, variables: { courseId } },
+      {
+        query: GetStudentCourseLeaderboardDocument,
+        variables: { courseId, mode: leaderboardType },
+      },
     ],
   })
 
   const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
     variables: { courseId },
     refetchQueries: [
-      { query: GetCourseOverviewDataDocument, variables: { courseId } },
+      {
+        query: GetStudentCourseLeaderboardDocument,
+        variables: { courseId, mode: leaderboardType },
+      },
     ],
   })
 
@@ -232,38 +238,54 @@ function CourseOverview({
                     <div className="flex flex-1 flex-col justify-between gap-6">
                       <div>
                         <div className="flex w-full flex-col justify-between md:flex-row">
-                          <H3 className={{ root: 'mb-1' }}>
+                          <H3
+                            className={{
+                              root: twMerge(
+                                participant?.id && participation?.isActive
+                                  ? 'mb-1'
+                                  : 'mb-4'
+                              ),
+                            }}
+                          >
                             {t('pwa.courses.individualLeaderboard')}
                           </H3>
 
-                          <RadioGroup
-                            value={leaderboardType}
-                            onValueChange={(newValue) =>
-                              setLeaderboardType(
-                                newValue as 'course' | 'biweekly'
-                              )
-                            }
-                            disabled={loadingLeaderboard}
-                            className="mb-3 flex flex-row justify-end gap-3 md:mt-1.5 md:flex-col md:gap-0.5"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="course" id="course" />
-                              <Label htmlFor="course">
-                                {t('shared.generic.course')}
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="biweekly" id="biweekly" />
-                              <Label htmlFor="biweekly">
-                                {`${t('pwa.courses.biWeekly')} (${(() => {
-                                  const startDate = dayjs().subtract(14, 'day')
-                                  const formatDate = (date: dayjs.Dayjs) =>
-                                    date.format('DD.MM')
-                                  return `${formatDate(startDate)} - ${dayjs().format('DD.MM')}`
-                                })()})`}
-                              </Label>
-                            </div>
-                          </RadioGroup>
+                          {participant?.id && participation?.isActive && (
+                            <RadioGroup
+                              value={leaderboardType}
+                              onValueChange={(newValue) =>
+                                setLeaderboardType(
+                                  newValue as 'course' | 'biweekly'
+                                )
+                              }
+                              disabled={loadingLeaderboard}
+                              className="mb-3 flex flex-row justify-end gap-3 md:mt-1.5 md:flex-col md:gap-0.5"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="course" id="course" />
+                                <Label htmlFor="course">
+                                  {t('shared.generic.course')}
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem
+                                  value="biweekly"
+                                  id="biweekly"
+                                />
+                                <Label htmlFor="biweekly">
+                                  {`${t('pwa.courses.biWeekly')} (${(() => {
+                                    const startDate = dayjs().subtract(
+                                      14,
+                                      'day'
+                                    )
+                                    const formatDate = (date: dayjs.Dayjs) =>
+                                      date.format('DD.MM')
+                                    return `${formatDate(startDate)} - ${dayjs().format('DD.MM')}`
+                                  })()})`}
+                                </Label>
+                              </div>
+                            </RadioGroup>
+                          )}
                         </div>
 
                         {!dataLeaderboard?.getStudentCourseLeaderboard ||

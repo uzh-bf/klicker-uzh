@@ -76,15 +76,15 @@ export async function joinCourseWithPin(
   return updatedParticipant
 }
 
-// join a course leaderboard as a participant
-// creates a participation and a leaderboard entry
-interface JoinCourseArgs {
-  courseId: string
-}
-export async function joinCourse(
-  { courseId }: JoinCourseArgs,
+export async function joinCourseLeaderboard(
+  {
+    courseId,
+  }: {
+    courseId: string
+  },
   ctx: ContextWithUser
 ) {
+  // upsert or activate participation in the course
   const participation = await ctx.prisma.participation.upsert({
     where: {
       courseId_participantId: {
@@ -112,6 +112,7 @@ export async function joinCourse(
 
   if (!participation) return null
 
+  // upsert a course leaderboard entry with zero points
   const lbEntry = await ctx.prisma.leaderboardEntry.upsert({
     where: {
       type_participantId_courseId: {
@@ -140,6 +141,16 @@ export async function joinCourse(
       score: 0,
     },
     update: {},
+  })
+
+  // invalidate participation and leaderboard entry
+  ctx.emitter.emit('invalidate', {
+    typename: 'Participation',
+    id: participation.id,
+  })
+  ctx.emitter.emit('invalidate', {
+    typename: 'LeaderboardEntry',
+    id: lbEntry.id,
   })
 
   return {
@@ -245,10 +256,6 @@ export async function getCourseOverviewData(
           },
         },
       },
-    })
-
-    const course = ctx.prisma.course.findUnique({
-      where: { id: courseId },
     })
 
     if (participation) {
