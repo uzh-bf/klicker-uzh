@@ -24,7 +24,6 @@ function StudentTimelines() {
 
   const courses = data?.getCourseStudentTimelines
 
-  // TODO: extract components for course information and chart to separate components
   return (
     <Layout
       course={{ displayName: 'KlickerUZH' }}

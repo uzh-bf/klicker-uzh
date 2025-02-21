@@ -182,13 +182,14 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
 export interface ICourseStudentTimeline {
   courseId: string
   courseName: string
+  courseGamified: boolean
   courseStart: Date
   courseEnd: Date
   timelineEntries: {
     timestamp: Date
-    collectedPoints: number
+    collectedPoints?: number
     collectedXp: number
-    totalPoints: number
+    totalPoints?: number
     totalXp: number
   }[]
 }
@@ -199,9 +200,9 @@ export const CourseStudentTimelineEntry =
   CourseStudentTimelineEntryRef.implement({
     fields: (t) => ({
       timestamp: t.expose('timestamp', { type: 'Date' }),
-      collectedPoints: t.exposeFloat('collectedPoints'),
+      collectedPoints: t.exposeFloat('collectedPoints', { nullable: true }),
       collectedXp: t.exposeFloat('collectedXp'),
-      totalPoints: t.exposeFloat('totalPoints'),
+      totalPoints: t.exposeFloat('totalPoints', { nullable: true }),
       totalXp: t.exposeFloat('totalXp'),
     }),
   })
@@ -212,6 +213,7 @@ export const CourseStudentTimeline = CourseStudentTimelineRef.implement({
   fields: (t) => ({
     courseId: t.exposeID('courseId'),
     courseName: t.exposeString('courseName'),
+    courseGamified: t.exposeBoolean('courseGamified'),
     courseStart: t.expose('courseStart', { type: 'Date' }),
     courseEnd: t.expose('courseEnd', { type: 'Date' }),
     timelineEntries: t.expose('timelineEntries', {

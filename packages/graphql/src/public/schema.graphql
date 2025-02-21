@@ -606,6 +606,7 @@ type CoursePerformanceAnalytics {
 
 type CourseStudentTimeline {
   courseEnd: Date!
+  courseGamified: Boolean!
   courseId: ID!
   courseName: String!
   courseStart: Date!
@@ -613,10 +614,10 @@ type CourseStudentTimeline {
 }
 
 type CourseStudentTimelineEntry {
-  collectedPoints: Float!
+  collectedPoints: Float
   collectedXp: Float!
   timestamp: Date!
-  totalPoints: Float!
+  totalPoints: Float
   totalXp: Float!
 }
 

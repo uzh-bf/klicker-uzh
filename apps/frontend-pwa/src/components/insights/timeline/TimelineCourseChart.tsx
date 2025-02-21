@@ -20,6 +20,7 @@ function TimelineCourseChart({ course }: { course: CourseStudentTimeline }) {
         const courseEndTime = new Date(course.courseEnd).getTime()
         const now = Date.now()
         const isOngoing = courseEndTime > now
+        const gamified = course.courseGamified
 
         const timelineData = course.timelineEntries
           ? course.timelineEntries
@@ -98,10 +99,12 @@ function TimelineCourseChart({ course }: { course: CourseStudentTimeline }) {
               margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
             >
               <defs>
-                <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2} />
-                </linearGradient>
+                {gamified && (
+                  <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2} />
+                  </linearGradient>
+                )}
                 <linearGradient id="colorXp" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
                   <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.2} />
@@ -134,7 +137,10 @@ function TimelineCourseChart({ course }: { course: CourseStudentTimeline }) {
                   const previousData =
                     currentIndex > 0 ? timelineData[currentIndex - 1] : null
                   const deltaPoints =
-                    previousData !== null
+                    gamified &&
+                    previousData !== null &&
+                    previousData.totalPoints !== null &&
+                    typeof previousData.totalPoints !== 'undefined'
                       ? currentData.totalPoints - previousData.totalPoints
                       : 0
                   const deltaXp =
@@ -159,18 +165,20 @@ function TimelineCourseChart({ course }: { course: CourseStudentTimeline }) {
                           })}
                         </strong>
                       </div>
-                      <div>
-                        {t('pwa.insights.totalPoints')}:{' '}
-                        {currentData.totalPoints}{' '}
-                        <span
-                          style={{
-                            color: deltaPoints >= 0 ? 'green' : 'red',
-                          }}
-                        >
-                          ({deltaPoints >= 0 ? '+' : ''}
-                          {deltaPoints})
-                        </span>
-                      </div>
+                      {gamified && (
+                        <div>
+                          {t('pwa.insights.totalPoints')}:{' '}
+                          {currentData.totalPoints}{' '}
+                          <span
+                            style={{
+                              color: deltaPoints >= 0 ? 'green' : 'red',
+                            }}
+                          >
+                            ({deltaPoints >= 0 ? '+' : ''}
+                            {deltaPoints})
+                          </span>
+                        </div>
+                      )}
                       <div>
                         {t('pwa.insights.totalXp')}: {currentData.totalXp}{' '}
                         <span
@@ -194,13 +202,15 @@ function TimelineCourseChart({ course }: { course: CourseStudentTimeline }) {
                 }
               />
               <Legend verticalAlign="top" align="right" height={36} />
-              <Area
-                type="monotone"
-                dataKey="totalPoints"
-                stroke="#8884d8"
-                fill="url(#colorPoints)"
-                name={t('pwa.insights.totalPoints')}
-              />
+              {gamified && (
+                <Area
+                  type="monotone"
+                  dataKey="totalPoints"
+                  stroke="#8884d8"
+                  fill="url(#colorPoints)"
+                  name={t('pwa.insights.totalPoints')}
+                />
+              )}
               <Area
                 type="monotone"
                 dataKey="totalXp"

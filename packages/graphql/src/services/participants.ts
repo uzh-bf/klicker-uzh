@@ -1146,27 +1146,31 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
     include: {
       participations: {
         include: {
-          course: {
-            include: {
-              // fetch weekly entries for older than 14 days and daily entries for the last 14 days
-              timelineEntries: {
-                where: {
-                  OR: [
-                    {
-                      type: TimelineEntryType.WEEKLY,
-                      timestamp: {
-                        lt: dayjs().subtract(14, 'days').toDate(),
-                      },
-                    },
-                    {
-                      type: TimelineEntryType.DAILY,
-                      timestamp: {
-                        gte: dayjs().subtract(14, 'days').toDate(),
-                      },
-                    },
-                  ],
+          timelineEntries: {
+            where: {
+              OR: [
+                {
+                  type: TimelineEntryType.WEEKLY,
+                  timestamp: {
+                    lt: dayjs().subtract(14, 'days').toDate(),
+                  },
                 },
-              },
+                {
+                  type: TimelineEntryType.DAILY,
+                  timestamp: {
+                    gte: dayjs().subtract(14, 'days').toDate(),
+                  },
+                },
+              ],
+            },
+          },
+          course: {
+            select: {
+              id: true,
+              displayName: true,
+              isGamificationEnabled: true,
+              startDate: true,
+              endDate: true,
             },
           },
         },
@@ -1183,42 +1187,78 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
   const courses = participant.participations.map((participation) => {
     const course = participation.course
 
-    // sort timeline entries by timestamp and map to required information
-    const { timelineEntries } = course.timelineEntries
-      .sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1))
-      .reduce<{
-        timelineEntries: {
-          timestamp: Date
-          collectedPoints: number
-          collectedXp: number
+    if (course.isGamificationEnabled) {
+      // sort timeline entries by timestamp and map to include points when gamified
+      const { timelineEntries } = participation.timelineEntries
+        .sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1))
+        .reduce<{
+          timelineEntries: {
+            timestamp: Date
+            collectedPoints: number
+            collectedXp: number
+            totalPoints: number
+            totalXp: number
+          }[]
           totalPoints: number
           totalXp: number
-        }[]
-        totalPoints: number
-        totalXp: number
-      }>(
-        (acc, entry) => {
-          acc.totalPoints += entry.collectedPoints
-          acc.totalXp += entry.collectedXp
-          acc.timelineEntries.push({
-            timestamp: entry.timestamp,
-            collectedPoints: entry.collectedPoints,
-            collectedXp: entry.collectedXp,
-            totalPoints: acc.totalPoints,
-            totalXp: acc.totalXp,
-          })
+        }>(
+          (acc, entry) => {
+            acc.totalPoints += entry.collectedPoints
+            acc.totalXp += entry.collectedXp
+            acc.timelineEntries.push({
+              timestamp: entry.timestamp,
+              collectedPoints: entry.collectedPoints,
+              collectedXp: entry.collectedXp,
+              totalPoints: acc.totalPoints,
+              totalXp: acc.totalXp,
+            })
 
-          return acc
-        },
-        { timelineEntries: [], totalPoints: 0, totalXp: 0 }
-      )
+            return acc
+          },
+          { timelineEntries: [], totalPoints: 0, totalXp: 0 }
+        )
 
-    return {
-      courseId: course.id,
-      courseName: course.displayName,
-      courseStart: course.startDate,
-      courseEnd: course.endDate,
-      timelineEntries,
+      return {
+        courseId: course.id,
+        courseName: course.displayName,
+        courseGamified: true,
+        courseStart: course.startDate,
+        courseEnd: course.endDate,
+        timelineEntries,
+      }
+    } else {
+      // for non-gamified courses, only include xp values
+      const { timelineEntries } = participation.timelineEntries
+        .sort((a, b) => (a.timestamp > b.timestamp ? 1 : -1))
+        .reduce<{
+          timelineEntries: {
+            timestamp: Date
+            collectedXp: number
+            totalXp: number
+          }[]
+          totalXp: number
+        }>(
+          (acc, entry) => {
+            acc.totalXp += entry.collectedXp
+            acc.timelineEntries.push({
+              timestamp: entry.timestamp,
+              collectedXp: entry.collectedXp,
+              totalXp: acc.totalXp,
+            })
+
+            return acc
+          },
+          { timelineEntries: [], totalXp: 0 }
+        )
+
+      return {
+        courseId: course.id,
+        courseName: course.displayName,
+        courseGamified: false,
+        courseStart: course.startDate,
+        courseEnd: course.endDate,
+        timelineEntries,
+      }
     }
   })
 

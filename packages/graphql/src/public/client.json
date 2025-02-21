@@ -148,7 +148,7 @@
    "GetCoursePerformanceAnalytics": "9b46ac78a110619d0edff36150a73170ac14822e4074d8fb4e3ab6d398ae3414",
    "GetCoursePracticeQuiz": "4240bb41fd4c347bc7381ecf3f94de347ff2b3e38d47f6f7230642fe5ce3c54a",
    "GetCourseRunningLiveQuizzes": "ce037e4ed631347550ff54d45e5d0b4c94389f35d77873e535ce8e676fd2aec1",
-   "GetCourseStudentTimelines": "27156fa86a0280fab352b3a61fcd6176f6f9920d6e72766981536c8263b6d04d",
+   "GetCourseStudentTimelines": "9ac72310ed35d428bba4a9f1cfc3a64a3b83ad211a168d8d6a7a2dd2c0372dd5",
    "GetCourseSummary": "ab045b4abe94c4ba4e86150994ce42656310ff79241fd52a2e3b03396d6d0571",
    "GetCourseWeeklyActivity": "769cc8d45ec0f063e4ca121bf1cc362ea9fa9f822ef1eab1a578f9f7db59bdb4",
    "GetFeedbacks": "4d12fff29b8c270acb661bd340c218fd12b89ec382e47e0adeab91d5eac3749b",

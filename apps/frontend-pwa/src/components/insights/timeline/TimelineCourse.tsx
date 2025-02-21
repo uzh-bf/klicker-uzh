@@ -4,7 +4,9 @@ import TimelineCourseInformation from './TimelineCourseInformation'
 
 function TimelineCourse({ course }: { course: CourseStudentTimeline }) {
   const totalPoints =
-    course.timelineEntries && course.timelineEntries.length > 0
+    course.courseGamified &&
+    course.timelineEntries &&
+    course.timelineEntries.length > 0
       ? course.timelineEntries[course.timelineEntries.length - 1].totalPoints
       : 0
   const totalXp =
@@ -16,6 +18,7 @@ function TimelineCourse({ course }: { course: CourseStudentTimeline }) {
     <div className="flex w-full flex-col gap-2 md:flex-row md:gap-3">
       <TimelineCourseInformation
         courseName={course.courseName}
+        courseGamified={course.courseGamified}
         courseStart={course.courseStart}
         courseEnd={course.courseEnd}
         totalPoints={totalPoints}

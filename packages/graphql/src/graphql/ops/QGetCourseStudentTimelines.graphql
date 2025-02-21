@@ -2,6 +2,7 @@ query GetCourseStudentTimelines {
   getCourseStudentTimelines {
     courseId
     courseName
+    courseGamified
     courseStart
     courseEnd
     timelineEntries {

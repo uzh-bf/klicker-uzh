@@ -2,6 +2,7 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faCalendarDays,
   faCheck,
+  faCrown,
   faHourglassHalf,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -11,15 +12,17 @@ import { useTranslations } from 'next-intl'
 
 function TimelineCourseInformation({
   courseName,
+  courseGamified,
   courseStart,
   courseEnd,
   totalPoints,
   totalXp,
 }: {
   courseName: string
+  courseGamified: boolean
   courseStart: string
   courseEnd: string
-  totalPoints: number
+  totalPoints?: number | null
   totalXp: number
 }) {
   const t = useTranslations()
@@ -58,15 +61,26 @@ function TimelineCourseInformation({
           })()}
         </div>
       </div>
+      {courseGamified && (
+        <div className="mb-0.5 flex items-center text-sm text-gray-600">
+          <FontAwesomeIcon
+            icon={faCrown}
+            className="mr-2 w-4 text-orange-400"
+          />
+          <span>{t('shared.generic.gamified')}</span>
+        </div>
+      )}
       <div className="mb-2 flex items-center text-sm text-gray-600">
-        <FontAwesomeIcon icon={faCalendarDays} className="mr-2" />
+        <FontAwesomeIcon icon={faCalendarDays} className="mr-2 w-4" />
         <span>
           {new Date(courseStart).toLocaleDateString('de-DE')} -{' '}
           {new Date(courseEnd).toLocaleDateString('de-DE')}
         </span>
       </div>
       <div className="text-sm">
-        <div>{`${t('pwa.insights.totalPoints')}: ${totalPoints}`}</div>
+        {courseGamified && (
+          <div>{`${t('pwa.insights.totalPoints')}: ${totalPoints}`}</div>
+        )}
         <div>{`${t('pwa.insights.totalXp')}: ${totalXp}`}</div>
       </div>
     </div>
