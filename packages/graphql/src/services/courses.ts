@@ -436,6 +436,7 @@ async function computeRollingLeaderboardEntries(
       username: string
       avatar: string | null
       score: number
+      xp: number
       isSelf?: boolean
     }
   }>((acc, entry) => {
@@ -444,6 +445,7 @@ async function computeRollingLeaderboardEntries(
       username: entry.participant.username,
       avatar: entry.participant.avatar,
       score: 0,
+      xp: entry.participant.xp,
       isSelf: ctx.user?.sub === entry.participant.id,
     }
 
@@ -486,40 +488,43 @@ async function computeRollingLeaderboardEntries(
   })
 
   // sort the leaderboard entries and add rank, level, and compute statistics
-  const { leaderboardEntries, count, sum } = Object.values(leaderboardScores)
-    .sort((a, b) => b.score - a.score)
-    .reduce<{
-      leaderboardEntries: {
-        id: number
-        participantId: string
-        username: string
-        avatar: string | null
-        score: number
-        rank: number
-        isSelf?: boolean
-        level?: number
-      }[]
-      count: number
-      sum: number
-    }>(
-      (acc, scoreEntry, ix) => {
-        acc.leaderboardEntries.push({
-          id: Math.floor(random(1000000000)),
-          participantId: scoreEntry.participantId,
-          username: scoreEntry.username,
-          avatar: scoreEntry.avatar,
-          score: scoreEntry.score,
-          isSelf: scoreEntry.isSelf,
-          rank: ix + 1,
-          level: levelFromXp(scoreEntry.score),
-        })
-        acc.count += 1
-        acc.sum += scoreEntry.score
+  const sortedScores = sortBy(
+    Object.values(leaderboardScores),
+    [prop('score'), 'desc'],
+    [prop('username'), 'asc']
+  )
+  const { leaderboardEntries, count, sum } = sortedScores.reduce<{
+    leaderboardEntries: {
+      id: number
+      participantId: string
+      username: string
+      avatar: string | null
+      score: number
+      rank: number
+      isSelf?: boolean
+      level?: number
+    }[]
+    count: number
+    sum: number
+  }>(
+    (acc, scoreEntry, ix) => {
+      acc.leaderboardEntries.push({
+        id: Math.floor(random(1000000000)),
+        participantId: scoreEntry.participantId,
+        username: scoreEntry.username,
+        avatar: scoreEntry.avatar,
+        score: scoreEntry.score,
+        isSelf: scoreEntry.isSelf,
+        rank: ix + 1,
+        level: levelFromXp(scoreEntry.xp),
+      })
+      acc.count += 1
+      acc.sum += scoreEntry.score
 
-        return acc
-      },
-      { leaderboardEntries: [], count: 0, sum: 0 }
-    )
+      return acc
+    },
+    { leaderboardEntries: [], count: 0, sum: 0 }
+  )
 
   return { leaderboardEntries, count, sum }
 }
