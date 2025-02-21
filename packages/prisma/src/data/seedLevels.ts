@@ -9,7 +9,7 @@ export async function seedLevels(prisma: Prisma.PrismaClient) {
         index,
         name: `Level ${index}`,
         requiredXp: xpForLevel(index),
-        avatar: `/levels/Level${index}.svg`,
+        avatar: `/levels/level${index}.svg`,
         nextLevel: index < 11 ? { connect: { index: index + 1 } } : undefined,
       },
       update: {},

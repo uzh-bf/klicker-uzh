@@ -58,13 +58,13 @@ function ProfileData({
             className="h-[200px] w-[200px] overflow-hidden rounded-full"
             fill
           />
-          {level && (
+          {level && level.avatar && (
             <div className="absolute -bottom-2 right-0">
               <Image
-                src={`${process.env.NEXT_PUBLIC_IMAGE_BASE_PATH}/levels/level_${level.index}.svg`}
+                src={level.avatar}
                 width={50}
                 height={50}
-                alt="Level"
+                alt={`Level ${level.index}`}
                 className="object-contain"
               />
             </div>
