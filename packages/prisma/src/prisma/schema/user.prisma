@@ -115,6 +115,7 @@ model User {
   answerCollections AnswerCollection[]
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
+  adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")
   managedUserGroups         UserGroup[]         @relation("UserGroupOwner")
   managedCatalogCollections CatalogCollection[]
 

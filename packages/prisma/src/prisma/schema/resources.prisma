@@ -105,9 +105,10 @@ model MediaFile {
 // ----- SHARING & PERMISSIONS -----
 // #region
 enum AccessLevel {
-    READ
-    WRITE
-    ADMIN // e.g. on catalog colletions, admins can edit the access rights of other users
+    READ // read access (no modifications, no deletion, no sharing)
+    WRITE // edit access (no deletion, no sharing)
+    EXECUTE // e.g. for live quizzes: only inspect evaluation
+    ADMIN // e.g. admins can not only edit (= WRITE) but also change access rights
 }
 
 enum PermissionStatus {
@@ -119,7 +120,8 @@ model UserGroup {
     id   Int    @id @default(autoincrement())
     name String
 
-    members User[] @relation("UserGroupMembers")
+    members User[] @relation("UserGroupMembers") // can view / edit / admin shared objects according to permissions
+    admins  User[] @relation("UserGroupAdmins") // member + can add & remove members and provide & remove admin access
 
     permissions Permission[]
 
