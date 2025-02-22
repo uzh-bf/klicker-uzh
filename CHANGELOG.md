@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.29...v3.3.0-alpha.30) (2025-02-22)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that level avatars are displayed correctly ([a048f8c](https://github.com/uzh-bf/klicker-uzh/commit/a048f8c484901b49a1acefb71df2aa65ec55808e))
+* fetch correct timeline entries based on participation link for student course insights ([ec835f8](https://github.com/uzh-bf/klicker-uzh/commit/ec835f82d7f06535fcee141184ebbc33be2bf999))
+* **packages/graphql:** ensure that ordering of course and biweekly leaderboard are identical ([abbdf65](https://github.com/uzh-bf/klicker-uzh/commit/abbdf65d0ba446c1dd821ca6dc92339cd207175f))
+* resolve cache issues with course leaderboard joining ([95004cc](https://github.com/uzh-bf/klicker-uzh/commit/95004cc486d8dea26a640f30cde32297f65a01b1))
+
 ## [3.3.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.28...v3.3.0-alpha.29) (2025-02-20)
 
 
