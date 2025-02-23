@@ -8,11 +8,14 @@ import {
 } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
+import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import { PrismaTransactionClient } from './stacks.js'
+
+dayjs.extend(isoWeek)
 
 interface UpdateParticipantProfileArgs {
   password?: string | null
@@ -906,17 +909,13 @@ export async function updateWeeklyTimelineEntriesCourse(
   ctx: Context
 ) {
   // get start date of current week (monday) in UTC
-  const startDateCurrentWeek = dayjs()
-    .utc()
-    .startOf('week')
-    .add(1, 'day')
-    .toDate()
+  const startDateCurrentWeek = dayjs().utc().startOf('isoWeek').toDate()
 
   // get start date of previous week (monday) in UTC
   const startDateLastWeek = dayjs()
     .utc()
-    .startOf('week')
-    .subtract(6, 'days')
+    .startOf('isoWeek')
+    .subtract(7, 'days')
     .toDate()
 
   // fetch all timeline entries (weekly and daily) within the restrictions for the current course
@@ -1034,7 +1033,7 @@ export async function updateWeeklyTimelineEntriesCourse(
 
     await sendTeamsNotifications(
       'graphql/updateWeeklyTimelineEntriesCourse',
-      `Successfully updated ${updates.length} weekly timeline entries for course ${courseId} (${numUpdatesLastWeek} for last week, ${numUpdatesCurrentWeek} for the current week).`
+      `Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`
     )
   }
 
