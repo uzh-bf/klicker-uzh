@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.30...v3.3.0-alpha.31) (2025-02-23)
+
+
+### Bug Fixes
+
+* **packages/graphql:** make sure correct week start dates are used for timeline entry aggregation ([#4524](https://github.com/uzh-bf/klicker-uzh/issues/4524)) ([43eef34](https://github.com/uzh-bf/klicker-uzh/commit/43eef34b67e75b27976701958437568aaa8664eb))
+
 ## [3.3.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.29...v3.3.0-alpha.30) (2025-02-22)
 
 
