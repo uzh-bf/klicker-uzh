@@ -3,11 +3,11 @@ import { useTranslations } from 'next-intl'
 import UserGroupsManagement from '~/components/catalog/UserGroupsManagement'
 import Layout from '~/components/Layout'
 
-function Catalog() {
+function UserGroupsPage() {
   const t = useTranslations()
 
   return (
-    <Layout displayName={t('manage.general.catalog')}>
+    <Layout displayName={t('manage.general.userGroups')}>
       <UserGroupsManagement />
     </Layout>
   )
@@ -21,4 +21,4 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
   }
 }
 
-export default Catalog
+export default UserGroupsPage

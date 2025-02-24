@@ -31,14 +31,14 @@ function AnswerCollectionList({
   }
 
   return (
-    <div className="mt-7">
+    <div>
       <H3>{t('manage.resources.availableAnswerCollections')}</H3>
       {collections && collections.length === 0 ? (
         <UserNotification type="info" className={{ root: 'mt-1.5' }}>
           {t('manage.resources.noAnswerCollections')}
         </UserNotification>
       ) : (
-        <div className="mt-2 flex flex-col">
+        <div className="flex flex-col">
           {collections?.map((collection) => (
             <AnswerCollectionItem
               isOwner={collection.isOwner ?? false}

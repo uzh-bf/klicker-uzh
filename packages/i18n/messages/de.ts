@@ -2072,6 +2072,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerCollections: 'Antwort-Sammlungen',
       answerCollectionsDescription:
         'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Zusätzlich können Sie hier öffentliche Antwort-Sammlungen anderer Nutzer importieren bzw. Zugriff auf diese anfragen.',
+      selectCreateAnswerCollection:
+        'Bitte wählen Sie eine Aktion auf einer bestimmten Antwort-Sammlung aus oder erstellen Sie eine neue.',
       newAnswerCollection: 'Neue Antwort-Sammlung',
       addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
       answerOptionUsed:

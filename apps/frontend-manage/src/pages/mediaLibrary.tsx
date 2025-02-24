@@ -3,11 +3,11 @@ import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import MediaLibrary from '../components/resources/MediaLibrary'
 
-function AnswerCollectionsPage() {
+function MediaLibraryPage() {
   const t = useTranslations()
 
   return (
-    <Layout displayName={t('manage.resources.answerCollections')}>
+    <Layout displayName={t('manage.resources.mediaLibrary')}>
       <MediaLibrary />
     </Layout>
   )
@@ -21,4 +21,4 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
   }
 }
 
-export default AnswerCollectionsPage
+export default MediaLibraryPage

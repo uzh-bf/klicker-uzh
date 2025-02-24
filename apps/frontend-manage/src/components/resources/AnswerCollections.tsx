@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetAnswerCollectionsInfoDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import AnswerCollectionCreation from './answerCollections/AnswerCollectionCreation'
@@ -32,17 +32,26 @@ function AnswerCollections() {
       <div className="mb-2">
         {t('manage.resources.answerCollectionsDescription')}
       </div>
-      <AnswerCollectionCreation />
-      <AnswerCollectionList
-        collections={data?.getAnswerCollectionsInfo ?? []}
-        loading={loading}
-        setDeletionSuccess={setDeletionSuccess}
-        setDeletionFailure={setDeletionFailure}
-        setRemovalSuccess={setRemovalSuccess}
-        setRemovalFailure={setRemovalFailure}
-        setCancellationSuccess={setCancellationSuccess}
-        setCancellationFailure={setCancellationFailure}
-      />
+      <div className="mt-6 flex flex-col lg:flex-row-reverse">
+        <div className="lg:w-1/2 lg:border-l lg:pl-4">
+          <UserNotification type="info" className={{ root: 'mb-3' }}>
+            {t('manage.resources.selectCreateAnswerCollection')}
+          </UserNotification>
+          <AnswerCollectionCreation />
+        </div>
+        <div className="lg:w-1/2 lg:pr-4">
+          <AnswerCollectionList
+            collections={data?.getAnswerCollectionsInfo ?? []}
+            loading={loading}
+            setDeletionSuccess={setDeletionSuccess}
+            setDeletionFailure={setDeletionFailure}
+            setRemovalSuccess={setRemovalSuccess}
+            setRemovalFailure={setRemovalFailure}
+            setCancellationSuccess={setCancellationSuccess}
+            setCancellationFailure={setCancellationFailure}
+          />
+        </div>
+      </div>
       <CollectionDeletionSuccessToast
         open={deletionSuccess}
         onClose={() => setDeletionSuccess(false)}

@@ -2048,6 +2048,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answerCollections: 'Answer Collections',
       answerCollectionsDescription:
         'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. Additionally, you can import public answer collections from other users or request access to them.',
+      selectCreateAnswerCollection:
+        'Please select an action on a specific answer collection or create a new one.',
       newAnswerCollection: 'New Answer Collection',
       addSharedAnswerCollection: 'Add Shared Answer Collection',
       answerOptionUsed:
