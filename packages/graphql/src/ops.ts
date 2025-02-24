@@ -26,6 +26,7 @@ export type Scalars = {
 
 export enum AccessLevel {
   Admin = 'ADMIN',
+  Execute = 'EXECUTE',
   Read = 'READ',
   Write = 'WRITE'
 }

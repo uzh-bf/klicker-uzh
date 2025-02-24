@@ -68,27 +68,63 @@ function Header({ user }: HeaderProps): React.ReactElement {
     ...(user?.privatePreview
       ? ([
           {
-            type: 'button',
+            type: 'dropdown',
             key: 'resources-menubar-item',
             label: t('manage.general.resources'),
             icon: faBolt,
-            onClick: () => router.push('/resources'),
-            active: router.pathname == '/resources',
-            data: { cy: 'resources' },
-            className: { icon: 'text-orange-400' },
-          },
-          {
-            type: 'button',
-            key: 'catalog-menubar-item',
-            label: t('manage.general.catalog'),
-            icon: faBolt,
-            onClick: () => router.push('/catalog'),
-            active: router.pathname == '/catalog',
+            active:
+              router.pathname == '/answerCollections' ||
+              router.pathname === '/catalog' ||
+              router.pathname === '/userGroups' ||
+              router.pathname === '/mediaLibrary',
             notification:
               pendingRequestData &&
               pendingRequestData.countCatalogSharingRequests !== 0,
-            data: { cy: 'catalog' },
-            className: { icon: 'text-orange-400' },
+            elements: [
+              {
+                key: 'answer-collections-item',
+                type: 'link',
+                label: t('manage.resources.answerCollections'),
+                onClick: () => router.push('/answerCollections'),
+                data: { cy: 'answer-collections' },
+              },
+              {
+                key: 'catalog-item',
+                type: 'link',
+                label: t('manage.general.catalog'),
+                onClick: () => router.push('/catalog'),
+                notification:
+                  pendingRequestData &&
+                  pendingRequestData.countCatalogSharingRequests !== 0,
+                data: { cy: 'catalog' },
+              },
+              {
+                key: 'user-groups-item',
+                type: 'link',
+                label: t('manage.general.userGroups'),
+                onClick: () => router.push('/userGroups'),
+                data: { cy: 'user-groups' },
+              },
+              {
+                key: 'media-library-item',
+                type: 'link',
+                disabled: true,
+                label: t('manage.general.mediaLibrary'),
+                onClick: () => router.push('/mediaLibrary'),
+                badge: t('shared.generic.comingSoon'),
+                data: { cy: 'media-library' },
+                className: {
+                  label: 'bg-opacity-100',
+                  text: 'mr-8',
+                  badge: 'bg-green-700 hover:bg-green-800',
+                },
+              },
+            ],
+            data: { cy: 'resources' },
+            className: {
+              icon: 'text-orange-400',
+              content: 'flex flex-col gap-1',
+            },
           },
         ] as NavigationItemProps[])
       : []),

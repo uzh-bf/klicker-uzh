@@ -12,6 +12,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   // #region
   it('Create the answer collection that will be used for the case study question tests', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.CS.collection,
       accessCy: 'private',
@@ -350,6 +351,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
   it('Verify that the deletion of answer collection entries is limited, editing is unaffected', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
 
     cy.wrap(this.data.CS.items).each((sol: string) => {
@@ -367,6 +369,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
   it('Verify that the answer collection used in the case study can no longer be deleted', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
     cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
     cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
@@ -866,6 +869,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
   it('Verify that all elements of the previously used answer collection and the collection itself can be deleted again', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
 
     cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
@@ -913,6 +917,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
   it('Verify that after the deletion of the linked questions, all solution options can be deleted again', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
 
     cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
@@ -949,6 +954,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
   it('Cleanup: Delete all created answer collections', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.CS.collection })
     cy.deleteAnswerCollection({ collectionName: this.data.CS.collectionEdited })
   })

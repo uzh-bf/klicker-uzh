@@ -1,6 +1,6 @@
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import CatalogBrowser from '~/components/catalog/CatalogBrowser'
+import UserGroupsManagement from '~/components/catalog/UserGroupsManagement'
 import Layout from '~/components/Layout'
 
 function Catalog() {
@@ -8,7 +8,7 @@ function Catalog() {
 
   return (
     <Layout displayName={t('manage.general.catalog')}>
-      <CatalogBrowser />
+      <UserGroupsManagement />
     </Layout>
   )
 }

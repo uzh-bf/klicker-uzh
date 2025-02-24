@@ -67,6 +67,7 @@ describe('Different live-quiz workflows', function () {
     })
 
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.collection.name,
       description: this.data.collection.description,
@@ -1370,6 +1371,7 @@ describe('Different live-quiz workflows', function () {
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
   })
 

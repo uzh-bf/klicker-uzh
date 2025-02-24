@@ -864,6 +864,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courses: 'Kurse',
       resources: 'Ressourcen',
       catalog: 'Katalog',
+      mediaLibrary: 'Mediathek',
+      userGroups: 'Benutzergruppen',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -2168,10 +2170,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       cancellationFailed:
         'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
-    catalog: {
-      userGroups: 'Nutzergruppen',
-      userGroupsComingSoon:
+    userGroups: {
+      comingSoon:
         'Hier werden bald die von Ihnen gemanagten Nutzergruppen, sowie Nutzergruppen zu welchen Sie zugewiesen wurden, angezeigt.',
+    },
+    catalog: {
       accessTypes: 'Zugriffs-Typen',
       objectType: 'Objekt-Typ',
       all: 'Alle',

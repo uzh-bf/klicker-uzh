@@ -68,6 +68,7 @@ describe('Create and solve a group activity', function () {
 
     // create answer collection
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.questions.collection.name,
       description: this.data.questions.collection.description,
@@ -1451,6 +1452,7 @@ describe('Create and solve a group activity', function () {
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({
       collectionName: this.data.questions.collection.name,
     })

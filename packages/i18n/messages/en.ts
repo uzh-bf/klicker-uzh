@@ -865,6 +865,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       courses: 'Courses',
       resources: 'Resources',
       catalog: 'Catalog',
+      mediaLibrary: 'Media Library',
+      userGroups: 'User Groups',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
@@ -2143,10 +2145,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       cancellationFailed:
         'An error occurred while withdrawing the access request. Please try again or contact the support.',
     },
-    catalog: {
-      userGroups: 'User Groups',
-      userGroupsComingSoon:
+    userGroups: {
+      comingSoon:
         'Here you will soon see the user groups you manage, as well as user groups to which you have been assigned.',
+    },
+    catalog: {
       accessTypes: 'Access Types',
       objectType: 'Object Type',
       all: 'All',

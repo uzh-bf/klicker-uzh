@@ -1,14 +1,14 @@
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import CatalogBrowser from '~/components/catalog/CatalogBrowser'
-import Layout from '~/components/Layout'
+import Layout from '../components/Layout'
+import MediaLibrary from '../components/resources/MediaLibrary'
 
-function Catalog() {
+function AnswerCollectionsPage() {
   const t = useTranslations()
 
   return (
-    <Layout displayName={t('manage.general.catalog')}>
-      <CatalogBrowser />
+    <Layout displayName={t('manage.resources.answerCollections')}>
+      <MediaLibrary />
     </Layout>
   )
 }
@@ -21,4 +21,4 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
   }
 }
 
-export default Catalog
+export default AnswerCollectionsPage
