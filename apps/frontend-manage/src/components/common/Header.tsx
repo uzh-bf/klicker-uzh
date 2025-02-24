@@ -123,7 +123,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
             data: { cy: 'resources' },
             className: {
               icon: 'text-orange-400',
-              content: 'flex flex-col gap-1',
+              content: 'flex flex-col gap-0.5',
             },
           },
         ] as NavigationItemProps[])

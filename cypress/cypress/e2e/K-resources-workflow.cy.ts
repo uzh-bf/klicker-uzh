@@ -557,6 +557,33 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
   })
 
+  it('Cancel the request through user pro1 and request the answer collection again', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    // check that access request is pending
+    cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
+      messages.manage.catalog.accessRequested
+    )
+
+    // cancel the request
+    cy.get(`[data-cy="cancel-request-${this.data.restricted.name}"]`).click()
+    cy.get('[data-cy="confirm-cancel-sharing-request"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
+      messages.manage.catalog.requestAccess
+    )
+
+    // request the answer collection again
+    cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
+    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+
+    // check that access request is pending again
+    cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
+      messages.manage.catalog.accessRequested
+    )
+  })
+
   it('Grant access to restricted answer collection (for user pro1)', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()

@@ -1,4 +1,4 @@
-import { faClock, faHandPointer } from '@fortawesome/free-regular-svg-icons'
+import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
   faDownload,
   faLink,
@@ -15,7 +15,6 @@ import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
 import CollectionRemovalModal from './CollectionRemovalModal'
-import RequestCancellationModal from './RequestCancellationModal'
 
 function AnswerCollectionItem({
   collection,
@@ -27,8 +26,6 @@ function AnswerCollectionItem({
   setDeletionFailure,
   setRemovalSuccess,
   setRemovalFailure,
-  setCancellationSuccess,
-  setCancellationFailure,
 }: {
   collection: AnswerCollection
   isOwner?: boolean
@@ -39,8 +36,6 @@ function AnswerCollectionItem({
   setDeletionFailure: Dispatch<SetStateAction<boolean>>
   setRemovalSuccess: Dispatch<SetStateAction<boolean>>
   setRemovalFailure: Dispatch<SetStateAction<boolean>>
-  setCancellationSuccess: Dispatch<SetStateAction<boolean>>
-  setCancellationFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
@@ -49,7 +44,6 @@ function AnswerCollectionItem({
   const [deletionModal, setDeletionModal] = useState(false)
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
-  const [cancellationModal, setCancellationModal] = useState(false)
 
   const collectionAccessMap: Record<ObjectAccess, React.ReactNode> = {
     [ObjectAccess.Private]: (
@@ -81,10 +75,6 @@ function AnswerCollectionItem({
           // allow viewing of shared collections (not for requested ones)
           else if (accessGranted) {
             setViewingModal(true)
-          }
-          // allow cancelling a pending request
-          else {
-            setCancellationModal(true)
           }
         }}
         className={{
@@ -143,18 +133,7 @@ function AnswerCollectionItem({
             <FontAwesomeIcon icon={faHandPointer} />
             <div>{t('manage.resources.viewCollection')}</div>
           </div>
-        ) : (
-          <div className="flex flex-col items-end gap-0.5 py-0.5 text-sm">
-            <div className="text-primary-100 flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faClock} />
-              <div>{t('manage.resources.requestedAccess')}</div>
-            </div>
-            <div className="flex flex-row items-center gap-1.5">
-              <FontAwesomeIcon icon={faHandPointer} />
-              <div>{t('manage.resources.clickToCancelRequest')}</div>
-            </div>
-          </div>
-        )}
+        ) : null}
       </Button>
       {isEditable ? (
         <>
@@ -189,17 +168,7 @@ function AnswerCollectionItem({
             setRemovalFailure={setRemovalFailure}
           />
         </>
-      ) : (
-        <>
-          <RequestCancellationModal
-            collection={collection}
-            cancellationModal={cancellationModal}
-            setCancellationModal={setCancellationModal}
-            setCancellationSuccess={setCancellationSuccess}
-            setCancellationFailure={setCancellationFailure}
-          />
-        </>
-      )}
+      ) : null}
     </>
   )
 }

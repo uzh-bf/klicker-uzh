@@ -12,8 +12,6 @@ function AnswerCollectionList({
   setDeletionFailure,
   setRemovalSuccess,
   setRemovalFailure,
-  setCancellationSuccess,
-  setCancellationFailure,
 }: {
   collections?: AnswerCollection[]
   loading: boolean
@@ -21,8 +19,6 @@ function AnswerCollectionList({
   setDeletionFailure: Dispatch<SetStateAction<boolean>>
   setRemovalSuccess: Dispatch<SetStateAction<boolean>>
   setRemovalFailure: Dispatch<SetStateAction<boolean>>
-  setCancellationSuccess: Dispatch<SetStateAction<boolean>>
-  setCancellationFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
@@ -51,8 +47,6 @@ function AnswerCollectionList({
               setDeletionFailure={setDeletionFailure}
               setRemovalSuccess={setRemovalSuccess}
               setRemovalFailure={setRemovalFailure}
-              setCancellationSuccess={setCancellationSuccess}
-              setCancellationFailure={setCancellationFailure}
             />
           ))}
         </div>

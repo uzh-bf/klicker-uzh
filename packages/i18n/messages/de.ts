@@ -2071,7 +2071,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bald wird hier Ihre Mediathek verfügbar sein und Ihnen ermöglichen, hochgeladene Ressourcen einzusehen.',
       answerCollections: 'Antwort-Sammlungen',
       answerCollectionsDescription:
-        'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Zusätzlich können Sie hier öffentliche Antwort-Sammlungen anderer Nutzer importieren bzw. Zugriff auf diese anfragen.',
+        'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Um bestehende Antwort-Sammlungen anderer Nutzer zu importieren oder Zugriff auf diese zu beantragen, besuchen Sie bitte den <link>Katalog</link>.',
       selectCreateAnswerCollection:
         'Bitte wählen Sie eine Aktion auf einer bestimmten Antwort-Sammlung aus oder erstellen Sie eine neue.',
       newAnswerCollection: 'Neue Antwort-Sammlung',
@@ -2121,7 +2121,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       numOfAnswers: '{number} Antworten',
       byOwner: 'von {owner}',
       clickToViewEdit: 'Ansehen / Editieren',
-      clickToCancelRequest: 'Anfrage zurückziehen',
+      cancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
       saveChanges: 'Änderungen speichern',
       infoAccessChangeLimited:

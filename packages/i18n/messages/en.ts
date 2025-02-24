@@ -2047,7 +2047,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your media library will be available here soon, allowing you to access all your uploaded resources.',
       answerCollections: 'Answer Collections',
       answerCollectionsDescription:
-        'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. Additionally, you can import public answer collections from other users or request access to them.',
+        'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. To import existing answer collections form other users or request access to these, please visit the <link>catalog</link>.',
       selectCreateAnswerCollection:
         'Please select an action on a specific answer collection or create a new one.',
       newAnswerCollection: 'New Answer Collection',
@@ -2097,7 +2097,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
       clickToViewEdit: 'Click to view / edit',
-      clickToCancelRequest: 'Click to cancel request',
+      cancelRequest: 'Cancel Request',
       answerCollection: 'Answer Collection: {name}',
       saveChanges: 'Save changes',
       infoAccessChangeLimited:

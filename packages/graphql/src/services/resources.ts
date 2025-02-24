@@ -327,6 +327,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
           answerCollectionId: {
             not: null,
           },
+          permissionStatus: DB.PermissionStatus.GRANTED,
         },
         include: {
           answerCollection: {

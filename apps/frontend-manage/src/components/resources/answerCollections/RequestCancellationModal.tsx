@@ -1,79 +1,123 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  AnswerCollection,
   CancelAnswerCollectionRequestDocument,
-  GetAnswerCollectionsInfoDocument,
+  GetCatalogObjectsDocument,
+  GetSingleAnswerCollectionCatalogDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function RequestCancellationModal({
-  collection,
-  cancellationModal,
-  setCancellationModal,
-  setCancellationSuccess,
-  setCancellationFailure,
+function CancelRequestAnswerCollectionModal({
+  id,
+  open,
+  onClose,
+  onSuccess,
+  onFailure,
 }: {
-  collection: AnswerCollection
-  cancellationModal: boolean
-  setCancellationModal: (value: boolean) => void
-  setCancellationSuccess: (value: boolean) => void
-  setCancellationFailure: (value: boolean) => void
+  id: number
+  open: boolean
+  onClose: () => void
+  onSuccess: () => void
+  onFailure: () => void
 }) {
   const t = useTranslations()
 
-  const [cancelAnswerCollectionRequest] = useMutation(
-    CancelAnswerCollectionRequestDocument,
-    {
-      variables: { collectionId: collection.id },
+  // fetch answer collection
+  const { data, loading } = useQuery(GetSingleAnswerCollectionCatalogDocument, {
+    variables: {
+      collectionId: id,
+    },
+  })
+  const collection = data?.getSingleAnswerCollectionCatalog
+
+  const [cancelAnswerCollectionRequest, { loading: mutationLoading }] =
+    useMutation(CancelAnswerCollectionRequestDocument, {
+      variables: { collectionId: id },
       optimisticResponse: {
         cancelAnswerCollectionRequest: true,
       },
-      refetchQueries: [GetAnswerCollectionsInfoDocument],
-    }
-  )
+      update: (cache, { data }) => {
+        // check if request was successful
+        const cancelledCollection = data?.cancelAnswerCollectionRequest
+        if (!cancelledCollection) return
+
+        // update list of answer collections
+        const catalogObjects = cache.readQuery({
+          query: GetCatalogObjectsDocument,
+        })
+
+        if (catalogObjects?.getCatalogObjects) {
+          const updatedObjects = catalogObjects?.getCatalogObjects.map(
+            (obj) => {
+              if (obj.id === id) {
+                return { ...obj, isRequested: false }
+              }
+
+              return obj
+            }
+          )
+
+          cache.writeQuery({
+            query: GetCatalogObjectsDocument,
+            data: {
+              getCatalogObjects: updatedObjects,
+            },
+          })
+        }
+      },
+    })
 
   return (
     <Modal
       title={t('manage.resources.cancelSharingRequest')}
-      open={cancellationModal}
-      onClose={() => setCancellationModal(false)}
+      open={open}
+      onClose={onClose}
       dataCloseButton={{ cy: 'close-cancel-sharing-request' }}
     >
-      <div>
-        {t('manage.resources.confirmCancelRequest', {
-          name: collection.name,
-        })}
-      </div>
-      <Button
-        onClick={async () => {
-          const { data, errors } = await cancelAnswerCollectionRequest()
+      {loading || !collection ? (
+        <Loader />
+      ) : (
+        <>
+          <div>
+            {t('manage.resources.confirmCancelRequest', {
+              name: data?.getSingleAnswerCollectionCatalog?.name,
+            })}
+          </div>
+          <Button
+            onClick={async () => {
+              const { data, errors } = await cancelAnswerCollectionRequest()
 
-          if (
-            typeof data?.cancelAnswerCollectionRequest !== 'undefined' &&
-            data?.cancelAnswerCollectionRequest !== null &&
-            !errors
-          ) {
-            setCancellationSuccess(true)
-            setCancellationModal(false)
-          } else {
-            setCancellationFailure(true)
-          }
-        }}
-        className={{
-          root: 'float-right mt-4 flex flex-row gap-1.5 border border-red-600',
-        }}
-        data={{ cy: 'confirm-cancel-sharing-request' }}
-      >
-        <FontAwesomeIcon icon={faTrashCan} />
-        <div>
-          {t('manage.resources.confirmCancellation', { name: collection.name })}
-        </div>
-      </Button>
+              if (
+                typeof data?.cancelAnswerCollectionRequest !== 'undefined' &&
+                data?.cancelAnswerCollectionRequest !== null &&
+                !errors
+              ) {
+                onSuccess()
+                onClose()
+              } else {
+                onFailure()
+              }
+            }}
+            loading={mutationLoading}
+            className={{
+              root: 'float-right mt-4 flex flex-row gap-1.5 border border-red-600',
+            }}
+            data={{ cy: 'confirm-cancel-sharing-request' }}
+          >
+            <FontAwesomeIcon icon={faTrashCan} />
+            <div>
+              {t('manage.resources.confirmCancellation', {
+                name: collection.name,
+              })}
+            </div>
+          </Button>
+        </>
+      )}
     </Modal>
   )
 }
 
-export default RequestCancellationModal
+export default CancelRequestAnswerCollectionModal
