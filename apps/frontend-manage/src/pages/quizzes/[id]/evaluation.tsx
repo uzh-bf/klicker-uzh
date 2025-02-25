@@ -3,7 +3,7 @@ import ActivityEvaluation from '@components/evaluation/ActivityEvaluation'
 import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
-import EvaluationUnavailableNotification from '~/components/evaluation/EvaluationUnavailableNotification'
+import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 
 function Evaluation() {
   const router = useRouter()

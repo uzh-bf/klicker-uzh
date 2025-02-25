@@ -1,14 +1,14 @@
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import UserGroupsManagement from '~/components/catalog/UserGroupsManagement'
-import Layout from '~/components/Layout'
+import Layout from '../../components/Layout'
+import MediaLibrary from '../../components/resources/MediaLibrary'
 
-function UserGroupsPage() {
+function MediaLibraryPage() {
   const t = useTranslations()
 
   return (
-    <Layout displayName={t('manage.general.userGroups')}>
-      <UserGroupsManagement />
+    <Layout displayName={t('manage.resources.mediaLibrary')}>
+      <MediaLibrary />
     </Layout>
   )
 }
@@ -21,4 +21,4 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
   }
 }
 
-export default UserGroupsPage
+export default MediaLibraryPage

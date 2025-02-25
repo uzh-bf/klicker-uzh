@@ -73,10 +73,10 @@ function Header({ user }: HeaderProps): React.ReactElement {
             label: t('manage.general.resources'),
             icon: faBolt,
             active:
-              router.pathname == '/answerCollections' ||
-              router.pathname === '/catalog' ||
-              router.pathname === '/userGroups' ||
-              router.pathname === '/mediaLibrary',
+              router.pathname == '/resources/answerCollections' ||
+              router.pathname === '/resources/catalog' ||
+              router.pathname === '/resources/userGroups' ||
+              router.pathname === '/resources/mediaLibrary',
             notification:
               pendingRequestData &&
               pendingRequestData.countCatalogSharingRequests !== 0,
@@ -85,14 +85,14 @@ function Header({ user }: HeaderProps): React.ReactElement {
                 key: 'answer-collections-item',
                 type: 'link',
                 label: t('manage.resources.answerCollections'),
-                onClick: () => router.push('/answerCollections'),
+                onClick: () => router.push('/resources/answerCollections'),
                 data: { cy: 'answer-collections' },
               },
               {
                 key: 'catalog-item',
                 type: 'link',
                 label: t('manage.general.catalog'),
-                onClick: () => router.push('/catalog'),
+                onClick: () => router.push('/resources/catalog'),
                 notification:
                   pendingRequestData &&
                   pendingRequestData.countCatalogSharingRequests !== 0,
@@ -102,7 +102,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
                 key: 'user-groups-item',
                 type: 'link',
                 label: t('manage.general.userGroups'),
-                onClick: () => router.push('/userGroups'),
+                onClick: () => router.push('/resources/userGroups'),
                 data: { cy: 'user-groups' },
               },
               {
@@ -110,7 +110,7 @@ function Header({ user }: HeaderProps): React.ReactElement {
                 type: 'link',
                 disabled: true,
                 label: t('manage.general.mediaLibrary'),
-                onClick: () => router.push('/mediaLibrary'),
+                onClick: () => router.push('/resources/mediaLibrary'),
                 badge: t('shared.generic.comingSoon'),
                 data: { cy: 'media-library' },
                 className: {

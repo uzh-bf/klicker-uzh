@@ -29,7 +29,7 @@ function AnswerCollections() {
       <div className="mb-2">
         {t.rich('manage.resources.answerCollectionsDescription', {
           link: (text) => (
-            <Link href="/catalog" className="text-primary-100">
+            <Link href="/resources/catalog" className="text-primary-100">
               {text}
             </Link>
           ),

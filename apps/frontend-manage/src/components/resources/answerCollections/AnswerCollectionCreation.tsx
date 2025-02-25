@@ -32,7 +32,7 @@ function AnswerCollectionCreation() {
             className={{ root: 'w-full sm:w-1/2' }}
             onClick={() =>
               router.push({
-                pathname: '/catalog',
+                pathname: '/resources/catalog',
                 query: { filter: CatalogObjectType.AnswerCollection },
               })
             }
