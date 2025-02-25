@@ -11,10 +11,8 @@ mutation ShareAnswerCollection(
     userGroupId: $userGroupId
   ) {
     permissionId
-    userId
     username
     userEmail
-    userGroupId
     userGroupName
     accessLevel
   }

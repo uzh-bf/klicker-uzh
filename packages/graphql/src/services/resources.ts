@@ -471,67 +471,6 @@ export async function shareAnswerCollection(
   }
 }
 
-export async function revokeAnswerCollectionPermission(
-  {
-    collectionId,
-    userId,
-    userGroupId,
-  }: {
-    collectionId: number
-    userId?: string | null
-    userGroupId?: number | null
-  },
-  ctx: ContextWithUser
-) {
-  // fetch collection and verify that the user has permissions to share it
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        // TODO: update with admin permissions here as soon as they are implemented
-        // {
-        //   permissions: {
-        //     some: {
-        //       userId: ctx.user.sub,
-        //       permissionStatus: DB.PermissionStatus.GRANTED,
-        //       accessLevel: DB.AccessLevel.ADMIN,
-        //     },
-        //   },
-        // },
-      ],
-    },
-  })
-
-  if (!collection) {
-    return null
-  }
-
-  // create new permission with the defined access level
-  if (userId) {
-    const deletedPermission = await ctx.prisma.permission.delete({
-      where: {
-        answerCollectionId_userId: {
-          answerCollectionId: collectionId,
-          userId,
-        },
-      },
-    })
-
-    if (typeof deletedPermission.id === 'undefined') {
-      return null
-    } else {
-      return deletedPermission.id
-    }
-  } else if (userGroupId) {
-    // TODO: implement revoking shared permission with user groups
-  } else {
-    return null
-  }
-}
-
 export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {

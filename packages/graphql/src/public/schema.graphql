@@ -1702,9 +1702,7 @@ type PermissionInfo {
   accessLevel: AccessLevel!
   permissionId: Int!
   userEmail: String
-  userGroupId: Int
   userGroupName: String
-  userId: String
   username: String
 }
 

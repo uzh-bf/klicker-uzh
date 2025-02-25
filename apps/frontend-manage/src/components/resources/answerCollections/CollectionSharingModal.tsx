@@ -1,28 +1,16 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faSave, faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  AccessLevel,
   AnswerCollection,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   ShareAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  FormikSelectField,
-  FormikTextField,
-  H3,
-  Modal,
-  Select,
-} from '@uzh-bf/design-system'
-import { Formik } from 'formik'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
-import * as Yup from 'yup'
 import CollectionSharingErrorToast from '../sharing/CollectionSharingErrorToast'
 import CollectionSharingSuccessToast from '../sharing/CollectionSharingSuccessToast'
+import GrantedPermissionsTable from '../sharing/GrantedPermissionsTable'
 import PermissionsTable from '../sharing/PermissionsTable'
 
 function CollectionSharingModal({
@@ -51,8 +39,6 @@ function CollectionSharingModal({
   // mutation to create new permission entry for answer collection
   const [shareAnswerCollection] = useMutation(ShareAnswerCollectionDocument)
 
-  // TODO: split up this component into smaller components (the bottom table should be generic enough to be re-used for other sharing modals as well)
-  // TODO: add loading state if permissions are still loading
   return (
     <>
       <Modal
@@ -111,253 +97,69 @@ function CollectionSharingModal({
         </div>
 
         <div className="mt-8">
-          <H3>{t('manage.resources.grantedPermissions')}</H3>
-          <table className="mt-1 w-full border-collapse overflow-hidden rounded-lg border-b shadow-sm">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
-                  {t('shared.generic.username')} ({t('shared.generic.email')})
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
-                  {t('shared.generic.userGroup')}
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
-                  {t('shared.generic.accessLevel')}
-                </th>
-                <th className="w-10" />
-              </tr>
-            </thead>
-            <tbody
-              className="bg-white"
-              key={permissions?.map((p) => p.permissionId).join()}
-            >
-              {permissions
-                ?.filter(
-                  (permission) =>
-                    permission.username || permission.userGroupName
-                )
-                .map((permission, index) => (
-                  <tr
-                    key={index}
-                    className="border-t border-gray-200 hover:bg-gray-50"
-                  >
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {permission.username
-                        ? `${permission.username} (${permission.userEmail})`
-                        : '-'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {permission.userGroupName || '-'}
-                    </td>
-                    <td className="px-4 py-1.5 text-gray-900">
-                      <Select
-                        value={permission.accessLevel}
-                        items={[
-                          AccessLevel.Read,
-                          AccessLevel.Write,
-                          AccessLevel.Admin,
-                        ].map((level) => ({
-                          label: t(`manage.resources.access${level}`),
-                          value: level,
-                        }))}
-                        onChange={(value) => alert('CHANGE PERMISSION')} // TODO: handle changing of permission
-                        className={{
-                          trigger: 'h-7 text-sm text-gray-900',
-                        }}
-                      />
-                    </td>
-                    <td className="w-10 text-center">
-                      <Button
-                        basic
-                        className={{
-                          root: 'mt-1 text-red-600 hover:text-red-800',
-                        }}
-                        onClick={() => alert('DELETE PERMISSION')} // TODO: handle deletion of permission
-                      >
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="h-4 w-4"
-                        />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              <Formik
-                isInitialValid={false}
-                initialValues={{
-                  usernameOrEmail: undefined,
-                  userGroupId: undefined,
-                  accessLevel: AccessLevel.Read,
-                }}
-                onSubmit={async (values, { setSubmitting, resetForm }) => {
-                  setSubmitting(true)
+          <GrantedPermissionsTable
+            permissions={permissions ?? []}
+            permissionsLoading={permissionsLoading}
+            onAccessLevelChange={async () => {}} // TODO: implement mutation
+            onPermissionRemoval={async () => {}} // TODO: implement mutation
+            onNewPermissionSuccess={() => setSharingSuccess(true)}
+            onNewPermissionFailure={() => setSharingFailure(true)}
+            shareObjectCallback={async (values) => {
+              const newPermission = await shareAnswerCollection({
+                variables: {
+                  collectionId: collection.id,
+                  usernameOrEmail: values.usernameOrEmail,
+                  userGroupId:
+                    typeof values.usernameOrEmail === 'undefined'
+                      ? values.userGroupId
+                      : undefined,
+                  accessLevel: values.accessLevel,
+                },
+                update: (cache, { data }) => {
+                  if (!data?.shareAnswerCollection) return
+
+                  const prevPermissions = cache.readQuery({
+                    query: GetAnswerCollectionPermissionsDocument,
+                    variables: {
+                      collectionId: collection.id,
+                    },
+                  })
 
                   if (
-                    typeof values.userGroupId !== 'undefined' ||
-                    (typeof values.usernameOrEmail !== 'undefined' &&
-                      values.usernameOrEmail !== '')
+                    !prevPermissions?.getAnswerCollectionPermissions ||
+                    !data.shareAnswerCollection
                   ) {
-                    const newPermission = await shareAnswerCollection({
-                      variables: {
-                        collectionId: collection.id,
-                        usernameOrEmail: values.usernameOrEmail,
-                        userGroupId:
-                          typeof values.usernameOrEmail === 'undefined'
-                            ? values.userGroupId
-                            : undefined,
-                        accessLevel: values.accessLevel,
-                      },
-                      update: (cache, { data }) => {
-                        if (!data?.shareAnswerCollection) return
-
-                        const prevPermissions = cache.readQuery({
-                          query: GetAnswerCollectionPermissionsDocument,
-                          variables: {
-                            collectionId: collection.id,
-                          },
-                        })
-
-                        if (
-                          !prevPermissions?.getAnswerCollectionPermissions ||
-                          !data.shareAnswerCollection
-                        ) {
-                          return
-                        }
-
-                        // replace the permission that was just added (if it already exists) and add it otherwise
-                        const newPermissions =
-                          prevPermissions.getAnswerCollectionPermissions.filter(
-                            (permission) =>
-                              permission.permissionId !==
-                              data.shareAnswerCollection!.permissionId
-                          )
-                        newPermissions.push(data.shareAnswerCollection)
-
-                        cache.writeQuery({
-                          query: GetAnswerCollectionPermissionsDocument,
-                          variables: {
-                            collectionId: collection.id,
-                          },
-                          data: {
-                            getAnswerCollectionPermissions: newPermissions,
-                          },
-                        })
-                      },
-                      refetchQueries: [GetAnswerCollectionsInfoDocument],
-                    })
-
-                    if (
-                      typeof newPermission.data?.shareAnswerCollection
-                        ?.permissionId !== 'undefined'
-                    ) {
-                      setSharingSuccess(true)
-                      resetForm()
-                      setSubmitting(false)
-                    } else {
-                      setSharingFailure(true)
-                      setSubmitting(false)
-                    }
-                  } else {
-                    setSharingFailure(true)
-                    setSubmitting(false)
+                    return
                   }
-                }}
-                validationSchema={Yup.object()
-                  .shape({
-                    usernameOrEmail: Yup.string(),
-                    userGroupId: Yup.number(),
-                    accessLevel: Yup.string().required(),
+
+                  // replace the permission that was just added (if it already exists) and add it otherwise
+                  const newPermissions =
+                    prevPermissions.getAnswerCollectionPermissions.filter(
+                      (permission) =>
+                        permission.permissionId !==
+                        data.shareAnswerCollection!.permissionId
+                    )
+                  newPermissions.push(data.shareAnswerCollection)
+
+                  cache.writeQuery({
+                    query: GetAnswerCollectionPermissionsDocument,
+                    variables: {
+                      collectionId: collection.id,
+                    },
+                    data: {
+                      getAnswerCollectionPermissions: newPermissions,
+                    },
                   })
-                  .test(
-                    'either-user-or-group',
-                    t('manage.resources.usernameEmailOrGroupRequired'),
-                    function (values) {
-                      const { usernameOrEmail, userGroupId } = values
-                      return (
-                        (!!usernameOrEmail && usernameOrEmail !== '') ||
-                        !!userGroupId
-                      )
-                    }
-                  )}
-              >
-                {({ isSubmitting, isValid, submitForm }) => (
-                  <tr className="border-t border-gray-200 hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      <FormikTextField
-                        name="usernameOrEmail"
-                        id="usernameOrEmail"
-                        placeholder={
-                          t('shared.generic.username') +
-                          ' / ' +
-                          t('shared.generic.email')
-                        }
-                        disabled={isSubmitting}
-                        className={{
-                          input: 'h-7 w-full text-sm text-gray-900',
-                        }}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      <FormikSelectField
-                        name="userGroupId"
-                        id="userGroupId"
-                        placeholder={t('manage.resources.noUserGroupSelected')}
-                        items={[]} // TODO: add available user groups
-                        disabled={isSubmitting}
-                        className={{
-                          select: {
-                            trigger: 'h-7 text-sm text-gray-900',
-                          },
-                        }}
-                      />
-                    </td>
-                    <td className="px-4 py-1.5 text-sm text-gray-900">
-                      <FormikSelectField
-                        name="accessLevel"
-                        id="accessLevel"
-                        items={[
-                          AccessLevel.Read,
-                          AccessLevel.Write,
-                          AccessLevel.Admin,
-                        ].map((level) => ({
-                          label: t(`manage.resources.access${level}`),
-                          value: level,
-                        }))}
-                        disabled={isSubmitting}
-                        className={{
-                          select: {
-                            trigger: 'h-7 text-sm text-gray-900',
-                          },
-                        }}
-                      />
-                    </td>
-                    <td className="w-10 text-center">
-                      <Button
-                        basic
-                        type="button"
-                        onClick={() => submitForm()}
-                        disabled={!isValid || isSubmitting}
-                        className={{
-                          root: twMerge(
-                            'mt-1 text-green-700 hover:text-green-800',
-                            !isValid || isSubmitting
-                              ? 'text-gray-500 hover:cursor-not-allowed hover:text-gray-500'
-                              : '',
-                            isSubmitting && 'hover:cursor-progress'
-                          ),
-                        }}
-                      >
-                        <FontAwesomeIcon
-                          icon={faSave}
-                          className="h-[1.1rem] w-[1.1rem]"
-                        />
-                      </Button>
-                    </td>
-                  </tr>
-                )}
-              </Formik>
-            </tbody>
-          </table>
+                },
+                refetchQueries: [GetAnswerCollectionsInfoDocument],
+              })
+
+              return (
+                typeof newPermission.data?.shareAnswerCollection
+                  ?.permissionId !== 'undefined'
+              )
+            }}
+          />
         </div>
       </Modal>
       <CollectionSharingSuccessToast
