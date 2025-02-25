@@ -351,8 +351,6 @@ describe('Create, edit and share answer collections', function () {
     )
   })
 
-  // TODO (later): share private answer collection directly with another user
-
   it('Verify that the private answer collection can be used in a selection quesetion by the owner', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
@@ -621,7 +619,18 @@ describe('Create, edit and share answer collections', function () {
     ).click()
   })
 
-  // TODO: check out sharing modal and verify that access for user pro 1 is shown correctly
+  it("Verify that the active permission for user 'pro1' is shown correctly", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessREAD)
+  })
 
   it('Verify that restricted answer collection is visible in resources for user pro1', function () {
     cy.loginIndividualCatalyst()
@@ -902,7 +911,18 @@ describe('Create, edit and share answer collections', function () {
     ).click()
   })
 
-  // TODO: check out sharing modal and verify that access for user pro 1 is shown correctly
+  it("Verify that the active permission for user 'pro1' is shown correctly", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessREAD)
+  })
 
   it("Verify that the public answer collection is visible in resources for user 'pro1'", function () {
     cy.loginIndividualCatalyst()
