@@ -56,6 +56,7 @@ interface IAnswerCollection extends DB.AnswerCollection {
   isImported?: boolean
   isAccessGranted?: boolean
   isRemovable?: boolean
+  isShareable?: boolean
 }
 
 export const AnswerCollectionRef =
@@ -91,6 +92,7 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     isImported: t.exposeBoolean('isImported', { nullable: true }),
     isAccessGranted: t.exposeBoolean('isAccessGranted', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+    isShareable: t.exposeBoolean('isShareable', { nullable: true }),
   }),
 })
 
@@ -141,3 +143,25 @@ export const CatalogObject = CatalogObjectRef.implement({
 })
 
 // #endregion
+
+// ----- PERMISSIONS -----
+// #region
+
+interface IPermissionInfo {
+  permissionId: number
+  username?: string
+  userEmail?: string
+  userGroupName?: string
+  accessLevel: DB.AccessLevel
+}
+export const PermissionInfoRef =
+  builder.objectRef<IPermissionInfo>('PermissionInfo')
+export const PermissionInfo = PermissionInfoRef.implement({
+  fields: (t) => ({
+    permissionId: t.exposeInt('permissionId'),
+    username: t.exposeString('username', { nullable: true }),
+    userEmail: t.exposeString('userEmail', { nullable: true }),
+    userGroupName: t.exposeString('userGroupName', { nullable: true }),
+    accessLevel: t.expose('accessLevel', { type: AccessLevel }),
+  }),
+})

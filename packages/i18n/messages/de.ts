@@ -293,6 +293,13 @@ export default {
       caseStudyItems: 'Fallstudien-Elemente',
       results: 'Resultate',
       never: 'Nie',
+      actions: 'Aktionen',
+      read: 'Lesen',
+      write: 'Schreiben',
+      admin: 'Admin',
+      owner: 'Besitzer',
+      userGroup: 'Benutzergruppe',
+      accessLevel: 'Zugriffsrechte',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -2142,6 +2149,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       viewCollection: 'Sammlung ansehen',
       editCollection: 'Sammlung bearbeiten',
+      shareCollection: 'Sammlung teilen',
+      shareAnswerCollection: 'Antwort-Sammlung teilen',
+      infoCollectionSharing:
+        "Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung '<b>{name}</b>' mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.",
+      viewUseCollectionContent: 'Inhalt einsehen / Sammlung verwenden',
+      modifyContent: 'Inhalt bearbeiten',
+      modifyCatalogAssignment: 'Katalog-Zuweisung bearbeiten',
+      modifyPermissions: 'Berechtigungen bearbeiten',
+      revokeAccess: 'Zugriff entziehen',
+      transferOwnership: 'Eigentumsrechte übertragen',
+      grantedPermissions: 'Bestehende Berechtigungen',
+      sharingSuccessful: 'Die Antwort-Sammlung wurde erfolgreich geteilt.',
+      sharingFailed:
+        'Beim Teilen der Antwort-Sammlung ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
       requestedAccess: 'Zugriff beantragt',
       deleteCollection: 'Sammlung löschen',
       deletionDisabledInUse:
@@ -2171,6 +2192,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zugriffs-Anfrage wurde erfolgreich zurückgezogen.',
       cancellationFailed:
         'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      accessREAD: 'Lesezugriff',
+      accessWRITE: 'Schreibzugriff',
+      accessADMIN: 'Admin-Zugriff',
+      accessEXECUTE: 'Ausführungsrechte',
+      noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
+      usernameEmailOrGroupRequired:
+        'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
     },
     userGroups: {
       comingSoon:

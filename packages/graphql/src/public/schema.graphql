@@ -106,6 +106,7 @@ type AnswerCollection {
   isImported: Boolean
   isOwner: Boolean
   isRemovable: Boolean
+  isShareable: Boolean
   name: String!
   numOfEntries: Int
   numSharedUsers: Int
@@ -1379,6 +1380,7 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
+  shareAnswerCollection(accessLevel: AccessLevel!, collectionId: Int!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -1696,6 +1698,14 @@ type PerformanceRates {
   partialRate: Float!
 }
 
+type PermissionInfo {
+  accessLevel: AccessLevel!
+  permissionId: Int!
+  userEmail: String
+  userGroupName: String
+  username: String
+}
+
 enum PermissionStatus {
   GRANTED
   REQUESTED
@@ -1751,6 +1761,7 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getAnswerCollectionPermissions(collectionId: Int!): [PermissionInfo!]
   getAnswerCollections: [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]

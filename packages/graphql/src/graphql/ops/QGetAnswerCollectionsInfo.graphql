@@ -16,5 +16,6 @@ query GetAnswerCollectionsInfo {
     isRemovable
     isImported
     isAccessGranted
+    isShareable
   }
 }

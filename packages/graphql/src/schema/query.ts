@@ -65,6 +65,7 @@ import {
   AnswerCollection,
   CatalogObject,
   ObjectSharingRequest,
+  PermissionInfo,
 } from './resource.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
@@ -906,6 +907,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.getSingleAnswerCollection(args, ctx)
+        },
+      }),
+
+      getAnswerCollectionPermissions: asUser.field({
+        nullable: true,
+        type: [PermissionInfo],
+        args: {
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getAnswerCollectionPermissions(args, ctx)
         },
       }),
 

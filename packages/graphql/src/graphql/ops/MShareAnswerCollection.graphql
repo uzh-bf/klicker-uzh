@@ -1,0 +1,19 @@
+mutation ShareAnswerCollection(
+  $collectionId: Int!
+  $accessLevel: AccessLevel!
+  $usernameOrEmail: String
+  $userGroupId: Int
+) {
+  shareAnswerCollection(
+    collectionId: $collectionId
+    accessLevel: $accessLevel
+    usernameOrEmail: $usernameOrEmail
+    userGroupId: $userGroupId
+  ) {
+    permissionId
+    username
+    userEmail
+    userGroupName
+    accessLevel
+  }
+}

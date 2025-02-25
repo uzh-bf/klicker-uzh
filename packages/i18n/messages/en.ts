@@ -292,6 +292,13 @@ export default {
       caseStudyItems: 'Case study items',
       results: 'Results',
       never: 'Never',
+      actions: 'Actions',
+      read: 'Read',
+      write: 'Write',
+      admin: 'Admin',
+      owner: 'Owner',
+      userGroup: 'User group',
+      accessLevel: 'Access level',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -2118,6 +2125,20 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while requesting the answer collection. Please try again or contact the support.',
       viewCollection: 'View Collection',
       editCollection: 'Edit Collection',
+      shareCollection: 'Share Collection',
+      shareAnswerCollection: 'Share Answer Collection',
+      infoCollectionSharing:
+        'This view allows you to share the answer collection "<b>{name}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
+      viewUseCollectionContent: 'View Content / Use Collection',
+      modifyContent: 'Modify Content',
+      modifyCatalogAssignment: 'Modify Catalog Assignment',
+      modifyPermissions: 'Modify Permissions',
+      revokeAccess: 'Revoke Access',
+      transferOwnership: 'Transfer Ownership',
+      grantedPermissions: 'Granted Permissions',
+      sharingSuccessful: 'The answer collection was shared successfully.',
+      sharingFailed:
+        'An error occurred while sharing the answer collection or the specified user could not be found.',
       requestedAccess: 'Requested Access',
       deleteCollection: 'Delete collection',
       deletionDisabledInUse:
@@ -2146,6 +2167,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       cancellationSuccessful: 'The access request was successfully withdrawn.',
       cancellationFailed:
         'An error occurred while withdrawing the access request. Please try again or contact the support.',
+      accessREAD: 'Read access',
+      accessWRITE: 'Write access',
+      accessADMIN: 'Admin access',
+      accessEXECUTE: 'Execution access',
+      noUserGroupSelected: 'No user group selected',
+      usernameEmailOrGroupRequired:
+        'Please enter a username / email address or select a user group.',
     },
     userGroups: {
       comingSoon:

@@ -292,6 +292,185 @@ export async function getSingleAnswerCollection(
   }
 }
 
+export async function getAnswerCollectionPermissions(
+  { collectionId }: { collectionId: number },
+  ctx: ContextWithUser
+) {
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      // TODO: only allow access to owners or users with granted admin access
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        // {
+        //   permissions: {
+        //     some: {
+        //       userId: ctx.user.sub,
+        //       permissionStatus: DB.PermissionStatus.GRANTED,
+        //       accessLevel: DB.AccessLevel.ADMIN,
+        //     },
+        //   },
+        // },
+      ],
+    },
+    include: {
+      permissions: {
+        where: {
+          permissionStatus: DB.PermissionStatus.GRANTED,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              shortname: true,
+              email: true,
+            },
+          },
+          // TODO: also include permissions awarded to user groups and set in return object
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return []
+  }
+
+  return collection.permissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      userId: permission.user?.id,
+      username: permission.user?.shortname,
+      userEmail: permission.user?.email,
+      userGroupId: undefined,
+      userGroupName: undefined,
+      accessLevel: permission.accessLevel,
+    }))
+    .sort((a, b) => {
+      if (a.username === b.username) {
+        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
+      }
+      return (a.username ?? '').localeCompare(b.username ?? '')
+    })
+}
+
+export async function shareAnswerCollection(
+  {
+    collectionId,
+    accessLevel,
+    usernameOrEmail,
+    userGroupId,
+  }: {
+    collectionId: number
+    accessLevel: DB.AccessLevel
+    usernameOrEmail?: string | null
+    userGroupId?: number | null
+  },
+  ctx: ContextWithUser
+) {
+  // fetch collection and verify that the user has permissions to share it
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        // TODO: update with admin permissions here as soon as they are implemented
+        // {
+        //   permissions: {
+        //     some: {
+        //       userId: ctx.user.sub,
+        //       permissionStatus: DB.PermissionStatus.GRANTED,
+        //       accessLevel: DB.AccessLevel.ADMIN,
+        //     },
+        //   },
+        // },
+      ],
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // create new permission with the defined access level
+  if (usernameOrEmail && usernameOrEmail.length > 0) {
+    // check if a user with the provided username or email exists
+    const user = await ctx.prisma.user.findFirst({
+      where: {
+        OR: [
+          {
+            shortname: usernameOrEmail,
+          },
+          {
+            email: usernameOrEmail,
+          },
+        ],
+      },
+      select: {
+        id: true,
+        shortname: true,
+        email: true,
+      },
+    })
+
+    const userId = user?.id
+    if (!userId) {
+      return null
+    }
+
+    // upsert new permission for the answer collection under consideration
+    const permission = await ctx.prisma.permission.upsert({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: collectionId,
+          userId,
+        },
+      },
+      create: {
+        accessLevel,
+        permissionStatus: DB.PermissionStatus.GRANTED,
+        answerCollection: {
+          connect: {
+            id: collectionId,
+          },
+        },
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        objectOwner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+      update: {
+        accessLevel,
+        permissionStatus: DB.PermissionStatus.GRANTED,
+      },
+    })
+
+    return {
+      permissionId: permission.id,
+      userId: user.id,
+      username: user.shortname,
+      userEmail: user.email,
+      userGroupId: undefined,
+      userGroupName: undefined,
+      accessLevel: permission.accessLevel,
+    }
+  } else if (userGroupId) {
+    // TODO: implement sharing with user groups
+  } else {
+    return null
+  }
+}
+
 export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
@@ -365,6 +544,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     isEditable: true,
     isRemovable: collection._count?.linkedElements === 0,
     isImported: collection.originalId !== null,
+    isShareable: true, // owned answer collections can always be shared
     isAccessGranted: false,
   }))
 
@@ -386,7 +566,8 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
       isEditable: false,
       isRemovable: collection._count.linkedElements === 0,
       isImported: false,
-      isAccessGranted: object.permissionStatus === DB.PermissionStatus.GRANTED,
+      isShareable: object.accessLevel === DB.AccessLevel.ADMIN, // only users with admin access can share a shared answer collection
+      isAccessGranted: true, // requested ansewr collections are not returned by this query
     }
   })
 

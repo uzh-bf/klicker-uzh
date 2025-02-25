@@ -67,6 +67,7 @@ import {
   AnswerCollectionEntry,
   CatalogObject,
   ObjectAccess,
+  PermissionInfo,
 } from './resource.js'
 import {
   FileUploadSAS,
@@ -1341,6 +1342,20 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.deleteAnswerCollection(args, ctx)
+        },
+      }),
+
+      shareAnswerCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PermissionInfo,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          accessLevel: t.arg({ type: AccessLevel, required: true }),
+          usernameOrEmail: t.arg.string({ required: false }),
+          userGroupId: t.arg.int({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.shareAnswerCollection(args, ctx)
         },
       }),
 
