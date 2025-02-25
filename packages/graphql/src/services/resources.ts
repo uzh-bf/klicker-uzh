@@ -244,11 +244,6 @@ export async function getSingleAnswerCollection(
       },
       _count: {
         select: {
-          linkedElements: {
-            where: {
-              ownerId: ctx.user.sub,
-            },
-          },
           permissions: {
             where: {
               permissionStatus: DB.PermissionStatus.GRANTED,
@@ -281,7 +276,6 @@ export async function getSingleAnswerCollection(
       })),
       isOwner: true,
       isEditable: true,
-      isRemovable: collection._count?.linkedElements === 0,
     }
   } else {
     return {
@@ -294,7 +288,6 @@ export async function getSingleAnswerCollection(
       catalogCollectionId,
       isOwner: false,
       isEditable: false,
-      isRemovable: collection._count?.linkedElements === 0,
     }
   }
 }
@@ -310,6 +303,11 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
           _count: {
             select: {
               entries: true,
+              linkedElements: {
+                where: {
+                  ownerId: ctx.user.sub,
+                },
+              },
               permissions: {
                 where: {
                   permissionStatus: DB.PermissionStatus.GRANTED,
@@ -335,6 +333,11 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
               _count: {
                 select: {
                   entries: true,
+                  linkedElements: {
+                    where: {
+                      ownerId: ctx.user.sub,
+                    },
+                  },
                 },
               },
               owner: {
@@ -360,6 +363,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     numOfEntries: collection._count.entries,
     isOwner: true,
     isEditable: true,
+    isRemovable: collection._count?.linkedElements === 0,
     isImported: collection.originalId !== null,
     isAccessGranted: false,
   }))
@@ -380,6 +384,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
       ownerShortname: collection.owner?.shortname,
       isOwner: false,
       isEditable: false,
+      isRemovable: collection._count.linkedElements === 0,
       isImported: false,
       isAccessGranted: object.permissionStatus === DB.PermissionStatus.GRANTED,
     }

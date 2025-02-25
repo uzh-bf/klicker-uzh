@@ -23,6 +23,7 @@ function AnswerCollectionEditModal({
   const [optionsEditingDisabled, setOptionsEditingDisabled] = useState(false)
   const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
     variables: { id: collectionId },
+    fetchPolicy: 'cache-and-network',
   })
 
   const collection = data?.getSingleAnswerCollection

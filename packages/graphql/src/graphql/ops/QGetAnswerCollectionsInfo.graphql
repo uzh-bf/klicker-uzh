@@ -13,6 +13,7 @@ query GetAnswerCollectionsInfo {
 
     isOwner
     isEditable
+    isRemovable
     isImported
     isAccessGranted
   }

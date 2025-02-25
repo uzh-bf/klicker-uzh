@@ -2096,7 +2096,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No answer collections have been created or imported form the catalog yet.',
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
-      clickToViewEdit: 'Click to view / edit',
       cancelRequest: 'Cancel Request',
       answerCollection: 'Answer Collection: {name}',
       saveChanges: 'Save changes',
@@ -2118,6 +2117,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestError:
         'An error occurred while requesting the answer collection. Please try again or contact the support.',
       viewCollection: 'View Collection',
+      editCollection: 'Edit Collection',
       requestedAccess: 'Requested Access',
       deleteCollection: 'Delete collection',
       deletionDisabledInUse:

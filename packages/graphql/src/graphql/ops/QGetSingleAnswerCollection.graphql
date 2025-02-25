@@ -13,7 +13,6 @@ query GetSingleAnswerCollection($id: Int!) {
 
     isOwner
     isEditable
-    isRemovable
 
     entries {
       id

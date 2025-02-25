@@ -34,20 +34,24 @@ function AnswerCollectionList({
           {t('manage.resources.noAnswerCollections')}
         </UserNotification>
       ) : (
-        <div className="flex flex-col">
-          {collections?.map((collection) => (
-            <AnswerCollectionItem
-              isOwner={collection.isOwner ?? false}
-              isEditable={collection.isEditable ?? false}
-              isImported={collection.isImported ?? false}
-              accessGranted={collection.isAccessGranted ?? false}
-              key={`answer-collection-${collection.id}`}
-              collection={collection}
-              setDeletionSuccess={setDeletionSuccess}
-              setDeletionFailure={setDeletionFailure}
-              setRemovalSuccess={setRemovalSuccess}
-              setRemovalFailure={setRemovalFailure}
-            />
+        <div className="mt-1.5 bg-white">
+          {collections?.map((collection, index) => (
+            <div key={`answer-collection-${collection.id}`}>
+              <AnswerCollectionItem
+                isOwner={collection.isOwner ?? false}
+                isEditable={collection.isEditable ?? false}
+                isImported={collection.isImported ?? false}
+                accessGranted={collection.isAccessGranted ?? false}
+                collection={collection}
+                setDeletionSuccess={setDeletionSuccess}
+                setDeletionFailure={setDeletionFailure}
+                setRemovalSuccess={setRemovalSuccess}
+                setRemovalFailure={setRemovalFailure}
+              />
+              {index < collections.length - 1 && (
+                <hr className="border-t-2 border-gray-300" />
+              )}
+            </div>
           ))}
         </div>
       )}

@@ -2120,7 +2120,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es wurden noch keine Antwort-Sammlungen erstellt oder aus dem Katalog importiert.',
       numOfAnswers: '{number} Antworten',
       byOwner: 'von {owner}',
-      clickToViewEdit: 'Ansehen / Editieren',
       cancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
       saveChanges: 'Änderungen speichern',
@@ -2142,6 +2141,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestError:
         'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       viewCollection: 'Sammlung ansehen',
+      editCollection: 'Sammlung bearbeiten',
       requestedAccess: 'Zugriff beantragt',
       deleteCollection: 'Sammlung löschen',
       deletionDisabledInUse:
