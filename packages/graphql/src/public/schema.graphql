@@ -106,6 +106,7 @@ type AnswerCollection {
   isImported: Boolean
   isOwner: Boolean
   isRemovable: Boolean
+  isShareable: Boolean
   name: String!
   numOfEntries: Int
   numSharedUsers: Int
@@ -1696,6 +1697,14 @@ type PerformanceRates {
   partialRate: Float!
 }
 
+type PermissionInfo {
+  accessLevel: AccessLevel!
+  permissionId: Int!
+  userEmail: String
+  userGroupName: String
+  username: String
+}
+
 enum PermissionStatus {
   GRANTED
   REQUESTED
@@ -1751,6 +1760,7 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getAnswerCollectionPermissions(collectionId: Int!): [PermissionInfo!]
   getAnswerCollections: [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]

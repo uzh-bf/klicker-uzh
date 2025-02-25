@@ -292,6 +292,67 @@ export async function getSingleAnswerCollection(
   }
 }
 
+export async function getAnswerCollectionPermissions(
+  { collectionId }: { collectionId: number },
+  ctx: ContextWithUser
+) {
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      // TODO: only allow access to owners or users with granted admin access
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        // {
+        //   permissions: {
+        //     some: {
+        //       userId: ctx.user.sub,
+        //       permissionStatus: DB.PermissionStatus.GRANTED,
+        //       accessLevel: DB.AccessLevel.ADMIN,
+        //     },
+        //   },
+        // },
+      ],
+    },
+    include: {
+      permissions: {
+        where: {
+          permissionStatus: DB.PermissionStatus.GRANTED,
+        },
+        include: {
+          user: {
+            select: {
+              shortname: true,
+              email: true,
+            },
+          },
+          // TODO: also include permissions awarded to user groups and set in return object
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return []
+  }
+
+  return collection.permissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      username: permission.user?.shortname,
+      userEmail: permission.user?.email,
+      userGroupName: undefined,
+      accessLevel: permission.accessLevel,
+    }))
+    .sort((a, b) => {
+      if (a.username === b.username) {
+        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
+      }
+      return (a.username ?? '').localeCompare(b.username ?? '')
+    })
+}
+
 export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
@@ -365,6 +426,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     isEditable: true,
     isRemovable: collection._count?.linkedElements === 0,
     isImported: collection.originalId !== null,
+    isShareable: true, // owned answer collections can always be shared
     isAccessGranted: false,
   }))
 
@@ -386,7 +448,8 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
       isEditable: false,
       isRemovable: collection._count.linkedElements === 0,
       isImported: false,
-      isAccessGranted: object.permissionStatus === DB.PermissionStatus.GRANTED,
+      isShareable: object.accessLevel === DB.AccessLevel.ADMIN, // only users with admin access can share a shared answer collection
+      isAccessGranted: true, // requested ansewr collections are not returned by this query
     }
   })
 

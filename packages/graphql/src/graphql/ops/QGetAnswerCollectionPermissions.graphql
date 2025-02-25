@@ -1,0 +1,9 @@
+query GetAnswerCollectionPermissions($collectionId: Int!) {
+  getAnswerCollectionPermissions(collectionId: $collectionId) {
+    permissionId
+    username
+    userEmail
+    userGroupName
+    accessLevel
+  }
+}

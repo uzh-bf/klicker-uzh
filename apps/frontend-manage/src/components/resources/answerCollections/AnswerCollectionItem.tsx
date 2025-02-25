@@ -1,5 +1,6 @@
 import { faEye, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArrowUpFromBracket,
   faDownload,
   faEllipsisVertical,
   faInfoCircle,
@@ -12,19 +13,21 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { AnswerCollection, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
 import CollectionRemovalModal from './CollectionRemovalModal'
+import CollectionSharingModal from './CollectionSharingModal'
 
 function AnswerCollectionItem({
   collection,
   isOwner = false,
   isEditable = false,
   isImported = false,
+  isShareable = false,
   accessGranted = false,
   setDeletionSuccess,
   setDeletionFailure,
@@ -35,6 +38,7 @@ function AnswerCollectionItem({
   isOwner?: boolean
   isEditable?: boolean
   isImported?: boolean
+  isShareable?: boolean
   accessGranted?: boolean
   setDeletionSuccess: Dispatch<SetStateAction<boolean>>
   setDeletionFailure: Dispatch<SetStateAction<boolean>>
@@ -48,6 +52,7 @@ function AnswerCollectionItem({
   const [deletionModal, setDeletionModal] = useState(false)
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
+  const [sharingModal, setSharingModal] = useState(false)
 
   const collectionAccessMap: Record<ObjectAccess, React.ReactNode> = {
     [ObjectAccess.Private]: (
@@ -70,85 +75,107 @@ function AnswerCollectionItem({
     ),
   }
 
-  const DeletionTooltip = () => (
-    <Tooltip
-      tooltip={t('manage.resources.deletionDisabledInUse')}
-      className={{
-        tooltip: 'max-w-[30rem] text-sm',
-        trigger: 'ml-2',
-      }}
-    >
-      <FontAwesomeIcon icon={faInfoCircle} className="text-primary-100" />
-    </Tooltip>
-  )
+  const dropdownItems = useMemo(() => {
+    const items = []
+    const DeletionTooltip = () => (
+      <Tooltip
+        tooltip={t('manage.resources.deletionDisabledInUse')}
+        className={{
+          tooltip: 'max-w-[30rem] text-sm',
+          trigger: 'ml-2',
+        }}
+      >
+        <FontAwesomeIcon icon={faInfoCircle} className="text-primary-100" />
+      </Tooltip>
+    )
 
-  const dropdownItems = isEditable
-    ? [
-        {
-          id: 'edit',
-          label: (
-            <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-              <FontAwesomeIcon icon={faPencil} className="mr-2.5 h-4 w-4" />
-              {t('manage.resources.editCollection')}
-            </div>
-          ),
-          onClick: () => setEditModal(true),
-          data: { cy: 'edit-answer-collection' },
-        },
-        {
-          id: 'delete',
-          label: (
-            <div
-              className={twMerge(
-                'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
-                !collection.isRemovable &&
-                  'text-opactiy-50 hover:cursor-not-allowed'
-              )}
-            >
-              <FontAwesomeIcon icon={faTrashCan} className="mr-2.5 h-4 w-4" />
-              {t('manage.resources.deleteCollection')}
-              {!collection.isRemovable && <DeletionTooltip />}
-            </div>
-          ),
-          onClick: () => setDeletionModal(true),
-          disabled: !collection.isRemovable,
-          data: { cy: 'delete-answer-collection' },
-        },
-      ]
-    : accessGranted
-      ? [
-          {
-            id: 'view',
-            label: (
-              <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
-                <FontAwesomeIcon icon={faEye} className="mr-2.5 h-4 w-4" />
-                {t('manage.resources.viewCollection')}
-              </div>
-            ),
-            onClick: () => setViewingModal(true),
-            data: { cy: 'view-answer-collection' },
-          },
-          {
-            id: 'remove',
-            label: (
-              <div
-                className={twMerge(
-                  'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
-                  !collection.isRemovable &&
-                    'text-opactiy-50 hover:cursor-not-allowed'
-                )}
-              >
-                <FontAwesomeIcon icon={faX} className="mr-2.5 h-4 w-4" />
-                {t('manage.resources.removeCollection')}
-                {!collection.isRemovable && <DeletionTooltip />}
-              </div>
-            ),
-            onClick: () => setRemovalModal(true),
-            disabled: !collection.isRemovable,
-            data: { cy: 'remove-answer-collection' },
-          },
-        ]
-      : []
+    if (isShareable) {
+      items.push({
+        id: 'share',
+        label: (
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+            <FontAwesomeIcon
+              icon={faArrowUpFromBracket}
+              className="mr-2.5 h-4 w-4"
+            />
+            {t('manage.resources.shareCollection')}
+          </div>
+        ),
+        onClick: () => setSharingModal(true),
+        data: { cy: 'share-answer-collection' },
+      })
+    }
+
+    if (isEditable) {
+      items.push({
+        id: 'edit',
+        label: (
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+            <FontAwesomeIcon icon={faPencil} className="mr-2.5 h-4 w-4" />
+            {t('manage.resources.editCollection')}
+          </div>
+        ),
+        onClick: () => setEditModal(true),
+        data: { cy: 'edit-answer-collection' },
+      })
+
+      items.push({
+        id: 'delete',
+        label: (
+          <div
+            className={twMerge(
+              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
+              !collection.isRemovable &&
+                'text-opactiy-50 hover:cursor-not-allowed'
+            )}
+          >
+            <FontAwesomeIcon icon={faTrashCan} className="mr-2.5 h-4 w-4" />
+            {t('manage.resources.deleteCollection')}
+            {!collection.isRemovable && <DeletionTooltip />}
+          </div>
+        ),
+        onClick: () => setDeletionModal(true),
+        disabled: !collection.isRemovable,
+        data: { cy: 'delete-answer-collection' },
+      })
+    }
+
+    if (accessGranted) {
+      items.push({
+        id: 'view',
+        label: (
+          <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
+            <FontAwesomeIcon icon={faEye} className="mr-2.5 h-4 w-4" />
+            {t('manage.resources.viewCollection')}
+          </div>
+        ),
+        onClick: () => setViewingModal(true),
+        data: { cy: 'view-answer-collection' },
+      })
+
+      items.push({
+        id: 'remove',
+        label: (
+          <div
+            className={twMerge(
+              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
+              !collection.isRemovable &&
+                'text-opactiy-50 hover:cursor-not-allowed'
+            )}
+          >
+            <FontAwesomeIcon icon={faX} className="mr-2.5 h-4 w-4" />
+            {t('manage.resources.removeCollection')}
+            {!collection.isRemovable && <DeletionTooltip />}
+          </div>
+        ),
+        onClick: () => setRemovalModal(true),
+        disabled: !collection.isRemovable,
+        data: { cy: 'remove-answer-collection' },
+      })
+    }
+
+    return items
+  }, [isEditable, isShareable, accessGranted, collection.isRemovable, t])
 
   return (
     <>
@@ -250,6 +277,14 @@ function AnswerCollectionItem({
             setRemovalFailure={setRemovalFailure}
           />
         </>
+      )}
+
+      {isShareable && (
+        <CollectionSharingModal
+          collection={collection}
+          open={sharingModal}
+          onClose={() => setSharingModal(false)}
+        />
       )}
     </>
   )
