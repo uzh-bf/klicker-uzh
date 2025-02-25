@@ -2138,7 +2138,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       grantedPermissions: 'Granted Permissions',
       sharingSuccessful: 'The answer collection was shared successfully.',
       sharingFailed:
-        'An error occurred while sharing the answer collection. Please try again or contact the support.',
+        'An error occurred while sharing the answer collection or the specified user could not be found.',
       requestedAccess: 'Requested Access',
       deleteCollection: 'Delete collection',
       deletionDisabledInUse:

@@ -1,10 +1,12 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faSave, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AccessLevel,
   AnswerCollection,
   GetAnswerCollectionPermissionsDocument,
+  GetAnswerCollectionsInfoDocument,
+  ShareAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -19,9 +21,9 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import PermissionsTable from '../PermissionsTable'
-import CollectionSharingErrorToast from './CollectionSharingErrorToast'
-import CollectionSharingSuccessToast from './CollectionSharingSuccessToast'
+import CollectionSharingErrorToast from '../sharing/CollectionSharingErrorToast'
+import CollectionSharingSuccessToast from '../sharing/CollectionSharingSuccessToast'
+import PermissionsTable from '../sharing/PermissionsTable'
 
 function CollectionSharingModal({
   collection,
@@ -46,7 +48,11 @@ function CollectionSharingModal({
   )
   const permissions = data?.getAnswerCollectionPermissions
 
-  // TODO: split up this component into smaller components
+  // mutation to create new permission entry for answer collection
+  const [shareAnswerCollection] = useMutation(ShareAnswerCollectionDocument)
+
+  // TODO: split up this component into smaller components (the bottom table should be generic enough to be re-used for other sharing modals as well)
+  // TODO: add loading state if permissions are still loading
   return (
     <>
       <Modal
@@ -121,7 +127,10 @@ function CollectionSharingModal({
                 <th className="w-10" />
               </tr>
             </thead>
-            <tbody className="bg-white">
+            <tbody
+              className="bg-white"
+              key={permissions?.map((p) => p.permissionId).join()}
+            >
               {permissions
                 ?.filter(
                   (permission) =>
@@ -177,30 +186,99 @@ function CollectionSharingModal({
                 isInitialValid={false}
                 initialValues={{
                   usernameOrEmail: undefined,
-                  userGroup: undefined,
+                  userGroupId: undefined,
                   accessLevel: AccessLevel.Read,
                 }}
-                onSubmit={(values, { setSubmitting, resetForm }) => {
+                onSubmit={async (values, { setSubmitting, resetForm }) => {
                   setSubmitting(true)
 
-                  // TODO: handle form submission to add new permission
-                  alert(JSON.stringify(values, null, 2))
+                  if (
+                    typeof values.userGroupId !== 'undefined' ||
+                    (typeof values.usernameOrEmail !== 'undefined' &&
+                      values.usernameOrEmail !== '')
+                  ) {
+                    const newPermission = await shareAnswerCollection({
+                      variables: {
+                        collectionId: collection.id,
+                        usernameOrEmail: values.usernameOrEmail,
+                        userGroupId:
+                          typeof values.usernameOrEmail === 'undefined'
+                            ? values.userGroupId
+                            : undefined,
+                        accessLevel: values.accessLevel,
+                      },
+                      update: (cache, { data }) => {
+                        if (!data?.shareAnswerCollection) return
 
-                  resetForm()
-                  setSubmitting(false)
+                        const prevPermissions = cache.readQuery({
+                          query: GetAnswerCollectionPermissionsDocument,
+                          variables: {
+                            collectionId: collection.id,
+                          },
+                        })
+
+                        if (
+                          !prevPermissions?.getAnswerCollectionPermissions ||
+                          !data.shareAnswerCollection
+                        ) {
+                          return
+                        }
+
+                        // replace the permission that was just added (if it already exists) and add it otherwise
+                        const newPermissions =
+                          prevPermissions.getAnswerCollectionPermissions.filter(
+                            (permission) =>
+                              permission.permissionId !==
+                              data.shareAnswerCollection!.permissionId
+                          )
+                        newPermissions.push(data.shareAnswerCollection)
+
+                        cache.writeQuery({
+                          query: GetAnswerCollectionPermissionsDocument,
+                          variables: {
+                            collectionId: collection.id,
+                          },
+                          data: {
+                            getAnswerCollectionPermissions: newPermissions,
+                          },
+                        })
+                      },
+                      refetchQueries: [GetAnswerCollectionsInfoDocument],
+                    })
+
+                    if (
+                      typeof newPermission.data?.shareAnswerCollection
+                        ?.permissionId !== 'undefined'
+                    ) {
+                      setSharingSuccess(true)
+                      resetForm()
+                      setSubmitting(false)
+                    } else {
+                      setSharingFailure(true)
+                      setSubmitting(false)
+                    }
+                  } else {
+                    setSharingFailure(true)
+                    setSubmitting(false)
+                  }
                 }}
-                validationSchema={
-                  // either individual user or user group need to be defined
-                  Yup.object().shape({
-                    usernameOrEmail: Yup.string().required(
-                      t('manage.resources.usernameEmailOrGroupRequired')
-                    ),
-                    userGroup: Yup.string().nullable(
-                      t('manage.resources.usernameEmailOrGroupRequired')
-                    ),
+                validationSchema={Yup.object()
+                  .shape({
+                    usernameOrEmail: Yup.string(),
+                    userGroupId: Yup.number(),
                     accessLevel: Yup.string().required(),
                   })
-                }
+                  .test(
+                    'either-user-or-group',
+                    t('manage.resources.usernameEmailOrGroupRequired'),
+                    function (values) {
+                      const { usernameOrEmail, userGroupId } = values
+                      return (
+                        (!!usernameOrEmail && usernameOrEmail !== '') ||
+                        !!userGroupId
+                      )
+                    }
+                  )}
               >
                 {({ isSubmitting, isValid, submitForm }) => (
                   <tr className="border-t border-gray-200 hover:bg-gray-50">
@@ -221,8 +299,8 @@ function CollectionSharingModal({
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">
                       <FormikSelectField
-                        name="userGroup"
-                        id="userGroup"
+                        name="userGroupId"
+                        id="userGroupId"
                         placeholder={t('manage.resources.noUserGroupSelected')}
                         items={[]} // TODO: add available user groups
                         disabled={isSubmitting}

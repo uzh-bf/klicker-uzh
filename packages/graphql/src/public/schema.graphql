@@ -1380,6 +1380,7 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
+  shareAnswerCollection(accessLevel: AccessLevel!, collectionId: Int!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -1701,7 +1702,9 @@ type PermissionInfo {
   accessLevel: AccessLevel!
   permissionId: Int!
   userEmail: String
+  userGroupId: Int
   userGroupName: String
+  userId: String
   username: String
 }
 

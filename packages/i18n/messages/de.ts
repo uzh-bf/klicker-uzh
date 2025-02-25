@@ -2162,7 +2162,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       grantedPermissions: 'Bestehende Berechtigungen',
       sharingSuccessful: 'Die Antwort-Sammlung wurde erfolgreich geteilt.',
       sharingFailed:
-        'Beim Teilen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+        'Beim Teilen der Antwort-Sammlung ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
       requestedAccess: 'Zugriff beantragt',
       deleteCollection: 'Sammlung löschen',
       deletionDisabledInUse:
