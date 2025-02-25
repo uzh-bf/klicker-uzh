@@ -352,7 +352,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   it('Verify that the deletion of answer collection entries is limited, editing is unaffected', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.CS.collection}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
@@ -370,9 +373,15 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   it('Verify that the answer collection used in the case study can no longer be deleted', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.CS.collection}"]`
+    ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
-    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
   })
 
   it('Add a sample solution to the case study question', function () {
@@ -871,7 +880,14 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
 
-    cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.CS.collection}"]`
+    ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'not.have.attr',
+      'data-disabled'
+    )
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -887,12 +903,16 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.findByText(messages.manage.resources.answerOptionUsed).should(
       'not.exist'
     )
-    cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
 
     cy.get(
-      `[data-cy="answer-collection-${this.data.CS.collectionEdited}"]`
+      `[data-cy="answer-collection-actions-${this.data.CS.collectionEdited}"]`
     ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.wrap(this.data.CS.itemsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -904,7 +924,6 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
     })
     cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
-    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
   })
   // #endregion
@@ -919,7 +938,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
 
-    cy.get(`[data-cy="answer-collection-${this.data.CS.collection}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.CS.collection}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -935,8 +957,9 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
 
     cy.get(
-      `[data-cy="answer-collection-${this.data.CS.collectionEdited}"]`
+      `[data-cy="answer-collection-actions-${this.data.CS.collectionEdited}"]`
     ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.wrap(this.data.CS.itemsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'

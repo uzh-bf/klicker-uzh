@@ -1,12 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { faInfoCircle } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Button, Modal, Tooltip } from '@uzh-bf/design-system'
+import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 
 function AnswerCollectionViewingModal({
@@ -69,39 +65,6 @@ function AnswerCollectionViewingModal({
             </li>
           ))}
         </ul>
-      </div>
-      <div className="mt-3 flex flex-row items-center gap-3">
-        <Button
-          type="button"
-          onClick={() => {
-            onRemove()
-            onClose()
-          }}
-          disabled={!collection.isRemovable}
-          className={{
-            root: twMerge(
-              'border-red-600',
-              collection.isRemovable &&
-                'hover:border-red-600 hover:text-red-600'
-            ),
-          }}
-          data={{ cy: 'remove-answer-collection' }}
-        >
-          <FontAwesomeIcon icon={faTrashCan} className="mr-1" />
-          <div>{t('manage.resources.removeCollection')}</div>
-        </Button>
-        {!collection.isRemovable ? (
-          <Tooltip
-            tooltip={t('manage.resources.removalDisabledInUse')}
-            className={{ tooltip: 'max-w-[30rem] text-sm' }}
-          >
-            <FontAwesomeIcon
-              icon={faInfoCircle}
-              className="text-primary-100"
-              size="lg"
-            />
-          </Tooltip>
-        ) : null}
       </div>
     </Modal>
   )

@@ -22,7 +22,7 @@ describe('Create, edit and share answer collections', function () {
   }
 
   function removeAnswerCollection({ name }: { name: string }) {
-    cy.get(`[data-cy="answer-collection-${name}"]`).click()
+    cy.get(`[data-cy="answer-collection-actions-${name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
   }
@@ -149,7 +149,10 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
@@ -243,7 +246,10 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.private.nameNew}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.private.nameNew}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
@@ -381,8 +387,13 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).click()
-    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
+    ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
   })
 
   it('Delete the selection question that depends on the private answer collection', function () {
@@ -668,15 +679,23 @@ describe('Create, edit and share answer collections', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="remove-answer-collection"]').should('be.disabled')
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="remove-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
   })
 
   it('Verify that answer option used as a sample solution cannot be removed (by owner)', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     // check that all answer options can be edited, only non-solution items can be removed
     cy.wrap(this.data.restricted.items).each((value: string, ix: number) => {
@@ -712,7 +731,9 @@ describe('Create, edit and share answer collections', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="close-remove-answer-collection"]').click()
   })
@@ -721,7 +742,10 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     // check that all answer options can be edited, only non-solution items can be removed
     cy.wrap(this.data.restricted.items).each((value: string, ix: number) => {
@@ -946,7 +970,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`)
       .should('exist')
       .contains(messages.manage.resources.accessPRIVATE)
-    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     // check that all answer options can be edited
     cy.wrap(this.data.public.items).each((value: string) => {
@@ -995,15 +1022,23 @@ describe('Create, edit and share answer collections', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
   })
 
   it('Verify that original answer collection can be completely edited by owner', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     // check that all answer options can be edited
     cy.wrap(this.data.public.items).each((value: string) => {
@@ -1085,7 +1120,10 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessPRIVATE
@@ -1118,7 +1156,10 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
@@ -1187,7 +1228,10 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessPUBLIC
@@ -1233,7 +1277,10 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.get('[data-cy="answer-collection-access"]').contains(
       messages.manage.resources.accessRESTRICTED
@@ -1271,7 +1318,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="answer-collection-${this.data.private.name}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
+    ).click()
+    cy.get('[data-cy="view-answer-collection"]').click()
 
     // validate content of viewing modal
     cy.wrap(this.data.private.items).each((value: string) => {
