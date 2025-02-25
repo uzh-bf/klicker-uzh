@@ -1,7 +1,8 @@
 import { useQuery } from '@apollo/client'
 import { GetAnswerCollectionsInfoDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useState } from 'react'
 import AnswerCollectionCreation from './answerCollections/AnswerCollectionCreation'
 import AnswerCollectionList from './answerCollections/AnswerCollectionList'
@@ -9,8 +10,6 @@ import CollectionDeletionErrorToast from './answerCollections/CollectionDeletion
 import CollectionDeletionSuccessToast from './answerCollections/CollectionDeletionSuccessToast'
 import CollectionRemovalErrorToast from './answerCollections/CollectionRemovalErrorToast'
 import CollectionRemovalSuccessToast from './answerCollections/CollectionRemovalSuccessToast'
-import RequestCancellationErrorToast from './answerCollections/RequestCancellationErrorToast'
-import RequestCancellationSuccessToast from './answerCollections/RequestCancellationSuccessToast'
 
 function AnswerCollections() {
   const t = useTranslations()
@@ -23,26 +22,37 @@ function AnswerCollections() {
   const [deletionFailure, setDeletionFailure] = useState(false)
   const [removalSuccess, setRemovalSuccess] = useState(false)
   const [removalFailure, setRemovalFailure] = useState(false)
-  const [cancellationSuccess, setCancellationSuccess] = useState(false)
-  const [cancellationFailure, setCancellationFailure] = useState(false)
 
   return (
     <div className="h-full w-full">
       <H2>{t('manage.resources.answerCollections')}</H2>
       <div className="mb-2">
-        {t('manage.resources.answerCollectionsDescription')}
+        {t.rich('manage.resources.answerCollectionsDescription', {
+          link: (text) => (
+            <Link href="/resources/catalog" className="text-primary-100">
+              {text}
+            </Link>
+          ),
+        })}
       </div>
-      <AnswerCollectionCreation />
-      <AnswerCollectionList
-        collections={data?.getAnswerCollectionsInfo ?? []}
-        loading={loading}
-        setDeletionSuccess={setDeletionSuccess}
-        setDeletionFailure={setDeletionFailure}
-        setRemovalSuccess={setRemovalSuccess}
-        setRemovalFailure={setRemovalFailure}
-        setCancellationSuccess={setCancellationSuccess}
-        setCancellationFailure={setCancellationFailure}
-      />
+      <div className="mt-6 flex flex-col lg:flex-row-reverse">
+        <div className="lg:w-1/2 lg:border-l lg:pl-4">
+          <UserNotification type="info" className={{ root: 'mb-3' }}>
+            {t('manage.resources.selectCreateAnswerCollection')}
+          </UserNotification>
+          <AnswerCollectionCreation />
+        </div>
+        <div className="lg:w-1/2 lg:pr-4">
+          <AnswerCollectionList
+            collections={data?.getAnswerCollectionsInfo ?? []}
+            loading={loading}
+            setDeletionSuccess={setDeletionSuccess}
+            setDeletionFailure={setDeletionFailure}
+            setRemovalSuccess={setRemovalSuccess}
+            setRemovalFailure={setRemovalFailure}
+          />
+        </div>
+      </div>
       <CollectionDeletionSuccessToast
         open={deletionSuccess}
         onClose={() => setDeletionSuccess(false)}
@@ -58,14 +68,6 @@ function AnswerCollections() {
       <CollectionRemovalErrorToast
         open={removalFailure}
         onClose={() => setRemovalFailure(false)}
-      />
-      <RequestCancellationSuccessToast
-        open={cancellationSuccess}
-        onClose={() => setCancellationSuccess(false)}
-      />
-      <RequestCancellationErrorToast
-        open={cancellationFailure}
-        onClose={() => setCancellationFailure(false)}
       />
     </div>
   )

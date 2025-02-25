@@ -14,7 +14,7 @@ function ObjectAccessRequestModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [successModal, setSuccessModal] = useState(false)
+  const [successToast, setSuccessToast] = useState(false)
 
   if (object.objectType === CatalogObjectType.AnswerCollection) {
     return (
@@ -23,14 +23,14 @@ function ObjectAccessRequestModal({
           id={object.id!}
           open={open}
           onClose={onClose}
-          onSuccess={() => setSuccessModal(true)}
+          onSuccess={() => setSuccessToast(true)}
         />
         <Toast
           dismissible
           type="success"
           duration={3000}
-          openExternal={successModal}
-          onCloseExternal={() => setSuccessModal(false)}
+          openExternal={successToast}
+          onCloseExternal={() => setSuccessToast(false)}
         >
           {t('manage.catalog.answerCollectionRequestSuccess')}
         </Toast>

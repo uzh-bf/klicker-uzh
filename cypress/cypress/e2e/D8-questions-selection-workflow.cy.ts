@@ -12,6 +12,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
   // #region
   it('Create the answer collections that will be used for the selection question tests', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.SE.collection,
       accessCy: 'private',
@@ -172,7 +173,11 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   it('Verify that all options of the answer collection can be edited', function () {
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
@@ -227,7 +232,11 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   it('Verify that the options that are used as a solution cannot be deleted anymore', function () {
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
 
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
@@ -245,8 +254,14 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   it('Verify that the answer collection cannot be deleted anymore', function () {
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
-    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
+    ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
   })
 
   it('Edit the selection question and change the answer collection (including new sample solutions)', function () {
@@ -310,18 +325,33 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   it('Verify that the previous answer collection could be deleted again, the current one not', function () {
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
-    cy.get('[data-cy="delete-answer-collection"]').should('not.be.disabled')
-    cy.get('[data-cy="close-answer-collection-edit-modal"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.get(
-      `[data-cy="answer-collection-${this.data.SE.collectionEdited}"]`
+      `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
     ).click()
-    cy.get('[data-cy="delete-answer-collection"]').should('be.disabled')
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'not.have.attr',
+      'data-disabled'
+    )
+    cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="close-answer-collection-edit-modal"]').click()
+
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE.collectionEdited}"]`
+    ).click()
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
   })
 
   it('Check that only answer options not used as solutions can be deleted', function () {
     cy.get('[data-cy="resources"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
@@ -338,8 +368,9 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
 
     cy.get(
-      `[data-cy="answer-collection-${this.data.SE.collectionEdited}"]`
+      `[data-cy="answer-collection-actions-${this.data.SE.collectionEdited}"]`
     ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -362,8 +393,12 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   it('Verify that after the deletion of the linked questions, all solution options can be deleted again', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
 
-    cy.get(`[data-cy="answer-collection-${this.data.SE.collection}"]`).click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -379,8 +414,9 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get("[data-cy='close-answer-collection-edit-modal']").click()
 
     cy.get(
-      `[data-cy="answer-collection-${this.data.SE.collectionEdited}"]`
+      `[data-cy="answer-collection-actions-${this.data.SE.collectionEdited}"]`
     ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
     cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -398,6 +434,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   it('Cleanup: Delete all created answer collections', function () {
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.SE.collection })
     cy.deleteAnswerCollection({ collectionName: this.data.SE.collectionEdited })
   })

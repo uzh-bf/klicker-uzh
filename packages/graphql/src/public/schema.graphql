@@ -6,6 +6,7 @@ schema {
 
 enum AccessLevel {
   ADMIN
+  EXECUTE
   READ
   WRITE
 }

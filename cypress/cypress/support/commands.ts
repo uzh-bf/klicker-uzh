@@ -179,7 +179,7 @@ interface DeleteCollectionArgs {
 Cypress.Commands.add(
   'deleteAnswerCollection',
   ({ collectionName }: DeleteCollectionArgs) => {
-    cy.get(`[data-cy="answer-collection-${collectionName}"]`).click()
+    cy.get(`[data-cy="answer-collection-actions-${collectionName}"]`).click()
     cy.get('[data-cy="delete-answer-collection"]').click()
     cy.get('[data-cy="confirm-delete-answer-collection"]').click()
     cy.get(`[data-cy="answer-collection-${collectionName}"]`).should(

@@ -14,7 +14,7 @@ function ObjectImportModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [successModal, setSuccessModal] = useState(false)
+  const [successToast, setSuccessToast] = useState(false)
 
   if (object.objectType === CatalogObjectType.AnswerCollection) {
     return (
@@ -23,12 +23,12 @@ function ObjectImportModal({
           id={object.id!}
           open={open}
           onClose={onClose}
-          onSuccess={() => setSuccessModal(true)}
+          onSuccess={() => setSuccessToast(true)}
         />
         <Toast
           dismissible
-          openExternal={successModal}
-          onCloseExternal={() => setSuccessModal(false)}
+          openExternal={successToast}
+          onCloseExternal={() => setSuccessToast(false)}
           type="success"
         >
           {t('manage.catalog.answerCollectionImportSuccess')}

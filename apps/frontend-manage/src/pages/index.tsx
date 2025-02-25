@@ -27,8 +27,6 @@ import { useRouter } from 'next/router'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { isEmpty, pickBy } from 'remeda'
 import { buildIndex, processItems } from 'src/lib/utils/filters'
-import ElementSuccessToast from '~/components/questions/manipulation/ElementSuccessToast'
-import RecoveryPrompt from '~/components/questions/manipulation/RecoveryPrompt'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import ElementCreation, {
   WizardMode,
@@ -37,6 +35,8 @@ import Layout from '../components/Layout'
 import ElementEditModal, {
   ElementEditMode,
 } from '../components/questions/manipulation/ElementEditModal'
+import ElementSuccessToast from '../components/questions/manipulation/ElementSuccessToast'
+import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
 import QuestionList from '../components/questions/QuestionList'
 import TagList from '../components/questions/tags/TagList'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'

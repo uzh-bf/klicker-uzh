@@ -1,4 +1,8 @@
-import { faClock, faCopy, faHand } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faCopy,
+  faHandPointer,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faList,
@@ -17,6 +21,7 @@ import { twMerge } from 'tailwind-merge'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import ObjectAccessRequestModal from './ObjectAccessRequestModal'
 import ObjectImportModal from './ObjectImportModal'
+import ObjectRequestCancellationModal from './ObjectRequestCancellationModal.tsx'
 
 function CatalogObjectItem({ object }: { object: CatalogObject }) {
   const t = useTranslations()
@@ -26,6 +31,8 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
 
   const actionsDisabled = object.isOwner || object.isShared
   const [requestModal, setRequestModal] = useState(false)
+  const [requestCancellationModal, setRequestCancellationModal] =
+    useState(false)
   const [importModal, setImportModal] = useState(false)
 
   return (
@@ -99,15 +106,31 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
               }}
               data={{ cy: `request-access-${object.name}` }}
             >
-              <FontAwesomeIcon icon={faHand} />
+              <FontAwesomeIcon icon={faHandPointer} />
               <div>{t('manage.catalog.requestAccess')}</div>
             </Button>
           ) : null}
           {object.isRequested ? (
-            <div className="flex flex-row items-center gap-1.5">
-              <FontAwesomeIcon icon={faClock} />
-              <div>{t('manage.catalog.accessRequested')}</div>
-            </div>
+            <>
+              <div className="flex flex-row items-center gap-1.5">
+                <FontAwesomeIcon icon={faClock} />
+                <div>{t('manage.catalog.accessRequested')}</div>
+              </div>
+              <Button
+                basic
+                className={{
+                  root: 'hover:text-primary-100 flex flex-row items-center gap-1.5',
+                }}
+                onClick={(e) => {
+                  e?.stopPropagation()
+                  setRequestCancellationModal(true)
+                }}
+                data={{ cy: `cancel-request-${object.name}` }}
+              >
+                <FontAwesomeIcon icon={faHandPointer} />
+                <div>{t('manage.resources.cancelRequest')}</div>
+              </Button>
+            </>
           ) : null}
           {object.isShared ? (
             <div className="flex flex-row items-center gap-1.5">
@@ -126,6 +149,11 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
         object={object}
         open={importModal}
         onClose={() => setImportModal(false)}
+      />
+      <ObjectRequestCancellationModal
+        object={object}
+        open={requestCancellationModal}
+        onClose={() => setRequestCancellationModal(false)}
       />
     </>
   )

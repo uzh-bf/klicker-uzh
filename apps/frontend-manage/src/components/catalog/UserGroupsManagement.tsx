@@ -6,10 +6,10 @@ function UserGroupsManagement() {
 
   return (
     <div>
-      <H2>{t('manage.catalog.userGroups')}</H2>
+      <H2>{t('manage.general.userGroups')}</H2>
       <UserNotification
         type="info"
-        message={t('manage.catalog.userGroupsComingSoon')}
+        message={t('manage.userGroups.comingSoon')}
       />
     </div>
   )

@@ -864,6 +864,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courses: 'Kurse',
       resources: 'Ressourcen',
       catalog: 'Katalog',
+      mediaLibrary: 'Mediathek',
+      userGroups: 'Benutzergruppen',
       generateToken: 'Login-Token generieren',
       '404Message':
         'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
@@ -2069,7 +2071,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bald wird hier Ihre Mediathek verfügbar sein und Ihnen ermöglichen, hochgeladene Ressourcen einzusehen.',
       answerCollections: 'Antwort-Sammlungen',
       answerCollectionsDescription:
-        'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Zusätzlich können Sie hier öffentliche Antwort-Sammlungen anderer Nutzer importieren bzw. Zugriff auf diese anfragen.',
+        'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Um bestehende Antwort-Sammlungen anderer Nutzer zu importieren oder Zugriff auf diese zu beantragen, besuchen Sie bitte den <link>Katalog</link>.',
+      selectCreateAnswerCollection:
+        'Bitte wählen Sie eine Aktion auf einer bestimmten Antwort-Sammlung aus oder erstellen Sie eine neue.',
       newAnswerCollection: 'Neue Antwort-Sammlung',
       addSharedAnswerCollection: 'Geteilte Antwort-Sammlung hinzufügen',
       answerOptionUsed:
@@ -2116,8 +2120,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es wurden noch keine Antwort-Sammlungen erstellt oder aus dem Katalog importiert.',
       numOfAnswers: '{number} Antworten',
       byOwner: 'von {owner}',
-      clickToViewEdit: 'Ansehen / Editieren',
-      clickToCancelRequest: 'Anfrage zurückziehen',
+      cancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
       saveChanges: 'Änderungen speichern',
       infoAccessChangeLimited:
@@ -2138,6 +2141,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestError:
         'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       viewCollection: 'Sammlung ansehen',
+      editCollection: 'Sammlung bearbeiten',
       requestedAccess: 'Zugriff beantragt',
       deleteCollection: 'Sammlung löschen',
       deletionDisabledInUse:
@@ -2168,10 +2172,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       cancellationFailed:
         'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
-    catalog: {
-      userGroups: 'Nutzergruppen',
-      userGroupsComingSoon:
+    userGroups: {
+      comingSoon:
         'Hier werden bald die von Ihnen gemanagten Nutzergruppen, sowie Nutzergruppen zu welchen Sie zugewiesen wurden, angezeigt.',
+    },
+    catalog: {
       accessTypes: 'Zugriffs-Typen',
       objectType: 'Objekt-Typ',
       all: 'Alle',

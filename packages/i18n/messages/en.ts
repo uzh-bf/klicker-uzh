@@ -865,6 +865,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       courses: 'Courses',
       resources: 'Resources',
       catalog: 'Catalog',
+      mediaLibrary: 'Media Library',
+      userGroups: 'User Groups',
       generateToken: 'Generate login token',
       '404Message':
         'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
@@ -2045,7 +2047,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your media library will be available here soon, allowing you to access all your uploaded resources.',
       answerCollections: 'Answer Collections',
       answerCollectionsDescription:
-        'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. Additionally, you can import public answer collections from other users or request access to them.',
+        'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. To import existing answer collections form other users or request access to these, please visit the <link>catalog</link>.',
+      selectCreateAnswerCollection:
+        'Please select an action on a specific answer collection or create a new one.',
       newAnswerCollection: 'New Answer Collection',
       addSharedAnswerCollection: 'Add Shared Answer Collection',
       answerOptionUsed:
@@ -2092,8 +2096,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No answer collections have been created or imported form the catalog yet.',
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
-      clickToViewEdit: 'Click to view / edit',
-      clickToCancelRequest: 'Click to cancel request',
+      cancelRequest: 'Cancel Request',
       answerCollection: 'Answer Collection: {name}',
       saveChanges: 'Save changes',
       infoAccessChangeLimited:
@@ -2114,6 +2117,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestError:
         'An error occurred while requesting the answer collection. Please try again or contact the support.',
       viewCollection: 'View Collection',
+      editCollection: 'Edit Collection',
       requestedAccess: 'Requested Access',
       deleteCollection: 'Delete collection',
       deletionDisabledInUse:
@@ -2143,10 +2147,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       cancellationFailed:
         'An error occurred while withdrawing the access request. Please try again or contact the support.',
     },
-    catalog: {
-      userGroups: 'User Groups',
-      userGroupsComingSoon:
+    userGroups: {
+      comingSoon:
         'Here you will soon see the user groups you manage, as well as user groups to which you have been assigned.',
+    },
+    catalog: {
       accessTypes: 'Access Types',
       objectType: 'Object Type',
       all: 'All',

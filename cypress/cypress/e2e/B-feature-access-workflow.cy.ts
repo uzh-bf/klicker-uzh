@@ -60,10 +60,8 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get('[data-cy="library"]').click()
     if (privatePreview) {
       cy.get('[data-cy="resources"]').should('exist')
-      cy.get('[data-cy="catalog"]').should('exist')
     } else {
       cy.get('[data-cy="resources"]').should('not.exist')
-      cy.get('[data-cy="catalog"]').should('not.exist')
     }
 
     // (private) check that new question type filters are available

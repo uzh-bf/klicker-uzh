@@ -4,7 +4,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import TimelineCourse from '~/components/insights/timeline/TimelineCourse'
+import TimelineCourse from '../../components/insights/timeline/TimelineCourse'
 import Layout from '../../components/Layout'
 
 function StudentTimelines() {

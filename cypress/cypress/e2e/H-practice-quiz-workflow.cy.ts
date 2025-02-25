@@ -73,6 +73,7 @@ describe('Different practice quiz workflows', function () {
 
     // create answer collection
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.questions.collection.name,
       description: this.data.questions.collection.description,
@@ -1185,6 +1186,7 @@ describe('Different practice quiz workflows', function () {
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({
       collectionName: this.data.questions.collection.name,
     })

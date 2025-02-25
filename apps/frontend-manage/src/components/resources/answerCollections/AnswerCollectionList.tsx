@@ -12,8 +12,6 @@ function AnswerCollectionList({
   setDeletionFailure,
   setRemovalSuccess,
   setRemovalFailure,
-  setCancellationSuccess,
-  setCancellationFailure,
 }: {
   collections?: AnswerCollection[]
   loading: boolean
@@ -21,8 +19,6 @@ function AnswerCollectionList({
   setDeletionFailure: Dispatch<SetStateAction<boolean>>
   setRemovalSuccess: Dispatch<SetStateAction<boolean>>
   setRemovalFailure: Dispatch<SetStateAction<boolean>>
-  setCancellationSuccess: Dispatch<SetStateAction<boolean>>
-  setCancellationFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
@@ -31,29 +27,31 @@ function AnswerCollectionList({
   }
 
   return (
-    <div className="mt-7">
+    <div>
       <H3>{t('manage.resources.availableAnswerCollections')}</H3>
       {collections && collections.length === 0 ? (
         <UserNotification type="info" className={{ root: 'mt-1.5' }}>
           {t('manage.resources.noAnswerCollections')}
         </UserNotification>
       ) : (
-        <div className="mt-2 flex flex-col">
-          {collections?.map((collection) => (
-            <AnswerCollectionItem
-              isOwner={collection.isOwner ?? false}
-              isEditable={collection.isEditable ?? false}
-              isImported={collection.isImported ?? false}
-              accessGranted={collection.isAccessGranted ?? false}
-              key={`answer-collection-${collection.id}`}
-              collection={collection}
-              setDeletionSuccess={setDeletionSuccess}
-              setDeletionFailure={setDeletionFailure}
-              setRemovalSuccess={setRemovalSuccess}
-              setRemovalFailure={setRemovalFailure}
-              setCancellationSuccess={setCancellationSuccess}
-              setCancellationFailure={setCancellationFailure}
-            />
+        <div className="mt-1.5 bg-white">
+          {collections?.map((collection, index) => (
+            <div key={`answer-collection-${collection.id}`}>
+              <AnswerCollectionItem
+                isOwner={collection.isOwner ?? false}
+                isEditable={collection.isEditable ?? false}
+                isImported={collection.isImported ?? false}
+                accessGranted={collection.isAccessGranted ?? false}
+                collection={collection}
+                setDeletionSuccess={setDeletionSuccess}
+                setDeletionFailure={setDeletionFailure}
+                setRemovalSuccess={setRemovalSuccess}
+                setRemovalFailure={setRemovalFailure}
+              />
+              {index < collections.length - 1 && (
+                <hr className="border-t-2 border-gray-300" />
+              )}
+            </div>
           ))}
         </div>
       )}
