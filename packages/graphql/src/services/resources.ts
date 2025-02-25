@@ -455,6 +455,12 @@ export async function shareAnswerCollection(
       },
     })
 
+    // invalidate permission
+    ctx.emitter.emit('invalidate', {
+      typename: 'Permission',
+      id: permission.id,
+    })
+
     return {
       permissionId: permission.id,
       userId: user.id,
