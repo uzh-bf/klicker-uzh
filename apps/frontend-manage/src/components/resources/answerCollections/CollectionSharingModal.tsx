@@ -20,10 +20,12 @@ function CollectionSharingModal({
   collection,
   open,
   onClose,
+  onOwnershipTransfer,
 }: {
   collection: AnswerCollection
   open: boolean
   onClose: () => void
+  onOwnershipTransfer: () => void
 }) {
   const t = useTranslations()
   const [sharingSuccess, setSharingSuccess] = useState(false)
@@ -121,6 +123,7 @@ function CollectionSharingModal({
             onPermissionRemoval={async () => {}} // TODO: implement mutation
             onNewPermissionSuccess={() => setSharingSuccess(true)}
             onNewPermissionFailure={() => setSharingFailure(true)}
+            onOwnershipTransfer={onOwnershipTransfer}
             shareObjectCallback={async (values) => {
               const newPermission = await shareAnswerCollection({
                 variables: {

@@ -300,6 +300,7 @@ export default {
       owner: 'Besitzer',
       userGroup: 'Benutzergruppe',
       accessLevel: 'Zugriffsrechte',
+      emailPlaceholder: 'E-Mail-Adresse eingeben',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -2199,6 +2200,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
       usernameEmailOrGroupRequired:
         'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
+      transferOwnershipTitle: 'Eigentumsübertragung der Sammlung',
+      importantInformation: 'Wichtige Information',
+      transferOwnershipCollectionDescription:
+        'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{collectionName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      confirmTransfer: 'Eigentumsrechte übertragen',
+      ownershipTransferSuccess:
+        'Die Eigentumsrechte wurden erfolgreich übertragen.',
+      ownershipTransferError:
+        'Bei der Übertragung der Eigentumsrechte ist leider ein Fehler aufgetreten. Bitte stellen Sie sicher, dass E-Mail Adresse / Nutzername korrekt sind.',
+      usernameOrEmailRequired:
+        'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',
     },
     userGroups: {
       comingSoon:

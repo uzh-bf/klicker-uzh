@@ -1,10 +1,12 @@
+import { faPeopleArrows } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AccessLevel,
   CatalogObjectType,
   PermissionInfo,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H3 } from '@uzh-bf/design-system'
+import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import DirectSharingForm from '../sharing/DirectSharingForm'
 import ExistingPermissionEntries from '../sharing/ExistingPermissionEntries'
@@ -18,6 +20,7 @@ function GrantedPermissionsTable({
   onPermissionRemoval,
   onNewPermissionSuccess,
   onNewPermissionFailure,
+  onOwnershipTransfer,
   shareObjectCallback,
 }: {
   type: CatalogObjectType
@@ -34,6 +37,7 @@ function GrantedPermissionsTable({
   onPermissionRemoval: (permissionId: number) => Promise<void>
   onNewPermissionSuccess: () => void
   onNewPermissionFailure: () => void
+  onOwnershipTransfer: () => void
   shareObjectCallback: ({
     usernameOrEmail,
     userGroupId,
@@ -48,7 +52,20 @@ function GrantedPermissionsTable({
 
   return (
     <>
-      <H3>{t('manage.resources.grantedPermissions')}</H3>
+      <div className="flex flex-row justify-between">
+        <H3>{t('manage.resources.grantedPermissions')}</H3>
+        <Button
+          basic
+          onClick={() => onOwnershipTransfer()}
+          className={{
+            root: 'h-7 rounded border px-2 py-0.5 hover:bg-gray-100',
+          }}
+          data={{ cy: 'transfer-ownership' }}
+        >
+          <FontAwesomeIcon icon={faPeopleArrows} />
+          <span>{t('manage.resources.transferOwnership')}</span>
+        </Button>
+      </div>
       <table className="mt-1 w-full border-collapse overflow-hidden rounded-lg border-b shadow-sm">
         <thead>
           <tr className="bg-gray-50">

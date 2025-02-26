@@ -359,6 +359,122 @@ export async function getAnswerCollectionPermissions(
     })
 }
 
+export async function transferCollectionOwnership(
+  {
+    collectionId,
+    usernameOrEmail,
+  }: {
+    collectionId: number
+    usernameOrEmail: string
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [
+        {
+          shortname: usernameOrEmail,
+        },
+        {
+          email: usernameOrEmail,
+        },
+      ],
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  if (!newOwner) {
+    return null
+  }
+
+  // verify that the current user has ownership of the collection
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // update the owner of the collection and grant admin permissions to the current user
+  const updatedCollection = await ctx.prisma.answerCollection.update({
+    where: {
+      id: collectionId,
+    },
+    data: {
+      owner: {
+        connect: {
+          id: newOwner.id,
+        },
+      },
+      permissions: {
+        upsert: {
+          where: {
+            answerCollectionId_userId: {
+              answerCollectionId: collectionId,
+              userId: ctx.user.sub,
+            },
+          },
+          create: {
+            accessLevel: DB.AccessLevel.ADMIN,
+            permissionStatus: DB.PermissionStatus.GRANTED,
+            user: {
+              connect: {
+                id: ctx.user.sub,
+              },
+            },
+            objectOwner: {
+              connect: {
+                id: newOwner.id,
+              },
+            },
+          },
+          update: {
+            accessLevel: DB.AccessLevel.ADMIN,
+            permissionStatus: DB.PermissionStatus.GRANTED,
+          },
+        },
+      },
+    },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              shortname: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedCollection.permissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        accessLevel: permission.accessLevel,
+      }
+    : null
+}
+
 export async function shareAnswerCollection(
   {
     collectionId,

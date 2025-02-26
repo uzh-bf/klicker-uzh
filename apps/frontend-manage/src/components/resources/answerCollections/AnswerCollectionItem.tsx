@@ -16,6 +16,7 @@ import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
 import CollectionRemovalModal from './CollectionRemovalModal'
 import CollectionSharingModal from './CollectionSharingModal'
+import TransferCollectionOwnershipModal from './TransferCollectionOwnershipModal'
 
 function AnswerCollectionItem({
   collection,
@@ -38,6 +39,7 @@ function AnswerCollectionItem({
   const [viewingModal, setViewingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
+  const [transferModalOpen, setTransferModalOpen] = useState(false)
 
   const collectionAccessMap: Record<ObjectAccess, React.ReactNode> = {
     [ObjectAccess.Private]: (
@@ -159,11 +161,20 @@ function AnswerCollectionItem({
 
       {/* sharing functionalities modals to add / revoke / ... access */}
       {collection.isShareable && (
-        <CollectionSharingModal
-          collection={collection}
-          open={sharingModal}
-          onClose={() => setSharingModal(false)}
-        />
+        <>
+          <CollectionSharingModal
+            collection={collection}
+            open={sharingModal}
+            onClose={() => setSharingModal(false)}
+            onOwnershipTransfer={() => setTransferModalOpen(true)}
+          />
+          <TransferCollectionOwnershipModal
+            open={transferModalOpen}
+            onClose={() => setTransferModalOpen(false)}
+            collectionId={collection.id}
+            collectionName={collection.name}
+          />
+        </>
       )}
 
       {/* answer collection deletion functionality for owner and admins */}

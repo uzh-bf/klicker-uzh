@@ -1302,7 +1302,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizDescField:
         'Here you can enter an optional description of the live quiz. This will be displayed to the students at the beginning of the quiz.',
       liveQuizDescCourse: 'You can assign your live quiz to a course.',
-      liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
       liveQuizEnableGamification:
         'Select a gamified course to activate gamification.',
@@ -2174,6 +2173,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noUserGroupSelected: 'No user group selected',
       usernameEmailOrGroupRequired:
         'Please enter a username / email address or select a user group.',
+      transferOwnershipTitle: 'Transfer Collection Ownership',
+      importantInformation: 'Important Information',
+      transferOwnershipCollectionDescription:
+        'You are about to transfer all ownership rights of the answer collection <b>{collectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      confirmTransfer: 'Transfer Ownership',
+      ownershipTransferSuccess: 'Ownership successfully transferred',
+      ownershipTransferError:
+        'An error occurred while transferring ownership. Please make sure the email address or username is correct and try again.',
+      usernameOrEmailRequired: 'Please enter a username or email address.',
     },
     userGroups: {
       comingSoon:
