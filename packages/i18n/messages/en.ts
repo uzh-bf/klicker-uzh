@@ -2131,7 +2131,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This view allows you to share the answer collection "<b>{name}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       viewUseCollectionContent: 'View Content / Use Collection',
       modifyContent: 'Modify Content',
-      modifyCatalogAssignment: 'Modify Catalog Assignment',
+      modifyCatalogAssignments: 'Modify Catalog Assignments',
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
       transferOwnership: 'Transfer Ownership',

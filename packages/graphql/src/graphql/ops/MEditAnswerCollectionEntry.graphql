@@ -1,5 +1,13 @@
-mutation EditAnswerCollectionEntry($id: Int!, $value: String!) {
-  editAnswerCollectionEntry(id: $id, value: $value) {
+mutation EditAnswerCollectionEntry(
+  $id: Int!
+  $value: String!
+  $collectionId: Int!
+) {
+  editAnswerCollectionEntry(
+    id: $id
+    value: $value
+    collectionId: $collectionId
+  ) {
     id
     value
   }

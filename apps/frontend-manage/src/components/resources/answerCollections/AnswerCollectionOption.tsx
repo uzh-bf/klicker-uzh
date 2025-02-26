@@ -62,7 +62,7 @@ function AnswerCollectionOption({
         data={{ cy: `delete-answer-option-${entry.value}` }}
         onClick={async () => {
           await deleteAnswerCollectionEntry({
-            variables: { id: entry.id },
+            variables: { id: entry.id, collectionId },
             update: (cache, { data }) => {
               if (!data?.deleteAnswerCollectionEntry) return
 
@@ -129,7 +129,11 @@ function AnswerCollectionOption({
 
               if (entry.value !== values.value) {
                 await editAnswerCollectionEntry({
-                  variables: { id: entry.id, value: values.value },
+                  variables: {
+                    id: entry.id,
+                    value: values.value,
+                    collectionId,
+                  },
                   update: (cache, { data }) => {
                     if (!data?.editAnswerCollectionEntry) return
 

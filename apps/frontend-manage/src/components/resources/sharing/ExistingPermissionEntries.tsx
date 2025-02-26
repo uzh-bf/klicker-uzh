@@ -11,11 +11,13 @@ import useAccessLevelSelection from './useAccessLevelSelection'
 function ExistingPermissionEntries({
   type,
   permissions,
+  changeLoading,
   onAccessLevelChange,
   onPermissionRemoval,
 }: {
   type: CatalogObjectType
   permissions: PermissionInfo[]
+  changeLoading: boolean
   onAccessLevelChange: ({
     permissionId,
     newAccessLevel,

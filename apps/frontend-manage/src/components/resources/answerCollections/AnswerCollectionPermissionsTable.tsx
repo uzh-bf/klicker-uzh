@@ -26,7 +26,7 @@ function AnswerCollectionPermissionsTable({
           permissions: [false, false, true, true],
         },
         {
-          action: t('manage.resources.modifyCatalogAssignment'),
+          action: t('manage.resources.modifyCatalogAssignments'),
           permissions: [false, false, true, true],
         },
         {

@@ -303,20 +303,19 @@ export async function getAnswerCollectionPermissions(
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
-      // TODO: only allow access to owners or users with granted admin access
       OR: [
         {
           ownerId: ctx.user.sub,
         },
-        // {
-        //   permissions: {
-        //     some: {
-        //       userId: ctx.user.sub,
-        //       permissionStatus: DB.PermissionStatus.GRANTED,
-        //       accessLevel: DB.AccessLevel.ADMIN,
-        //     },
-        //   },
-        // },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              accessLevel: DB.AccessLevel.ADMIN,
+            },
+          },
+        },
       ],
     },
     include: {
@@ -374,29 +373,16 @@ export async function shareAnswerCollection(
   },
   ctx: ContextWithUser
 ) {
-  // fetch collection and verify that the user has permissions to share it
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        // TODO: update with admin permissions here as soon as they are implemented
-        // {
-        //   permissions: {
-        //     some: {
-        //       userId: ctx.user.sub,
-        //       permissionStatus: DB.PermissionStatus.GRANTED,
-        //       accessLevel: DB.AccessLevel.ADMIN,
-        //     },
-        //   },
-        // },
-      ],
+  // verify that user has either owner or admin access
+  const valid = await validateCollectionPermissions(
+    {
+      collectionId,
+      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
     },
-  })
+    ctx
+  )
 
-  if (!collection) {
+  if (!valid) {
     return null
   }
 
@@ -478,6 +464,72 @@ export async function shareAnswerCollection(
     // TODO: implement sharing with user groups
   } else {
     return null
+  }
+}
+
+export async function changeCollectionAccessLevel(
+  {
+    collectionId,
+    permissionId,
+    accessLevel,
+  }: {
+    collectionId: number
+    permissionId: number
+    accessLevel: DB.AccessLevel
+  },
+  ctx: ContextWithUser
+) {
+  // verify that user has either owner or admin access
+  const valid = await validateCollectionPermissions(
+    {
+      collectionId,
+      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
+  // update the access level of the permission
+  const permission = await ctx.prisma.permission.update({
+    where: {
+      id: permissionId,
+    },
+    data: {
+      accessLevel,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          shortname: true,
+          email: true,
+        },
+      },
+    },
+  })
+
+  // if the permission did not exist in the first place, return null
+  if (!permission) {
+    return null
+  }
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permission.id,
+  })
+
+  return {
+    permissionId: permission.id,
+    userId: permission.user?.id,
+    username: permission.user?.shortname,
+    userEmail: permission.user?.email,
+    userGroupId: undefined,
+    userGroupName: undefined,
+    accessLevel: permission.accessLevel,
   }
 }
 
@@ -884,16 +936,70 @@ async function incrementCollectionVersion(
   return collection
 }
 
+async function validateCollectionPermissions(
+  {
+    collectionId,
+    acceptedAccessLevels,
+  }: {
+    collectionId: number
+    acceptedAccessLevels: DB.AccessLevel[]
+  },
+  ctx: ContextWithUser
+) {
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              accessLevel: {
+                in: acceptedAccessLevels,
+              },
+            },
+          },
+        },
+      ],
+    },
+  })
+
+  if (!collection) {
+    return false
+  }
+
+  return true
+}
+
 export async function editAnswerCollectionEntry(
   {
     id,
     value,
+    collectionId,
   }: {
     id: number
     value: string
+    collectionId: number
   },
   ctx: ContextWithUser
 ) {
+  // verify that the user has at least writer permissions for the collection
+  const valid = await validateCollectionPermissions(
+    {
+      collectionId,
+      acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
   // update entry in the database
   const updatedEntry = await ctx.prisma.answerCollectionEntry.update({
     where: {
@@ -914,9 +1020,22 @@ export async function editAnswerCollectionEntry(
 }
 
 export async function deleteAnswerCollectionEntry(
-  { id }: { id: number },
+  { id, collectionId }: { id: number; collectionId: number },
   ctx: ContextWithUser
 ) {
+  // verify that the user has at least writer permissions for the collection
+  const valid = await validateCollectionPermissions(
+    {
+      collectionId,
+      acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
   // delete answer option from the database
   const updatedEntry = await ctx.prisma.answerCollectionEntry.delete({
     where: {
@@ -943,6 +1062,19 @@ export async function addAnswerCollectionOption(
   },
   ctx: ContextWithUser
 ) {
+  // verify that the user has at least writer permissions for the collection
+  const valid = await validateCollectionPermissions(
+    {
+      collectionId,
+      acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
   // add new answer option to the database
   const newEntry = await ctx.prisma.answerCollectionEntry.create({
     data: {

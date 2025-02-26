@@ -13,6 +13,7 @@ function GrantedPermissionsTable({
   type,
   permissions,
   permissionsLoading,
+  changeLoading,
   onAccessLevelChange,
   onPermissionRemoval,
   onNewPermissionSuccess,
@@ -22,6 +23,7 @@ function GrantedPermissionsTable({
   type: CatalogObjectType
   permissions: PermissionInfo[]
   permissionsLoading: boolean
+  changeLoading: boolean
   onAccessLevelChange: ({
     permissionId,
     newAccessLevel,
@@ -75,6 +77,7 @@ function GrantedPermissionsTable({
               <ExistingPermissionEntries
                 type={type}
                 permissions={permissions ?? []}
+                changeLoading={changeLoading}
                 onAccessLevelChange={onAccessLevelChange}
                 onPermissionRemoval={onPermissionRemoval}
               />

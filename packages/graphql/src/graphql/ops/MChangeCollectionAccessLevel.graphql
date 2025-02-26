@@ -1,0 +1,17 @@
+mutation ChangeCollectionAccessLevel(
+  $collectionId: Int!
+  $permissionId: Int!
+  $accessLevel: AccessLevel!
+) {
+  changeCollectionAccessLevel(
+    collectionId: $collectionId
+    permissionId: $permissionId
+    accessLevel: $accessLevel
+  ) {
+    permissionId
+    username
+    userEmail
+    userGroupName
+    accessLevel
+  }
+}

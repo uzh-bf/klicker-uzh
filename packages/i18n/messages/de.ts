@@ -2155,7 +2155,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         "Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung '<b>{name}</b>' mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.",
       viewUseCollectionContent: 'Inhalt einsehen / Sammlung verwenden',
       modifyContent: 'Inhalt bearbeiten',
-      modifyCatalogAssignment: 'Katalog-Zuweisung bearbeiten',
+      modifyCatalogAssignments: 'Katalog-Zuweisungen bearbeiten',
       modifyPermissions: 'Berechtigungen bearbeiten',
       revokeAccess: 'Zugriff entziehen',
       transferOwnership: 'Eigentumsrechte übertragen',
