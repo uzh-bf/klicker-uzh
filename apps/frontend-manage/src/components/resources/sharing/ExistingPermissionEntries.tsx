@@ -6,7 +6,7 @@ import {
   PermissionInfo,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select } from '@uzh-bf/design-system'
-import useAccessLevelSelection from './useAccessLevelSelection'
+import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
 
 function ExistingPermissionEntries({
   type,

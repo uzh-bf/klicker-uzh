@@ -12,7 +12,7 @@ import { Button, Modal, SelectField, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import AnswerCollectionPermissionsTable from '~/components/resources/answerCollections/AnswerCollectionPermissionsTable'
-import useAccessLevelSelection from '../../resources/sharing/useAccessLevelSelection'
+import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
 
 function SharingRequestApprovalModal({
   request,

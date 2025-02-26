@@ -10,7 +10,7 @@ import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import useAccessLevelSelection from './useAccessLevelSelection'
+import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
 
 function DirectSharingForm({
   type,
