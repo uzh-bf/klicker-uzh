@@ -3,6 +3,7 @@ import {
   AnswerCollection,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
+  GetCatalogSharingRequestsDocument,
   ShareAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
@@ -151,7 +152,10 @@ function CollectionSharingModal({
                     },
                   })
                 },
-                refetchQueries: [GetAnswerCollectionsInfoDocument],
+                refetchQueries: [
+                  GetAnswerCollectionsInfoDocument,
+                  GetCatalogSharingRequestsDocument,
+                ],
               })
 
               return (

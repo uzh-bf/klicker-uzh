@@ -52,5 +52,21 @@
     "content": "This is a new question to block deletion",
     "numberOfInputs": 2,
     "solutions": [0, 1, 4]
+  },
+  "direct": {
+    "name": "Direct Answer Collection",
+    "description": "This is a direct answer collection",
+    "items": [
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten"
+    ]
   }
 }

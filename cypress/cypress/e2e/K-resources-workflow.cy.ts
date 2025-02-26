@@ -27,7 +27,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
   }
 
-  // ! Creation and editing of answer collections
+  // ! 1. Creation and editing of answer collections
   // #region
   it('Create a public answer collection', function () {
     cy.loginLecturer()
@@ -311,7 +311,7 @@ describe('Create, edit and share answer collections', function () {
   })
   // #endregion
 
-  // ! Sharing functionalities (private collection)
+  // ! 2. Sharing functionalities (private collection)
   // #region
   it('Create a private answer collection', function () {
     cy.loginLecturer()
@@ -350,8 +350,6 @@ describe('Create, edit and share answer collections', function () {
       'not.exist'
     )
   })
-
-  // TODO (later): share private answer collection directly with another user
 
   it('Verify that the private answer collection can be used in a selection quesetion by the owner', function () {
     cy.loginLecturer()
@@ -421,7 +419,7 @@ describe('Create, edit and share answer collections', function () {
 
   // #endregion
 
-  // ! Sharing functionalities (restricted collection)
+  // ! 3. Sharing functionalities (restricted collection)
   // #region
   it('Create a restricted answer collection', function () {
     cy.loginLecturer()
@@ -437,7 +435,7 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
-  it('Verify that public answer collection is visible to owner in catalog, but cannot be requested / imported', function () {
+  it('Verify that restricted answer collection is visible to owner in catalog, but cannot be requested / imported by owner', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
@@ -621,6 +619,19 @@ describe('Create, edit and share answer collections', function () {
     ).click()
   })
 
+  it("Verify that the active permission for user 'pro1' is shown correctly", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessREAD)
+  })
+
   it('Verify that restricted answer collection is visible in resources for user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
@@ -786,7 +797,7 @@ describe('Create, edit and share answer collections', function () {
   })
   // #endregion
 
-  // ! Sharing functionalities (public collection)
+  // ! 4. Sharing functionalities (public collection)
   // #region
   it('Create a public answer collection', function () {
     cy.loginLecturer()
@@ -802,7 +813,7 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
-  it('Verify that public answer collection is visible to owner in catalog, but cannot be requested / imported', function () {
+  it('Verify that public answer collection is visible to owner in catalog, but cannot be requested / imported by owner', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
@@ -898,6 +909,19 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="deny-sharing-request-${this.data.public.name}-pro2"]`
     ).click()
+  })
+
+  it("Verify that the active permission for user 'pro1' is shown correctly", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessREAD)
   })
 
   it("Verify that the public answer collection is visible in resources for user 'pro1'", function () {
@@ -1092,7 +1116,7 @@ describe('Create, edit and share answer collections', function () {
 
   // #endregion
 
-  // ! Access rule modifications (automatic declining of requests / persistence of access / ...)
+  // ! 5. Modification of availability in catalog (automatic declining of requests / persistence of access / ...)
   // #region
   it('Create a private answer collection', function () {
     cy.loginLecturer()
@@ -1346,5 +1370,184 @@ describe('Create, edit and share answer collections', function () {
   it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
     validateDatabaseContent()
   })
+  // #endregion
+
+  // ! 6. Direct Sharing of answer collections
+  // #region
+
+  it('Create a restricted answer collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+
+    cy.createAnswerCollection({
+      name: this.data.direct.name,
+      accessCy: 'restricted',
+      access: messages.manage.resources.accessRESTRICTED,
+      description: this.data.direct.description,
+      entries: this.data.direct.items,
+    })
+  })
+
+  it("Give direct access to user 'pro1'", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.direct.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // directly add permission for user pro1
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_IND_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.resources.accessREAD
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+
+    // verify that permission has been created correctly
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessREAD)
+  })
+
+  it("Verify that the restricted answer collection is visible in resources for user 'pro1'", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.direct.name}"]`).should(
+      'exist'
+    )
+
+    // check that the answer options are visible
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.direct.name}"]`
+    ).click()
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.wrap(this.data.direct.items).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+
+  it("Request access to the restricted answer collection (for user 'pro2')", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.direct.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="request-access-${this.data.direct.name}"]`).click()
+    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+  })
+
+  it("Verify that the sharing request by user 'pro2' is visible in the catalog and give direct access to the answer collection", function () {
+    // verify visibility of sharing request
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="sharing-request-${this.data.direct.name}-pro2"]`).should(
+      'exist'
+    )
+
+    // give direct access to the answer collection
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.direct.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST_EMAIL')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.resources.accessREAD
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+
+    // verify that permission has been created correctly
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessREAD)
+  })
+
+  it("Verify that the access request by user 'pro2' has been resolved automatically", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="sharing-request-${this.data.direct.name}-pro2"]`).should(
+      'not.exist'
+    )
+  })
+
+  it("Verify that the restricted answer collection is visible in resources for user 'pro2'", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.direct.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.direct.name}"]`
+    ).click()
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.wrap(this.data.direct.items).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+
+  it("Verify that shared answer collection can be used in questions by user 'pro1'", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="library"]').click()
+    cy.get('[data-cy="create-question"]').click()
+    cy.get('[data-cy="select-question-type"]').click()
+    cy.get(
+      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
+    ).click()
+    cy.get('[data-cy="select-answer-collection"]').click()
+    cy.get(
+      `[data-cy="select-answer-collection-${this.data.direct.name}"]`
+    ).click()
+  })
+
+  it("Cleanup: Remove the shared answer collection from user 'pro1'", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.direct.name}"]`).should(
+      'exist'
+    )
+    removeAnswerCollection({ name: this.data.direct.name })
+    cy.get(`[data-cy="answer-collection-${this.data.direct.name}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it("Cleanup: Remove the shared answer collection from user 'pro2'", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.direct.name}"]`).should(
+      'exist'
+    )
+    removeAnswerCollection({ name: this.data.direct.name })
+    cy.get(`[data-cy="answer-collection-${this.data.direct.name}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Cleanup: Delete the restricted answer collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.direct.name })
+  })
+
+  it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
+    validateDatabaseContent()
+  })
+
   // #endregion
 })
