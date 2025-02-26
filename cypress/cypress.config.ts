@@ -17,6 +17,7 @@ export default defineConfig({
     LECTURER_INST_SHORTNAME: 'pro2',
     LECTURER_INST_EMAIL: 'pro2@df.uzh.ch',
     LECTURER_INST2_SHORTNAME: 'pro3',
+    LECTURER_INST2_EMAIL: 'pro3@df.uzh.ch',
     LECTURER_PASSWORD: 'abcd',
     STUDENT_USERNAME: 'testuser1',
     STUDENT_USERNAME2: 'testuser2',

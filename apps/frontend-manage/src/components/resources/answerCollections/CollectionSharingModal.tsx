@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   AnswerCollection,
+  CatalogObjectType,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogSharingRequestsDocument,
@@ -12,7 +13,7 @@ import { useState } from 'react'
 import CollectionSharingErrorToast from '../sharing/CollectionSharingErrorToast'
 import CollectionSharingSuccessToast from '../sharing/CollectionSharingSuccessToast'
 import GrantedPermissionsTable from '../sharing/GrantedPermissionsTable'
-import PermissionsTable from '../sharing/PermissionsTable'
+import AnswerCollectionPermissionsTable from './AnswerCollectionPermissionsTable'
 
 function CollectionSharingModal({
   collection,
@@ -59,46 +60,12 @@ function CollectionSharingModal({
           })}
         </div>
         <div className="my-4">
-          <PermissionsTable
-            actions={[
-              {
-                action: t('manage.resources.viewUseCollectionContent'),
-                permissions: [true, true, true, true],
-              },
-              {
-                action: t('manage.resources.modifyContent'),
-                permissions: [false, true, true, true],
-              },
-              {
-                action: t('manage.resources.shareCollection'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.modifyCatalogAssignment'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.modifyPermissions'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.revokeAccess'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.deleteCollection'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.transferOwnership'),
-                permissions: [false, false, false, true],
-              },
-            ]}
-          />
+          <AnswerCollectionPermissionsTable />
         </div>
 
         <div className="mt-8">
           <GrantedPermissionsTable
+            type={CatalogObjectType.AnswerCollection}
             permissions={permissions ?? []}
             permissionsLoading={permissionsLoading}
             onAccessLevelChange={async () => {}} // TODO: implement mutation

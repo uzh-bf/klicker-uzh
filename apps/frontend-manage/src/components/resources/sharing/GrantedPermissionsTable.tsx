@@ -1,4 +1,8 @@
-import { AccessLevel, PermissionInfo } from '@klicker-uzh/graphql/dist/ops'
+import {
+  AccessLevel,
+  CatalogObjectType,
+  PermissionInfo,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -6,6 +10,7 @@ import DirectSharingForm from '../sharing/DirectSharingForm'
 import ExistingPermissionEntries from '../sharing/ExistingPermissionEntries'
 
 function GrantedPermissionsTable({
+  type,
   permissions,
   permissionsLoading,
   onAccessLevelChange,
@@ -14,6 +19,7 @@ function GrantedPermissionsTable({
   onNewPermissionFailure,
   shareObjectCallback,
 }: {
+  type: CatalogObjectType
   permissions: PermissionInfo[]
   permissionsLoading: boolean
   onAccessLevelChange: ({
@@ -67,11 +73,13 @@ function GrantedPermissionsTable({
           ) : (
             <>
               <ExistingPermissionEntries
+                type={type}
                 permissions={permissions ?? []}
                 onAccessLevelChange={onAccessLevelChange}
                 onPermissionRemoval={onPermissionRemoval}
               />
               <DirectSharingForm
+                type={type}
                 onSuccess={onNewPermissionSuccess}
                 onFailure={onNewPermissionFailure}
                 shareObjectCallback={shareObjectCallback}

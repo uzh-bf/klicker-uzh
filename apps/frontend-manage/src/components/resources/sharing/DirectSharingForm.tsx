@@ -1,6 +1,6 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AccessLevel } from '@klicker-uzh/graphql/dist/ops'
+import { AccessLevel, CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
@@ -10,12 +10,15 @@ import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import useAccessLevelSelection from './useAccessLevelSelection'
 
 function DirectSharingForm({
+  type,
   onSuccess,
   onFailure,
   shareObjectCallback,
 }: {
+  type: CatalogObjectType
   onSuccess: () => void
   onFailure: () => void
   shareObjectCallback: ({
@@ -29,6 +32,7 @@ function DirectSharingForm({
   }) => Promise<boolean>
 }) {
   const t = useTranslations()
+  const accessLevelSelectItems = useAccessLevelSelection({ type })
 
   return (
     <Formik
@@ -117,15 +121,7 @@ function DirectSharingForm({
             <FormikSelectField
               name="accessLevel"
               id="accessLevel"
-              items={[
-                AccessLevel.Read,
-                AccessLevel.Write,
-                AccessLevel.Admin,
-              ].map((level) => ({
-                label: t(`manage.resources.access${level}`),
-                value: level,
-                data: { cy: `access-level-${level}` },
-              }))}
+              items={accessLevelSelectItems}
               disabled={isSubmitting}
               className={{
                 select: {

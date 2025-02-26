@@ -1420,7 +1420,7 @@ export async function resolveObjectSharingRequest(
     where: {
       id: permissionId,
       userId,
-      accessLevel: accessLevel ?? DB.AccessLevel.READ,
+      accessLevel: DB.AccessLevel.READ, // access requests are always assigned read access level
       permissionStatus: DB.PermissionStatus.REQUESTED,
       objectOwnerId: ctx.user.sub,
     },
@@ -1438,6 +1438,7 @@ export async function resolveObjectSharingRequest(
       },
       data: {
         permissionStatus: DB.PermissionStatus.GRANTED,
+        accessLevel,
       },
     })
   } else {

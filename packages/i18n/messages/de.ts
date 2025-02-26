@@ -2228,7 +2228,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
       approveSharingRequest: 'Zugriffsanfrage akzeptieren',
       specifyAccessLevel:
-        'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Schreiberechten, dass alle Änderungen anderer Nutzer an Ihrem Objekt direkt für alle Nutzer mit Zugriff auf dieses sichtbar sein werden. Die offizielle Dokumentation der Sharing-Funktionen enthält weiterführende Informationen.',
+        'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Bearbeitungsrechten, dass alle Änderungen anderer Nutzer direkt auf Ihrem Objekt in Kraft treten. Für weitere Informationen zu den Zugriffsleveln, beachten Sie bitte die untenstehende Tabelle.',
       accessLevel: 'Zugriffslevel',
       accessLevelREAD: 'Lesezugriff',
       accessLevelWRITE: 'Schreibzugriff',
