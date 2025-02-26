@@ -68,5 +68,25 @@
       "Nine",
       "Ten"
     ]
+  },
+  "access": {
+    "name": "Access Answer Collection",
+    "description": "This is an access answer collection",
+    "items": [
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+      "Twenty"
+    ],
+    "replacedName": "Access Answer Collection New",
+    "replacedEntry": "Eleven NEW",
+    "newEntry": "Twenty-One",
+    "newEntry2": "Twenty-Two"
   }
 }

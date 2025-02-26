@@ -53,6 +53,7 @@ function ExistingPermissionEntries({
           <Select
             value={permission.accessLevel}
             items={accessLevelSelectItems}
+            disabled={changeLoading}
             onChange={async (value) =>
               await onAccessLevelChange({
                 permissionId: permission.permissionId,

@@ -7,6 +7,8 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
+  // ! Helper functions
+  // #region
   function validateDatabaseContent() {
     cy.task('verifyDeletionAnswerCollections').then((result) => {
       // check if the verification was successful
@@ -26,6 +28,37 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="remove-answer-collection"]').click()
     cy.get('[data-cy="confirm-remove-answer-collection"]').click()
   }
+
+  function grantCollectionAccess({
+    collectionName,
+    accessLevel,
+    accessLevelCy,
+    username,
+  }: {
+    collectionName: string
+    accessLevel: string
+    accessLevelCy: string
+    username: string
+  }) {
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-actions-${collectionName}"]`).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // directly add permission for user pro2
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(username)
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get(`[data-cy="access-level-${accessLevelCy}"]`).click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(accessLevel)
+    cy.get('[data-cy="new-permission-submit"]').click()
+
+    // verify that permission has been created correctly
+    cy.get(`[data-cy="permission-${username}"]`)
+      .should('exist')
+      .contains(accessLevel)
+  }
+  // #endregion
 
   // ! 1. Creation and editing of answer collections
   // #region
@@ -1391,27 +1424,12 @@ describe('Create, edit and share answer collections', function () {
 
   it("Give direct access to user 'pro1'", function () {
     cy.loginLecturer()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.get(
-      `[data-cy="answer-collection-actions-${this.data.direct.name}"]`
-    ).click()
-    cy.get('[data-cy="share-answer-collection"]').click()
-
-    // directly add permission for user pro1
-    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
-    cy.get('[data-cy="new-permission-username-or-email"]').type(
-      Cypress.env('LECTURER_IND_SHORTNAME')
-    )
-    cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessREAD
-    )
-    cy.get('[data-cy="new-permission-submit"]').click()
-
-    // verify that permission has been created correctly
-    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
-      .should('exist')
-      .contains(messages.manage.resources.accessREAD)
+    grantCollectionAccess({
+      collectionName: this.data.direct.name,
+      username: Cypress.env('LECTURER_IND_SHORTNAME'),
+      accessLevel: messages.manage.resources.accessREAD,
+      accessLevelCy: 'READ',
+    })
   })
 
   it("Verify that the restricted answer collection is visible in resources for user 'pro1'", function () {
@@ -1549,5 +1567,485 @@ describe('Create, edit and share answer collections', function () {
     validateDatabaseContent()
   })
 
+  // #endregion
+
+  // ! 7. Access levels and associated permissions & functionalities
+  // #region
+
+  function testAnswerCollectionEditPermissions(data) {
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-actions-${data.access.name}"]`).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+
+    // change the name of the answer collection
+    cy.get('[data-cy="answer-collection-name"]').should(
+      'have.value',
+      data.access.name
+    )
+    cy.get('[data-cy="answer-collection-name"]')
+      .click()
+      .clear()
+      .type(data.access.replacedName)
+    cy.get('[data-cy="save-changes-answer-collection"]').click()
+
+    // modify the first answer option by appending a number to it
+    cy.get(`[data-cy="edit-answer-option-${data.access.items[0]}"]`).click()
+    cy.get(`[data-cy="edit-answer-option-input"]`).should(
+      'have.value',
+      data.access.items[0]
+    )
+    cy.get(`[data-cy="edit-answer-option-input"]`)
+      .click()
+      .clear()
+      .type(data.access.replacedEntry)
+    cy.get(`[data-cy="save-edit-answer-option"]`).click()
+
+    // add new answer option
+    cy.get('[data-cy="add-answer-option"]').click()
+    cy.get(`[data-cy="input-new-answer-option"]`).type(data.access.newEntry)
+    cy.get(`[data-cy="save-new-answer-option"]`).click()
+
+    // add second new answer option and delete it again
+    cy.get('[data-cy="add-answer-option"]').click()
+    cy.get('[data-cy="input-new-answer-option"]')
+      .click()
+      .type(data.access.newEntry2)
+    cy.get('[data-cy="save-new-answer-option"]').click()
+    cy.get(`[data-cy="delete-answer-option-${data.access.newEntry2}"]`).click()
+  }
+
+  function validateAndUndoWritePermissionChanges(data) {
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${data.access.replacedName}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').click()
+
+    // verify that the name of the collection has been modified and undo it
+    cy.get('[data-cy="answer-collection-name"]').should(
+      'have.value',
+      data.access.replacedName
+    )
+    cy.get('[data-cy="answer-collection-name"]')
+      .click()
+      .clear()
+      .type(data.access.name)
+    cy.get('[data-cy="save-changes-answer-collection"]').click()
+
+    // verify that the first answer option has been modified and undo it
+    cy.get(
+      `[data-cy="edit-answer-option-${data.access.replacedEntry}"]`
+    ).click()
+    cy.get(`[data-cy="edit-answer-option-input"]`).should(
+      'have.value',
+      data.access.replacedEntry
+    )
+    cy.get(`[data-cy="edit-answer-option-input"]`)
+      .click()
+      .clear()
+      .type(data.access.items[0])
+    cy.get(`[data-cy="save-edit-answer-option"]`).click()
+
+    // verify that the new answer option has been added and undo it
+    cy.get(`[data-cy="edit-answer-option-${data.access.newEntry}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="delete-answer-option-${data.access.newEntry}"]`).click()
+
+    // verify that the second new answer option has been removed
+    cy.get(`[data-cy="edit-answer-option-${data.access.newEntry2}"]`).should(
+      'not.exist'
+    )
+  }
+
+  it('Create a new private answer collection that can be shared between users with different access levels', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.createAnswerCollection({
+      name: this.data.access.name,
+      accessCy: 'private',
+      access: messages.manage.resources.accessPRIVATE,
+      description: this.data.access.description,
+      entries: this.data.access.items,
+    })
+  })
+
+  it("Grant READ permissions to user 'pro1'", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // directly add permission for user pro1
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_IND_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.resources.accessREAD
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+
+    // verify that permission has been created correctly
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessREAD)
+  })
+
+  it("Grant WRITE permissions to user 'pro2'", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // directly add permission for user pro2
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="access-level-WRITE"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.resources.accessWRITE
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+
+    // verify that permission has been created correctly
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessWRITE)
+  })
+
+  it("Grant ADMIN permissions to user 'pro3'", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // directly add permission for user pro3
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST2_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.resources.accessADMIN
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+
+    // verify that permission has been created correctly
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessADMIN)
+  })
+
+  it("Verify that user 'pro1' can view the answer collection", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.access.name}"]`).should(
+      'exist'
+    )
+
+    // validate content of viewing modal
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.wrap(this.data.access.items).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+
+  it("Verify that user 'pro1' can remove the answer collection (but do not trigger removal)", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.access.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="remove-answer-collection"]').should('exist')
+    cy.get('[data-cy="delete-answer-collection"]').should('not.exist')
+  })
+
+  it("Verify that user 'pro1' can use the created answer collection in a question", function () {
+    cy.loginIndividualCatalyst()
+    cy.createQuestionSE({
+      title: this.data.question.title,
+      content: this.data.question.content,
+      numberOfInputs: this.data.question.numberOfInputs,
+      collectionName: this.data.access.name,
+      correctAnswers: this.data.access.items.filter((_, i) =>
+        this.data.question.solutions.includes(i)
+      ),
+    })
+  })
+
+  it("Verify that user 'pro1' can no longer remove the used answer collection", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.access.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="remove-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
+  })
+
+  it("Use the write permissions of user 'pro2' to make changes to the answer collection", function () {
+    cy.loginInstitutionalCatalyst()
+    testAnswerCollectionEditPermissions(this.data)
+  })
+
+  it('Verify as an owner that the changes persist and undo them', function () {
+    cy.loginLecturer()
+    validateAndUndoWritePermissionChanges(this.data)
+  })
+
+  it("Verify that user 'pro2' can remove the answer collection (but do not trigger removal)", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.access.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="remove-answer-collection"]').should('exist')
+    cy.get('[data-cy="delete-answer-collection"]').should('not.exist')
+  })
+
+  it("Verify that user 'pro2' can use the answer collection in a question", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.createQuestionSE({
+      title: this.data.question.title,
+      content: this.data.question.content,
+      numberOfInputs: this.data.question.numberOfInputs,
+      collectionName: this.data.access.name,
+      correctAnswers: this.data.access.items.filter((_, i) =>
+        this.data.question.solutions.includes(i)
+      ),
+    })
+  })
+
+  it("Verify that user 'pro2' can no longer remove the used answer collection", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.access.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="remove-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
+  })
+
+  it("Use the write permissions of user 'pro3' to make changes to the answer collection", function () {
+    cy.loginInstitutionalCatalyst2()
+    testAnswerCollectionEditPermissions(this.data)
+  })
+
+  it('Verify as an owner that the changes persist and undo them', function () {
+    cy.loginLecturer()
+    validateAndUndoWritePermissionChanges(this.data)
+  })
+
+  it("Verify that user 'pro3' can both remove and delete the answer collection (but do not trigger either", function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.access.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="remove-answer-collection"]').should('exist')
+    cy.get('[data-cy="delete-answer-collection"]').should('exist')
+  })
+
+  it("Verify that user 'pro3' can use the answer collection in a question", function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.createQuestionSE({
+      title: this.data.question.title,
+      content: this.data.question.content,
+      numberOfInputs: this.data.question.numberOfInputs,
+      collectionName: this.data.access.name,
+      correctAnswers: this.data.access.items.filter((_, i) =>
+        this.data.question.solutions.includes(i)
+      ),
+    })
+  })
+
+  it("Verify that user 'pro3' can no longer remove or delete the used answer collection", function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.access.name}"]`).should(
+      'exist'
+    )
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="remove-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
+    cy.get('[data-cy="delete-answer-collection"]').should(
+      'have.attr',
+      'data-disabled'
+    )
+  })
+
+  it("Verify that user 'pro3' can open the sharing dialogue and has access to all permissions with the correct values", function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // verify that all permissions are visible
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessREAD)
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessWRITE)
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+  })
+
+  it("Verify that user 'pro3' can modify the permissions of user 'pro1' to WRITE", function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // change the permissions of user pro1 to WRITE
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessREAD)
+    cy.get(
+      `[data-cy="access-level-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).click()
+    cy.get('[data-cy="access-level-WRITE"]').click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessWRITE)
+  })
+
+  it("Verify that user 'pro1' has been granted write permissions and test edit permissions", function () {
+    cy.loginIndividualCatalyst()
+    testAnswerCollectionEditPermissions(this.data)
+  })
+
+  it('Verify as an owner that the changes persist, undo them and change the permissions back to read level', function () {
+    cy.loginLecturer()
+    validateAndUndoWritePermissionChanges(this.data)
+    cy.get('[data-cy="close-answer-collection-edit-modal"]').click()
+
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessWRITE)
+    cy.get(
+      `[data-cy="access-level-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).click()
+    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessREAD)
+  })
+
+  it("Verify that user 'pro1' has read permissions again and can view the answer collection", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.access.name}"]`).should(
+      'exist'
+    )
+
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="edit-answer-collection"]').should('not.exist')
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.wrap(this.data.access.items).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+
+  it("Cleanup: Remove the created question and answer collection for user 'pro1'", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="library"]').click()
+    cy.deleteElement({ elementName: this.data.question.title })
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    removeAnswerCollection({ name: this.data.access.name })
+  })
+
+  it("Cleanup: Remove the created question and answer collection for user 'pro2'", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="library"]').click()
+    cy.deleteElement({ elementName: this.data.question.title })
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    removeAnswerCollection({ name: this.data.access.name })
+  })
+
+  it("Cleanup: Remove the created question and answer collection for user 'pro3'", function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="library"]').click()
+    cy.deleteElement({ elementName: this.data.question.title })
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    removeAnswerCollection({ name: this.data.access.name })
+  })
+
+  it('Cleanup: Delete the answer collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.access.name })
+  })
+
+  it('Cleanup: Verify that all answer collections have been deleted properly', function () {
+    validateDatabaseContent()
+  })
   // #endregion
 })

@@ -658,6 +658,22 @@ export async function modifyAnswerCollection(
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              accessLevel: {
+                in: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+              },
+            },
+          },
+        },
+      ],
     },
     include: {
       _count: {
@@ -686,7 +702,6 @@ export async function modifyAnswerCollection(
     const updateResult = await tx.answerCollection.update({
       where: {
         id,
-        ownerId: ctx.user.sub,
       },
       data: {
         name: name ?? undefined,
