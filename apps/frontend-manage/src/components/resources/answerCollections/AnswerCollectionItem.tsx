@@ -167,6 +167,7 @@ function AnswerCollectionItem({
             open={sharingModal}
             onClose={() => setSharingModal(false)}
             onOwnershipTransfer={() => setTransferModalOpen(true)}
+            isOwner={collection.isOwner ?? false}
           />
           <TransferCollectionOwnershipModal
             open={transferModalOpen}

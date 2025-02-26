@@ -16,6 +16,7 @@ function GrantedPermissionsTable({
   permissions,
   permissionsLoading,
   changeLoading,
+  isOwner,
   onAccessLevelChange,
   onPermissionRemoval,
   onNewPermissionSuccess,
@@ -27,6 +28,7 @@ function GrantedPermissionsTable({
   permissions: PermissionInfo[]
   permissionsLoading: boolean
   changeLoading: boolean
+  isOwner: boolean
   onAccessLevelChange: ({
     permissionId,
     newAccessLevel,
@@ -54,17 +56,19 @@ function GrantedPermissionsTable({
     <>
       <div className="flex flex-row justify-between">
         <H3>{t('manage.resources.grantedPermissions')}</H3>
-        <Button
-          basic
-          onClick={() => onOwnershipTransfer()}
-          className={{
-            root: 'h-7 rounded border px-2 py-0.5 hover:bg-gray-100',
-          }}
-          data={{ cy: 'transfer-ownership' }}
-        >
-          <FontAwesomeIcon icon={faPeopleArrows} />
-          <span>{t('manage.resources.transferOwnership')}</span>
-        </Button>
+        {isOwner && (
+          <Button
+            basic
+            onClick={() => onOwnershipTransfer()}
+            className={{
+              root: 'h-7 rounded border px-2 py-0.5 hover:bg-gray-100',
+            }}
+            data={{ cy: 'transfer-ownership' }}
+          >
+            <FontAwesomeIcon icon={faPeopleArrows} />
+            <span>{t('manage.resources.transferOwnership')}</span>
+          </Button>
+        )}
       </div>
       <table className="mt-1 w-full border-collapse overflow-hidden rounded-lg border-b shadow-sm">
         <thead>

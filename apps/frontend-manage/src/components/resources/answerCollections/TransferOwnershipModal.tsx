@@ -26,6 +26,7 @@ function TransferOwnershipModal({
   return (
     <>
       <Modal
+        escapeDisabled
         title={t('manage.resources.transferOwnership')}
         open={open}
         onClose={onClose}

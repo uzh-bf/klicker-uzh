@@ -21,11 +21,13 @@ function CollectionSharingModal({
   open,
   onClose,
   onOwnershipTransfer,
+  isOwner,
 }: {
   collection: AnswerCollection
   open: boolean
   onClose: () => void
   onOwnershipTransfer: () => void
+  isOwner: boolean
 }) {
   const t = useTranslations()
   const [sharingSuccess, setSharingSuccess] = useState(false)
@@ -77,6 +79,7 @@ function CollectionSharingModal({
             permissions={permissions ?? []}
             permissionsLoading={permissionsLoading}
             changeLoading={changeLoading}
+            isOwner={isOwner}
             onAccessLevelChange={async ({ permissionId, newAccessLevel }) => {
               await changeCollectionAccessLevel({
                 variables: {
