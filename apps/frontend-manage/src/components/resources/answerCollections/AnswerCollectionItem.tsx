@@ -64,7 +64,7 @@ function AnswerCollectionItem({
     isOwner: collection.isOwner ?? false,
     isShareable: collection.isShareable ?? false,
     isEditable: collection.isEditable ?? false,
-    isRemovable: !collection.isOwner,
+    isRemovable: collection.isRemovable ?? false,
     isDeletionAllowed: collection.isDeletionAllowed ?? false,
     setSharingModal,
     setEditModal,

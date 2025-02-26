@@ -2230,8 +2230,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       specifyAccessLevel:
         'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Bearbeitungsrechten, dass alle Änderungen anderer Nutzer direkt auf Ihrem Objekt in Kraft treten. Für weitere Informationen zu den Zugriffsleveln, beachten Sie bitte die untenstehende Tabelle.',
       accessLevel: 'Zugriffslevel',
-      accessLevelREAD: 'Lesezugriff',
-      accessLevelWRITE: 'Schreibzugriff',
       approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich akzeptiert.',
       approvalFailed:
         'Beim Akzeptieren der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',

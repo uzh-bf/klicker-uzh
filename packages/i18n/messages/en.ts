@@ -2205,8 +2205,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       specifyAccessLevel:
         'Please select an access level for sharing the object {objectName} (type: {objectType}) with the user {userShortname}. Please note that when granting editing rights, any changes by other users directly take effect on the shared object. For more information on the permission levels, please refer to the table below.',
       accessLevel: 'Access Level',
-      accessLevelREAD: 'Read Access',
-      accessLevelWRITE: 'Write Access',
       approvalSuccessful: 'The sharing request was successfully approved.',
       approvalFailed:
         'An error occurred while approving the sharing request. Please try again or contact the support.',

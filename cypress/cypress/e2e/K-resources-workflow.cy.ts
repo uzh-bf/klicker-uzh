@@ -603,7 +603,7 @@ describe('Create, edit and share answer collections', function () {
 
     // approval modal
     cy.get('[data-cy="access-level-select"]').contains(
-      messages.manage.catalog.accessLevelREAD
+      messages.manage.resources.accessREAD
     )
     cy.get('[data-cy="access-level-select"]').click()
     cy.get('[data-cy="access-level-READ"]').click()
@@ -895,7 +895,7 @@ describe('Create, edit and share answer collections', function () {
 
     // approval modal
     cy.get('[data-cy="access-level-select"]').contains(
-      messages.manage.catalog.accessLevelREAD
+      messages.manage.resources.accessREAD
     )
     cy.get('[data-cy="access-level-select"]').click()
     cy.get('[data-cy="access-level-READ"]').click()
@@ -1290,7 +1290,7 @@ describe('Create, edit and share answer collections', function () {
 
     // approval modal
     cy.get('[data-cy="access-level-select"]').contains(
-      messages.manage.catalog.accessLevelREAD
+      messages.manage.resources.accessREAD
     )
     cy.get('[data-cy="access-level-select"]').click()
     cy.get('[data-cy="access-level-READ"]').click()
