@@ -24,22 +24,12 @@ import CollectionSharingModal from './CollectionSharingModal'
 
 function AnswerCollectionItem({
   collection,
-  isOwner = false,
-  isEditable = false,
-  isImported = false,
-  isShareable = false,
-  accessGranted = false,
   setDeletionSuccess,
   setDeletionFailure,
   setRemovalSuccess,
   setRemovalFailure,
 }: {
   collection: AnswerCollection
-  isOwner?: boolean
-  isEditable?: boolean
-  isImported?: boolean
-  isShareable?: boolean
-  accessGranted?: boolean
   setDeletionSuccess: Dispatch<SetStateAction<boolean>>
   setDeletionFailure: Dispatch<SetStateAction<boolean>>
   setRemovalSuccess: Dispatch<SetStateAction<boolean>>
@@ -75,6 +65,7 @@ function AnswerCollectionItem({
     ),
   }
 
+  // TODO: extract this logic to a custom hook if possible
   const dropdownItems = useMemo(() => {
     const items = []
     const DeletionTooltip = () => (
@@ -89,7 +80,12 @@ function AnswerCollectionItem({
       </Tooltip>
     )
 
-    if (isShareable) {
+    if (collection.isOwner) {
+      // TODO: add functionality to transfer ownership and corresponding modal
+    }
+
+    // sharing functionalities
+    if (collection.isShareable) {
       items.push({
         id: 'share',
         label: (
@@ -106,7 +102,8 @@ function AnswerCollectionItem({
       })
     }
 
-    if (isEditable) {
+    if (collection.isEditable) {
+      // editing permissions on the answer collection
       items.push({
         id: 'edit',
         label: (
@@ -118,29 +115,8 @@ function AnswerCollectionItem({
         onClick: () => setEditModal(true),
         data: { cy: 'edit-answer-collection' },
       })
-
-      items.push({
-        id: 'delete',
-        label: (
-          <div
-            className={twMerge(
-              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
-              !collection.isRemovable &&
-                'text-opactiy-50 hover:cursor-not-allowed'
-            )}
-          >
-            <FontAwesomeIcon icon={faTrashCan} className="mr-2.5 h-4 w-4" />
-            {t('manage.resources.deleteCollection')}
-            {!collection.isRemovable && <DeletionTooltip />}
-          </div>
-        ),
-        onClick: () => setDeletionModal(true),
-        disabled: !collection.isRemovable,
-        data: { cy: 'delete-answer-collection' },
-      })
-    }
-
-    if (accessGranted) {
+    } else {
+      // viewing permissions on the answer collection only
       items.push({
         id: 'view',
         label: (
@@ -152,7 +128,10 @@ function AnswerCollectionItem({
         onClick: () => setViewingModal(true),
         data: { cy: 'view-answer-collection' },
       })
+    }
 
+    if (!collection.isOwner) {
+      // removal functionalities
       items.push({
         id: 'remove',
         label: (
@@ -174,8 +153,31 @@ function AnswerCollectionItem({
       })
     }
 
+    if (collection.isDeletionAllowed) {
+      // deletion functionalities
+      items.push({
+        id: 'delete',
+        label: (
+          <div
+            className={twMerge(
+              'flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100',
+              !collection.isRemovable &&
+                'text-opactiy-50 hover:cursor-not-allowed'
+            )}
+          >
+            <FontAwesomeIcon icon={faTrashCan} className="mr-2.5 h-4 w-4" />
+            {t('manage.resources.deleteCollection')}
+            {!collection.isRemovable && <DeletionTooltip />}
+          </div>
+        ),
+        onClick: () => setDeletionModal(true),
+        disabled: !collection.isRemovable,
+        data: { cy: 'delete-answer-collection' },
+      })
+    }
+
     return items
-  }, [isEditable, isShareable, accessGranted, collection.isRemovable, t])
+  }, [t, collection]) // TODO: update dependencies to minimum required
 
   return (
     <>
@@ -185,19 +187,19 @@ function AnswerCollectionItem({
       >
         <div className="flex flex-col items-start">
           <div className="flex items-center gap-2">
-            {!(isOwner && !isImported) && (
+            {!(collection.isOwner && !collection.isImported) && (
               <FontAwesomeIcon
-                icon={isImported ? faDownload : faLink}
+                icon={collection.isImported ? faDownload : faLink}
                 className="text-gray-500"
                 fixedWidth
               />
             )}
             <span className="font-medium">{collection.name}</span>
-            {isEditable && collectionAccessMap[collection.access]}
+            {collection.isEditable && collectionAccessMap[collection.access]}
           </div>
 
           <div className="text-sm text-gray-500">
-            {!isEditable && (
+            {!collection.isOwner && (
               <span className="mr-3">
                 {t('manage.resources.byOwner', {
                   owner:
@@ -217,7 +219,7 @@ function AnswerCollectionItem({
         </div>
 
         <div className="flex items-center gap-4">
-          {isEditable && (collection.numSharedUsers ?? 0) > 0 && (
+          {collection.isShareable && (collection.numSharedUsers ?? 0) > 0 && (
             <div className="flex items-center text-sm text-gray-600">
               <span className="mr-1">{collection.numSharedUsers}</span>
               <FontAwesomeIcon icon={faUserGroup} />
@@ -243,47 +245,50 @@ function AnswerCollectionItem({
         </div>
       </div>
 
-      {isEditable && (
-        <>
-          <AnswerCollectionEditModal
-            collectionId={collection.id}
-            open={editModal}
-            onClose={() => setEditModal(false)}
-            onDelete={() => setDeletionModal(true)}
-          />
-          <CollectionDeletionModal
-            collection={collection}
-            deletionModal={deletionModal}
-            setDeletionModal={setDeletionModal}
-            setDeletionSuccess={setDeletionSuccess}
-            setDeletionFailure={setDeletionFailure}
-          />
-        </>
+      {/* editing and viewing modal components */}
+      {collection.isEditable && (
+        <AnswerCollectionEditModal
+          collectionId={collection.id}
+          open={editModal}
+          onClose={() => setEditModal(false)}
+          onDelete={() => setDeletionModal(true)}
+        />
+      )}
+      {!collection.isEditable && (
+        <AnswerCollectionViewingModal
+          collectionId={collection.id}
+          open={viewingModal}
+          onClose={() => setViewingModal(false)}
+          onRemove={() => setRemovalModal(true)}
+        />
       )}
 
-      {accessGranted && (
-        <>
-          <AnswerCollectionViewingModal
-            collectionId={collection.id}
-            open={viewingModal}
-            onClose={() => setViewingModal(false)}
-            onRemove={() => setRemovalModal(true)}
-          />
-          <CollectionRemovalModal
-            collection={collection}
-            removalModal={removalModal}
-            setRemovalModal={setRemovalModal}
-            setRemovalSuccess={setRemovalSuccess}
-            setRemovalFailure={setRemovalFailure}
-          />
-        </>
-      )}
-
-      {isShareable && (
+      {/* sharing functionalities modals to add / revoke / ... access */}
+      {collection.isShareable && (
         <CollectionSharingModal
           collection={collection}
           open={sharingModal}
           onClose={() => setSharingModal(false)}
+        />
+      )}
+
+      {/* answer collection deletion functionality for owner and admins */}
+      {collection.isDeletionAllowed && (
+        <CollectionDeletionModal
+          collection={collection}
+          deletionModal={deletionModal}
+          setDeletionModal={setDeletionModal}
+          setDeletionSuccess={setDeletionSuccess}
+          setDeletionFailure={setDeletionFailure}
+        />
+      )}
+      {!collection.isOwner && (
+        <CollectionRemovalModal
+          collection={collection}
+          removalModal={removalModal}
+          setRemovalModal={setRemovalModal}
+          setRemovalSuccess={setRemovalSuccess}
+          setRemovalFailure={setRemovalFailure}
         />
       )}
     </>

@@ -87,9 +87,11 @@ export async function createAnswerCollection(
     numSharedUsers: newCollection._count?.permissions,
     numOfEntries: newCollection._count.entries,
     isOwner: true,
+    isImported: false,
     isEditable: true,
-    isImported: newCollection.originalId !== null,
-    isAccessGranted: false,
+    isShareable: true,
+    isRemovable: true,
+    isDeletionAllowed: true,
   }
 }
 
@@ -278,16 +280,18 @@ export async function getSingleAnswerCollection(
       isEditable: true,
     }
   } else {
+    const accessLevel = collection.permissions[0]?.accessLevel
     return {
       ...collection,
       accessType: AccessType.SHARED,
       sharingStatus: DB.PermissionStatus.GRANTED, // need to be granted for query above to succeed
-      sharingLevel:
-        collection.permissions[0]?.accessLevel ?? DB.AccessLevel.READ,
+      sharingLevel: accessLevel ?? DB.AccessLevel.READ,
       ownerShortname: collection.owner?.shortname,
       catalogCollectionId,
       isOwner: false,
-      isEditable: false,
+      isEditable:
+        accessLevel === DB.AccessLevel.WRITE ||
+        accessLevel === DB.AccessLevel.ADMIN,
     }
   }
 }
@@ -547,11 +551,11 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     numSharedUsers: collection._count?.permissions,
     numOfEntries: collection._count.entries,
     isOwner: true,
-    isEditable: true,
-    isRemovable: collection._count?.linkedElements === 0,
     isImported: collection.originalId !== null,
-    isShareable: true, // owned answer collections can always be shared
-    isAccessGranted: false,
+    isEditable: true, // owner always has editing permissions
+    isShareable: true, // owner always has sharing permissions
+    isRemovable: collection._count.linkedElements === 0, // can be removed from own account if not linked to any elements
+    isDeletionAllowed: true, // owner always has deletion objects
   }))
 
   const sharedCollections = user.sharedObjects.flatMap((object) => {
@@ -569,11 +573,13 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
       sharingLevel: object.accessLevel,
       ownerShortname: collection.owner?.shortname,
       isOwner: false,
-      isEditable: false,
-      isRemovable: collection._count.linkedElements === 0,
-      isImported: false,
+      isImported: false, // shared objects cannot be imported
+      isEditable:
+        object.accessLevel === DB.AccessLevel.WRITE ||
+        object.accessLevel === DB.AccessLevel.ADMIN, // only users with write or admin access can edit shared answer collections
       isShareable: object.accessLevel === DB.AccessLevel.ADMIN, // only users with admin access can share a shared answer collection
-      isAccessGranted: true, // requested ansewr collections are not returned by this query
+      isRemovable: collection._count.linkedElements === 0, // can be removed from own account if not linked to any elements
+      isDeletionAllowed: object.accessLevel === DB.AccessLevel.ADMIN, // only users with admin access can delete answer collections
     }
   })
 

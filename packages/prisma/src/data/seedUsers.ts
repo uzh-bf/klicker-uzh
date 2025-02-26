@@ -67,6 +67,8 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
       shortname: 'pro3',
       password: 'abcd',
       catalystInstitutional: true,
+      publicPreview: true,
+      privatePreview: true,
     })
   )
 }

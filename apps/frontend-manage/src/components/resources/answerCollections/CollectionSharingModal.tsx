@@ -50,7 +50,7 @@ function CollectionSharingModal({
         onClose={onClose}
         dataCloseButton={{ cy: 'close-remove-answer-collection' }}
         className={{
-          content: 'max-w-5xl',
+          content: 'h-max max-w-5xl',
         }}
       >
         <div>

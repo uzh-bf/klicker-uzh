@@ -983,7 +983,7 @@
             "deprecationReason": null
           },
           {
-            "name": "isAccessGranted",
+            "name": "isDeletionAllowed",
             "description": null,
             "args": [],
             "type": {

@@ -38,11 +38,6 @@ function AnswerCollectionList({
           {collections?.map((collection, index) => (
             <div key={`answer-collection-${collection.id}`}>
               <AnswerCollectionItem
-                isOwner={collection.isOwner ?? false}
-                isEditable={collection.isEditable ?? false}
-                isImported={collection.isImported ?? false}
-                isShareable={collection.isShareable ?? false}
-                accessGranted={collection.isAccessGranted ?? false}
                 collection={collection}
                 setDeletionSuccess={setDeletionSuccess}
                 setDeletionFailure={setDeletionFailure}

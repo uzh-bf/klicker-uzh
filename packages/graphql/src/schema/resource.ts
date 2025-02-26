@@ -51,12 +51,12 @@ interface IAnswerCollection extends DB.AnswerCollection {
   sharingLevel?: DB.AccessLevel
   ownerShortname?: string
   numSharedUsers?: number
-  isOwner?: boolean
-  isEditable?: boolean
-  isImported?: boolean
-  isAccessGranted?: boolean
-  isRemovable?: boolean
-  isShareable?: boolean
+  isOwner?: boolean // flag to signal ownership
+  isImported?: boolean // imported flag for UI icon
+  isEditable?: boolean // flag for contend editing permissions
+  isShareable?: boolean // flag for sharing permissions (incl. catalog assignment, access removal, etc.)
+  isRemovable?: boolean // flag if the collection can be removed from the own account
+  isDeletionAllowed?: boolean // flag if the user has permissions to delete the collection
 }
 
 export const AnswerCollectionRef =
@@ -88,11 +88,11 @@ export const AnswerCollection = AnswerCollectionRef.implement({
       nullable: true,
     }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
-    isEditable: t.exposeBoolean('isEditable', { nullable: true }),
     isImported: t.exposeBoolean('isImported', { nullable: true }),
-    isAccessGranted: t.exposeBoolean('isAccessGranted', { nullable: true }),
-    isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+    isEditable: t.exposeBoolean('isEditable', { nullable: true }),
     isShareable: t.exposeBoolean('isShareable', { nullable: true }),
+    isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
+    isDeletionAllowed: t.exposeBoolean('isDeletionAllowed', { nullable: true }),
   }),
 })
 

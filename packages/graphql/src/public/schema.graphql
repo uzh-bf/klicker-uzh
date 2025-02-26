@@ -101,7 +101,7 @@ type AnswerCollection {
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
-  isAccessGranted: Boolean
+  isDeletionAllowed: Boolean
   isEditable: Boolean
   isImported: Boolean
   isOwner: Boolean
