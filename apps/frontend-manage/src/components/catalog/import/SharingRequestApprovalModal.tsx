@@ -11,6 +11,8 @@ import {
 import { Button, Modal, SelectField, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import AnswerCollectionPermissionsTable from '~/components/resources/answerCollections/AnswerCollectionPermissionsTable'
+import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
 
 function SharingRequestApprovalModal({
   request,
@@ -26,6 +28,10 @@ function SharingRequestApprovalModal({
   const t = useTranslations()
   const [accessLevel, setAccessLevel] = useState(AccessLevel.Read)
   const [errorToast, setErrorToast] = useState(false)
+
+  const accessLevelSelectItems = useAccessLevelSelection({
+    type: request.objectType,
+  })
 
   const [approveObjectSharingRequest, { loading: approvaLoading }] =
     useMutation(ApproveObjectSharingRequestDocument)
@@ -50,20 +56,9 @@ function SharingRequestApprovalModal({
         required
         value={accessLevel}
         label={t('manage.catalog.accessLevel')}
-        items={[
-          {
-            label: t(`manage.catalog.accessLevel${AccessLevel.Read}`),
-            value: AccessLevel.Read,
-            data: { cy: 'access-level-read' },
-          },
-          // {
-          //   label: t(`manage.catalog.accessLevel${AccessLevel.Write}`),
-          //   value: AccessLevel.Write,
-          //   data: { cy: 'access-level-write' },
-          // },
-        ]}
+        items={accessLevelSelectItems}
         onChange={(newValue) => setAccessLevel(newValue as AccessLevel)}
-        className={{ label: 'text-base' }}
+        className={{ label: 'text-base', select: { trigger: 'h-9' } }}
         data={{ cy: 'access-level-select' }}
       />
       <div className="mt-2 flex flex-row justify-between">
@@ -149,6 +144,11 @@ function SharingRequestApprovalModal({
           <div>{t('shared.generic.approve')}</div>
         </Button>
       </div>
+
+      <div className="mt-10">
+        <AnswerCollectionPermissionsTable activeAccessLevel={accessLevel} />
+      </div>
+
       <Toast
         dismissible
         type="error"

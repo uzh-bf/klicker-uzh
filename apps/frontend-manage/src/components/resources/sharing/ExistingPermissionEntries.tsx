@@ -1,15 +1,23 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AccessLevel, PermissionInfo } from '@klicker-uzh/graphql/dist/ops'
+import {
+  AccessLevel,
+  CatalogObjectType,
+  PermissionInfo,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
 
 function ExistingPermissionEntries({
+  type,
   permissions,
+  changeLoading,
   onAccessLevelChange,
   onPermissionRemoval,
 }: {
+  type: CatalogObjectType
   permissions: PermissionInfo[]
+  changeLoading: boolean
   onAccessLevelChange: ({
     permissionId,
     newAccessLevel,
@@ -19,7 +27,7 @@ function ExistingPermissionEntries({
   }) => Promise<void>
   onPermissionRemoval: (permissionId: number) => Promise<void>
 }) {
-  const t = useTranslations()
+  const accessLevelSelectItems = useAccessLevelSelection({ type })
 
   return permissions
     ?.filter((permission) => permission.username || permission.userGroupName)
@@ -44,13 +52,7 @@ function ExistingPermissionEntries({
         <td className="px-4 py-1.5 text-gray-900">
           <Select
             value={permission.accessLevel}
-            items={[AccessLevel.Read, AccessLevel.Write, AccessLevel.Admin].map(
-              (level) => ({
-                label: t(`manage.resources.access${level}`),
-                value: level,
-                data: { cy: `access-level-${level}` },
-              })
-            )}
+            items={accessLevelSelectItems}
             onChange={async (value) =>
               await onAccessLevelChange({
                 permissionId: permission.permissionId,

@@ -3,14 +3,30 @@ import {
   faCircleXmark,
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { AccessLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 function PermissionsTable({
+  activeAccessLevel,
   actions,
 }: {
+  activeAccessLevel?: AccessLevel
   actions: { action: string; permissions: boolean[] }[]
 }) {
   const t = useTranslations()
+
+  // map access levels to indices
+  const accessLevelToColumnIndex = {
+    [AccessLevel.Read]: 1, // Read is the second column (index 1)
+    [AccessLevel.Write]: 2, // Write is the third column (index 2)
+    [AccessLevel.Admin]: 3, // Admin is the fourth column (index 3)
+    [AccessLevel.Execute]: -1, // Execution rights are not present in this table
+  }
+
+  // get the active column index based on the corresponding access level
+  const activeColumnIndex = activeAccessLevel
+    ? accessLevelToColumnIndex[activeAccessLevel]
+    : -1
 
   return (
     <table className="w-full border-collapse overflow-hidden rounded-lg border-b shadow-sm">
@@ -22,10 +38,12 @@ function PermissionsTable({
             t('shared.generic.write'),
             t('shared.generic.admin'),
             t('shared.generic.owner'),
-          ].map((title) => (
+          ].map((title, index) => (
             <th
               key={title}
-              className="px-4 py-3 text-center text-sm font-bold text-gray-700 first:text-left"
+              className={`px-4 py-3 text-center text-sm font-bold text-gray-700 first:text-left ${
+                index === activeColumnIndex ? 'bg-blue-50' : ''
+              }`}
             >
               {title}
             </th>
@@ -40,7 +58,12 @@ function PermissionsTable({
           >
             <td className="px-4 py-3 text-sm text-gray-900">{action}</td>
             {permissions.map((hasPermission, index) => (
-              <td key={index} className="px-4 py-3 text-center">
+              <td
+                key={index}
+                className={`px-4 py-3 text-center ${
+                  index + 1 === activeColumnIndex ? 'bg-blue-50' : ''
+                }`}
+              >
                 <FontAwesomeIcon
                   icon={hasPermission ? faCheckCircle : faCircleXmark}
                   className={`text-lg ${

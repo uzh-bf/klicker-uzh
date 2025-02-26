@@ -1263,6 +1263,7 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           value: t.arg.string({ required: true }),
+          collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.editAnswerCollectionEntry(args, ctx)
@@ -1274,6 +1275,7 @@ export const Mutation = builder.mutationType({
         type: 'Int',
         args: {
           id: t.arg.int({ required: true }),
+          collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.deleteAnswerCollectionEntry(args, ctx)
@@ -1356,6 +1358,19 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.shareAnswerCollection(args, ctx)
+        },
+      }),
+
+      changeCollectionAccessLevel: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PermissionInfo,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          permissionId: t.arg.int({ required: true }),
+          accessLevel: t.arg({ type: AccessLevel, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.changeCollectionAccessLevel(args, ctx)
         },
       }),
 

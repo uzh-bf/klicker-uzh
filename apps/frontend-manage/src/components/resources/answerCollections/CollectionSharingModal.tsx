@@ -1,6 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   AnswerCollection,
+  CatalogObjectType,
+  ChangeCollectionAccessLevelDocument,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogSharingRequestsDocument,
@@ -12,7 +14,7 @@ import { useState } from 'react'
 import CollectionSharingErrorToast from '../sharing/CollectionSharingErrorToast'
 import CollectionSharingSuccessToast from '../sharing/CollectionSharingSuccessToast'
 import GrantedPermissionsTable from '../sharing/GrantedPermissionsTable'
-import PermissionsTable from '../sharing/PermissionsTable'
+import AnswerCollectionPermissionsTable from './AnswerCollectionPermissionsTable'
 
 function CollectionSharingModal({
   collection,
@@ -40,6 +42,11 @@ function CollectionSharingModal({
   // mutation to create new permission entry for answer collection
   const [shareAnswerCollection] = useMutation(ShareAnswerCollectionDocument)
 
+  // mutation to change the access level of a certain permission
+  const [changeCollectionAccessLevel, { loading: changeLoading }] = useMutation(
+    ChangeCollectionAccessLevelDocument
+  )
+
   return (
     <>
       <Modal
@@ -49,7 +56,7 @@ function CollectionSharingModal({
         onClose={onClose}
         dataCloseButton={{ cy: 'close-remove-answer-collection' }}
         className={{
-          content: 'max-w-5xl',
+          content: 'h-max max-h-full max-w-5xl',
         }}
       >
         <div>
@@ -59,49 +66,58 @@ function CollectionSharingModal({
           })}
         </div>
         <div className="my-4">
-          <PermissionsTable
-            actions={[
-              {
-                action: t('manage.resources.viewUseCollectionContent'),
-                permissions: [true, true, true, true],
-              },
-              {
-                action: t('manage.resources.modifyContent'),
-                permissions: [false, true, true, true],
-              },
-              {
-                action: t('manage.resources.shareCollection'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.modifyCatalogAssignment'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.modifyPermissions'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.revokeAccess'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.deleteCollection'),
-                permissions: [false, false, true, true],
-              },
-              {
-                action: t('manage.resources.transferOwnership'),
-                permissions: [false, false, false, true],
-              },
-            ]}
-          />
+          <AnswerCollectionPermissionsTable />
         </div>
 
         <div className="mt-8">
           <GrantedPermissionsTable
+            type={CatalogObjectType.AnswerCollection}
             permissions={permissions ?? []}
             permissionsLoading={permissionsLoading}
-            onAccessLevelChange={async () => {}} // TODO: implement mutation
+            changeLoading={changeLoading}
+            onAccessLevelChange={async ({ permissionId, newAccessLevel }) => {
+              await changeCollectionAccessLevel({
+                variables: {
+                  collectionId: collection.id,
+                  permissionId,
+                  accessLevel: newAccessLevel,
+                },
+                update: (cache, { data }) => {
+                  if (!data?.changeCollectionAccessLevel) return
+
+                  const prevPermissions = cache.readQuery({
+                    query: GetAnswerCollectionPermissionsDocument,
+                    variables: {
+                      collectionId: collection.id,
+                    },
+                  })
+
+                  if (!prevPermissions?.getAnswerCollectionPermissions) {
+                    return
+                  }
+
+                  cache.writeQuery({
+                    query: GetAnswerCollectionPermissionsDocument,
+                    variables: {
+                      collectionId: collection.id,
+                    },
+                    data: {
+                      getAnswerCollectionPermissions:
+                        prevPermissions.getAnswerCollectionPermissions.map(
+                          (permission) =>
+                            permission.permissionId === permissionId
+                              ? data.changeCollectionAccessLevel!
+                              : permission
+                        ),
+                    },
+                  })
+                },
+                refetchQueries: [
+                  GetAnswerCollectionsInfoDocument,
+                  GetCatalogSharingRequestsDocument,
+                ],
+              })
+            }}
             onPermissionRemoval={async () => {}} // TODO: implement mutation
             onNewPermissionSuccess={() => setSharingSuccess(true)}
             onNewPermissionFailure={() => setSharingFailure(true)}
@@ -126,10 +142,7 @@ function CollectionSharingModal({
                     },
                   })
 
-                  if (
-                    !prevPermissions?.getAnswerCollectionPermissions ||
-                    !data.shareAnswerCollection
-                  ) {
+                  if (!prevPermissions?.getAnswerCollectionPermissions) {
                     return
                   }
 

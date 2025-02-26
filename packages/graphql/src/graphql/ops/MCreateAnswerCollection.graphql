@@ -24,8 +24,10 @@ mutation CreateAnswerCollection(
     numOfEntries
 
     isOwner
-    isEditable
     isImported
-    isAccessGranted
+    isEditable
+    isShareable
+    isRemovable
+    isDeletionAllowed
   }
 }

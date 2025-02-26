@@ -2155,7 +2155,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         "Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung '<b>{name}</b>' mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.",
       viewUseCollectionContent: 'Inhalt einsehen / Sammlung verwenden',
       modifyContent: 'Inhalt bearbeiten',
-      modifyCatalogAssignment: 'Katalog-Zuweisung bearbeiten',
+      modifyCatalogAssignments: 'Katalog-Zuweisungen bearbeiten',
       modifyPermissions: 'Berechtigungen bearbeiten',
       revokeAccess: 'Zugriff entziehen',
       transferOwnership: 'Eigentumsrechte übertragen',
@@ -2172,7 +2172,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht entfernen.',
       deleteAnswerCollection: 'Antwort-Sammlung löschen',
       confirmCollectionDeletion:
-        'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil löschen möchten? Bei geteilten Antwort-Sammlungen bleibt der Zugriff für andere Nutzer bestehen, solange diese die Sammlung verwenden.',
+        'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil löschen möchten? Bei geteilten Antwort-Sammlungen bleibt der Zugriff für andere Nutzer bestehen, solange diese die Sammlung verwenden. Nutzer welche die Antwort-Sammlung nicht nutzen, verlieren den Zugriff.',
       confirmDeletion: 'Löschung bestätigen',
       deletionSuccessful: 'Die Antwort-Sammlung wurde erfolgreich gelöscht.',
       deletionFailed:
@@ -2228,10 +2228,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
       approveSharingRequest: 'Zugriffsanfrage akzeptieren',
       specifyAccessLevel:
-        'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Schreiberechten, dass alle Änderungen anderer Nutzer an Ihrem Objekt direkt für alle Nutzer mit Zugriff auf dieses sichtbar sein werden. Die offizielle Dokumentation der Sharing-Funktionen enthält weiterführende Informationen.',
+        'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Bearbeitungsrechten, dass alle Änderungen anderer Nutzer direkt auf Ihrem Objekt in Kraft treten. Für weitere Informationen zu den Zugriffsleveln, beachten Sie bitte die untenstehende Tabelle.',
       accessLevel: 'Zugriffslevel',
-      accessLevelREAD: 'Lesezugriff',
-      accessLevelWRITE: 'Schreibzugriff',
       approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich akzeptiert.',
       approvalFailed:
         'Beim Akzeptieren der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',

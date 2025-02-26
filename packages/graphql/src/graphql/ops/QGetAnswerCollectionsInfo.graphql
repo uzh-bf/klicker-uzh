@@ -12,10 +12,10 @@ query GetAnswerCollectionsInfo {
     numOfEntries
 
     isOwner
-    isEditable
-    isRemovable
     isImported
-    isAccessGranted
+    isEditable
     isShareable
+    isRemovable
+    isDeletionAllowed
   }
 }

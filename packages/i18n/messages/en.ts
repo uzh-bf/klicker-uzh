@@ -2131,7 +2131,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This view allows you to share the answer collection "<b>{name}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       viewUseCollectionContent: 'View Content / Use Collection',
       modifyContent: 'Modify Content',
-      modifyCatalogAssignment: 'Modify Catalog Assignment',
+      modifyCatalogAssignments: 'Modify Catalog Assignments',
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
       transferOwnership: 'Transfer Ownership',
@@ -2148,7 +2148,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This collection is used by at least one of your questions. Therefore, you cannot remove the collection.',
       deleteAnswerCollection: 'Delete Answer Collection',
       confirmCollectionDeletion:
-        'Are you sure you want to delete the answer collection "{name}" from your profile? For shared answer collections, access for other users remains as long as they use the collection.',
+        'Are you sure you want to delete the answer collection "{name}" from your profile? For shared answer collections, access for other users remains as long as they use the collection. All users who are not using the collection will loose access to it.',
       confirmDeletion: 'Confirm deletion',
       deletionSuccessful: 'The answer collection was successfully deleted.',
       deletionFailed:
@@ -2203,10 +2203,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please review the following access requests for your shared objects. Accepting a sharing request will grant the requesting user access to the corresponding object without creating a copy. Any modifications other users with write access to your objects make are directly visible to all users of the object.',
       approveSharingRequest: 'Approve sharing request',
       specifyAccessLevel:
-        'Please select an access level for sharing the object {objectName} (type: {objectType}) with the user {userShortname}. Please note that when granting write access, any changes other users make to your object are directly visible to all users with access to it. The official documentation of the sharing features provides further information.',
+        'Please select an access level for sharing the object {objectName} (type: {objectType}) with the user {userShortname}. Please note that when granting editing rights, any changes by other users directly take effect on the shared object. For more information on the permission levels, please refer to the table below.',
       accessLevel: 'Access Level',
-      accessLevelREAD: 'Read Access',
-      accessLevelWRITE: 'Write Access',
       approvalSuccessful: 'The sharing request was successfully approved.',
       approvalFailed:
         'An error occurred while approving the sharing request. Please try again or contact the support.',
