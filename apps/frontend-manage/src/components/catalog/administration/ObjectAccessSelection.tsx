@@ -1,22 +1,27 @@
 import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
-import { FormikSelectField } from '@uzh-bf/design-system'
+import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 
 function ObjectAccessSelection({
-  triggerClassName,
+  value,
+  onChange,
+  compact,
 }: {
-  triggerClassName?: string
+  value: ObjectAccess
+  onChange: (value: ObjectAccess) => void
+  compact?: boolean
 }) {
   const t = useTranslations()
 
   return (
-    <FormikSelectField
+    <SelectField
       required
-      name="access"
-      label={t('manage.resources.access')}
-      tooltip={t('manage.resources.accessTooltip')}
+      value={value}
+      onChange={(value) => onChange(value as ObjectAccess)}
+      label={!compact ? t('manage.resources.access') : undefined}
+      tooltip={!compact ? t('manage.resources.accessTooltip') : undefined}
       items={[
         {
           value: ObjectAccess.Restricted,
@@ -30,7 +35,12 @@ function ObjectAccessSelection({
         },
       ]}
       data={{ cy: 'answer-collection-access' }}
-      className={{ select: { trigger: twMerge('h-9 w-48', triggerClassName) } }}
+      className={{
+        select: {
+          trigger: twMerge('h-9 w-48', compact && 'h-7 w-40 text-sm'),
+          item: compact ? 'text-sm' : '',
+        },
+      }}
     />
   )
 }

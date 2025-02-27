@@ -132,11 +132,13 @@ export type CatalogObject = {
   uuid?: string
   name: string
   objectType: CatalogObjectType
+  assignmentId: number
   access: ObjectAccess
   ownerShortname?: string
   isRequested: boolean
   isShared: boolean
   isOwner: boolean
+  isOwnerOrAdmin: boolean
 }
 
 // #endregion

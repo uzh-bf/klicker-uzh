@@ -151,11 +151,13 @@ export const CatalogObject = CatalogObjectRef.implement({
     uuid: t.exposeString('uuid', { nullable: true }),
     name: t.exposeString('name'),
     objectType: t.expose('objectType', { type: CatalogObjectType }),
+    assignmentId: t.exposeInt('assignmentId'),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     isRequested: t.exposeBoolean('isRequested'),
     isShared: t.exposeBoolean('isShared'),
     isOwner: t.exposeBoolean('isOwner'),
+    isOwnerOrAdmin: t.exposeBoolean('isOwnerOrAdmin'),
   }),
 })
 

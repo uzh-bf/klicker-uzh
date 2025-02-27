@@ -1527,24 +1527,27 @@ export async function getCatalogObjects(
     catalogCollection?.objectAssignments.flatMap((assignment) => {
       if (assignment.answerCollection) {
         const collection = assignment.answerCollection
+        const permission = collection.permissions[0]
 
         return {
           id: collection.id,
           name: collection.name,
+          assignmentId: assignment.id,
           objectType: CatalogObjectType.ANSWER_COLLECTION,
           access: assignment.access,
           ownerShortname: collection.owner?.shortname,
           isRequested:
             collection.permissions.length > 0 &&
-            typeof collection.permissions[0] !== 'undefined' &&
-            collection.permissions[0].permissionStatus ===
-              DB.PermissionStatus.REQUESTED,
+            typeof permission !== 'undefined' &&
+            permission.permissionStatus === DB.PermissionStatus.REQUESTED,
           isShared:
             collection.permissions.length > 0 &&
-            typeof collection.permissions[0] !== 'undefined' &&
-            collection.permissions[0].permissionStatus ===
-              DB.PermissionStatus.GRANTED,
+            typeof permission !== 'undefined' &&
+            permission.permissionStatus === DB.PermissionStatus.GRANTED,
           isOwner: collection.ownerId === ctx.user.sub,
+          isOwnerOrAdmin:
+            collection.ownerId === ctx.user.sub ||
+            permission?.accessLevel === DB.AccessLevel.ADMIN,
         }
       }
 
@@ -1552,6 +1555,114 @@ export async function getCatalogObjects(
     }) ?? []
 
   return mappedAnswerCollections
+}
+
+export async function changeCatalogObjectAccessLevel(
+  {
+    assignmentId,
+    accessLevel,
+  }: { assignmentId: number; accessLevel: DB.ObjectAccess },
+  ctx: ContextWithUser
+) {
+  // fetch current assignment
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      id: assignmentId,
+    },
+    include: {
+      answerCollection: {
+        select: {
+          id: true,
+        },
+      },
+      // ... add more object types once they are supported for sharing
+    },
+  })
+
+  if (!assignment) {
+    return false
+  }
+
+  // verify that the user has sufficient access for this action
+  let verified = false
+  if (assignment.answerCollection?.id) {
+    // verify that the user has access to the answer collection
+    const { valid } = await validateCollectionPermissions(
+      {
+        collectionId: assignment.answerCollection.id,
+        acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      },
+      ctx
+    )
+    verified = valid
+  }
+
+  if (!verified) {
+    return false
+  }
+
+  // change the access level of the assignment
+  const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.update(
+    {
+      where: {
+        id: assignmentId,
+      },
+      data: {
+        access: accessLevel,
+      },
+    }
+  )
+
+  return !!updatedAssignment.id
+}
+
+export async function removeCatalogObjectAssignment(
+  { assignmentId }: { assignmentId: number },
+  ctx: ContextWithUser
+) {
+  // fetch current assignment
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      id: assignmentId,
+    },
+    include: {
+      answerCollection: {
+        select: {
+          id: true,
+        },
+      },
+      // ... add more object types once they are supported for sharing
+    },
+  })
+
+  if (!assignment) {
+    return false
+  }
+
+  // verify that the user has sufficient access for this action
+  let verified = false
+  if (assignment.answerCollection?.id) {
+    // verify that the user has access to the answer collection
+    const { valid } = await validateCollectionPermissions(
+      {
+        collectionId: assignment.answerCollection.id,
+        acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      },
+      ctx
+    )
+    verified = valid
+  }
+
+  if (!verified) {
+    return false
+  }
+
+  // change the access level of the assignment
+  const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.delete(
+    { where: { id: assignmentId } }
+  )
+
+  return !!updatedAssignment.id
 }
 
 export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
@@ -1659,11 +1770,13 @@ export async function addAnswerCollectionToCatalog(
     id: collection.id,
     name: collection.name,
     objectType: CatalogObjectType.ANSWER_COLLECTION,
+    assignmentId: assignment.id,
     access: assignment.access,
     ownerShortname: collection.owner?.shortname,
     isRequested: false,
     isShared: true,
     isOwner: collection.ownerId === ctx.user.sub,
+    isOwnerOrAdmin: true,
   }
 }
 
@@ -1776,11 +1889,13 @@ export async function requestAnswerCollection(
         id: updatedCollection.id,
         name: updatedCollection.name,
         objectType: CatalogObjectType.ANSWER_COLLECTION,
+        assignmentId: assignment.id,
         access: assignment.access,
         ownerShortname: permissionRequest.objectOwner?.shortname,
         isRequested: true,
         isShared: false,
         isOwner: false,
+        isOwnerOrAdmin: false,
       }
     : null
 }

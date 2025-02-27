@@ -369,8 +369,10 @@ type CatalogAnswerCollection {
 
 type CatalogObject {
   access: ObjectAccess!
+  assignmentId: Int!
   id: Int
   isOwner: Boolean!
+  isOwnerOrAdmin: Boolean!
   isRequested: Boolean!
   isShared: Boolean!
   name: String!
@@ -1301,6 +1303,7 @@ type Mutation {
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
+  changeCatalogObjectAccessLevel(accessLevel: ObjectAccess!, assignmentId: Int!): Boolean!
   changeCollectionAccessLevel(accessLevel: AccessLevel!, collectionId: Int!, permissionId: Int!): PermissionInfo
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
@@ -1386,6 +1389,7 @@ type Mutation {
   publishScheduledActivities: Boolean!
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   removeAnswerCollection(collectionId: Int!): Int
+  removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestAnswerCollection(catalogCollectionId: String, collectionId: Int!): CatalogObject
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback

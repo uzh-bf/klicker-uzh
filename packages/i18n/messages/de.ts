@@ -2233,25 +2233,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       importObject: 'Objekt importieren',
       accessRequested: 'Zugriff beantragt',
       accessGranted: 'Zugriff gewährt',
-      importPublicResource: 'Öffentliche Ressource importieren',
-      answerCollectionRequestSuccess:
-        'Der Zugriff auf die ausgewählte Antwort-Sammlung wurde erfolgreich benatragt.',
-      answerCollectionImportSuccess:
-        'Eine Kopie der Antwort-Sammlung wurde erfolgreich in Ihr Konto importiert.',
-      requestPublicResource:
-        "Durch das Bentragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den erteilten Berechtigungen. Gewährte Berechtigungen können jederzeit vom Besitzer widerrufen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die 'Importieren' Option.",
-      sharingRequestsExplanation:
-        'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
-      approveSharingRequest: 'Zugriffsanfrage akzeptieren',
-      specifyAccessLevel:
-        'Bitte wählen Sie ein Zugriffslevel für die Freigabe des Objekts {objectName} (Typ: {objectType}) für den Nutzer {userShortname}. Bitte beachten Sie bei der Vergabe von Bearbeitungsrechten, dass alle Änderungen anderer Nutzer direkt auf Ihrem Objekt in Kraft treten. Für weitere Informationen zu den Zugriffsleveln, beachten Sie bitte die untenstehende Tabelle.',
-      accessLevel: 'Zugriffslevel',
-      approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich akzeptiert.',
-      approvalFailed:
-        'Beim Akzeptieren der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      declineSuccessful: 'Die Zugriffsanfrage wurde erfolgreich abgelehnt.',
-      declineFailed:
-        'Beim Ablehnen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       addObjectToCatalog: 'Objekt hinzufügen',
       addObjectToCatalogTitle: 'Objekt zur Katalogsammlung hinzufügen',
       selectObjectType: 'Objekttyp auswählen',
@@ -2278,6 +2259,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       objectAddedError:
         'Fehler beim Hinzufügen des Objekts zur Katalogsammlung',
       selectObjectTypeFirst: 'Bitte wählen Sie zuerst einen Objekttyp aus',
+      changeAccessTitle: 'Zugriffsrechte ändern',
+      changeAccessDescription:
+        'Sind Sie sicher, dass Sie die Zugriffsrechte für {objectType} "{objectName}" auf {newAccess} ändern möchten?',
+      changeAccessConfirm: 'Zugriff ändern',
+      removeObjectTitle: 'Objekt aus Katalog-Sammlung entfernen',
+      removeObjectDescription:
+        'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
+      removeObjectConfirm: 'Objekt entfernen',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

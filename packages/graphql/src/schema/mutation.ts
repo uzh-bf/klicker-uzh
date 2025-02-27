@@ -1408,6 +1408,27 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeCatalogObjectAccessLevel: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          assignmentId: t.arg.int({ required: true }),
+          accessLevel: t.arg({ type: ObjectAccess, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.changeCatalogObjectAccessLevel(args, ctx)
+        },
+      }),
+
+      removeCatalogObjectAssignment: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          assignmentId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.removeCatalogObjectAssignment(args, ctx)
+        },
+      }),
+
       approveObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {

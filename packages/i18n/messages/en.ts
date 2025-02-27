@@ -2248,6 +2248,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       objectAddedSuccess: 'Object successfully added to the catalog collection',
       objectAddedError: 'Failed to add object to the catalog collection',
       selectObjectTypeFirst: 'Please select an object type first',
+      changeAccessTitle: 'Change Access Level',
+      changeAccessDescription:
+        'Are you sure you want to change the access level of the {objectType} "{objectName}" to {newAccess}?',
+      changeAccessConfirm: 'Change Access',
+      removeObjectTitle: 'Remove Object from Catalog Collection',
+      removeObjectDescription:
+        'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
+      removeObjectConfirm: 'Remove Object',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

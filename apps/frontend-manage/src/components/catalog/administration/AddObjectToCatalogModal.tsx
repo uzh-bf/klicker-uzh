@@ -20,7 +20,7 @@ interface AddObjectToCatalogModalProps {
   onError: () => void
 }
 
-interface FormValues {
+export interface CatalogObjectAdditionFormValues {
   objectType?: CatalogObjectType
   access: ObjectAccess
   objectId?: string
@@ -55,7 +55,7 @@ function AddObjectToCatalogModal({
             objectType: undefined,
             access: ObjectAccess.Restricted,
             objectId: undefined,
-          } as FormValues
+          } as CatalogObjectAdditionFormValues
         }
         validationSchema={Yup.object().shape({
           objectType: Yup.string().required(
@@ -153,7 +153,10 @@ function AddObjectToCatalogModal({
               {/* Step 1: Object Type and Access Level Selection */}
               <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                 <H4>1. {t('manage.catalog.selectObjectType')}</H4>
-                <ObjectTypeSelection accessValue={values.access} />
+                <ObjectTypeSelection
+                  accessValue={values.access}
+                  setFieldValue={setFieldValue}
+                />
               </div>
 
               {/* Step 2: Object Selection */}

@@ -1,9 +1,21 @@
 import { CatalogObjectType, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField, UserNotification } from '@uzh-bf/design-system'
+import { FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
+import { CatalogObjectAdditionFormValues } from './AddObjectToCatalogModal'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
-function ObjectTypeSelection({ accessValue }: { accessValue: ObjectAccess }) {
+function ObjectTypeSelection({
+  accessValue,
+  setFieldValue,
+}: {
+  accessValue: ObjectAccess
+  setFieldValue: (
+    field: string,
+    value: any,
+    shouldValidate?: boolean
+  ) => Promise<void | FormikErrors<CatalogObjectAdditionFormValues>>
+}) {
   const t = useTranslations()
 
   return (
@@ -26,7 +38,10 @@ function ObjectTypeSelection({ accessValue }: { accessValue: ObjectAccess }) {
           />
         </div>
         <div className="w-full md:w-1/2">
-          <ObjectAccessSelection />
+          <ObjectAccessSelection
+            value={accessValue}
+            onChange={(value) => setFieldValue('access', value)}
+          />
         </div>
       </div>
       <UserNotification

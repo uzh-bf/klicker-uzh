@@ -10,10 +10,12 @@ mutation RequestAnswerCollection(
     uuid
     name
     objectType
+    assignmentId
     access
     ownerShortname
     isRequested
     isShared
     isOwner
+    isOwnerOrAdmin
   }
 }
