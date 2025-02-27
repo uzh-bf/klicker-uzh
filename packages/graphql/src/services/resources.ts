@@ -1554,6 +1554,119 @@ export async function getCatalogObjects(
   return mappedAnswerCollections
 }
 
+export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
+  // fetch all answer collections, where the user is the owner or has been granted admin access
+  const collections = await ctx.prisma.answerCollection.findMany({
+    where: {
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              accessLevel: DB.AccessLevel.ADMIN,
+            },
+          },
+        },
+      ],
+    },
+  })
+
+  return collections.map((collection) => ({
+    id: String(collection.id),
+    name: collection.name,
+  }))
+}
+
+export async function addAnswerCollectionToCatalog(
+  {
+    collectionId,
+    access,
+    catalogCollectionId,
+  }: {
+    collectionId: number
+    access: DB.ObjectAccess
+    catalogCollectionId?: string | null
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the user has sufficient permissions on the answer collection
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              accessLevel: DB.AccessLevel.ADMIN,
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // TODO: check if the user has sufficient permissions on the catalog collection
+
+  // upsert the assignemnt of the answer collection to the catalog collection
+  const assignment = await ctx.prisma.catalogCollectionAssignment.upsert({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    create: {
+      access,
+      answerCollection: {
+        connect: {
+          id: collectionId,
+        },
+      },
+      catalogCollection: {
+        connect: {
+          id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
+      },
+    },
+    update: {
+      access,
+    },
+  })
+
+  // return the updated catalog object
+  return {
+    id: collection.id,
+    name: collection.name,
+    objectType: CatalogObjectType.ANSWER_COLLECTION,
+    access: assignment.access,
+    ownerShortname: collection.owner?.shortname,
+    isRequested: false,
+    isShared: true,
+    isOwner: collection.ownerId === ctx.user.sub,
+  }
+}
+
 export async function requestAnswerCollection(
   {
     collectionId,

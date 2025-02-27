@@ -22,6 +22,7 @@ export enum CatalogObjectType {
   ANSWER_COLLECTION = 'ANSWER_COLLECTION',
   // TODO: add more object types once they are supported
   // ELEMENT = 'ELEMENT',
+  // COURSE = 'COURSE
   // LIVE_QUIZ = 'LIVE_QUIZ',
   // PRACTICE_QUIZ = 'PRACTICE_QUIZ',
   // MICRO_LEARNING = 'MICRO_LEARNING',

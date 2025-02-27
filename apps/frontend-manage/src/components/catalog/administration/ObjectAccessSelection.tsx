@@ -1,9 +1,14 @@
 import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 
-function ObjectAccessSelection() {
+function ObjectAccessSelection({
+  triggerClassName,
+}: {
+  triggerClassName?: string
+}) {
   const t = useTranslations()
 
   return (
@@ -25,7 +30,7 @@ function ObjectAccessSelection() {
         },
       ]}
       data={{ cy: 'answer-collection-access' }}
-      className={{ select: { trigger: 'h-9 w-40' } }}
+      className={{ select: { trigger: twMerge('h-9 w-48', triggerClassName) } }}
     />
   )
 }

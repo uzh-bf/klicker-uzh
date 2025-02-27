@@ -306,6 +306,7 @@ export default {
       PRACTICE_QUIZ: 'Übungs-Quiz',
       MICRO_LEARNING: 'Microlearning',
       GROUP_ACTIVITY: 'Gruppenaktivität',
+      ANSWER_COLLECTION: 'Antwort-Sammlung',
     },
     contentInput: {
       boldStyle:
@@ -2090,7 +2091,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie einen Namen für Ihre Antwort-Sammlung, damit diese bei der Elementerstellung oder als geteilte Sammlung identifiziert werden kann. Der Name wird den Studierenden nicht angezeigt.',
       access: 'Zugriff',
       accessTooltip:
-        "Wählen Sie aus, ob diese Antwort-Sammlung nur für Sie sichtbar sein soll oder auch durch andere Nutzer importiert werden kann. Bei einem 'eingeschränkten' Zugriff können andere Nutzer den Zugriff auf Ihre Antwort-Sammlung nur anfragen.",
+        "Wählen Sie aus, ob dieses Objekt durch alle Nutzer mit Zugriff auf die ausgewählte Katalog-Sammlung importiert werden kann. Bei einem 'eingeschränkten' Zugriff müssen andere Nutzer diesen explizit beantragen.",
       accessPUBLIC: 'Öffentlich',
       accessRESTRICTED: 'Eingeschränkt',
       catalogCollection: 'Katalog-Sammlung',
@@ -2109,9 +2110,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uniqueValuesRequired:
         'Alle Optionen in einer Antwort-Sammlung müssen einen einzigartigen Wert haben. Bitte stellen Sie sicher, dass keine zwei Antwortoptionen übereinstimmen.',
       infoAccessPUBLIC:
-        'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und über den Katalog importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
+        'Öffentliche Objekte können von allen Nutzern mit Zugriff auf die entsprechende Katalog-Sammlung eingesehen und importiert werden.',
       infoAccessRESTRICTED:
-        'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
+        'Eingeschränkte Objekte können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung abhängig von den vergebenen Rechten genutzt werden.',
       collectionCreationSuccess:
         'Die Antwort-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
@@ -2125,8 +2126,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       cancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
       saveChanges: 'Änderungen speichern',
-      infoAccessChangeLimited:
-        'Diese Antwort-Sammlung wird bereits von anderen Nutzern verwendet. Sie können die Zugriffsregeln daher nur weiter lockern oder nach einer vollständigen Veröffentlichung nicht mehr einschränken.',
       successfulCollectionEdit:
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
       answerOptions: 'Antwort-Optionen',
@@ -2253,6 +2252,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       declineSuccessful: 'Die Zugriffsanfrage wurde erfolgreich abgelehnt.',
       declineFailed:
         'Beim Ablehnen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      addObjectToCatalog: 'Objekt hinzufügen',
+      addObjectToCatalogTitle: 'Objekt zur Katalogsammlung hinzufügen',
+      selectObjectType: 'Objekttyp auswählen',
+      selectSpecificObject: 'Objekt auswählen',
+      selectObjectTypeInstructions: 'Wählen Sie den Objekttyp aus',
+      selectObjectTypeDescription:
+        'Bitte wählen Sie über die folgenden Auswahlmöglichkeiten zuerst den Objekttyp und die Sichtbarkeit und im Anschluss das konkrete Objekt, welches Sie zu dieser Katalogsammlung hinzufügen möchten.',
+      objectTypeTooltip:
+        'Der Typ des Objekts, das zur Katalogsammlung hinzugefügt wird',
+      accessLevelTitle: 'Zugriffsebene',
+      objectTypeRequired: 'Bitte wählen Sie einen Objekttyp aus',
+      accessRequired: 'Bitte wählen Sie eine Zugriffsebene aus',
+      objectRequired: 'Bitte wählen Sie ein Objekt aus',
+      selectSpecificObjectInstructions: 'Wählen Sie ein bestimmtes Objekt aus',
+      selectSpecificObjectDescription:
+        'Wählen Sie ein(e) {type} aus der Liste unten, um das Objekt zu dieser Katalogsammlung hinzuzufügen.',
+      selectObject: 'Objekt auswählen',
+      searchObjects: 'Objekte durchsuchen...',
+      noObjectsFound: 'Keine Objekte gefunden',
+      noObjectsAvailable:
+        'Für den ausgewählten Typ sind keine Objekte verfügbar',
+      objectAddedSuccess:
+        'Objekt wurde erfolgreich zur Katalogsammlung hinzugefügt',
+      objectAddedError:
+        'Fehler beim Hinzufügen des Objekts zur Katalogsammlung',
+      selectObjectTypeFirst: 'Bitte wählen Sie zuerst einen Objekttyp aus',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

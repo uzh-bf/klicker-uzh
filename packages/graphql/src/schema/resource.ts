@@ -159,6 +159,19 @@ export const CatalogObject = CatalogObjectRef.implement({
   }),
 })
 
+interface ICatalogSelectionObject {
+  id: string
+  name: string
+}
+export const CatalogSelectionObjectRef =
+  builder.objectRef<ICatalogSelectionObject>('CatalogSelectionObject')
+export const CatalogSelectionObject = CatalogSelectionObjectRef.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    name: t.exposeString('name'),
+  }),
+})
+
 // #endregion
 
 // ----- PERMISSIONS -----

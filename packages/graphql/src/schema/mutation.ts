@@ -66,6 +66,7 @@ import {
   AnswerCollection,
   AnswerCollectionEntry,
   CatalogObject,
+  ObjectAccess,
   PermissionInfo,
 } from './resource.js'
 import {
@@ -1286,6 +1287,19 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.addAnswerCollectionOption(args, ctx)
+        },
+      }),
+
+      addAnswerCollectionToCatalog: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CatalogObject,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          access: t.arg({ type: ObjectAccess, required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.addAnswerCollectionToCatalog(args, ctx)
         },
       }),
 

@@ -41,6 +41,7 @@ function CatalogObjectItem({
     useState(false)
   const [importModal, setImportModal] = useState(false)
 
+  // TODO: add removal and access level switches if the user has sufficient permissions for it (sort them accordingly)
   return (
     <>
       <div

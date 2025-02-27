@@ -65,6 +65,7 @@ import {
   AnswerCollection,
   CatalogAnswerCollection,
   CatalogObject,
+  CatalogSelectionObject,
   ObjectSharingRequest,
   PermissionInfo,
 } from './resource.js'
@@ -945,6 +946,14 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.getCatalogObjects(args, ctx)
+        },
+      }),
+
+      getCatalogAnswerCollections: asUser.field({
+        nullable: true,
+        type: [CatalogSelectionObject],
+        resolve(_, __, ctx) {
+          return ResourcesService.getCatalogAnswerCollections(ctx)
         },
       }),
 

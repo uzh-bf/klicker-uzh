@@ -4,7 +4,7 @@ const { ElementType, PublicationStatus } = Prisma
 
 export const ANSWER_COLLECTIONS = [
   {
-    name: 'Public Collection (Fruits)',
+    name: 'Collection 1 (Fruits)',
     description:
       'This collection contains questions about fruits. The description supports markdown syntax such as **bold** and *italic*.',
     entries: [
@@ -80,7 +80,7 @@ export const ANSWER_COLLECTIONS = [
     ],
   },
   {
-    name: 'Private Collection (Vegetables)',
+    name: 'Collection 2 (Vegetables)',
     description:
       'This collection contains questions about vegetables. The description supports markdown syntax such as **bold** and *italic*.',
     entries: [
@@ -105,7 +105,7 @@ export const ANSWER_COLLECTIONS = [
     ],
   },
   {
-    name: 'Restricted Collection (Animals)',
+    name: 'Collection 3 (Animals)',
     description:
       'This collection contains questions about animals. The description supports markdown syntax such as **bold** and *italic*.',
     entries: [

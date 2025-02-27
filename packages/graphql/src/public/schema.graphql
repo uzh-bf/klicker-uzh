@@ -383,6 +383,11 @@ enum CatalogObjectType {
   ANSWER_COLLECTION
 }
 
+type CatalogSelectionObject {
+  id: String!
+  name: String!
+}
+
 type Choice {
   correct: Boolean
   feedback: String
@@ -1289,6 +1294,7 @@ type Mutation {
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
+  addAnswerCollectionToCatalog(access: ObjectAccess!, catalogCollectionId: String, collectionId: Int!): CatalogObject
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   approveObjectSharingRequest(accessLevel: AccessLevel!, permissionId: Int!, userId: String!): Boolean!
@@ -1778,6 +1784,7 @@ type Query {
   getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
+  getCatalogAnswerCollections: [CatalogSelectionObject!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course

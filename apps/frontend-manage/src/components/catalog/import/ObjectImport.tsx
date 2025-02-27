@@ -21,13 +21,13 @@ function ObjectImport({
 }) {
   const t = useTranslations()
   const router = useRouter()
-
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<CatalogObjectType | ''>('')
   const [accessTypeFilter, setAccessTypeFilter] = useState<ObjectAccess | ''>(
     ''
   )
 
+  // TODO: also return the catalog collection title here - to be shown next to the Catalog title
   const { data, loading } = useQuery(GetCatalogObjectsDocument, {
     variables: {
       catalogCollectionId,
