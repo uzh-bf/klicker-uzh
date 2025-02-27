@@ -2215,6 +2215,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       revokeAccessDisabledTooltip:
         'Der Zugriff kann nicht entzogen werden, da dieser Nutzer die Sammlung aktiv verwendet.',
+      modifyOwnPermissionsTitle: 'Eigenen Zugriff ändern',
+      ownAccess: '(Sie)',
+      removeOwnPermissionsWarning:
+        'Sie sind dabei, Ihren individuellen Zugriff auf diese Ressource zu entziehen. Nach der Bestätigung können Sie unter Umständen nicht mehr auf die Ressource zugreifen. Diese Aktion kann nicht rückgängig gemacht werden. Möchten Sie wirklich fortfahren?',
+      changeOwnPermissionsWarning:
+        'Sie sind dabei, Ihre eigenen Zugriffsrechte auf {accessLevel} zu ändern. Dies kann Ihre Möglichkeit einschränken, bestimmte Aktionen mit dieser Ressource durchzuführen, einschließlich der erneuten Änderung Ihrer Zugriffsrechte. Möchten Sie wirklich fortfahren?',
     },
     userGroups: {
       comingSoon:

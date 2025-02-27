@@ -2188,6 +2188,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Failed to remove access. Please try again or contact support.',
       revokeAccessDisabledTooltip:
         'The access to the answer collection cannot be revoked because this user is actively using the collection.',
+      modifyOwnPermissionsTitle: 'Modify your own access',
+      ownAccess: '(you)',
+      removeOwnPermissionsWarning:
+        'You are about to revoke your individual access rights to this resource. Once confirmed, you might no longer be able to access or modify this resource. This action cannot be undone. Are you sure you want to proceed?',
+      changeOwnPermissionsWarning:
+        'You are about to change your own access level to {accessLevel}. This might limit your ability to perform certain actions on this resource, including changing your access level back. Are you sure you want to proceed?',
     },
     userGroups: {
       comingSoon:

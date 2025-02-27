@@ -1,10 +1,12 @@
 query GetAnswerCollectionPermissions($collectionId: Int!) {
   getAnswerCollectionPermissions(collectionId: $collectionId) {
     permissionId
+    userId
     username
     userEmail
     userGroupName
     accessLevel
     isRevokable
+    isOwn
   }
 }

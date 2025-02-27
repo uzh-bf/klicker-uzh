@@ -1703,10 +1703,12 @@ type PerformanceRates {
 
 type PermissionInfo {
   accessLevel: AccessLevel!
+  isOwn: Boolean
   isRevokable: Boolean
   permissionId: Int!
   userEmail: String
   userGroupName: String
+  userId: String
   username: String
 }
 

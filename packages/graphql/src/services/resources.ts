@@ -376,6 +376,7 @@ export async function getAnswerCollectionPermissions(
     return acc
   }, {})
 
+  // TODO: once permissions from user groups are included, deduplicate and use highest available permission level
   return collection.permissions
     .map((permission) => ({
       permissionId: permission.id,
@@ -386,6 +387,7 @@ export async function getAnswerCollectionPermissions(
       userGroupName: undefined,
       accessLevel: permission.accessLevel,
       isRevokable: !usersWithUsage[permission.user?.id ?? ''],
+      isOwn: permission.user?.id === ctx.user.sub,
     }))
     .sort((a, b) => {
       if (a.username === b.username) {
@@ -524,6 +526,7 @@ export async function transferCollectionOwnership(
         userGroupName: undefined,
         accessLevel: permission.accessLevel,
         isRevokable: true,
+        isOwn: true,
       }
     : null
 }
@@ -543,7 +546,7 @@ export async function shareAnswerCollection(
   ctx: ContextWithUser
 ) {
   // verify that user has either owner or admin access
-  const valid = await validateCollectionPermissions(
+  const { valid, collection } = await validateCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.ADMIN],
@@ -557,7 +560,7 @@ export async function shareAnswerCollection(
 
   // create new permission with the defined access level
   if (usernameOrEmail && usernameOrEmail.length > 0) {
-    // check if a user with the provided username or email exists
+    // check if a user with the provided username or email exists and is not the owner of the collection
     const user = await ctx.prisma.user.findFirst({
       where: {
         OR: [
@@ -577,7 +580,7 @@ export async function shareAnswerCollection(
     })
 
     const userId = user?.id
-    if (!userId) {
+    if (!userId || collection?.ownerId === userId) {
       return null
     }
 
@@ -629,6 +632,7 @@ export async function shareAnswerCollection(
       userGroupName: undefined,
       accessLevel: permission.accessLevel,
       isRevokable: true,
+      isOwn: false,
     }
   } else if (userGroupId) {
     // TODO: implement sharing with user groups
@@ -650,7 +654,7 @@ export async function changeCollectionAccessLevel(
   ctx: ContextWithUser
 ) {
   // verify that user has either owner or admin access
-  const valid = await validateCollectionPermissions(
+  const { valid } = await validateCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.ADMIN],
@@ -1227,10 +1231,10 @@ async function validateCollectionPermissions(
   })
 
   if (!collection) {
-    return false
+    return { valid: false, collection: null }
   }
 
-  return true
+  return { valid: true, collection }
 }
 
 export async function editAnswerCollectionEntry(
@@ -1246,7 +1250,7 @@ export async function editAnswerCollectionEntry(
   ctx: ContextWithUser
 ) {
   // verify that the user has at least writer permissions for the collection
-  const valid = await validateCollectionPermissions(
+  const { valid } = await validateCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
@@ -1282,7 +1286,7 @@ export async function deleteAnswerCollectionEntry(
   ctx: ContextWithUser
 ) {
   // verify that the user has at least writer permissions for the collection
-  const valid = await validateCollectionPermissions(
+  const { valid } = await validateCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
@@ -1321,7 +1325,7 @@ export async function addAnswerCollectionOption(
   ctx: ContextWithUser
 ) {
   // verify that the user has at least writer permissions for the collection
-  const valid = await validateCollectionPermissions(
+  const { valid } = await validateCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],

@@ -11,10 +11,12 @@ mutation ShareAnswerCollection(
     userGroupId: $userGroupId
   ) {
     permissionId
+    userId
     username
     userEmail
     userGroupName
     accessLevel
     isRevokable
+    isOwn
   }
 }

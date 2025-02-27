@@ -2231,11 +2231,90 @@ describe('Create, edit and share answer collections', function () {
     ).contains(messages.manage.resources.accessADMIN)
   })
 
-  it('Cleanup: Remove the answer collection from the main user', function () {
+  it('Change own access rights from admin permissions to read access for main user', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    removeAnswerCollection({ name: this.data.ownership.name })
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+    cy.get(
+      `[data-cy="access-level-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).click()
+    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="cancel-modify-own-permissions"]').click()
+    cy.get(
+      `[data-cy="access-level-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).click()
+    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="confirm-modify-own-permissions"]').click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessREAD)
+  })
+
+  it('Change the main users access rights back to admin permissions', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessREAD)
+    cy.get(
+      `[data-cy="access-level-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).click()
+    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+  })
+
+  it('Have the main user revoke its own access through the use of admin rights', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).click()
+    cy.get('[data-cy="cancel-modify-own-permissions"]').click()
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).click()
+    cy.get('[data-cy="confirm-modify-own-permissions"]').click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).should('not.exist')
+  })
+
+  it('Verify that the main user has no permissions on the collection anymore', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).should('not.exist')
   })
 
   it('Cleanup: Remove the answer collection from user pro2', function () {
