@@ -7,13 +7,11 @@ model AnswerCollection {
 
     name        String
     description String
-    version     Int          @default(1)
-    isDeleted   Boolean      @default(false)
-    access      ObjectAccess @default(PRIVATE)
+    version     Int     @default(1)
+    isDeleted   Boolean @default(false)
 
-    // optional catalog collection in which this answer collection will be available for import (if access is RESTRICTED or PUBLIC)
-    catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-    catalogCollectionId String?            @db.Uuid
+    // link to the join table including all catalog assignments
+    catalogAssignments CatalogCollectionAssignment[]
 
     entries AnswerCollectionEntry[]
 
@@ -28,6 +26,52 @@ model AnswerCollection {
     updatedAt DateTime @updatedAt
 
     @@unique([ownerId, name])
+}
+
+// many-to-many join table between catalog collection and shared object with access information
+model CatalogCollectionAssignment {
+    id Int @id @default(autoincrement())
+
+    // access level for this specific assignment
+    access ObjectAccess @default(RESTRICTED)
+
+    // catalog collection assignment
+    catalogCollection   CatalogCollection @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    catalogCollectionId String            @db.Uuid
+
+    // object in the catalog collection
+    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    answerCollectionId Int?
+
+    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    elementId Int?
+
+    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    courseId String? @db.Uuid
+
+    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    liveQuizId String?   @db.Uuid
+
+    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    practiceQuizId String?       @db.Uuid
+
+    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    microLearningId String?        @db.Uuid
+
+    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    groupActivityId String?        @db.Uuid
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // for each assignment of an object to a catalog collection there is only allowed to be one entry
+    @@unique([answerCollectionId, catalogCollectionId])
+    @@unique([elementId, catalogCollectionId])
+    @@unique([courseId, catalogCollectionId])
+    @@unique([liveQuizId, catalogCollectionId])
+    @@unique([practiceQuizId, catalogCollectionId])
+    @@unique([microLearningId, catalogCollectionId])
+    @@unique([groupActivityId, catalogCollectionId])
 }
 
 model AnswerCollectionEntry {
@@ -51,9 +95,8 @@ model AnswerCollectionEntry {
 // ----- CATALOG -----
 // #region
 enum ObjectAccess {
-    PUBLIC
-    PRIVATE
     RESTRICTED
+    PUBLIC
 }
 
 model CatalogCollection {
@@ -67,8 +110,8 @@ model CatalogCollection {
     // users / user groups that are allowed to edit the access rights of other users / user groups (admin access)
     permissions Permission[]
 
-    // objects contained in this catalog collection
-    answerCollections AnswerCollection[]
+    // link to the join-table containing all associated objects
+    objectAssignments CatalogCollectionAssignment[]
 
     owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
     ownerId String? @db.Uuid

@@ -47,7 +47,8 @@ model Course {
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
   timelineEntries            TimelineEntry[]
 
-  permissions Permission[]
+  permissions        Permission[]
+  catalogAssignments CatalogCollectionAssignment[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   competencyTreeId Int?
