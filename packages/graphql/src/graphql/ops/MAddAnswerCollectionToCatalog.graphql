@@ -1,9 +1,11 @@
-mutation RequestAnswerCollection(
+mutation AddAnswerCollectionToCatalog(
   $collectionId: Int!
+  $access: ObjectAccess!
   $catalogCollectionId: String
 ) {
-  requestAnswerCollection(
+  addAnswerCollectionToCatalog(
     collectionId: $collectionId
+    access: $access
     catalogCollectionId: $catalogCollectionId
   ) {
     id

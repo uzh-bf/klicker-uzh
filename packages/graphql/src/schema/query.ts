@@ -63,7 +63,9 @@ import {
 } from './question.js'
 import {
   AnswerCollection,
+  CatalogAnswerCollection,
   CatalogObject,
+  CatalogSelectionObject,
   ObjectSharingRequest,
   PermissionInfo,
 } from './resource.js'
@@ -947,11 +949,20 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCatalogAnswerCollections: asUser.field({
+        nullable: true,
+        type: [CatalogSelectionObject],
+        resolve(_, __, ctx) {
+          return ResourcesService.getCatalogAnswerCollections(ctx)
+        },
+      }),
+
       getSingleAnswerCollectionCatalog: asUser.field({
         nullable: true,
-        type: AnswerCollection,
+        type: CatalogAnswerCollection,
         args: {
           collectionId: t.arg.int({ required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.getSingleAnswerCollectionCatalog(args, ctx)

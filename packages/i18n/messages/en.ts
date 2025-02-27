@@ -305,6 +305,7 @@ export default {
       PRACTICE_QUIZ: 'Practice Quiz',
       MICRO_LEARNING: 'Microlearning',
       GROUP_ACTIVITY: 'Group Activity',
+      ANSWER_COLLECTION: 'Answer Collection',
     },
     contentInput: {
       boldStyle:
@@ -2066,14 +2067,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Choose a name for your answer collection so it can be identified when creating elements or as a shared collection. The name will not be shown to students.',
       access: 'Access',
       accessTooltip:
-        'Choose whether this answer collection should only be visible to you or can also be imported by other users. With "restricted" access, other users can only request access to your answer collection.',
+        'Choose whether this object can be imported by all users with access to the selected catalog collection. With "restricted" access, other users must explicitly request access.',
       accessPUBLIC: 'Public',
       accessRESTRICTED: 'Restricted',
-      accessPRIVATE: 'Private',
       catalogCollection: 'Catalog Collection',
-      catalogCollectionTooltip:
-        'Here you can select a catalog collection in which your answer collection should be visible. Only users with access to the corresponding catalog collection can import your answer collection there or request access to it. If you do not select a catalog collection, the collection is visible to all users.',
-      noCatalogCollectionSelected: 'No catalog collection selected',
       descriptionTooltip:
         'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
       descriptionPlaceholder:
@@ -2089,11 +2086,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uniqueValuesRequired:
         'All options in an answer collection need to have a unique value. Please make sure that no two answers options coincide.',
       infoAccessPUBLIC:
-        'Public Answer Collections can be viewed by all users and imported via the catalog. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
-      infoAccessPRIVATE:
-        'Private answer collections are only visible to you and cannot be viewed by other users or imported via the catalog. You can grant access to individual users or user groups after creating the collection.',
+        'Public objects can be viewed and imported by all users with access to the corresponding catalog collection.',
       infoAccessRESTRICTED:
-        'Restricted answer collections can be requested by other users in the catalog and imported after your approval. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
+        'Restricted objects can be requested by other users in the catalog and used after your approval depending on the granted rights.',
       collectionCreationSuccess:
         'The answer collection was created successfully.',
       collectionCreationError:
@@ -2101,13 +2096,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       availableAnswerCollections: 'Available Answer Collections',
       noAnswerCollections:
         'No answer collections have been created or imported form the catalog yet.',
+      createAnswerCollection: 'Create Answer Collection',
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
       cancelRequest: 'Cancel Request',
       answerCollection: 'Answer Collection: {name}',
       saveChanges: 'Save changes',
-      infoAccessChangeLimited:
-        'This answer collection is already used by other users. Therefore, you can only relax the access rules further or no longer restrict them after a complete publication.',
       successfulCollectionEdit:
         'The changes to the answer collection have been saved successfully.',
       answerOptions: 'Answer Options',
@@ -2231,8 +2225,37 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       declineSuccessful: 'The sharing request was successfully declined.',
       declineFailed:
         'An error occurred while declining the sharing request. Please try again or contact the support.',
-      noCatalogCollectionSelectedWarning:
-        'If you do not assign your shared object (with an access status other than "Private") to a specific catalog collection, all other users can find it in the catalog and import it / request access to it.',
+      addObjectToCatalog: 'Add Object',
+      addObjectToCatalogTitle: 'Add Object to Catalog Collection',
+      selectObjectType: 'Select Object Type',
+      selectSpecificObject: 'Select Object',
+      selectObjectTypeInstructions: 'Select the type of object you want to add',
+      selectObjectTypeDescription:
+        'Please select the object type and visibility first and then the specific object you want to add to this catalog collection.',
+      objectTypeTooltip:
+        'The type of object that will be added to the catalog collection',
+      accessLevelTitle: 'Access Level',
+      objectTypeRequired: 'Please select an object type',
+      accessRequired: 'Please select an access level',
+      objectRequired: 'Please select an object to add',
+      selectSpecificObjectInstructions: 'Select a specific object to add',
+      selectSpecificObjectDescription:
+        'Choose a {type} from the list below to add to this catalog collection.',
+      selectObject: 'Select an object',
+      searchObjects: 'Search objects...',
+      noObjectsFound: 'No objects found',
+      noObjectsAvailable: 'No objects available for the selected type',
+      objectAddedSuccess: 'Object successfully added to the catalog collection',
+      objectAddedError: 'Failed to add object to the catalog collection',
+      selectObjectTypeFirst: 'Please select an object type first',
+      changeAccessTitle: 'Change Access Level',
+      changeAccessDescription:
+        'Are you sure you want to change the access level of the {objectType} "{objectName}" to {newAccess}?',
+      changeAccessConfirm: 'Change Access',
+      removeObjectTitle: 'Remove Object from Catalog Collection',
+      removeObjectDescription:
+        'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
+      removeObjectConfirm: 'Remove Object',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

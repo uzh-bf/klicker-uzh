@@ -9,7 +9,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, TextField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import CatalogObjectItem from './CatalogObjectItem'
 import ObjectFilters from './ObjectFilters'
 import useObjectFilters from './useObjectFilters'
@@ -21,13 +21,13 @@ function ObjectImport({
 }) {
   const t = useTranslations()
   const router = useRouter()
-
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<CatalogObjectType | ''>('')
   const [accessTypeFilter, setAccessTypeFilter] = useState<ObjectAccess | ''>(
     ''
   )
 
+  // TODO: also return the catalog collection title here - to be shown next to the Catalog title
   const { data, loading } = useQuery(GetCatalogObjectsDocument, {
     variables: {
       catalogCollectionId,
@@ -41,6 +41,13 @@ function ObjectImport({
     typeFilter,
     accessTypeFilter,
   })
+
+  // group filtered objects into a group that is owned / managed with admin access and others
+  const { managed, others } = useMemo(() => {
+    const managed = filteredObjects.filter((object) => object.isOwnerOrAdmin)
+    const others = filteredObjects.filter((object) => !object.isOwnerOrAdmin)
+    return { managed, others }
+  }, [filteredObjects])
 
   // set initial filter values based on query params
   useEffect(() => {
@@ -78,13 +85,33 @@ function ObjectImport({
         />
       </div>
       <div className="mt-2 flex flex-col border-t">
-        {filteredObjects && filteredObjects.length > 0 ? (
-          filteredObjects?.map((object) => (
-            <CatalogObjectItem
-              key={`catalog-object-${object.id}-${object.name}`}
-              object={object}
-            />
-          ))
+        {filteredObjects.length > 0 ? (
+          <div>
+            {managed.length > 0 && (
+              <div className="mb-3">
+                {managed.map((object) => (
+                  <CatalogObjectItem
+                    managedAccess
+                    key={`catalog-object-${object.id}-${object.name}`}
+                    object={object}
+                    catalogCollectionId={catalogCollectionId}
+                  />
+                ))}
+              </div>
+            )}
+            {others.length > 0 && (
+              <div>
+                {others.map((object) => (
+                  <CatalogObjectItem
+                    key={`catalog-object-${object.id}-${object.name}`}
+                    object={object}
+                    catalogCollectionId={catalogCollectionId}
+                    managedAccess={false}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           <UserNotification
             type="info"

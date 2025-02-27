@@ -65,7 +65,6 @@ export const AnswerCollection = AnswerCollectionRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
-    access: t.expose('access', { type: ObjectAccess }),
     accessType: t.expose('accessType', { type: AccessType }),
     description: t.exposeString('description'),
     entries: t.expose('entries', {
@@ -84,15 +83,33 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
-    catalogCollectionId: t.exposeString('catalogCollectionId', {
-      nullable: true,
-    }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
     isImported: t.exposeBoolean('isImported', { nullable: true }),
     isEditable: t.exposeBoolean('isEditable', { nullable: true }),
     isShareable: t.exposeBoolean('isShareable', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
     isDeletionAllowed: t.exposeBoolean('isDeletionAllowed', { nullable: true }),
+  }),
+})
+
+interface ICatalogAnswerCollection extends DB.AnswerCollection {
+  objectAccess: DB.ObjectAccess
+  ownerShortname?: string
+  entries?: DB.AnswerCollectionEntry[]
+}
+export const CatalogAnswerCollectionRef =
+  builder.objectRef<ICatalogAnswerCollection>('CatalogAnswerCollection')
+export const CatalogAnswerCollection = CatalogAnswerCollectionRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description'),
+    objectAccess: t.expose('objectAccess', { type: ObjectAccess }),
+    ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
+    entries: t.expose('entries', {
+      type: [AnswerCollectionEntryRef],
+      nullable: true,
+    }),
   }),
 })
 
@@ -134,11 +151,26 @@ export const CatalogObject = CatalogObjectRef.implement({
     uuid: t.exposeString('uuid', { nullable: true }),
     name: t.exposeString('name'),
     objectType: t.expose('objectType', { type: CatalogObjectType }),
+    assignmentId: t.exposeInt('assignmentId'),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     isRequested: t.exposeBoolean('isRequested'),
     isShared: t.exposeBoolean('isShared'),
     isOwner: t.exposeBoolean('isOwner'),
+    isOwnerOrAdmin: t.exposeBoolean('isOwnerOrAdmin'),
+  }),
+})
+
+interface ICatalogSelectionObject {
+  id: string
+  name: string
+}
+export const CatalogSelectionObjectRef =
+  builder.objectRef<ICatalogSelectionObject>('CatalogSelectionObject')
+export const CatalogSelectionObject = CatalogSelectionObjectRef.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    name: t.exposeString('name'),
   }),
 })
 

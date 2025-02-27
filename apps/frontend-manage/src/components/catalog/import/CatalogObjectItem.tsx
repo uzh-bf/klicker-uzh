@@ -6,6 +6,7 @@ import {
 import {
   faCheck,
   faList,
+  faX,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -18,12 +19,23 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import ObjectAccessRequestModal from './ObjectAccessRequestModal'
+import ObjectChangeAccessModal from './ObjectChangeAccessModal'
 import ObjectImportModal from './ObjectImportModal'
+import ObjectRemovalModal from './ObjectRemovalModal'
 import ObjectRequestCancellationModal from './ObjectRequestCancellationModal.tsx'
 
-function CatalogObjectItem({ object }: { object: CatalogObject }) {
+function CatalogObjectItem({
+  object,
+  catalogCollectionId,
+  managedAccess,
+}: {
+  object: CatalogObject
+  catalogCollectionId?: string
+  managedAccess: boolean
+}) {
   const t = useTranslations()
   const objectTypeIcons: Record<CatalogObjectType, IconDefinition> = {
     [CatalogObjectType.AnswerCollection]: faList,
@@ -34,6 +46,9 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
   const [requestCancellationModal, setRequestCancellationModal] =
     useState(false)
   const [importModal, setImportModal] = useState(false)
+  const [changeAccessModal, setChangeAccessModal] = useState(false)
+  const [removalModal, setRemovalModal] = useState(false)
+  const [newAccess, setNewAccess] = useState<ObjectAccess>(object.access)
 
   return (
     <>
@@ -138,22 +153,60 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
               <div>{t('manage.catalog.accessGranted')}</div>
             </div>
           ) : null}
+          {managedAccess ? (
+            <div className="flex flex-row gap-2">
+              <ObjectAccessSelection
+                compact
+                value={object.access}
+                onChange={(access) => {
+                  setNewAccess(access as ObjectAccess)
+                  setChangeAccessModal(true)
+                }}
+              />
+              <Button
+                onClick={(e) => {
+                  e?.stopPropagation()
+                  setRemovalModal(true)
+                }}
+                className={{ root: 'h-7' }}
+                data={{ cy: `remove-object-${object.name}` }}
+              >
+                <FontAwesomeIcon icon={faX} className="text-red-600" />
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
       <ObjectAccessRequestModal
         object={object}
         open={requestModal}
+        catalogCollectionId={catalogCollectionId}
         onClose={() => setRequestModal(false)}
       />
       <ObjectImportModal
         object={object}
         open={importModal}
+        catalogCollectionId={catalogCollectionId}
         onClose={() => setImportModal(false)}
       />
       <ObjectRequestCancellationModal
         object={object}
         open={requestCancellationModal}
+        catalogCollectionId={catalogCollectionId}
         onClose={() => setRequestCancellationModal(false)}
+      />
+      <ObjectChangeAccessModal
+        object={object}
+        newAccess={newAccess}
+        open={changeAccessModal}
+        catalogCollectionId={catalogCollectionId}
+        onClose={() => setChangeAccessModal(false)}
+      />
+      <ObjectRemovalModal
+        object={object}
+        open={removalModal}
+        catalogCollectionId={catalogCollectionId}
+        onClose={() => setRemovalModal(false)}
       />
     </>
   )

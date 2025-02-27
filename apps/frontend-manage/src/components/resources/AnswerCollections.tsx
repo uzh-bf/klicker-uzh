@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetAnswerCollectionsInfoDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H2, UserNotification } from '@uzh-bf/design-system'
+import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -37,9 +37,6 @@ function AnswerCollections() {
       </div>
       <div className="mt-6 flex flex-col lg:flex-row-reverse">
         <div className="lg:w-1/2 lg:border-l lg:pl-4">
-          <UserNotification type="info" className={{ root: 'mb-3' }}>
-            {t('manage.resources.selectCreateAnswerCollection')}
-          </UserNotification>
           <AnswerCollectionCreation />
         </div>
         <div className="lg:w-1/2 lg:pr-4">

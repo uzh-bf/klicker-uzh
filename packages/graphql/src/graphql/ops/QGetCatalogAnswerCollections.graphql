@@ -1,0 +1,6 @@
+query GetCatalogAnswerCollections {
+  getCatalogAnswerCollections {
+    id
+    name
+  }
+}

@@ -7,10 +7,12 @@ import RequestAnswerCollectionModal from './RequestAnswerCollectionModal'
 function ObjectAccessRequestModal({
   object,
   open,
+  catalogCollectionId,
   onClose,
 }: {
   object: CatalogObject
   open: boolean
+  catalogCollectionId?: string
   onClose: () => void
 }) {
   const t = useTranslations()
@@ -22,6 +24,7 @@ function ObjectAccessRequestModal({
         <RequestAnswerCollectionModal
           id={object.id!}
           open={open}
+          catalogCollectionId={catalogCollectionId}
           onClose={onClose}
           onSuccess={() => setSuccessToast(true)}
         />

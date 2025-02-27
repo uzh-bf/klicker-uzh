@@ -2,7 +2,6 @@ query GetAnswerCollectionsInfo {
   getAnswerCollectionsInfo {
     id
     name
-    access
     accessType
     sharingStatus
     sharingLevel

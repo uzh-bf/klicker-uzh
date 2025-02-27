@@ -9,26 +9,22 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateAnswerCollectionDocument,
   GetAnswerCollectionsInfoDocument,
-  ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikTextField,
+  H3,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { FieldArray, Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
-import AnswerCollectionAccessSelection from './AnswerCollectionAccessSelection'
-import AnswerCollectionCatalogSelection from './AnswerCollectionCatalogSelection'
 
 type AnswerCollectionFormValues = {
   name?: string
-  access: ObjectAccess
   description?: string
   entries: { value?: string }[]
-  catalogCollectionId: string
 }
 
 function AnswerCollectionCreationForm({
@@ -70,11 +66,10 @@ function AnswerCollectionCreationForm({
 
   return (
     <div className="mb-6">
+      <H3>{t('manage.resources.createAnswerCollection')}</H3>
       <Formik
         initialValues={{
           name: undefined,
-          access: ObjectAccess.Private,
-          catalogCollectionId: '',
           description: undefined,
           entries: [{ value: undefined }, { value: undefined }],
         }}
@@ -83,12 +78,7 @@ function AnswerCollectionCreationForm({
             variables: {
               name: values.name!,
               description: values.description!,
-              access: values.access,
               answers: values.entries.map((entry) => entry.value!),
-              catalogCollectionId:
-                values.catalogCollectionId === ''
-                  ? undefined
-                  : values.catalogCollectionId,
             },
             update: (cache, { data }) => {
               if (!data?.createAnswerCollection) return
@@ -123,25 +113,13 @@ function AnswerCollectionCreationForm({
       >
         {({ values, errors, isValid, isSubmitting }) => (
           <Form>
-            <div className="mb-1 flex space-x-4">
-              <FormikTextField
-                required
-                name="name"
-                label={t('manage.resources.name')}
-                tooltip={t('manage.resources.nameTooltip')}
-                data={{ cy: 'answer-collection-name' }}
-              />
-              <AnswerCollectionAccessSelection />
-            </div>
-            {values.access !== ObjectAccess.Private ? (
-              <AnswerCollectionCatalogSelection />
-            ) : null}
-            {typeof values.access !== 'undefined' ? (
-              <UserNotification
-                message={t(`manage.resources.infoAccess${values.access}`)}
-                className={{ root: 'my-2' }}
-              />
-            ) : null}
+            <FormikTextField
+              required
+              name="name"
+              label={t('manage.resources.name')}
+              tooltip={t('manage.resources.nameTooltip')}
+              data={{ cy: 'answer-collection-name' }}
+            />
             <EditorField
               required
               label={t('shared.generic.description')}

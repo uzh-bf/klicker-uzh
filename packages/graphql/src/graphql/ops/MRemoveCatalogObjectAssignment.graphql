@@ -1,0 +1,3 @@
+mutation RemoveCatalogObjectAssignment($assignmentId: Int!) {
+  removeCatalogObjectAssignment(assignmentId: $assignmentId)
+}

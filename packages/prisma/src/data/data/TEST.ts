@@ -4,10 +4,9 @@ const { ElementType, PublicationStatus } = Prisma
 
 export const ANSWER_COLLECTIONS = [
   {
-    name: 'Public Collection (Fruits)',
+    name: 'Collection 1 (Fruits)',
     description:
       'This collection contains questions about fruits. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.ObjectAccess.PUBLIC,
     entries: [
       {
         value: 'Apple',
@@ -81,10 +80,9 @@ export const ANSWER_COLLECTIONS = [
     ],
   },
   {
-    name: 'Private Collection (Vegetables)',
+    name: 'Collection 2 (Vegetables)',
     description:
       'This collection contains questions about vegetables. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.ObjectAccess.PRIVATE,
     entries: [
       {
         value: 'Artichoke',
@@ -107,10 +105,9 @@ export const ANSWER_COLLECTIONS = [
     ],
   },
   {
-    name: 'Restricted Collection (Animals)',
+    name: 'Collection 3 (Animals)',
     description:
       'This collection contains questions about animals. The description supports markdown syntax such as **bold** and *italic*.',
-    access: Prisma.ObjectAccess.RESTRICTED,
     entries: [
       {
         value: 'Antelope',
@@ -131,6 +128,19 @@ export const ANSWER_COLLECTIONS = [
         value: 'Fox',
       },
     ],
+  },
+]
+
+export const CATALOG_ASSIGNMENTS = [
+  {
+    answerCollectionName: ANSWER_COLLECTIONS[0]!.name,
+    catalogCollectionName: undefined,
+    access: Prisma.ObjectAccess.PUBLIC,
+  },
+  {
+    answerCollectionName: ANSWER_COLLECTIONS[2]!.name,
+    catalogCollectionName: undefined,
+    access: Prisma.ObjectAccess.RESTRICTED,
   },
 ]
 

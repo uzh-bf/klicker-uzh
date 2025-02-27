@@ -137,7 +137,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         create: {
           name: data.name,
           description: data.description,
-          access: data.access,
           owner: {
             connect: {
               id: USER_ID_TEST,
@@ -146,19 +145,45 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           entries: {
             create: data.entries,
           },
-          catalogCollection:
-            data.access !== 'PRIVATE'
-              ? {
-                  connect: {
-                    id: missingCatalogCollection.id,
-                  },
-                }
-              : undefined,
         },
         update: {},
         include: {
           entries: true,
         },
+      })
+    })
+  )
+
+  // assign answer collections to catalog collections, if defined in relation
+  const catalogAnswerCollectionAssignments = await Promise.all(
+    DATA_TEST.CATALOG_ASSIGNMENTS.map(async (data) => {
+      const collection = answerCollections.find(
+        (ac) => ac.name === data.answerCollectionName
+      )
+      // TODO: once available, fetch catalog collections here and assign same answer collection to multiple for testing
+      const catalogCollectionId = missingCatalogCollection.id
+
+      return prisma.catalogCollectionAssignment.upsert({
+        where: {
+          answerCollectionId_catalogCollectionId: {
+            answerCollectionId: collection!.id,
+            catalogCollectionId,
+          },
+        },
+        create: {
+          access: data.access,
+          answerCollection: {
+            connect: {
+              id: collection!.id,
+            },
+          },
+          catalogCollection: {
+            connect: {
+              id: catalogCollectionId,
+            },
+          },
+        },
+        update: {},
       })
     })
   )

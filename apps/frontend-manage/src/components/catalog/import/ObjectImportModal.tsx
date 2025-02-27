@@ -7,10 +7,12 @@ import ImportAnswerCollectionModal from './ImportAnswerCollectionModal'
 function ObjectImportModal({
   object,
   open,
+  catalogCollectionId,
   onClose,
 }: {
   object: CatalogObject
   open: boolean
+  catalogCollectionId?: string
   onClose: () => void
 }) {
   const t = useTranslations()
@@ -22,6 +24,7 @@ function ObjectImportModal({
         <ImportAnswerCollectionModal
           id={object.id!}
           open={open}
+          catalogCollectionId={catalogCollectionId}
           onClose={onClose}
           onSuccess={() => setSuccessToast(true)}
         />

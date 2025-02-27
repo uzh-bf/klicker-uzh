@@ -15,11 +15,13 @@ import { useState } from 'react'
 function ImportAnswerCollectionModal({
   id,
   open,
+  catalogCollectionId,
   onClose,
   onSuccess,
 }: {
   id: number
   open: boolean
+  catalogCollectionId?: string
   onClose: () => void
   onSuccess: () => void
 }) {
@@ -31,13 +33,14 @@ function ImportAnswerCollectionModal({
   const { data, loading } = useQuery(GetSingleAnswerCollectionCatalogDocument, {
     variables: {
       collectionId: id,
+      catalogCollectionId,
     },
   })
 
   const [importAnswerCollection, { loading: importLoading }] = useMutation(
     ImportAnswerCollectionDocument,
     {
-      variables: { collectionId: id },
+      variables: { collectionId: id, catalogCollectionId },
     }
   )
 

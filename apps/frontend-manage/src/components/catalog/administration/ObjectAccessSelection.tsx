@@ -1,0 +1,48 @@
+import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import { SelectField } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
+import ObjectAccessLabel from '../ObjectAccessLabel'
+
+function ObjectAccessSelection({
+  value,
+  onChange,
+  compact,
+}: {
+  value: ObjectAccess
+  onChange: (value: ObjectAccess) => void
+  compact?: boolean
+}) {
+  const t = useTranslations()
+
+  return (
+    <SelectField
+      required
+      value={value}
+      onChange={(value) => onChange(value as ObjectAccess)}
+      label={!compact ? t('manage.resources.access') : undefined}
+      tooltip={!compact ? t('manage.resources.accessTooltip') : undefined}
+      items={[
+        {
+          value: ObjectAccess.Restricted,
+          label: <ObjectAccessLabel accessType={ObjectAccess.Restricted} />,
+          data: { cy: 'answer-collection-access-restricted' },
+        },
+        {
+          value: ObjectAccess.Public,
+          label: <ObjectAccessLabel accessType={ObjectAccess.Public} />,
+          data: { cy: 'answer-collection-access-public' },
+        },
+      ]}
+      data={{ cy: 'answer-collection-access' }}
+      className={{
+        select: {
+          trigger: twMerge('h-9 w-48', compact && 'h-7 w-40 text-sm'),
+          item: compact ? 'text-sm' : '',
+        },
+      }}
+    />
+  )
+}
+
+export default ObjectAccessSelection

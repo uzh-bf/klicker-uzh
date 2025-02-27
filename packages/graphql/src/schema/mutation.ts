@@ -1232,10 +1232,8 @@ export const Mutation = builder.mutationType({
         type: AnswerCollection,
         args: {
           name: t.arg.string({ required: true }),
-          access: t.arg({ type: ObjectAccess, required: true }),
           description: t.arg.string({ required: true }),
           answers: t.arg.stringList({ required: true }),
-          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.createAnswerCollection(args, ctx)
@@ -1248,9 +1246,7 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           name: t.arg.string({ required: false }),
-          access: t.arg({ type: ObjectAccess, required: false }),
           description: t.arg.string({ required: false }),
-          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.modifyAnswerCollection(args, ctx)
@@ -1294,10 +1290,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      addAnswerCollectionToCatalog: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CatalogObject,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          access: t.arg({ type: ObjectAccess, required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.addAnswerCollectionToCatalog(args, ctx)
+        },
+      }),
+
       importAnswerCollection: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
           collectionId: t.arg.int({ required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.importAnswerCollection(args, ctx)
@@ -1309,6 +1319,7 @@ export const Mutation = builder.mutationType({
         type: CatalogObject,
         args: {
           collectionId: t.arg.int({ required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
           return ResourcesService.requestAnswerCollection(args, ctx)
@@ -1394,6 +1405,27 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.revokeCollectionAccess(args, ctx)
+        },
+      }),
+
+      changeCatalogObjectAccessLevel: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          assignmentId: t.arg.int({ required: true }),
+          accessLevel: t.arg({ type: ObjectAccess, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.changeCatalogObjectAccessLevel(args, ctx)
+        },
+      }),
+
+      removeCatalogObjectAssignment: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          assignmentId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.removeCatalogObjectAssignment(args, ctx)
         },
       }),
 
