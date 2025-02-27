@@ -199,6 +199,7 @@ function CatalogObjectItem({
         object={object}
         newAccess={newAccess}
         open={changeAccessModal}
+        catalogCollectionId={catalogCollectionId}
         onClose={() => setChangeAccessModal(false)}
       />
       <ObjectRemovalModal

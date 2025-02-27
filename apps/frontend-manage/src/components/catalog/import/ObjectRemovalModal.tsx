@@ -61,11 +61,17 @@ function ObjectRemovalModal({
                   // update list of answer collections
                   const catalogObjects = cache.readQuery({
                     query: GetCatalogObjectsDocument,
+                    variables: {
+                      catalogCollectionId,
+                    },
                   })
 
                   if (catalogObjects?.getCatalogObjects) {
                     cache.writeQuery({
                       query: GetCatalogObjectsDocument,
+                      variables: {
+                        catalogCollectionId,
+                      },
                       data: {
                         getCatalogObjects:
                           catalogObjects?.getCatalogObjects.filter(

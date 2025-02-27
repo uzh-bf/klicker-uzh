@@ -50,6 +50,9 @@ function RequestAnswerCollectionModal({
         // update lists of answer collections
         const catalogObjects = cache.readQuery({
           query: GetCatalogObjectsDocument,
+          variables: {
+            catalogCollectionId,
+          },
         })
 
         if (catalogObjects?.getCatalogObjects) {
@@ -65,6 +68,9 @@ function RequestAnswerCollectionModal({
 
           cache.writeQuery({
             query: GetCatalogObjectsDocument,
+            variables: {
+              catalogCollectionId,
+            },
             data: {
               getCatalogObjects: updatedObjects,
             },

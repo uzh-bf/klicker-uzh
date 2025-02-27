@@ -12,11 +12,13 @@ function ObjectChangeAccessModal({
   object,
   newAccess,
   open,
+  catalogCollectionId,
   onClose,
 }: {
   object: CatalogObject
   newAccess: ObjectAccess
   open: boolean
+  catalogCollectionId?: string
   onClose: () => void
 }) {
   const t = useTranslations()
@@ -64,11 +66,17 @@ function ObjectChangeAccessModal({
                   // update list of answer collections
                   const catalogObjects = cache.readQuery({
                     query: GetCatalogObjectsDocument,
+                    variables: {
+                      catalogCollectionId,
+                    },
                   })
 
                   if (catalogObjects?.getCatalogObjects) {
                     cache.writeQuery({
                       query: GetCatalogObjectsDocument,
+                      variables: {
+                        catalogCollectionId,
+                      },
                       data: {
                         getCatalogObjects:
                           catalogObjects?.getCatalogObjects.map((obj) =>

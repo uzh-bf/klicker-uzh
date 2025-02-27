@@ -50,6 +50,9 @@ function RequestCancellationModal({
         // update list of answer collections
         const catalogObjects = cache.readQuery({
           query: GetCatalogObjectsDocument,
+          variables: {
+            catalogCollectionId,
+          },
         })
 
         if (catalogObjects?.getCatalogObjects) {
@@ -65,6 +68,9 @@ function RequestCancellationModal({
 
           cache.writeQuery({
             query: GetCatalogObjectsDocument,
+            variables: {
+              catalogCollectionId,
+            },
             data: {
               getCatalogObjects: updatedObjects,
             },
