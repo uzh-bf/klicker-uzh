@@ -149,19 +149,25 @@ export const CatalogObject = CatalogObjectRef.implement({
 
 interface IPermissionInfo {
   permissionId: number
+  userId?: string
   username?: string
   userEmail?: string
   userGroupName?: string
   accessLevel: DB.AccessLevel
+  isRevokable?: boolean
+  isOwn?: boolean
 }
 export const PermissionInfoRef =
   builder.objectRef<IPermissionInfo>('PermissionInfo')
 export const PermissionInfo = PermissionInfoRef.implement({
   fields: (t) => ({
     permissionId: t.exposeInt('permissionId'),
+    userId: t.exposeString('userId', { nullable: true }),
     username: t.exposeString('username', { nullable: true }),
     userEmail: t.exposeString('userEmail', { nullable: true }),
     userGroupName: t.exposeString('userGroupName', { nullable: true }),
     accessLevel: t.expose('accessLevel', { type: AccessLevel }),
+    isRevokable: t.exposeBoolean('isRevokable', { nullable: true }),
+    isOwn: t.exposeBoolean('isOwn', { nullable: true }),
   }),
 })

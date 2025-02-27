@@ -1,0 +1,6 @@
+mutation RevokeCollectionAccess($permissionId: Int!, $collectionId: Int!) {
+  revokeCollectionAccess(
+    permissionId: $permissionId
+    collectionId: $collectionId
+  )
+}

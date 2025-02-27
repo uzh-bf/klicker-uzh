@@ -1378,6 +1378,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
+  revokeCollectionAccess(collectionId: Int!, permissionId: Int!): Int
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
@@ -1702,9 +1703,12 @@ type PerformanceRates {
 
 type PermissionInfo {
   accessLevel: AccessLevel!
+  isOwn: Boolean
+  isRevokable: Boolean
   permissionId: Int!
   userEmail: String
   userGroupName: String
+  userId: String
   username: String
 }
 

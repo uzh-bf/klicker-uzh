@@ -6,11 +6,14 @@ import {
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogSharingRequestsDocument,
+  RevokeCollectionAccessDocument,
   ShareAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import CollectionAccessRemovalErrorToast from '../sharing/CollectionAccessRemovalErrorToast'
+import CollectionAccessRemovalSuccessToast from '../sharing/CollectionAccessRemovalSuccessToast'
 import CollectionSharingErrorToast from '../sharing/CollectionSharingErrorToast'
 import CollectionSharingSuccessToast from '../sharing/CollectionSharingSuccessToast'
 import GrantedPermissionsTable from '../sharing/GrantedPermissionsTable'
@@ -32,6 +35,8 @@ function CollectionSharingModal({
   const t = useTranslations()
   const [sharingSuccess, setSharingSuccess] = useState(false)
   const [sharingFailure, setSharingFailure] = useState(false)
+  const [removalSuccess, setRemovalSuccess] = useState(false)
+  const [removalFailure, setRemovalFailure] = useState(false)
 
   // get all permissions that have already been granted for this collection
   const { data, loading: permissionsLoading } = useQuery(
@@ -50,6 +55,9 @@ function CollectionSharingModal({
   const [changeCollectionAccessLevel, { loading: changeLoading }] = useMutation(
     ChangeCollectionAccessLevelDocument
   )
+
+  // mutation to revoke access for a certain permission
+  const [revokeCollectionAccess] = useMutation(RevokeCollectionAccessDocument)
 
   return (
     <>
@@ -101,6 +109,10 @@ function CollectionSharingModal({
                     return
                   }
 
+                  const modifiedPermissionId =
+                    data.changeCollectionAccessLevel!.permissionId
+                  const newAccessLevel =
+                    data.changeCollectionAccessLevel!.accessLevel
                   cache.writeQuery({
                     query: GetAnswerCollectionPermissionsDocument,
                     variables: {
@@ -110,8 +122,8 @@ function CollectionSharingModal({
                       getAnswerCollectionPermissions:
                         prevPermissions.getAnswerCollectionPermissions.map(
                           (permission) =>
-                            permission.permissionId === permissionId
-                              ? data.changeCollectionAccessLevel!
+                            permission.permissionId === modifiedPermissionId
+                              ? { ...permission, accessLevel: newAccessLevel }
                               : permission
                         ),
                     },
@@ -123,7 +135,58 @@ function CollectionSharingModal({
                 ],
               })
             }}
-            onPermissionRemoval={async () => {}} // TODO: implement mutation
+            onPermissionRemoval={async (permissionId) => {
+              try {
+                const result = await revokeCollectionAccess({
+                  variables: {
+                    collectionId: collection.id,
+                    permissionId,
+                  },
+                  update: (cache, { data }) => {
+                    const prevPermissions = cache.readQuery({
+                      query: GetAnswerCollectionPermissionsDocument,
+                      variables: {
+                        collectionId: collection.id,
+                      },
+                    })
+
+                    const removedId = data?.revokeCollectionAccess
+                    if (
+                      !prevPermissions?.getAnswerCollectionPermissions ||
+                      typeof removedId === 'undefined'
+                    ) {
+                      return
+                    }
+
+                    cache.writeQuery({
+                      query: GetAnswerCollectionPermissionsDocument,
+                      variables: {
+                        collectionId: collection.id,
+                      },
+                      data: {
+                        getAnswerCollectionPermissions:
+                          prevPermissions.getAnswerCollectionPermissions.filter(
+                            (permission) =>
+                              permission.permissionId !== removedId
+                          ),
+                      },
+                    })
+                  },
+                  refetchQueries: [
+                    GetAnswerCollectionsInfoDocument,
+                    GetCatalogSharingRequestsDocument,
+                  ],
+                })
+
+                if (result.data?.revokeCollectionAccess) {
+                  setRemovalSuccess(true)
+                } else {
+                  setRemovalFailure(true)
+                }
+              } catch (error) {
+                setRemovalFailure(true)
+              }
+            }}
             onNewPermissionSuccess={() => setSharingSuccess(true)}
             onNewPermissionFailure={() => setSharingFailure(true)}
             onOwnershipTransfer={onOwnershipTransfer}
@@ -192,6 +255,14 @@ function CollectionSharingModal({
       <CollectionSharingErrorToast
         open={sharingFailure}
         onClose={() => setSharingFailure(false)}
+      />
+      <CollectionAccessRemovalSuccessToast
+        open={removalSuccess}
+        onClose={() => setRemovalSuccess(false)}
+      />
+      <CollectionAccessRemovalErrorToast
+        open={removalFailure}
+        onClose={() => setRemovalFailure(false)}
       />
     </>
   )

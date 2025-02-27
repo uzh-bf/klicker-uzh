@@ -7,9 +7,12 @@ mutation TransferCollectionOwnership(
     usernameOrEmail: $usernameOrEmail
   ) {
     permissionId
+    userId
     username
     userEmail
     userGroupName
     accessLevel
+    isRevokable
+    isOwn
   }
 }
