@@ -88,5 +88,21 @@
     "replacedEntry": "Eleven NEW",
     "newEntry": "Twenty-One",
     "newEntry2": "Twenty-Two"
+  },
+  "ownership": {
+    "name": "Ownership Answer Collection",
+    "description": "This is an ownership answer collection",
+    "items": [
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten"
+    ]
   }
 }

@@ -2048,4 +2048,178 @@ describe('Create, edit and share answer collections', function () {
     validateDatabaseContent()
   })
   // #endregion
+
+  // ! 8. Miscellaneous (e.g. ownership transfer)
+  // #region
+  it('Create a new answer collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.createAnswerCollection({
+      name: this.data.ownership.name,
+      accessCy: 'private',
+      access: messages.manage.resources.accessPRIVATE,
+      description: this.data.ownership.description,
+      entries: this.data.ownership.items,
+    })
+  })
+
+  it("Grant READ permissions to user 'pro1'", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // directly add permission for user pro1
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_IND_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.resources.accessREAD
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+
+    // verify that permission has been created correctly
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessREAD)
+  })
+
+  it("Transfer ownership to user 'pro2' using the e-mail address", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get('[data-cy="transfer-ownership"]').click()
+
+    // transfer ownership to user pro2
+    cy.get('[data-cy="cancel-ownership-transfer"]').click()
+    cy.get('[data-cy="transfer-ownership"]').click()
+    cy.get('[data-cy="new-owner-username-email-input"]').type(
+      Cypress.env('LECTURER_INST_EMAIL')
+    )
+    cy.get('[data-cy="confirm-ownership-transfer"]').click()
+
+    // verify that admin permission has been created for pervious owner, but ownership transfer functionality is not visible anymore
+    cy.get('[data-cy="transfer-ownership"]').should('not.exist')
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessADMIN)
+  })
+
+  it("Verify that user 'pro2' is the new owner with an overview of all permissions", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // verify that all permissions are visible
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessREAD)
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+  })
+
+  it("Verify that user 'pro1' still has read access to the answer collection", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.ownership.name}"]`).should(
+      'exist'
+    )
+
+    // validate content of viewing modal
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.wrap(this.data.ownership.items).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
+  })
+
+  it("Transfer ownership to user 'pro1' using the username", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get('[data-cy="transfer-ownership"]').click()
+    cy.get('[data-cy="new-owner-username-email-input"]').type(
+      Cypress.env('LECTURER_IND_SHORTNAME')
+    )
+    cy.get('[data-cy="confirm-ownership-transfer"]').click()
+
+    // verify that the correct permissions are displayed
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+  })
+
+  it("Verify that user 'pro1' is the new owner with an overview of all permissions", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+
+    // verify that all permissions are visible
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).contains(messages.manage.resources.accessADMIN)
+  })
+
+  it('Cleanup: Remove the answer collection from the main user', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    removeAnswerCollection({ name: this.data.ownership.name })
+  })
+
+  it('Cleanup: Remove the answer collection from user pro2', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    removeAnswerCollection({ name: this.data.ownership.name })
+  })
+
+  it('Cleanup: Delete the answer collection', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.ownership.name })
+  })
+
+  it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
+    validateDatabaseContent()
+  })
+  // #endregion
 })
