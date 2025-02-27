@@ -300,7 +300,6 @@ export default {
       owner: 'Besitzer',
       userGroup: 'Benutzergruppe',
       accessLevel: 'Zugriffsrechte',
-      emailPlaceholder: 'E-Mail-Adresse eingeben',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',

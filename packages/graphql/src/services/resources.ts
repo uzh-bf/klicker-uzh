@@ -381,8 +381,12 @@ export async function transferCollectionOwnership(
         },
       ],
     },
-    select: {
-      id: true,
+    include: {
+      sharedObjects: {
+        where: {
+          answerCollectionId: collectionId,
+        },
+      },
     },
   })
 
@@ -459,6 +463,18 @@ export async function transferCollectionOwnership(
       },
     },
   })
+
+  // if the new owner previously had a permission on the collection, delete it
+  if (newOwner.sharedObjects.length > 0) {
+    await ctx.prisma.permission.delete({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: collectionId,
+          userId: newOwner.id,
+        },
+      },
+    })
+  }
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedCollection.permissions[0]

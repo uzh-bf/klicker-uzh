@@ -40,44 +40,15 @@ function TransferCollectionOwnershipModal({
             collectionId,
             usernameOrEmail,
           },
-          update: (cache, { data }) => {
-            if (!data?.transferCollectionOwnership) return
-
-            const cacheRes = cache.readQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId,
-              },
-            })
-
-            const prevPermissions = cacheRes?.getAnswerCollectionPermissions
-            if (
-              prevPermissions === null ||
-              typeof prevPermissions === 'undefined'
-            ) {
-              return
-            }
-
-            // update the permissions list with the current owner as an admin user
-            const newPermissions = prevPermissions.filter(
-              (permission) =>
-                permission.permissionId !==
-                data.transferCollectionOwnership!.permissionId
-            )
-            newPermissions.push(data.transferCollectionOwnership)
-            cache.writeQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId,
-              },
-              data: {
-                getAnswerCollectionPermissions: newPermissions,
-              },
-            })
-          },
           refetchQueries: [
             GetAnswerCollectionsInfoDocument,
             GetCatalogSharingRequestsDocument,
+            {
+              // use refetch query instead of cache update, because new owner permissions might also
+              // be removed in addition to the added new admin permission for the previous owner
+              query: GetAnswerCollectionPermissionsDocument,
+              variables: { collectionId },
+            },
           ],
         })
 
