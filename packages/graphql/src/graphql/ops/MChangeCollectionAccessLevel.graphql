@@ -9,9 +9,6 @@ mutation ChangeCollectionAccessLevel(
     accessLevel: $accessLevel
   ) {
     permissionId
-    username
-    userEmail
-    userGroupName
     accessLevel
   }
 }

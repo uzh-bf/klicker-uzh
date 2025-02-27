@@ -15,5 +15,6 @@ mutation ShareAnswerCollection(
     userEmail
     userGroupName
     accessLevel
+    isRevokable
   }
 }

@@ -2183,6 +2183,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       ownershipTransferError:
         'An error occurred while transferring ownership. Please make sure the email address or username is correct and try again.',
       usernameOrEmailRequired: 'Please enter a username or email address.',
+      accessRemovalSuccessful: 'Access has been successfully removed.',
+      accessRemovalFailed:
+        'Failed to remove access. Please try again or contact support.',
+      revokeAccessDisabledTooltip:
+        'The access to the answer collection cannot be revoked because this user is actively using the collection.',
     },
     userGroups: {
       comingSoon:

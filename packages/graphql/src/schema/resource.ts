@@ -153,6 +153,7 @@ interface IPermissionInfo {
   userEmail?: string
   userGroupName?: string
   accessLevel: DB.AccessLevel
+  isRevokable?: boolean
 }
 export const PermissionInfoRef =
   builder.objectRef<IPermissionInfo>('PermissionInfo')
@@ -163,5 +164,6 @@ export const PermissionInfo = PermissionInfoRef.implement({
     userEmail: t.exposeString('userEmail', { nullable: true }),
     userGroupName: t.exposeString('userGroupName', { nullable: true }),
     accessLevel: t.expose('accessLevel', { type: AccessLevel }),
+    isRevokable: t.exposeBoolean('isRevokable', { nullable: true }),
   }),
 })

@@ -2210,6 +2210,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei der Übertragung der Eigentumsrechte ist leider ein Fehler aufgetreten. Bitte stellen Sie sicher, dass E-Mail Adresse / Nutzername korrekt sind.',
       usernameOrEmailRequired:
         'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',
+      accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
+      accessRemovalFailed:
+        'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      revokeAccessDisabledTooltip:
+        'Der Zugriff kann nicht entzogen werden, da dieser Nutzer die Sammlung aktiv verwendet.',
     },
     userGroups: {
       comingSoon:

@@ -1990,6 +1990,17 @@ describe('Create, edit and share answer collections', function () {
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).contains(messages.manage.resources.accessREAD)
+
+    // verify that none of the permissions can be revoked (as they are all used)
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('be.disabled')
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('be.disabled')
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('be.disabled')
   })
 
   it("Verify that user 'pro1' has read permissions again and can view the answer collection", function () {
@@ -2010,14 +2021,37 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
-  it("Cleanup: Remove the created question and answer collection for user 'pro1'", function () {
+  it("Remove the created question for user 'pro1'", function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.deleteElement({ elementName: this.data.question.title })
+  })
+
+  it("Revoke the access to the user collection for user 'pro1'", function () {
+    cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    removeAnswerCollection({ name: this.data.access.name })
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    ).should('not.exist')
+
+    // verify that the remaining permissions can still not be revoked
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('be.disabled')
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('be.disabled')
   })
+
+  // TODO: once available, delete the question from user pro2, verify that the access can then be revoked, share the question from user pro3 with pro2 and verify that access revokal is no longer possible, remove access to question again and revoke access
 
   it("Cleanup: Remove the created question and answer collection for user 'pro2'", function () {
     cy.loginInstitutionalCatalyst()

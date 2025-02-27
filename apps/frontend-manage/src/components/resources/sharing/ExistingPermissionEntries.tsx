@@ -5,7 +5,9 @@ import {
   CatalogObjectType,
   PermissionInfo,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Select } from '@uzh-bf/design-system'
+import { Button, Select, Tooltip } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
 
 function ExistingPermissionEntries({
@@ -28,6 +30,33 @@ function ExistingPermissionEntries({
   onPermissionRemoval: (permissionId: number) => Promise<void>
 }) {
   const accessLevelSelectItems = useAccessLevelSelection({ type })
+  const t = useTranslations()
+
+  const AccessRevokationButton = ({
+    permission,
+    disabled,
+    className,
+  }: {
+    permission: PermissionInfo
+    disabled?: boolean
+    className?: string
+  }) => (
+    <Button
+      basic
+      disabled={disabled}
+      className={{
+        root: twMerge('mt-1 text-red-600 hover:text-red-800', className),
+      }}
+      onClick={async () => await onPermissionRemoval(permission.permissionId)}
+      data={{
+        cy: permission.username
+          ? `revoke-permission-${permission.username}`
+          : `revoke-permission-${permission.userGroupName}`,
+      }}
+    >
+      <FontAwesomeIcon icon={faTrashCan} className="mt-1 h-4 w-4" />
+    </Button>
+  )
 
   return permissions
     ?.filter((permission) => permission.username || permission.userGroupName)
@@ -71,22 +100,20 @@ function ExistingPermissionEntries({
           />
         </td>
         <td className="w-10 text-center">
-          <Button
-            basic
-            className={{
-              root: 'mt-1 text-red-600 hover:text-red-800',
-            }}
-            onClick={async () =>
-              await onPermissionRemoval(permission.permissionId)
-            }
-            data={{
-              cy: permission.username
-                ? `remove-permission-${permission.username}`
-                : `remove-permission-${permission.userGroupName}`,
-            }}
-          >
-            <FontAwesomeIcon icon={faTrashCan} className="h-4 w-4" />
-          </Button>
+          {permission.isRevokable ? (
+            <AccessRevokationButton permission={permission} />
+          ) : (
+            <Tooltip
+              tooltip={t('manage.resources.revokeAccessDisabledTooltip')}
+              className={{ tooltip: 'max-w-[30rem] text-sm' }}
+            >
+              <AccessRevokationButton
+                disabled
+                permission={permission}
+                className="text-gray-400 hover:text-gray-400"
+              />
+            </Tooltip>
+          )}
         </td>
       </tr>
     ))

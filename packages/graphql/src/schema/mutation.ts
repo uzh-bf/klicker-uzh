@@ -1386,6 +1386,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      revokeCollectionAccess: t.withAuth(asUserFullAccess).int({
+        nullable: true,
+        args: {
+          permissionId: t.arg.int({ required: true }),
+          collectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.revokeCollectionAccess(args, ctx)
+        },
+      }),
+
       approveObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
