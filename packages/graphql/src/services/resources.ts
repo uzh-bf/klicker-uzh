@@ -15,16 +15,12 @@ const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
 export async function createAnswerCollection(
   {
     name,
-    access,
     description,
     answers,
-    catalogCollectionId,
   }: {
     name: string
-    access: DB.ObjectAccess
     description: string
     answers: string[]
-    catalogCollectionId?: string | null
   },
   ctx: ContextWithUser
 ) {
@@ -45,7 +41,6 @@ export async function createAnswerCollection(
   const newCollection = await ctx.prisma.answerCollection.create({
     data: {
       name,
-      access,
       description,
       entries: {
         create: answers.map((answer) => ({
@@ -57,15 +52,6 @@ export async function createAnswerCollection(
           id: ctx.user.sub,
         },
       },
-      // connect to catalog collection if provided (and to empty catalog if not private)
-      catalogCollection:
-        access !== DB.ObjectAccess.PRIVATE
-          ? {
-              connect: {
-                id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-              },
-            }
-          : undefined,
     },
     include: {
       _count: {
@@ -260,18 +246,12 @@ export async function getSingleAnswerCollection(
     return null
   }
 
-  const catalogCollectionId =
-    collection.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID
-      ? null // return null if collection is not linked to any catalog
-      : collection.catalogCollectionId
-
   // return owned collection (editable, etc. if the ownerId is the user's id)
   if (collection.ownerId === ctx.user.sub) {
     return {
       ...collection,
       accessType: AccessType.OWNER,
       numSharedUsers: collection._count?.permissions,
-      catalogCollectionId,
       entries: collection.entries.map((entry) => ({
         ...entry,
         numSolutionUsages: entry._count?.itemUsages,
@@ -287,7 +267,6 @@ export async function getSingleAnswerCollection(
       sharingStatus: DB.PermissionStatus.GRANTED, // need to be granted for query above to succeed
       sharingLevel: accessLevel ?? DB.AccessLevel.READ,
       ownerShortname: collection.owner?.shortname,
-      catalogCollectionId,
       isOwner: false,
       isEditable:
         accessLevel === DB.AccessLevel.WRITE ||
@@ -889,15 +868,11 @@ export async function modifyAnswerCollection(
   {
     id,
     name,
-    access,
     description,
-    catalogCollectionId,
   }: {
     id: number
     name?: string | null
-    access?: DB.ObjectAccess | null
     description?: string | null
-    catalogCollectionId?: string | null
   },
   ctx: ContextWithUser
 ) {
@@ -952,47 +927,38 @@ export async function modifyAnswerCollection(
       },
       data: {
         name: name ?? undefined,
-        access: access ?? undefined,
         description: description ?? undefined,
         version: {
           increment: 1,
         },
-        // for non-private collections, set a catalog collection, for private ones, remove it
-        catalogCollection:
-          access !== DB.ObjectAccess.PRIVATE
-            ? {
-                connect: {
-                  id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-                },
-              }
-            : { disconnect: true },
       },
       include: {
         entries: true,
       },
     })
 
-    // if access is changed from restricted or public to private, all access requests will be declined automatically
-    if (
-      (collection.access === DB.ObjectAccess.PUBLIC ||
-        collection.access === DB.ObjectAccess.RESTRICTED) &&
-      access === DB.ObjectAccess.PRIVATE
-    ) {
-      await tx.permission.deleteMany({
-        where: {
-          answerCollectionId: id,
-          permissionStatus: DB.PermissionStatus.REQUESTED,
-        },
-      })
+    // TODO: MIGRATE - MOVE THIS TO CORRESPONDING CATALOG OPERATION
+    // // if access is changed from restricted or public to private, all access requests will be declined automatically
+    // if (
+    //   (collection.access === DB.ObjectAccess.PUBLIC ||
+    //     collection.access === DB.ObjectAccess.RESTRICTED) &&
+    //   access === DB.ObjectAccess.PRIVATE
+    // ) {
+    //   await tx.permission.deleteMany({
+    //     where: {
+    //       answerCollectionId: id,
+    //       permissionStatus: DB.PermissionStatus.REQUESTED,
+    //     },
+    //   })
 
-      // invalidate the corresponding cache entries
-      collection.permissions.forEach((permission) => {
-        ctx.emitter.emit('invalidate', {
-          typename: 'Permission',
-          id: permission.id,
-        })
-      })
-    }
+    //   // invalidate the corresponding cache entries
+    //   collection.permissions.forEach((permission) => {
+    //     ctx.emitter.emit('invalidate', {
+    //       typename: 'Permission',
+    //       id: permission.id,
+    //     })
+    //   })
+    // }
 
     // invalidate the answer collection
     ctx.emitter.emit('invalidate', {
@@ -1439,7 +1405,10 @@ async function verifyUserAccessCatalogCollection(
 
 // function to retrieve information on a single answer collection that is available in the catalog (no private collections)
 export async function getSingleAnswerCollectionCatalog(
-  { collectionId }: { collectionId: number },
+  {
+    collectionId,
+    catalogCollectionId,
+  }: { collectionId: number; catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
   // fetch the answer collection
@@ -1463,14 +1432,17 @@ export async function getSingleAnswerCollectionCatalog(
     },
   })
 
-  if (!collection || collection.access === DB.ObjectAccess.PRIVATE) {
+  if (!collection) {
     return null
   }
 
   // verify that the user has access to the catalog collection the answer collection is contained in
-  const validAccess = collection.catalogCollectionId
+  const validAccess = catalogCollectionId
     ? await verifyUserAccessCatalogCollection(
-        { catalogCollectionId: collection.catalogCollectionId },
+        {
+          catalogCollectionId:
+            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
         ctx
       )
     : true
@@ -1479,10 +1451,26 @@ export async function getSingleAnswerCollectionCatalog(
     return null
   }
 
+  // fetch the corresponding assignement to access the access enum value
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+  })
+
+  if (!assignment) {
+    return null
+  }
+
   // only if collection is public, the entries should be revealed
-  if (collection.access === DB.ObjectAccess.PUBLIC) {
+  if (assignment.access === DB.ObjectAccess.PUBLIC) {
     return {
       ...collection,
+      objectAccess: assignment.access,
       accessType: AccessType.SHARED,
       ownerShortname: collection.owner?.shortname,
     }
@@ -1490,6 +1478,7 @@ export async function getSingleAnswerCollectionCatalog(
     return {
       ...collection,
       entries: [],
+      objectAccess: assignment.access,
       accessType: AccessType.SHARED,
       ownerShortname: collection.owner?.shortname,
     }
@@ -1505,28 +1494,28 @@ export async function getCatalogObjects(
       id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
     },
     include: {
-      answerCollections: {
-        where: {
-          ownerId: {
-            not: null,
-          },
-          access: {
-            in: [DB.ObjectAccess.PUBLIC, DB.ObjectAccess.RESTRICTED],
-          },
-        },
-        select: {
-          id: true,
-          name: true,
-          access: true,
-          ownerId: true,
-          owner: {
-            select: {
-              shortname: true,
-            },
-          },
-          permissions: {
+      objectAssignments: {
+        include: {
+          answerCollection: {
             where: {
-              userId: ctx.user.sub,
+              ownerId: {
+                not: null,
+              },
+            },
+            select: {
+              id: true,
+              name: true,
+              ownerId: true,
+              owner: {
+                select: {
+                  shortname: true,
+                },
+              },
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                },
+              },
             },
           },
         },
@@ -1535,30 +1524,41 @@ export async function getCatalogObjects(
   })
 
   const mappedAnswerCollections: CatalogObject[] =
-    catalogCollection?.answerCollections.map((collection) => ({
-      id: collection.id,
-      name: collection.name,
-      objectType: CatalogObjectType.ANSWER_COLLECTION,
-      access: collection.access,
-      ownerShortname: collection.owner?.shortname,
-      isRequested:
-        collection.permissions.length > 0 &&
-        typeof collection.permissions[0] !== 'undefined' &&
-        collection.permissions[0].permissionStatus ===
-          DB.PermissionStatus.REQUESTED,
-      isShared:
-        collection.permissions.length > 0 &&
-        typeof collection.permissions[0] !== 'undefined' &&
-        collection.permissions[0].permissionStatus ===
-          DB.PermissionStatus.GRANTED,
-      isOwner: collection.ownerId === ctx.user.sub,
-    })) ?? []
+    catalogCollection?.objectAssignments.flatMap((assignment) => {
+      if (assignment.answerCollection) {
+        const collection = assignment.answerCollection
 
-  return [...mappedAnswerCollections]
+        return {
+          id: collection.id,
+          name: collection.name,
+          objectType: CatalogObjectType.ANSWER_COLLECTION,
+          access: assignment.access,
+          ownerShortname: collection.owner?.shortname,
+          isRequested:
+            collection.permissions.length > 0 &&
+            typeof collection.permissions[0] !== 'undefined' &&
+            collection.permissions[0].permissionStatus ===
+              DB.PermissionStatus.REQUESTED,
+          isShared:
+            collection.permissions.length > 0 &&
+            typeof collection.permissions[0] !== 'undefined' &&
+            collection.permissions[0].permissionStatus ===
+              DB.PermissionStatus.GRANTED,
+          isOwner: collection.ownerId === ctx.user.sub,
+        }
+      }
+
+      return []
+    }) ?? []
+
+  return mappedAnswerCollections
 }
 
 export async function requestAnswerCollection(
-  { collectionId }: { collectionId: number },
+  {
+    collectionId,
+    catalogCollectionId,
+  }: { collectionId: number; catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
   // fetch the answer collection including potential pending permission requests
@@ -1588,14 +1588,32 @@ export async function requestAnswerCollection(
   }
 
   // verify that the user has access to the catalog collection the answer collection is contained in
-  const validAccess = collection.catalogCollectionId
+  const validAccess = catalogCollectionId
     ? await verifyUserAccessCatalogCollection(
-        { catalogCollectionId: collection.catalogCollectionId },
+        {
+          catalogCollectionId:
+            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
         ctx
       )
     : true
 
   if (!validAccess) {
+    return null
+  }
+
+  // get catalog assignment of this answer collection
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+  })
+
+  if (!assignment) {
     return null
   }
 
@@ -1645,7 +1663,7 @@ export async function requestAnswerCollection(
         id: updatedCollection.id,
         name: updatedCollection.name,
         objectType: CatalogObjectType.ANSWER_COLLECTION,
-        access: updatedCollection.access,
+        access: assignment.access,
         ownerShortname: permissionRequest.objectOwner?.shortname,
         isRequested: true,
         isShared: false,
@@ -1655,7 +1673,10 @@ export async function requestAnswerCollection(
 }
 
 export async function importAnswerCollection(
-  { collectionId }: { collectionId: number },
+  {
+    collectionId,
+    catalogCollectionId,
+  }: { collectionId: number; catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
   // get answer collection, verify public access and check if access has already been granted
@@ -1668,23 +1689,37 @@ export async function importAnswerCollection(
     },
   })
 
-  if (
-    !collection ||
-    collection.ownerId === null ||
-    collection.access !== DB.ObjectAccess.PUBLIC
-  ) {
+  if (!collection || collection.ownerId === null) {
     return false
   }
 
   // verify that the user has access to the catalog collection the answer collection is contained in
-  const validAccess = collection.catalogCollectionId
+  const validAccess = catalogCollectionId
     ? await verifyUserAccessCatalogCollection(
-        { catalogCollectionId: collection.catalogCollectionId },
+        {
+          catalogCollectionId:
+            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
         ctx
       )
     : true
 
   if (!validAccess) {
+    return false
+  }
+
+  // get catalog assignment of this answer collection
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+  })
+
+  if (!assignment || assignment.access !== DB.ObjectAccess.PUBLIC) {
     return false
   }
 
@@ -1694,7 +1729,6 @@ export async function importAnswerCollection(
       originalId: collection.id,
       name: collection.name,
       description: collection.description,
-      access: DB.ObjectAccess.PRIVATE,
       owner: {
         connect: {
           id: ctx.user.sub,

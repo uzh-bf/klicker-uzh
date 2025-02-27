@@ -10,15 +10,17 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CancelRequestAnswerCollectionModal({
+function RequestCancellationModal({
   id,
   open,
+  catalogCollectionId,
   onClose,
   onSuccess,
   onFailure,
 }: {
   id: number
   open: boolean
+  catalogCollectionId?: string
   onClose: () => void
   onSuccess: () => void
   onFailure: () => void
@@ -29,6 +31,7 @@ function CancelRequestAnswerCollectionModal({
   const { data, loading } = useQuery(GetSingleAnswerCollectionCatalogDocument, {
     variables: {
       collectionId: id,
+      catalogCollectionId,
     },
   })
   const collection = data?.getSingleAnswerCollectionCatalog
@@ -120,4 +123,4 @@ function CancelRequestAnswerCollectionModal({
   )
 }
 
-export default CancelRequestAnswerCollectionModal
+export default RequestCancellationModal

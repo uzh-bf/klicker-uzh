@@ -83,6 +83,7 @@ function ObjectImport({
             <CatalogObjectItem
               key={`catalog-object-${object.id}-${object.name}`}
               object={object}
+              catalogCollectionId={catalogCollectionId}
             />
           ))
         ) : (

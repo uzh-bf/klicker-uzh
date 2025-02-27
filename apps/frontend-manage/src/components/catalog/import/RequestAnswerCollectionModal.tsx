@@ -17,11 +17,13 @@ import { useState } from 'react'
 function RequestAnswerCollectionModal({
   id,
   open,
+  catalogCollectionId,
   onClose,
   onSuccess,
 }: {
   id: number
   open: boolean
+  catalogCollectionId?: string
   onClose: () => void
   onSuccess: () => void
 }) {
@@ -32,13 +34,14 @@ function RequestAnswerCollectionModal({
   const { data, loading } = useQuery(GetSingleAnswerCollectionCatalogDocument, {
     variables: {
       collectionId: id,
+      catalogCollectionId,
     },
   })
 
   const [requestAnswerCollection, { loading: requestLoading }] = useMutation(
     RequestAnswerCollectionDocument,
     {
-      variables: { collectionId: id },
+      variables: { collectionId: id, catalogCollectionId },
       update: (cache, { data }) => {
         // check if request was successful
         const requestedCollection = data?.requestAnswerCollection
@@ -87,7 +90,7 @@ function RequestAnswerCollectionModal({
         <Loader />
       ) : (
         <>
-          {collection.access === ObjectAccess.Public ? (
+          {collection.objectAccess === ObjectAccess.Public ? (
             <UserNotification
               type="warning"
               message={t('manage.catalog.requestPublicResource')}

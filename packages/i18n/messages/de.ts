@@ -2092,7 +2092,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accessTooltip:
         "Wählen Sie aus, ob diese Antwort-Sammlung nur für Sie sichtbar sein soll oder auch durch andere Nutzer importiert werden kann. Bei einem 'eingeschränkten' Zugriff können andere Nutzer den Zugriff auf Ihre Antwort-Sammlung nur anfragen.",
       accessPUBLIC: 'Öffentlich',
-      accessPRIVATE: 'Privat',
       accessRESTRICTED: 'Eingeschränkt',
       catalogCollection: 'Katalog-Sammlung',
       catalogCollectionTooltip:
@@ -2137,7 +2136,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
       requestAccessMessage:
-        "Hier können Sie den Zugriff auf die Antwort-Sammlung '<b>{name}</b>' (von {owner}) beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.",
+        'Hier können Sie den Zugriff auf die Antwort-Sammlung "<b>{name}</b>" (von {owner}) beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.',
       importCollectionMessage:
         'Hier können Sie eine Kopie der Antwort-Sammlung "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie die importierte Antwort-Sammlung direkt verwenden oder bei Bedarf anpassen. Änderungen an der ursprünglichen Antwort-Sammlung haben keinen Einfluss auf Ihre importierte Kopie.',
       showAnswers: 'Antworten anzeigen',
@@ -2152,7 +2151,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareCollection: 'Sammlung teilen',
       shareAnswerCollection: 'Antwort-Sammlung teilen',
       infoCollectionSharing:
-        "Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung '<b>{name}</b>' mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.",
+        'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{name}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       viewUseCollectionContent: 'Inhalt einsehen / Sammlung verwenden',
       modifyContent: 'Inhalt bearbeiten',
       modifyCatalogAssignments: 'Katalog-Zuweisungen bearbeiten',

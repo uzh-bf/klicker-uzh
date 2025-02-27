@@ -2069,7 +2069,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Choose whether this answer collection should only be visible to you or can also be imported by other users. With "restricted" access, other users can only request access to your answer collection.',
       accessPUBLIC: 'Public',
       accessRESTRICTED: 'Restricted',
-      accessPRIVATE: 'Private',
       catalogCollection: 'Catalog Collection',
       catalogCollectionTooltip:
         'Here you can select a catalog collection in which your answer collection should be visible. Only users with access to the corresponding catalog collection can import your answer collection there or request access to it. If you do not select a catalog collection, the collection is visible to all users.',

@@ -1,3 +1,9 @@
-mutation ImportAnswerCollection($collectionId: Int!) {
-  importAnswerCollection(collectionId: $collectionId)
+mutation ImportAnswerCollection(
+  $collectionId: Int!
+  $catalogCollectionId: String
+) {
+  importAnswerCollection(
+    collectionId: $collectionId
+    catalogCollectionId: $catalogCollectionId
+  )
 }

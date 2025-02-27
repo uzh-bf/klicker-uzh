@@ -23,7 +23,13 @@ import ObjectAccessRequestModal from './ObjectAccessRequestModal'
 import ObjectImportModal from './ObjectImportModal'
 import ObjectRequestCancellationModal from './ObjectRequestCancellationModal.tsx'
 
-function CatalogObjectItem({ object }: { object: CatalogObject }) {
+function CatalogObjectItem({
+  object,
+  catalogCollectionId,
+}: {
+  object: CatalogObject
+  catalogCollectionId?: string
+}) {
   const t = useTranslations()
   const objectTypeIcons: Record<CatalogObjectType, IconDefinition> = {
     [CatalogObjectType.AnswerCollection]: faList,
@@ -143,16 +149,19 @@ function CatalogObjectItem({ object }: { object: CatalogObject }) {
       <ObjectAccessRequestModal
         object={object}
         open={requestModal}
+        catalogCollectionId={catalogCollectionId}
         onClose={() => setRequestModal(false)}
       />
       <ObjectImportModal
         object={object}
         open={importModal}
+        catalogCollectionId={catalogCollectionId}
         onClose={() => setImportModal(false)}
       />
       <ObjectRequestCancellationModal
         object={object}
         open={requestCancellationModal}
+        catalogCollectionId={catalogCollectionId}
         onClose={() => setRequestCancellationModal(false)}
       />
     </>

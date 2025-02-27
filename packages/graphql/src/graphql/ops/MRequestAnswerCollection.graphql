@@ -1,5 +1,11 @@
-mutation RequestAnswerCollection($collectionId: Int!) {
-  requestAnswerCollection(collectionId: $collectionId) {
+mutation RequestAnswerCollection(
+  $collectionId: Int!
+  $catalogCollectionId: String
+) {
+  requestAnswerCollection(
+    collectionId: $collectionId
+    catalogCollectionId: $catalogCollectionId
+  ) {
     id
     uuid
     name
