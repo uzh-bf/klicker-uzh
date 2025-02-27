@@ -38,7 +38,7 @@ function DirectSharingForm({
     <Formik
       isInitialValid={false}
       initialValues={{
-        usernameOrEmail: undefined,
+        usernameOrEmail: '',
         userGroupId: undefined,
         accessLevel: AccessLevel.Read,
       }}
@@ -57,8 +57,8 @@ function DirectSharingForm({
           })
 
           if (success) {
-            onSuccess()
             resetForm()
+            onSuccess()
             setSubmitting(false)
           } else {
             onFailure()
@@ -86,12 +86,11 @@ function DirectSharingForm({
           }
         )}
     >
-      {({ isSubmitting, isValid, submitForm }) => (
+      {({ values, isSubmitting, isValid, submitForm }) => (
         <tr className="border-t border-gray-200 hover:bg-gray-50">
           <td className="px-4 py-3 text-sm text-gray-900">
             <FormikTextField
               name="usernameOrEmail"
-              id="usernameOrEmail"
               placeholder={
                 t('shared.generic.username') + ' / ' + t('shared.generic.email')
               }
@@ -150,7 +149,7 @@ function DirectSharingForm({
             >
               <FontAwesomeIcon
                 icon={faSave}
-                className="h-[1.1rem] w-[1.1rem]"
+                className="mt-1 h-[1.1rem] w-[1.1rem]"
               />
             </Button>
           </td>

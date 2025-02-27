@@ -3,7 +3,6 @@ import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops
 import { Markdown } from '@klicker-uzh/markdown'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 
 function AnswerCollectionViewingModal({
   collectionId,
@@ -55,14 +54,6 @@ function AnswerCollectionViewingModal({
             {t('shared.generic.description')}:
           </div>
           <Markdown content={collection.description} />
-        </div>
-
-        <div
-          className="flex flex-row items-center gap-3"
-          data-cy="viewing-collection-access"
-        >
-          <div className="font-bold">{t('manage.resources.access')}:</div>
-          <ObjectAccessLabel accessType={collection.access} />
         </div>
 
         <div>

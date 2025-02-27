@@ -10,6 +10,7 @@ import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import useAnswerCollectionActionsDropdown from '~/lib/hooks/useAnswerCollectionActionsDropdown'
+import ObjectPermissionLevel from '../ObjectPermissionLevel'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
@@ -69,6 +70,9 @@ function AnswerCollectionItem({
               />
             )}
             <span className="font-medium">{collection.name}</span>
+            {collection.sharingLevel && (
+              <ObjectPermissionLevel accessLevel={collection.sharingLevel} />
+            )}
           </div>
 
           <div className="text-sm text-gray-500">
