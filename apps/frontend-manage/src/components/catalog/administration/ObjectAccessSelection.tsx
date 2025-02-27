@@ -1,9 +1,9 @@
 import { ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
+import ObjectAccessLabel from '../ObjectAccessLabel'
 
-function AnswerCollectionAccessSelection() {
+function ObjectAccessSelection() {
   const t = useTranslations()
 
   return (
@@ -13,11 +13,6 @@ function AnswerCollectionAccessSelection() {
       label={t('manage.resources.access')}
       tooltip={t('manage.resources.accessTooltip')}
       items={[
-        {
-          value: ObjectAccess.Private,
-          label: <ObjectAccessLabel accessType={ObjectAccess.Private} />,
-          data: { cy: 'answer-collection-access-private' },
-        },
         {
           value: ObjectAccess.Restricted,
           label: <ObjectAccessLabel accessType={ObjectAccess.Restricted} />,
@@ -35,4 +30,4 @@ function AnswerCollectionAccessSelection() {
   )
 }
 
-export default AnswerCollectionAccessSelection
+export default ObjectAccessSelection

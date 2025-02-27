@@ -2094,9 +2094,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accessPUBLIC: 'Öffentlich',
       accessRESTRICTED: 'Eingeschränkt',
       catalogCollection: 'Katalog-Sammlung',
-      catalogCollectionTooltip:
-        'Hier können Sie eine Katalog-Sammlung wählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll. Nur Nutzer mit Zugriff auf die entsprechende Katalog-Sammlung können Ihre Antwort-Sammlung dort importieren oder Zugriff darauf anfragen. Wählen Sie keine Katalog-Sammlung, ist die Sammlung für alle Nutzer sichtbar.',
-      noCatalogCollectionSelected: 'Keine Katalog-Sammlung ausgewählt',
       descriptionTooltip:
         'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
       descriptionPlaceholder:
@@ -2113,8 +2110,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Alle Optionen in einer Antwort-Sammlung müssen einen einzigartigen Wert haben. Bitte stellen Sie sicher, dass keine zwei Antwortoptionen übereinstimmen.',
       infoAccessPUBLIC:
         'Öffentliche Antwort-Sammlungen können von allen Nutzern eingesehen und über den Katalog importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
-      infoAccessPRIVATE:
-        'Private Antwort-Sammlungen sind nur für Sie sichtbar und können nicht von anderen Nutzern eingesehen oder über den Katalog importiert werden. Sie können nach Erstellung der Sammlung einzelnen Nutzern oder Nutzergruppen Zugriff gewähren.',
       infoAccessRESTRICTED:
         'Eingeschränkte Antwort-Sammlungen können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung importiert werden. Sie können zusätzlich eine optionale (geschützte) Katalog-Sammlung auswählen, in welcher Ihre Antwort-Sammlung sichtbar sein soll.',
       collectionCreationSuccess:
@@ -2124,6 +2119,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       availableAnswerCollections: 'Verfügbare Antwort-Sammlungen',
       noAnswerCollections:
         'Es wurden noch keine Antwort-Sammlungen erstellt oder aus dem Katalog importiert.',
+      createAnswerCollection: 'Antwort-Sammlung erstellen',
       numOfAnswers: '{number} Antworten',
       byOwner: 'von {owner}',
       cancelRequest: 'Anfrage zurückziehen',
@@ -2257,8 +2253,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       declineSuccessful: 'Die Zugriffsanfrage wurde erfolgreich abgelehnt.',
       declineFailed:
         'Beim Ablehnen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      noCatalogCollectionSelectedWarning:
-        "Wenn Sie Ihr geteiltes Objekt (mit einem anderen Zugriffsstatus als 'Privat') nicht einer bestimmten Katalog-Sammlung zuweisen, können alle anderen Nutzer dieses im Katalog finden und darüber importieren / Zugriff beantragen.",
     },
     groupActivity: {
       activityMissingOrNotCompleted:

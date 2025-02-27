@@ -5,12 +5,11 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AnswerCollection, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import useAnswerCollectionActionsDropdown from '~/lib/hooks/useAnswerCollectionActionsDropdown'
-import ObjectAccessLabel from '../../catalog/ObjectAccessLabel'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
@@ -41,27 +40,6 @@ function AnswerCollectionItem({
   const [sharingModal, setSharingModal] = useState(false)
   const [transferModalOpen, setTransferModalOpen] = useState(false)
 
-  const collectionAccessMap: Record<ObjectAccess, React.ReactNode> = {
-    [ObjectAccess.Private]: (
-      <ObjectAccessLabel
-        accessType={ObjectAccess.Private}
-        className="ml-2 text-sm"
-      />
-    ),
-    [ObjectAccess.Public]: (
-      <ObjectAccessLabel
-        accessType={ObjectAccess.Public}
-        className="ml-2 text-sm"
-      />
-    ),
-    [ObjectAccess.Restricted]: (
-      <ObjectAccessLabel
-        accessType={ObjectAccess.Restricted}
-        className="ml-2 text-sm"
-      />
-    ),
-  }
-
   const dropdownItems = useAnswerCollectionActionsDropdown({
     isOwner: collection.isOwner ?? false,
     isShareable: collection.isShareable ?? false,
@@ -91,7 +69,6 @@ function AnswerCollectionItem({
               />
             )}
             <span className="font-medium">{collection.name}</span>
-            {collection.isEditable && collectionAccessMap[collection.access]}
           </div>
 
           <div className="text-sm text-gray-500">
@@ -147,7 +124,6 @@ function AnswerCollectionItem({
           collectionId={collection.id}
           open={editModal}
           onClose={() => setEditModal(false)}
-          onDelete={() => setDeletionModal(true)}
         />
       )}
       {!collection.isEditable && (

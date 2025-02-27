@@ -1,6 +1,6 @@
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -19,7 +19,10 @@ function AnswerCollectionCreation() {
   return (
     <>
       {!creationOpen ? (
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <div className="mb-4">
+          <UserNotification type="info" className={{ root: 'mb-3' }}>
+            {t('manage.resources.selectCreateAnswerCollection')}
+          </UserNotification>
           <Button
             className={{ root: 'w-full' }}
             onClick={() => setCreationOpen(true)}
@@ -28,19 +31,6 @@ function AnswerCollectionCreation() {
             <FontAwesomeIcon icon={faPlusCircle} />
             {t('manage.resources.newAnswerCollection')}
           </Button>
-          {/* <Button
-            className={{ root: 'w-full sm:w-1/2' }}
-            onClick={() =>
-              router.push({
-                pathname: '/resources/catalog',
-                query: { filter: CatalogObjectType.AnswerCollection },
-              })
-            }
-            data={{ cy: 'add-shared-answer-collection' }}
-          >
-            <FontAwesomeIcon icon={faDownload} />
-            {t('manage.resources.addSharedAnswerCollection')}
-          </Button> */}
         </div>
       ) : null}
       {creationOpen ? (

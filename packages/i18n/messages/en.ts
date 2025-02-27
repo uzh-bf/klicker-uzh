@@ -2070,9 +2070,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessPUBLIC: 'Public',
       accessRESTRICTED: 'Restricted',
       catalogCollection: 'Catalog Collection',
-      catalogCollectionTooltip:
-        'Here you can select a catalog collection in which your answer collection should be visible. Only users with access to the corresponding catalog collection can import your answer collection there or request access to it. If you do not select a catalog collection, the collection is visible to all users.',
-      noCatalogCollectionSelected: 'No catalog collection selected',
       descriptionTooltip:
         'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
       descriptionPlaceholder:
@@ -2089,8 +2086,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'All options in an answer collection need to have a unique value. Please make sure that no two answers options coincide.',
       infoAccessPUBLIC:
         'Public Answer Collections can be viewed by all users and imported via the catalog. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
-      infoAccessPRIVATE:
-        'Private answer collections are only visible to you and cannot be viewed by other users or imported via the catalog. You can grant access to individual users or user groups after creating the collection.',
       infoAccessRESTRICTED:
         'Restricted answer collections can be requested by other users in the catalog and imported after your approval. You can additionally select an optional (protected) catalog collection in which your answer collection should be visible.',
       collectionCreationSuccess:
@@ -2100,6 +2095,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       availableAnswerCollections: 'Available Answer Collections',
       noAnswerCollections:
         'No answer collections have been created or imported form the catalog yet.',
+      createAnswerCollection: 'Create Answer Collection',
       numOfAnswers: '{number} Answers',
       byOwner: 'by {owner}',
       cancelRequest: 'Cancel Request',
@@ -2230,8 +2226,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       declineSuccessful: 'The sharing request was successfully declined.',
       declineFailed:
         'An error occurred while declining the sharing request. Please try again or contact the support.',
-      noCatalogCollectionSelectedWarning:
-        'If you do not assign your shared object (with an access status other than "Private") to a specific catalog collection, all other users can find it in the catalog and import it / request access to it.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
