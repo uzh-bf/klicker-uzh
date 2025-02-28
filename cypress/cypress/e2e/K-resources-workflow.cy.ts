@@ -157,8 +157,6 @@ describe('Create, edit and share answer collections', function () {
 
     cy.createAnswerCollection({
       name: this.data.restricted.name,
-      accessCy: 'restricted',
-      access: messages.manage.resources.accessRESTRICTED,
       description: this.data.restricted.description,
       entries: this.data.restricted.items,
     })
@@ -171,8 +169,6 @@ describe('Create, edit and share answer collections', function () {
 
     cy.createAnswerCollection({
       name: this.data.private.name,
-      accessCy: 'private',
-      access: messages.manage.resources.accessPRIVATE,
       description: this.data.private.description,
       entries: this.data.private.items,
     })
@@ -353,8 +349,6 @@ describe('Create, edit and share answer collections', function () {
 
     cy.createAnswerCollection({
       name: this.data.private.name,
-      accessCy: 'private',
-      access: messages.manage.resources.accessPRIVATE,
       description: this.data.private.description,
       entries: this.data.private.items,
     })
@@ -461,8 +455,6 @@ describe('Create, edit and share answer collections', function () {
 
     cy.createAnswerCollection({
       name: this.data.restricted.name,
-      accessCy: 'restricted',
-      access: messages.manage.resources.accessRESTRICTED,
       description: this.data.restricted.description,
       entries: this.data.restricted.items,
     })
@@ -839,8 +831,6 @@ describe('Create, edit and share answer collections', function () {
 
     cy.createAnswerCollection({
       name: this.data.public.name,
-      accessCy: 'public',
-      access: messages.manage.resources.accessPUBLIC,
       description: this.data.public.description,
       entries: this.data.public.items,
     })
@@ -1157,8 +1147,6 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.private.name,
-      accessCy: 'private',
-      access: messages.manage.resources.accessPRIVATE,
       description: this.data.private.description,
       entries: this.data.private.items,
     })
@@ -1415,8 +1403,6 @@ describe('Create, edit and share answer collections', function () {
 
     cy.createAnswerCollection({
       name: this.data.direct.name,
-      accessCy: 'restricted',
-      access: messages.manage.resources.accessRESTRICTED,
       description: this.data.direct.description,
       entries: this.data.direct.items,
     })
@@ -1666,8 +1652,6 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.access.name,
-      accessCy: 'private',
-      access: messages.manage.resources.accessPRIVATE,
       description: this.data.access.description,
       entries: this.data.access.items,
     })
@@ -2091,8 +2075,6 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.ownership.name,
-      accessCy: 'private',
-      access: messages.manage.resources.accessPRIVATE,
       description: this.data.ownership.description,
       entries: this.data.ownership.items,
     })

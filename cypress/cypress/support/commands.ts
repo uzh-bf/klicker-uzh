@@ -129,25 +129,16 @@ Cypress.Commands.add(
 
 interface AnswerCollectionArgs {
   name: string
-  accessCy: string
-  access: string
   description: string
   entries: string[]
 }
 
 Cypress.Commands.add(
   'createAnswerCollection',
-  ({ name, accessCy, access, description, entries }: AnswerCollectionArgs) => {
+  ({ name, description, entries }: AnswerCollectionArgs) => {
     cy.get('[data-cy="create-answer-collection"]').click()
     cy.get('[data-cy="answer-collection-name"]').type(name)
     cy.get('[data-cy="answer-collection-name"]').should('have.value', name)
-
-    cy.get('[data-cy="answer-collection-access"]').contains(
-      messages.manage.resources.accessPRIVATE
-    )
-    cy.get('[data-cy="answer-collection-access"]').click()
-    cy.get(`[data-cy="answer-collection-access-${accessCy}"]`).click()
-    cy.get('[data-cy="answer-collection-access"]').contains(access)
 
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
@@ -168,7 +159,6 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="submit-create-answer-collection"]').click()
     cy.get(`[data-cy="answer-collection-${name}"]`).should('exist')
-    cy.get(`[data-cy="answer-collection-${name}"]`).contains(access)
   }
 )
 
@@ -1357,8 +1347,6 @@ declare global {
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       createAnswerCollection({
         name,
-        accessCy,
-        access,
         description,
         entries,
       }: AnswerCollectionArgs): Chainable<void>
