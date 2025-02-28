@@ -46,13 +46,12 @@ function AnswerCollectionMetaForm({
       }}
       validationSchema={Yup.object({
         name: Yup.string().required(t('manage.resources.nameRequired')),
-        access: Yup.string().required(),
         description: Yup.string().required(
           t('manage.resources.descriptionRequired')
         ),
       })}
     >
-      {({ values, isValid, isSubmitting }) => (
+      {({ isValid, isSubmitting }) => (
         <Form className="flex flex-col">
           <FormikTextField
             required

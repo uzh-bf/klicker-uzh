@@ -1,3 +1,4 @@
+import { CatalogObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
@@ -175,6 +176,39 @@ Cypress.Commands.add(
     cy.get(`[data-cy="answer-collection-${collectionName}"]`).should(
       'not.exist'
     )
+  }
+)
+
+interface AddObjectToCatalogArgs {
+  objectName: string
+  objectType: CatalogObjectType
+  accessLevel: 'public' | 'restricted'
+}
+
+Cypress.Commands.add(
+  'addObjectToCatalog',
+  ({ objectName, objectType, accessLevel }: AddObjectToCatalogArgs) => {
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${objectType}"]`).click()
+    cy.get('[data-cy="object-type-selection"]').contains(
+      messages.shared.types[objectType]
+    )
+
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.resources.accessRESTRICTED
+    )
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-restricted"]').should('exist')
+    cy.get('[data-cy="object-access-public"]').should('exist')
+    cy.get(`[data-cy="object-access-${accessLevel}"]`).click()
+
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.findByText(objectName).click()
+    cy.get('[data-cy="submit-add-object-button"]').click()
+
+    cy.get(`[data-cy="catalog-object-${objectName}"]`).should('exist')
   }
 )
 
@@ -1353,6 +1387,11 @@ declare global {
       deleteAnswerCollection({
         collectionName,
       }: DeleteCollectionArgs): Chainable<void>
+      addObjectToCatalog({
+        objectName,
+        objectType,
+        accessLevel,
+      }: AddObjectToCatalogArgs): Chainable<void>
       createQuestionSC({
         title,
         content,

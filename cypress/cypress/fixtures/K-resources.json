@@ -2,6 +2,8 @@
   "public": {
     "name": "Public Answer Collection",
     "description": "This is a public answer collection",
+    "nameNew": "Public Answer Collection New",
+    "descriptionNew": "This is a new public answer collection",
     "items": [
       "Red",
       "Green",
@@ -24,6 +26,17 @@
       "Black",
       "White",
       "Grey"
+    ],
+    "itemsNew": [
+      "Red NEW",
+      "Green NEW",
+      "Blue NEW",
+      "Purple NEW",
+      "Orange NEW",
+      "Pink NEW",
+      "Black NEW",
+      "White NEW",
+      "Grey NEW"
     ]
   },
   "restricted": {
@@ -34,18 +47,7 @@
   "private": {
     "name": "Private Answer Collection",
     "description": "This is a private answer collection",
-    "nameNew": "Private Answer Collection New",
-    "descriptionNew": "This is a new private answer collection",
-    "items": ["Apple", "Banana", "Cherry", "Grape", "Lemon", "Melon", "Orange"],
-    "itemsNew": [
-      "Apple NEW",
-      "Banana NEW",
-      "Cherry NEW",
-      "Grape NEW",
-      "Lemon NEW",
-      "Melon NEW",
-      "Orange NEW"
-    ]
+    "items": ["Apple", "Banana", "Cherry", "Grape", "Lemon", "Melon", "Orange"]
   },
   "question": {
     "title": "New SE Question to block deletion",

@@ -1,3 +1,4 @@
+import { CatalogObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create, edit and share answer collections', function () {
@@ -62,7 +63,7 @@ describe('Create, edit and share answer collections', function () {
 
   // ! 1. Creation and editing of answer collections
   // #region
-  it('Create a public answer collection', function () {
+  it('Create an answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
@@ -76,15 +77,6 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
       this.data.public.name
-    )
-
-    cy.get('[data-cy="answer-collection-access"]').contains(
-      messages.manage.resources.accessPRIVATE
-    )
-    cy.get('[data-cy="answer-collection-access"]').click()
-    cy.get('[data-cy="answer-collection-access-public"]').click()
-    cy.get('[data-cy="answer-collection-access"]').contains(
-      messages.manage.resources.accessPUBLIC
     )
 
     cy.get('[data-cy="answer-collection-description"]')
@@ -145,115 +137,88 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).contains(
-      messages.manage.resources.accessPUBLIC
-    )
   })
 
-  it('Create a restricted answer collection', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-
-    cy.createAnswerCollection({
-      name: this.data.restricted.name,
-      description: this.data.restricted.description,
-      entries: this.data.restricted.items,
-    })
-  })
-
-  it('Create a private answer collection', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-
-    cy.createAnswerCollection({
-      name: this.data.private.name,
-      description: this.data.private.description,
-      entries: this.data.private.items,
-    })
-  })
-
-  it('Edit the private answer collection', function () {
+  it('Edit the answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(
-      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
+      `[data-cy="answer-collection-actions-${this.data.public.name}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
-      this.data.private.name
+      this.data.public.name
     )
     cy.get('[data-cy="answer-collection-name"]')
       .clear()
-      .type(this.data.private.nameNew)
+      .type(this.data.public.nameNew)
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
-      this.data.private.nameNew
+      this.data.public.nameNew
     )
 
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .contains(this.data.private.description)
+      .contains(this.data.public.description)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .clear()
-      .type(this.data.private.descriptionNew)
+      .type(this.data.public.descriptionNew)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .contains(this.data.private.descriptionNew)
+      .contains(this.data.public.descriptionNew)
     cy.get('[data-cy="save-changes-answer-collection"]').click()
 
     // check that current values are correct
-    cy.wrap(this.data.private.items).each((value: string) => {
+    cy.wrap(this.data.public.itemsAfterDeletion).each((value: string) => {
       cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
 
     // verify validation for editing answer options
     cy.get(
-      `[data-cy="edit-answer-option-${this.data.private.items[0]}"]`
+      `[data-cy="edit-answer-option-${this.data.public.itemsAfterDeletion[0]}"]`
     ).click()
     cy.get(`[data-cy="edit-answer-option-input"]`).should(
       'have.value',
-      this.data.private.items[0]
+      this.data.public.itemsAfterDeletion[0]
     )
 
     cy.get(`[data-cy="save-edit-answer-option"]`).should('not.be.disabled')
     cy.get(`[data-cy="edit-answer-option-input"]`)
       .clear()
-      .type(this.data.private.items[1]) // duplicate answer options not allowed
+      .type(this.data.public.itemsAfterDeletion[1]) // duplicate answer options not allowed
     cy.get(`[data-cy="save-edit-answer-option"]`).should('be.disabled')
     cy.get(`[data-cy="edit-answer-option-input"]`)
       .clear()
-      .type(this.data.private.items[0])
+      .type(this.data.public.itemsAfterDeletion[0])
     cy.get(`[data-cy="save-edit-answer-option"]`).should('not.be.disabled')
     cy.get(`[data-cy="edit-answer-option-input"]`).clear() // empty options are not allowed
     cy.get(`[data-cy="save-edit-answer-option"]`).should('be.disabled')
     cy.get(`[data-cy="edit-answer-option-input"]`)
       .clear()
-      .type(this.data.private.items[0])
+      .type(this.data.public.itemsAfterDeletion[0])
     cy.get(`[data-cy="save-edit-answer-option"]`).click()
 
     // change all answer option values
-    cy.wrap(this.data.private.items).each((value: string, ix) => {
+    cy.wrap(this.data.public.itemsAfterDeletion).each((value: string, ix) => {
       cy.get(`[data-cy="edit-answer-option-${value}"]`).click()
       cy.get(`[data-cy="edit-answer-option-input"]`).should('have.value', value)
       cy.get(`[data-cy="edit-answer-option-input"]`)
         .clear()
-        .type(this.data.private.itemsNew[ix])
+        .type(this.data.public.itemsNew[ix])
       cy.get(`[data-cy="save-edit-answer-option"]`).click()
       cy.get(
-        `[data-cy="answer-option-${this.data.private.itemsNew[ix]}"]`
-      ).contains(this.data.private.itemsNew[ix])
+        `[data-cy="answer-option-${this.data.public.itemsNew[ix]}"]`
+      ).contains(this.data.public.itemsNew[ix])
     })
 
     // verify validation for newly added answer options and add new answer option
-    const existingElement = this.data.private.itemsNew[0]
+    const existingElement = this.data.public.itemsNew[0]
     const lastElement =
-      this.data.private.itemsNew[this.data.private.itemsNew.length - 1]
+      this.data.public.itemsNew[this.data.public.itemsNew.length - 1]
     cy.get(`[data-cy="delete-answer-option-${lastElement}"]`).click()
     cy.get(`[data-cy="answer-option-${lastElement}"]`).should('not.exist')
     cy.get(`[data-cy="add-answer-option"]`).click()
@@ -276,23 +241,23 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(
-      `[data-cy="answer-collection-actions-${this.data.private.nameNew}"]`
+      `[data-cy="answer-collection-actions-${this.data.public.nameNew}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
 
     cy.get('[data-cy="answer-collection-name"]').should(
       'have.value',
-      this.data.private.nameNew
+      this.data.public.nameNew
     )
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .contains(this.data.private.descriptionNew)
-    cy.wrap(this.data.private.itemsNew).each((value: string) => {
+      .contains(this.data.public.descriptionNew)
+    cy.wrap(this.data.public.itemsNew).each((value: string) => {
       cy.get(`[data-cy="answer-option-${value}"]`).contains(value)
     })
   })
 
-  it('Verify that all three answer collections can be used in selection questions by owner', function () {
+  it('Verify that all answer collections can be used in selection questions by owner', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="select-question-type"]').click()
@@ -302,13 +267,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="select-answer-collection"]').click()
     cy.get(
-      `[data-cy="select-answer-collection-${this.data.public.name}"]`
-    ).should('exist')
-    cy.get(
-      `[data-cy="select-answer-collection-${this.data.restricted.name}"]`
-    ).should('exist')
-    cy.get(
-      `[data-cy="select-answer-collection-${this.data.private.nameNew}"]`
+      `[data-cy="select-answer-collection-${this.data.public.nameNew}"]`
     ).should('exist')
   })
 
@@ -316,23 +275,11 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.private.nameNew}"]`).should(
-      'exist'
-    )
-    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
-      'exist'
-    )
-    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`).should(
+    cy.get(`[data-cy="answer-collection-${this.data.public.nameNew}"]`).should(
       'exist'
     )
 
-    cy.wrap([
-      this.data.private.nameNew,
-      this.data.restricted.name,
-      this.data.public.name,
-    ]).each((name: string) => {
-      cy.deleteAnswerCollection({ collectionName: name })
-    })
+    cy.deleteAnswerCollection({ collectionName: this.data.public.nameNew })
   })
 
   it('Cleanup: Verify that all answer collections have been deleted properly', function () {
@@ -354,31 +301,7 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
-  it('Verify that the private answer collection is not visible in the catalog for the owner', function () {
-    cy.loginLecturer()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="catalog"]').click()
-    cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="import-object-${this.data.private.name}"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="request-access-${this.data.private.name}"]`).should(
-      'not.exist'
-    )
-  })
-
-  it('Verify that the private answer collection is not visible in the catalog for other users', function () {
-    cy.loginIndividualCatalyst()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="catalog"]').click()
-    cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).should(
-      'not.exist'
-    )
-  })
-
-  it('Verify that the private answer collection can be used in a selection quesetion by the owner', function () {
+  it('Verify that the private answer collection can be used in a selection question by the owner', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
@@ -408,7 +331,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
   })
 
-  it("Verify that the private answer collection cannot be removed by user 'pro1' as it is used in a question", function () {
+  it('Verify that the private answer collection cannot be deleted as it is used in a question', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
@@ -448,7 +371,7 @@ describe('Create, edit and share answer collections', function () {
 
   // ! 3. Sharing functionalities (restricted collection)
   // #region
-  it('Create a restricted answer collection', function () {
+  it('Create an answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
@@ -460,13 +383,19 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
-  it('Verify that restricted answer collection is visible to owner in catalog, but cannot be requested / imported by owner', function () {
+  it('Add the answer collection as a restricted collection to the catalog', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
-    cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
-      'exist'
-    )
+
+    // add collection to catalog as restricted object
+    cy.addObjectToCatalog({
+      objectName: this.data.restricted.name,
+      objectType: CatalogObjectType.ANSWER_COLLECTION,
+      accessLevel: 'restricted',
+    })
+
+    // check that import and request functionalities are not available for owner
     cy.get(`[data-cy="import-object-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
@@ -794,24 +723,183 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
-  it('Remove created restricted answer collection (through owner interface - soft deletion)', function () {
+  it('Change the access level of the answer collection in the catalog to public', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).contains(
+      messages.manage.resources.accessRESTRICTED
+    )
+    cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).click()
+    cy.get('[data-cy="object-access-restricted"]').should('exist')
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="confirm-access-change"]').click()
+    cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).contains(
+      messages.manage.resources.accessPUBLIC
+    )
+  })
+
+  it('Verify that answer collections can now be imported or requested', function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="import-object-${this.data.restricted.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).should(
+      'exist'
+    )
+
+    // no owner / admin actions are available
+    cy.get(`[data-cy="remove-object-${this.data.restricted.name}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Remove the answer collection from the catalog (by owner)', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="remove-object-${this.data.restricted.name}"]`).click()
+    cy.get('[data-cy="confirm-removal"]').click()
+  })
+
+  it('Verify that the answer collection is no longer visible in the catalog', function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Re-add the answer collection with restricted access to the answer collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.addObjectToCatalog({
+      objectName: this.data.restricted.name,
+      objectType: CatalogObjectType.ANSWER_COLLECTION,
+      accessLevel: 'restricted',
+    })
+  })
+
+  it("Grant admin access to user 'pro2' for the restricted answer collection", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST_EMAIL')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.resources.accessADMIN
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.resources.accessADMIN)
+  })
+
+  it('Verify that user pro2 should now be able to add this collection to the catalog', function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(
+      `[data-cy="object-type-${CatalogObjectType.ANSWER_COLLECTION}"]`
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
+    ).should('exist')
+  })
+
+  it("Create a question with the restricted answer collection for user 'pro2'", function () {
+    cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: this.data.question.title,
+      content: this.data.question.content,
+      numberOfInputs: this.data.question.numberOfInputs,
+      collectionName: this.data.restricted.name,
+      correctAnswers: this.data.restricted.items.filter((_, i) =>
+        this.data.question.solutions.includes(i)
+      ),
+    })
+  })
+
+  it('Delete created restricted answer collection (through owner interface - soft deletion since used by pro2)', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.restricted.name })
   })
 
-  it('Verify that the restricted answer collection is still visible to user pro1', function () {
+  it('Verify that the soft-deleted answer collection is no longer visible in the catalog', function () {
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Verify that the unused access to the collection for user pro1 has been revoked', function () {
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Verify that the used access to the collection for user pro2 is still intact, delete the question and remove the collection', function () {
+    cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
       'exist'
     )
-  })
 
-  it('Remove the restricted answer collection from user pro1', function () {
-    cy.loginIndividualCatalyst()
+    // object can no longer be added to the catalog (since it was deleted by the owner)
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(
+      `[data-cy="object-type-${CatalogObjectType.ANSWER_COLLECTION}"]`
+    ).click()
+    cy.findByText(messages.manage.catalog.noObjectsAvailable)
+    cy.get('[data-cy="close-add-object-modal"]').click()
+
+    // delete the dependent question
+    cy.get('[data-cy="library"]').click()
+    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
+      'exist'
+    )
+    cy.deleteElement({ elementName: this.data.question.title })
+    cy.get(`[data-cy="element-item-${this.data.question.title}"]`).should(
+      'not.exist'
+    )
+
+    // remove the answer collection (actual deletion, since no other users have access / no dependencies)
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     removeAnswerCollection({ name: this.data.restricted.name })
@@ -824,7 +912,7 @@ describe('Create, edit and share answer collections', function () {
 
   // ! 4. Sharing functionalities (public collection)
   // #region
-  it('Create a public answer collection', function () {
+  it('Create an answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
@@ -836,10 +924,18 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
-  it('Verify that public answer collection is visible to owner in catalog, but cannot be requested / imported by owner', function () {
+  it('Add the answer collection with public access to the catalog and verify visibility', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
+
+    cy.addObjectToCatalog({
+      objectName: this.data.public.name,
+      objectType: CatalogObjectType.ANSWER_COLLECTION,
+      accessLevel: 'public',
+    })
+
+    // answer collection should be visible to owner, but cannot be requested / imported
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).should(
       'exist'
     )
@@ -1014,9 +1110,7 @@ describe('Create, edit and share answer collections', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    cy.get(`[data-cy="answer-collection-${this.data.public.name}"]`)
-      .should('exist')
-      .contains(messages.manage.resources.accessPRIVATE)
+
     cy.get(
       `[data-cy="answer-collection-actions-${this.data.public.name}"]`
     ).click()
@@ -1105,7 +1199,7 @@ describe('Create, edit and share answer collections', function () {
     cy.deleteAnswerCollection({ collectionName: this.data.public.name })
   })
 
-  it('Verify that imported answer collection is still visible to user pro2', function () {
+  it('Verify that imported answer collection is still visible to user pro2 (due to derived permission)', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
@@ -1136,7 +1230,6 @@ describe('Create, edit and share answer collections', function () {
   it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
     validateDatabaseContent()
   })
-
   // #endregion
 
   // ! 5. Modification of availability in catalog (automatic declining of requests / persistence of access / ...)
@@ -1161,24 +1254,15 @@ describe('Create, edit and share answer collections', function () {
     )
   })
 
-  it('Change the access rights to restricted access', function () {
+  it('Add the private collection with restricted object access to the catalog', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.get(
-      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
-    ).click()
-    cy.get('[data-cy="edit-answer-collection"]').click()
-
-    cy.get('[data-cy="answer-collection-access"]').contains(
-      messages.manage.resources.accessPRIVATE
-    )
-    cy.get('[data-cy="answer-collection-access"]').click()
-    cy.get('[data-cy="answer-collection-access-restricted"]').click()
-    cy.get('[data-cy="answer-collection-access"]').contains(
-      messages.manage.resources.accessRESTRICTED
-    )
-    cy.get('[data-cy="save-changes-answer-collection"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.addObjectToCatalog({
+      objectName: this.data.private.name,
+      objectType: CatalogObjectType.ANSWER_COLLECTION,
+      accessLevel: 'restricted',
+    })
   })
 
   it('Verify that the restricted answer collection is now also visible to other users and request access for pro1', function () {
@@ -1200,21 +1284,18 @@ describe('Create, edit and share answer collections', function () {
   it('Change the access rights to public access', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.get(
-      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
-    ).click()
-    cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="catalog"]').click()
 
-    cy.get('[data-cy="answer-collection-access"]').contains(
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.resources.accessRESTRICTED
     )
-    cy.get('[data-cy="answer-collection-access"]').click()
-    cy.get('[data-cy="answer-collection-access-public"]').click()
-    cy.get('[data-cy="answer-collection-access"]').contains(
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).click()
+    cy.get('[data-cy="object-access-restricted"]').should('exist')
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="confirm-access-change"]').click()
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.resources.accessPUBLIC
     )
-    cy.get('[data-cy="save-changes-answer-collection"]').click()
   })
 
   it('Verify that the pending access request is still visible to the user', function () {
@@ -1272,21 +1353,17 @@ describe('Create, edit and share answer collections', function () {
   it('Change the access rights to restricted access', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.get(
-      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
-    ).click()
-    cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="catalog"]').click()
 
-    cy.get('[data-cy="answer-collection-access"]').contains(
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.resources.accessPUBLIC
     )
-    cy.get('[data-cy="answer-collection-access"]').click()
-    cy.get('[data-cy="answer-collection-access-restricted"]').click()
-    cy.get('[data-cy="answer-collection-access"]').contains(
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).click()
+    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="confirm-access-change"]').click()
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.resources.accessRESTRICTED
     )
-    cy.get('[data-cy="save-changes-answer-collection"]').click()
   })
 
   it('Verify that the import functionality is not available anymore', function () {
@@ -1318,42 +1395,24 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
-  it('Change the access rights to private access', function () {
+  it('Remove the answer collection entirely from the catalog', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    cy.get(
-      `[data-cy="answer-collection-actions-${this.data.private.name}"]`
-    ).click()
-    cy.get('[data-cy="edit-answer-collection"]').click()
-
-    cy.get('[data-cy="answer-collection-access"]').contains(
-      messages.manage.resources.accessRESTRICTED
-    )
-    cy.get('[data-cy="answer-collection-access"]').click()
-    cy.get('[data-cy="answer-collection-access-private"]').click()
-    cy.get('[data-cy="answer-collection-access"]').contains(
-      messages.manage.resources.accessPRIVATE
-    )
-    cy.get('[data-cy="save-changes-answer-collection"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="remove-object-${this.data.private.name}"]`).click()
+    cy.get('[data-cy="confirm-removal"]').click()
   })
 
-  it('Verify that access request by user pro2 has been declined automatically', function () {
+  it('Verify that access request by user pro2 has been not been declined automatically and decline it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="sharing-request-${this.data.private.name}-pro2"]`).should(
-      'not.exist'
+      'exist'
     )
-  })
-
-  it('Verify that answer collection is also not shown as pending request for user pro2 anymore', function () {
-    cy.loginInstitutionalCatalyst()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="catalog"]').click()
-    cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).should(
-      'not.exist'
-    )
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.private.name}-pro2"]`
+    ).click()
   })
 
   it('Verify that user pro1 still has access to the private collection', function () {
@@ -1374,17 +1433,11 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
-  it("Cleanup: Remove the private answer collection from user 'pro1'", function () {
-    cy.loginIndividualCatalyst()
-    cy.get('[data-cy="resources"]').click()
-    cy.get('[data-cy="answer-collections"]').click()
-    removeAnswerCollection({ name: this.data.private.name })
-  })
-
   it('Cleanup: Delete the private answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    // read permission for user pro1 is automatically revoked, since the collection is not used
     cy.deleteAnswerCollection({ collectionName: this.data.private.name })
   })
 
@@ -1395,7 +1448,6 @@ describe('Create, edit and share answer collections', function () {
 
   // ! 6. Direct Sharing of answer collections
   // #region
-
   it('Create a restricted answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
@@ -1415,6 +1467,17 @@ describe('Create, edit and share answer collections', function () {
       username: Cypress.env('LECTURER_IND_SHORTNAME'),
       accessLevel: messages.manage.resources.accessREAD,
       accessLevelCy: 'READ',
+    })
+  })
+
+  it('Add the answer collection with restricted object access to the catalog', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.addObjectToCatalog({
+      objectName: this.data.direct.name,
+      objectType: CatalogObjectType.ANSWER_COLLECTION,
+      accessLevel: 'restricted',
     })
   })
 
@@ -1552,12 +1615,10 @@ describe('Create, edit and share answer collections', function () {
   it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
     validateDatabaseContent()
   })
-
   // #endregion
 
   // ! 7. Access levels and associated permissions & functionalities
   // #region
-
   function testAnswerCollectionEditPermissions(data) {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()

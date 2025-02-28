@@ -1028,7 +1028,7 @@ export async function deleteAnswerCollection(
         },
       })
 
-      // remove all access requests in the same transaction
+      // remove all access requests
       await tx.permission.deleteMany({
         where: {
           answerCollectionId: collectionId,
@@ -1036,7 +1036,70 @@ export async function deleteAnswerCollection(
         },
       })
 
-      // disconnect granted permissions from user
+      // TODO: make this more efficient by using derived permissions
+      // revoke access for all users that have not used it
+      const grantedPermissions = await tx.permission.findMany({
+        where: {
+          answerCollectionId: collectionId,
+          permissionStatus: DB.PermissionStatus.GRANTED,
+        },
+      })
+
+      await Promise.all(
+        grantedPermissions.map(async (permission) => {
+          if (permission.answerCollectionId && permission.userId) {
+            // check if the user has used the collection
+            const permissionUsage = await tx.permission.findUnique({
+              where: {
+                id: permission.id,
+              },
+              include: {
+                answerCollection: {
+                  include: {
+                    linkedElements: {
+                      where: {
+                        OR: [
+                          {
+                            ownerId: permission.userId,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: permission.userId,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            })
+
+            if (
+              !permissionUsage ||
+              permissionUsage.answerCollection?.linkedElements.length === 0
+            ) {
+              // delete the permission
+              await tx.permission.delete({
+                where: {
+                  id: permission.id,
+                },
+              })
+
+              // invalidate permission
+              ctx.emitter.emit('invalidate', {
+                typename: 'Permission',
+                id: permission.id,
+              })
+            }
+          }
+        })
+      )
+
+      // disconnect granted permissions for remaining users
       await tx.permission.updateMany({
         where: {
           answerCollectionId: collectionId,
@@ -1044,6 +1107,13 @@ export async function deleteAnswerCollection(
         },
         data: {
           objectOwnerId: null,
+        },
+      })
+
+      // remove all catalog assignments
+      await tx.catalogCollectionAssignment.deleteMany({
+        where: {
+          answerCollectionId: collectionId,
         },
       })
 
@@ -1669,6 +1739,9 @@ export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
   // fetch all answer collections, where the user is the owner or has been granted admin access
   const collections = await ctx.prisma.answerCollection.findMany({
     where: {
+      ownerId: {
+        not: null, // soft deleted answer collections cannot be added to the catalog
+      },
       OR: [
         {
           ownerId: ctx.user.sub,

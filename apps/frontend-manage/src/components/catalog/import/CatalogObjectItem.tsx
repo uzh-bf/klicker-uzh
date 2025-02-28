@@ -162,6 +162,7 @@ function CatalogObjectItem({
                   setNewAccess(access as ObjectAccess)
                   setChangeAccessModal(true)
                 }}
+                cyPrefix={object.name}
               />
               <Button
                 onClick={(e) => {
