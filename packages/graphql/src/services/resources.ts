@@ -1013,21 +1013,11 @@ export async function deleteAnswerCollection(
     return null
   }
 
+  let remainingPermissions = collection._count.permissions
   let updatedCollection: DB.AnswerCollection
-  if (collection._count.permissions > 0) {
+  if (remainingPermissions > 0) {
     // only disconnect answer collection, since other users have access
     updatedCollection = await ctx.prisma.$transaction(async (tx) => {
-      const mutationResult = await tx.answerCollection.update({
-        where: {
-          id: collectionId,
-        },
-        data: {
-          owner: {
-            disconnect: true,
-          },
-        },
-      })
-
       // remove all access requests
       await tx.permission.deleteMany({
         where: {
@@ -1089,6 +1079,9 @@ export async function deleteAnswerCollection(
                 },
               })
 
+              // decrease the number of remaining permissions
+              remainingPermissions--
+
               // invalidate permission
               ctx.emitter.emit('invalidate', {
                 typename: 'Permission',
@@ -1116,6 +1109,25 @@ export async function deleteAnswerCollection(
           answerCollectionId: collectionId,
         },
       })
+
+      // depending on the number of remaining permissions, update or delete the answer collection
+      const mutationResult =
+        remainingPermissions > 0
+          ? await tx.answerCollection.update({
+              where: {
+                id: collectionId,
+              },
+              data: {
+                owner: {
+                  disconnect: true,
+                },
+              },
+            })
+          : await tx.answerCollection.delete({
+              where: {
+                id: collectionId,
+              },
+            })
 
       return mutationResult
     })
