@@ -8,10 +8,12 @@ function ObjectAccessSelection({
   value,
   onChange,
   compact,
+  cyPrefix,
 }: {
   value: ObjectAccess
   onChange: (value: ObjectAccess) => void
   compact?: boolean
+  cyPrefix: string
 }) {
   const t = useTranslations()
 
@@ -26,15 +28,15 @@ function ObjectAccessSelection({
         {
           value: ObjectAccess.Restricted,
           label: <ObjectAccessLabel accessType={ObjectAccess.Restricted} />,
-          data: { cy: 'answer-collection-access-restricted' },
+          data: { cy: 'object-access-restricted' },
         },
         {
           value: ObjectAccess.Public,
           label: <ObjectAccessLabel accessType={ObjectAccess.Public} />,
-          data: { cy: 'answer-collection-access-public' },
+          data: { cy: 'object-access-public' },
         },
       ]}
-      data={{ cy: 'answer-collection-access' }}
+      data={{ cy: `${cyPrefix}-object-access` }}
       className={{
         select: {
           trigger: twMerge('h-9 w-48', compact && 'h-7 w-40 text-sm'),

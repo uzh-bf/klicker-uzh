@@ -1,3 +1,4 @@
+import { CatalogObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
@@ -129,25 +130,16 @@ Cypress.Commands.add(
 
 interface AnswerCollectionArgs {
   name: string
-  accessCy: string
-  access: string
   description: string
   entries: string[]
 }
 
 Cypress.Commands.add(
   'createAnswerCollection',
-  ({ name, accessCy, access, description, entries }: AnswerCollectionArgs) => {
+  ({ name, description, entries }: AnswerCollectionArgs) => {
     cy.get('[data-cy="create-answer-collection"]').click()
     cy.get('[data-cy="answer-collection-name"]').type(name)
     cy.get('[data-cy="answer-collection-name"]').should('have.value', name)
-
-    cy.get('[data-cy="answer-collection-access"]').contains(
-      messages.manage.resources.accessPRIVATE
-    )
-    cy.get('[data-cy="answer-collection-access"]').click()
-    cy.get(`[data-cy="answer-collection-access-${accessCy}"]`).click()
-    cy.get('[data-cy="answer-collection-access"]').contains(access)
 
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
@@ -168,7 +160,6 @@ Cypress.Commands.add(
 
     cy.get('[data-cy="submit-create-answer-collection"]').click()
     cy.get(`[data-cy="answer-collection-${name}"]`).should('exist')
-    cy.get(`[data-cy="answer-collection-${name}"]`).contains(access)
   }
 )
 
@@ -185,6 +176,39 @@ Cypress.Commands.add(
     cy.get(`[data-cy="answer-collection-${collectionName}"]`).should(
       'not.exist'
     )
+  }
+)
+
+interface AddObjectToCatalogArgs {
+  objectName: string
+  objectType: CatalogObjectType
+  accessLevel: 'public' | 'restricted'
+}
+
+Cypress.Commands.add(
+  'addObjectToCatalog',
+  ({ objectName, objectType, accessLevel }: AddObjectToCatalogArgs) => {
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-${objectType}"]`).click()
+    cy.get('[data-cy="object-type-selection"]').contains(
+      messages.shared.types[objectType]
+    )
+
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.resources.accessRESTRICTED
+    )
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-restricted"]').should('exist')
+    cy.get('[data-cy="object-access-public"]').should('exist')
+    cy.get(`[data-cy="object-access-${accessLevel}"]`).click()
+
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.findByText(objectName).click()
+    cy.get('[data-cy="submit-add-object-button"]').click()
+
+    cy.get(`[data-cy="catalog-object-${objectName}"]`).should('exist')
   }
 )
 
@@ -1357,14 +1381,17 @@ declare global {
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       createAnswerCollection({
         name,
-        accessCy,
-        access,
         description,
         entries,
       }: AnswerCollectionArgs): Chainable<void>
       deleteAnswerCollection({
         collectionName,
       }: DeleteCollectionArgs): Chainable<void>
+      addObjectToCatalog({
+        objectName,
+        objectType,
+        accessLevel,
+      }: AddObjectToCatalogArgs): Chainable<void>
       createQuestionSC({
         title,
         content,

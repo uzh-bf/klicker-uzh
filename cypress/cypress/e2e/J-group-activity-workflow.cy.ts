@@ -73,8 +73,6 @@ describe('Create and solve a group activity', function () {
       name: this.data.questions.collection.name,
       description: this.data.questions.collection.description,
       entries: this.data.questions.collection.options,
-      access: messages.manage.resources.accessPRIVATE,
-      accessCy: 'private',
     })
 
     // create selection question

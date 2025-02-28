@@ -15,15 +15,11 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.SE.collection,
-      accessCy: 'private',
-      access: messages.manage.resources.accessPRIVATE,
       description: this.data.SE.collectionDescription,
       entries: [...this.data.SE.solutions, ...this.data.SE.solutionsNotChosen],
     })
     cy.createAnswerCollection({
       name: this.data.SE.collectionEdited,
-      accessCy: 'restricted',
-      access: messages.manage.resources.accessRESTRICTED,
       description: this.data.SE.collectionDescriptionEdited,
       entries: [
         ...this.data.SE.solutionsEdited,

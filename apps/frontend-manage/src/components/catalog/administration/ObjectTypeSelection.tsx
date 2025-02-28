@@ -41,6 +41,7 @@ function ObjectTypeSelection({
           <ObjectAccessSelection
             value={accessValue}
             onChange={(value) => setFieldValue('access', value)}
+            cyPrefix="modal"
           />
         </div>
       </div>

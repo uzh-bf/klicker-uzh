@@ -41,7 +41,6 @@ function AnswerCollectionCreationForm({
 
   const validationSchema = Yup.object({
     name: Yup.string().required(t('manage.resources.nameRequired')),
-    access: Yup.string().required(),
     description: Yup.string().required(
       t('manage.resources.descriptionRequired')
     ),
