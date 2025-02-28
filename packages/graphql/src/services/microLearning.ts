@@ -72,7 +72,9 @@ export async function getMicroLearningEvaluation(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: {
       id,
-      status: PublicationStatus.PUBLISHED,
+      status: {
+        in: [PublicationStatus.PUBLISHED, PublicationStatus.ENDED],
+      },
       isDeleted: false,
     },
     include: {
