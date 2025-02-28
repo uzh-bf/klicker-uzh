@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.31...v3.3.0-alpha.32) (2025-02-28)
+
+
+### Bug Fixes
+
+* **packages/graphql:** fetch complete evaluation data for completed microlearnings as well ([925e950](https://github.com/uzh-bf/klicker-uzh/commit/925e950c6785e40451f9e667f79ae5c77b16d11f))
+
 ## [3.3.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.30...v3.3.0-alpha.31) (2025-02-23)
 
 
