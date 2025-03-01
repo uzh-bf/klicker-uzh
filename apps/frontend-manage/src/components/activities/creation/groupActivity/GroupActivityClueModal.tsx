@@ -105,6 +105,7 @@ function GroupActivityClueModal({
                 {t('manage.activityWizard.groupActivityCluesDescription')}
               </div>
               <FormikSelectField
+                required
                 name="type"
                 items={[
                   {
@@ -121,7 +122,6 @@ function GroupActivityClueModal({
                 label={t('manage.activityWizard.groupActivityClueType')}
                 labelType="small"
                 data={{ cy: 'group-activity-clue-type' }}
-                required
               />
               <div className="flex w-full flex-row gap-2">
                 <FormikTextField
