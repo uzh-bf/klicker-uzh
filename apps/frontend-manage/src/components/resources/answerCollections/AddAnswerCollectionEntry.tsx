@@ -1,7 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AddAnswerCollectionOptionDocument,
   AnswerCollectionEntry,
@@ -37,15 +36,15 @@ function AddAnswerCollectionEntry({
   if (!fieldOpen) {
     return (
       <Button
-        className={{ root: 'w-full' }}
         onClick={() => {
           setFieldOpen(true)
           setOptionsEditingDisabled(true)
         }}
+        className={{ root: 'h-9 py-0' }}
         data={{ cy: 'add-answer-option' }}
       >
-        <FontAwesomeIcon icon={faPlusCircle} className="mr-1" />
-        {t('manage.resources.addAnswerOption')}
+        <Button.Icon icon={faPlusCircle} />
+        <Button.Label>{t('manage.resources.addAnswerOption')}</Button.Label>
       </Button>
     )
   }
@@ -107,18 +106,19 @@ function AddAnswerCollectionEntry({
         <Form className="flex flex-row gap-1">
           <FormikTextField
             name="newValue"
-            className={{ input: 'h-8' }}
+            className={{ input: 'h-9' }}
             data={{ cy: 'input-new-answer-option' }}
           />
           <Button
+            primary
             type="submit"
-            className={{ root: 'border-primary-80 h-8' }}
+            className={{ root: 'h-9 py-0' }}
             disabled={!isValid}
             loading={isSubmitting}
             data={{ cy: 'save-new-answer-option' }}
           >
-            <FontAwesomeIcon icon={faSave} className="mr-0.5" />
-            <div className="w-max">{t('shared.generic.save')}</div>
+            <Button.Icon icon={faSave} />
+            <Button.Label>{t('shared.generic.save')}</Button.Label>
           </Button>
         </Form>
       )}

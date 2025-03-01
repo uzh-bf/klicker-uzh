@@ -212,7 +212,7 @@ function PracticeQuizElement({
         )}
       </div>
       <div className="flex flex-col items-end justify-between gap-4">
-        <div className="flex flex-row items-center gap-3 text-sm">
+        <div className="flex flex-row items-center gap-2 text-sm">
           {practiceQuiz.status === PublicationStatus.Draft && (
             <>
               <PublishPracticeQuizButton

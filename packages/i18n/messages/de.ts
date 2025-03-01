@@ -1013,7 +1013,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createMicrolearning: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
       createGroupTask: 'Gruppenaktivität erstellen',
-      createQuestionCaps: 'FRAGE ERSTELLEN',
+      createQuestion: 'Frage Erstellen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',

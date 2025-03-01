@@ -1,7 +1,6 @@
 // TODO: notifications
 
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 
@@ -108,18 +107,18 @@ function FeedbackChannel({
                 <div className="flex-initial print:hidden">
                   <Button
                     className={{
-                      root: 'flex h-9 w-9 items-center justify-center',
+                      root: 'h-9 w-9',
                     }}
                     onClick={() => {
                       handlePublishFeedback(id, !isPublished)
                     }}
                     data={{ cy: `publish-feedback-${content}` }}
                   >
-                    {isPublished ? (
-                      <FontAwesomeIcon icon={faEye} />
-                    ) : (
-                      <FontAwesomeIcon icon={faEyeSlash} />
-                    )}
+                    <Button.Icon
+                      withoutLabel
+                      icon={isPublished ? faEye : faEyeSlash}
+                      className={{ root: 'h-4.5 w-4.5' }}
+                    />
                   </Button>
                 </div>
               )}

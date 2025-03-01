@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementData,
   ElementInstance,
@@ -368,22 +367,25 @@ function GroupActivityGradingStack({
                     <div className="mb-1 ml-0.5 mr-2 text-red-600">*</div>
                   </div>
                   <Button
-                    active={values.passed === true}
+                    destructive={values.passed === true}
                     onClick={() => setFieldValue('passed', true)}
-                    className={{ root: 'text-black', active: 'bg-green-500' }}
+                    className={{
+                      root: twMerge(
+                        values.passed ? 'bg-green-600 hover:bg-green-700' : ''
+                      ),
+                    }}
                     disabled={gradingCompleted}
                     data={{ cy: 'groupActivity-passed' }}
                   >
-                    <FontAwesomeIcon icon={faCheck} />
+                    <Button.Icon withoutLabel icon={faCheck} />
                   </Button>
                   <Button
-                    active={values.passed === false}
+                    destructive={values.passed === false}
                     onClick={() => setFieldValue('passed', false)}
-                    className={{ root: 'text-black', active: 'bg-red-500' }}
                     disabled={gradingCompleted}
                     data={{ cy: 'groupActivity-failed' }}
                   >
-                    <FontAwesomeIcon icon={faX} />
+                    <Button.Icon withoutLabel icon={faX} />
                   </Button>
                 </div>
                 <FastField
@@ -411,20 +413,17 @@ function GroupActivityGradingStack({
                 </FastField>
               </div>
               <Button
+                primary
                 disabled={!isValid || gradingCompleted}
                 type="submit"
-                className={{
-                  root: twMerge(
-                    'bg-primary-80 -mt-2 h-10 w-max self-end font-bold text-white',
-                    (!isValid || gradingCompleted) &&
-                      'bg-primary-60 cursor-not-allowed'
-                  ),
-                }}
                 loading={isSubmitting}
                 onClick={() => submitForm()}
+                className={{ root: 'float-right self-end' }}
                 data={{ cy: 'groupActivity-save-submission-grading' }}
               >
-                {t('manage.groupActivity.saveGrading')}
+                <Button.Label>
+                  {t('manage.groupActivity.saveGrading')}
+                </Button.Label>
               </Button>
               <EditingDetector />
             </div>

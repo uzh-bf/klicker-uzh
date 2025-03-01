@@ -19,17 +19,14 @@ function QuestionTags({
   }
 
   return (
-    <div className="flex max-w-2xl flex-row overflow-auto">
+    <div className="flex max-w-2xl flex-row gap-2 overflow-auto">
       {tags.map((tag): React.ReactElement => {
         const selected = tagfilter?.includes(tag.name)
 
         return (
           <Button
             className={{
-              root: twMerge(
-                'border-blue-40 m-1 mt-0 w-max rounded-md border border-solid bg-slate-100 px-3 py-1 shadow-none',
-                selected && 'bg-primary-20'
-              ),
+              root: twMerge('bg-uzh-grey-20 h-8', selected && 'bg-primary-20'),
             }}
             onClick={(event) => {
               event?.stopPropagation()

@@ -1,5 +1,4 @@
 import { faX } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityPerformance,
   ActivityType,
@@ -24,6 +23,7 @@ interface PerformanceRatesProps {
   instancePerformances: InstancePerformance[]
 }
 
+// TODO: update buttons in this file
 function PerformanceRates({
   activityPerformances,
   instancePerformances,
@@ -74,7 +74,7 @@ function PerformanceRates({
   const ResetButton = () => (
     <Button
       className={{
-        root: 'py-0.25 flex h-8 w-max flex-row items-center gap-2 self-end px-2 shadow-none',
+        root: 'h-8 self-end py-0',
       }}
       disabled={
         type === defaultFilters.type &&
@@ -91,8 +91,8 @@ function PerformanceRates({
         setInstanceSearch('')
       }}
     >
-      <FontAwesomeIcon icon={faX} />
-      <div>{t('manage.analytics.resetSelectors')}</div>
+      <Button.Icon icon={faX} />
+      <Button.Label>{t('manage.analytics.resetSelectors')}</Button.Label>
     </Button>
   )
 

@@ -46,6 +46,7 @@ function CourseArchiveModal({
       }
       onPrimaryAction={
         <Button
+          primary
           loading={loading}
           onClick={async () => {
             await toggleArchiveCourse({
@@ -62,10 +63,9 @@ function CourseArchiveModal({
             setOpen(false)
             setSelectedCourseId(null)
           }}
-          className={{ root: 'bg-primary-100 text-white' }}
           data={{ cy: 'course-archive-modal-confirm' }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       }
       onSecondaryAction={
@@ -76,7 +76,7 @@ function CourseArchiveModal({
           }}
           data={{ cy: 'course-archive-modal-cancel' }}
         >
-          {t('shared.generic.close')}
+          <Button.Label>{t('shared.generic.close')}</Button.Label>
         </Button>
       }
     >

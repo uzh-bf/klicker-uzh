@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { faChartSimple } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
   GetActivityAnalyticsDocument,
@@ -71,7 +70,7 @@ function QuizAnalytics() {
             <PreviewTag className="text-base" />
           </div>
           <Button
-            className={{ root: 'flex h-8 flex-row gap-3' }}
+            className={{ root: 'h-8' }}
             onClick={() =>
               window.open(
                 analytics.activityType === ActivityType.PracticeQuiz
@@ -82,8 +81,8 @@ function QuizAnalytics() {
             }
             data={{ cy: 'activity-evaluation-link' }}
           >
-            <FontAwesomeIcon icon={faChartSimple} />
-            <div>{t('shared.generic.evaluation')}</div>
+            <Button.Icon icon={faChartSimple} />
+            <Button.Label>{t('shared.generic.evaluation')}</Button.Label>
           </Button>
         </div>
         <ActivityAnalyticsCharts

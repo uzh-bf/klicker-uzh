@@ -1014,7 +1014,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createMicrolearning: 'Create microlearning',
       createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
-      createQuestionCaps: 'CREATE QUESTION',
+      createQuestion: 'Create Question',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',

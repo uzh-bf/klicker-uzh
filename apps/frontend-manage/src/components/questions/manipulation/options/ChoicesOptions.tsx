@@ -3,7 +3,6 @@ import {
   faArrowUp,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Switch } from '@uzh-bf/design-system'
 import {
@@ -140,7 +139,11 @@ function ChoicesOptions({
                         cy: `move-answer-option-ix-${index}-up`,
                       }}
                     >
-                      <FontAwesomeIcon icon={faArrowUp} className="h-3.5" />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faArrowUp}
+                        className={{ root: 'h-3.5' }}
+                      />
                     </Button>
                     <Button
                       className={{ root: 'px-auto py-0.5' }}
@@ -150,24 +153,24 @@ function ChoicesOptions({
                         cy: `move-answer-option-ix-${index}-down`,
                       }}
                     >
-                      <FontAwesomeIcon icon={faArrowDown} className="h-3.5" />
+                      <Button.Icon
+                        withoutLabel
+                        icon={faArrowDown}
+                        className={{ root: 'h-3.5' }}
+                      />
                     </Button>
                   </div>
                   <Button
+                    destructive
                     onClick={() => remove(index)}
                     className={{
-                      root: 'h-10 w-10 items-center justify-center rounded-md bg-red-600 text-white',
+                      root: 'ml-1 h-10 w-10',
                     }}
                     data={{
                       cy: `delete-answer-option-ix-${index}`,
                     }}
                   >
-                    <Button.Icon>
-                      <FontAwesomeIcon
-                        icon={faTrash}
-                        className="hover:bg-primary-20"
-                      />
-                    </Button.Icon>
+                    <Button.Icon withoutLabel icon={faTrash} />
                   </Button>
                 </div>
 
@@ -267,7 +270,7 @@ function ChoicesOptions({
               }
               data={{ cy: 'add-new-answer' }}
             >
-              {t('manage.questionForms.addAnswer')}
+              <Button.Label>{t('manage.questionForms.addAnswer')}</Button.Label>
             </Button>
           </div>
         )

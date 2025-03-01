@@ -40,20 +40,16 @@ function SignInOutButton() {
         />
         <div className="flex w-full flex-row items-center justify-between">
           <Button
+            destructive
             onClick={() => signOut()}
             data={{ cy: 'auth-logout-button' }}
-            className={{
-              root: 'border border-red-500',
-            }}
           >
             {t('shared.generic.logout')}
           </Button>
           <Button
+            primary
             onClick={() => router.push(process.env.NEXT_PUBLIC_MANAGE_URL!)}
             data={{ cy: 'auth-open-manage-button' }}
-            className={{
-              root: 'border border-green-700',
-            }}
           >
             {t('shared.generic.openApplication')}
           </Button>

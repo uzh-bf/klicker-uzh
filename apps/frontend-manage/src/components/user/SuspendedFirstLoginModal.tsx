@@ -22,6 +22,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
+// TODO: update buttons in this file
 function SuspendedFirstLoginModal() {
   const [firstLogin, setFirstLogin] = useState(false)
   const [showGenericError, setShowGenericError] = useState(false)
@@ -166,7 +167,7 @@ function SuspendedFirstLoginModal() {
                 </UserNotification>
               )}
 
-              <div className="prose mb-4 max-w-none">
+              <div className="prose mb-2 max-w-none">
                 {t('manage.firstLogin.relevantLinks')}
               </div>
 
@@ -176,17 +177,19 @@ function SuspendedFirstLoginModal() {
                   target="_blank"
                 >
                   <Button data={{ cy: 'first-login-documentation' }} fluid>
-                    Documentation
+                    <Button.Label>
+                      {t('shared.generic.documentation')}
+                    </Button.Label>
                   </Button>
                 </Link>
                 <Link href="https://community.klicker.uzh.ch" target="_blank">
                   <Button data={{ cy: 'first-login-community' }} fluid>
-                    Community
+                    <Button.Label>{t('shared.generic.community')}</Button.Label>
                   </Button>
                 </Link>
                 <Link href="https://klicker-uzh.feedbear.com" target="_blank">
                   <Button data={{ cy: 'first-login-roadmap' }} fluid>
-                    Roadmap
+                    <Button.Label>{t('shared.generic.roadmap')}</Button.Label>
                   </Button>
                 </Link>
               </div>
@@ -210,14 +213,14 @@ function SuspendedFirstLoginModal() {
 
               <Button
                 fluid
-                className={{
-                  root: 'bg-primary-80 float-right mt-4 w-32 justify-center text-white disabled:cursor-not-allowed disabled:opacity-50',
-                }}
-                disabled={!isValid || isSubmitting}
+                primary
                 type="submit"
+                loading={isSubmitting}
+                disabled={!isValid}
+                className={{ root: 'float-right mt-4 w-32' }}
                 data={{ cy: 'first-login-save-settings' }}
               >
-                {isSubmitting ? <Loader /> : t('shared.generic.save')}
+                <Button.Label>{t('shared.generic.save')}</Button.Label>
               </Button>
             </Form>
           )}

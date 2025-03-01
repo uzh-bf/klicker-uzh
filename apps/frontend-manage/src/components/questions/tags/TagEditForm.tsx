@@ -37,32 +37,27 @@ function TagEditForm({ tag, onConfirm }: TagEditFormProps) {
       >
         {({ errors, touched, isSubmitting, isValid }) => {
           return (
-            <Form>
+            <Form className="w-full">
               <div className="flex w-full flex-row justify-between gap-2">
                 <Field
                   name="tag"
                   type="tag"
                   className={twMerge(
-                    'bg-uzh-grey-20 border-uzh-grey-60 focus:border-primary-40 w-full rounded border bg-opacity-50 px-1 py-1',
+                    'bg-uzh-grey-20 border-uzh-grey-60 focus:border-primary-40 h-7 w-full rounded border bg-opacity-50 py-1 pl-1',
                     errors.tag && touched.tag && 'border-red-400 bg-red-50'
                   )}
                   data-cy="tag-modifier-field"
                 />
 
                 <Button
-                  basic
                   type="submit"
                   disabled={isSubmitting || !isValid}
                   className={{
-                    root: twMerge(
-                      'rounded border border-solid px-2',
-                      isValid && 'hover:text-primary-100 hover:bg-primary-20',
-                      !isValid && 'text-uzh-grey-60 cursor-not-allowed'
-                    ),
+                    root: twMerge('mr-0 h-7 rounded border border-solid px-2'),
                   }}
                   data={{ cy: 'tag-editing-save' }}
                 >
-                  {t('shared.generic.ok')}
+                  <Button.Label>{t('shared.generic.ok')}</Button.Label>
                 </Button>
               </div>
 

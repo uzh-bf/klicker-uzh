@@ -1,5 +1,4 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
@@ -16,11 +15,11 @@ const TriggerButton = React.forwardRef<
       ref={forwardedRef}
       type="button"
       className={{
-        root: 'border-red-600 hover:border-red-600 hover:text-red-600',
+        root: 'h-8 border-red-600 hover:border-red-600 hover:text-red-600',
       }}
     >
-      <FontAwesomeIcon icon={faTrashCan} />
-      {t('manage.questionForms.removeCase')}
+      <Button.Icon icon={faTrashCan} />
+      <Button.Label>{t('manage.questionForms.removeCase')}</Button.Label>
     </Button>
   )
 })
@@ -63,19 +62,17 @@ function CaseStudyCaseDeletionButton({
             onClick={() => setDeletionConfirmationOpen(false)}
             data={{ cy: 'cancel-delete-case' }}
           >
-            {t('shared.generic.cancel')}
+            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
           <Button
+            destructive
             onClick={() => {
               onConfirm()
               setDeletionConfirmationOpen(false)
             }}
-            className={{
-              root: 'border-red-600 hover:border-red-600 hover:text-red-600',
-            }}
             data={{ cy: 'confirm-delete-case' }}
           >
-            {t('shared.generic.delete')}
+            <Button.Label>{t('shared.generic.delete')}</Button.Label>
           </Button>
         </div>
       </div>

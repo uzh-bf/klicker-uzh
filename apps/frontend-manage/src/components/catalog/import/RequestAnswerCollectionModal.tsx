@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCatalogObjectsDocument,
   GetSingleAnswerCollectionCatalogDocument,
@@ -118,18 +117,19 @@ function RequestAnswerCollectionModal({
           </div>
           <div className="mt-3 flex flex-row justify-between">
             <Button
-              className={{ root: 'h-8 border-red-600 text-base' }}
+              className={{ root: 'h-8 border-red-600 py-0' }}
               data={{ cy: 'cancel-answer-collection-request' }}
               onClick={(e) => {
                 e?.stopPropagation()
                 onClose()
               }}
             >
-              <FontAwesomeIcon icon={faBan} />
-              {t('shared.generic.cancel')}
+              <Button.Icon icon={faBan} />
+              <Button.Label>{t('shared.generic.cancel')}</Button.Label>
             </Button>
             <Button
-              className={{ root: 'border-primary-80 h-8 text-base' }}
+              primary
+              className={{ root: 'h-8 py-0' }}
               onClick={async (e) => {
                 e?.stopPropagation()
                 const res = await requestAnswerCollection()
@@ -143,8 +143,8 @@ function RequestAnswerCollectionModal({
               loading={requestLoading}
               data={{ cy: 'confirm-answer-collection-request' }}
             >
-              <FontAwesomeIcon icon={faPaperPlane} />
-              {t('manage.resources.requestAccess')}
+              <Button.Icon icon={faPaperPlane} />
+              <Button.Label>{t('manage.resources.requestAccess')}</Button.Label>
             </Button>
           </div>
           <Toast

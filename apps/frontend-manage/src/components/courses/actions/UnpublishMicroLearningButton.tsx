@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   MicroLearning,
   UnpublishMicroLearningDocument,
@@ -31,9 +30,7 @@ function UnpublishMicroLearningButton({
       onClick={async () => await unpublishMicrolearning()}
       data={{ cy: `unpublish-microlearning-${microLearning.name}` }}
     >
-      <Button.Icon>
-        <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
-      </Button.Icon>
+      <Button.Icon icon={faLock} />
       <Button.Label>{t('manage.course.unpublishMicrolearning')}</Button.Label>
     </Button>
   )

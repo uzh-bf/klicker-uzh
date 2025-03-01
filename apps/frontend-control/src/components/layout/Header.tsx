@@ -17,7 +17,7 @@ function Header({ title }: HeaderProps) {
   return (
     <div className="fixed top-0 flex h-11 w-full flex-row items-center justify-between bg-slate-800 px-2 text-white md:px-4">
       <div className="line-clamp-1 text-lg font-bold">{title}</div>
-      <div className="flex flex-row gap-4">
+      <div className="flex flex-row">
         <Select
           basic
           value={router.locale}
@@ -43,6 +43,9 @@ function Header({ title }: HeaderProps) {
             userIdLogout.data?.logoutUser
               ? router.push('https://www.klicker.uzh.ch')
               : console.log('Logout failed')
+          }}
+          className={{
+            root: 'px-auto my-auto text-white hover:bg-transparent hover:text-white',
           }}
           data={{ cy: 'logout-control-button' }}
         >

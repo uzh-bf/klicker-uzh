@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
   ModifyAnswerCollectionDocument,
@@ -71,16 +70,17 @@ function AnswerCollectionMetaForm({
             className={{ root: 'mb-4' }}
           />
           <Button
+            primary
             type="submit"
             disabled={!isValid}
             loading={isSubmitting}
             className={{
-              root: 'w-max self-end border-green-600 hover:border-green-600',
+              root: 'self-end',
             }}
             data={{ cy: 'save-changes-answer-collection' }}
           >
-            <FontAwesomeIcon icon={faSave} className="mr-1" />
-            <div>{t('manage.resources.saveChanges')}</div>
+            <Button.Icon icon={faSave} />
+            <Button.Label>{t('manage.resources.saveChanges')}</Button.Label>
           </Button>
         </Form>
       )}

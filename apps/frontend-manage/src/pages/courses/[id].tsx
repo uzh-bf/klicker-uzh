@@ -12,7 +12,7 @@ import {
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
-import { Button, Prose, Tabs } from '@uzh-bf/design-system'
+import { Prose, Tabs } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -76,12 +76,6 @@ function CourseOverviewPage() {
     )
 
   const { course } = data
-
-  const CrownIcon = () => (
-    <Button.Icon className={{ root: 'text-orange-400' }}>
-      <FontAwesomeIcon icon={faCrown} size="sm" />
-    </Button.Icon>
-  )
 
   return (
     <Layout>
@@ -192,7 +186,7 @@ function CourseOverviewPage() {
             >
               <div className="flex flex-row items-center justify-center gap-2">
                 <div>{t('shared.generic.practiceQuizzes')}</div>
-                <CrownIcon />
+                <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
               </div>
             </Tabs.Tab>
             <Tabs.Tab
@@ -209,7 +203,7 @@ function CourseOverviewPage() {
             >
               <div className="flex flex-row items-center justify-center gap-2">
                 <div>{t('shared.generic.microlearnings')}</div>
-                <CrownIcon />
+                <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
               </div>
             </Tabs.Tab>
             <Tabs.Tab
@@ -226,7 +220,7 @@ function CourseOverviewPage() {
             >
               <div className="flex flex-row items-center justify-center gap-2">
                 <div>{t('shared.generic.groupActivities')}</div>
-                <CrownIcon />
+                <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
               </div>
             </Tabs.Tab>
           </Tabs.TabList>

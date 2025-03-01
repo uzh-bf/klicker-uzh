@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
@@ -54,12 +53,12 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
           console.log(error)
         }
       }}
-      className={{ root: 'text-primary-100' }}
+      className={{
+        root: 'text-primary-100 hover:text-primary-100 h-7 py-0 text-sm',
+      }}
       data={{ cy: `start-live-quiz-${liveQuiz.name}` }}
     >
-      <Button.Icon>
-        <FontAwesomeIcon icon={faPlay} />
-      </Button.Icon>
+      <Button.Icon icon={faPlay} />
       <Button.Label>{t('manage.liveQuizzes.startLiveQuiz')}</Button.Label>
     </Button>
   )

@@ -42,16 +42,21 @@ function GroupActivitySubmission({
   return (
     <Button
       fluid
-      active={submission.id === selectedSubmission}
       disabled={!submission.decisions}
       className={{
         root: twMerge(
           'justify-between bg-slate-200',
-          submission.results && submission.results.passed && 'bg-green-200',
-          submission.results && !submission.results.passed && 'bg-red-200',
-          submission.decisions && !submission.results && 'bg-orange-100'
+          submission.results &&
+            submission.results.passed &&
+            'bg-green-200 hover:bg-green-300',
+          submission.results &&
+            !submission.results.passed &&
+            'bg-red-200 hover:bg-red-300',
+          submission.decisions &&
+            !submission.results &&
+            'bg-orange-100 hover:bg-orange-200',
+          submission.id === selectedSubmission && 'border-2 border-red-500'
         ),
-        active: 'border-2 border-red-500',
       }}
       onClick={() => selectSubmission(submission.id)}
       data={{ cy: `group-activity-submission-${activityIndex}` }}

@@ -1,5 +1,4 @@
 import { faDownload } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { GetStaticPaths, GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -76,9 +75,7 @@ export function QR({
       </div>
       {showButton && (
         <Button fluid onClick={onButtonClick} data={{ cy: 'download-qr-code' }}>
-          <Button.Icon>
-            <FontAwesomeIcon icon={faDownload} />
-          </Button.Icon>
+          <Button.Icon icon={faDownload} />
           <Button.Label>{t('shared.generic.download')}</Button.Label>
         </Button>
       )}

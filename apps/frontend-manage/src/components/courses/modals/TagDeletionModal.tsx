@@ -6,7 +6,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 
 interface TagDeletionModalProps {
   id: number
@@ -52,17 +51,15 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
     <Modal
       onPrimaryAction={
         <Button
+          destructive
           loading={deleting}
           onClick={async () => {
             await deleteTag()
             setOpen(false)
           }}
-          className={{
-            root: twMerge('bg-red-600 font-bold text-white'),
-          }}
           data={{ cy: 'confirm-delete-tag' }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       }
       onSecondaryAction={
@@ -70,7 +67,7 @@ function TagDeletionModal({ id, name, open, setOpen }: TagDeletionModalProps) {
           onClick={(): void => setOpen(false)}
           data={{ cy: 'cancel-delete-tag' }}
         >
-          {t('shared.generic.cancel')}
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
       }
       onClose={(): void => setOpen(false)}

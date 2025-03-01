@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faPlay } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateLiveQuizDocument,
   EditLiveQuizDocument,
@@ -351,11 +350,8 @@ function LiveQuizWizard({
                   })
                   router.push(`/quizzes/${data.createLiveQuiz!.id}/cockpit`)
                 }}
-                className={{ root: 'space-x-1' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faPlay} />
-                </Button.Icon>
+                <Button.Icon icon={faPlay} />
                 <Button.Label>
                   {t('manage.activityWizard.liveQuizStartNow')}
                 </Button.Label>

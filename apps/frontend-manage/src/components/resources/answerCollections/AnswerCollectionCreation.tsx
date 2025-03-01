@@ -1,8 +1,6 @@
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useState } from 'react'
 import AnswerCollectionCreationForm from './AnswerCollectionCreationForm'
 import CollectionErrorToast from './CollectionErrorToast'
@@ -10,8 +8,6 @@ import CollectionSuccessToast from './CollectionSuccessToast'
 
 function AnswerCollectionCreation() {
   const t = useTranslations()
-  const router = useRouter()
-
   const [creationOpen, setCreationOpen] = useState(false)
   const [successToast, setSuccessToast] = useState(false)
   const [errorToast, setErrorToast] = useState(false)
@@ -24,12 +20,14 @@ function AnswerCollectionCreation() {
             {t('manage.resources.selectCreateAnswerCollection')}
           </UserNotification>
           <Button
-            className={{ root: 'w-full' }}
+            fluid
             onClick={() => setCreationOpen(true)}
             data={{ cy: 'create-answer-collection' }}
           >
-            <FontAwesomeIcon icon={faPlusCircle} />
-            {t('manage.resources.newAnswerCollection')}
+            <Button.Icon icon={faPlusCircle} />
+            <Button.Label>
+              {t('manage.resources.newAnswerCollection')}
+            </Button.Label>
           </Button>
         </div>
       ) : null}

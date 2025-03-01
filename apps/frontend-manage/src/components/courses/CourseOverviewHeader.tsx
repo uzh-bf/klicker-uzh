@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { faChartPie, faPencil } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Course,
   GetSingleCourseDocument,
@@ -69,12 +68,10 @@ function CourseOverviewHeader({
         </div>
         <Button
           onClick={() => setCourseSettingsModal(true)}
-          className={{ root: 'gap-3' }}
+          className={{ root: 'h-8' }}
           data={{ cy: 'course-settings-button' }}
         >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faPencil} />
-          </Button.Icon>
+          <Button.Icon icon={faPencil} />
           <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
         </Button>
         <CourseQRModal
@@ -87,15 +84,14 @@ function CourseOverviewHeader({
         />
         {user?.publicPreview ? (
           <Button
+            primary
             onClick={() => {
               window.open(`/analytics/${course.id}/activity`, '_blank')
             }}
-            className={{ root: 'bg-primary-80 gap-3 text-white' }}
+            className={{ root: 'h-8' }}
             data={{ cy: 'course-learning-analytics-link' }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faChartPie} />
-            </Button.Icon>
+            <Button.Icon icon={faChartPie} />
             <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
           </Button>
         ) : null}

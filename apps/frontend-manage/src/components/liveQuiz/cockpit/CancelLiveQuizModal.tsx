@@ -104,6 +104,7 @@ function CancelLiveQuizModal({
       title={t('manage.cockpit.confirmAbortLiveQuiz', { title: title })}
       onPrimaryAction={
         <Button
+          destructive
           loading={quizDeleting}
           disabled={
             queryLoading ||
@@ -115,12 +116,9 @@ function CancelLiveQuizModal({
             setOpen(false)
             setConfirmations({ ...initialConfirmations })
           }}
-          className={{
-            root: 'bg-red-700 text-white hover:bg-red-800 hover:text-white disabled:bg-opacity-50 disabled:hover:cursor-not-allowed',
-          }}
           data={{ cy: 'confirm-cancel-live-quiz' }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       }
       onSecondaryAction={
@@ -131,7 +129,7 @@ function CancelLiveQuizModal({
           }}
           data={{ cy: 'abort-cancel-live-quiz' }}
         >
-          {t('shared.generic.close')}
+          <Button.Label>{t('shared.generic.close')}</Button.Label>
         </Button>
       }
     >

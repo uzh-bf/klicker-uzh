@@ -90,17 +90,17 @@ function LiveQuizBlock({
     <div
       className={twMerge(
         className,
-        'bg-uzh-grey-40 min-w-[150px] rounded p-4',
+        'bg-uzh-grey-40 min-w-max rounded p-4',
         active && 'bg-green-300',
         inCooldown && 'bg-orange-200'
       )}
     >
       <div
         className={twMerge(
-          'flex flex-row items-center justify-between text-gray-700'
+          'flex min-w-max flex-row items-center justify-between text-gray-700'
         )}
       >
-        <div>
+        <div className="mr-2">
           <FontAwesomeIcon icon={ICON_MAP[block.status]} />
         </div>
         {typeof block.numOfParticipants !== 'undefined' &&
@@ -145,7 +145,7 @@ function LiveQuizBlock({
                 return Math.max(value - 1, 0)
               }
             }}
-            className={{ countdown: 'font-bold' }}
+            className={{ countdown: 'font-bold', root: 'ml-2' }}
           />
         )}
       </div>

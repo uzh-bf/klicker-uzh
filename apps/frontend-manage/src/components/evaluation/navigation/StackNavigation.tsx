@@ -4,8 +4,8 @@ import {
   faChevronRight,
   faGamepad,
   faLayerGroup,
+  IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -23,6 +23,41 @@ interface StackNavigationProps {
   leaderboardAvailable?: boolean
   feedbacksAvailable?: boolean
 }
+
+const NavigationButton = ({
+  icon,
+  label,
+  onClick,
+  active,
+  disabled,
+  data,
+  className,
+}: {
+  icon: IconDefinition
+  label: string
+  onClick: () => void
+  active?: boolean
+  disabled?: boolean
+  data?: { cy?: string; test?: string }
+  className?: string
+}) => (
+  <Button
+    basic
+    onClick={onClick}
+    disabled={disabled}
+    className={{
+      root: twMerge(
+        'h-full rounded-none border-b-2 border-transparent pt-2',
+        active && `border-primary-80 border-solid`,
+        className || ''
+      ),
+    }}
+    data={data}
+  >
+    <Button.Icon icon={icon} />
+    <Button.Label>{label}</Button.Label>
+  </Button>
+)
 
 function StackNavigation({
   stacks,
@@ -44,7 +79,7 @@ function StackNavigation({
   })
 
   return (
-    <div className="flex flex-row">
+    <div className="flex h-11 flex-row">
       {visibleStacks.length > 0 && (
         <Button
           basic
@@ -58,43 +93,26 @@ function StackNavigation({
             stacks.length <= 2 * width + 1 ||
             (typeof activeStack === 'number' && activeStack - width <= 0)
           }
+          className={{ root: 'h-full px-1' }}
           data={{ cy: 'evaluate-previous-block' }}
         >
-          <div
-            className={twMerge(
-              'hover:bg-primary-20 flex h-full flex-row items-center px-2',
-              (stacks.length <= 2 * width + 1 ||
-                (typeof activeStack === 'number' &&
-                  activeStack - width <= 0)) &&
-                'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
-            )}
-          >
-            <FontAwesomeIcon icon={faChevronLeft} size="lg" />
-          </div>
+          <Button.Icon withoutLabel icon={faChevronLeft} />
         </Button>
       )}
 
       {visibleStacks.map((stack) => (
-        <Button
-          basic
+        <NavigationButton
           key={stack.value}
           onClick={() => {
             setActiveStack(stack.value)
             setActiveInstance(stackInstanceMap[stack.value][0].value)
           }}
-          className={{
-            root: twMerge(
-              'hover:bg-primary-20 w-[7rem] border-b-2 border-transparent px-3 py-2 text-center',
-              stack.value === activeStack && `border-primary-80 border-solid`
-            ),
-          }}
           data={{ cy: `evaluate-stack-${stack.value}` }}
-        >
-          <div className="flex w-full flex-row items-center justify-center gap-2">
-            <FontAwesomeIcon size="xs" icon={faLayerGroup} />
-            <div>{stack.label}</div>
-          </div>
-        </Button>
+          className="w-[7rem]"
+          active={stack.value === activeStack}
+          icon={faLayerGroup}
+          label={stack.label}
+        />
       ))}
 
       {visibleStacks.length > 0 && (
@@ -113,80 +131,44 @@ function StackNavigation({
             (typeof activeStack === 'number' &&
               activeStack + width >= stacks.length - 1)
           }
+          className={{ root: 'h-full px-1' }}
           data={{ cy: 'evaluate-next-block' }}
         >
-          <div
-            className={twMerge(
-              'hover:bg-primary-20 flex h-full flex-row items-center px-2',
-              (stacks.length <= 2 * width + 1 ||
-                (typeof activeStack === 'number' &&
-                  activeStack + width >= stacks.length - 1)) &&
-                'text-uzh-grey-80 cursor-not-allowed hover:bg-white'
-            )}
-          >
-            <FontAwesomeIcon icon={faChevronRight} size="lg" />
-          </div>
+          <Button.Icon withoutLabel icon={faChevronRight} />
         </Button>
       )}
 
       {type === 'LiveQuiz' && leaderboardAvailable && (
-        <Button
-          basic
-          className={{
-            root: twMerge(
-              'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
-              activeStack === 'leaderboard' && `border-primary-80 border-solid`
-            ),
-          }}
+        <NavigationButton
           onClick={() => {
             setActiveStack('leaderboard')
           }}
           data={{ cy: 'evaluation-leaderboard' }}
-        >
-          <div className="flex flex-row items-center gap-2">
-            <FontAwesomeIcon icon={faGamepad} />
-            <div>{t('shared.generic.leaderboard')}</div>
-          </div>
-        </Button>
+          active={activeStack === 'leaderboard'}
+          icon={faGamepad}
+          label={t('shared.generic.leaderboard')}
+        />
       )}
       {type === 'LiveQuiz' && feedbacksAvailable && (
         <>
-          <Button
-            basic
-            className={{
-              root: twMerge(
-                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
-                activeStack === 'feedbacks' && `border-primary-80 border-solid`
-              ),
-            }}
+          <NavigationButton
             onClick={() => {
               setActiveStack('feedbacks')
             }}
             data={{ cy: 'evaluation-feedbacks' }}
-          >
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faComment} />
-              <div>{t('shared.generic.feedbacks')}</div>
-            </div>
-          </Button>
-          <Button
-            basic
-            className={{
-              root: twMerge(
-                'hover:bg-primary-20 border-b-2 border-transparent px-3 py-2',
-                activeStack === 'confusion' && `border-primary-80 border-solid`
-              ),
-            }}
+            active={activeStack === 'feedbacks'}
+            icon={faComment}
+            label={t('shared.generic.feedbacks')}
+          />
+          <NavigationButton
             onClick={() => {
               setActiveStack('confusion')
             }}
             data={{ cy: 'evaluation-confusion' }}
-          >
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faFaceSmile} />
-              <div>{t('manage.evaluation.confusion')}</div>
-            </div>
-          </Button>
+            active={activeStack === 'confusion'}
+            icon={faFaceSmile}
+            label={t('manage.evaluation.confusion')}
+          />
         </>
       )}
     </div>

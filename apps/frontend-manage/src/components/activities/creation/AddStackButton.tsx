@@ -74,7 +74,7 @@ function AddStackButton({
           <Button
             fluid
             className={{
-              root: 'flex max-w-[135px] flex-1 flex-col justify-center gap-1 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
+              root: 'flex max-w-[135px] flex-1 flex-col gap-1 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
               const elements = Object.values(selection).map((question) => ({
@@ -104,10 +104,8 @@ function AddStackButton({
             data={{ cy: 'add-stack-with-selected' }}
             ref={drop}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faSquare} />
-            </Button.Icon>
-            <Button.Label>
+            <Button.Icon icon={faSquare} />
+            <Button.Label className={{ root: 'max-w-full whitespace-normal' }}>
               {type === 'block'
                 ? t('manage.activityWizard.newBlockSelected', {
                     count: Object.keys(selection).length,
@@ -120,7 +118,7 @@ function AddStackButton({
           <Button
             fluid
             className={{
-              root: 'flex max-w-[135px] flex-1 flex-col justify-center gap-2 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
+              root: 'flex max-w-[135px] flex-1 flex-col gap-2 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
             }}
             onClick={() => {
               Object.values(selection).forEach((question) => {
@@ -159,7 +157,7 @@ function AddStackButton({
               <FontAwesomeIcon icon={faSquare} />
               <FontAwesomeIcon icon={faSquare} />
             </div>
-            <div>
+            <div className="max-w-full whitespace-normal">
               {t(
                 type === 'block'
                   ? 'manage.activityWizard.pasteSingleElementsBlock'
@@ -175,7 +173,7 @@ function AddStackButton({
       {drop(
         <div
           className={twMerge(
-            'hover:bg-primary-20 flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
+            'hover:bg-accent flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
             isOver && 'bg-primary-20'
           )}
           onClick={() => {

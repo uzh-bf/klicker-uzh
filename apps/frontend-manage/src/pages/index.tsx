@@ -226,8 +226,8 @@ function Index() {
             <Loader />
           ) : (
             <>
-              <div className="flex flex-none flex-row content-center justify-between">
-                <div className="flex flex-row items-center gap-1 pb-3">
+              <div className="flex flex-none flex-row content-center items-end justify-between pb-3">
+                <div className="flex flex-row items-center gap-1">
                   <div className="flex flex-col pr-0.5 text-sm">
                     <Checkbox
                       checked={
@@ -303,15 +303,12 @@ function Index() {
                       }}
                       data={{ cy: 'sort-order-question-pool-toggle' }}
                     >
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={sortIcon} />
-                      </Button.Icon>
+                      <Button.Icon icon={sortIcon} withoutLabel />
                     </Button>
                     <Select
                       className={{
                         root: 'min-w-30',
                         trigger: 'h-10',
-                        item: 'text-sm',
                       }}
                       placeholder={t('manage.general.sortBy')}
                       items={[
@@ -392,6 +389,7 @@ function Index() {
                   )}
                 </div>
                 <Button
+                  primary
                   onClick={() => {
                     const value = localStorage.getItem(
                       'autosave-element-creation'
@@ -403,12 +401,10 @@ function Index() {
                       setIsQuestionCreationModalOpen(true)
                     }
                   }}
-                  className={{
-                    root: 'bg-primary-80 h-10 font-bold text-white',
-                  }}
                   data={{ cy: 'create-question' }}
+                  className={{ root: 'font-bold' }}
                 >
-                  {t('manage.questionPool.createQuestionCaps')}
+                  {t('manage.questionPool.createQuestion')}
                 </Button>
               </div>
 

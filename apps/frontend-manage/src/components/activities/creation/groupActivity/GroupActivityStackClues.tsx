@@ -26,6 +26,7 @@ interface GroupActivityStackCluesProps extends GroupActivityWizardStepProps {
   resetSelection: () => void
 }
 
+// TODO: update buttons in this file
 function GroupActivityStackClues({
   acceptedTypes,
   selection,
@@ -143,7 +144,7 @@ function GroupActivityStackClues({
                           >
                             <div className="flex flex-col p-1">
                               <div className="font-bold">{clue.name}</div>
-                              <div className="h-full w-full border-black">
+                              <div className="line-clamp-1 w-full overflow-hidden border-black">
                                 {clue.type === ParameterType.Number && clue.unit
                                   ? `${clue.value} ${clue.unit}`
                                   : clue.value}
@@ -151,23 +152,26 @@ function GroupActivityStackClues({
                             </div>
                             <div className="flex h-full flex-col">
                               <Button
-                                className={{ root: 'h-1/2' }}
+                                className={{
+                                  root: 'h-1/2 rounded-none rounded-tr-sm px-1.5',
+                                }}
                                 data={{ cy: `edit-clue-${clue.name}` }}
                                 onClick={() => {
                                   setClueIx(ix)
                                   setClueModal(true)
                                 }}
                               >
-                                <FontAwesomeIcon icon={faPencil} />
+                                <Button.Icon withoutLabel icon={faPencil} />
                               </Button>
                               <Button
+                                destructive
                                 className={{
-                                  root: 'h-1/2 bg-red-600 text-white',
+                                  root: 'h-1/2 rounded-none !rounded-br-sm px-1.5',
                                 }}
                                 data={{ cy: `remove-clue-${clue.name}` }}
                                 onClick={() => remove(ix)}
                               >
-                                <FontAwesomeIcon icon={faTrashCan} />
+                                <Button.Icon withoutLabel icon={faTrashCan} />
                               </Button>
                             </div>
                           </div>

@@ -40,9 +40,10 @@ function NumericalExactSolutionsInput({
                   }}
                 />
                 <Button
+                  destructive
                   onClick={() => remove(index)}
                   className={{
-                    root: 'ml-2 h-9 bg-red-500 text-white hover:bg-red-600',
+                    root: 'h-9',
                   }}
                   data={{
                     cy: `delete-exact-solution-${index}`,
@@ -55,7 +56,7 @@ function NumericalExactSolutionsInput({
             <Button
               fluid
               className={{
-                root: 'border-uzh-grey-100 flex-1 border border-solid font-bold',
+                root: 'mt-1 h-8 border-gray-300 font-bold',
               }}
               onClick={() => push(undefined)}
               data={{ cy: 'add-exact-solution' }}

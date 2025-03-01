@@ -1,5 +1,4 @@
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, FormikTextField, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -90,18 +89,18 @@ function TransferOwnershipModal({
                     onClick={onClose}
                     data={{ cy: 'cancel-ownership-transfer' }}
                   >
-                    {t('shared.generic.cancel')}
+                    <Button.Label>{t('shared.generic.cancel')}</Button.Label>
                   </Button>
                   <Button
+                    primary
                     type="submit"
                     disabled={isSubmitting || !isValid}
                     data={{ cy: 'confirm-ownership-transfer' }}
-                    className={{
-                      root: 'bg-amber-600 text-white hover:cursor-pointer hover:bg-amber-700 hover:text-white',
-                    }}
                   >
-                    <FontAwesomeIcon icon={faExchangeAlt} className="mr-2" />
-                    {t('manage.resources.confirmTransfer')}
+                    <Button.Icon icon={faExchangeAlt} />
+                    <Button.Label>
+                      {t('manage.resources.confirmTransfer')}
+                    </Button.Label>
                   </Button>
                 </div>
               </Form>

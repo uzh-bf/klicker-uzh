@@ -1,10 +1,8 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { MicroLearning } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface MicroLearningAccessLinkProps {
   microLearning: Partial<MicroLearning> & Pick<MicroLearning, 'name'>
@@ -19,7 +17,7 @@ function MicroLearningAccessLink({
   const [copyToast, setCopyToast] = useState(false)
 
   return (
-    <>
+    <div>
       <Button
         basic
         onClick={() => {
@@ -29,12 +27,12 @@ function MicroLearningAccessLink({
           } catch (e) {}
         }}
         className={{
-          root: twMerge('text-primary-100 flex flex-row items-center gap-1'),
+          root: 'text-primary-100 hover:text-primary-100 h-7 py-0 text-sm',
         }}
         data={{ cy: `copy-quiz-link-${microLearning.name}` }}
       >
-        <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
-        <div>{t('manage.course.copyAccessLink')}</div>
+        <Button.Icon icon={faLink} />
+        <Button.Label>{t('manage.course.copyAccessLink')}</Button.Label>
       </Button>
       <Toast
         dismissible
@@ -46,7 +44,7 @@ function MicroLearningAccessLink({
       >
         {t('manage.course.linkAccessCopied')}
       </Toast>
-    </>
+    </div>
   )
 }
 

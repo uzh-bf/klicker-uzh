@@ -35,6 +35,7 @@ import StatusTag from './StatusTag'
 import ActivityAnalyticsLink from './actions/ActivityAnalyticsLink'
 import MicroLearningAccessLink from './actions/MicroLearningAccessLink'
 import MicroLearningEvaluationLink from './actions/MicroLearningEvaluationLink'
+import MicroLearningEvaluationPrimaryLink from './actions/MicroLearningEvaluationPrimaryLink'
 import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
@@ -160,7 +161,7 @@ function MicroLearningElement({
       </div>
 
       <div className="flex flex-col items-end justify-between gap-4">
-        <div className="flex flex-row items-center gap-3 text-sm">
+        <div className="flex flex-row items-center gap-2 text-sm">
           {microLearning.status === PublicationStatus.Draft && (
             <>
               <PublishMicroLearningButton microLearning={microLearning} />
@@ -383,9 +384,9 @@ function MicroLearningElement({
 
           {microLearning.status === PublicationStatus.Ended && (
             <>
-              <MicroLearningAccessLink
-                microLearning={microLearning}
-                href={href}
+              <MicroLearningEvaluationPrimaryLink
+                quizName={microLearning.name}
+                evaluationHref={evaluationHref}
               />
               <Dropdown
                 data={{ cy: `microlearning-actions-${microLearning.name}` }}

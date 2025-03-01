@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CancelAnswerCollectionRequestDocument,
   GetCatalogObjectsDocument,
@@ -96,6 +95,7 @@ function RequestCancellationModal({
             })}
           </div>
           <Button
+            destructive
             onClick={async () => {
               const { data, errors } = await cancelAnswerCollectionRequest()
 
@@ -112,16 +112,16 @@ function RequestCancellationModal({
             }}
             loading={mutationLoading}
             className={{
-              root: 'float-right mt-4 flex flex-row gap-1.5 border border-red-600',
+              root: 'float-right mt-3',
             }}
             data={{ cy: 'confirm-cancel-sharing-request' }}
           >
-            <FontAwesomeIcon icon={faTrashCan} />
-            <div>
+            <Button.Icon icon={faTrashCan} />
+            <Button.Label>
               {t('manage.resources.confirmCancellation', {
                 name: collection.name,
               })}
-            </div>
+            </Button.Label>
           </Button>
         </>
       )}

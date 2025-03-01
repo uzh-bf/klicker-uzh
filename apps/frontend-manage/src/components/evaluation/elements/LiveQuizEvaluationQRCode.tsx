@@ -1,5 +1,4 @@
 import { faX } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import QR from '@pages/qr/[...args]'
 import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -32,7 +31,7 @@ function LiveQuizEvaluationQRCode({
         }}
         onClick={() => setHideQR(true)}
       >
-        <FontAwesomeIcon icon={faX} />
+        <Button.Icon withoutLabel icon={faX} />
       </Button>
     </div>
   )

@@ -5,7 +5,6 @@ import {
   faPlusCircle,
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CreateAnswerCollectionDocument,
   GetAnswerCollectionsInfoDocument,
@@ -146,13 +145,10 @@ function AnswerCollectionCreationForm({
                         onClick={() => remove(index)}
                         data={{ cy: `remove-response-entry-${index}` }}
                         className={{
-                          root: 'flex h-9 w-9 items-center justify-center self-end border-red-600',
+                          root: 'h-9 w-9 self-end border-red-600 text-red-600 hover:text-red-600',
                         }}
                       >
-                        <FontAwesomeIcon
-                          icon={faTrashCan}
-                          className="text-red-600"
-                        />
+                        <Button.Icon withoutLabel icon={faTrashCan} />
                       </Button>
                     </div>
                   ))}
@@ -161,8 +157,10 @@ function AnswerCollectionCreationForm({
                     className={{ root: 'w-full' }}
                     data={{ cy: 'add-response-entry' }}
                   >
-                    <FontAwesomeIcon icon={faPlusCircle} />
-                    {t('manage.resources.addValue')}
+                    <Button.Icon icon={faPlusCircle} />
+                    <Button.Label>
+                      {t('manage.resources.addValue')}
+                    </Button.Label>
                   </Button>
                 </div>
               )}
@@ -170,7 +168,7 @@ function AnswerCollectionCreationForm({
             {errors && typeof errors.entries === 'string' ? (
               <UserNotification
                 type="error"
-                message={t('manage.resources.minTwoEntriesRequired')}
+                message={errors.entries}
                 className={{ root: 'mt-2 text-base' }}
               />
             ) : null}
@@ -180,8 +178,8 @@ function AnswerCollectionCreationForm({
                 onClick={onClose}
                 data={{ cy: 'cancel-create-answer-collection' }}
               >
-                <FontAwesomeIcon icon={faBan} />
-                {t('shared.generic.cancel')}
+                <Button.Icon icon={faBan} />
+                <Button.Label>{t('shared.generic.cancel')}</Button.Label>
               </Button>
               <Button
                 type="submit"
@@ -190,8 +188,8 @@ function AnswerCollectionCreationForm({
                 className={{ root: 'h-8 border-green-700' }}
                 data={{ cy: 'submit-create-answer-collection' }}
               >
-                <FontAwesomeIcon icon={faCheck} />
-                {t('shared.generic.create')}
+                <Button.Icon icon={faCheck} />
+                <Button.Label>{t('shared.generic.create')}</Button.Label>
               </Button>
             </div>
           </Form>

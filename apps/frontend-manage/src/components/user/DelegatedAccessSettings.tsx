@@ -1,14 +1,12 @@
 import { useMutation, useSuspenseQuery } from '@apollo/client'
-import { faClipboard } from '@fortawesome/free-regular-svg-icons'
-import { faArrowsRotate, faTrash } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faClipboard, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 import {
   CreateUserLoginDocument,
   DeleteUserLoginDocument,
   GetUserLoginsDocument,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { monoSpaceFont } from '@klicker-uzh/shared-components/src/font'
 import {
   Button,
@@ -105,16 +103,15 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     : t('manage.settings.lastUsedNever')}
                 </div>
                 <Button
-                  className={{ root: 'group' }}
+                  className={{
+                    root: 'group h-7 w-7 border-red-600 bg-transparent text-red-600 hover:text-red-600',
+                  }}
                   onClick={() =>
                     deleteUserLogin({ variables: { id: login.id } })
                   }
                   data={{ cy: `delete-delegated-login-${login.name}` }}
                 >
-                  <FontAwesomeIcon
-                    icon={faTrash}
-                    className="group-hover:text-red-600"
-                  />
+                  <Button.Icon withoutLabel icon={faTrashCan} />
                 </Button>
               </div>
             </div>
@@ -203,12 +200,10 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                                 }
                               )
                           }}
+                          className={{ root: 'h-8 w-8' }}
                           data={{ cy: 'copy-new-delegated-login-password' }}
                         >
-                          <FontAwesomeIcon
-                            icon={faClipboard}
-                            className="-mx-1 w-4"
-                          />
+                          <Button.Icon withoutLabel icon={faClipboard} />
                         </Button>
                         <Button
                           onClick={() =>
@@ -217,12 +212,10 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                               generatePassword.generate(PW_SETTINGS)
                             )
                           }
+                          className={{ root: 'h-8 w-8' }}
                           data={{ cy: 'generate-new-delegated-login-password' }}
                         >
-                          <FontAwesomeIcon
-                            icon={faArrowsRotate}
-                            className="-mx-1 w-4"
-                          />
+                          <Button.Icon withoutLabel icon={faArrowsRotate} />
                         </Button>
                       </div>
                     </div>
@@ -261,19 +254,16 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                     />
                   </div>
                   <Button
+                    primary
                     type="button"
-                    className={{
-                      root: twMerge(
-                        'bg-primary-80 float-right mb-2 mt-2 text-white',
-                        (!isValid || isSubmitting) &&
-                          'bg-primary-20 cursor-not-allowed'
-                      ),
-                    }}
                     disabled={!isValid || isSubmitting}
-                    data={{ cy: 'create-delegated-login' }}
                     onClick={() => setConfirmationModal(true)}
+                    className={{ root: 'float-right my-2' }}
+                    data={{ cy: 'create-delegated-login' }}
                   >
-                    {t('manage.settings.createLogin')}
+                    <Button.Label>
+                      {t('manage.settings.createLogin')}
+                    </Button.Label>
                   </Button>
                   <Modal
                     title={t('manage.settings.confirmDelegatedAcces')}
@@ -313,28 +303,24 @@ function DelegatedAccessSettings({ shortname }: DelegatedAccessSettingsProps) {
                                 }
                               )
                           }}
+                          className={{ root: 'h-8 w-8' }}
                           data={{ cy: 'copy-new-delegated-login-password' }}
                         >
-                          <FontAwesomeIcon
-                            icon={faClipboard}
-                            className="-mx-1 w-4"
-                          />
+                          <Button.Icon withoutLabel icon={faClipboard} />
                         </Button>
                       </div>
                     </div>
                     <Button
+                      primary
                       type="submit"
+                      loading={isSubmitting}
+                      disabled={!isValid}
                       className={{
-                        root: twMerge(
-                          'bg-primary-80 float-right mb-2 mt-2 text-white',
-                          (!isValid || isSubmitting) &&
-                            'bg-primary-20 cursor-not-allowed'
-                        ),
+                        root: 'float-right my-2',
                       }}
-                      disabled={!isValid || isSubmitting}
                       data={{ cy: 'confirm-delegated-login-creation' }}
                     >
-                      {isSubmitting ? <Loader /> : t('shared.generic.confirm')}
+                      <Button.Label>{t('shared.generic.confirm')}</Button.Label>
                     </Button>
                   </Modal>
                 </Form>

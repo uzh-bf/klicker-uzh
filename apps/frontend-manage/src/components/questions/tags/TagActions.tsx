@@ -4,7 +4,6 @@ import {
   faPencil,
   faTrash,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Tag } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -39,11 +38,11 @@ function TagActions({
           disabled={!onMoveUp}
           onClick={() => onMoveUp?.()}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100 px-1',
           }}
           data={{ cy: `tag-list-item-${tag.name}-move-up` }}
         >
-          <FontAwesomeIcon icon={faArrowUp} className="mr-2" />
+          <Button.Icon withoutLabel icon={faArrowUp} />
         </Button>
       )}
       {onMoveDown && (
@@ -52,11 +51,11 @@ function TagActions({
           disabled={!onMoveDown}
           onClick={() => onMoveDown?.()}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100 px-1',
           }}
           data={{ cy: `tag-list-item-${tag.name}-move-down` }}
         >
-          <FontAwesomeIcon icon={faArrowDown} className="mr-2" />
+          <Button.Icon withoutLabel icon={faArrowDown} />
         </Button>
       )}
       {setEditMode && (
@@ -65,11 +64,11 @@ function TagActions({
           disabled={active}
           onClick={() => setEditMode(true)}
           className={{
-            root: 'disabled:text-uzh-grey-60 hover:text-primary-100',
+            root: 'disabled:text-uzh-grey-60 hover:text-primary-100 px-1',
           }}
           data={{ cy: `tag-list-item-${tag.name}-edit` }}
         >
-          <FontAwesomeIcon icon={faPencil} className="mr-2" />
+          <Button.Icon withoutLabel icon={faPencil} />
         </Button>
       )}
       {setIsDeletionModalOpen && (
@@ -78,11 +77,11 @@ function TagActions({
           disabled={active}
           onClick={() => setIsDeletionModalOpen(true)}
           className={{
-            root: 'disabled:text-uzh-grey-60 disabled:hover:text-none hover:text-red-600',
+            root: 'disabled:text-uzh-grey-60 disabled:hover:text-none px-1 hover:text-red-600',
           }}
           data={{ cy: `tag-list-item-${tag.name}-delete` }}
         >
-          <FontAwesomeIcon icon={faTrash} className="mr-2" />
+          <Button.Icon withoutLabel icon={faTrash} />
         </Button>
       )}
       {setIsDeletionModalOpen && (

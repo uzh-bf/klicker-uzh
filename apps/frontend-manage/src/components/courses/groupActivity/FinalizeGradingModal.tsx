@@ -30,6 +30,7 @@ function FinalizeGradingModal({
         title={t('manage.groupActivity.finalizeGrading')}
         onPrimaryAction={
           <Button
+            primary
             loading={finalizingGrading}
             onClick={async () => {
               const { data } = await finalizeGroupActivityGrading({
@@ -43,12 +44,9 @@ function FinalizeGradingModal({
               }
               setOpen(false)
             }}
-            className={{
-              root: 'bg-primary-80 text-base font-bold text-white',
-            }}
             data={{ cy: 'confirm-finalize-grading' }}
           >
-            {t('shared.generic.confirm')}
+            <Button.Label>{t('shared.generic.confirm')}</Button.Label>
           </Button>
         }
         onSecondaryAction={
@@ -57,7 +55,7 @@ function FinalizeGradingModal({
             data={{ cy: 'cancel-finalize-grading' }}
             className={{ root: 'text-base' }}
           >
-            {t('shared.generic.cancel')}
+            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
         }
         onClose={(): void => setOpen(false)}

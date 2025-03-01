@@ -177,7 +177,7 @@ function Question({
           <div className="flex flex-row gap-2 md:flex-col">
             <Button
               className={{
-                root: 'space-x-2 bg-white text-sm md:w-36 md:text-base',
+                root: 'h-8 justify-start',
               }}
               onClick={() => {
                 const value = localStorage.getItem(`autosave-element-${id}`)
@@ -190,9 +190,7 @@ function Question({
               }}
               data={{ cy: `edit-question-${title}` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faPencil} />
-              </Button.Icon>
+              <Button.Icon icon={faPencil} />
               <Button.Label>{t('shared.generic.edit')}</Button.Label>
             </Button>
             {showRecoveryPrompt && (
@@ -221,14 +219,12 @@ function Question({
             )}
             <Button
               className={{
-                root: 'space-x-2 bg-white text-sm md:w-36 md:text-base',
+                root: 'h-8 justify-start',
               }}
               onClick={() => setIsDuplicationModalOpen(true)}
               data={{ cy: `duplicate-question-${title}` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faCopy} />
-              </Button.Icon>
+              <Button.Icon icon={faCopy} />
               <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
             </Button>
             {isDuplicationModalOpen && (
@@ -242,20 +238,19 @@ function Question({
             )}
             <Button
               className={{
-                root: 'space-x-2 border-red-400 text-sm md:w-36 md:text-base',
+                root: 'h-8 justify-start border-red-600',
               }}
               onClick={() => setIsDeletionModalOpen(true)}
               data={{ cy: `delete-question-${title}` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faTrash} />
-              </Button.Icon>
+              <Button.Icon icon={faTrash} />
               <Button.Label>{t('shared.generic.delete')}</Button.Label>
             </Button>
             <Modal
               hideCloseButton
               onPrimaryAction={
                 <Button
+                  destructive
                   loading={deleting}
                   onClick={async () => {
                     await deleteQuestion({
@@ -284,15 +279,14 @@ function Question({
                     unsetDeletedQuestion(id)
                     setIsDeletionModalOpen(false)
                   }}
-                  className={{ root: 'bg-red-600 font-bold text-white' }}
                   data={{ cy: 'confirm-question-deletion' }}
                 >
-                  {t('shared.generic.delete')}
+                  <Button.Label>{t('shared.generic.delete')}</Button.Label>
                 </Button>
               }
               onSecondaryAction={
                 <Button onClick={(): void => setIsDeletionModalOpen(false)}>
-                  {t('shared.generic.cancel')}
+                  <Button.Label>{t('shared.generic.cancel')}</Button.Label>
                 </Button>
               }
               onClose={(): void => setIsDeletionModalOpen(false)}

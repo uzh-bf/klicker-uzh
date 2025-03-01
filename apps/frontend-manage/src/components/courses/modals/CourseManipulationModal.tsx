@@ -14,7 +14,6 @@ import dayjs from 'dayjs'
 import { Form, Formik, FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
 import ElementCreationErrorToast from '../../toasts/ElementCreationErrorToast'
@@ -399,19 +398,17 @@ function CourseManipulationModal({
               />
             )}
             <Button
+              primary
               disabled={!isValid || isSubmitting}
               type="submit"
-              className={{
-                root: twMerge(
-                  'bg-primary-80 float-right mt-3 w-full font-bold text-white md:w-max',
-                  (!isValid || isSubmitting) && 'cursor-not-allowed opacity-50'
-                ),
-              }}
+              className={{ root: 'float-right mt-3' }}
               data={{ cy: 'manipulate-course-submit' }}
             >
-              {initialValues
-                ? t('shared.generic.save')
-                : t('shared.generic.create')}
+              <Button.Label>
+                {initialValues
+                  ? t('shared.generic.save')
+                  : t('shared.generic.create')}
+              </Button.Label>
             </Button>
           </Form>
         )}

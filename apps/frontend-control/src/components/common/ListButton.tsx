@@ -1,5 +1,4 @@
-import { IconProp } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -7,7 +6,7 @@ import { twMerge } from 'tailwind-merge'
 interface ListButtonProps {
   link?: string
   onClick?: () => void
-  icon: IconProp
+  icon: IconDefinition
   label: string
   data?: {
     cy?: string
@@ -41,18 +40,17 @@ function ListButton({
 
   return (
     <Button
+      fluid
       onClick={onClick ? onClick : () => router.push(link)}
       className={{
-        root: twMerge(
-          'bg-uzh-grey-40 border-uzh-grey-100 w-full rounded-md border border-solid p-2',
-          className?.root
-        ),
+        root: className?.root,
       }}
       data={data}
     >
-      <Button.Icon className={{ root: twMerge('ml-1 mr-3', className?.icon) }}>
-        <FontAwesomeIcon icon={icon} />
-      </Button.Icon>
+      <Button.Icon
+        className={{ root: twMerge('ml-1 mr-3', className?.icon) }}
+        icon={icon}
+      />
       <Button.Label
         className={{ root: twMerge('line-clamp-1', className?.root) }}
       >

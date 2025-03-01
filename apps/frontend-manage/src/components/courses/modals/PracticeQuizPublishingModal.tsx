@@ -7,7 +7,6 @@ import { Button, FormikDateField, H3, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 
 interface PracticeQuizPublishingModalProps {
@@ -47,13 +46,7 @@ function PracticeQuizPublishingModal({
           </div>
           <div>{t('manage.course.practiceQuizPublishingHint', { title })}</div>
           <Button
-            className={{
-              root: twMerge(
-                'bg-primary-100 float-right mt-3 text-white',
-                practiceQuizPublishing &&
-                  'hover:bg-primary-40 bg-primary-40 cursor-not-allowed'
-              ),
-            }}
+            primary
             onClick={async () => {
               await publishPracticeQuiz({
                 variables: {
@@ -64,8 +57,9 @@ function PracticeQuizPublishingModal({
             }}
             loading={practiceQuizPublishing}
             data={{ cy: 'publish-practice-quiz-immediately' }}
+            className={{ root: 'float-right mt-3' }}
           >
-            {t('manage.course.confirmPublication')}
+            <Button.Label>{t('manage.course.confirmPublication')}</Button.Label>
           </Button>
         </div>
 
@@ -118,19 +112,16 @@ function PracticeQuizPublishingModal({
                     data={{ cy: 'practice-quiz-available-from' }}
                   />
                   <Button
+                    primary
                     type="submit"
-                    className={{
-                      root: twMerge(
-                        'bg-primary-100 float-right mt-3 text-white',
-                        (!isValid || practiceQuizPublishing) &&
-                          'hover:bg-primary-40 bg-primary-40 cursor-not-allowed'
-                      ),
-                    }}
                     loading={practiceQuizPublishing}
                     disabled={!isValid}
                     data={{ cy: 'schedule-practice-quiz-publication' }}
+                    className={{ root: 'float-right mt-3' }}
                   >
-                    {t('manage.course.confirmScheduling')}
+                    <Button.Label>
+                      {t('manage.course.confirmScheduling')}
+                    </Button.Label>
                   </Button>
                 </Form>
               )

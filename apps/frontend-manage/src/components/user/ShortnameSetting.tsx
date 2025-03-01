@@ -124,14 +124,15 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
                 hideError
               />
               <Button
+                primary
                 disabled={isSubmitting || !isValid}
                 type="submit"
                 className={{
-                  root: 'border-uzh-grey-60 h-9 w-9 items-center justify-center shadow-none',
+                  root: 'h-9 w-9',
                 }}
                 data={{ cy: 'save-shortname' }}
               >
-                <FontAwesomeIcon icon={faSave} />
+                <Button.Icon withoutLabel icon={faSave} />
               </Button>
             </Form>
           )}

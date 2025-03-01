@@ -53,13 +53,17 @@ function AdvancedLiveQuizSettings({
           basic
           onClick={() => setOpen(true)}
           data={{ cy: 'live-quiz-advanced-settings' }}
+          className={{ root: 'h-7 w-7' }}
         >
-          <FontAwesomeIcon
+          <Button.Icon
+            withoutLabel
             icon={faGears}
-            className={twMerge(
-              'hover:text-primary-100',
-              showError && 'text-red-600 hover:text-red-700'
-            )}
+            className={{
+              root: twMerge(
+                'h-5 w-5',
+                showError && 'text-red-600 hover:text-red-700'
+              ),
+            }}
           />
         </Button>
       }

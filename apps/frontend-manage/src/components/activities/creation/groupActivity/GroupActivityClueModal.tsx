@@ -1,5 +1,4 @@
 import { faPlus, faSave } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ParameterType } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -54,8 +53,10 @@ function GroupActivityClueModal({
           cy: 'add-group-activity-clue',
         }}
       >
-        <FontAwesomeIcon icon={faPlus} />
-        <div>{t('manage.activityWizard.groupActivityAddClue')}</div>
+        <Button.Icon icon={faPlus} />
+        <Button.Label>
+          {t('manage.activityWizard.groupActivityAddClue')}
+        </Button.Label>
       </Button>
 
       <Modal
@@ -67,6 +68,7 @@ function GroupActivityClueModal({
       >
         <Formik
           enableReinitialize
+          validateOnMount
           validationSchema={yup.object().shape({
             name: yup
               .string()
@@ -97,7 +99,7 @@ function GroupActivityClueModal({
               : pushClue(values)
           }}
         >
-          {({ values, resetForm, submitForm }) => (
+          {({ values, isValid, resetForm, submitForm }) => (
             <Form className="flex flex-col">
               <div className="test-gray-800 text-base">
                 {t('manage.activityWizard.groupActivityCluesDescription')}
@@ -171,8 +173,10 @@ function GroupActivityClueModal({
               )}
 
               <Button
-                className={{ root: 'mt-3 gap-3 self-end' }}
+                primary
                 type="button"
+                disabled={!isValid}
+                className={{ root: 'mt-3 self-end' }}
                 onClick={async () => {
                   await submitForm()
                   resetForm()
@@ -180,9 +184,7 @@ function GroupActivityClueModal({
                 }}
                 data={{ cy: 'group-activity-clue-save' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faSave} />
-                </Button.Icon>
+                <Button.Icon icon={faSave} />
                 <Button.Label>{t('shared.generic.save')}</Button.Label>
               </Button>
             </Form>

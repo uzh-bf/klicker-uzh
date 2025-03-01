@@ -1,5 +1,4 @@
 import { faDownload, faRepeat } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   type ColumnDef,
   type SortingState,
@@ -158,10 +157,8 @@ function DataTable<TData, TValue>({
             datas={data as Record<string, string | undefined | null>[]}
             separator=";"
           >
-            <Button>
-              <Button.Icon>
-                <FontAwesomeIcon icon={faDownload} />
-              </Button.Icon>
+            <Button className={{ root: 'h-8' }}>
+              <Button.Icon icon={faDownload} />
               <Button.Label>{t('shared.table.download')}</Button.Label>
             </Button>
           </CsvDownloader>
@@ -169,29 +166,27 @@ function DataTable<TData, TValue>({
 
         <div className="flex flex-row gap-2">
           {isResetSortingEnabled && (
-            <Button onClick={() => setSorting([])}>
-              <FontAwesomeIcon icon={faRepeat} />
-              <div>{t('manage.evaluation.resetSorting')}</div>
+            <Button onClick={() => setSorting([])} className={{ root: 'h-8' }}>
+              <Button.Icon icon={faRepeat} />
+              <Button.Label>{t('manage.evaluation.resetSorting')}</Button.Label>
             </Button>
           )}
 
           {isPaginated && (
             <div className="space-x-2">
               <Button
-                variant="outline"
-                size="sm"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
+                className={{ root: 'h-8' }}
               >
-                {t('shared.table.previous')}
+                <Button.Label>{t('shared.table.previous')}</Button.Label>
               </Button>
               <Button
-                variant="outline"
-                size="sm"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
+                className={{ root: 'h-8' }}
               >
-                {t('shared.table.next')}
+                <Button.Label>{t('shared.table.next')}</Button.Label>
               </Button>
             </div>
           )}

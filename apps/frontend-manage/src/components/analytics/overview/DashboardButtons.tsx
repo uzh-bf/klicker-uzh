@@ -32,7 +32,7 @@ function DashboardButtons({ course }: { course: Pick<Course, 'id' | 'name'> }) {
       ].map((button, ix) => (
         <Button
           className={{
-            root: 'h-8.5 border-uzh-blue-40 shadow-none',
+            root: 'h-8 py-0',
           }}
           onClick={() => router.push(button.href)}
           data={{ cy: button.cy }}

@@ -50,6 +50,7 @@ function PublishConfirmationModal({
       title={t(`manage.course.publishItem${elementType}`)}
       onPrimaryAction={
         <Button
+          primary
           loading={mlPublishLoading || gaPublishLoading}
           onClick={async () => {
             if (elementType === ElementInstanceType.Microlearning) {
@@ -59,21 +60,17 @@ function PublishConfirmationModal({
             }
             setOpen(false)
           }}
-          className={{
-            root: 'bg-primary-80 text-base font-bold text-white',
-          }}
           data={{ cy: 'confirm-publish-action' }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       }
       onSecondaryAction={
         <Button
           onClick={(): void => setOpen(false)}
           data={{ cy: 'cancel-publish-action' }}
-          className={{ root: 'text-base' }}
         >
-          {t('shared.generic.cancel')}
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
       }
       onClose={(): void => setOpen(false)}

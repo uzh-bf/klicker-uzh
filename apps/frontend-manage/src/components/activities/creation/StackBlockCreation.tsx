@@ -49,6 +49,7 @@ interface StackBlockCreationSingleProps extends StackBlockCreationProps {
   error?: ElementStackErrorValues
 }
 
+// TODO: update buttons in this file
 function StackBlockCreation({
   stackIx,
   stack,
@@ -156,39 +157,43 @@ function StackBlockCreation({
             </Tooltip>
           )}
         </div>
-        <div className="flex flex-row gap-1 text-xs">
+        <div className="flex flex-row text-xs">
           {!singleStackMode && typeof move !== 'undefined' && (
             <Button
               basic
               className={{
-                root: 'hover:bg-primary-20 px-1 disabled:hidden',
+                root: 'hover:text-primary-100 px-1 hover:bg-transparent',
               }}
-              disabled={numOfStacks === 1}
+              disabled={numOfStacks === 1 || stackIx === 0}
               onClick={() =>
                 move(stackIx, stackIx !== 0 ? stackIx - 1 : stackIx)
               }
               data={{ cy: `move-stack-${stackIx}-left` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faArrowLeft} />
-              </Button.Icon>
+              <Button.Icon
+                withoutLabel
+                icon={faArrowLeft}
+                className={{ root: 'h-3.5 w-3.5' }}
+              />
             </Button>
           )}
           {!singleStackMode && typeof move !== 'undefined' && (
             <Button
               basic
               className={{
-                root: 'hover:bg-primary-20 px-1 disabled:hidden',
+                root: 'hover:text-primary-100 px-1 hover:bg-transparent',
               }}
-              disabled={numOfStacks === 1}
+              disabled={numOfStacks === 1 || stackIx === numOfStacks - 1}
               onClick={() =>
                 move(stackIx, stackIx !== numOfStacks ? stackIx + 1 : stackIx)
               }
               data={{ cy: `move-stack-${stackIx}-right` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faArrowRight} />
-              </Button.Icon>
+              <Button.Icon
+                withoutLabel
+                icon={faArrowRight}
+                className={{ root: 'h-3.5 w-3.5' }}
+              />
             </Button>
           )}
           {!singleStackMode && (
@@ -196,13 +201,15 @@ function StackBlockCreation({
               basic
               onClick={() => setStackDescriptionModal(true)}
               className={{
-                root: 'hover:text-primary-100 px-1',
+                root: 'hover:text-primary-100 px-1 hover:bg-transparent',
               }}
               data={{ cy: `open-stack-${stackIx}-description` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faCommentDots} size="lg" />
-              </Button.Icon>
+              <Button.Icon
+                withoutLabel
+                icon={faCommentDots}
+                className={{ root: 'h-3.5 w-3.5' }}
+              />
             </Button>
           )}
           {!singleStackMode && typeof remove !== 'undefined' && (
@@ -210,13 +217,15 @@ function StackBlockCreation({
               basic
               onClick={() => remove(stackIx)}
               className={{
-                root: 'px-1 hover:text-red-600',
+                root: 'px-1 hover:bg-transparent hover:text-red-600',
               }}
               data={{ cy: 'delete-stack' }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faTrash} />
-              </Button.Icon>
+              <Button.Icon
+                withoutLabel
+                icon={faTrash}
+                className={{ root: 'h-3.5 w-3.5' }}
+              />
             </Button>
           )}
         </div>
@@ -229,6 +238,9 @@ function StackBlockCreation({
         replace={replace}
         error={error}
         highlightFTNoSL={highlightFTNoSL}
+        selectionActive={
+          (selection && Object.keys(selection).length > 0) ?? false
+        }
       />
 
       {selection && !isEmpty(selection) && (

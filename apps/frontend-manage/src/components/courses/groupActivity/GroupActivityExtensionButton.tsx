@@ -1,5 +1,4 @@
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -24,16 +23,17 @@ function GroupActivityExtensionButton({
   return (
     <>
       <Button
+        basic
         onClick={() => setExtensionModal(true)}
+        className={{
+          root: 'text-primary-100 hover:text-primary-100 h-7 py-0 text-sm',
+        }}
         data={{
           cy: `extend-groupActivity-${activityName}`,
         }}
-        basic
       >
-        <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
-          <FontAwesomeIcon icon={faCalendar} className="w-[1.2rem]" />
-          <div>{t('manage.course.extendGroupActivity')}</div>
-        </div>
+        <Button.Icon icon={faCalendar} />
+        <Button.Label>{t('manage.course.extendGroupActivity')}</Button.Label>
       </Button>
       <ExtensionModal
         type="groupActivity"

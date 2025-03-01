@@ -180,8 +180,8 @@ function AddObjectToCatalogModal({
 
             <div className="mt-6 flex justify-end">
               <Button
-                type="submit"
                 primary
+                type="submit"
                 disabled={
                   !isValid || !dirty || isSubmitting || !values.objectId
                 }

@@ -1,5 +1,4 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { AccessLevel, CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -138,19 +137,13 @@ function DirectSharingForm({
               disabled={!isValid || isSubmitting}
               className={{
                 root: twMerge(
-                  'mt-1 text-green-700 hover:text-green-800',
-                  !isValid || isSubmitting
-                    ? 'text-gray-500 hover:cursor-not-allowed hover:text-gray-500'
-                    : '',
+                  'px-2 py-2 text-green-700 hover:text-green-800',
                   isSubmitting && 'hover:cursor-progress'
                 ),
               }}
               data={{ cy: 'new-permission-submit' }}
             >
-              <FontAwesomeIcon
-                icon={faSave}
-                className="mt-1 h-[1.1rem] w-[1.1rem]"
-              />
+              <Button.Icon withoutLabel icon={faSave} />
             </Button>
           </td>
         </tr>

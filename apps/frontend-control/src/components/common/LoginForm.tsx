@@ -89,9 +89,9 @@ function LoginForm({
               data={dataSecret}
             />
 
-            <div className="flex flex-row justify-between">
+            <div className="mt-2 flex justify-end">
               <Button
-                className={{ root: 'border-uzh-grey-80 mt-2' }}
+                className={{ root: 'float-right' }}
                 type="submit"
                 disabled={isSubmitting}
                 data={{ cy: 'submit-login' }}

@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleCourseDocument,
   UnpublishGroupActivityDocument,
@@ -36,16 +35,17 @@ function GroupActivityUnpublishButton({
   return (
     <Button
       basic
-      disabled={unpublishing}
+      loading={unpublishing}
       onClick={async () => await unpublishGroupActivity()}
+      className={{
+        root: 'h-7 py-0 text-sm text-red-600 hover:text-red-600',
+      }}
       data={{
         cy: `unpublish-groupActivity-${activityName}`,
       }}
     >
-      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
-        <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
-        <div>{t('manage.course.unpublishGroupActivity')}</div>
-      </div>
+      <Button.Icon icon={faLock} />
+      <Button.Label>{t('manage.course.unpublishGroupActivity')}</Button.Label>
     </Button>
   )
 }

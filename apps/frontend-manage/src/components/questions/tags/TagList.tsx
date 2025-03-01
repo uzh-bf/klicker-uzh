@@ -22,7 +22,6 @@ import {
   faCircleQuestion as faQuestionSolid,
   faSquareCheck as faSquareCheckSolid,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CheckPrivatePreviewAvailableDocument,
   ElementStatus,
@@ -229,24 +228,23 @@ function TagList({
         </ul>
       )}
 
-      <div className="mt-4 px-2">
+      <div className="mt-5">
         <Switch
           size="sm"
           label={t('manage.questionPool.showArchived')}
           checked={isArchiveActive}
           onCheckedChange={(): void => handleToggleArchive()}
+          className={{ label: 'font-normal' }}
         />
       </div>
 
       <Button
-        className={{ root: 'mx-2 mb-2 mt-4' }}
+        className={{ root: 'mt-2 h-8 text-sm' }}
         disabled={resetDisabled}
         onClick={(): void => handleReset()}
         data={{ cy: 'reset-question-pool-filters' }}
       >
-        <Button.Icon className={{ root: 'mr-1' }}>
-          <FontAwesomeIcon icon={faCircleXmark} />
-        </Button.Icon>
+        <Button.Icon className={{ root: 'mr-1' }} icon={faCircleXmark} />
         <Button.Label>{t('manage.questionPool.resetFilters')}</Button.Label>
       </Button>
     </div>

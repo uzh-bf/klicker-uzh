@@ -1,8 +1,9 @@
+import { IconDefinition } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 
 interface MenuButtonProps {
-  icon: React.ReactNode
+  icon: IconDefinition
   children: React.ReactNode
   onClick: () => void
   disabled?: boolean
@@ -29,7 +30,7 @@ function MenuButton({
     <Button
       className={{
         root: twMerge(
-          'bg-grey-60 my-0.5 flex flex-1 flex-col justify-center gap-0 border-0 text-white shadow-none',
+          'bg-grey-60 my-0.5 flex flex-1 flex-col items-center justify-center gap-0.5 border-0 text-white',
           disabled && 'text-uzh-grey-100 cursor-not-allowed',
           className?.root
         ),
@@ -38,9 +39,10 @@ function MenuButton({
       disabled={disabled}
       data={data}
     >
-      <Button.Icon className={{ root: twMerge('w-max', className?.icon) }}>
-        {icon}
-      </Button.Icon>
+      <Button.Icon
+        className={{ root: twMerge('!m-0 mx-auto', className?.icon) }}
+        icon={icon}
+      />
       <Button.Label className={{ root: twMerge('text-xs', className?.label) }}>
         {children}
       </Button.Label>

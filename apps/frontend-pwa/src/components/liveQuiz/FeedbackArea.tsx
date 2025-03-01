@@ -268,20 +268,16 @@ function FeedbackArea({
                   data={{ cy: 'feedback-input' }}
                 />
                 <Button
-                  className={{
-                    root: '!w-30 float-right h-10 items-center text-center',
-                  }}
+                  primary
                   type="submit"
                   disabled={isSubmitting}
+                  loading={isSubmitting}
+                  className={{
+                    root: 'float-right h-9 w-24 items-center text-center',
+                  }}
                   data={{ cy: 'feedback-submit' }}
                 >
-                  {isSubmitting ? (
-                    <Button.Label>
-                      <Loader />
-                    </Button.Label>
-                  ) : (
-                    <Button.Label>{t('shared.generic.send')}</Button.Label>
-                  )}
+                  <Button.Label>{t('shared.generic.send')}</Button.Label>
                 </Button>
               </Form>
             )}

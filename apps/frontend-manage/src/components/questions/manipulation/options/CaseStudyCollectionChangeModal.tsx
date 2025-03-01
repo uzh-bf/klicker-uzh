@@ -22,19 +22,17 @@ function CaseStudyCollectionChangeModal({
         <div>{t('manage.questionForms.confirmCollectionChange')}</div>
         <div className="flex justify-between gap-2">
           <Button onClick={onClose} data={{ cy: 'cancel-change-collection' }}>
-            {t('shared.generic.cancel')}
+            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
           <Button
+            destructive
             onClick={() => {
               onConfirm()
               onClose()
             }}
-            className={{
-              root: 'border-red-600 hover:border-red-600 hover:text-red-600',
-            }}
             data={{ cy: 'confirm-change-collection' }}
           >
-            {t('shared.generic.confirm')}
+            <Button.Label>{t('shared.generic.confirm')}</Button.Label>
           </Button>
         </div>
       </div>

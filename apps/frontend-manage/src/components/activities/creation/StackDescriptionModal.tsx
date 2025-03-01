@@ -43,7 +43,8 @@ function StackDescriptionModal({
         data={{ cy: `stack-${stackIx}-description` }}
       />
       <Button
-        className={{ root: 'bg-uzh-blue-100 float-right mt-3 text-white' }}
+        primary
+        className={{ root: 'float-right mt-4' }}
         onClick={() => setModalOpen(false)}
         data={{ cy: 'close-stack-description' }}
       >

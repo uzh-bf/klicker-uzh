@@ -19,7 +19,6 @@ import { Button, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import AutoSaveMonitor from './AutoSaveMonitor'
 import ElementContentInput from './ElementContentInput'
 import ElementExplanationField from './ElementExplanationField'
@@ -381,15 +380,11 @@ function ElementEditModal({
             escapeDisabled={true}
             onPrimaryAction={
               <Button
-                disabled={isSubmitting || !isValid}
-                className={{
-                  root: twMerge(
-                    'border-uzh-grey-80 bg-primary-80 mt-2 font-bold text-white',
-                    (isSubmitting || !isValid) &&
-                      'cursor-not-allowed opacity-50'
-                  ),
-                }}
+                primary
                 type="submit"
+                loading={isSubmitting}
+                disabled={!isValid}
+                className={{ root: 'mt-2' }}
                 form="question-manipulation-form"
                 data={{ cy: 'save-new-question' }}
               >
@@ -398,7 +393,7 @@ function ElementEditModal({
             }
             onSecondaryAction={
               <Button
-                className={{ root: 'border-uzh-grey-80 mt-2' }}
+                className={{ root: 'mt-2' }}
                 onClick={() => handleSetIsOpen(false)}
                 data={{ cy: 'close-element-modal' }}
               >

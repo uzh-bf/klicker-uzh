@@ -170,16 +170,13 @@ function FeedbackSearchAndFilters({
           <Button
             basic
             className={{
-              root: twMerge(
-                'hover:bg-primary-20 flex h-9 w-9 items-center justify-center rounded-md',
-                !hidden?.sorting && 'mr-2'
-              ),
+              root: twMerge('h-9 w-9', !hidden?.sorting && 'mr-2'),
             }}
             onClick={() => window.print()}
             disabled={disabled?.print}
             data={{ cy: 'print-feedback-channel-button' }}
           >
-            <FontAwesomeIcon icon={faPrint} />
+            <Button.Icon withoutLabel icon={faPrint} />
           </Button>
         )}
 

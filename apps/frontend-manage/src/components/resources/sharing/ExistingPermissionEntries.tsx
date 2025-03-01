@@ -1,5 +1,4 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AccessLevel,
   CatalogObjectType,
@@ -108,7 +107,10 @@ function ExistingPermissionEntries({
       basic
       disabled={disabled}
       className={{
-        root: twMerge('mt-1 text-red-600 hover:text-red-800', className),
+        root: twMerge(
+          'mt-1 px-2 py-2 text-red-600 hover:text-red-800',
+          className
+        ),
       }}
       onClick={async () => {
         await handleRemovePermission(
@@ -122,7 +124,7 @@ function ExistingPermissionEntries({
           : `revoke-permission-${permission.userGroupName}`,
       }}
     >
-      <FontAwesomeIcon icon={faTrashCan} className="mt-1 h-4 w-4" />
+      <Button.Icon withoutLabel icon={faTrashCan} />
     </Button>
   )
 

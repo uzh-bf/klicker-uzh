@@ -20,22 +20,22 @@ function ActivitiesElementsSwitch({
       />
       <div className="flex flex-row">
         <Button
-          basic
+          primary={type === 'activity'}
           onClick={() => setType('activity')}
           className={{
-            root: `py-0.25 h-8 rounded-l border !border-r-0 border-solid px-2 ${type === 'activity' ? 'bg-primary-100 border-primary-100 text-white' : ''}`,
+            root: 'h-8 !rounded-r-none !border-r-0 px-2 py-0',
           }}
         >
-          {t('manage.analytics.activities')}
+          <Button.Label>{t('manage.analytics.activities')}</Button.Label>
         </Button>
         <Button
-          basic
+          primary={type === 'instance'}
           onClick={() => setType('instance')}
           className={{
-            root: `h-8 rounded-r border !border-l-0 border-solid px-2 py-0.5 ${type === 'instance' ? 'bg-primary-100 border-primary-100 text-white' : ''}`,
+            root: 'h-8 !rounded-l-none !border-l-0 px-2 py-0',
           }}
         >
-          {t('manage.analytics.elements')}
+          <Button.Label>{t('manage.analytics.elements')}</Button.Label>
         </Button>
       </div>
     </div>
