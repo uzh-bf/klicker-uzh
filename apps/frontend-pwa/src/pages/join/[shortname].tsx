@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetShortnameQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
@@ -68,18 +67,16 @@ function Join({
             name: shortname,
           })}
         </div>
-        <div className="mt-2 space-y-1">
+        <div className="mt-2 space-y-1.5">
           {data.shortnameQuizzes.map((quiz) => (
             <div key={quiz.id}>
               <Link href={`/session/${quiz.id}`}>
                 <Button
                   fluid
-                  className={{ root: 'justify-start gap-4' }}
+                  className={{ root: 'justify-start' }}
                   data={{ cy: `join-live-quiz-${quiz.name}` }}
                 >
-                  <Button.Icon>
-                    <FontAwesomeIcon icon={faExternalLink} />
-                  </Button.Icon>
+                  <Button.Icon icon={faExternalLink} />
                   <Button.Label>
                     {quiz.displayName}{' '}
                     {quiz.course && `in ${quiz.course?.displayName}`}

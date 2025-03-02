@@ -1,6 +1,5 @@
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import { faQuestion } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Feedback } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -152,13 +151,17 @@ function PublicFeedback({
           </div>
         </div>
         <Button
-          onClick={() => onUpvote(upvotes.upvote)}
           active={upvotes.upvote}
-          className={{ root: 'h-10 w-10 items-center justify-center' }}
           disabled={feedback.resolvedAt}
+          onClick={() => onUpvote(upvotes.upvote)}
+          className={{ root: 'h-10 w-10' }}
           data={{ cy: `feedback-upvote-${feedback.content}` }}
         >
-          <FontAwesomeIcon icon={faThumbsUp} size="lg" />
+          <Button.Icon
+            withoutLabel
+            icon={faThumbsUp}
+            className={{ root: 'h-5 w-5' }}
+          />
         </Button>
       </div>
       {feedback.responses &&
@@ -181,13 +184,17 @@ function PublicFeedback({
                     }
                     active={upvotes[response.id] === 1}
                     className={{
-                      root: 'mr-1 h-9 w-9 items-center justify-center',
+                      root: 'mr-1 h-9 w-9',
                     }}
                     data={{
                       cy: `feedback-response-upvote-${response.content}`,
                     }}
                   >
-                    <FontAwesomeIcon icon={faThumbsUp} size="lg" />
+                    <Button.Icon
+                      withoutLabel
+                      icon={faThumbsUp}
+                      className={{ root: 'h-4 w-4' }}
+                    />
                   </Button>
                   <Button
                     onClick={async () =>
@@ -197,10 +204,16 @@ function PublicFeedback({
                       })
                     }
                     active={upvotes[response.id] === -1}
-                    className={{ root: 'h-9 w-9 items-center justify-center' }}
+                    className={{
+                      root: 'h-9 w-9',
+                    }}
                     data={{ cy: 'feedback-response-downvote' }}
                   >
-                    <FontAwesomeIcon icon={faQuestion} size="lg" />
+                    <Button.Icon
+                      withoutLabel
+                      icon={faQuestion}
+                      className={{ root: 'h-4 w-4' }}
+                    />
                   </Button>
                 </div>
               </div>

@@ -181,6 +181,8 @@ export default {
       join: 'Beitreten',
       leave: 'Austreten',
       documentation: 'Dokumentation',
+      community: 'Community',
+      roadmap: 'Roadmap',
       features: 'Features',
       experiencePoints: 'Erfahrungspunkte',
       level: 'Level',
@@ -731,6 +733,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
+      createProfile: 'Profil erstellen',
       usernameMinLength:
         'Der Benutzername muss mindestens {length} Zeichen lang sein.',
       usernameMaxLength:
@@ -2233,6 +2236,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       importObject: 'Objekt importieren',
       accessRequested: 'Zugriff beantragt',
       accessGranted: 'Zugriff gewährt',
+      answerCollectionRequestSuccess:
+        'Der Zugriff auf die ausgewählte Antwort-Sammlung wurde erfolgreich beantragt.',
+      importPublicResource: 'Öffentliche Ressource importieren',
+      answerCollectionImportSuccess:
+        'Eine Kopie der Antwort-Sammlung wurde erfolgreich in Ihr Konto importiert.',
+      requestPublicResource:
+        'Durch das Beantragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den gewährten Berechtigungen. Gewährte Berechtigungen können vom Besitzer entzogen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die Option "Importieren".',
+      sharingRequestsExplanation:
+        'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
+      approveSharingRequest: 'Zugriffsanfrage bestätigen',
+      specifyAccessLevel:
+        'Bitte wählen Sie eine Zugriffsebene für das Teilen des Objekts "{objectName}" (Typ: {objectType}) mit dem Nutzer {userShortname} aus. Bitte beachten Sie, dass bei der Gewährung von Bearbeitungsrechten Änderungen anderer Nutzer direkt auf das geteilte Objekt wirken. Weitere Informationen zu den Berechtigungsstufen finden Sie in der Tabelle unten.',
+      accessLevel: 'Zugriffsebene',
+      approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich bestätigt.',
+      approvalFailed:
+        'Beim Bestätigen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      declineSuccessful: 'Die Zugriffsanfrage wurde erfolgreich abgelehnt.',
+      declineFailed:
+        'Beim Ablehnen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       addObjectToCatalog: 'Objekt hinzufügen',
       addObjectToCatalogTitle: 'Objekt zur Katalogsammlung hinzufügen',
       selectObjectType: 'Objekttyp auswählen',

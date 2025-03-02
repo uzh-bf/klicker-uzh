@@ -57,8 +57,8 @@ function ContentElement({
           }}
           data={{ cy: `read-content-element-${elementIx}` }}
         >
-          <FontAwesomeIcon icon={faCheck} />
-          <div>{t('pwa.practiceQuiz.read')}</div>
+          <Button.Icon icon={faCheck} />
+          <Button.Label>{t('pwa.practiceQuiz.read')}</Button.Label>
         </Button>
       )}
     </div>

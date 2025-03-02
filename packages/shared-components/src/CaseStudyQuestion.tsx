@@ -1,5 +1,4 @@
 import { faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type {
   CaseStudyElementOptions,
   CaseStudyInstanceEvaluation,
@@ -162,9 +161,7 @@ function CaseStudyQuestion({
                 }}
                 data={{ cy: 'switch-previous-case' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faArrowLeft} />
-                </Button.Icon>
+                <Button.Icon icon={faArrowLeft} />
                 <Button.Label>{t('pwa.liveQuiz.previousCase')}</Button.Label>
               </Button>
               <Button
@@ -175,14 +172,12 @@ function CaseStudyQuestion({
                 }
                 disabled={caseIndex === options.cases.length - 1}
                 className={{
-                  root: 'border-uzh-blue-80 h-8 border-2',
+                  root: 'border-uzh-blue-80 h-8 gap-2 border-2',
                 }}
                 data={{ cy: 'switch-next-case' }}
               >
                 <Button.Label>{t('pwa.liveQuiz.nextCase')}</Button.Label>
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faArrowRight} />
-                </Button.Icon>
+                <Button.Icon withoutLabel icon={faArrowRight} />
               </Button>
             </div>
           </div>

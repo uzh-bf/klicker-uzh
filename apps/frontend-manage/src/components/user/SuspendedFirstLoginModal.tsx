@@ -22,7 +22,6 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
-// TODO: update buttons in this file
 function SuspendedFirstLoginModal() {
   const [firstLogin, setFirstLogin] = useState(false)
   const [showGenericError, setShowGenericError] = useState(false)

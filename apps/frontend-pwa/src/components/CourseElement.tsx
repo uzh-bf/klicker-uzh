@@ -71,10 +71,10 @@ function CourseElement({
         <Button
           className={{
             root: twMerge(
-              'rounded-l-none p-4',
+              '!rounded-l-none p-3',
               pushDisabled
-                ? 'border-slate-400 bg-slate-400'
-                : 'border-slate-600 bg-slate-600',
+                ? 'border-slate-400 bg-slate-400 hover:bg-slate-500'
+                : 'border-slate-600 bg-slate-600 hover:bg-slate-500',
               !course.isSubscribed && !pushDisabled && 'cursor-pointer'
             ),
           }}
@@ -92,7 +92,12 @@ function CourseElement({
               fixedWidth
             />
           ) : (
-            <FontAwesomeIcon icon={faBellSlash} fixedWidth flip="horizontal" />
+            <FontAwesomeIcon
+              icon={faBellSlash}
+              fixedWidth
+              flip="horizontal"
+              className="text-red-500"
+            />
           )}
         </Button>
       )}

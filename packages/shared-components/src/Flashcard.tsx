@@ -137,8 +137,8 @@ function FlashcardBack({
             }
             setResponse={() => setResponse(FlashcardCorrectness.Incorrect)}
             text={t('pwa.practiceQuiz.flashcardNoResponse')}
-            color="bg-red-300"
-            activeColor="bg-red-600"
+            color="bg-red-300 hover:bg-red-300"
+            activeColor="bg-red-600 hover:bg-red-600"
             icon={faX}
             disabled={typeof existingResponse !== 'undefined'}
             elementIx={elementIx}
@@ -150,8 +150,8 @@ function FlashcardBack({
             }
             setResponse={() => setResponse(FlashcardCorrectness.Partial)}
             text={t('pwa.practiceQuiz.flashcardPartialResponse')}
-            color="bg-orange-300"
-            activeColor="bg-orange-600"
+            color="bg-orange-300 hover:bg-orange-300"
+            activeColor="bg-orange-600 hover:bg-orange-600"
             icon={faCheck}
             disabled={typeof existingResponse !== 'undefined'}
             elementIx={elementIx}
@@ -163,8 +163,8 @@ function FlashcardBack({
             }
             setResponse={() => setResponse(FlashcardCorrectness.Correct)}
             text={t('pwa.practiceQuiz.flashcardYesResponse')}
-            color="bg-green-300"
-            activeColor="bg-green-600"
+            color="bg-green-300 hover:bg-green-300"
+            activeColor="bg-green-600 hover:bg-green-600"
             icon={faCheckDouble}
             disabled={typeof existingResponse !== 'undefined'}
             elementIx={elementIx}
@@ -200,23 +200,23 @@ function FlashcardButton({
     <Button
       basic
       disabled={disabled}
-      className={{
-        root: twMerge(
-          'w-full justify-center rounded px-3 py-2 hover:shadow hover:brightness-95',
-          disabled &&
-            'cursor-not-allowed opacity-70 hover:shadow-none hover:brightness-100',
-          active ? `text-white opacity-100 ${activeColor}` : color
-        ),
-      }}
-      active={active}
       onClick={(e?: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e?.stopPropagation()
         setResponse()
       }}
+      className={{
+        root: twMerge(
+          color,
+          'w-full hover:bg-transparent hover:brightness-95',
+          active
+            ? `text-white opacity-100 hover:text-white ${activeColor}`
+            : color
+        ),
+      }}
       data={{ cy: `flashcard-response-${elementIx}-${text}` }}
     >
-      <FontAwesomeIcon icon={icon} />
-      {text}
+      <Button.Icon icon={icon} />
+      <Button.Label>{text}</Button.Label>
     </Button>
   )
 }

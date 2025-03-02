@@ -335,8 +335,8 @@ function CourseOverview({
                                   />
                                   <Button
                                     fluid
-                                    className={{ root: 'bg-white' }}
                                     onClick={() => joinCourseLeaderboard()}
+                                    className={{ root: 'h-8' }}
                                     data={{
                                       cy: 'student-course-join-leaderboard',
                                     }}
@@ -346,7 +346,7 @@ function CourseOverview({
                                       {
                                         name: course.displayName,
                                         b: (text) => (
-                                          <span className="font-bold">
+                                          <span className="px-1 font-bold">
                                             {text}
                                           </span>
                                         ),

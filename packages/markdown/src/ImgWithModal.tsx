@@ -1,5 +1,4 @@
 import { faExpand } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Modal } from '@uzh-bf/design-system'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -48,14 +47,12 @@ function ImgWithModal({
             {withModal && (
               <Button
                 className={{
-                  root: 'absolute right-2 top-2 text-sm',
+                  root: 'absolute right-2 top-2 h-9 w-9 text-sm',
                 }}
                 onClick={() => setIsOpen(true)}
                 data={{ cy: `close-image-modal` }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faExpand} />
-                </Button.Icon>
+                <Button.Icon withoutLabel icon={faExpand} />
               </Button>
             )}
           </div>
@@ -64,7 +61,9 @@ function ImgWithModal({
       }
       onClose={() => setIsOpen(false)}
       title={alt}
-      className={{ content: className?.modal }}
+      className={{
+        content: className?.modal,
+      }}
     >
       <div className="relative h-full w-full">
         <img src={src} alt="Image" className="object-contain" />

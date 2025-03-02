@@ -122,25 +122,6 @@ function MicrolearningEvaluation() {
           )}
         </div>
 
-        {participation?.getParticipation && (
-          <div className="text-right">
-            <Button
-              loading={markingAsCompleted}
-              onClick={async () => {
-                await markMicrolearningCompleted({
-                  variables: {
-                    courseId: microlearning.course!.id,
-                    id,
-                  },
-                })
-                router.replace('/')
-              }}
-              data={{ cy: 'finish-microlearning' }}
-            >
-              {t('shared.generic.finish')}
-            </Button>
-          </div>
-        )}
         {typeof participation?.getParticipation?.isActive === 'boolean' &&
           participation?.getParticipation?.isActive === false && (
             <UserNotification type="info">
@@ -157,6 +138,26 @@ function MicrolearningEvaluation() {
               name: microlearning.displayName,
             })}
           </UserNotification>
+        )}
+        {participation?.getParticipation && (
+          <div className="text-right">
+            <Button
+              primary
+              loading={markingAsCompleted}
+              onClick={async () => {
+                await markMicrolearningCompleted({
+                  variables: {
+                    courseId: microlearning.course!.id,
+                    id,
+                  },
+                })
+                router.replace('/')
+              }}
+              data={{ cy: 'finish-microlearning' }}
+            >
+              <Button.Label>{t('shared.generic.finish')}</Button.Label>
+            </Button>
+          </div>
         )}
       </div>
     </Layout>

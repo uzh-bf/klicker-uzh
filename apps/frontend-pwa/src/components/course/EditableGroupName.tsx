@@ -56,16 +56,16 @@ function EditableGroupName({ groupId, groupName }: EditableGroupNameProps) {
           setEditMode(false)
         }}
         loading={submitting}
-        className={{ root: 'h-7' }}
+        className={{ root: 'h-7 py-0' }}
       >
-        {t('shared.generic.save')}
+        <Button.Label>{t('shared.generic.save')}</Button.Label>
       </Button>
       <Button
         basic
         onClick={() => setEditMode(false)}
-        className={{ root: 'rounded px-1.5 py-0.5 hover:bg-gray-200' }}
+        className={{ root: 'h-7 py-0' }}
       >
-        {t('shared.generic.cancel')}
+        <Button.Label>{t('shared.generic.cancel')}</Button.Label>
       </Button>
     </div>
   )

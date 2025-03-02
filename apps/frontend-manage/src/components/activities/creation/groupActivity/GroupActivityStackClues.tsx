@@ -26,7 +26,6 @@ interface GroupActivityStackCluesProps extends GroupActivityWizardStepProps {
   resetSelection: () => void
 }
 
-// TODO: update buttons in this file
 function GroupActivityStackClues({
   acceptedTypes,
   selection,

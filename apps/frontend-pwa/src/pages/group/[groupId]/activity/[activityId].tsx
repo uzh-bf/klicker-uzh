@@ -178,13 +178,16 @@ function GroupActivityDetails() {
                     {t('pwa.groupActivity.groupCompleteQuestion')}
                   </p>
                   <Button
+                    primary
                     disabled={groupActivity.group.participants?.length === 1}
                     loading={startLoading}
                     className={{ root: 'mt-4 self-end text-lg font-bold' }}
                     onClick={() => startGroupActivity()}
                     data={{ cy: 'start-group-activity' }}
                   >
-                    {t('pwa.groupActivity.startCaps')}
+                    <Button.Label>
+                      {t('pwa.groupActivity.startCaps')}
+                    </Button.Label>
                   </Button>
                 </>
               ) : null}

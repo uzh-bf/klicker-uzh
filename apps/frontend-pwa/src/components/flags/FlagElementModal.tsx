@@ -4,7 +4,6 @@ import {
   faEnvelope,
   faMessage as faMessageSolid,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   FlagElementDocument,
   GetStackElementFeedbacksDocument,
@@ -182,21 +181,24 @@ function FlagElementModal({
         }}
         open={open}
         trigger={
-          <Button
-            basic
-            onClick={() => setOpen(true)}
-            data={{ cy: `flag-element-${index}-button` }}
-          >
-            <Button.Icon>
-              <FontAwesomeIcon
+          <div>
+            <Button
+              basic
+              onClick={() => setOpen(true)}
+              className={{
+                root: twMerge(
+                  'hover:text-primary-80 text-uzh-grey-100 !px-1',
+                  !!feedbackValue && 'text-primary-100'
+                ),
+              }}
+              data={{ cy: `flag-element-${index}-button` }}
+            >
+              <Button.Icon
+                withoutLabel
                 icon={!!feedbackValue ? faMessageSolid : faMessage}
-                className={twMerge(
-                  'hover:text-primary-80 text-uzh-grey-100',
-                  !!feedbackValue && 'text-primary-80'
-                )}
               />
-            </Button.Icon>
-          </Button>
+            </Button>
+          </div>
         }
         onClose={() => setOpen(false)}
         hideCloseButton
@@ -230,23 +232,16 @@ function FlagElementModal({
                     className={{ root: 'order-2 text-base md:order-1' }}
                     data={{ cy: 'cancel-flag-element' }}
                   >
-                    {t('shared.generic.cancel')}
+                    <Button.Label>{t('shared.generic.cancel')}</Button.Label>
                   </Button>
                   <Button
-                    className={{
-                      root: 'bg-primary-80 order-1 float-right border-0 px-5 text-base text-white disabled:opacity-20 md:order-2',
-                    }}
+                    primary
+                    className={{ root: 'order-1 float-right' }}
                     type="submit"
                     disabled={isSubmitting || !isValid}
                     data={{ cy: 'submit-flag-element' }}
                   >
-                    <Button.Icon
-                      className={{
-                        root: 'mr-1 justify-items-center',
-                      }}
-                    >
-                      <FontAwesomeIcon icon={faEnvelope} />
-                    </Button.Icon>
+                    <Button.Icon icon={faEnvelope} />
                     <Button.Label>
                       {!!feedbackValue
                         ? t('pwa.practiceQuiz.updateFeedback')

@@ -93,26 +93,26 @@ export function ParticipantSelf(props: ParticipantSelfProps) {
     <Participant isHighlighted {...props}>
       {props.isActive && typeof props.onLeaveLeaderboard !== 'undefined' && (
         <Button
-          className={{ root: 'text-sm' }}
+          className={{ root: 'h-7 text-sm' }}
           onClick={(e) => {
             e?.stopPropagation()
             props?.onLeaveLeaderboard?.()
           }}
           data={{ cy: 'leave-leaderboard' }}
         >
-          {t('shared.generic.leave')}
+          <Button.Label>{t('shared.generic.leave')}</Button.Label>
         </Button>
       )}
       {!props.isActive && typeof props.onJoinLeaderboard !== 'undefined' && (
         <Button
-          className={{ root: 'text-sm' }}
+          className={{ root: 'h-7 text-sm' }}
           onClick={(e) => {
             e?.stopPropagation()
             props.onJoinLeaderboard!()
           }}
           data={{ cy: 'join-leaderboard' }}
         >
-          {t('shared.generic.join')}
+          <Button.Label>{t('shared.generic.join')}</Button.Label>
         </Button>
       )}
     </Participant>

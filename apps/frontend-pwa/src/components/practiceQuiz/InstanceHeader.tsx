@@ -179,40 +179,40 @@ function InstanceHeader({
           </div>
         </div>
         {withParticipant && (
-          <div className="-mr-2 flex flex-row items-center gap-4">
+          <div className="-mr-2 flex flex-row items-center gap-1">
             <Button
               basic
-              active={vote === 1}
-              onClick={() => handleVote(true)}
-              data={{ cy: `upvote-element-${index}-button` }}
               disabled={ratingLoading}
+              onClick={() => handleVote(true)}
+              className={{
+                root: twMerge(
+                  'text-uzh-grey-100 hover:text-primary-80 px-1',
+                  vote === 1 && 'text-primary-100'
+                ),
+              }}
+              data={{ cy: `upvote-element-${index}-button` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon
-                  icon={vote === 1 ? faThumbsUpSolid : faThumbsUp}
-                  className={twMerge(
-                    'text-uzh-grey-100 hover:text-primary-80',
-                    vote === 1 && 'text-primary-80'
-                  )}
-                />
-              </Button.Icon>
+              <Button.Icon
+                withoutLabel
+                icon={vote === 1 ? faThumbsUpSolid : faThumbsUp}
+              />
             </Button>
             <Button
               basic
-              active={vote === -1}
-              onClick={() => handleVote(false)}
-              data={{ cy: `downvote-element-${index}-button` }}
               disabled={ratingLoading}
+              onClick={() => handleVote(false)}
+              className={{
+                root: twMerge(
+                  'text-uzh-grey-100 hover:text-primary-80 px-1',
+                  vote === -1 && 'text-primary-100'
+                ),
+              }}
+              data={{ cy: `downvote-element-${index}-button` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon
-                  icon={vote === -1 ? faThumbsDownSolid : faThumbsDown}
-                  className={twMerge(
-                    'text-uzh-grey-100 hover:text-primary-80',
-                    vote === -1 && 'text-primary-80'
-                  )}
-                />
-              </Button.Icon>
+              <Button.Icon
+                withoutLabel
+                icon={vote === -1 ? faThumbsDownSolid : faThumbsDown}
+              />
             </Button>
             <FlagElementModal
               index={index}

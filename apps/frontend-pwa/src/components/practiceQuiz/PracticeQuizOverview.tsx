@@ -49,7 +49,7 @@ function PracticeQuizOverview({
               <Button
                 basic
                 className={{
-                  root: 'hover:text-primary-100 font-bold',
+                  root: 'hover:text-primary-100 !p-0 text-sm font-bold hover:bg-transparent',
                 }}
                 onClick={() =>
                   router.push(
@@ -149,11 +149,12 @@ function PracticeQuizOverview({
       </div>
 
       <Button
-        className={{ root: 'self-end text-lg' }}
+        primary
+        className={{ root: 'h-9 self-end text-lg' }}
         onClick={() => setCurrentIx(0)}
         data={{ cy: 'start-practice-quiz' }}
       >
-        {t('shared.generic.start')}
+        <Button.Label>{t('shared.generic.start')}</Button.Label>
       </Button>
     </div>
   )

@@ -72,8 +72,8 @@ function StepProgressWithScoring({
                     {typeof element.score !== 'undefined' &&
                       element.score !== null && (
                         <ProgressPoints
-                          score={element.score}
-                          status={element.status}
+                          score={element.score as string | null}
+                          status={element.status as string | null}
                         />
                       )}
                     <FontAwesomeIcon
@@ -121,10 +121,10 @@ function StepProgressWithScoring({
           }}
           data={{ cy: 'practice-quiz-reset' }}
         >
-          <FontAwesomeIcon icon={faRepeat} />
-          <div className="hidden w-max md:block">
+          <Button.Icon icon={faRepeat} className={{ root: 'mr-0 md:mr-2' }} />
+          <Button.Label className={{ root: 'hidden w-max md:block' }}>
             {t('pwa.practiceQuiz.resetAnswers')}
-          </div>
+          </Button.Label>
         </Button>
       )}
     </div>

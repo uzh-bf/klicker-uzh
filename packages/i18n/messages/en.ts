@@ -180,6 +180,8 @@ export default {
       join: 'Join',
       leave: 'Leave',
       documentation: 'Documentation',
+      community: 'Community',
+      roadmap: 'Roadmap',
       features: 'Features',
       experiencePoints: 'Experience points',
       level: 'Level',

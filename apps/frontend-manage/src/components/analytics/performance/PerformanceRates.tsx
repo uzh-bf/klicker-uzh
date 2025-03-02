@@ -23,7 +23,6 @@ interface PerformanceRatesProps {
   instancePerformances: InstancePerformance[]
 }
 
-// TODO: update buttons in this file
 function PerformanceRates({
   activityPerformances,
   instancePerformances,

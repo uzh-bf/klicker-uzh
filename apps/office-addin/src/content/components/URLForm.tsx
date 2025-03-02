@@ -47,7 +47,9 @@ export function URLForm({ slideID, setSelectedURL }: URLFormProps) {
           placeholder="https://manage.klicker.uzh.ch/quizzes/12345/evaluation?hmac=xyz"
           data={{ cy: 'url-form-input' }}
         />
-        <Button type="submit">Embed</Button>
+        <Button primary type="submit">
+          <Button.Label>Embed</Button.Label>
+        </Button>
       </Form>
     </Formik>
   )

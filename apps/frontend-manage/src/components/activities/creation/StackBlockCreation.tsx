@@ -49,7 +49,6 @@ interface StackBlockCreationSingleProps extends StackBlockCreationProps {
   error?: ElementStackErrorValues
 }
 
-// TODO: update buttons in this file
 function StackBlockCreation({
   stackIx,
   stack,

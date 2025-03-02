@@ -11,7 +11,7 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import * as yup from 'yup'
+import * as Yup from 'yup'
 import Layout from '../components/Layout'
 
 function JoinPage() {
@@ -20,10 +20,14 @@ function JoinPage() {
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
   const [showError, setError] = useState(false)
 
-  const joinCourseWithPinSchema = yup.object({
-    pin: yup
-      .number()
+  const joinCourseWithPinSchema = Yup.object({
+    pin: Yup.number()
       .typeError(t('pwa.joinCourse.coursePinNumerical'))
+      .test(
+        'len',
+        t('pwa.joinCourse.coursePinRequired'),
+        (val) => val !== undefined && val.toString().length === 9
+      )
       .required(t('pwa.joinCourse.coursePinRequired')),
   })
 
@@ -33,6 +37,7 @@ function JoinPage() {
         <H2>{t('pwa.general.joinCourse')}</H2>
         <div className="mb-5">{t('pwa.joinCourse.introLoggedInNoCourse')}</div>
         <Formik
+          validateOnMount
           initialValues={{
             pin: '',
           }}
@@ -63,11 +68,12 @@ function JoinPage() {
                 />
 
                 <Button
-                  className={{
-                    root: 'border-uzh-grey-80 float-right mt-2',
-                  }}
+                  primary
                   type="submit"
                   disabled={isSubmitting || !isValid}
+                  className={{
+                    root: 'float-right mt-2',
+                  }}
                   data={{ cy: 'join-course-submit-form' }}
                 >
                   <Button.Label>{t('pwa.general.joinCourse')}</Button.Label>

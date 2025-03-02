@@ -1,7 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import { faBookmark as faBookmarkFilled } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   BookmarkElementStackDocument,
   GetBookmarksPracticeQuizDocument,
@@ -73,26 +72,18 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
       data={{ cy: 'bookmark-element-stack' }}
       className={{
         root: twMerge(
-          'flex flex-row items-center text-sm shadow-none',
+          'h-7 text-sm',
           bookmarks === null || typeof bookmarks === 'undefined'
             ? 'hidden'
             : undefined
         ),
       }}
     >
-      <Button.Label>
-        <div>{t('shared.generic.bookmark')}</div>
-      </Button.Label>
-      <Button.Icon>
-        {isBookmarked ? (
-          <FontAwesomeIcon
-            className="text-red-600 hover:text-red-500"
-            icon={faBookmarkFilled}
-          />
-        ) : (
-          <FontAwesomeIcon className="hover:text-red-400" icon={faBookmark} />
-        )}
-      </Button.Icon>
+      <Button.Icon
+        icon={isBookmarked ? faBookmarkFilled : faBookmark}
+        className={{ root: twMerge(isBookmarked && 'text-red-600') }}
+      />
+      <Button.Label>{t('shared.generic.bookmark')}</Button.Label>
     </Button>
   )
 }

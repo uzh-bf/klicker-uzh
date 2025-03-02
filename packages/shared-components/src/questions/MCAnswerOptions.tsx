@@ -59,13 +59,13 @@ export function MCAnswerOptions({
                   root: twMerge(
                     'hover:bg-unset min-h-[2.5rem] border-slate-400',
                     !hasFeedback && 'h-full',
-                    hasFeedback && 'rounded-b-none'
+                    hasFeedback && 'rounded-b-none',
+                    value?.[choice.ix] && 'bg-primary-20 border-primary-100'
                   ),
                 }}
                 onClick={() =>
                   onChange({ ...value, [choice.ix]: !value?.[choice.ix] })
                 }
-                active={value?.[choice.ix]}
                 data={{
                   cy: `mc-${elementIx}-answer-option-${choice.ix}`,
                 }}
