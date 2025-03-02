@@ -5,7 +5,6 @@ import {
   faLock,
   faUser,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 
 function SellingPoints() {
@@ -39,8 +38,10 @@ function SellingPoints() {
           }}
           onClick={() => window.location.replace(entry.href)}
         >
-          <FontAwesomeIcon icon={entry.icon} className="h-14 w-14" />
-          <div className="text-lg font-bold">{entry.title}</div>
+          <Button.Icon icon={entry.icon} className={{ root: 'h-14 w-14' }} />
+          <Button.Label className={{ root: 'text-lg font-bold' }}>
+            {entry.title}
+          </Button.Label>
         </Button>
       ))}
     </div>
