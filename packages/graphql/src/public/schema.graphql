@@ -1801,6 +1801,7 @@ type Query {
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogAnswerCollections: [CatalogSelectionObject!]
+  getCatalogCollectionInfo(catalogCollectionId: String): CatalogCollection
   getCatalogCollectionsList: [CatalogCollection!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]

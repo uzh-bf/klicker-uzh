@@ -143,6 +143,7 @@
    "GetBookmarkedElementStacks": "559b314fe72f2a6fca38a8ff246f39161d6f0520c7a66511248699b752b040bb",
    "GetBookmarksPracticeQuiz": "162b4bf626d9ea2356883d0a5d85f564dc4e9428c0cc2030fcd68130f3b82184",
    "GetCatalogAnswerCollections": "ff946eec7421fc301c7585a6fc3ee47a24fc5c623fc44ba81cd8f76395a553ae",
+   "GetCatalogCollectionInfo": "ebab3c17e4bed09c3992fe24ea7de3f23156dbada365b3e7691a74239a2eb3a5",
    "GetCatalogCollectionsList": "c1ee7e426384ce1ec62d61e36abdbfea176cadd2477a78becc5fd7a9b99485f9",
    "GetCatalogObjects": "c602a516085b9102e8d725e6266618dcd4d5fc40f73dc9c2f0990a326699166d",
    "GetCatalogSharingRequests": "0cb83f774e522f7f575e5c9d8953bc03e1fc749eacd19c0ff7b52719ed1fa32f",

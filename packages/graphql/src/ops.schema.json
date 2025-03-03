@@ -26110,6 +26110,31 @@
             "deprecationReason": null
           },
           {
+            "name": "getCatalogCollectionInfo",
+            "description": null,
+            "args": [
+              {
+                "name": "catalogCollectionId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "CatalogCollection",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "getCatalogCollectionsList",
             "description": null,
             "args": [],

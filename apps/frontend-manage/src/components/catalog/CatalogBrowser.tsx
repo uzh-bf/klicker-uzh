@@ -1,3 +1,5 @@
+import { useQuery } from '@apollo/client'
+import { GetCatalogCollectionInfoDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import AddObjectToCatalogButton from './administration/AddObjectToCatalogButton'
@@ -15,6 +17,17 @@ function CatalogBrowser() {
   const router = useRouter()
   const { catalogCollectionId } = router.query
 
+  // get current collection metadata (only if inside a collection)
+  const { data: metaData } = useQuery(GetCatalogCollectionInfoDocument, {
+    variables: {
+      catalogCollectionId: catalogCollectionId as string,
+    },
+    skip: typeof catalogCollectionId !== 'string',
+  })
+  const collectionName = metaData?.getCatalogCollectionInfo?.name
+  const userIsCollectionAdmin =
+    metaData?.getCatalogCollectionInfo?.isOwnerOrAdmin
+
   // Object modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [addObjectSuccess, setAddObjectSuccess] = useState(false)
@@ -29,6 +42,7 @@ function CatalogBrowser() {
     <div className="h-full">
       <PendingSharingRequests />
       <ObjectImport
+        collectionName={collectionName}
         catalogCollectionId={catalogCollectionId as string | undefined}
       />
 
@@ -38,27 +52,33 @@ function CatalogBrowser() {
             setCollectionModalOpen={setCollectionModalOpen}
           />
         ) : null}
-        <AddObjectToCatalogButton setIsModalOpen={setIsModalOpen} />
+        {userIsCollectionAdmin ? (
+          <AddObjectToCatalogButton setIsModalOpen={setIsModalOpen} />
+        ) : null}
       </div>
 
-      <AddObjectToCatalogModal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        catalogCollectionId={catalogCollectionId as string | undefined}
-        onSuccess={() => {
-          setAddObjectSuccess(true)
-          setIsModalOpen(false)
-        }}
-        onError={() => setAddObjectError(true)}
-      />
-      <ObjectAddedSuccessToast
-        open={addObjectSuccess}
-        onClose={() => setAddObjectSuccess(false)}
-      />
-      <ObjectAddedErrorToast
-        open={addObjectError}
-        onClose={() => setAddObjectError(false)}
-      />
+      {userIsCollectionAdmin ? (
+        <>
+          <AddObjectToCatalogModal
+            open={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            catalogCollectionId={catalogCollectionId as string | undefined}
+            onSuccess={() => {
+              setAddObjectSuccess(true)
+              setIsModalOpen(false)
+            }}
+            onError={() => setAddObjectError(true)}
+          />
+          <ObjectAddedSuccessToast
+            open={addObjectSuccess}
+            onClose={() => setAddObjectSuccess(false)}
+          />
+          <ObjectAddedErrorToast
+            open={addObjectError}
+            onClose={() => setAddObjectError(false)}
+          />
+        </>
+      ) : null}
 
       {typeof catalogCollectionId === 'undefined' ? (
         <>

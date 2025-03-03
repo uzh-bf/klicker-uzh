@@ -102,6 +102,65 @@ export async function createCatalogCollection(
   }
 }
 
+export async function getCatalogCollectionInfo(
+  { catalogCollectionId }: { catalogCollectionId?: string | null },
+  ctx: ContextWithUser
+) {
+  if (
+    catalogCollectionId === MISSING_CATALOG_COLLECTION_ID ||
+    !catalogCollectionId
+  ) {
+    return null
+  }
+
+  const collection = await ctx.prisma.catalogCollection.findUnique({
+    where: {
+      id: catalogCollectionId,
+    },
+    include: {
+      owner: {
+        select: {
+          id: true,
+          shortname: true,
+        },
+      },
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  const isRequested = collection.permissions.some(
+    (permission) =>
+      permission.permissionStatus === DB.PermissionStatus.REQUESTED
+  )
+  const isShared = collection.permissions.some(
+    (permission) => permission.permissionStatus === DB.PermissionStatus.GRANTED
+  )
+  const isOwnerOrAdmin =
+    collection.ownerId === ctx.user.sub ||
+    collection.permissions.some(
+      (permission) =>
+        permission.accessLevel === DB.AccessLevel.ADMIN &&
+        permission.permissionStatus === DB.PermissionStatus.GRANTED
+    )
+
+  return {
+    ...collection,
+    ownerShortname: collection.owner?.shortname,
+    isRequested,
+    isShared,
+    isOwner: collection.ownerId === ctx.user.sub,
+    isOwnerOrAdmin,
+  }
+}
+
 // TODO: when querying catalog collections, only show the ones that have elements inside of them or the user is the owner or has at least writing access (= filter out public without collections elements)
 // TODO: in UI show hint if someone only has read access on restricted catalog collection or no access on public catalog collection that with these access rights, nothing can be added
 

@@ -932,6 +932,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCatalogCollectionInfo: asUser.field({
+        nullable: true,
+        type: CatalogCollection,
+        args: {
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.getCatalogCollectionInfo(args, ctx)
+        },
+      }),
+
       countCatalogSharingRequests: asUser.int({
         nullable: false,
         resolve(_, __, ctx) {

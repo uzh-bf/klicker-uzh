@@ -21,8 +21,10 @@ import ObjectFilters from './ObjectFilters'
 import useObjectFilters from './useObjectFilters'
 
 function ObjectImport({
+  collectionName,
   catalogCollectionId,
 }: {
+  collectionName?: string
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
@@ -35,11 +37,11 @@ function ObjectImport({
 
   // fetch all available catalog collections
   const { data: collectionsData, loading: collectionsLoading } = useQuery(
-    GetCatalogCollectionsListDocument
+    GetCatalogCollectionsListDocument,
+    { skip: typeof catalogCollectionId !== 'undefined' }
   )
   const collections = collectionsData?.getCatalogCollectionsList ?? []
 
-  // TODO: also return the catalog collection title here - to be shown next to the Catalog title
   const { data: objectsData, loading: objectsLoading } = useQuery(
     GetCatalogObjectsDocument,
     {
@@ -78,7 +80,11 @@ function ObjectImport({
   // TODO: enable scrolling on this component on overflow!
   return (
     <div>
-      <H2 className={{ root: 'md:-mb-5' }}>{t('manage.general.catalog')}</H2>
+      <H2 className={{ root: 'md:-mb-5' }}>
+        {collectionName
+          ? `${t('manage.general.catalog')}: ${collectionName}`
+          : t('manage.general.catalog')}
+      </H2>
       <div className="mb-2 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <TextField
           placeholder={t('manage.general.searchPlaceholder')}
