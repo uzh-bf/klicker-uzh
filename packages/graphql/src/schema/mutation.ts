@@ -12,6 +12,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
+import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import { ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
@@ -61,14 +62,14 @@ import {
   OptionsSelectionInput,
   Tag,
 } from './question.js'
+import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
   AccessLevel,
-  AnswerCollection,
-  AnswerCollectionEntry,
+  CatalogCollection,
   CatalogObject,
   ObjectAccess,
   PermissionInfo,
-} from './resource.js'
+} from './sharing.js'
 import {
   FileUploadSAS,
   LocaleType,
@@ -1299,7 +1300,7 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.addAnswerCollectionToCatalog(args, ctx)
+          return SharingService.addAnswerCollectionToCatalog(args, ctx)
         },
       }),
 
@@ -1310,7 +1311,7 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.importAnswerCollection(args, ctx)
+          return SharingService.importAnswerCollection(args, ctx)
         },
       }),
 
@@ -1322,7 +1323,7 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.requestAnswerCollection(args, ctx)
+          return SharingService.requestAnswerCollection(args, ctx)
         },
       }),
 
@@ -1408,6 +1409,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      createCatalogCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CatalogCollection,
+        args: {
+          name: t.arg.string({ required: true }),
+          access: t.arg({ type: ObjectAccess, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.createCatalogCollection(args, ctx)
+        },
+      }),
+
       changeCatalogObjectAccessLevel: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1415,7 +1428,7 @@ export const Mutation = builder.mutationType({
           accessLevel: t.arg({ type: ObjectAccess, required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.changeCatalogObjectAccessLevel(args, ctx)
+          return SharingService.changeCatalogObjectAccessLevel(args, ctx)
         },
       }),
 
@@ -1425,7 +1438,7 @@ export const Mutation = builder.mutationType({
           assignmentId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.removeCatalogObjectAssignment(args, ctx)
+          return SharingService.removeCatalogObjectAssignment(args, ctx)
         },
       }),
 
@@ -1437,7 +1450,7 @@ export const Mutation = builder.mutationType({
           accessLevel: t.arg({ type: AccessLevel, required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.resolveObjectSharingRequest(
+          return SharingService.resolveObjectSharingRequest(
             { ...args, approved: true },
             ctx
           )
@@ -1451,7 +1464,7 @@ export const Mutation = builder.mutationType({
           userId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.resolveObjectSharingRequest(
+          return SharingService.resolveObjectSharingRequest(
             { ...args, approved: false },
             ctx
           )

@@ -2230,8 +2230,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sharingRequests: 'Zugriffs-Anfragen',
       unresolved: 'Unbearbeitet',
       objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
-      noPublicRestrictedCollections:
-        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden. Object, für welche bereits Zugriff angefragt oder bestätigt wurde, können nicht mehr ausgewählt werden.',
+      noObjectsFoundInCatalog:
+        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
       importObject: 'Objekt importieren',
       accessRequested: 'Zugriff beantragt',
@@ -2289,6 +2289,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
       removeObjectConfirm: 'Objekt entfernen',
+      createCatalogCollection: 'Sammlung erstellen',
+      createCatalogCollectionTitle: 'Katalog-Sammlung erstellen',
+      createCatalogCollectionDescription:
+        'Katalog-Sammlungen dienen dazu, Inhalte zu organisieren und sie für bestimmte Benutzer oder Benutzergruppen sichtbar zu machen. Der Zugriff auf Objekte innerhalb der Katalog-Sammlung wird separat gehandhabt. Die Existenz der Katalog-Sammlung ist immer für alle sichtbar, aber nur öffentliche Katalog-Sammlungen können von jedem eingesehen werden, was ihnen ermöglicht, den Zugriff auf alles darin zu beantragen. Zugriffs- und Verwaltungsprivilegien für eingeschränkte Katalog-Sammlungen können nach der Erstellung in einem separaten Dialog definiert werden.',
+      collectionName: 'Name der Sammlung',
+      collectionNameTooltip:
+        'Geben Sie einen eindeutigen Namen für Ihre Katalog-Sammlung ein.',
+      collectionNamePlaceholder: 'Name der Katalog-Sammlung',
+      catalogAccessTooltip:
+        'Wählen Sie, ob die Sammlung für alle Benutzer sichtbar sein soll oder ob der Zugriff eingeschränkt werden soll.',
+      accessDescriptionPUBLIC:
+        'Öffentliche Sammlungen sind für alle Benutzer sichtbar und können durchsucht werden.',
+      accessDescriptionRESTRICTED:
+        'Eingeschränkte Sammlungen können nur von Benutzern mit Zugriff durchsucht werden. Alle Benutzer von KlickerUZH können Zugriff auf diese Sammlungen beantragen oder erhalten diesen direkt durch die Freigabefunktionalität bei der Erstellung.',
+      nameRequired: 'Bitte geben Sie einen Namen ein.',
+      collectionCreationSuccess: 'Katalog-Sammlung wurde erfolgreich erstellt.',
+      collectionCreationError:
+        'Bei der Erstellung der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      backToCatalogOverview: 'zurück zur Katalog-Übersicht',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

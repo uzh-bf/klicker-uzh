@@ -367,6 +367,17 @@ type CatalogAnswerCollection {
   ownerShortname: String
 }
 
+type CatalogCollection {
+  access: ObjectAccess!
+  id: String!
+  isOwner: Boolean!
+  isOwnerOrAdmin: Boolean!
+  isRequested: Boolean!
+  isShared: Boolean!
+  name: String!
+  ownerShortname: String
+}
+
 type CatalogObject {
   access: ObjectAccess!
   assignmentId: Int!
@@ -1313,6 +1324,7 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
+  createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -1789,6 +1801,7 @@ type Query {
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogAnswerCollections: [CatalogSelectionObject!]
+  getCatalogCollectionsList: [CatalogCollection!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course

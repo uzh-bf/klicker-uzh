@@ -13,10 +13,8 @@ function AddObjectToCatalogButton({
   return (
     <div className="flex justify-end">
       <Button
-        small
         primary
         onClick={() => setIsModalOpen(true)}
-        className={{ root: 'my-3' }}
         data={{ cy: 'add-object-to-catalog-button' }}
       >
         <Button.Icon icon={faPlus} />

@@ -28,6 +28,31 @@ model AnswerCollection {
     @@unique([ownerId, name])
 }
 
+model AnswerCollectionEntry {
+    id    Int    @id @default(autoincrement())
+    value String
+
+    collection   AnswerCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    collectionId Int
+
+    // elements where this entry is used as a sample solution -> deletion not allowed
+    itemUsages Element[] @relation("ElementAnswerCollectionUsedItems")
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([collectionId, value])
+}
+
+// #endregion
+
+// ----- CATALOG -----
+// #region
+enum ObjectAccess {
+    RESTRICTED
+    PUBLIC
+}
+
 // many-to-many join table between catalog collection and shared object with access information
 model CatalogCollectionAssignment {
     id Int @id @default(autoincrement())
@@ -74,37 +99,15 @@ model CatalogCollectionAssignment {
     @@unique([groupActivityId, catalogCollectionId])
 }
 
-model AnswerCollectionEntry {
-    id    Int    @id @default(autoincrement())
-    value String
-
-    collection   AnswerCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    collectionId Int
-
-    // elements where this entry is used as a sample solution -> deletion not allowed
-    itemUsages Element[] @relation("ElementAnswerCollectionUsedItems")
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([collectionId, value])
-}
-
-// #endregion
-
-// ----- CATALOG -----
-// #region
-enum ObjectAccess {
-    RESTRICTED
-    PUBLIC
-}
-
 model CatalogCollection {
     id          String  @id @default(uuid()) @db.Uuid
     name        String
     description String?
 
-    // functionalities like "requesting access", etc. are not available here, access can only be provided explicitely (as for private objects)
+    // access level determines who can browse a collection's content (public = everyone, restricted = only users with access)
+    access ObjectAccess @default(RESTRICTED)
+
+    // functionalities like "requesting access", etc. are not available here, access can only be provided explicitly (as for private objects)
     // users / user groups that are allowed to import / request elements from this collection (read access)
     // users / user groups that are allowed to add elements to this collection (write access)
     // users / user groups that are allowed to edit the access rights of other users / user groups (admin access)

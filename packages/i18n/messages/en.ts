@@ -2202,8 +2202,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sharingRequests: 'Sharing Requests',
       unresolved: 'Unresolved',
       objectTypeANSWER_COLLECTION: 'Answer Collection',
-      noPublicRestrictedCollections:
-        'No public or restricted objects were found for the entered search criteria and filters. Objects for which access has already been requested or confirmed cannot be selected anymore.',
+      noObjectsFoundInCatalog:
+        'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
       importObject: 'Import Object',
       accessRequested: 'Access requested',
@@ -2258,6 +2258,24 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
       removeObjectConfirm: 'Remove Object',
+      createCatalogCollection: 'Create Collection',
+      createCatalogCollectionTitle: 'Create Catalog Collection',
+      createCatalogCollectionDescription:
+        'Catalog collections are used to organize content and make it visible to specific users or user groups. Access to objects within the catalog collection is handled separately. The existence of the catalog collection is always visible to everyone, but only public catalog collections can be accessed by anyone, allowing them to request access to everything within. Access and managing privileges for restricted catalog collections can be defined after creation in a separate sharing dialog after creation.',
+      collectionName: 'Collection Name',
+      collectionNameTooltip: 'Enter a unique name for your catalog collection.',
+      collectionNamePlaceholder: 'Name of the catalog collection',
+      catalogAccessTooltip:
+        'Choose whether the collection should be visible to all users or if access should be restricted.',
+      accessDescriptionPUBLIC:
+        'Public collections are visible to all users and can be browsed by anyone.',
+      accessDescriptionRESTRICTED:
+        'Restricted collections can only be browsed by users with access. All users of KlickerUZH can request such access or be provided access directly through the sharing functionalitiy upon creation.',
+      nameRequired: 'Please enter a name.',
+      collectionCreationSuccess: 'Catalog collection was successfully created.',
+      collectionCreationError:
+        'An error occurred while creating the catalog collection. Please try again.',
+      backToCatalogOverview: 'back to Catalog Overview',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

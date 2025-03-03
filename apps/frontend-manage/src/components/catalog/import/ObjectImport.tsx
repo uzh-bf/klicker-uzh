@@ -1,7 +1,12 @@
 import { useQuery } from '@apollo/client'
-import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
+import {
+  faFolderTree,
+  faMagnifyingGlass,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CatalogObjectType,
+  GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
   ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -10,6 +15,7 @@ import { H2, TextField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
+import CatalogCollectionListItem from '../administration/CatalogCollectionListItem'
 import CatalogObjectItem from './CatalogObjectItem'
 import ObjectFilters from './ObjectFilters'
 import useObjectFilters from './useObjectFilters'
@@ -27,13 +33,22 @@ function ObjectImport({
     ''
   )
 
+  // fetch all available catalog collections
+  const { data: collectionsData, loading: collectionsLoading } = useQuery(
+    GetCatalogCollectionsListDocument
+  )
+  const collections = collectionsData?.getCatalogCollectionsList ?? []
+
   // TODO: also return the catalog collection title here - to be shown next to the Catalog title
-  const { data, loading } = useQuery(GetCatalogObjectsDocument, {
-    variables: {
-      catalogCollectionId,
-    },
-  })
-  const objects = data?.getCatalogObjects ?? []
+  const { data: objectsData, loading: objectsLoading } = useQuery(
+    GetCatalogObjectsDocument,
+    {
+      variables: {
+        catalogCollectionId,
+      },
+    }
+  )
+  const objects = objectsData?.getCatalogObjects ?? []
 
   const filteredObjects = useObjectFilters({
     objects,
@@ -56,7 +71,7 @@ function ObjectImport({
     }
   }, [router.query])
 
-  if (loading) {
+  if (objectsLoading || collectionsLoading) {
     return <Loader />
   }
 
@@ -85,6 +100,27 @@ function ObjectImport({
         />
       </div>
       <div className="mt-2 flex flex-col border-t">
+        {typeof catalogCollectionId === 'undefined' ? (
+          collections.map((collection) => (
+            <CatalogCollectionListItem
+              key={collection.id}
+              collection={collection}
+            />
+          ))
+        ) : (
+          <div
+            className="h-9 border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
+            onClick={() => {
+              router.push('/resources/catalog', {}, { shallow: true })
+            }}
+            data-cy={'leave-catalog-collection'}
+          >
+            <div className="flex h-full flex-row items-center gap-2">
+              <FontAwesomeIcon icon={faFolderTree} className="mr-1 w-4" />
+              <div className="flex w-4 justify-center">...</div>
+            </div>
+          </div>
+        )}
         {filteredObjects.length > 0 ? (
           <div>
             {managed.length > 0 && (
@@ -115,7 +151,8 @@ function ObjectImport({
         ) : (
           <UserNotification
             type="info"
-            message={t('manage.catalog.noPublicRestrictedCollections')}
+            message={t('manage.catalog.noObjectsFoundInCatalog')}
+            className={{ root: 'mt-2' }}
           />
         )}
       </div>
