@@ -4,7 +4,7 @@ import {
   TailwindFonts,
 } from '@uzh-bf/design-system/dist/constants'
 
-export default {
+const tailwindConfig = {
   content: ['./src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -30,3 +30,5 @@ export default {
     require('@tailwindcss/container-queries'),
   ],
 }
+
+export default tailwindConfig

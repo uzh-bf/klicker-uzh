@@ -1,4 +1,5 @@
 import { ApolloProvider } from '@apollo/client'
+import { Capacitor } from '@capacitor/core'
 import {
   ActionPerformed,
   PushNotificationSchema,
@@ -16,7 +17,7 @@ import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
-import { Capacitor } from '@capacitor/core'
+import '@uzh-bf/design-system/dist/style.css'
 import '../globals.css'
 
 config.autoAddCss = false
