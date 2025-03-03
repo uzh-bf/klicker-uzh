@@ -26,6 +26,7 @@ function CatalogBrowser() {
   })
   const collectionName = metaData?.getCatalogCollectionInfo?.name
   const userIsCollectionAdmin =
+    typeof catalogCollectionId === 'undefined' ||
     metaData?.getCatalogCollectionInfo?.isOwnerOrAdmin
   const userIsCollectionEditor = metaData?.getCatalogCollectionInfo?.isEditor
 

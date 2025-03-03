@@ -45,7 +45,7 @@ function CatalogCollectionListItem({
           accessType={collection.access}
           className="mr-2 w-3 text-sm"
         />
-        <FontAwesomeIcon icon={faFolder} className="w-4" />
+        <FontAwesomeIcon icon={faFolder} className="h-4 w-4" />
         <div>{collection.name}</div>
         {collection.ownerShortname ? (
           <div className="text-xs text-slate-500">
@@ -55,7 +55,7 @@ function CatalogCollectionListItem({
           </div>
         ) : null}
       </div>
-      <div>ACTIONS</div>
+      <div>ACTIONS - SHARE, DELETE, REQUEST ACCESS</div>
     </div>
   )
 }
