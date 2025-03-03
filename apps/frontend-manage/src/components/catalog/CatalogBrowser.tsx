@@ -27,13 +27,14 @@ function CatalogBrowser() {
   const collectionName = metaData?.getCatalogCollectionInfo?.name
   const userIsCollectionAdmin =
     metaData?.getCatalogCollectionInfo?.isOwnerOrAdmin
+  const userIsCollectionEditor = metaData?.getCatalogCollectionInfo?.isEditor
 
-  // Object modal state
+  // object modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [addObjectSuccess, setAddObjectSuccess] = useState(false)
   const [addObjectError, setAddObjectError] = useState(false)
 
-  // Collection modal state
+  // catalog collection modal states
   const [collectionModalOpen, setCollectionModalOpen] = useState(false)
   const [collectionSuccess, setCollectionSuccess] = useState(false)
   const [collectionError, setCollectionError] = useState(false)
@@ -44,6 +45,11 @@ function CatalogBrowser() {
       <ObjectImport
         collectionName={collectionName}
         catalogCollectionId={catalogCollectionId as string | undefined}
+        collectionEditor={
+          typeof catalogCollectionId === 'undefined'
+            ? true
+            : (userIsCollectionEditor ?? false)
+        }
       />
 
       <div className="float-right mt-4 flex flex-row gap-3">

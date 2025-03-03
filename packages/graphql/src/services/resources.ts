@@ -28,7 +28,7 @@ async function incrementCollectionVersion(
   return collection
 }
 
-export async function validateCollectionPermissions(
+export async function validateAnswerCollectionPermissions(
   {
     collectionId,
     acceptedAccessLevels,
@@ -580,7 +580,7 @@ export async function shareAnswerCollection(
   ctx: ContextWithUser
 ) {
   // verify that user has either owner or admin access
-  const { valid, collection } = await validateCollectionPermissions(
+  const { valid, collection } = await validateAnswerCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.ADMIN],
@@ -688,7 +688,7 @@ export async function changeCollectionAccessLevel(
   ctx: ContextWithUser
 ) {
   // verify that user has either owner or admin access
-  const { valid } = await validateCollectionPermissions(
+  const { valid } = await validateAnswerCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.ADMIN],
@@ -1290,7 +1290,7 @@ export async function editAnswerCollectionEntry(
   ctx: ContextWithUser
 ) {
   // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateCollectionPermissions(
+  const { valid } = await validateAnswerCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
@@ -1326,7 +1326,7 @@ export async function deleteAnswerCollectionEntry(
   ctx: ContextWithUser
 ) {
   // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateCollectionPermissions(
+  const { valid } = await validateAnswerCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
@@ -1365,7 +1365,7 @@ export async function addAnswerCollectionOption(
   ctx: ContextWithUser
 ) {
   // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateCollectionPermissions(
+  const { valid } = await validateAnswerCollectionPermissions(
     {
       collectionId,
       acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],

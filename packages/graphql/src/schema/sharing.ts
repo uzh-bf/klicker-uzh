@@ -26,10 +26,11 @@ export const AccessLevel = builder.enumType('AccessLevel', {
 // #region
 interface ICatalogCollection extends DB.CatalogCollection {
   ownerShortname?: string
-  isRequested: boolean
-  isShared: boolean
-  isOwner: boolean
-  isOwnerOrAdmin: boolean
+  isRequested: boolean // pending permission request
+  isShared: boolean // granted permission
+  isEditor?: boolean // WRITE / ADMIN / OWNER permissions
+  isOwner?: boolean // OWNER permissions
+  isOwnerOrAdmin: boolean // ADMIN / OWNER permissions
 }
 export const CatalogCollectionRef =
   builder.objectRef<ICatalogCollection>('CatalogCollection')
@@ -41,7 +42,8 @@ export const CatalogCollection = CatalogCollectionRef.implement({
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     isRequested: t.exposeBoolean('isRequested'),
     isShared: t.exposeBoolean('isShared'),
-    isOwner: t.exposeBoolean('isOwner'),
+    isEditor: t.exposeBoolean('isEditor', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
     isOwnerOrAdmin: t.exposeBoolean('isOwnerOrAdmin'),
   }),
 })

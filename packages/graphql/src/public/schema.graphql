@@ -370,7 +370,8 @@ type CatalogAnswerCollection {
 type CatalogCollection {
   access: ObjectAccess!
   id: String!
-  isOwner: Boolean!
+  isEditor: Boolean
+  isOwner: Boolean
   isOwnerOrAdmin: Boolean!
   isRequested: Boolean!
   isShared: Boolean!

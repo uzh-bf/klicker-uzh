@@ -14,7 +14,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, TextField, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import CatalogCollectionListItem from '../administration/CatalogCollectionListItem'
 import CatalogObjectItem from './CatalogObjectItem'
 import ObjectFilters from './ObjectFilters'
@@ -23,9 +23,11 @@ import useObjectFilters from './useObjectFilters'
 function ObjectImport({
   collectionName,
   catalogCollectionId,
+  collectionEditor, // determines if the current user has sufficient permissions on the collection to make modifications
 }: {
   collectionName?: string
   catalogCollectionId?: string
+  collectionEditor: boolean
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -58,13 +60,6 @@ function ObjectImport({
     typeFilter,
     accessTypeFilter,
   })
-
-  // group filtered objects into a group that is owned / managed with admin access and others
-  const { managed, others } = useMemo(() => {
-    const managed = filteredObjects.filter((object) => object.isOwnerOrAdmin)
-    const others = filteredObjects.filter((object) => !object.isOwnerOrAdmin)
-    return { managed, others }
-  }, [filteredObjects])
 
   // set initial filter values based on query params
   useEffect(() => {
@@ -129,26 +124,20 @@ function ObjectImport({
         )}
         {filteredObjects.length > 0 ? (
           <div>
-            {managed.length > 0 && (
+            {filteredObjects.length > 0 && (
               <div>
-                {managed.map((object) => (
-                  <CatalogObjectItem
-                    managedAccess
-                    key={`catalog-object-${object.id}-${object.name}`}
-                    object={object}
-                    catalogCollectionId={catalogCollectionId}
-                  />
-                ))}
-              </div>
-            )}
-            {others.length > 0 && (
-              <div>
-                {others.map((object) => (
+                {filteredObjects.map((object) => (
                   <CatalogObjectItem
                     key={`catalog-object-${object.id}-${object.name}`}
                     object={object}
                     catalogCollectionId={catalogCollectionId}
-                    managedAccess={false}
+                    // if element is in catalog collection -> collection permissions apply regarding object management in catalog collection
+                    // if element is shown on top level of catalog -> permissions on the object itself apply
+                    managedAccess={
+                      typeof catalogCollectionId !== 'undefined'
+                        ? collectionEditor
+                        : object.isOwnerOrAdmin
+                    }
                   />
                 ))}
               </div>

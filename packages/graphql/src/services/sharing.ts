@@ -6,7 +6,7 @@ import {
   ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
-import { validateCollectionPermissions } from './resources.js'
+import { validateAnswerCollectionPermissions } from './resources.js'
 
 // ! do not modify - required for the import of objects not assigned to any catalogue
 const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
@@ -58,6 +58,46 @@ async function verifyCatalogCollectionBrowsable(
   )
 }
 
+// helper function to check for a specific access level on the catalog collection
+export async function validateCatalogCollectionPermissions(
+  {
+    catalogCollectionId,
+    acceptedAccessLevels,
+  }: {
+    catalogCollectionId: string
+    acceptedAccessLevels: DB.AccessLevel[]
+  },
+  ctx: ContextWithUser
+) {
+  const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
+    where: {
+      id: catalogCollectionId,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              accessLevel: {
+                in: acceptedAccessLevels,
+              },
+            },
+          },
+        },
+      ],
+    },
+  })
+
+  if (!catalogCollection) {
+    return { valid: false, collection: null }
+  }
+
+  return { valid: true, catalogCollection }
+}
+
 // #endregion
 
 // ! Catalog Objects
@@ -97,7 +137,6 @@ export async function createCatalogCollection(
     ownerShortname: collection.owner?.shortname,
     isRequested: false,
     isShared: false,
-    isOwner: true,
     isOwnerOrAdmin: true,
   }
 }
@@ -143,6 +182,13 @@ export async function getCatalogCollectionInfo(
   const isShared = collection.permissions.some(
     (permission) => permission.permissionStatus === DB.PermissionStatus.GRANTED
   )
+  const isEditor =
+    collection.permissions.some(
+      (permission) =>
+        (permission.accessLevel === DB.AccessLevel.WRITE ||
+          permission.accessLevel === DB.AccessLevel.ADMIN) &&
+        permission.permissionStatus === DB.PermissionStatus.GRANTED
+    ) || collection.ownerId === ctx.user.sub
   const isOwnerOrAdmin =
     collection.ownerId === ctx.user.sub ||
     collection.permissions.some(
@@ -151,11 +197,15 @@ export async function getCatalogCollectionInfo(
         permission.permissionStatus === DB.PermissionStatus.GRANTED
     )
 
+  console.log(collection)
+  console.log(isEditor)
+
   return {
     ...collection,
     ownerShortname: collection.owner?.shortname,
     isRequested,
     isShared,
+    isEditor,
     isOwner: collection.ownerId === ctx.user.sub,
     isOwnerOrAdmin,
   }
@@ -227,7 +277,6 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
         ownerShortname: collection.owner?.shortname,
         isRequested,
         isShared,
-        isOwner: collection.ownerId === ctx.user.sub,
         isOwnerOrAdmin,
       }
     })
@@ -358,27 +407,27 @@ export async function getCatalogObjects(
   const mappedAnswerCollections: CatalogObject[] =
     catalogCollection?.objectAssignments.flatMap((assignment) => {
       if (assignment.answerCollection) {
-        const collection = assignment.answerCollection
-        const permission = collection.permissions[0]
+        const answerCollection = assignment.answerCollection
+        const permission = answerCollection.permissions[0]
 
         return {
-          id: collection.id,
-          name: collection.name,
+          id: answerCollection.id,
+          name: answerCollection.name,
           assignmentId: assignment.id,
           objectType: CatalogObjectType.ANSWER_COLLECTION,
           access: assignment.access,
-          ownerShortname: collection.owner?.shortname,
+          ownerShortname: answerCollection.owner?.shortname,
           isRequested:
-            collection.permissions.length > 0 &&
+            answerCollection.permissions.length > 0 &&
             typeof permission !== 'undefined' &&
             permission.permissionStatus === DB.PermissionStatus.REQUESTED,
           isShared:
-            collection.permissions.length > 0 &&
+            answerCollection.permissions.length > 0 &&
             typeof permission !== 'undefined' &&
             permission.permissionStatus === DB.PermissionStatus.GRANTED,
-          isOwner: collection.ownerId === ctx.user.sub,
+          isOwner: answerCollection.ownerId === ctx.user.sub,
           isOwnerOrAdmin:
-            collection.ownerId === ctx.user.sub ||
+            answerCollection.ownerId === ctx.user.sub ||
             permission?.accessLevel === DB.AccessLevel.ADMIN,
         }
       }
@@ -389,66 +438,10 @@ export async function getCatalogObjects(
   return mappedAnswerCollections
 }
 
-export async function changeCatalogObjectAccessLevel(
-  {
-    assignmentId,
-    accessLevel,
-  }: { assignmentId: number; accessLevel: DB.ObjectAccess },
-  ctx: ContextWithUser
-) {
-  // fetch current assignment
-  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
-    where: {
-      id: assignmentId,
-    },
-    include: {
-      answerCollection: {
-        select: {
-          id: true,
-        },
-      },
-      // ... add more object types once they are supported for sharing
-    },
-  })
-
-  if (!assignment) {
-    return false
-  }
-
-  // verify that the user has sufficient access for this action
-  let verified = false
-  if (assignment.answerCollection?.id) {
-    // verify that the user has access to the answer collection
-    const { valid } = await validateCollectionPermissions(
-      {
-        collectionId: assignment.answerCollection.id,
-        acceptedAccessLevels: [DB.AccessLevel.ADMIN],
-      },
-      ctx
-    )
-    verified = valid
-  }
-
-  if (!verified) {
-    return false
-  }
-
-  // change the access level of the assignment
-  const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.update(
-    {
-      where: {
-        id: assignmentId,
-      },
-      data: {
-        access: accessLevel,
-      },
-    }
-  )
-
-  return !!updatedAssignment.id
-}
-
-export async function removeCatalogObjectAssignment(
+// function that verifies that a user has sufficient permissions to edit an object in the catalog
+// - for items in the default collection, the permissions on the object are checked
+// - for items in a catalog collection, the permissions on the catalog collection are checked
+async function verifyCatalogItemEditPermissions(
   { assignmentId }: { assignmentId: number },
   ctx: ContextWithUser
 ) {
@@ -471,21 +464,79 @@ export async function removeCatalogObjectAssignment(
     return false
   }
 
-  // verify that the user has sufficient access for this action
-  let verified = false
-  if (assignment.answerCollection?.id) {
-    // verify that the user has access to the answer collection
-    const { valid } = await validateCollectionPermissions(
+  // boolean to check for sufficient permissions
+  let sufficientPermissions = false
+
+  // ! Case 1: Object in Catalog Collection -> access level on catalog collection decides permissions
+  // write permissions are required for content management of catalog collection
+  if (assignment.catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID) {
+    const { valid } = await validateCatalogCollectionPermissions(
       {
-        collectionId: assignment.answerCollection.id,
-        acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+        catalogCollectionId: assignment.catalogCollectionId,
+        acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
       },
       ctx
     )
-    verified = valid
+    sufficientPermissions = valid
+  }
+  // ! Case 2: Object in top-level collection -> access level on object decides permissions
+  else {
+    if (assignment.answerCollection?.id) {
+      // verify that the user has access to the answer collection
+      const { valid } = await validateAnswerCollectionPermissions(
+        {
+          collectionId: assignment.answerCollection.id,
+          acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+        },
+        ctx
+      )
+      sufficientPermissions = valid
+    }
+    // ... add more object types once they are supported for sharing
   }
 
-  if (!verified) {
+  return sufficientPermissions
+}
+
+export async function changeCatalogObjectAccessLevel(
+  {
+    assignmentId,
+    accessLevel,
+  }: { assignmentId: number; accessLevel: DB.ObjectAccess },
+  ctx: ContextWithUser
+) {
+  const sufficientPermissions = await verifyCatalogItemEditPermissions(
+    { assignmentId },
+    ctx
+  )
+  if (!sufficientPermissions) {
+    return false
+  }
+
+  // change the access level of the assignment
+  const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.update(
+    {
+      where: {
+        id: assignmentId,
+      },
+      data: {
+        access: accessLevel,
+      },
+    }
+  )
+
+  return !!updatedAssignment.id
+}
+
+export async function removeCatalogObjectAssignment(
+  { assignmentId }: { assignmentId: number },
+  ctx: ContextWithUser
+) {
+  const sufficientPermissions = await verifyCatalogItemEditPermissions(
+    { assignmentId },
+    ctx
+  )
+  if (!sufficientPermissions) {
     return false
   }
 

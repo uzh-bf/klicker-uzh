@@ -6,7 +6,6 @@ mutation CreateCatalogCollection($name: String!, $access: ObjectAccess!) {
     ownerShortname
     isRequested
     isShared
-    isOwner
     isOwnerOrAdmin
   }
 }
