@@ -1,4 +1,5 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
+import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import QR from '@pages/qr/[...args]'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -43,18 +44,16 @@ function CourseQRModal({
     <Modal
       title={t('manage.general.qrCode')}
       trigger={
-        <div>
-          <Button
-            onClick={() => setModalOpen(true)}
-            className={{ root: 'h-8 py-0' }}
-            data={dataTrigger}
-          >
-            <Button.Icon icon={faQrcode} />
-            <Button.Label>
-              {triggerText || t('manage.general.qrCode')}
-            </Button.Label>
-          </Button>
-        </div>
+        <ForwardRefButton
+          onClick={() => setModalOpen(true)}
+          overrideClassName="h-8 py-0"
+          data={dataTrigger}
+        >
+          <Button.Icon icon={faQrcode} />
+          <Button.Label>
+            {triggerText || t('manage.general.qrCode')}
+          </Button.Label>
+        </ForwardRefButton>
       }
       open={modalOpen}
       onClose={() => setModalOpen(false)}

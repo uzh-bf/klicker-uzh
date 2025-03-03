@@ -103,14 +103,9 @@ function Feedback({
               </div>
             )}
             <Button
-              disabled={isBeingDeleted}
               onClick={(e) => {
                 e?.stopPropagation()
-                if (isBeingDeleted) {
-                  onDeleteFeedback()
-                } else {
-                  setIsBeingDeleted(true)
-                }
+                onDeleteFeedback()
               }}
               className={{
                 root: 'mr-1 h-9 w-9 border-red-600 hover:text-red-600',

@@ -8,6 +8,7 @@ import {
   FlagElementDocument,
   GetStackElementFeedbacksDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import {
   Button,
   FormikTextareaField,
@@ -181,24 +182,20 @@ function FlagElementModal({
         }}
         open={open}
         trigger={
-          <div>
-            <Button
-              basic
-              onClick={() => setOpen(true)}
-              className={{
-                root: twMerge(
-                  'hover:text-primary-80 text-uzh-grey-100 !px-1',
-                  !!feedbackValue && 'text-primary-100'
-                ),
-              }}
-              data={{ cy: `flag-element-${index}-button` }}
-            >
-              <Button.Icon
-                withoutLabel
-                icon={!!feedbackValue ? faMessageSolid : faMessage}
-              />
-            </Button>
-          </div>
+          <ForwardRefButton
+            basic
+            onClick={() => setOpen(true)}
+            overrideClassName={twMerge(
+              'hover:text-primary-80 text-uzh-grey-100 !px-1',
+              !!feedbackValue && 'text-primary-100'
+            )}
+            data={{ cy: `flag-element-${index}-button` }}
+          >
+            <Button.Icon
+              withoutLabel
+              icon={!!feedbackValue ? faMessageSolid : faMessage}
+            />
+          </ForwardRefButton>
         }
         onClose={() => setOpen(false)}
         hideCloseButton
