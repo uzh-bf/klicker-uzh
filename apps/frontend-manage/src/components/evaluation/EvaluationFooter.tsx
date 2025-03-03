@@ -62,13 +62,11 @@ function EvaluationFooter({
                 }}
                 disabled={textSize.size === 'sm'}
                 className={{
-                  root: 'flex h-8 w-8 items-center justify-center',
+                  root: 'h-8 w-8',
                 }}
                 data={{ cy: 'decrease-font-size' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faMinus} />
-                </Button.Icon>
+                <Button.Icon withoutLabel icon={faMinus} />
               </Button>
               <Button
                 onClick={() => {
@@ -76,13 +74,11 @@ function EvaluationFooter({
                 }}
                 disabled={textSize.size === 'xl'}
                 className={{
-                  root: 'flex h-8 w-8 items-center justify-center',
+                  root: 'h-8 w-8',
                 }}
                 data={{ cy: 'increase-font-size' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faPlus} />
-                </Button.Icon>
+                <Button.Icon withoutLabel icon={faPlus} />
               </Button>
               <FontAwesomeIcon icon={faFont} size="lg" />
               {t('manage.evaluation.fontSize')}

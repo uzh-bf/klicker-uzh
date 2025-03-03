@@ -8,7 +8,6 @@ import { Button, FormikDateField, Modal } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 interface ExtensionModalProps {
@@ -120,21 +119,16 @@ function ExtensionModal({
                   onClick={(): void => setOpen(false)}
                   data={{ cy: 'extend-activity-cancel' }}
                 >
-                  {t('shared.generic.cancel')}
+                  <Button.Label>{t('shared.generic.cancel')}</Button.Label>
                 </Button>
                 <Button
+                  primary
                   type="submit"
                   loading={isSubmitting}
                   disabled={!isValid}
-                  className={{
-                    root: twMerge(
-                      'bg-primary-100 font-bold text-white',
-                      !isValid && 'bg-primary-40 cursor-not-allowed'
-                    ),
-                  }}
                   data={{ cy: 'extend-activity-confirm' }}
                 >
-                  {t('shared.generic.confirm')}
+                  <Button.Label>{t('shared.generic.confirm')}</Button.Label>
                 </Button>
               </div>
             </Form>

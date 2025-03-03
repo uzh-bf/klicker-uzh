@@ -37,13 +37,11 @@ function AccountDeletionForm() {
           {t('pwa.profile.deleteProfileDescription')}
         </Prose>
         <Button
+          destructive
           onClick={(): void => setDeleteModalOpen(true)}
           data={{ cy: 'confirm-delete-account' }}
-          className={{
-            root: 'border-red-700 text-red-600 hover:border-red-700 hover:bg-red-600 hover:text-white',
-          }}
         >
-          {t('shared.generic.delete')}
+          <Button.Label>{t('shared.generic.delete')}</Button.Label>
         </Button>
 
         <Modal
@@ -54,10 +52,8 @@ function AccountDeletionForm() {
           className={{ content: 'max-w-md' }}
           onPrimaryAction={
             <Button
+              destructive
               loading={deletingAccount || loggingOut}
-              className={{
-                root: 'border-red-700 bg-red-600 text-white',
-              }}
               onClick={async () => {
                 await deleteParticipantAccount()
                 try {
@@ -67,7 +63,7 @@ function AccountDeletionForm() {
               }}
               data={{ cy: 'delete-account-command' }}
             >
-              {t('shared.generic.confirm')}
+              <Button.Label> {t('shared.generic.confirm')}</Button.Label>
             </Button>
           }
           onSecondaryAction={
@@ -75,7 +71,7 @@ function AccountDeletionForm() {
               onClick={() => setDeleteModalOpen(false)}
               data={{ cy: 'cancel-delete-account' }}
             >
-              {t('shared.generic.cancel')}
+              <Button.Label>{t('shared.generic.cancel')}</Button.Label>
             </Button>
           }
         >

@@ -1,5 +1,4 @@
 import { faArrowRightArrowLeft } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
@@ -93,7 +92,7 @@ function CSEvaluationScatterSidebar({
             <Button
               basic
               className={{
-                root: 'ml-2 mt-5 rotate-90 self-center rounded-full p-1',
+                root: 'ml-1 mt-5 rotate-90 self-center rounded-full p-1',
               }}
               onClick={() => {
                 if (!xCriterion || !yCriterion) return
@@ -102,7 +101,7 @@ function CSEvaluationScatterSidebar({
                 setYCriterion(temp)
               }}
             >
-              <FontAwesomeIcon icon={faArrowRightArrowLeft} />
+              <Button.Icon withoutLabel icon={faArrowRightArrowLeft} />
             </Button>
           ) : null}
         </div>

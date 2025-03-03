@@ -10,6 +10,7 @@ import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import { swapIndices } from 'remeda'
+import { twMerge } from 'tailwind-merge'
 import {
   ElementBlockErrorValues,
   ElementBlockFormValues,
@@ -19,6 +20,7 @@ import {
 
 interface BaseProps {
   stackIx: number
+  selectionActive: boolean
 }
 
 interface StackWizardElementListProps extends BaseProps {
@@ -44,9 +46,15 @@ function WizardElementList({
   error,
   replace,
   highlightFTNoSL,
+  selectionActive,
 }: StackWizardElementListProps | BlockWizardElementListProps) {
   return (
-    <div className="my-2 flex max-h-[7.5rem] flex-1 flex-col overflow-y-auto">
+    <div
+      className={twMerge(
+        'my-2 flex max-h-[7.5rem] flex-1 flex-col overflow-y-auto',
+        selectionActive ? 'max-h-[5.5rem]' : ''
+      )}
+    >
       {stack.elements.map((element, elementIdx) => {
         const errors =
           error && Array.isArray(error)
@@ -58,7 +66,7 @@ function WizardElementList({
         return (
           <div
             key={`${elementIdx}-${element.title}`}
-            className="flex flex-row items-center border-b border-solid border-slate-200 py-0.5 text-xs last:border-b-0"
+            className="flex flex-row items-center border-b border-solid border-slate-200 pl-1 text-xs last:border-b-0"
             data-cy={`element-${elementIdx}-${type}-${stackIx}`}
           >
             <div className="flex-1">
@@ -70,7 +78,7 @@ function WizardElementList({
                 {element.title}
               </Ellipsis>
             </div>
-            <div className="flex flex-row">
+            <div className="flex flex-row items-center">
               {errors?.[elementIdx] && (
                 <FontAwesomeIcon
                   icon={faCircleExclamation}
@@ -88,7 +96,7 @@ function WizardElementList({
               <Button
                 basic
                 className={{
-                  root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
+                  root: 'px-1 disabled:hidden',
                 }}
                 disabled={stack.elements.length === 1}
                 onClick={() => {
@@ -107,12 +115,16 @@ function WizardElementList({
                   cy: `move-element-${elementIdx}-${type}-${stackIx}-up`,
                 }}
               >
-                <FontAwesomeIcon icon={faArrowUp} />
+                <Button.Icon
+                  withoutLabel
+                  icon={faArrowUp}
+                  className={{ root: 'h-3 w-3' }}
+                />
               </Button>
               <Button
                 basic
                 className={{
-                  root: 'hover:bg-primary-20 flex flex-col justify-center px-1 disabled:hidden',
+                  root: 'px-1 disabled:hidden',
                 }}
                 disabled={stack.elements.length === 1}
                 onClick={() => {
@@ -136,7 +148,11 @@ function WizardElementList({
                   cy: `move-element-${elementIdx}-${type}-${stackIx}-down`,
                 }}
               >
-                <FontAwesomeIcon icon={faArrowDown} />
+                <Button.Icon
+                  withoutLabel
+                  icon={faArrowDown}
+                  className={{ root: 'h-3 w-3' }}
+                />
               </Button>
             </div>
             <Button
@@ -154,9 +170,11 @@ function WizardElementList({
               }}
               data={{ cy: `remove-element-${elementIdx}-${type}-${stackIx}` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faTrash} />
-              </Button.Icon>
+              <Button.Icon
+                withoutLabel
+                icon={faTrash}
+                className={{ root: 'h-3 w-3' }}
+              />
             </Button>
           </div>
         )

@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AccessLevel,
   ApproveObjectSharingRequestDocument,
@@ -61,21 +60,22 @@ function SharingRequestApprovalModal({
         className={{ label: 'text-base', select: { trigger: 'h-9' } }}
         data={{ cy: 'access-level-select' }}
       />
-      <div className="mt-2 flex flex-row justify-between">
+      <div className="mt-3 flex flex-row justify-between">
         <Button
           onClick={(e) => {
             e?.stopPropagation()
             onClose()
           }}
-          className={{ root: 'border-red-600 text-base' }}
+          className={{ root: 'h-8 border-red-600 py-0 text-base' }}
           data={{ cy: 'cancel-approval' }}
         >
-          <FontAwesomeIcon icon={faBan} />
-          <div>{t('shared.generic.cancel')}</div>
+          <Button.Icon icon={faBan} />
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
         <Button
+          primary
           loading={approvaLoading}
-          className={{ root: 'border-green-600 text-base' }}
+          className={{ root: 'h-8 py-0' }}
           data={{ cy: 'confirm-approval' }}
           onClick={async (e) => {
             e?.stopPropagation()
@@ -140,12 +140,12 @@ function SharingRequestApprovalModal({
             }
           }}
         >
-          <FontAwesomeIcon icon={faCheck} />
-          <div>{t('shared.generic.approve')}</div>
+          <Button.Icon icon={faCheck} />
+          <Button.Label>{t('shared.generic.approve')}</Button.Label>
         </Button>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-6">
         <AnswerCollectionPermissionsTable activeAccessLevel={accessLevel} />
       </div>
 

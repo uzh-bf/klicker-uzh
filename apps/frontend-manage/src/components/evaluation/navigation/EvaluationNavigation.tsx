@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { faPieChart } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CheckPublicPreviewAvailableDocument,
   StackEvaluation,
@@ -77,7 +76,7 @@ function EvaluationNavigation({
         data?.checkPublicPreviewAvailable &&
         type === 'Asynchronous' ? (
           <Button
-            className={{ root: 'flex h-8 flex-row gap-2' }}
+            className={{ root: 'h-8 py-0' }}
             onClick={() =>
               window.open(
                 `/analytics/${courseId}/quizzes/${activityId}`,
@@ -86,8 +85,8 @@ function EvaluationNavigation({
             }
             data={{ cy: 'quiz-analytics' }}
           >
-            <FontAwesomeIcon icon={faPieChart} />
-            <div>{t('manage.analytics.quizAnalytics')}</div>
+            <Button.Icon icon={faPieChart} />
+            <Button.Label>{t('manage.analytics.quizAnalytics')}</Button.Label>
           </Button>
         ) : null}
         <StackNavigation

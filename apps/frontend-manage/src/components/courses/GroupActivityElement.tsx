@@ -21,7 +21,7 @@ import { WizardMode } from '../activities/ElementCreation'
 import StatusTag from './StatusTag'
 import PublishGroupActivityButton from './actions/PublishGroupActivityButton'
 import GroupActivityExtensionButton from './groupActivity/GroupActivityExtensionButton'
-import GroupActivityGradingLink from './groupActivity/GroupActivityGradingLink'
+import GroupActivityGradingPrimaryLink from './groupActivity/GroupActivityGradingPrimaryLink'
 import GroupActivityUnpublishButton from './groupActivity/GroupActivityUnpublishButton'
 import GroupActivityDeletionModal from './modals/GroupActivityDeletionModal'
 import GroupActivityEndingModal from './modals/GroupActivityEndingModal'
@@ -177,7 +177,7 @@ function GroupActivityElement({
       </div>
 
       <div className="flex flex-col items-end justify-between gap-4">
-        <div className="flex flex-row items-center gap-3 text-sm">
+        <div className="flex flex-row items-center gap-2 text-sm">
           {groupActivity.status === PublicationStatus.Draft && (
             <>
               <PublishGroupActivityButton groupActivity={groupActivity} />
@@ -298,7 +298,7 @@ function GroupActivityElement({
 
           {groupActivity.status === PublicationStatus.Ended && (
             <>
-              <GroupActivityGradingLink
+              <GroupActivityGradingPrimaryLink
                 activityId={groupActivity.id}
                 activityName={groupActivity.name}
               />
@@ -308,7 +308,7 @@ function GroupActivityElement({
 
           {groupActivity.status === PublicationStatus.Graded && (
             <>
-              <GroupActivityGradingLink
+              <GroupActivityGradingPrimaryLink
                 activityId={groupActivity.id}
                 activityName={groupActivity.name}
               />

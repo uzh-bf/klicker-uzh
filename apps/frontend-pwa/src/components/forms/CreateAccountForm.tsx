@@ -1,6 +1,5 @@
 import { useLazyQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
@@ -126,16 +125,15 @@ function CreateAccountForm({
                 </div>
               </div>
               <Button
-                className={{
-                  root: 'w-full flex-none md:w-max',
-                }}
+                primary
                 type="submit"
                 disabled={!tosChecked || isSubmitting || !isValid}
+                className={{
+                  root: 'h-8 w-full flex-none md:w-max',
+                }}
                 data={{ cy: 'create-profile-button' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faSave} />
-                </Button.Icon>
+                <Button.Icon icon={faSave} />
                 <Button.Label>{t('pwa.profile.createProfile')}</Button.Label>
               </Button>
             </div>

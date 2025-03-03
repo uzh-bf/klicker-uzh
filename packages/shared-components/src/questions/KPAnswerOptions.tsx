@@ -1,5 +1,4 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { Choice, QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { ElementDisplayMode, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
@@ -66,36 +65,42 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'hover:bg-unset min-h-[2.5rem] border-slate-400'
+                    'hover:bg-unset h-9 w-9 border-slate-400 !p-0',
+                    value?.[choice.ix] === true &&
+                      'bg-primary-20 border-primary-100'
                   ),
                 }}
-                active={value?.[choice.ix] === true}
                 onClick={() => onChange({ ...value, [choice.ix]: true })}
                 data={{
                   cy: `toggle-kp-${elementIx}-answer-${choice.ix}-correct`,
                 }}
                 disabled={disabled}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faCheck} />
-                </Button.Icon>
+                <Button.Icon
+                  withoutLabel
+                  icon={faCheck}
+                  className={{ root: 'h-[1.2rem] w-[1.2rem]' }}
+                />
               </Button>
               <Button
                 className={{
                   root: twMerge(
-                    'hover:bg-unset min-h-[2.5rem] border-slate-400'
+                    'hover:bg-unset h-9 w-9 border-slate-400',
+                    value?.[choice.ix] === false &&
+                      'bg-primary-20 border-primary-100'
                   ),
                 }}
-                active={value?.[choice.ix] === false}
                 onClick={() => onChange({ ...value, [choice.ix]: false })}
                 data={{
                   cy: `toggle-kp-${elementIx}-answer-${choice.ix}-incorrect`,
                 }}
                 disabled={disabled}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faX} />
-                </Button.Icon>
+                <Button.Icon
+                  withoutLabel
+                  icon={faX}
+                  className={{ root: 'h-[1.2rem] w-[1.2rem]' }}
+                />
               </Button>
             </div>
           </div>

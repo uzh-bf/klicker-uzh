@@ -44,9 +44,10 @@ function ObjectRemovalModal({
             className={{ root: 'w-auto' }}
             data={{ cy: 'cancel-removal' }}
           >
-            {t('shared.generic.cancel')}
+            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
           <Button
+            destructive
             loading={loading}
             onClick={async () => {
               const res = await removeCatalogObjectAssignment({
@@ -87,12 +88,11 @@ function ObjectRemovalModal({
                 onClose()
               }
             }}
-            className={{
-              root: 'w-auto border-red-600 bg-red-600 text-white hover:border-red-700 hover:bg-red-700 hover:text-white',
-            }}
             data={{ cy: 'confirm-removal' }}
           >
-            {t('manage.catalog.removeObjectConfirm')}
+            <Button.Label>
+              {t('manage.catalog.removeObjectConfirm')}
+            </Button.Label>
           </Button>
         </div>
       </div>

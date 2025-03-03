@@ -1,11 +1,9 @@
 import { useQuery } from '@apollo/client'
 import { faShuffle } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetCourseGroupsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import ParticipantListEntry from './ParticipantListEntry'
 import AssignmentConfirmationModal from './groups/AssignmentConfirmationModal'
 
@@ -74,20 +72,13 @@ function GroupsList({
 
         {!groupCreationFinalized && (
           <Button
-            className={{
-              root: twMerge(
-                'bg-primary-80 h-8 w-max gap-4 self-end text-white',
-                randomAssignmentNotPossible &&
-                  'hover:bg-primar-40 bg-primary-40 cursor-not-allowed bg-opacity-50'
-              ),
-            }}
+            primary
+            className={{ root: 'my-1 h-8 w-max self-end' }}
             onClick={() => setOpen(true)}
             disabled={randomAssignmentNotPossible}
             data={{ cy: 'assign-random-groups' }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faShuffle} />
-            </Button.Icon>
+            <Button.Icon icon={faShuffle} />
             <Button.Label>{t('manage.course.assignRandomGroups')}</Button.Label>
           </Button>
         )}

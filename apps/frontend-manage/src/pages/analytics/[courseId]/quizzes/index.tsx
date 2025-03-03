@@ -36,9 +36,7 @@ const ActivityLink = ({
     key={`analytics-link-pq-${activityId}`}
     href={`/analytics/${courseId}/quizzes/${activityId}`}
   >
-    <Button className={{ root: 'flex w-full flex-row justify-center gap-2' }}>
-      {activityName}
-    </Button>
+    <Button className={{ root: 'h-9 w-full' }}>{activityName}</Button>
   </Link>
 )
 

@@ -54,8 +54,7 @@ function AnswerCollectionOption({
       <Button
         className={{
           root: twMerge(
-            'h-8 w-8 items-center justify-center border border-red-600',
-            !deletionNotAllowed && 'hover:border-red-600 hover:text-red-600'
+            'h-8 w-8 items-center justify-center border border-red-600'
           ),
         }}
         disabled={deletionNotAllowed}
@@ -90,12 +89,12 @@ function AnswerCollectionOption({
           })
         }}
       >
-        <FontAwesomeIcon icon={faTrashCan} />
+        <Button.Icon withoutLabel icon={faTrashCan} />
       </Button>
       {!editMode ? (
         <Button
           className={{
-            root: 'border-primary-80 hover:border-primary-80 h-8 w-8 items-center justify-center border',
+            root: 'border-primary-80 hover:border-primary-80 h-8 w-8',
           }}
           onClick={() => {
             setEditMode(true)
@@ -104,7 +103,7 @@ function AnswerCollectionOption({
           disabled={editDisabled}
           data={{ cy: `edit-answer-option-${entry.value}` }}
         >
-          <FontAwesomeIcon icon={faPencil} />
+          <Button.Icon withoutLabel icon={faPencil} />
         </Button>
       ) : null}
       <div
@@ -172,18 +171,13 @@ function AnswerCollectionOption({
             {({ isSubmitting, isValid }) => (
               <Form className="flex flex-row gap-[0.1875rem]">
                 <Button
+                  primary
                   type="submit"
-                  className={{
-                    root: twMerge(
-                      'border-primary-80 hover:border-primary-80 bg-primary-100 h-8 w-8 items-center justify-center border text-white',
-                      (isSubmitting || !isValid) &&
-                        'bg-primary-60 cursor-not-allowed'
-                    ),
-                  }}
                   disabled={isSubmitting || !isValid}
+                  className={{ root: 'h-8 w-8' }}
                   data={{ cy: 'save-edit-answer-option' }}
                 >
-                  <FontAwesomeIcon icon={faSave} />
+                  <Button.Icon withoutLabel icon={faSave} />
                 </Button>
                 <FormikTextField
                   name="value"

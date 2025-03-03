@@ -114,7 +114,7 @@ function MicrolearningIntroduction({
                   <Button
                     basic
                     className={{
-                      root: 'hover:text-primary-100 font-bold',
+                      root: 'hover:text-primary-100 !p-0 font-bold hover:bg-transparent',
                     }}
                     onClick={() =>
                       router.push(
@@ -128,7 +128,7 @@ function MicrolearningIntroduction({
                     }
                     data={{ cy: 'login-to-start-microlearning' }}
                   >
-                    {text}
+                    <Button.Label>{text}</Button.Label>
                   </Button>
                 ),
               })}
@@ -194,13 +194,14 @@ function MicrolearningIntroduction({
           legacyBehavior
         >
           <Button
+            primary
             disabled={microLearningPast}
             className={{
-              root: 'w-full justify-center text-lg md:w-auto md:self-end',
+              root: 'w-full text-lg md:w-auto md:self-end',
             }}
             data={{ cy: 'start-microlearning' }}
           >
-            {t('shared.generic.begin')}
+            <Button.Label>{t('shared.generic.begin')}</Button.Label>
           </Button>
         </Link>
       </div>

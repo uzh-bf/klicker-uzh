@@ -7,7 +7,7 @@ function PerformanceDashboardLabel() {
 
   return (
     <>
-      <FontAwesomeIcon className="mr-1" icon={faChartSimple} />
+      <FontAwesomeIcon className="mr-2.5" icon={faChartSimple} />
       <div>{t('manage.analytics.performanceDashboard')}</div>
     </>
   )

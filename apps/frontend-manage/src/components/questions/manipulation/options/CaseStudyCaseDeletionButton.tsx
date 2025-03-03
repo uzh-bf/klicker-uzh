@@ -1,29 +1,8 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
-
-const TriggerButton = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<typeof Button>
->(function Trigger(props, forwardedRef) {
-  const t = useTranslations()
-
-  return (
-    <Button
-      {...props}
-      ref={forwardedRef}
-      type="button"
-      className={{
-        root: 'border-red-600 hover:border-red-600 hover:text-red-600',
-      }}
-    >
-      <FontAwesomeIcon icon={faTrashCan} />
-      {t('manage.questionForms.removeCase')}
-    </Button>
-  )
-})
+import { useState } from 'react'
 
 function CaseStudyCaseDeletionButton({
   hasSampleSolution,
@@ -43,10 +22,14 @@ function CaseStudyCaseDeletionButton({
       open={deletionConfirmationOpen}
       onClose={() => setDeletionConfirmationOpen(false)}
       trigger={
-        <TriggerButton
+        <ForwardRefButton
           onClick={() => setDeletionConfirmationOpen(true)}
           data={{ cy: `delete-case-${index}` }}
-        />
+          overrideClassName="h-8 border-red-600 hover:border-red-600 hover:text-red-600"
+        >
+          <Button.Icon icon={faTrashCan} />
+          <Button.Label>{t('manage.questionForms.removeCase')}</Button.Label>
+        </ForwardRefButton>
       }
       title={t('manage.questionForms.confirmCaseDeletion')}
     >
@@ -63,19 +46,17 @@ function CaseStudyCaseDeletionButton({
             onClick={() => setDeletionConfirmationOpen(false)}
             data={{ cy: 'cancel-delete-case' }}
           >
-            {t('shared.generic.cancel')}
+            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
           <Button
+            destructive
             onClick={() => {
               onConfirm()
               setDeletionConfirmationOpen(false)
             }}
-            className={{
-              root: 'border-red-600 hover:border-red-600 hover:text-red-600',
-            }}
             data={{ cy: 'confirm-delete-case' }}
           >
-            {t('shared.generic.delete')}
+            <Button.Label>{t('shared.generic.delete')}</Button.Label>
           </Button>
         </div>
       </div>

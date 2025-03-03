@@ -1,5 +1,4 @@
 import { faCopy } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { PracticeQuiz } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -18,7 +17,7 @@ function PracticeQuizAccessLink({
   const [copyToast, setCopyToast] = useState(false)
 
   return (
-    <>
+    <div>
       <Button
         basic
         onClick={() => {
@@ -28,12 +27,12 @@ function PracticeQuizAccessLink({
           } catch (e) {}
         }}
         className={{
-          root: 'text-primary-100 flex flex-row items-center gap-1',
+          root: 'text-primary-100 hover:text-primary-100 h-7 py-0 text-sm',
         }}
         data={{ cy: `copy-quiz-link-${practiceQuiz.name}` }}
       >
-        <FontAwesomeIcon icon={faCopy} size="sm" className="w-4" />
-        <div>{t('manage.course.copyAccessLink')}</div>
+        <Button.Icon icon={faCopy} />
+        <Button.Label>{t('manage.course.copyAccessLink')}</Button.Label>
       </Button>
       <Toast
         dismissible
@@ -45,7 +44,7 @@ function PracticeQuizAccessLink({
       >
         {t('manage.course.linkAccessCopied')}
       </Toast>
-    </>
+    </div>
   )
 }
 

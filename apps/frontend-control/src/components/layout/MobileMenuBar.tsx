@@ -3,7 +3,6 @@ import {
   faHouse,
   faPersonChalkboard,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -23,21 +22,21 @@ function MobileMenuBar({ quizId }: MobileMenuBarProps) {
     <div className="fixed bottom-0 h-12 w-full bg-slate-800">
       <div className="flex h-full flex-row justify-between">
         <MenuButton
-          icon={<FontAwesomeIcon icon={faArrowLeftLong} />}
+          icon={faArrowLeftLong}
           onClick={() => router.back()}
           data={{ cy: 'back-button' }}
         >
           {t('shared.generic.back')}
         </MenuButton>
         <MenuButton
-          icon={<FontAwesomeIcon icon={faHouse} />}
+          icon={faHouse}
           onClick={() => router.push('/')}
           data={{ cy: 'home-button' }}
         >
           {t('shared.generic.home')}
         </MenuButton>
         <MenuButton
-          icon={<FontAwesomeIcon icon={faPersonChalkboard} />}
+          icon={faPersonChalkboard}
           onClick={() => setEmbedModalOpen(true)}
           disabled={!quizId}
           data={{ cy: 'ppt-button' }}

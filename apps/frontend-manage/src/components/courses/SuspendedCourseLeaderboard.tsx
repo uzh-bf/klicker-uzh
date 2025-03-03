@@ -156,14 +156,19 @@ function SuspendedCourseLeaderboard({
 
                     await refetch()
                   }}
-                  className={{ root: 'h-6 w-max shadow-none' }}
+                  className={{ root: 'h-6 w-max' }}
                   disabled={updateLoading}
                 >
-                  <FontAwesomeIcon
+                  <Button.Icon
                     icon={faSync}
-                    className={updateLoading ? 'animate-spin' : ''}
+                    className={{
+                      root: twMerge(
+                        'h-3.5 w-3.5',
+                        updateLoading ? 'animate-spin' : ''
+                      ),
+                    }}
                   />
-                  {t('shared.generic.recompute')}
+                  <Button.Label>{t('shared.generic.recompute')}</Button.Label>
                 </Button>
               </div>
             )}

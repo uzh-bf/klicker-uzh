@@ -1,5 +1,4 @@
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Button,
   FormikNumberField,
@@ -216,12 +215,12 @@ function CaseStudyCasesFields({
                 push({ id: nanoid(), name: undefined, description: '' })
               }
               className={{
-                root: 'border-primary-80 justify-center font-semibold',
+                root: 'border-primary-80 h-9 font-semibold',
               }}
               data={{ cy: 'add-new-case' }}
             >
-              <FontAwesomeIcon icon={faPlus} />
-              {t('manage.questionForms.addCase')}
+              <Button.Icon icon={faPlus} />
+              <Button.Label>{t('manage.questionForms.addCase')}</Button.Label>
             </Button>
           </div>
         )}

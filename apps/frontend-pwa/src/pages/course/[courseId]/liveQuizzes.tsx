@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetCourseRunningLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
@@ -83,12 +82,10 @@ function CourseLiveQuizzes({
               <Link href={`/session/${quiz.id}`}>
                 <Button
                   fluid
-                  className={{ root: 'justify-start gap-4' }}
+                  className={{ root: 'justify-start' }}
                   data={{ cy: `join-live-quiz-${quiz.name}` }}
                 >
-                  <Button.Icon>
-                    <FontAwesomeIcon icon={faExternalLink} />
-                  </Button.Icon>
+                  <Button.Icon icon={faExternalLink} />
                   <Button.Label>{quiz.displayName}</Button.Label>
                 </Button>
               </Link>

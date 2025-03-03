@@ -38,7 +38,7 @@ const Profile = () => {
       course={{ displayName: 'KlickerUZH' }}
       displayName={t('pwa.profile.myProfile')}
     >
-      <div className="flex flex-col items-center gap-4 rounded border p-4 md:mx-auto md:w-max">
+      <div className="flex flex-col items-center gap-2 rounded border p-4 md:mx-auto md:w-max">
         <ProfileData
           isSelf={true}
           username={participant.username}
@@ -56,7 +56,7 @@ const Profile = () => {
             className={{ root: 'mt-2' }}
             data={{ cy: 'edit-profile' }}
           >
-            {t('pwa.profile.editProfile')}
+            <Button.Label>{t('pwa.profile.editProfile')}</Button.Label>
           </Button>
 
           {!pageInFrame && (
@@ -69,7 +69,7 @@ const Profile = () => {
               className={{ root: 'mt-2' }}
               data={{ cy: 'logout' }}
             >
-              {t('shared.generic.logout')}
+              <Button.Label>{t('shared.generic.logout')}</Button.Label>
             </Button>
           )}
         </div>

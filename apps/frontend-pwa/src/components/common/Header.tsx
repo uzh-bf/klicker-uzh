@@ -101,35 +101,13 @@ function Header({
             />
           </div>
         ) : null}
-        {/* {hasSeenSurvey === 'false' && (
-          <Link
-            href="https://qualtricsxm2zqlm4s5q.qualtrics.com/jfe/form/SV_0qyOBbtR0TXnpe6"
-            target="_blank"
-          >
-            <Button
-              className={{
-                root: 'hidden md:flex text-white flex-row gap-2 items-center bg-uzh-red-100 border-uzh-red-100 rounded px-2 -mx-2',
-              }}
-              onClick={() => {
-                setHasSeenSurvey(true)
-              }}
-            >
-              <FontAwesomeIcon icon={faBullhorn} className="text-sm" />
-              <div>{t('shared.generic.survey')}</div>
-            </Button>
-          </Link>
-        )} */}
         {course?.id && (
-          <Link href={`/course/${course.id}/docs`}>
-            <Button
-              className={{
-                root: 'hover:bg-primary-20 hover:text-primary-100 block rounded px-1 py-1 md:px-2',
-              }}
-              basic
-              data={{ cy: 'course-docs' }}
-            >
-              <FontAwesomeIcon className="fa-xl" icon={faCircleQuestion} />
-            </Button>
+          <Link
+            href={`/course/${course.id}/docs`}
+            data-cy="course-docs"
+            className="flex items-center"
+          >
+            <FontAwesomeIcon icon={faCircleQuestion} className="h-6 w-6" />
           </Link>
         )}
         {/* <Image src="/bf_icon.svg" width={30} height={30} /> */}
@@ -137,48 +115,55 @@ function Header({
           router.pathname !== '/' &&
           (pageInFrame ? (
             <Button
-              className={{ root: 'hidden bg-slate-800 text-white md:block' }}
+              className={{
+                root: 'hidden h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white md:block',
+              }}
               onClick={() => router.back()}
               data={{ cy: 'header-back' }}
             >
-              {t('shared.generic.back')}
+              <Button.Label>{t('shared.generic.back')}</Button.Label>
             </Button>
           ) : (
             <Link href="/">
               <Button
-                className={{ root: 'hidden bg-slate-800 text-white md:block' }}
+                className={{
+                  root: 'hidden h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white md:block',
+                }}
                 data={{ cy: 'header-home' }}
               >
-                {t('shared.generic.home')}
+                <Button.Label>{t('shared.generic.home')}</Button.Label>
               </Button>
             </Link>
           ))
         ) : !previewMode ? (
           <Link href="/login">
             <Button
-              className={{ root: 'bg-slate-800 text-white' }}
+              className={{
+                root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
+              }}
               data={{ cy: 'header-login' }}
             >
-              {t('shared.generic.login')}
+              <Button.Label>{t('shared.generic.login')}</Button.Label>
             </Button>
           </Link>
         ) : null}
         {participant && (!participant?.avatar || !participant?.email) && (
           <Link href="/editProfile">
             <Button
+              primary
               className={{
-                root: 'bg-uzh-red-100 border-uzh-red-100 hidden text-white md:block',
+                root: 'bg-uzh-red-100 hover:bg-uzh-red-80 h-8 py-0 text-white hover:text-white',
               }}
               data={{ cy: 'header-setup-profile' }}
             >
-              {t('pwa.general.setupProfile')}
+              <Button.Label>{t('pwa.general.setupProfile')}</Button.Label>
             </Button>
           </Link>
         )}
         <Link href={participant ? '/profile' : '/login'} legacyBehavior>
           <Button
             basic
-            className={{ root: 'relative' }}
+            className={{ root: 'relative !p-0 hover:bg-transparent' }}
             data={{ cy: 'header-avatar' }}
           >
             <Image

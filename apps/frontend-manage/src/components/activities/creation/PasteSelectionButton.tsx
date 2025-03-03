@@ -1,5 +1,4 @@
 import { faBars } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -34,7 +33,7 @@ function PasteSelectionButton({
     <Button
       fluid
       className={{
-        root: 'mb-2 justify-center gap-3 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
+        root: 'mb-2 h-7 border-orange-300 bg-orange-100 text-sm hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
       }}
       onClick={() => {
         const newElements = Object.values(selection).map((question) => ({
@@ -56,9 +55,7 @@ function PasteSelectionButton({
       }}
       data={{ cy: 'paste-selected-questions' }}
     >
-      <Button.Icon>
-        <FontAwesomeIcon icon={faBars} />
-      </Button.Icon>
+      <Button.Icon icon={faBars} />
       <Button.Label>
         {t('manage.activityWizard.pasteSelectionElements', {
           count: Object.keys(selection).length,

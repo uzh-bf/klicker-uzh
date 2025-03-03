@@ -1,6 +1,5 @@
 import { useLazyQuery, useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CheckParticipantNameAvailableDocument,
   Participant,
@@ -213,11 +212,10 @@ function UpdateAccountInfoForm({
                 fluid
                 type="submit"
                 disabled={isSubmitting || !isValid || !isUsernameAvailable}
+                className={{ root: 'border-primary-100 h-8' }}
                 data={{ cy: 'save-account-update' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faSave} />
-                </Button.Icon>
+                <Button.Icon icon={faSave} />
                 <Button.Label>{t('shared.generic.save')}</Button.Label>
               </Button>
             </div>

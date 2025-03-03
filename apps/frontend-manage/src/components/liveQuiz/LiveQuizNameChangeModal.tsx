@@ -4,7 +4,6 @@ import { Button, FormikTextField, Modal, Toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 
 interface LiveQuizNameChangeModalProps {
@@ -117,22 +116,17 @@ function LiveQuizNameChangeModal({
                   onClick={(): void => setOpen(false)}
                   data={{ cy: 'live-quiz-name-change-cancel' }}
                 >
-                  {t('shared.generic.cancel')}
+                  <Button.Label>{t('shared.generic.cancel')}</Button.Label>
                 </Button>
                 <Button
+                  primary
                   type="submit"
-                  disabled={isSubmitting || !isValid}
+                  disabled={!isValid}
                   loading={isSubmitting}
                   onClick={submitForm}
-                  className={{
-                    root: twMerge(
-                      'bg-primary-80 font-bold text-white',
-                      !isValid && 'bg-primary-60 cursor-not-allowed'
-                    ),
-                  }}
                   data={{ cy: 'live-quiz-name-change-confirm' }}
                 >
-                  {t('shared.generic.confirm')}
+                  <Button.Label>{t('shared.generic.confirm')}</Button.Label>
                 </Button>
               </div>
             </>

@@ -1,5 +1,4 @@
 import { faX } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityFeedback,
   ActivityType,
@@ -92,8 +91,8 @@ function ActivityInstanceFeedbacksPlot({
         setInstanceSearch('')
       }}
     >
-      <FontAwesomeIcon icon={faX} />
-      <div>{t('manage.analytics.resetSelectors')}</div>
+      <Button.Icon icon={faX} />
+      <Button.Label>{t('manage.analytics.resetSelectors')}</Button.Label>
     </Button>
   )
 

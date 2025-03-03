@@ -56,13 +56,13 @@ function ConfirmationItem({
           onClick={onClick}
           className={{
             root: twMerge(
-              'border-primary-100 h-7',
+              'border-primary-100 h-7 py-0',
               confirmationType === 'delete' && 'border-red-600'
             ),
           }}
           data={data}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       )}
     </div>

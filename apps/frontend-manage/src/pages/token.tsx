@@ -49,15 +49,20 @@ function TokenGeneration() {
                 legacyBehavior
                 passHref
               >
-                <a data-cy="link-to-control-app">{displayLink}</a>
+                <a
+                  data-cy="link-to-control-app"
+                  className="text-primary-100 underline"
+                >
+                  {displayLink}
+                </a>
               </Link>
             ),
             displayLink: process.env.NEXT_PUBLIC_CONTROL_URL,
           })}
         </div>
         <Button
+          primary
           loading={generatingToken}
-          data={{ cy: 'generate-token' }}
           onClick={async () => {
             const result = await generateLoginToken()
             if (result) {
@@ -69,9 +74,10 @@ function TokenGeneration() {
               setHadToken(true)
             }
           }}
-          className={{ root: 'bg-primary-80 mb-3 text-white' }}
+          className={{ root: 'mb-2' }}
+          data={{ cy: 'generate-token' }}
         >
-          {t('manage.token.generateToken')}
+          <Button.Label>{t('manage.token.generateToken')}</Button.Label>
         </Button>
 
         {tokenValid && (

@@ -48,6 +48,10 @@
   display: flex
 }
 
+.h-9 {
+  height: 2.25rem
+}
+
 .h-full {
   height: 100%
 }
@@ -66,6 +70,10 @@
 
 .min-h-36 {
   min-height: 9rem
+}
+
+.w-9 {
+  width: 2.25rem
 }
 
 .w-auto {

@@ -6,7 +6,6 @@ import {
 } from '@apollo/client'
 import { SubscribeToMoreFunction } from '@apollo/client/react/hooks/useSuspenseQuery'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AddMessageToGroupDocument,
   Exact,
@@ -343,20 +342,21 @@ function SuspendedGroupView({
                     data={{ cy: 'group-message-textarea' }}
                   />
                   <Button
+                    primary
                     type="submit"
                     className={{
-                      root: twMerge(
-                        'bg-primary-100 flex h-8 w-8 items-center justify-center rounded-full text-white',
-                        (!isValid || isSubmitting) &&
-                          'bg-primary-20 cursor-not-allowed'
-                      ),
+                      root: 'h-8 w-8 rounded-full',
                     }}
                     data={{
                       cy: 'group-message-submit',
                     }}
                     disabled={!isValid || isSubmitting}
                   >
-                    <FontAwesomeIcon icon={faPaperPlane} className="mr-0.5" />
+                    <Button.Icon
+                      withoutLabel
+                      icon={faPaperPlane}
+                      className={{ root: 'mr-0.5' }}
+                    />
                   </Button>
                 </Form>
               )}

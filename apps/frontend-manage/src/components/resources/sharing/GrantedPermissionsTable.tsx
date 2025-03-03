@@ -1,5 +1,4 @@
 import { faPeopleArrows } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AccessLevel,
   CatalogObjectType,
@@ -61,12 +60,14 @@ function GrantedPermissionsTable({
             basic
             onClick={() => onOwnershipTransfer()}
             className={{
-              root: 'h-7 rounded border px-2 py-0.5 hover:bg-gray-100',
+              root: 'h-7 rounded border px-2 py-0.5',
             }}
             data={{ cy: 'transfer-ownership' }}
           >
-            <FontAwesomeIcon icon={faPeopleArrows} />
-            <span>{t('manage.resources.transferOwnership')}</span>
+            <Button.Icon icon={faPeopleArrows} />
+            <Button.Label>
+              {t('manage.resources.transferOwnership')}
+            </Button.Label>
           </Button>
         )}
       </div>

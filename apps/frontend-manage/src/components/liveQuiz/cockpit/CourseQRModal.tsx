@@ -1,5 +1,5 @@
 import { faQrcode } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import QR from '@pages/qr/[...args]'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -42,18 +42,18 @@ function CourseQRModal({
 
   return (
     <Modal
-      title="QR Code"
+      title={t('manage.general.qrCode')}
       trigger={
-        <Button
-          className={{ root: '!mr-0 w-full gap-2' }}
+        <ForwardRefButton
           onClick={() => setModalOpen(true)}
+          overrideClassName="h-8 py-0"
           data={dataTrigger}
         >
-          <Button.Icon>
-            <FontAwesomeIcon icon={faQrcode} />
-          </Button.Icon>
-          {triggerText || t('manage.general.qrCode')}
-        </Button>
+          <Button.Icon icon={faQrcode} />
+          <Button.Label>
+            {triggerText || t('manage.general.qrCode')}
+          </Button.Label>
+        </ForwardRefButton>
       }
       open={modalOpen}
       onClose={() => setModalOpen(false)}
@@ -65,7 +65,7 @@ function CourseQRModal({
     >
       <UserNotification message={t('manage.course.courseQRDescription')} />
 
-      <div className="mt-4">
+      <div className="mb-2 mt-4">
         <QR
           className={{
             title: 'text-base',
@@ -79,12 +79,8 @@ function CourseQRModal({
       <Link passHref href={`/qr/${relativeLink}`} target="_blank">
         <Button
           fluid
-          className={{
-            root: twMerge(
-              'bg-primary-80 mt-3 h-11 text-lg font-bold text-white',
-              className?.button
-            ),
-          }}
+          primary
+          className={{ root: className?.button }}
           data={{ cy: 'present-qr-code-button' }}
         >
           <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>

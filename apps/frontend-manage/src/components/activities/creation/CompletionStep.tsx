@@ -1,6 +1,5 @@
 import { faEye } from '@fortawesome/free-regular-svg-icons'
 import { faList, faSync, faXmark } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -48,13 +47,8 @@ function CompletionStep({
 
         {previewElementHref && (
           <Link href={previewElementHref} target="_blank" prefetch>
-            <Button
-              data={{ cy: 'load-activity-preview' }}
-              className={{ root: 'space-x-1' }}
-            >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faEye} />
-              </Button.Icon>
+            <Button data={{ cy: 'load-activity-preview' }}>
+              <Button.Icon icon={faEye} />
               <Button.Label>
                 {t('manage.activityWizard.openPreview')}
               </Button.Label>
@@ -63,13 +57,8 @@ function CompletionStep({
         )}
 
         <Link href={viewElementHref}>
-          <Button
-            data={{ cy: 'load-live-quiz-list' }}
-            className={{ root: 'space-x-1' }}
-          >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faList} />
-            </Button.Icon>
+          <Button data={{ cy: 'load-live-quiz-list' }}>
+            <Button.Icon icon={faList} />
             <Button.Label>
               {t('manage.activityWizard.openOverview')}
             </Button.Label>
@@ -83,9 +72,7 @@ function CompletionStep({
               router.push({ pathname: '/' }, undefined, { shallow: true })
             }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faXmark} />
-            </Button.Icon>
+            <Button.Icon icon={faXmark} />
             <Button.Label>
               {t('manage.activityWizard.closeWizard')}
             </Button.Label>
@@ -98,12 +85,9 @@ function CompletionStep({
               setStepNumber(0)
               router.push({ pathname: '/' }, undefined, { shallow: true })
             }}
-            className={{ root: 'space-x-1' }}
             data={{ cy: 'create-new-element' }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faSync} />
-            </Button.Icon>
+            <Button.Icon icon={faSync} />
             <Button.Label>
               {t('manage.activityWizard.createNewElement')}
             </Button.Label>

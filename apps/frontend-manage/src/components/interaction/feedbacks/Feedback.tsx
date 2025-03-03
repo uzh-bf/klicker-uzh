@@ -60,7 +60,7 @@ function Feedback({
     <div>
       <Button
         className={{
-          root: 'bg-primary-10 border-primary-100 flex w-full border border-solid p-2 !pl-4 text-left',
+          root: 'border-primary-100 flex w-full border border-solid p-2 !pl-4 text-left',
         }}
         onClick={() => setIsEditingActive((prev) => !prev)}
         data={{ cy: `open-feedback-${content}` }}
@@ -103,49 +103,36 @@ function Feedback({
               </div>
             )}
             <Button
-              className={{
-                root: twMerge(
-                  'mr-1 h-9',
-                  isBeingDeleted && 'bg-red-600 text-white'
-                ),
-              }}
               onClick={(e) => {
                 e?.stopPropagation()
-                if (isBeingDeleted) {
-                  onDeleteFeedback()
-                } else {
-                  setIsBeingDeleted(true)
-                }
+                onDeleteFeedback()
+              }}
+              className={{
+                root: 'mr-1 h-9 w-9 border-red-600 hover:text-red-600',
               }}
               data={{ cy: `delete-feedback-${content}` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faTrashCan} />
-              </Button.Icon>
+              <Button.Icon withoutLabel icon={faTrashCan} />
             </Button>
             <Button
-              className={{ root: 'h-9' }}
               icon={isEditingActive ? 'arrow up' : 'arrow down'}
               onClick={(e) => {
                 e?.stopPropagation()
                 setIsEditingActive((prev) => !prev)
               }}
+              className={{
+                root: 'h-9 w-9',
+              }}
               data={{ cy: `open-feedback-button-${content}` }}
             >
-              {isEditingActive ? (
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faArrowUp} />
-                </Button.Icon>
-              ) : (
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faArrowDown} />
-                </Button.Icon>
-              )}
+              <Button.Icon
+                withoutLabel
+                icon={isEditingActive ? faArrowUp : faArrowDown}
+              />
             </Button>
           </div>
         </div>
       </Button>
-
       <div
         className={twMerge(
           'border border-t-0 border-solid border-gray-300 p-4 print:border-0 print:p-2 print:pr-0',
@@ -176,13 +163,13 @@ function Feedback({
                   </div>
                   <div className="ml-2 print:hidden">
                     <Button
-                      className={{ root: 'mr-1 h-9 w-9 justify-center' }}
+                      className={{
+                        root: 'mr-1 h-8 w-8 border-red-600 bg-transparent hover:text-red-600',
+                      }}
                       onClick={() => onDeleteResponse(response.id)}
                       data={{ cy: `delete-response-${response.content}` }}
                     >
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={faTrashCan} />
-                      </Button.Icon>
+                      <Button.Icon withoutLabel icon={faTrashCan} />
                     </Button>
                   </div>
                 </div>
@@ -206,13 +193,13 @@ function Feedback({
                 }
               }}
             >
-              {({ isSubmitting }) => (
+              {({ values, isSubmitting }) => (
                 <div className="flex-1">
                   <Form>
                     <FormikTextareaField
                       className={{
                         input: twMerge(
-                          'border-uzh-grey-80 mb-1 w-full rounded-md border-2 border-solid bg-white p-1.5 text-sm',
+                          'border-uzh-grey-80 mb-1 h-20 w-full rounded-md border-2 border-solid bg-white p-1.5 text-sm',
                           resolved && 'bg-gray-100 opacity-50'
                         ),
                         root: 'mb-1',
@@ -230,16 +217,22 @@ function Feedback({
                       data={{ cy: `respond-to-feedback-${content}` }}
                     />
                     <Button
+                      primary
                       className={{
-                        root: 'bg-primary-80 float-right px-5 text-white disabled:opacity-60',
+                        root: 'float-right mt-1',
                       }}
                       type="submit"
-                      disabled={isSubmitting || resolved}
+                      disabled={
+                        isSubmitting ||
+                        resolved ||
+                        values.respondToFeedbackInput === ''
+                      }
                       data={{ cy: `submit-feedback-response-${content}` }}
                     >
-                      <Button.Icon className={{ root: 'mr-1' }}>
-                        <FontAwesomeIcon icon={faPaperPlane} />
-                      </Button.Icon>
+                      <Button.Icon
+                        icon={faPaperPlane}
+                        className={{ root: 'mr-1' }}
+                      />
                       <Button.Label>{t('shared.generic.respond')}</Button.Label>
                     </Button>
                   </Form>
@@ -247,16 +240,14 @@ function Feedback({
               )}
             </Formik>
           </div>
-          <div className="flex flex-initial flex-col gap-2 pl-4">
+          <div className="flex w-max flex-initial flex-col gap-2 pl-4">
             <Button
-              className={{ root: 'px-5' }}
+              className={{ root: 'h-9 w-full px-4' }}
               disabled={resolved}
               onClick={() => onPinFeedback(!pinned)}
               data={{ cy: `pin-feedback-${content}` }}
             >
-              <Button.Icon className={{ root: 'mr-1' }}>
-                <FontAwesomeIcon icon={faThumbTack} />
-              </Button.Icon>
+              <Button.Icon icon={faThumbTack} className={{ root: 'mr-1' }} />
               <Button.Label>
                 {pinned
                   ? t('manage.cockpit.unpinFeedback')
@@ -264,7 +255,7 @@ function Feedback({
               </Button.Label>
             </Button>
             <Button
-              className={{ root: 'px-5' }}
+              className={{ root: 'h-9 w-full px-4' }}
               icon={resolved ? 'lock open' : 'lock'}
               onClick={() => {
                 onResolveFeedback(!resolved)
@@ -274,18 +265,12 @@ function Feedback({
               }}
               data={{ cy: `resolve-feedback-${content}` }}
             >
-              {resolved ? (
-                <Button.Icon className={{ root: 'mr-1' }}>
-                  <FontAwesomeIcon icon={faLockOpen} />
-                </Button.Icon>
-              ) : (
-                <Button.Icon className={{ root: 'mr-1' }}>
-                  <FontAwesomeIcon icon={faLock} />
-                </Button.Icon>
-              )}
-              {resolved
-                ? t('manage.cockpit.reopen')
-                : t('manage.cockpit.resolve')}
+              <Button.Icon icon={resolved ? faLockOpen : faLock} />
+              <Button.Label>
+                {resolved
+                  ? t('manage.cockpit.reopen')
+                  : t('manage.cockpit.resolve')}
+              </Button.Label>
             </Button>
           </div>
         </div>

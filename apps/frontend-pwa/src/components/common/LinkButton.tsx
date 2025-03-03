@@ -1,5 +1,4 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
@@ -33,21 +32,13 @@ function LinkButton({
         {...props}
         fluid
         className={{
-          root: twMerge(
-            'gap-5 border-slate-300 bg-slate-200 px-4 py-2 text-lg shadow hover:bg-slate-300',
-            disabled && 'cursor-not-allowed hover:bg-slate-200',
-            className?.root
-          ),
+          root: twMerge('text-lg', className?.root),
         }}
         onClick={onClick}
         data={data}
         disabled={disabled}
       >
-        {icon && (
-          <Button.Icon>
-            <FontAwesomeIcon icon={icon} />
-          </Button.Icon>
-        )}
+        {icon && <Button.Icon icon={icon} />}
         <Button.Label className={{ root: 'flex-1 text-left' }}>
           {children}
         </Button.Label>

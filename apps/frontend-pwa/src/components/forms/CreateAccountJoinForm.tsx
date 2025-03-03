@@ -20,7 +20,7 @@ function CreateAccountJoinForm() {
   const [checkValidCoursePin] = useLazyQuery(CheckValidCoursePinDocument)
 
   return (
-    <div className="mx-auto w-72 py-4 sm:w-96 md:w-[28rem]">
+    <div className="mx-auto w-full p-4">
       <UserNotification type="info">
         {t('pwa.login.existingParticipantAccount')}
       </UserNotification>
@@ -67,13 +67,14 @@ function CreateAccountJoinForm() {
               data={{ cy: 'pin-field' }}
             />
             <Button
-              className={{ root: 'float-right' }}
+              primary
               type="submit"
               // TODO: improve state that field is disabled for invalid pins
               disabled={isSubmitting}
+              className={{ root: 'float-right' }}
               data={{ cy: 'signup-course' }}
             >
-              {t('pwa.login.signup')}
+              <Button.Label>{t('pwa.login.signup')}</Button.Label>
             </Button>
           </Form>
         )}

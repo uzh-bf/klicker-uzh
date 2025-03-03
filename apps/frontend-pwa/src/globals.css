@@ -1,8 +1,6 @@
 @import 'tailwindcss/src/css/preflight.css';
 
 @import 'tailwindcss/base';
-@import '@uzh-bf/design-system/dist/style.css';
-
 @import 'tailwindcss/components';
 /* @import '@klicker-uzh/markdown/dist/components.css'; */
 @import '@klicker-uzh/shared-components/dist/components.css';

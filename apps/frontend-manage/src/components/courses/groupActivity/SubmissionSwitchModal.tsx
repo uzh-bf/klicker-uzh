@@ -23,26 +23,23 @@ function SubmissionSwitchModal({
       title={t('manage.groupActivity.switchSubmission')}
       onPrimaryAction={
         <Button
+          primary
           onClick={() => {
             setSelectedSubmission(nextSubmission)
             setCurrentEditing(false)
             setSwitchingModal(false)
           }}
-          className={{
-            root: 'bg-primary-80 text-base font-bold text-white',
-          }}
           data={{ cy: 'confirm-submission-switch' }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       }
       onSecondaryAction={
         <Button
           onClick={(): void => setSwitchingModal(false)}
           data={{ cy: 'cancel-submission-switch' }}
-          className={{ root: 'text-base' }}
         >
-          {t('shared.generic.cancel')}
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
       }
       onClose={(): void => setSwitchingModal(false)}

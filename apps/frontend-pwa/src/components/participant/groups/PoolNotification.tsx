@@ -42,6 +42,7 @@ function PoolNotification({ courseId }: { courseId: string }) {
         className={{ root: 'w-full' }}
       />
       <Button
+        destructive
         onClick={async () => await leaveRandomCourseGroupPool()}
         loading={loading}
         data={{ cy: 'leave-random-group-pool' }}

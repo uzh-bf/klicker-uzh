@@ -269,9 +269,7 @@ function GroupActivityStack({
       </div>
       {!decisions && !activityEnded ? (
         <Button
-          className={{
-            root: 'float-right mt-4 text-lg font-bold',
-          }}
+          primary
           disabled={
             Object.values(studentResponse).some(
               (response) => !response.valid
@@ -388,9 +386,12 @@ function GroupActivityStack({
           }}
           type="submit"
           loading={submitLoading}
+          className={{
+            root: 'float-right mt-4 text-lg font-bold',
+          }}
           data={{ cy: 'submit-group-activity' }}
         >
-          {t('pwa.groupActivity.sendAnswers')}
+          <Button.Label>{t('pwa.groupActivity.sendAnswers')}</Button.Label>
         </Button>
       ) : null}
       {!!decisions ? (

@@ -74,18 +74,20 @@ function GroupAction({
         >
           {({ isValid }) => (
             <Form className="w-full px-2">
-              <div className="flex flex-row gap-4">
+              <div className="flex flex-row gap-2">
                 <FormikTextField
                   name="value"
                   placeholder={placeholder}
-                  className={{ root: 'w-full' }}
+                  className={{ root: 'w-full', input: 'h-8' }}
                   data={inputData}
                 />
                 <Button
+                  primary
                   type="submit"
                   data={data}
                   loading={loading}
                   disabled={!isValid}
+                  className={{ root: 'h-8' }}
                 >
                   {textSubmit}
                 </Button>
@@ -99,16 +101,17 @@ function GroupAction({
 
   return (
     <Button
-      basic
       className={{
-        root: 'border-uzh-grey-80 hover:bg-primary-20 flex flex-col items-center rounded-md border border-solid p-3',
+        root: 'border-uzh-grey-80 flex h-full flex-col items-center rounded-md p-3',
       }}
       onClick={onClick}
       disabled={loading}
       data={data}
     >
       <TitleIcon />
-      <div>{explanation}</div>
+      <Button.Label className={{ root: 'whitespace-normal' }}>
+        {explanation}
+      </Button.Label>
     </Button>
   )
 }

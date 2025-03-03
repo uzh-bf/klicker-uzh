@@ -38,13 +38,7 @@ export function TitleImage() {
                 </p>
                 <div className="mt-10 flex items-center gap-x-6">
                   <a href="https://manage.klicker.uzh.ch" target="_blank">
-                    <Button
-                      className={{
-                        root: 'border-uzh-blue-40 w-full cursor-pointer text-xl md:w-max',
-                      }}
-                    >
-                      Sign Up / Login
-                    </Button>
+                    <Button primary>Sign Up / Login</Button>
                   </a>
                   <a
                     href="/getting_started/welcome"

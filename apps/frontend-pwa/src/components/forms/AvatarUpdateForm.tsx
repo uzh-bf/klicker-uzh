@@ -1,7 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { BigHead } from '@bigheads/core'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Participant,
   UpdateParticipantAvatarDocument,
@@ -170,11 +169,10 @@ function AvatarUpdateForm({
                     type="submit"
                     loading={isSubmitting}
                     disabled={!isValid}
+                    className={{ root: 'border-primary-100 h-8' }}
                     data={{ cy: 'save-avatar-update' }}
                   >
-                    <Button.Icon>
-                      <FontAwesomeIcon icon={faSave} />
-                    </Button.Icon>
+                    <Button.Icon icon={faSave} />
                     <Button.Label>{t('shared.generic.save')}</Button.Label>
                   </Button>
                 </div>

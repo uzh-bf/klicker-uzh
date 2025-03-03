@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstance,
   GetLiveQuizHmacDocument,
@@ -39,11 +38,11 @@ function LazyHMACLink({
   }`
 
   return (
-    <div className="flex max-w-full flex-row items-center justify-between gap-3">
+    <div className="flex max-w-full flex-row items-center justify-between gap-3 rounded bg-slate-100 px-2 py-1">
       <Link
-        className="rounded bg-slate-100 px-2 py-1 hover:bg-slate-200"
         href={link}
         target="_blank"
+        rel="noopener noreferrer"
         legacyBehavior
         passHref
       >
@@ -58,9 +57,7 @@ function LazyHMACLink({
         onClick={() => navigator?.clipboard?.writeText(link)}
         data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
       >
-        <Button.Icon>
-          <FontAwesomeIcon icon={faClipboard} />
-        </Button.Icon>
+        <Button.Icon withoutLabel icon={faClipboard} />
       </Button>
     </div>
   )
@@ -92,7 +89,7 @@ function EmbeddingModal({
       hideCloseButton
       onPrimaryAction={
         <Button onClick={onClose} data={{ cy: 'close-embedding-modal' }}>
-          {t('shared.generic.close')}
+          <Button.Label>{t('shared.generic.close')}</Button.Label>
         </Button>
       }
     >

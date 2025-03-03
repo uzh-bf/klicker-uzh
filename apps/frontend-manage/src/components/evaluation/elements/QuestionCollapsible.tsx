@@ -1,5 +1,4 @@
 import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Prose } from '@uzh-bf/design-system'
 import { useEffect, useState } from 'react'
@@ -67,16 +66,19 @@ function QuestionCollapsible({
         <Button
           className={{
             root: twMerge(
-              'hover:bg-primary-20 hidden h-4 w-full rounded-none border-0 text-center text-xs shadow-none hover:bg-none md:block print:hidden',
+              'hover:bg-accent hidden h-4 w-full rounded-none border-0 text-center text-xs shadow-none hover:bg-none md:block print:hidden',
               questionCollapsed && 'bg-gradient-to-b from-white to-slate-100'
             ),
           }}
           onClick={() => setQuestionCollapsed(!questionCollapsed)}
           data={{ cy: 'toggle-question-collapse-evaluation' }}
         >
-          <FontAwesomeIcon
+          <Button.Icon
+            withoutLabel
             icon={questionCollapsed ? faChevronDown : faChevronUp}
-            className={twMerge('-mt-1.5 h-6', questionCollapsed && '-mt-2')}
+            className={{
+              root: twMerge('-mt-2 h-5 w-5', questionCollapsed && '-mt-2'),
+            }}
           />
         </Button>
       )}

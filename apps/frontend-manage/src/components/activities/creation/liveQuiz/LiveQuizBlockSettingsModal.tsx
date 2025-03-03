@@ -45,11 +45,12 @@ function LiveQuizBlockSettingsModal({
         data={{ cy: 'block-time-limit' }}
       />
       <Button
-        className={{ root: 'bg-uzh-blue-100 float-right mt-3 text-white' }}
+        primary
+        className={{ root: 'float-right mt-3' }}
         onClick={() => setOpenSettings(false)}
         data={{ cy: 'close-block-settings' }}
       >
-        {t('shared.generic.ok')}
+        <Button.Label>{t('shared.generic.ok')}</Button.Label>
       </Button>
     </Modal>
   )

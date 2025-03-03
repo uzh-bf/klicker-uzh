@@ -6,6 +6,7 @@ import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 
 import '@/styles/globals.css'
+import '@uzh-bf/design-system/dist/style.css'
 
 export default function App({
   Component,

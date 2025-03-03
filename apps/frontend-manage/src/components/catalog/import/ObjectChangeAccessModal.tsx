@@ -48,9 +48,10 @@ function ObjectChangeAccessModal({
             className={{ root: 'w-auto' }}
             data={{ cy: 'cancel-access-change' }}
           >
-            {t('shared.generic.cancel')}
+            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
           <Button
+            primary
             loading={loading}
             onClick={async () => {
               const res = await changeCatalogObjectAccessLevel({
@@ -94,12 +95,11 @@ function ObjectChangeAccessModal({
                 onClose()
               }
             }}
-            className={{
-              root: 'bg-primary-80 hover:bg-primary-100 border-primary-80 hover:border-primary-100 w-auto text-white hover:text-white',
-            }}
             data={{ cy: 'confirm-access-change' }}
           >
-            {t('manage.catalog.changeAccessConfirm')}
+            <Button.Label>
+              {t('manage.catalog.changeAccessConfirm')}
+            </Button.Label>
           </Button>
         </div>
       </div>

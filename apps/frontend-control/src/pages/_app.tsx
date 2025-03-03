@@ -10,6 +10,7 @@ import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
+import '@uzh-bf/design-system/dist/style.css'
 import '../globals.css'
 
 config.autoAddCss = false

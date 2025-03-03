@@ -57,8 +57,9 @@ export function LiveQuizProgress({
         <div className="my-auto">
           <Button
             fluid
+            primary
             className={{
-              root: 'bg-primary-80 !mr-0 h-10 w-32 font-bold text-white disabled:opacity-50',
+              root: 'h-10 w-32',
             }}
             disabled={isSubmitDisabled}
             onClick={onSubmit}

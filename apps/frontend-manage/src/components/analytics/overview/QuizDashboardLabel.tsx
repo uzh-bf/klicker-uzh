@@ -7,7 +7,7 @@ function QuizDashboardLabel() {
 
   return (
     <>
-      <FontAwesomeIcon className="mr-1" icon={faChartPie} />
+      <FontAwesomeIcon className="mr-2.5" icon={faChartPie} />
       <div>{t('manage.analytics.quizDashboard')}</div>
     </>
   )

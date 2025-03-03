@@ -7,7 +7,7 @@ function ActivityDashboardLabel() {
 
   return (
     <>
-      <FontAwesomeIcon className="mr-1" icon={faChartLine} />
+      <FontAwesomeIcon className="mr-2.5" icon={faChartLine} />
       <div>{t('manage.analytics.activityDashboard')}</div>
     </>
   )

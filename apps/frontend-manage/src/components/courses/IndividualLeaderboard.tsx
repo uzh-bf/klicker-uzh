@@ -141,7 +141,7 @@ function IndividualLeaderboard({
             </>
           )}
         </div>
-        <div className="flex flex-row flex-wrap items-center gap-x-3">
+        <div className="mt-1 flex flex-row flex-wrap items-center gap-x-1">
           <div className="min-w-max">{t('manage.course.quickSelection')}:</div>
           <Button
             basic
@@ -151,9 +151,9 @@ function IndividualLeaderboard({
               setCustomStartDate(undefined)
               setCustomEndDate(undefined)
             }}
-            className={{ root: 'text-primary-100 h-8 hover:underline' }}
+            className={{ root: 'text-primary-100 h-7 hover:underline' }}
           >
-            {t('manage.course.entireCourse')}
+            <Button.Label>{t('manage.course.entireCourse')}</Button.Label>
           </Button>
           <Button
             basic
@@ -165,9 +165,9 @@ function IndividualLeaderboard({
               setCustomStartDate(undefined)
               setCustomEndDate(undefined)
             }}
-            className={{ root: 'text-primary-100 h-8 hover:underline' }}
+            className={{ root: 'text-primary-100 h-7 hover:underline' }}
           >
-            {t('manage.course.lastWeek')}
+            <Button.Label>{t('manage.course.lastWeek')}</Button.Label>
           </Button>
           {weeklyDates.length >= 2 && (
             <Button
@@ -183,9 +183,9 @@ function IndividualLeaderboard({
                   setCustomEndDate(weeklyDates[0])
                 }
               }}
-              className={{ root: 'text-primary-100 h-8 hover:underline' }}
+              className={{ root: 'text-primary-100 h-7 hover:underline' }}
             >
-              {t('manage.course.lastTwoWeeks')}
+              <Button.Label>{t('manage.course.lastTwoWeeks')}</Button.Label>
             </Button>
           )}
         </div>

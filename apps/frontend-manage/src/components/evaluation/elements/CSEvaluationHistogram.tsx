@@ -1,5 +1,4 @@
 import { faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
@@ -131,7 +130,7 @@ function CSEvaluationHistogram({
             <div className="flex h-full w-full flex-col items-center gap-2 py-4">
               {criteria.length > 1 && (
                 <Button onClick={onHistogramArrowUp}>
-                  <FontAwesomeIcon icon={faArrowUp} />
+                  <Button.Icon withoutLabel icon={faArrowUp} />
                 </Button>
               )}
               <CSEvaluationHistogramChart
@@ -145,7 +144,7 @@ function CSEvaluationHistogram({
               />
               {criteria.length > 1 && (
                 <Button onClick={onHistogramArrowDown}>
-                  <FontAwesomeIcon icon={faArrowDown} />
+                  <Button.Icon withoutLabel icon={faArrowDown} />
                 </Button>
               )}
             </div>

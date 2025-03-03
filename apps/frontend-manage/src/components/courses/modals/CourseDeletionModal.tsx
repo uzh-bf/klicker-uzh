@@ -111,6 +111,7 @@ function CourseDeletionModal({
       title={t('manage.courseList.deleteCourse')}
       onPrimaryAction={
         <Button
+          destructive
           loading={courseDeleting}
           disabled={
             queryLoading ||
@@ -132,12 +133,9 @@ function CourseDeletionModal({
             setSelectedCourseId(null)
             setConfirmations({ ...initialConfirmations })
           }}
-          className={{
-            root: 'bg-red-700 text-white hover:bg-red-800 hover:text-white disabled:bg-opacity-50 disabled:hover:cursor-not-allowed',
-          }}
           data={{ cy: 'course-deletion-modal-confirm' }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       }
       onSecondaryAction={
@@ -149,7 +147,7 @@ function CourseDeletionModal({
           }}
           data={{ cy: 'course-deletion-modal-cancel' }}
         >
-          {t('shared.generic.close')}
+          <Button.Label>{t('shared.generic.close')}</Button.Label>
         </Button>
       }
     >

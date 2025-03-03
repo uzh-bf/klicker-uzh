@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseActivitiesDocument,
   ParticipantActivityPerformances,
@@ -73,19 +72,23 @@ function StudentActivityPerformance({
             )
           }}
           className={{
-            root: 'h-7 w-max',
+            root: 'h-7 py-0',
           }}
         >
           {selectedActivities.length === allActivityIds.length ? (
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faX} />
-              {t('manage.analytics.deselectAllActivities')}
-            </div>
+            <>
+              <Button.Icon icon={faX} />
+              <Button.Label>
+                {t('manage.analytics.deselectAllActivities')}
+              </Button.Label>
+            </>
           ) : (
-            <div className="flex flex-row items-center gap-2">
-              <FontAwesomeIcon icon={faCheck} />
-              {t('manage.analytics.selectAllActivities')}
-            </div>
+            <>
+              <Button.Icon icon={faCheck} />
+              <Button.Label>
+                {t('manage.analytics.selectAllActivities')}
+              </Button.Label>
+            </>
           )}
         </Button>
       </div>

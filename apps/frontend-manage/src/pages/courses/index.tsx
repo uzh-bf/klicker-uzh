@@ -19,7 +19,6 @@ import {
 import { useRouter } from 'next/router'
 
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -91,7 +90,7 @@ function CourseSelectionPage() {
                   const ArchiveButton = (
                     <Button
                       className={{
-                        root: 'flex h-10 w-10 items-center justify-center',
+                        root: 'h-9 w-9',
                       }}
                       onClick={() => {
                         setSelectedCourseId(course.id)
@@ -101,7 +100,8 @@ function CourseSelectionPage() {
                       disabled={courseRunning}
                       data={{ cy: `archive-course-${course.name}` }}
                     >
-                      <FontAwesomeIcon
+                      <Button.Icon
+                        withoutLabel
                         icon={course.isArchived ? faInbox : faArchive}
                       />
                     </Button>
@@ -135,7 +135,7 @@ function CourseSelectionPage() {
                       )}
                       <Button
                         className={{
-                          root: 'flex h-10 w-10 items-center justify-center border border-red-600',
+                          root: 'h-9 w-9 border-red-600',
                         }}
                         onClick={() => {
                           setSelectedCourseId(course.id)
@@ -143,12 +143,12 @@ function CourseSelectionPage() {
                         }}
                         data={{ cy: `delete-course-${course.name}` }}
                       >
-                        <FontAwesomeIcon icon={faTrashCan} />
+                        <Button.Icon withoutLabel icon={faTrashCan} />
                       </Button>
                     </div>
                   )
                 })}
-                <div className="mr-24">
+                <div className="mr-[5.5rem]">
                   <CourseListButton
                     onClick={() => showCreateCourseModal(true)}
                     icon={faPlusCircle}

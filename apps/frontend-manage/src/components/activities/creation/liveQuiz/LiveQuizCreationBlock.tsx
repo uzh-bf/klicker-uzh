@@ -102,59 +102,67 @@ function LiveQuizCreationBlock({
               </Tooltip>
             )}
         </div>
-        <div className="flex flex-row gap-1 text-xs">
+        <div className="flex flex-row text-xs">
           <Button
             basic
             className={{
-              root: 'hover:bg-primary-20 px-1 disabled:hidden',
+              root: 'hover:text-primary-100 px-1 hover:bg-transparent',
             }}
-            disabled={numOfBlocks === 1}
+            disabled={numOfBlocks === 1 || blockIx === 0}
             onClick={() => move(blockIx, blockIx !== 0 ? blockIx - 1 : blockIx)}
             data={{ cy: `move-block-${blockIx}-left` }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faArrowLeft} />
-            </Button.Icon>
+            <Button.Icon
+              withoutLabel
+              icon={faArrowLeft}
+              className={{ root: 'h-3.5 w-3.5' }}
+            />
           </Button>
           <Button
             basic
             className={{
-              root: 'hover:bg-primary-20 px-1 disabled:hidden',
+              root: 'hover:text-primary-100 px-1 hover:bg-transparent',
             }}
-            disabled={numOfBlocks === 1}
+            disabled={numOfBlocks === 1 || blockIx === numOfBlocks - 1}
             onClick={() =>
               move(blockIx, blockIx !== numOfBlocks ? blockIx + 1 : blockIx)
             }
             data={{ cy: `move-block-${blockIx}-right` }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faArrowRight} />
-            </Button.Icon>
+            <Button.Icon
+              withoutLabel
+              icon={faArrowRight}
+              className={{ root: 'h-3.5 w-3.5' }}
+            />
           </Button>
 
           <Button
             basic
             onClick={() => setOpenSettings(true)}
             className={{
-              root: 'hover:text-primary-100 px-1',
+              root: 'hover:text-primary-100 px-1 hover:bg-transparent',
             }}
             data={{ cy: `open-block-${blockIx}-settings` }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faGears} />
-            </Button.Icon>
+            <Button.Icon
+              withoutLabel
+              icon={faGears}
+              className={{ root: 'h-3.5 w-3.5' }}
+            />
           </Button>
           <Button
             basic
             onClick={() => remove(blockIx)}
             className={{
-              root: 'px-1 hover:text-red-600',
+              root: 'px-1 hover:bg-transparent hover:text-red-600',
             }}
             data={{ cy: `delete-block-${blockIx}` }}
           >
-            <Button.Icon>
-              <FontAwesomeIcon icon={faTrash} />
-            </Button.Icon>
+            <Button.Icon
+              withoutLabel
+              icon={faTrash}
+              className={{ root: 'h-3.5 w-3.5' }}
+            />
           </Button>
         </div>
       </div>
@@ -165,6 +173,9 @@ function LiveQuizCreationBlock({
         stackIx={blockIx}
         replace={replace}
         error={error}
+        selectionActive={
+          (selection && Object.keys(selection).length > 0) ?? false
+        }
       />
 
       {selection && !isEmpty(selection) && (

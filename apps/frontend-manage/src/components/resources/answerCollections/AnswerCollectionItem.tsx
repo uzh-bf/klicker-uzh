@@ -113,7 +113,7 @@ function AnswerCollectionItem({
                     root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
                   }}
                 >
-                  <FontAwesomeIcon icon={faEllipsisVertical} />
+                  <Button.Icon withoutLabel icon={faEllipsisVertical} />
                 </Button>
               }
               data={{ cy: `answer-collection-actions-${collection.name}` }}

@@ -11,7 +11,6 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import Layout from '../../../../components/Layout'
 import FinalizeGradingModal from '../../../../components/courses/groupActivity/FinalizeGradingModal'
 import GroupActivityGradingStack from '../../../../components/courses/groupActivity/GroupActivityGradingStack'
@@ -122,6 +121,7 @@ function GroupActivityGrading() {
                   />
                 ))}
                 <Button
+                  primary
                   disabled={
                     submissions.some(
                       (submission) =>
@@ -129,15 +129,7 @@ function GroupActivityGrading() {
                     ) || groupActivity.status === PublicationStatus.Graded
                   }
                   className={{
-                    root: twMerge(
-                      'bg-primary-80 w-max self-end font-bold text-white',
-                      (submissions.some(
-                        (submission) =>
-                          !submission.results && submission.decisions
-                      ) ||
-                        groupActivity.status === PublicationStatus.Graded) &&
-                        'bg-primary-60 cursor-not-allowed'
-                    ),
+                    root: 'w-max self-end',
                   }}
                   onClick={() => setFinalizeModal(true)}
                   data={{ cy: 'finalize-grading' }}

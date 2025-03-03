@@ -121,9 +121,7 @@ function LiveQuizTimeline({
               className={{ root: 'h-8' }}
               data={{ cy: 'embed-evaluation-cockpit' }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faCode} size="sm" />
-              </Button.Icon>
+              <Button.Icon icon={faCode} />
               <Button.Label>
                 {t('manage.liveQuizzes.embeddingEvaluation')}
               </Button.Label>
@@ -142,10 +140,8 @@ function LiveQuizTimeline({
               onClick={() => setQRModal(true)}
               data={{ cy: `qr-modal-${quizId}` }}
             >
-              <Button.Icon>
-                <FontAwesomeIcon icon={faQrcode} />
-              </Button.Icon>
-              {t('manage.general.qrCode')}
+              <Button.Icon icon={faQrcode} />
+              <Button.Label> {t('manage.general.qrCode')}</Button.Label>
             </Button>
             <a
               className="flex-1"
@@ -158,9 +154,7 @@ function LiveQuizTimeline({
                 className={{ root: 'h-8' }}
                 data={{ cy: 'audience-view-cockpit' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faUpRightFromSquare} />
-                </Button.Icon>
+                <Button.Icon icon={faUpRightFromSquare} />
                 <Button.Label>{t('manage.cockpit.audienceView')}</Button.Label>
               </Button>
             </a>
@@ -176,9 +170,7 @@ function LiveQuizTimeline({
                 disabled={isFeedbackQuiz}
                 data={{ cy: 'evaluation-results-cockpit' }}
               >
-                <Button.Icon>
-                  <FontAwesomeIcon icon={faUpRightFromSquare} className="h-4" />
-                </Button.Icon>
+                <Button.Icon icon={faUpRightFromSquare} />
                 <Button.Label>
                   {t('manage.cockpit.evaluationResults')}
                 </Button.Label>
@@ -189,9 +181,12 @@ function LiveQuizTimeline({
           {isFeedbackQuiz && (
             <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
+                primary
                 loading={loading}
                 className={{
-                  root: twMerge('bg-uzh-red-100 h-8 text-white'),
+                  root: twMerge(
+                    'bg-uzh-red-100 hover:bg-uzh-red-100 h-8 text-white'
+                  ),
                 }}
                 onClick={handleEndLiveQuiz}
                 data={{ cy: 'end-live-quiz-cockpit' }}
@@ -247,23 +242,25 @@ function LiveQuizTimeline({
           </div>
           <div className="mt-2 flex w-full flex-row justify-between gap-2">
             <Button
+              destructive
               onClick={() => setCancelLiveQuizModal(true)}
-              className={{ root: 'bg-red-800 text-white' }}
               data={{ cy: 'abort-live-quiz-cockpit' }}
             >
-              {t('manage.cockpit.abortLiveQuiz')}
+              <Button.Label>{t('manage.cockpit.abortLiveQuiz')}</Button.Label>
             </Button>
             <Button
+              primary={
+                buttonState === 'firstBlock' ||
+                buttonState === 'nextBlock' ||
+                buttonState === 'endQuiz'
+              }
               loading={loading}
               className={{
                 root: twMerge(
-                  (buttonState === 'firstBlock' ||
-                    buttonState === 'nextBlock') &&
-                    `bg-primary-80 text-white`,
-                  buttonState === 'endQuiz' && 'bg-uzh-red-100 text-white',
+                  buttonState === 'endQuiz' && 'bg-uzh-red-100',
                   buttonState === 'blockActive' &&
                     inCooldown &&
-                    'text-uzh-red-100 border-uzh-red-100'
+                    'text-uzh-red-100 border-uzh-red-100 border bg-white'
                 ),
               }}
               onClick={() => {

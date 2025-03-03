@@ -16,8 +16,8 @@ function TagHeader({ text, state, setState }: TagHeaderProps) {
       onClick={() => setState(!state)}
       className={{
         root: twMerge(
-          'mb-1 mt-3 flex w-full flex-row items-center justify-between px-2 py-0.5 first:mt-0',
-          'border-b border-solid border-gray-300 text-neutral-500'
+          'mb-1 mt-3 flex w-full flex-row items-center justify-between px-2 py-0.5 text-sm first:mt-0',
+          'rounded-none border-b border-solid border-gray-300 text-neutral-500 hover:bg-transparent'
         ),
       }}
       data={{ cy: `collapse-tag-header-${text}` }}

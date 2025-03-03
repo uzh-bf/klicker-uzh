@@ -1,6 +1,5 @@
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 
 interface ActivityConfirmationModalProps {
   open: boolean
@@ -42,22 +41,17 @@ function ActivityConfirmationModal({
       title={title}
       onPrimaryAction={
         <Button
+          primary={confirmationType === 'confirm'}
+          destructive={confirmationType === 'delete'}
           loading={submitting}
           disabled={disabled}
           onClick={async () => {
             await onSubmit()
             setOpen(false)
           }}
-          className={{
-            root: twMerge(
-              'bg-primary-100 text-white hover:text-white disabled:!bg-opacity-50 disabled:hover:cursor-not-allowed',
-              confirmationType === 'delete' && 'bg-red-700 hover:bg-red-800',
-              disabled && confirmationType !== 'delete' && 'bg-primary-40'
-            ),
-          }}
           data={{ cy: 'activity-confirmation-modal-confirm' }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       }
       onSecondaryAction={
@@ -67,7 +61,7 @@ function ActivityConfirmationModal({
           }}
           data={{ cy: 'activity-confirmation-modal-cancel' }}
         >
-          {t('shared.generic.cancel')}
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
       }
     >

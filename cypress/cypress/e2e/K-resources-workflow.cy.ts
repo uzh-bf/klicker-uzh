@@ -2296,9 +2296,23 @@ describe('Create, edit and share answer collections', function () {
     ).click()
     cy.get('[data-cy="access-level-READ"]').click()
     cy.get('[data-cy="confirm-modify-own-permissions"]').click()
+
+    // modal has been closed and permission updated
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="answer-collection-${this.data.ownership.name}"]`
     ).contains(messages.manage.resources.accessREAD)
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').should('not.exist')
+    cy.get('[data-cy="edit-answer-collection"]').should('not.exist')
+    cy.get('[data-cy="view-answer-collection"]').click()
+    cy.wrap(this.data.ownership.items).each((value: string) => {
+      cy.findByText(value).should('exist')
+    })
   })
 
   it('Change the main users access rights back to admin permissions', function () {

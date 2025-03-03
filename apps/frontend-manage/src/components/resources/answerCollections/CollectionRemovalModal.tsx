@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AnswerCollection,
   GetAnswerCollectionsInfoDocument,
@@ -45,6 +44,7 @@ function CollectionRemovalModal({
         })}
       </div>
       <Button
+        destructive
         onClick={async () => {
           const { data, errors } = await removeAnswerCollection()
 
@@ -60,14 +60,14 @@ function CollectionRemovalModal({
           }
         }}
         className={{
-          root: 'float-right mt-4 flex flex-row gap-1.5 border border-red-600',
+          root: 'float-right mt-4',
         }}
         data={{ cy: 'confirm-remove-answer-collection' }}
       >
-        <FontAwesomeIcon icon={faTrashCan} />
-        <div>
+        <Button.Icon icon={faTrashCan} />
+        <Button.Label>
           {t('manage.resources.confirmRemoval', { name: collection.name })}
-        </div>
+        </Button.Label>
       </Button>
     </Modal>
   )

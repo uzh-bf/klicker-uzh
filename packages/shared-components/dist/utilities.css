@@ -56,10 +56,6 @@
   margin-bottom: auto
 }
 
-.\!mr-0 {
-  margin-right: 0px !important
-}
-
 .-mb-0\.5 {
   margin-bottom: -0.125rem
 }
@@ -212,6 +208,14 @@
   height: 2rem
 }
 
+.h-9 {
+  height: 2.25rem
+}
+
+.h-\[1\.2rem\] {
+  height: 1.2rem
+}
+
 .h-\[1px\] {
   height: 1px
 }
@@ -284,6 +288,14 @@
   width: 20rem
 }
 
+.w-9 {
+  width: 2.25rem
+}
+
+.w-\[1\.2rem\] {
+  width: 1.2rem
+}
+
 .w-\[30px\] {
   width: 30px
 }
@@ -334,10 +346,6 @@
 
 .animate-spin {
   animation: spin 1s linear infinite
-}
-
-.cursor-not-allowed {
-  cursor: not-allowed
 }
 
 .cursor-pointer {
@@ -541,6 +549,10 @@
   border-color: rgb(21 128 61 / var(--tw-border-opacity, 1))
 }
 
+.border-primary-100 {
+  border-color: var(--theme-color-primary)
+}
+
 .border-red-600 {
   --tw-border-opacity: 1;
   border-color: rgb(220 38 38 / var(--tw-border-opacity, 1))
@@ -636,8 +648,8 @@
   background-color: rgb(234 88 12 / var(--tw-bg-opacity, 1))
 }
 
-.bg-primary-80 {
-  background-color: var(--theme-color-primary-80)
+.bg-primary-20 {
+  background-color: var(--theme-color-primary-20)
 }
 
 .bg-red-200 {
@@ -752,6 +764,10 @@
 
 .to-transparent {
   --tw-gradient-to: transparent var(--tw-gradient-to-position)
+}
+
+.\!p-0 {
+  padding: 0px !important
 }
 
 .p-1 {
@@ -969,10 +985,6 @@
   opacity: 1
 }
 
-.opacity-70 {
-  opacity: 0.7
-}
-
 .opacity-80 {
   opacity: 0.8
 }
@@ -987,10 +999,6 @@
   --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
-}
-
-.outline {
-  outline-style: solid
 }
 
 .filter {
@@ -1031,31 +1039,49 @@
     border-color: rgb(254 215 170 / var(--tw-border-opacity, 1))
   }
 
+  .hover\:bg-green-300:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgb(134 239 172 / var(--tw-bg-opacity, 1))
+  }
+
+  .hover\:bg-green-600:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgb(22 163 74 / var(--tw-bg-opacity, 1))
+  }
+
+  .hover\:bg-orange-300:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgb(253 186 116 / var(--tw-bg-opacity, 1))
+  }
+
+  .hover\:bg-orange-600:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgb(234 88 12 / var(--tw-bg-opacity, 1))
+  }
+
+  .hover\:bg-red-300:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgb(252 165 165 / var(--tw-bg-opacity, 1))
+  }
+
+  .hover\:bg-red-600:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgb(220 38 38 / var(--tw-bg-opacity, 1))
+  }
+
   .hover\:bg-transparent:hover {
     background-color: transparent
   }
 
-  .hover\:shadow:hover {
-    --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
-    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
-  }
-
-  .hover\:shadow-none:hover {
-    --tw-shadow: 0 0 #0000;
-    --tw-shadow-colored: 0 0 #0000;
-    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
+  .hover\:text-white:hover {
+    --tw-text-opacity: 1;
+    color: rgb(255 255 255 / var(--tw-text-opacity, 1))
   }
 
   .hover\:shadow-xl:hover {
     --tw-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     --tw-shadow-colored: 0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)
-  }
-
-  .hover\:brightness-100:hover {
-    --tw-brightness: brightness(1);
-    filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)
   }
 
   .hover\:brightness-95:hover {
@@ -1074,10 +1100,6 @@
 
 .focus\:border-primary-80:focus {
   border-color: var(--theme-color-primary-80)
-}
-
-.disabled\:opacity-50:disabled {
-  opacity: 0.5
 }
 
 .prose-p\:\!m-0 :is(:where(p):not(:where([class~="not-prose"],[class~="not-prose"] *))) {

@@ -1,6 +1,5 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
 import { faEnvelope, faKey } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
   BeforeInstallPromptEvent,
@@ -65,7 +64,7 @@ function LoginForm({
   }
 
   return (
-    <div className="flex max-w-xl flex-grow flex-col md:!flex-grow-0 md:rounded-lg md:border md:shadow">
+    <div className="flex max-w-full flex-grow flex-col md:max-w-xl md:!flex-grow-0 md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center">
         <div className="mb-8 w-full text-center sm:my-12">
           <Image
@@ -110,10 +109,10 @@ function LoginForm({
             key="login"
             value="login"
             className={{
-              root: 'flex h-full items-center rounded-none md:-my-2 md:px-4 md:pb-14',
+              root: 'flex h-max items-center rounded-none md:-my-2 md:mt-3 md:px-4 md:pb-14',
             }}
           >
-            <Form className="mx-auto w-72 sm:w-96">
+            <Form className="mx-auto w-full px-4">
               {router.query.newAccount ? (
                 <UserNotification type="success">
                   {t('pwa.general.waitingForActivation')}
@@ -139,16 +138,12 @@ function LoginForm({
                   {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK === 'true' && (
                     <Button
                       fluid
-                      className={{
-                        root: 'bg-primary-80 justify-start gap-4 text-white',
-                      }}
+                      primary
                       type="submit"
                       disabled={isSubmitting}
                       data={{ cy: 'magic-link-login' }}
                     >
-                      <Button.Icon>
-                        <FontAwesomeIcon icon={faEnvelope} />
-                      </Button.Icon>
+                      <Button.Icon icon={faEnvelope} />
                       <Button.Label>
                         {t('pwa.general.magicLinkLogin')}
                       </Button.Label>
@@ -156,14 +151,11 @@ function LoginForm({
                   )}
                   <Button
                     fluid
-                    className={{ root: 'justify-start gap-4' }}
                     type="button"
                     onClick={() => setMagicLinkLogin(false)}
                     data={{ cy: 'password-login' }}
                   >
-                    <Button.Icon>
-                      <FontAwesomeIcon icon={faKey} />
-                    </Button.Icon>
+                    <Button.Icon icon={faKey} />
                     <Button.Label>
                       {t('pwa.general.passwordLogin')}
                     </Button.Label>
@@ -191,17 +183,20 @@ function LoginForm({
                       basic
                       onClick={() => setMagicLinkLogin(true)}
                       className={{
-                        root: 'text-primary-80 hover:text-primary-100 text-sm hover:underline',
+                        root: 'text-primary-100 mt-1 !p-0 text-sm hover:bg-transparent hover:underline',
                       }}
                     >
-                      {t('shared.generic.forgotPassword')}
+                      <Button.Label>
+                        {t('shared.generic.forgotPassword')}
+                      </Button.Label>
                     </Button>
                     <Button
-                      className={{
-                        root: 'border-uzh-grey-80 bg-primary-80 mt-3 !justify-center text-white md:mb-0 md:mt-2 md:w-max md:self-end',
-                      }}
+                      primary
                       type="submit"
                       disabled={isSubmitting}
+                      className={{
+                        root: 'mt-3 md:mb-0 md:mt-2 md:w-max md:self-end',
+                      }}
                       data={{ cy: 'submit-login' }}
                     >
                       <Button.Label>{t('shared.generic.signin')}</Button.Label>
@@ -214,10 +209,10 @@ function LoginForm({
                 <div className="mt-4 flex flex-col justify-center md:hidden">
                   <UserNotification type="info" message={installAndroid}>
                     <Button
+                      onClick={onInstallClick}
                       className={{
                         root: 'border-uzh-grey-80 mt-2 w-fit',
                       }}
-                      onClick={onInstallClick}
                       data={{ cy: 'install-student-pwa' }}
                     >
                       <Button.Label>

@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetSingleAnswerCollectionCatalogDocument,
   ImportAnswerCollectionDocument,
@@ -94,18 +93,22 @@ function ImportAnswerCollectionModal({
               ) : (
                 <Button
                   basic
-                  className={{ root: 'text-primary-100' }}
+                  className={{
+                    root: 'text-primary-100 px-0 py-0 hover:bg-transparent',
+                  }}
                   onClick={() => setShowEntries(true)}
                   data={{ cy: 'public-collection-show-answers' }}
                 >
-                  {t('manage.resources.showAnswers')}
+                  <Button.Label>
+                    {t('manage.resources.showAnswers')}
+                  </Button.Label>
                 </Button>
               )}
             </div>
           </div>
           <div className="mt-3 flex flex-row justify-between">
             <Button
-              className={{ root: 'h-8 border-red-600 text-base' }}
+              className={{ root: 'h-8 border-red-600 py-0' }}
               data={{ cy: 'cancel-answer-collection-import' }}
               onClick={(e) => {
                 e?.stopPropagation()
@@ -113,11 +116,12 @@ function ImportAnswerCollectionModal({
                 onClose()
               }}
             >
-              <FontAwesomeIcon icon={faBan} />
-              {t('shared.generic.cancel')}
+              <Button.Icon icon={faBan} />
+              <Button.Label>{t('shared.generic.cancel')}</Button.Label>
             </Button>
             <Button
-              className={{ root: 'border-primary-80 h-8 text-base' }}
+              primary
+              className={{ root: 'h-8 py-0' }}
               onClick={async (e) => {
                 e?.stopPropagation()
                 const res = await importAnswerCollection()
@@ -131,8 +135,10 @@ function ImportAnswerCollectionModal({
               loading={importLoading}
               data={{ cy: 'confirm-answer-collection-import' }}
             >
-              <FontAwesomeIcon icon={faPaperPlane} />
-              {t('manage.resources.importCollection')}
+              <Button.Icon icon={faPaperPlane} />
+              <Button.Label>
+                {t('manage.resources.importCollection')}
+              </Button.Label>
             </Button>
           </div>
           <Toast

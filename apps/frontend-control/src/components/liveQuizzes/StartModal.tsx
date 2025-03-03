@@ -65,6 +65,7 @@ function StartModal({
       onClose={() => setStartModalOpen(false)}
       onPrimaryAction={
         <Button
+          primary
           loading={startingLiveQuiz}
           onClick={async () => {
             try {
@@ -76,9 +77,6 @@ function StartModal({
               setStartModalOpen(false)
               setErrorToast(true)
             }
-          }}
-          className={{
-            root: 'bg-primary-80 text-white',
           }}
           data={{
             cy: 'confirm-start-live-quiz',

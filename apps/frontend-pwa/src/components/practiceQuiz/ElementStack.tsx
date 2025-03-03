@@ -361,7 +361,6 @@ function ElementStack({
       {/* display continue button if question was already answered */}
       {typeof stackStorage !== 'undefined' && !showMarkAsRead ? (
         <Button
-          className={{ root: 'float-right mt-4 text-lg' }}
           onClick={() => {
             setStudentResponse({})
 
@@ -371,18 +370,21 @@ function ElementStack({
               handleNextElement()
             }
           }}
+          className={{ root: 'float-right mt-4' }}
           data={{ cy: 'student-stack-continue' }}
         >
-          {currentStep === totalSteps
-            ? t('shared.generic.finish')
-            : t('shared.generic.continue')}
+          <Button.Label>
+            {currentStep === totalSteps
+              ? t('shared.generic.finish')
+              : t('shared.generic.continue')}
+          </Button.Label>
         </Button>
       ) : null}
 
       {/* display mark all as read button, if only content elements have not been answered yet */}
       {typeof stackStorage === 'undefined' && showMarkAsRead && (
         <Button
-          className={{ root: 'float-right mt-4 text-lg' }}
+          className={{ root: 'float-right mt-4' }}
           disabled={Object.values(studentResponse).some(
             (response) => !response.valid
           )}
@@ -409,18 +411,19 @@ function ElementStack({
           }}
           data={{ cy: 'practice-quiz-mark-all-as-read' }}
         >
-          {t('pwa.practiceQuiz.markAllAsRead')}
+          <Button.Label>{t('pwa.practiceQuiz.markAllAsRead')}</Button.Label>
         </Button>
       )}
 
       {typeof stackStorage === 'undefined' && !showMarkAsRead && (
         <Button
+          primary
           loading={submittingResponse}
           disabled={
             activityExpired ||
             Object.values(studentResponse).some((response) => !response.valid)
           }
-          className={{ root: 'float-right mt-4 text-lg' }}
+          className={{ root: 'float-right mt-4' }}
           onClick={async () => {
             const result = await respondToElementStack({
               variables: {
@@ -593,7 +596,7 @@ function ElementStack({
           }}
           data={{ cy: 'student-stack-submit' }}
         >
-          {t('shared.generic.submit')}
+          <Button.Label>{t('shared.generic.submit')}</Button.Label>
         </Button>
       )}
     </div>

@@ -57,9 +57,10 @@ export function SCAnswerOptions({
                 fluid
                 className={{
                   root: twMerge(
-                    'hover:bg-unset min-h-[2.5rem] border-slate-400',
+                    'hover:bg-unset min-h-[2.5rem] border-slate-300',
                     !hasFeedback && 'h-full',
-                    hasFeedback && 'rounded-b-none'
+                    hasFeedback && 'rounded-b-none',
+                    value?.[choice.ix] && 'bg-primary-20 border-primary-100'
                   ),
                 }}
                 onClick={() =>
@@ -69,7 +70,6 @@ export function SCAnswerOptions({
                     )
                   )
                 }
-                active={value?.[choice.ix]}
                 data={{
                   cy: `sc-${elementIx}-answer-option-${choice.ix}`,
                 }}

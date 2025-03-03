@@ -147,8 +147,8 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
           </div>
         </div>
 
-        <div className="flex flex-col items-end justify-between gap-4">
-          <div className="flex flex-row items-center gap-3.5 text-sm">
+        <div>
+          <div className="flex flex-row items-center gap-2 text-sm">
             {(quiz.status === PublicationStatus.Scheduled ||
               quiz.status === PublicationStatus.Draft) && (
               <>

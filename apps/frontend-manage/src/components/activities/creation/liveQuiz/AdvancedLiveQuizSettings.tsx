@@ -6,6 +6,7 @@ import {
   LQ_MAX_BONUS_POINTS,
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
+import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, FormikNumberField, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -49,19 +50,23 @@ function AdvancedLiveQuizSettings({
       open={open}
       onClose={() => setOpen(false)}
       trigger={
-        <Button
+        <ForwardRefButton
           basic
           onClick={() => setOpen(true)}
+          overrideClassName="h-7 w-7"
           data={{ cy: 'live-quiz-advanced-settings' }}
         >
-          <FontAwesomeIcon
+          <Button.Icon
+            withoutLabel
             icon={faGears}
-            className={twMerge(
-              'hover:text-primary-100',
-              showError && 'text-red-600 hover:text-red-700'
-            )}
+            className={{
+              root: twMerge(
+                'h-5 w-5',
+                showError && 'text-red-600 hover:text-red-700'
+              ),
+            }}
           />
-        </Button>
+        </ForwardRefButton>
       }
       title={t('manage.activityWizard.liveQuizAdvancedSettings')}
       className={{ content: '!w-full max-w-[60rem] !pb-5' }}

@@ -1,5 +1,4 @@
 import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { PracticeQuiz } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -20,13 +19,13 @@ function PublishPracticeQuizButton({
     <>
       <Button
         basic
-        className={{ root: 'text-primary-100 flex flex-row gap-3' }}
         onClick={() => setPublishModal(true)}
         data={{ cy: `publish-practice-quiz-${practiceQuiz.name}` }}
+        className={{
+          root: 'text-primary-100 hover:text-primary-100 h-7 py-0 text-sm',
+        }}
       >
-        <Button.Icon>
-          <FontAwesomeIcon icon={faUserGroup} className="w-[1.2rem]" />
-        </Button.Icon>
+        <Button.Icon icon={faUserGroup} />
         <Button.Label>{t('manage.course.publishPracticeQuiz')}</Button.Label>
       </Button>
       <PracticeQuizPublishingModal

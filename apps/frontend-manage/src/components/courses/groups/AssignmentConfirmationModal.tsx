@@ -57,6 +57,7 @@ function AssignmentConfirmationModal({
         title={t('manage.course.finalizeRandomGroupAssignment')}
         onPrimaryAction={
           <Button
+            primary
             onClick={async () => {
               const res = await manualRandomGroupAssignments({
                 variables: { courseId: courseId },
@@ -69,13 +70,10 @@ function AssignmentConfirmationModal({
                 setShowError(true)
               }
             }}
-            className={{
-              root: 'bg-primary-80 text-base font-bold text-white',
-            }}
             data={{ cy: 'confirm-random-group-assignment' }}
             loading={randomGroupCreationLoading}
           >
-            {t('shared.generic.confirm')}
+            <Button.Label>{t('shared.generic.confirm')}</Button.Label>
           </Button>
         }
         onSecondaryAction={
@@ -84,7 +82,7 @@ function AssignmentConfirmationModal({
             data={{ cy: 'cancel-random-group-assignment' }}
             className={{ root: 'text-base' }}
           >
-            {t('shared.generic.cancel')}
+            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
         }
         onClose={(): void => setOpen(false)}

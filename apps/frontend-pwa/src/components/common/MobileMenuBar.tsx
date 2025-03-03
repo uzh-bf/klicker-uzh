@@ -27,7 +27,6 @@ function MobileMenuBar({
   participantMissing,
 }: MobileMenuBarProps): React.ReactElement {
   const t = useTranslations()
-
   const homeMenuItem = {
     label: t('shared.generic.home'),
     icon: <FontAwesomeIcon icon={faHome} size="lg" />,
@@ -48,7 +47,7 @@ function MobileMenuBar({
   }
 
   return (
-    <div className="flex w-full flex-row justify-between gap-1 bg-slate-800 py-1 text-white">
+    <div className="flex w-full flex-row justify-between gap-1 bg-slate-800 text-white">
       {items.map((item: any) => (
         <NotificationBadgeWrapper
           count={item.unseenItems}
@@ -59,7 +58,7 @@ function MobileMenuBar({
         >
           <Button
             className={{
-              root: 'bg-grey-60 flex flex-1 flex-col justify-center gap-0 border-0 shadow-none',
+              root: 'bg-grey-60 flex flex-1 flex-col justify-center rounded-none border-0 hover:bg-transparent hover:text-white',
             }}
             key={item.value}
             onClick={() => {

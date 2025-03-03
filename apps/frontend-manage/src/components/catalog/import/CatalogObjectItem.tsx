@@ -92,7 +92,7 @@ function CatalogObjectItem({
               basic
               className={{
                 root: twMerge(
-                  'hover:text-primary-100 flex flex-row items-center gap-1.5',
+                  'hover:text-primary-100 h-7 px-1 py-0 text-sm',
                   object.access === ObjectAccess.Public && 'font-semibold'
                 ),
               }}
@@ -102,8 +102,8 @@ function CatalogObjectItem({
               }}
               data={{ cy: `import-object-${object.name}` }}
             >
-              <FontAwesomeIcon icon={faCopy} />
-              <div>{t('manage.catalog.importObject')}</div>
+              <Button.Icon icon={faCopy} />
+              <Button.Label>{t('manage.catalog.importObject')}</Button.Label>
             </Button>
           ) : null}
           {!actionsDisabled && !object.isRequested ? (
@@ -111,7 +111,7 @@ function CatalogObjectItem({
               basic
               className={{
                 root: twMerge(
-                  'hover:text-primary-100 flex flex-row items-center gap-1.5',
+                  'hover:text-primary-100 h-7 px-1 py-0 text-sm',
                   object.access === ObjectAccess.Restricted && 'font-semibold'
                 ),
               }}
@@ -121,8 +121,8 @@ function CatalogObjectItem({
               }}
               data={{ cy: `request-access-${object.name}` }}
             >
-              <FontAwesomeIcon icon={faHandPointer} />
-              <div>{t('manage.catalog.requestAccess')}</div>
+              <Button.Icon icon={faHandPointer} />
+              <Button.Label>{t('manage.catalog.requestAccess')}</Button.Label>
             </Button>
           ) : null}
           {object.isRequested ? (
@@ -134,7 +134,7 @@ function CatalogObjectItem({
               <Button
                 basic
                 className={{
-                  root: 'hover:text-primary-100 flex flex-row items-center gap-1.5',
+                  root: 'hover:text-primary-100 h-7 px-1 py-0 text-sm',
                 }}
                 onClick={(e) => {
                   e?.stopPropagation()
@@ -142,8 +142,10 @@ function CatalogObjectItem({
                 }}
                 data={{ cy: `cancel-request-${object.name}` }}
               >
-                <FontAwesomeIcon icon={faHandPointer} />
-                <div>{t('manage.resources.cancelRequest')}</div>
+                <Button.Icon icon={faHandPointer} />
+                <Button.Label>
+                  {t('manage.resources.cancelRequest')}
+                </Button.Label>
               </Button>
             </>
           ) : null}
@@ -165,14 +167,15 @@ function CatalogObjectItem({
                 cyPrefix={object.name}
               />
               <Button
+                destructive
                 onClick={(e) => {
                   e?.stopPropagation()
                   setRemovalModal(true)
                 }}
-                className={{ root: 'h-7' }}
+                className={{ root: 'h-7 w-7' }}
                 data={{ cy: `remove-object-${object.name}` }}
               >
-                <FontAwesomeIcon icon={faX} className="text-red-600" />
+                <Button.Icon withoutLabel icon={faX} />
               </Button>
             </div>
           ) : null}

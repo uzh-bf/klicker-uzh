@@ -1,5 +1,4 @@
 import { faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -23,7 +22,7 @@ function InstanceNavigation({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row items-center gap-2">
+    <div className="flex flex-row items-center">
       <Button
         basic
         onClick={() => {
@@ -32,12 +31,13 @@ function InstanceNavigation({
         disabled={activeInstance === 0}
         className={{
           root: twMerge(
+            'px-2 py-2',
             activeInstance === 0 && 'text-uzh-grey-80 cursor-not-allowed'
           ),
         }}
         data={{ cy: 'evaluate-previous-question' }}
       >
-        <FontAwesomeIcon icon={faArrowLeft} />
+        <Button.Icon withoutLabel icon={faArrowLeft} />
       </Button>
       <Button
         basic
@@ -47,13 +47,14 @@ function InstanceNavigation({
         disabled={activeInstance === numOfInstances - 1}
         className={{
           root: twMerge(
+            'px-2 py-2',
             activeInstance === numOfInstances - 1 &&
               'text-uzh-grey-80 cursor-not-allowed'
           ),
         }}
         data={{ cy: 'evaluate-next-question' }}
       >
-        <FontAwesomeIcon icon={faArrowRight} />
+        <Button.Icon withoutLabel icon={faArrowRight} />
       </Button>
 
       <div className="ml-2 font-bold">{t('shared.generic.element')}:</div>
@@ -74,6 +75,7 @@ function InstanceNavigation({
           trigger: 'm-0 h-full w-max rounded-none border-none shadow-none',
         }}
         value={String(activeInstance)}
+        contentPosition="popper"
         data={{ cy: 'evaluate-question-select' }}
       />
     </div>

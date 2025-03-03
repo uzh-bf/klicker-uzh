@@ -3,7 +3,6 @@ import {
   faPersonChalkboard,
   faPlay,
 } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, H4 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -44,18 +43,17 @@ function LiveQuizLists({
                 data={{ cy: `running-live-quiz-${quiz.name}` }}
               />
               <Button
+                fluid
                 onClick={() => {
                   setEmbedOpen(true)
                   setQuizId(quiz.id)
                 }}
-                className={{
-                  root: 'bg-uzh-grey-40 border-uzh-grey-100 h-full rounded-md border border-solid p-2',
-                }}
                 data={{ cy: `ppt-link-${quiz.name}` }}
               >
-                <Button.Icon className={{ root: 'mr-2' }}>
-                  <FontAwesomeIcon icon={faPersonChalkboard} />
-                </Button.Icon>
+                <Button.Icon
+                  className={{ root: 'mr-2' }}
+                  icon={faPersonChalkboard}
+                />
                 <Button.Label>PPT</Button.Label>
               </Button>
             </div>
@@ -89,14 +87,9 @@ function LiveQuizLists({
                   setEmbedOpen(true)
                   setQuizId(quiz.id)
                 }}
-                className={{
-                  root: 'bg-uzh-grey-40 border-uzh-grey-100 h-full rounded-md border border-solid p-2',
-                }}
                 data={{ cy: `ppt-link-${quiz.name}` }}
               >
-                <Button.Icon className={{ root: 'mr-2' }}>
-                  <FontAwesomeIcon icon={faPersonChalkboard} />
-                </Button.Icon>
+                <Button.Icon icon={faPersonChalkboard} />
                 <Button.Label>PPT</Button.Label>
               </Button>
             </div>

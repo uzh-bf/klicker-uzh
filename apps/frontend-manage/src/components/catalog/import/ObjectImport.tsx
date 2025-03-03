@@ -88,7 +88,7 @@ function ObjectImport({
         {filteredObjects.length > 0 ? (
           <div>
             {managed.length > 0 && (
-              <div className="mb-3">
+              <div>
                 {managed.map((object) => (
                   <CatalogObjectItem
                     managedAccess

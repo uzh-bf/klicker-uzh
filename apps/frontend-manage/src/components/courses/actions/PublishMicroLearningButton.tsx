@@ -1,5 +1,4 @@
 import { faUserGroup } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceType,
   MicroLearning,
@@ -20,16 +19,16 @@ function PublishMicroLearningButton({
   const [publishModal, setPublishModal] = useState(false)
 
   return (
-    <>
+    <div>
       <Button
         basic
-        className={{ root: 'text-primary-100' }}
         onClick={() => setPublishModal(true)}
+        className={{
+          root: 'text-primary-100 hover:text-primary-100 h-7 py-0 text-sm',
+        }}
         data={{ cy: `publish-microlearning-${microLearning.name}` }}
       >
-        <Button.Icon>
-          <FontAwesomeIcon icon={faUserGroup} className="w-[1.2rem]" />
-        </Button.Icon>
+        <Button.Icon icon={faUserGroup} />
         <Button.Label>{t('manage.course.publishMicrolearning')}</Button.Label>
       </Button>
       <PublishConfirmationModal
@@ -40,7 +39,7 @@ function PublishMicroLearningButton({
         open={publishModal}
         setOpen={setPublishModal}
       />
-    </>
+    </div>
   )
 }
 

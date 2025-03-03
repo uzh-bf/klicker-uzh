@@ -38,21 +38,16 @@ function CreationButton({
       data={data}
       onClick={onClick}
     >
-      <div className="flex flex-row gap-6">
-        <Button.Icon>
-          <FontAwesomeIcon icon={icon} />
-        </Button.Icon>
-        <Button.Label>{text}</Button.Label>
+      <div className="flex flex-row items-center gap-3">
+        <FontAwesomeIcon icon={icon} />
+        <div>{text}</div>
       </div>
       <div>
         {isCatalystRequired && (
-          <Button.Icon
-            className={{
-              root: comingSoon ? 'text-slate-400' : 'text-orange-400',
-            }}
-          >
-            <FontAwesomeIcon icon={faCrown} />
-          </Button.Icon>
+          <FontAwesomeIcon
+            icon={faCrown}
+            className={comingSoon ? 'text-slate-400' : 'text-orange-400'}
+          />
         )}
       </div>
     </Button>
@@ -61,7 +56,9 @@ function CreationButton({
   if (comingSoon && disabled) {
     return (
       <Tooltip
-        tooltip={<div className="max-w-[300px]">Coming Soon</div>}
+        tooltip={
+          <div className="max-w-[300px]">{t('shared.generic.comingSoon')}</div>
+        }
         className={{ tooltip: 'z-20' }}
       >
         {button}

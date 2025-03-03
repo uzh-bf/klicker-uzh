@@ -5,6 +5,7 @@ import {
   JoinCourseWithPinDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { initializeApollo } from '@lib/apollo'
 import {
   Button,
@@ -18,9 +19,7 @@ import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import * as yup from 'yup'
-
-import Loader from '@klicker-uzh/shared-components/src/Loader'
+import * as Yup from 'yup'
 import Layout from '../../../components/Layout'
 import CreateAccountForm from '../../../components/forms/CreateAccountForm'
 
@@ -42,10 +41,14 @@ function JoinCourse({
   const [showError, setError] = useState(false)
   const [initialPin, setInitialPin] = useState<string>('')
 
-  const joinCourseWithPinSchema = yup.object({
-    pin: yup
-      .number()
+  const joinCourseWithPinSchema = Yup.object({
+    pin: Yup.number()
       .typeError(t('pwa.joinCourse.coursePinNumerical'))
+      .test(
+        'len',
+        t('pwa.joinCourse.coursePinRequired'),
+        (val) => val !== undefined && val.toString().length === 9
+      )
       .required(t('pwa.joinCourse.coursePinRequired')),
   })
 
@@ -93,6 +96,7 @@ function JoinCourse({
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
             </div>
             <Formik
+              validateOnMount
               initialValues={{
                 pin: initialPin,
               }}
@@ -121,11 +125,12 @@ function JoinCourse({
                       label={t('pwa.joinCourse.coursePinFormat')}
                     />
                     <Button
-                      className={{
-                        root: 'border-uzh-grey-80 float-right mt-2',
-                      }}
+                      primary
                       type="submit"
                       disabled={isSubmitting || !isValid}
+                      className={{
+                        root: 'float-right mt-2',
+                      }}
                       data={{ cy: 'join-course' }}
                     >
                       <Button.Label>{t('pwa.general.joinCourse')}</Button.Label>

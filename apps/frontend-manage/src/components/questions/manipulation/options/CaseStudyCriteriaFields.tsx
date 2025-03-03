@@ -115,7 +115,7 @@ function CaseStudyCriteriaFields() {
                   <Button
                     onClick={() => remove(index)}
                     className={{
-                      root: 'mt-6 h-8 w-8 items-center justify-center border-red-600 hover:border-red-600 hover:text-red-600',
+                      root: 'h-8 w-8 border-red-600 hover:border-red-600 hover:text-red-600',
                     }}
                     data={{ cy: `remove-criterion-${index}` }}
                   >
@@ -135,12 +135,14 @@ function CaseStudyCriteriaFields() {
                   })
                 }
                 className={{
-                  root: 'border-primary-80 items-center justify-center',
+                  root: 'border-primary-80 h-8',
                 }}
                 data={{ cy: 'add-new-criterion' }}
               >
-                <FontAwesomeIcon icon={faPlus} />
-                {t('manage.questionForms.addCriterion')}
+                <Button.Icon icon={faPlus} />
+                <Button.Label>
+                  {t('manage.questionForms.addCriterion')}
+                </Button.Label>
               </Button>
             </>
           )}

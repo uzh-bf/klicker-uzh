@@ -161,19 +161,19 @@ function LiveQuiz({
                   data-cy={`change-liveQuiz-name-${quiz.name}`}
                 />
               </div>
-              <div className="flex flex-row gap-5">
+              <div className="mr-2 flex flex-row">
                 {quiz.blocks?.length !== 0 && (
                   <>
                     <Button
                       basic
+                      className={{ root: 'h-7 text-sm' }}
                       onClick={() => setEmbedModalOpen(true)}
-                      className={{
-                        root: 'hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm',
-                      }}
                       data={{ cy: `show-embedding-modal-${quiz.name}` }}
                     >
-                      <FontAwesomeIcon icon={faCode} size="sm" />
-                      {t('manage.liveQuizzes.embeddingEvaluation')}
+                      <Button.Icon icon={faCode} />
+                      <Button.Label>
+                        {t('manage.liveQuizzes.embeddingEvaluation')}
+                      </Button.Label>
                     </Button>
                     <EmbeddingModal
                       key={quiz.id}
@@ -195,13 +195,11 @@ function LiveQuiz({
                     <Button
                       basic
                       onClick={() => setQrModalOpen(true)}
-                      className={{
-                        root: 'hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm',
-                      }}
+                      className={{ root: 'h-7 text-sm' }}
                       data={{ cy: `show-qr-modal-${quiz.name}` }}
                     >
-                      <FontAwesomeIcon icon={faQrcode} size="sm" />
-                      {t('manage.general.qrCode')}
+                      <Button.Icon icon={faQrcode} />
+                      <Button.Label>{t('manage.general.qrCode')}</Button.Label>
                     </Button>
                     <LiveQuizQRModal
                       quizId={quiz.id}
@@ -212,36 +210,35 @@ function LiveQuiz({
                 )}
 
                 {PublicationStatus.Published === quiz.status && (
-                  <Link
-                    href={`/quizzes/${quiz.id}/cockpit`}
-                    legacyBehavior
-                    passHref
+                  <Button
+                    basic
+                    onClick={() => router.push(`/quizzes/${quiz.id}/cockpit`)}
+                    className={{ root: 'h-7 text-sm' }}
+                    data={{ cy: `live-quiz-cockpit-${quiz.name}` }}
                   >
-                    <a
-                      className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`live-quiz-cockpit-${quiz.name}`}
-                    >
-                      <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>{t('manage.liveQuizzes.lecturerCockpit')}</div>
-                    </a>
-                  </Link>
+                    <Button.Icon icon={faArrowUpRightFromSquare} />
+                    <Button.Label>
+                      {t('manage.liveQuizzes.lecturerCockpit')}
+                    </Button.Label>
+                  </Button>
                 )}
                 {PublicationStatus.Ended === quiz.status && (
-                  <Link
-                    href={`/quizzes/${quiz.id}/evaluation`}
-                    legacyBehavior
-                    passHref
+                  <Button
+                    basic
+                    onClick={() =>
+                      window.open(`/quizzes/${quiz.id}/evaluation`, '_blank')
+                    }
+                    className={{ root: 'h-7 text-sm' }}
+                    data={{ cy: `live-quiz-evaluation-${quiz.name}` }}
                   >
-                    <a
-                      className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm"
-                      data-cy={`live-quiz-evaluation${quiz.name}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      <div>{t('manage.liveQuizzes.liveQuizEvaluation')}</div>
-                    </a>
-                  </Link>
+                    <Button.Icon
+                      icon={faArrowUpRightFromSquare}
+                      className={{ root: 'h-3.5 w-3.5' }}
+                    />
+                    <Button.Label>
+                      {t('manage.liveQuizzes.liveQuizEvaluation')}
+                    </Button.Label>
+                  </Button>
                 )}
                 {(PublicationStatus.Draft === quiz.status ||
                   PublicationStatus.Scheduled === quiz.status) && (
@@ -252,15 +249,19 @@ function LiveQuiz({
                       await startLiveQuiz()
                       router.push(`quizzes/${quiz.id}/cockpit`)
                     }}
+                    className={{ root: 'h-7 text-sm' }}
                     data={{ cy: `start-live-quiz-${quiz.name}` }}
                   >
-                    <div className="hover:text-primary-100 flex cursor-pointer flex-row items-center gap-2 text-sm">
-                      <FontAwesomeIcon icon={faPlay} size="sm" />
-                      <div>{t('manage.liveQuizzes.startLiveQuiz')}</div>
-                    </div>
+                    <Button.Icon
+                      icon={faPlay}
+                      className={{ root: 'h-3.5 w-3.5' }}
+                    />
+                    <Button.Label>
+                      {t('manage.liveQuizzes.startLiveQuiz')}
+                    </Button.Label>
                   </Button>
                 )}
-                <div className="flex flex-row items-center gap-1 text-sm">
+                <div className="ml-3 flex flex-row items-center gap-1 text-sm">
                   <FontAwesomeIcon
                     icon={timeIcon[quiz.status]}
                     className="mr-1"
@@ -293,9 +294,7 @@ function LiveQuiz({
                 }
                 data={{ cy: `duplicate-live-quiz-${quiz.name}` }}
               >
-                <Button.Icon className={{ root: 'text-slate-600' }}>
-                  <FontAwesomeIcon icon={faCopy} />
-                </Button.Icon>
+                <Button.Icon icon={faCopy} />
                 <Button.Label>
                   {t('manage.liveQuizzes.duplicateLiveQuiz')}
                 </Button.Label>
@@ -315,9 +314,7 @@ function LiveQuiz({
                   }
                   data={{ cy: `edit-live-quiz-${quiz.name}` }}
                 >
-                  <Button.Icon className={{ root: 'text-slate-600' }}>
-                    <FontAwesomeIcon icon={faPencil} />
-                  </Button.Icon>
+                  <Button.Icon icon={faPencil} />
                   <Button.Label>
                     {t('manage.liveQuizzes.editLiveQuiz')}
                   </Button.Label>
@@ -333,9 +330,10 @@ function LiveQuiz({
                   onClick={() => setDeletionModal(true)}
                   data={{ cy: `delete-live-quiz-${quiz.name}` }}
                 >
-                  <Button.Icon className={{ root: 'text-red-400' }}>
-                    <FontAwesomeIcon icon={faTrash} />
-                  </Button.Icon>
+                  <Button.Icon
+                    icon={faTrash}
+                    className={{ root: 'text-red-600' }}
+                  />
                   <Button.Label>
                     {t('manage.liveQuizzes.deleteLiveQuiz')}
                   </Button.Label>

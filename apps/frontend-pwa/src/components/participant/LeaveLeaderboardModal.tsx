@@ -19,11 +19,11 @@ function LeaveLeaderboardModal({
       hideCloseButton
       onPrimaryAction={
         <Button
+          destructive
           onClick={() => onConfirm()}
-          className={{ root: 'bg-red-600 font-bold text-white' }}
           data={{ cy: 'confirm-leave-course-leaderboard' }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       }
       onSecondaryAction={
@@ -31,7 +31,7 @@ function LeaveLeaderboardModal({
           onClick={(): void => setIsModalOpen(false)}
           data={{ cy: 'cancel-leave-course-leaderboard' }}
         >
-          {t('shared.generic.cancel')}
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
       }
       onClose={(): void => setIsModalOpen(false)}

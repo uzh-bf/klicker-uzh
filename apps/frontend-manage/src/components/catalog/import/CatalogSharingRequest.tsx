@@ -1,6 +1,5 @@
 import { useMutation } from '@apollo/client'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   CountCatalogSharingRequestsDocument,
   DeclineObjectSharingRequestDocument,
@@ -46,19 +45,19 @@ function CatalogSharingRequest({
       <div className="flex flex-row gap-2">
         <Button
           className={{
-            root: 'h-7 border-green-600 hover:border-green-600 hover:text-green-800',
+            root: 'h-7 border-green-600 hover:text-green-800',
           }}
           data={{
             cy: `approve-sharing-request-${request.objectName}-${request.userShortname}`,
           }}
           onClick={() => setApprovalModal(true)}
         >
-          <FontAwesomeIcon icon={faCheck} />
-          <div>{t('shared.generic.accept')}</div>
+          <Button.Icon icon={faCheck} />
+          <Button.Label>{t('shared.generic.accept')}</Button.Label>
         </Button>
         <Button
           className={{
-            root: 'h-7 border-red-600 hover:border-red-600 hover:text-red-700',
+            root: 'h-7 border-red-600 py-0 hover:text-red-700',
           }}
           data={{
             cy: `deny-sharing-request-${request.objectName}-${request.userShortname}`,
@@ -125,8 +124,8 @@ function CatalogSharingRequest({
             }
           }}
         >
-          <FontAwesomeIcon icon={faBan} />
-          <div>{t('shared.generic.decline')}</div>
+          <Button.Icon icon={faBan} />
+          <Button.Label>{t('shared.generic.decline')}</Button.Label>
         </Button>
       </div>
       <SharingRequestApprovalModal

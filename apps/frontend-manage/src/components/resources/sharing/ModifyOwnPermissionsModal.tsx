@@ -49,16 +49,14 @@ function ModifyOwnPermissionsModal({
           onClick={onClose}
           data={{ cy: 'cancel-modify-own-permissions' }}
         >
-          {t('shared.generic.cancel')}
+          <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
         <Button
+          destructive
           onClick={onConfirm}
           data={{ cy: 'confirm-modify-own-permissions' }}
-          className={{
-            root: 'border-red-600 bg-red-600 text-white hover:border-red-700 hover:bg-red-700 hover:text-white',
-          }}
         >
-          {t('shared.generic.confirm')}
+          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
       </div>
     </Modal>

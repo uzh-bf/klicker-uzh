@@ -5,7 +5,6 @@ import { Button, H3, Modal, Prose } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { Dispatch, SetStateAction } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 function LiveQuizQRModal({
   quizId,
@@ -48,11 +47,8 @@ function LiveQuizQRModal({
           <Link passHref href={`/qr${accountRelativeLink}`} target="_blank">
             <Button
               fluid
-              className={{
-                root: twMerge(
-                  'bg-primary-80 mt-2 h-9 text-lg font-bold text-white'
-                ),
-              }}
+              primary
+              className={{ root: 'mt-2' }}
               data={{ cy: `qr-link-${shortname}` }}
             >
               <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
@@ -71,11 +67,8 @@ function LiveQuizQRModal({
           <Link passHref href={`/qr${quizRelativeLink}`} target="_blank">
             <Button
               fluid
-              className={{
-                root: twMerge(
-                  'bg-primary-80 mt-2 h-9 text-lg font-bold text-white'
-                ),
-              }}
+              primary
+              className={{ root: 'mt-2' }}
               data={{ cy: `qr-direct-link-${quizId}` }}
             >
               <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
