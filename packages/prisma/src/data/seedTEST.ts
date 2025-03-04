@@ -120,8 +120,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     create: {
       id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
       name: '',
+      access: Prisma.ObjectAccess.PUBLIC,
     },
-    update: {},
+    update: { name: '', access: Prisma.ObjectAccess.PUBLIC },
   })
 
   // seed answer collections

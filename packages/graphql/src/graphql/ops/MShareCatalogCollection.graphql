@@ -1,0 +1,15 @@
+mutation ShareCatalogCollection(
+  $catalogCollectionId: String!
+  $accessLevel: AccessLevel!
+  $usernameOrEmail: String
+  $userGroupId: Int
+) {
+  shareCatalogCollection(
+    catalogCollectionId: $catalogCollectionId
+    accessLevel: $accessLevel
+    usernameOrEmail: $usernameOrEmail
+    userGroupId: $userGroupId
+  ) {
+    ...PermissionInfoData
+  }
+}

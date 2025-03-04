@@ -1,0 +1,11 @@
+mutation CreateCatalogCollection($name: String!, $access: ObjectAccess!) {
+  createCatalogCollection(name: $name, access: $access) {
+    id
+    name
+    access
+    ownerShortname
+    isRequested
+    isShared
+    isOwnerOrAdmin
+  }
+}

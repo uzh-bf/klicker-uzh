@@ -11,6 +11,7 @@ import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
+import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import {
   CourseActivityAnalytics,
@@ -61,14 +62,14 @@ import {
   InstanceUpdateActivityInfo,
   Tag,
 } from './question.js'
+import { AnswerCollection, CatalogAnswerCollection } from './resource.js'
 import {
-  AnswerCollection,
-  CatalogAnswerCollection,
+  CatalogCollection,
   CatalogObject,
   CatalogSelectionObject,
   ObjectSharingRequest,
   PermissionInfo,
-} from './resource.js'
+} from './sharing.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -923,10 +924,40 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCatalogCollectionPermissions: asUser.field({
+        nullable: true,
+        type: [PermissionInfo],
+        args: {
+          catalogCollectionId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.getCatalogCollectionPermissions(args, ctx)
+        },
+      }),
+
+      getCatalogCollectionsList: asUser.field({
+        nullable: true,
+        type: [CatalogCollection],
+        resolve(_, __, ctx) {
+          return SharingService.getCatalogCollectionsList(ctx)
+        },
+      }),
+
+      getCatalogCollectionInfo: asUser.field({
+        nullable: true,
+        type: CatalogCollection,
+        args: {
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.getCatalogCollectionInfo(args, ctx)
+        },
+      }),
+
       countCatalogSharingRequests: asUser.int({
         nullable: false,
         resolve(_, __, ctx) {
-          return ResourcesService.countCatalogSharingRequests(ctx)
+          return SharingService.countCatalogSharingRequests(ctx)
         },
       }),
 
@@ -934,7 +965,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: [ObjectSharingRequest],
         resolve(_, __, ctx) {
-          return ResourcesService.getCatalogSharingRequests(ctx)
+          return SharingService.getCatalogSharingRequests(ctx)
         },
       }),
 
@@ -945,7 +976,7 @@ export const Query = builder.queryType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.getCatalogObjects(args, ctx)
+          return SharingService.getCatalogObjects(args, ctx)
         },
       }),
 
@@ -953,7 +984,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: [CatalogSelectionObject],
         resolve(_, __, ctx) {
-          return ResourcesService.getCatalogAnswerCollections(ctx)
+          return SharingService.getCatalogAnswerCollections(ctx)
         },
       }),
 
@@ -965,7 +996,7 @@ export const Query = builder.queryType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.getSingleAnswerCollectionCatalog(args, ctx)
+          return SharingService.getSingleAnswerCollectionCatalog(args, ctx)
         },
       }),
     }

@@ -9,11 +9,13 @@ function ObjectAccessSelection({
   onChange,
   compact,
   cyPrefix,
+  hideTooltip,
 }: {
   value: ObjectAccess
   onChange: (value: ObjectAccess) => void
   compact?: boolean
   cyPrefix: string
+  hideTooltip?: boolean
 }) {
   const t = useTranslations()
 
@@ -23,7 +25,11 @@ function ObjectAccessSelection({
       value={value}
       onChange={(value) => onChange(value as ObjectAccess)}
       label={!compact ? t('manage.resources.access') : undefined}
-      tooltip={!compact ? t('manage.resources.accessTooltip') : undefined}
+      tooltip={
+        !compact && !hideTooltip
+          ? t('manage.resources.accessTooltip')
+          : undefined
+      }
       items={[
         {
           value: ObjectAccess.Restricted,

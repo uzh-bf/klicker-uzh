@@ -1,0 +1,12 @@
+query GetCatalogCollectionsList {
+  getCatalogCollectionsList {
+    id
+    name
+    access
+    ownerShortname
+    isRequested
+    isShared
+    isOwner
+    isOwnerOrAdmin
+  }
+}

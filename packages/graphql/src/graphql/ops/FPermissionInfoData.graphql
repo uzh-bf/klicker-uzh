@@ -1,0 +1,10 @@
+fragment PermissionInfoData on PermissionInfo {
+  permissionId
+  userId
+  username
+  userEmail
+  userGroupName
+  accessLevel
+  isRevokable
+  isOwn
+}

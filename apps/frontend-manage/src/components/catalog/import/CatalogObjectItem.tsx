@@ -1,6 +1,7 @@
 import {
   faClock,
   faCopy,
+  faFolder,
   faHandPointer,
 } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -39,6 +40,7 @@ function CatalogObjectItem({
   const t = useTranslations()
   const objectTypeIcons: Record<CatalogObjectType, IconDefinition> = {
     [CatalogObjectType.AnswerCollection]: faList,
+    [CatalogObjectType.CatalogCollection]: faFolder,
   }
 
   const actionsDisabled = object.isOwner || object.isShared
@@ -53,7 +55,7 @@ function CatalogObjectItem({
   return (
     <>
       <div
-        className="flex flex-row items-center justify-between border-b border-solid px-1 py-1 text-sm hover:bg-slate-100"
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:bg-slate-100"
         onClick={() => {
           if (
             actionsDisabled ||
@@ -75,7 +77,7 @@ function CatalogObjectItem({
           />
           <FontAwesomeIcon
             icon={objectTypeIcons[object.objectType]}
-            size="sm"
+            className="w-4"
           />
           <div>{object.name}</div>
           {object.ownerShortname ? (

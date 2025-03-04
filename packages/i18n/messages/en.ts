@@ -308,6 +308,7 @@ export default {
       MICRO_LEARNING: 'Microlearning',
       GROUP_ACTIVITY: 'Group Activity',
       ANSWER_COLLECTION: 'Answer Collection',
+      CATALOG_COLLECTION: 'Catalog Collection',
     },
     contentInput: {
       boldStyle:
@@ -2202,8 +2203,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sharingRequests: 'Sharing Requests',
       unresolved: 'Unresolved',
       objectTypeANSWER_COLLECTION: 'Answer Collection',
-      noPublicRestrictedCollections:
-        'No public or restricted objects were found for the entered search criteria and filters. Objects for which access has already been requested or confirmed cannot be selected anymore.',
+      objectTypeCATALOG_COLLECTION: 'Catalog Collection',
+      noObjectsFoundInCatalog:
+        'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
       importObject: 'Import Object',
       accessRequested: 'Access requested',
@@ -2258,6 +2260,57 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
       removeObjectConfirm: 'Remove Object',
+      createCatalogCollection: 'Create Collection',
+      createCatalogCollectionTitle: 'Create Catalog Collection',
+      createCatalogCollectionDescription:
+        'Catalog collections are used to organize content and make it visible to specific users or user groups. Access to objects within the catalog collection is handled separately. The existence of the catalog collection is always visible to everyone, but only public catalog collections can be accessed by anyone, allowing them to request access to everything within. Access and managing privileges for restricted catalog collections can be defined after creation in a separate sharing dialog after creation.',
+      collectionName: 'Collection Name',
+      collectionNameTooltip: 'Enter a unique name for your catalog collection.',
+      collectionNamePlaceholder: 'Name of the catalog collection',
+      catalogAccessTooltip:
+        'Choose whether the collection should be visible to all users or if access should be restricted.',
+      accessDescriptionPUBLIC:
+        'Public collections are visible to all users and can be browsed by anyone.',
+      accessDescriptionRESTRICTED:
+        'Restricted collections can only be browsed by users with access. All users of KlickerUZH can request such access or be provided access directly through the sharing functionalitiy upon creation.',
+      nameRequired: 'Please enter a name.',
+      collectionCreationSuccess: 'Catalog collection was successfully created.',
+      collectionCreationError:
+        'An error occurred while creating the catalog collection. Please try again.',
+      backToCatalogOverview: 'back to Catalog Overview',
+      shareCatalogCollection: 'Share Collection',
+      deleteCatalogCollection: 'Delete Collection',
+      openCatalogCollection: 'Open Collection',
+      infoCatalogCollectionSharing:
+        'This view allows you to share the catalog collection "<b>{name}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
+      browseCatalogCollection: 'Browse Collection / Request Included Objects',
+      modifyContent: 'Modify Content',
+      modifyPermissions: 'Modify Permissions',
+      revokeAccess: 'Revoke Access',
+      deleteCollection: 'Delete Collection',
+      transferOwnership: 'Transfer Ownership',
+      sharingSuccessful: 'The catalog collection was shared successfully.',
+      sharingFailed:
+        'An error occurred while sharing the catalog collection or the specified user could not be found.',
+      accessRemovalSuccessful: 'Access has been successfully removed.',
+      accessRemovalFailed:
+        'Failed to remove access. Please try again or contact support.',
+      transferOwnershipCollectionDescription:
+        'You are about to transfer all ownership rights of the catalog collection <b>{catalogCollectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      deleteCatalogCollectionTitle: 'Delete Catalog Collection',
+      deleteCatalogCollectionDescription:
+        'Are you sure you want to delete the catalog collection "{name}"? This will remove all objects from the catalog collection and prevent users from accessing these objects through the catalog collection.',
+      deleteConfirm: 'Delete',
+      deletionSuccessful: 'The catalog collection was successfully deleted.',
+      deletionFailed:
+        'An error occurred while deleting the catalog collection. Please try again or contact the support.',
+      requestCatalogCollectionAccess: 'Request Access to Catalog Collection',
+      requestCatalogCollectionAccessDescription:
+        'Here you can request access to the catalog collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared catalog collection and its objects.',
+      requestAccessSuccess:
+        'The access request for the catalog collection was successfully submitted.',
+      requestAccessFailed:
+        'An error occurred while requesting the catalog collection. Please try again or contact the support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

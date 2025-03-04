@@ -309,6 +309,7 @@ export default {
       MICRO_LEARNING: 'Microlearning',
       GROUP_ACTIVITY: 'Gruppenaktivität',
       ANSWER_COLLECTION: 'Antwort-Sammlung',
+      CATALOG_COLLECTION: 'Katalog-Sammlung',
     },
     contentInput: {
       boldStyle:
@@ -2230,8 +2231,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sharingRequests: 'Zugriffs-Anfragen',
       unresolved: 'Unbearbeitet',
       objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
-      noPublicRestrictedCollections:
-        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden. Object, für welche bereits Zugriff angefragt oder bestätigt wurde, können nicht mehr ausgewählt werden.',
+      objectTypeCATALOG_COLLECTION: 'Katalog-Sammlung',
+      noObjectsFoundInCatalog:
+        'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
       importObject: 'Objekt importieren',
       accessRequested: 'Zugriff beantragt',
@@ -2289,6 +2291,58 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
       removeObjectConfirm: 'Objekt entfernen',
+      createCatalogCollection: 'Sammlung erstellen',
+      createCatalogCollectionTitle: 'Katalog-Sammlung erstellen',
+      createCatalogCollectionDescription:
+        'Katalog-Sammlungen dienen dazu, Inhalte zu organisieren und sie für bestimmte Benutzer oder Benutzergruppen sichtbar zu machen. Der Zugriff auf Objekte innerhalb der Katalog-Sammlung wird separat gehandhabt. Die Existenz der Katalog-Sammlung ist immer für alle sichtbar, aber nur öffentliche Katalog-Sammlungen können von jedem eingesehen werden, was ihnen ermöglicht, den Zugriff auf alles darin zu beantragen. Zugriffs- und Verwaltungsprivilegien für eingeschränkte Katalog-Sammlungen können nach der Erstellung in einem separaten Dialog definiert werden.',
+      collectionName: 'Name der Sammlung',
+      collectionNameTooltip:
+        'Geben Sie einen eindeutigen Namen für Ihre Katalog-Sammlung ein.',
+      collectionNamePlaceholder: 'Name der Katalog-Sammlung',
+      catalogAccessTooltip:
+        'Wählen Sie, ob die Sammlung für alle Benutzer sichtbar sein soll oder ob der Zugriff eingeschränkt werden soll.',
+      accessDescriptionPUBLIC:
+        'Öffentliche Sammlungen sind für alle Benutzer sichtbar und können durchsucht werden.',
+      accessDescriptionRESTRICTED:
+        'Eingeschränkte Sammlungen können nur von Benutzern mit Zugriff durchsucht werden. Alle Benutzer von KlickerUZH können Zugriff auf diese Sammlungen beantragen oder erhalten diesen direkt durch die Freigabefunktionalität bei der Erstellung.',
+      nameRequired: 'Bitte geben Sie einen Namen ein.',
+      collectionCreationSuccess: 'Katalog-Sammlung wurde erfolgreich erstellt.',
+      collectionCreationError:
+        'Bei der Erstellung der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      backToCatalogOverview: 'zurück zur Katalog-Übersicht',
+      shareCatalogCollection: 'Sammlung teilen',
+      deleteCatalogCollection: 'Sammlung löschen',
+      openCatalogCollection: 'Sammlung öffnen',
+      infoCatalogCollectionSharing:
+        'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{name}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      browseCatalogCollection: 'Sammlung durchsuchen / Objekte anfragen',
+      modifyContent: 'Inhalt bearbeiten',
+      modifyPermissions: 'Berechtigungen bearbeiten',
+      revokeAccess: 'Zugriff entziehen',
+      deleteCollection: 'Sammlung löschen',
+      transferOwnership: 'Eigentumsrechte übertragen',
+      sharingSuccessful: 'Die Katalog-Sammlung wurde erfolgreich geteilt.',
+      sharingFailed:
+        'Beim Teilen der Katalog-Sammlung ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
+      accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
+      accessRemovalFailed:
+        'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      transferOwnershipCollectionDescription:
+        'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{catalogCollectionName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      deleteCatalogCollectionTitle: 'Katalogsammlung löschen',
+      deleteCatalogCollectionDescription:
+        'Sind Sie sicher, dass Sie die Katalogsammlung "{name}" löschen möchten? Dies entfernt alle Objekte aus der Katalogsammlung und verhindert, dass Benutzer über die Katalogsammlung auf diese Objekte zugreifen können.',
+      deleteConfirm: 'Löschen',
+      deletionSuccessful: 'Die Katalogsammlung wurde erfolgreich gelöscht.',
+      deletionFailed:
+        'Beim Löschen der Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      requestCatalogCollectionAccess: 'Zugriff auf Katalogsammlung anfordern',
+      requestCatalogCollectionAccessDescription:
+        'Hier können Sie Zugriff auf die Katalogsammlung "<b>{name}</b>" (von {owner}) anfordern. Der Besitzer wird als Teil der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail-Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
+      requestAccessSuccess:
+        'Die Zugriffsanfrage für die Katalogsammlung wurde erfolgreich übermittelt.',
+      requestAccessFailed:
+        'Bei der Anforderung des Zugriffs auf die Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

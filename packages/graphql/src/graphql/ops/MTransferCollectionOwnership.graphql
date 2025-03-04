@@ -6,13 +6,6 @@ mutation TransferCollectionOwnership(
     collectionId: $collectionId
     usernameOrEmail: $usernameOrEmail
   ) {
-    permissionId
-    userId
-    username
-    userEmail
-    userGroupName
-    accessLevel
-    isRevokable
-    isOwn
+    ...PermissionInfoData
   }
 }

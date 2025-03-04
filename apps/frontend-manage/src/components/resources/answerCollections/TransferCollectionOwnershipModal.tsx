@@ -6,7 +6,7 @@ import {
   TransferCollectionOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import TransferOwnershipModal from './TransferOwnershipModal'
+import TransferOwnershipModal from '../TransferOwnershipModal'
 
 interface TransferCollectionOwnershipModalProps {
   open: boolean

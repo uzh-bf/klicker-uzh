@@ -1,0 +1,12 @@
+query GetCatalogCollectionInfo($catalogCollectionId: String) {
+  getCatalogCollectionInfo(catalogCollectionId: $catalogCollectionId) {
+    id
+    name
+    access
+    ownerShortname
+    isRequested
+    isShared
+    isEditor
+    isOwnerOrAdmin
+  }
+}
