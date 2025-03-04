@@ -1432,6 +1432,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeCatalogCollectionObjectAccess: t
+        .withAuth(asUserFullAccess)
+        .boolean({
+          nullable: false,
+          args: {
+            catalogCollectionId: t.arg.string({ required: true }),
+            access: t.arg({ type: ObjectAccess, required: true }),
+          },
+          resolve(_, args, ctx) {
+            return SharingService.changeCatalogCollectionObjectAccess(args, ctx)
+          },
+        }),
+
       requestCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogCollection,

@@ -1,0 +1,9 @@
+mutation ChangeCatalogCollectionObjectAccess(
+  $catalogCollectionId: String!
+  $access: ObjectAccess!
+) {
+  changeCatalogCollectionObjectAccess(
+    catalogCollectionId: $catalogCollectionId
+    access: $access
+  )
+}

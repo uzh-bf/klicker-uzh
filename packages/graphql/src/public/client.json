@@ -10,6 +10,7 @@
    "CancelAnswerCollectionRequest": "354b7d1867406777f7301caebaea837e50206fc730c263977a2b560458f20be9",
    "CancelLiveQuiz": "a270a5ab4a8e102679be3d43db8de35cc35d5650f42c0d02aa40548edadee6d4",
    "ChangeCatalogCollectionAccessLevel": "df20af6ebf978a062eb34f264ade2d9e53e5a14e55165b254af35bc4399c761a",
+   "ChangeCatalogCollectionObjectAccess": "99abaed190bb008b3301fc2537d148a7584fd911c61f189129ccb0a14e76b850",
    "ChangeCatalogObjectAccessLevel": "361ad407dd29c2add9838165a83934d854f58e909aebb8f15fa02e29aad5f2a1",
    "ChangeCollectionAccessLevel": "6ba1f2683771e04fe0aa346ebb198ba16083191e366248179f3eb301ebd37c20",
    "ChangeEmailSettings": "4eb1aea4a048c1f61c892d0efe44e45ce29c2f45066a91d1bebfeae593ff6fa3",

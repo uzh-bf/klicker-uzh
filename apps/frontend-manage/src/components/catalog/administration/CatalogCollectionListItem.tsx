@@ -9,12 +9,14 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectAccessLabel from '../ObjectAccessLabel'
+import CatalogCollectionChangeAccessModal from '../collections/CatalogCollectionChangeAccessModal'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
 import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
 import CatalogCollectionRequestAccessModal from '../collections/CatalogCollectionRequestAccessModal'
 import CatalogCollectionRequestAccessSuccessToast from '../collections/CatalogCollectionRequestAccessSuccessToast'
 import CatalogCollectionSharingModal from '../collections/CatalogCollectionSharingModal'
 import TransferCatalogCollectionOwnershipModal from '../collections/TransferCatalogCollectionOwnershipModal'
+import ObjectAccessSelection from './ObjectAccessSelection'
 
 function CatalogCollectionListItem({
   collection,
@@ -29,6 +31,8 @@ function CatalogCollectionListItem({
   const [transferModal, setTransferModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [requestModal, setRequestModal] = useState(false)
+  const [changeAccessModal, setChangeAccessModal] = useState(false)
+  const [newAccess, setNewAccess] = useState<ObjectAccess>(collection.access)
 
   // toast states
   const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
@@ -109,6 +113,17 @@ function CatalogCollectionListItem({
               <div>{t('manage.catalog.accessGranted')}</div>
             </div>
           ) : null}
+          {collection.isOwnerOrAdmin ? (
+            <ObjectAccessSelection
+              compact
+              value={collection.access}
+              onChange={(access) => {
+                setNewAccess(access as ObjectAccess)
+                setChangeAccessModal(true)
+              }}
+              cyPrefix={collection.name}
+            />
+          ) : null}
           {dropdownItems.length > 0 ? (
             <Dropdown
               items={dropdownItems}
@@ -150,6 +165,12 @@ function CatalogCollectionListItem({
             open={deletionModal}
             onClose={() => setDeletionModal(false)}
             onSuccess={() => setShowDeletionSuccessToast(true)}
+          />
+          <CatalogCollectionChangeAccessModal
+            catalogCollection={collection}
+            newAccess={newAccess}
+            open={changeAccessModal}
+            onClose={() => setChangeAccessModal(false)}
           />
         </>
       ) : null}

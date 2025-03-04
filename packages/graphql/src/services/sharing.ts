@@ -331,6 +331,53 @@ export async function changeCatalogCollectionAccessLevel(
   }
 }
 
+export async function changeCatalogCollectionObjectAccess(
+  {
+    catalogCollectionId,
+    access,
+  }: {
+    catalogCollectionId: string
+    access: DB.ObjectAccess
+  },
+  ctx: ContextWithUser
+) {
+  // verify that user has sufficient access (ADMIN or OWNER) to change the catalog collection access level
+  const { valid } = await validateCatalogCollectionPermissions(
+    {
+      catalogCollectionId,
+      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return false
+  }
+
+  // update the access level of the catalog collection
+  const updatedCollection = await ctx.prisma.catalogCollection.update({
+    where: {
+      id: catalogCollectionId,
+    },
+    data: {
+      access,
+    },
+  })
+
+  if (!updatedCollection) {
+    return false
+  }
+
+  // invalidate cache for the updated collection
+  ctx.emitter.emit('invalidate', {
+    typename: 'CatalogCollection',
+    id: updatedCollection.id,
+  })
+
+  // return success
+  return true
+}
+
 export async function revokeCatalogCollectionAccess(
   {
     permissionId,
