@@ -807,7 +807,8 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
         !(
           collection.ownerId !== ctx.user.sub &&
           collection.access === DB.ObjectAccess.PUBLIC &&
-          collection._count.objectAssignments === 0
+          collection._count.objectAssignments === 0 &&
+          collection.permissions.length === 0
         )
     )
     .map((collection) => {
