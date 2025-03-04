@@ -395,6 +395,7 @@ type CatalogObject {
 
 enum CatalogObjectType {
   ANSWER_COLLECTION
+  CATALOG_COLLECTION
 }
 
 type CatalogSelectionObject {
@@ -1315,6 +1316,7 @@ type Mutation {
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
+  changeCatalogCollectionAccessLevel(accessLevel: AccessLevel!, catalogCollectionId: String!, permissionId: Int!): PermissionInfo
   changeCatalogObjectAccessLevel(accessLevel: ObjectAccess!, assignmentId: Int!): Boolean!
   changeCollectionAccessLevel(accessLevel: AccessLevel!, collectionId: Int!, permissionId: Int!): PermissionInfo
   changeEmailSettings(projectUpdates: Boolean!): User
@@ -1408,11 +1410,13 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
+  revokeCatalogCollectionAccess(catalogCollectionId: String!, permissionId: Int!): Int
   revokeCollectionAccess(collectionId: Int!, permissionId: Int!): Int
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   shareAnswerCollection(accessLevel: AccessLevel!, collectionId: Int!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
+  shareCatalogCollection(accessLevel: AccessLevel!, catalogCollectionId: String!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -1803,6 +1807,7 @@ type Query {
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogAnswerCollections: [CatalogSelectionObject!]
   getCatalogCollectionInfo(catalogCollectionId: String): CatalogCollection
+  getCatalogCollectionPermissions(catalogCollectionId: String!): [PermissionInfo!]
   getCatalogCollectionsList: [CatalogCollection!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]

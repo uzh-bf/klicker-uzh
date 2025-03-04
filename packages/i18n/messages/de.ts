@@ -309,6 +309,7 @@ export default {
       MICRO_LEARNING: 'Microlearning',
       GROUP_ACTIVITY: 'Gruppenaktivität',
       ANSWER_COLLECTION: 'Antwort-Sammlung',
+      CATALOG_COLLECTION: 'Katalog-Sammlung',
     },
     contentInput: {
       boldStyle:
@@ -2230,6 +2231,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sharingRequests: 'Zugriffs-Anfragen',
       unresolved: 'Unbearbeitet',
       objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
+      objectTypeCATALOG_COLLECTION: 'Katalog-Sammlung',
       noObjectsFoundInCatalog:
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
@@ -2308,6 +2310,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       collectionCreationError:
         'Bei der Erstellung der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
       backToCatalogOverview: 'zurück zur Katalog-Übersicht',
+      shareCatalogCollection: 'Sammlung teilen',
+      deleteCatalogCollection: 'Sammlung löschen',
+      openCatalogCollection: 'Sammlung öffnen',
+      infoCatalogCollectionSharing:
+        'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{name}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      browseCatalogCollection: 'Sammlung durchsuchen / Objekte anfragen',
+      modifyContent: 'Inhalt bearbeiten',
+      modifyPermissions: 'Berechtigungen bearbeiten',
+      revokeAccess: 'Zugriff entziehen',
+      deleteCollection: 'Sammlung löschen',
+      transferOwnership: 'Eigentumsrechte übertragen',
+      sharingSuccessful: 'Die Katalog-Sammlung wurde erfolgreich geteilt.',
+      sharingFailed:
+        'Beim Teilen der Katalog-Sammlung ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
+      accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
+      accessRemovalFailed:
+        'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

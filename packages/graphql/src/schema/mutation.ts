@@ -1432,6 +1432,44 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeCatalogCollectionAccessLevel: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PermissionInfo,
+        args: {
+          catalogCollectionId: t.arg.string({ required: true }),
+          permissionId: t.arg.int({ required: true }),
+          accessLevel: t.arg({ type: AccessLevel, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.changeCatalogCollectionAccessLevel(args, ctx)
+        },
+      }),
+
+      revokeCatalogCollectionAccess: t.withAuth(asUserFullAccess).int({
+        nullable: true,
+        args: {
+          permissionId: t.arg.int({ required: true }),
+          catalogCollectionId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.revokeCatalogCollectionAccess(args, ctx)
+        },
+      }),
+
+      shareCatalogCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PermissionInfo,
+        args: {
+          catalogCollectionId: t.arg.string({ required: true }),
+          accessLevel: t.arg({ type: AccessLevel, required: true }),
+          usernameOrEmail: t.arg.string({ required: false }),
+          userGroupId: t.arg.int({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.shareCatalogCollection(args, ctx)
+        },
+      }),
+
       removeCatalogObjectAssignment: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {

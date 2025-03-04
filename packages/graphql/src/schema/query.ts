@@ -924,6 +924,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCatalogCollectionPermissions: asUser.field({
+        nullable: true,
+        type: [PermissionInfo],
+        args: {
+          catalogCollectionId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.getCatalogCollectionPermissions(args, ctx)
+        },
+      }),
+
       getCatalogCollectionsList: asUser.field({
         nullable: true,
         type: [CatalogCollection],

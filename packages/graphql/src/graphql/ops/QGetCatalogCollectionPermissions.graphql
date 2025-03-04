@@ -1,0 +1,5 @@
+query GetCatalogCollectionPermissions($catalogCollectionId: String!) {
+  getCatalogCollectionPermissions(catalogCollectionId: $catalogCollectionId) {
+    ...PermissionInfoData
+  }
+}

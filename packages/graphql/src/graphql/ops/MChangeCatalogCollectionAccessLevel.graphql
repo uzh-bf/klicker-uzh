@@ -1,0 +1,14 @@
+mutation ChangeCatalogCollectionAccessLevel(
+  $catalogCollectionId: String!
+  $permissionId: Int!
+  $accessLevel: AccessLevel!
+) {
+  changeCatalogCollectionAccessLevel(
+    catalogCollectionId: $catalogCollectionId
+    permissionId: $permissionId
+    accessLevel: $accessLevel
+  ) {
+    permissionId
+    accessLevel
+  }
+}

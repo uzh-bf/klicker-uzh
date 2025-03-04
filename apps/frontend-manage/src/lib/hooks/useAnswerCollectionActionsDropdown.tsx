@@ -50,10 +50,6 @@ function useAnswerCollectionActionsDropdown({
       </Tooltip>
     )
 
-    if (isOwner) {
-      // TODO: add functionality to transfer ownership and corresponding modal
-    }
-
     // sharing functionalities
     if (isShareable) {
       items.push({

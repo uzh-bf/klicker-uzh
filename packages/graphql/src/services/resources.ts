@@ -704,6 +704,7 @@ export async function changeCollectionAccessLevel(
   const permission = await ctx.prisma.permission.update({
     where: {
       id: permissionId,
+      answerCollectionId: collectionId,
     },
     data: {
       accessLevel,
@@ -748,7 +749,7 @@ export async function revokeCollectionAccess(
   }: { permissionId: number; collectionId: number },
   ctx: ContextWithUser
 ) {
-  // verify that the permission belongs to the specified user and collection
+  // verify that the permission belongs to the specified collection
   const permission = await ctx.prisma.permission.findUnique({
     where: {
       id: permissionId,
@@ -811,6 +812,13 @@ export async function revokeCollectionAccess(
       id: permissionId,
     },
   })
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: deletedPermission.id,
+  })
+
   return deletedPermission.id
 }
 

@@ -25,10 +25,10 @@ function CatalogBrowser() {
     skip: typeof catalogCollectionId !== 'string',
   })
   const collectionName = metaData?.getCatalogCollectionInfo?.name
-  const userIsCollectionAdmin =
-    typeof catalogCollectionId === 'undefined' ||
-    metaData?.getCatalogCollectionInfo?.isOwnerOrAdmin
-  const userIsCollectionEditor = metaData?.getCatalogCollectionInfo?.isEditor
+  const userIsCollectionEditor =
+    (typeof catalogCollectionId === 'undefined' ||
+      metaData?.getCatalogCollectionInfo?.isEditor) ??
+    false
 
   // object modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -46,11 +46,7 @@ function CatalogBrowser() {
       <ObjectImport
         collectionName={collectionName}
         catalogCollectionId={catalogCollectionId as string | undefined}
-        collectionEditor={
-          typeof catalogCollectionId === 'undefined'
-            ? true
-            : (userIsCollectionEditor ?? false)
-        }
+        collectionEditor={userIsCollectionEditor}
       />
 
       <div className="float-right mt-4 flex flex-row gap-3">
@@ -59,12 +55,12 @@ function CatalogBrowser() {
             setCollectionModalOpen={setCollectionModalOpen}
           />
         ) : null}
-        {userIsCollectionAdmin ? (
+        {userIsCollectionEditor ? (
           <AddObjectToCatalogButton setIsModalOpen={setIsModalOpen} />
         ) : null}
       </div>
 
-      {userIsCollectionAdmin ? (
+      {userIsCollectionEditor ? (
         <>
           <AddObjectToCatalogModal
             open={isModalOpen}

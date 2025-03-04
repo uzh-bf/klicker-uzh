@@ -277,6 +277,7 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
         ownerShortname: collection.owner?.shortname,
         isRequested,
         isShared,
+        isOwner: collection.ownerId === ctx.user.sub,
         isOwnerOrAdmin,
       }
     })
@@ -546,6 +547,305 @@ export async function removeCatalogObjectAssignment(
   )
 
   return !!updatedAssignment.id
+}
+
+export async function changeCatalogCollectionAccessLevel(
+  {
+    catalogCollectionId,
+    permissionId,
+    accessLevel,
+  }: {
+    catalogCollectionId: string
+    permissionId: number
+    accessLevel: DB.AccessLevel
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the requesting user has sufficient permissions to modify access level (ADMIN or OWNER)
+  const { valid } = await validateCatalogCollectionPermissions(
+    {
+      catalogCollectionId,
+      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
+  // update the access level of the permission
+  const permission = await ctx.prisma.permission.update({
+    where: {
+      id: permissionId,
+      catalogCollectionId,
+    },
+    data: {
+      accessLevel,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          shortname: true,
+          email: true,
+        },
+      },
+    },
+  })
+
+  // if the permission did not exist in the first place, return null
+  if (!permission) {
+    return null
+  }
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permission.id,
+  })
+
+  return {
+    permissionId: permission.id,
+    userId: permission.user?.id,
+    username: permission.user?.shortname,
+    userEmail: permission.user?.email,
+    userGroupId: undefined,
+    userGroupName: undefined,
+    accessLevel: permission.accessLevel,
+  }
+}
+
+export async function revokeCatalogCollectionAccess(
+  {
+    permissionId,
+    catalogCollectionId,
+  }: { permissionId: number; catalogCollectionId: string },
+  ctx: ContextWithUser
+) {
+  // verify that the requesting user has sufficient permissions to revoke access (ADMIN or OWNER)
+  const { valid } = await validateCatalogCollectionPermissions(
+    {
+      catalogCollectionId,
+      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
+  // verify that the permission belongs to the specified catalog collection
+  const permission = await ctx.prisma.permission.findUnique({
+    where: {
+      id: permissionId,
+      catalogCollectionId,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  })
+
+  if (!permission || permission.id !== permissionId) {
+    return null
+  }
+
+  // delete the permission
+  const deletedPermission = await ctx.prisma.permission.delete({
+    where: {
+      id: permissionId,
+    },
+  })
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: deletedPermission.id,
+  })
+
+  return deletedPermission.id
+}
+
+export async function shareCatalogCollection(
+  {
+    catalogCollectionId,
+    accessLevel,
+    usernameOrEmail,
+    userGroupId,
+  }: {
+    catalogCollectionId: string
+    accessLevel: DB.AccessLevel
+    usernameOrEmail?: string | null
+    userGroupId?: number | null
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the requesting user has sufficient permissions to share object (ADMIN or OWNER)
+  const { valid, catalogCollection } =
+    await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId,
+        acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      },
+      ctx
+    )
+
+  if (!valid) {
+    return null
+  }
+
+  // create new permission with the defined access level
+  if (usernameOrEmail && usernameOrEmail.length > 0) {
+    // check if a user with the provided username or email exists and is not the owner of the catalog collection
+    const user = await ctx.prisma.user.findFirst({
+      where: {
+        OR: [
+          {
+            shortname: usernameOrEmail,
+          },
+          {
+            email: usernameOrEmail,
+          },
+        ],
+      },
+      select: {
+        id: true,
+        shortname: true,
+        email: true,
+      },
+    })
+
+    const userId = user?.id
+    if (!userId || catalogCollection?.ownerId === userId) {
+      return null
+    }
+
+    // upsert new permission for the answer collection under consideration
+    const permission = await ctx.prisma.permission.upsert({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId,
+          userId,
+        },
+      },
+      create: {
+        accessLevel,
+        permissionStatus: DB.PermissionStatus.GRANTED,
+        catalogCollection: {
+          connect: {
+            id: catalogCollectionId,
+          },
+        },
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+        objectOwner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+      },
+      update: {
+        accessLevel,
+        permissionStatus: DB.PermissionStatus.GRANTED,
+      },
+    })
+
+    // invalidate permission
+    ctx.emitter.emit('invalidate', {
+      typename: 'Permission',
+      id: permission.id,
+    })
+
+    return {
+      permissionId: permission.id,
+      userId: user.id,
+      username: user.shortname,
+      userEmail: user.email,
+      userGroupId: undefined,
+      userGroupName: undefined,
+      accessLevel: permission.accessLevel,
+      isRevokable: true,
+      isOwn: false,
+    }
+  } else if (userGroupId) {
+    // TODO: implement sharing with user groups
+  } else {
+    return null
+  }
+}
+
+export async function getCatalogCollectionPermissions(
+  { catalogCollectionId }: { catalogCollectionId: string },
+  ctx: ContextWithUser
+) {
+  const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
+    where: {
+      id: catalogCollectionId,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              accessLevel: DB.AccessLevel.ADMIN,
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      permissions: {
+        where: {
+          permissionStatus: DB.PermissionStatus.GRANTED,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              shortname: true,
+              email: true,
+            },
+          },
+          // TODO: also include permissions awarded to user groups and set in return object
+        },
+      },
+    },
+  })
+
+  if (!catalogCollection) {
+    return []
+  }
+
+  // TODO: once permissions from user groups are included, deduplicate and use highest available permission level
+  return catalogCollection.permissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      userId: permission.user?.id,
+      username: permission.user?.shortname,
+      userEmail: permission.user?.email,
+      userGroupId: undefined,
+      userGroupName: undefined,
+      accessLevel: permission.accessLevel,
+      isRevokable: true,
+      isOwn: permission.user?.id === ctx.user.sub,
+    }))
+    .sort((a, b) => {
+      if (a.username === b.username) {
+        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
+      }
+      return (a.username ?? '').localeCompare(b.username ?? '')
+    })
 }
 
 export async function getCatalogAnswerCollections(ctx: ContextWithUser) {

@@ -308,6 +308,7 @@ export default {
       MICRO_LEARNING: 'Microlearning',
       GROUP_ACTIVITY: 'Group Activity',
       ANSWER_COLLECTION: 'Answer Collection',
+      CATALOG_COLLECTION: 'Catalog Collection',
     },
     contentInput: {
       boldStyle:
@@ -2202,6 +2203,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sharingRequests: 'Sharing Requests',
       unresolved: 'Unresolved',
       objectTypeANSWER_COLLECTION: 'Answer Collection',
+      objectTypeCATALOG_COLLECTION: 'Catalog Collection',
       noObjectsFoundInCatalog:
         'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
@@ -2276,6 +2278,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       collectionCreationError:
         'An error occurred while creating the catalog collection. Please try again.',
       backToCatalogOverview: 'back to Catalog Overview',
+      shareCatalogCollection: 'Share Collection',
+      deleteCatalogCollection: 'Delete Collection',
+      openCatalogCollection: 'Open Collection',
+      infoCatalogCollectionSharing:
+        'This view allows you to share the catalog collection "<b>{name}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
+      browseCatalogCollection: 'Browse Collection / Request Included Objects',
+      modifyContent: 'Modify Content',
+      modifyPermissions: 'Modify Permissions',
+      revokeAccess: 'Revoke Access',
+      deleteCollection: 'Delete Collection',
+      transferOwnership: 'Transfer Ownership',
+      sharingSuccessful: 'The catalog collection was shared successfully.',
+      sharingFailed:
+        'An error occurred while sharing the catalog collection or the specified user could not be found.',
+      accessRemovalSuccessful: 'Access has been successfully removed.',
+      accessRemovalFailed:
+        'Failed to remove access. Please try again or contact support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

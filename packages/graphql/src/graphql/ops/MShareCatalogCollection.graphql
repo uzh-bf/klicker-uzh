@@ -1,11 +1,11 @@
-mutation ShareAnswerCollection(
-  $collectionId: Int!
+mutation ShareCatalogCollection(
+  $catalogCollectionId: String!
   $accessLevel: AccessLevel!
   $usernameOrEmail: String
   $userGroupId: Int
 ) {
-  shareAnswerCollection(
-    collectionId: $collectionId
+  shareCatalogCollection(
+    catalogCollectionId: $catalogCollectionId
     accessLevel: $accessLevel
     usernameOrEmail: $usernameOrEmail
     userGroupId: $userGroupId

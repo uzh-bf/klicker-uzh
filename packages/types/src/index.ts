@@ -20,6 +20,7 @@ export enum AccessType {
 
 export enum CatalogObjectType {
   ANSWER_COLLECTION = 'ANSWER_COLLECTION',
+  CATALOG_COLLECTION = 'CATALOG_COLLECTION',
   // TODO: add more object types once they are supported
   // ELEMENT = 'ELEMENT',
   // COURSE = 'COURSE

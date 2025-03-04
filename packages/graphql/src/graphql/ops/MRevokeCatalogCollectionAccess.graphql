@@ -1,0 +1,9 @@
+mutation RevokeCatalogCollectionAccess(
+  $permissionId: Int!
+  $catalogCollectionId: String!
+) {
+  revokeCatalogCollectionAccess(
+    permissionId: $permissionId
+    catalogCollectionId: $catalogCollectionId
+  )
+}
