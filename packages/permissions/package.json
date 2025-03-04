@@ -1,14 +1,15 @@
 {
   "name": "@klicker-uzh/permissions",
-  "version": "0.1.0",
   "description": "Permission management system for KlickerUZH",
+  "version": "0.1.0",
   "main": "index.ts",
-  "type": "module",
+  "devDependencies": {
+    "tsx": "~4.19.1",
+    "typescript": "~5.6.3"
+  },
   "scripts": {
+    "activitySharingDemo": "tsx activity-sharing.ts",
     "demo": "tsx index.ts"
   },
-  "devDependencies": {
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
-  }
+  "type": "module"
 }
