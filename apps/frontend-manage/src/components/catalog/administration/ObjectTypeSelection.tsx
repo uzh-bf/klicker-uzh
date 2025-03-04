@@ -28,11 +28,13 @@ function ObjectTypeSelection({
             label={t('manage.catalog.objectType')}
             tooltip={t('manage.catalog.objectTypeTooltip')}
             placeholder={t('manage.catalog.selectObjectType')}
-            items={Object.values(CatalogObjectType).map((objectType) => ({
-              value: objectType,
-              label: t(`shared.types.${objectType}`),
-              data: { cy: `object-type-${objectType}` },
-            }))}
+            items={Object.values(CatalogObjectType)
+              .filter((type) => type !== CatalogObjectType.CatalogCollection)
+              .map((objectType) => ({
+                value: objectType,
+                label: t(`shared.types.${objectType}`),
+                data: { cy: `object-type-${objectType}` },
+              }))}
             data={{ cy: 'object-type-selection' }}
             className={{ select: { trigger: 'h-9' } }}
           />

@@ -1000,29 +1000,6 @@ export async function modifyAnswerCollection(
       },
     })
 
-    // TODO: MIGRATE - MOVE THIS TO CORRESPONDING CATALOG OPERATION
-    // // if access is changed from restricted or public to private, all access requests will be declined automatically
-    // if (
-    //   (collection.access === DB.ObjectAccess.PUBLIC ||
-    //     collection.access === DB.ObjectAccess.RESTRICTED) &&
-    //   access === DB.ObjectAccess.PRIVATE
-    // ) {
-    //   await tx.permission.deleteMany({
-    //     where: {
-    //       answerCollectionId: id,
-    //       permissionStatus: DB.PermissionStatus.REQUESTED,
-    //     },
-    //   })
-
-    //   // invalidate the corresponding cache entries
-    //   collection.permissions.forEach((permission) => {
-    //     ctx.emitter.emit('invalidate', {
-    //       typename: 'Permission',
-    //       id: permission.id,
-    //     })
-    //   })
-    // }
-
     // invalidate the answer collection
     ctx.emitter.emit('invalidate', {
       typename: 'AnswerCollection',

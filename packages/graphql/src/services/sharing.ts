@@ -24,37 +24,22 @@ async function verifyCatalogCollectionBrowsable(
     return true
   }
 
-  const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
-    where: {
-      id: catalogCollectionId,
-    },
-    include: {
-      permissions: {
-        where: {
-          OR: [
-            {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-            // {
-            //   userGroup: {
-            //     members: {
-            //       some: {
-            //         id: ctx.user.sub,
-            //       },
-            //     },
-            //   },
-            // },
-          ],
-        },
+  const { valid, catalogCollection } =
+    await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId,
+        acceptedAccessLevels: [
+          DB.AccessLevel.READ,
+          DB.AccessLevel.WRITE,
+          DB.AccessLevel.ADMIN,
+        ],
       },
-    },
-  })
+      ctx
+    )
 
   return (
     catalogCollection &&
-    (catalogCollection.access === DB.ObjectAccess.PUBLIC ||
-      catalogCollection.permissions.length > 0)
+    (valid || catalogCollection.access === DB.ObjectAccess.PUBLIC)
   )
 }
 
@@ -87,6 +72,7 @@ export async function validateCatalogCollectionPermissions(
             },
           },
         },
+        // TODO: handle user groups
       ],
     },
   })
@@ -209,6 +195,16 @@ export async function getCatalogCollectionInfo(
     catalogCollectionId === MISSING_CATALOG_COLLECTION_ID ||
     !catalogCollectionId
   ) {
+    return null
+  }
+
+  // verify that user has at least read permissions on the catalog collection
+  const valid = await verifyCatalogCollectionBrowsable(
+    { catalogCollectionId },
+    ctx
+  )
+
+  if (!valid) {
     return null
   }
 
@@ -797,6 +793,126 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
   return mappedCollections
 }
 
+export async function requestCatalogCollection(
+  { catalogCollectionId }: { catalogCollectionId: string },
+  ctx: ContextWithUser
+) {
+  // fetch the catalog collection including potential pending permission requests
+  const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
+    where: {
+      id: catalogCollectionId,
+      ownerId: {
+        not: ctx.user.sub,
+      },
+    },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+        },
+      },
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  // check if granted / requested permission already exist
+  if (
+    !catalogCollection ||
+    catalogCollection.permissions.length > 0 ||
+    !catalogCollection.ownerId
+  ) {
+    return null
+  }
+
+  // create a new permission request
+  await ctx.prisma.permission.create({
+    data: {
+      accessLevel: DB.AccessLevel.READ,
+      permissionStatus: DB.PermissionStatus.REQUESTED,
+      catalogCollection: {
+        connect: {
+          id: catalogCollectionId,
+        },
+      },
+      user: {
+        connect: {
+          id: ctx.user.sub,
+        },
+      },
+      objectOwner: {
+        connect: {
+          id: catalogCollection.ownerId,
+        },
+      },
+    },
+    include: {
+      objectOwner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  // TODO: notify owner of the collection by e-mail that there is a new access request
+
+  // invalidate cache for the imported collection
+  ctx.emitter.emit('invalidate', {
+    typename: 'CatalogCollection',
+    id: catalogCollection?.id,
+  })
+
+  // return updated catalog collection object
+  return {
+    ...catalogCollection,
+    ownerShortname: catalogCollection.owner?.shortname,
+    isRequested: true,
+    isShared: false,
+    isOwner: false,
+    isOwnerOrAdmin: false,
+  }
+}
+
+export async function deleteCatalogCollection(
+  {
+    catalogCollectionId,
+  }: {
+    catalogCollectionId: string
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the user has sufficient access to delete the catalog collection
+  const { valid } = await validateCatalogCollectionPermissions(
+    {
+      catalogCollectionId,
+      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
+  // delete the catalog collection
+  const deletedCollection = await ctx.prisma.catalogCollection.delete({
+    where: {
+      id: catalogCollectionId,
+    },
+  })
+
+  // invalidate cache for the deleted collection
+  ctx.emitter.emit('invalidate', {
+    typename: 'CatalogCollection',
+    id: catalogCollectionId,
+  })
+
+  return deletedCollection.id
+}
 // #endregion
 
 // ! Catalog Operations
@@ -888,6 +1004,18 @@ export async function getCatalogObjects(
   { catalogCollectionId }: { catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
+  // verify that the user has access to the catalog collection (if defined)
+  if (catalogCollectionId) {
+    const valid = await verifyCatalogCollectionBrowsable(
+      { catalogCollectionId },
+      ctx
+    )
+
+    if (!valid) {
+      return []
+    }
+  }
+
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,

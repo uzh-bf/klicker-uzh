@@ -2329,6 +2329,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       transferOwnershipCollectionDescription:
         'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{catalogCollectionName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      deleteCatalogCollectionTitle: 'Katalogsammlung löschen',
+      deleteCatalogCollectionDescription:
+        'Sind Sie sicher, dass Sie die Katalogsammlung "{name}" löschen möchten? Dies entfernt alle Objekte aus der Katalogsammlung und verhindert, dass Benutzer über die Katalogsammlung auf diese Objekte zugreifen können.',
+      deleteConfirm: 'Löschen',
+      deletionSuccessful: 'Die Katalogsammlung wurde erfolgreich gelöscht.',
+      deletionFailed:
+        'Beim Löschen der Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      requestCatalogCollectionAccess: 'Zugriff auf Katalogsammlung anfordern',
+      requestCatalogCollectionAccessDescription:
+        'Hier können Sie Zugriff auf die Katalogsammlung "<b>{name}</b>" (von {owner}) anfordern. Der Besitzer wird als Teil der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail-Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
+      requestAccessSuccess:
+        'Die Zugriffsanfrage für die Katalogsammlung wurde erfolgreich übermittelt.',
+      requestAccessFailed:
+        'Bei der Anforderung des Zugriffs auf die Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

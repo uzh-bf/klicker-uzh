@@ -96,7 +96,7 @@ function useCatalogCollectionActionsDropdown({
     }
 
     // ! before re-introducing this dropdown item, fix issue that router.push does not seem to work properly here
-    // view functionality for shared access
+    // viewing functionality for shared access
     // if (isViewable) {
     //   items.push({
     //     id: 'view',
@@ -115,7 +115,15 @@ function useCatalogCollectionActionsDropdown({
     // }
 
     return items
-  }, [t, isShareable, isDeletable, isRequestable, isViewable])
+  }, [
+    t,
+    isShareable,
+    isDeletable,
+    isRequestable,
+    setSharingModal,
+    setDeletionModal,
+    setRequestModal,
+  ])
 }
 
 export default useCatalogCollectionActionsDropdown

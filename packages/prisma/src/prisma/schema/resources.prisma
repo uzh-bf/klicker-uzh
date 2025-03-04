@@ -116,7 +116,7 @@ model CatalogCollection {
     // link to the join-table containing all associated objects
     objectAssignments CatalogCollectionAssignment[]
 
-    owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+    owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     ownerId String? @db.Uuid
 
     createdAt DateTime @default(now())

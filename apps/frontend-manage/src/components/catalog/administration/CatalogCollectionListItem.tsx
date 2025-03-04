@@ -1,5 +1,5 @@
-import { faFolder } from '@fortawesome/free-regular-svg-icons'
-import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons'
+import { faClock, faFolder } from '@fortawesome/free-regular-svg-icons'
+import { faCheck, faEllipsisVertical } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CatalogCollection, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
@@ -9,6 +9,10 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectAccessLabel from '../ObjectAccessLabel'
+import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
+import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
+import CatalogCollectionRequestAccessModal from '../collections/CatalogCollectionRequestAccessModal'
+import CatalogCollectionRequestAccessSuccessToast from '../collections/CatalogCollectionRequestAccessSuccessToast'
 import CatalogCollectionSharingModal from '../collections/CatalogCollectionSharingModal'
 import TransferCatalogCollectionOwnershipModal from '../collections/TransferCatalogCollectionOwnershipModal'
 
@@ -20,28 +24,34 @@ function CatalogCollectionListItem({
   const t = useTranslations()
   const router = useRouter()
 
+  // modal states
   const [sharingModal, setSharingModal] = useState(false)
   const [transferModal, setTransferModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [requestModal, setRequestModal] = useState(false)
 
+  // toast states
+  const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
+  const [showDeletionSuccessToast, setShowDeletionSuccessToast] =
+    useState(false)
+
+  // access can be requested if not done already, not shared, and not owned
+  const isRequestable =
+    collection.access === ObjectAccess.Restricted &&
+    !collection.isRequested &&
+    !collection.isShared &&
+    !collection.isOwner
+
   const dropdownItems = useCatalogCollectionActionsDropdown({
     catalogCollectionId: collection.id,
     isShareable: collection.isOwnerOrAdmin,
     isDeletable: collection.isOwnerOrAdmin,
-    isRequestable:
-      collection.access === ObjectAccess.Restricted &&
-      !collection.isRequested &&
-      !collection.isShared &&
-      !collection.isOwner,
+    isRequestable,
     isViewable: collection.isShared,
     setSharingModal,
     setDeletionModal,
     setRequestModal,
   })
-
-  // TODO: deletion modal
-  // TODO: request modal
 
   return (
     <>
@@ -86,22 +96,36 @@ function CatalogCollectionListItem({
             </div>
           ) : null}
         </div>
-        {dropdownItems.length > 0 ? (
-          <Dropdown
-            items={dropdownItems}
-            trigger={
-              <ForwardRefButton
-                basic
-                className={{
-                  root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
-                }}
-              >
-                <Button.Icon withoutLabel icon={faEllipsisVertical} />
-              </ForwardRefButton>
-            }
-            className={{ viewport: 'z-20' }}
-          />
-        ) : null}
+        <div className="flex flex-row items-center gap-2">
+          {collection.isRequested ? (
+            <div className="flex flex-row items-center gap-1.5">
+              <FontAwesomeIcon icon={faClock} />
+              <div>{t('manage.catalog.accessRequested')}</div>
+            </div>
+          ) : null}
+          {collection.isShared ? (
+            <div className="flex flex-row items-center gap-1.5">
+              <FontAwesomeIcon icon={faCheck} />
+              <div>{t('manage.catalog.accessGranted')}</div>
+            </div>
+          ) : null}
+          {dropdownItems.length > 0 ? (
+            <Dropdown
+              items={dropdownItems}
+              trigger={
+                <ForwardRefButton
+                  basic
+                  className={{
+                    root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
+                  }}
+                >
+                  <Button.Icon withoutLabel icon={faEllipsisVertical} />
+                </ForwardRefButton>
+              }
+              className={{ viewport: 'z-20' }}
+            />
+          ) : null}
+        </div>
       </div>
 
       {collection.isOwnerOrAdmin ? (
@@ -120,8 +144,35 @@ function CatalogCollectionListItem({
             open={transferModal}
             onClose={() => setTransferModal(false)}
           />
+          <CatalogCollectionDeletionModal
+            catalogCollectionId={collection.id}
+            catalogCollectionName={collection.name}
+            open={deletionModal}
+            onClose={() => setDeletionModal(false)}
+            onSuccess={() => setShowDeletionSuccessToast(true)}
+          />
         </>
       ) : null}
+
+      {isRequestable && (
+        <CatalogCollectionRequestAccessModal
+          catalogCollectionId={collection.id}
+          catalogCollectionName={collection.name}
+          ownerShortname={collection.ownerShortname ?? undefined}
+          open={requestModal}
+          onClose={() => setRequestModal(false)}
+          onSuccess={() => setShowRequestSuccessToast(true)}
+        />
+      )}
+
+      <CatalogCollectionRequestAccessSuccessToast
+        open={showRequestSuccessToast}
+        onClose={() => setShowRequestSuccessToast(false)}
+      />
+      <CatalogCollectionDeletionSuccessToast
+        open={showDeletionSuccessToast}
+        onClose={() => setShowDeletionSuccessToast(false)}
+      />
     </>
   )
 }

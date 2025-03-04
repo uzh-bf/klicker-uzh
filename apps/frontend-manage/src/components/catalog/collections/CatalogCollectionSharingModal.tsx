@@ -50,7 +50,7 @@ function CatalogCollectionSharingModal({
   )
   const permissions = data?.getCatalogCollectionPermissions
 
-  // mutation to create new permission entry for answer collection
+  // mutation to create new permission entry for catalog collection
   const [shareCatalogCollection] = useMutation(ShareCatalogCollectionDocument)
 
   // mutation to change the access level of a certain permission
@@ -69,7 +69,7 @@ function CatalogCollectionSharingModal({
         title={t('manage.catalog.shareCatalogCollection')}
         open={open}
         onClose={onClose}
-        dataCloseButton={{ cy: 'close-remove-answer-collection' }}
+        dataCloseButton={{ cy: 'close-remove-catalog-collection' }}
         className={{
           content: 'h-max max-h-full max-w-5xl',
         }}

@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { GetCatalogCollectionInfoDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import AddObjectToCatalogButton from './administration/AddObjectToCatalogButton'
@@ -18,12 +19,15 @@ function CatalogBrowser() {
   const { catalogCollectionId } = router.query
 
   // get current collection metadata (only if inside a collection)
-  const { data: metaData } = useQuery(GetCatalogCollectionInfoDocument, {
-    variables: {
-      catalogCollectionId: catalogCollectionId as string,
-    },
-    skip: typeof catalogCollectionId !== 'string',
-  })
+  const { data: metaData, loading: metaDataLoading } = useQuery(
+    GetCatalogCollectionInfoDocument,
+    {
+      variables: {
+        catalogCollectionId: catalogCollectionId as string,
+      },
+      skip: typeof catalogCollectionId !== 'string',
+    }
+  )
   const collectionName = metaData?.getCatalogCollectionInfo?.name
   const userIsCollectionEditor =
     (typeof catalogCollectionId === 'undefined' ||
@@ -39,6 +43,19 @@ function CatalogBrowser() {
   const [collectionModalOpen, setCollectionModalOpen] = useState(false)
   const [collectionSuccess, setCollectionSuccess] = useState(false)
   const [collectionError, setCollectionError] = useState(false)
+
+  if (metaDataLoading) {
+    return <Loader />
+  }
+
+  // redirect user to home of catalog if access is not valid
+  if (
+    typeof catalogCollectionId !== 'undefined' &&
+    !metaData?.getCatalogCollectionInfo &&
+    !metaDataLoading
+  ) {
+    router.push({ pathname: '/resources/catalog', query: {} })
+  }
 
   return (
     <div className="h-full">

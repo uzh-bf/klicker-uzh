@@ -1432,6 +1432,27 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      requestCatalogCollection: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CatalogCollection,
+        args: {
+          catalogCollectionId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.requestCatalogCollection(args, ctx)
+        },
+      }),
+
+      deleteCatalogCollection: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          catalogCollectionId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.deleteCatalogCollection(args, ctx)
+        },
+      }),
+
       changeCatalogCollectionAccessLevel: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,

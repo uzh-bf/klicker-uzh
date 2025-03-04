@@ -1,0 +1,12 @@
+mutation RequestCatalogCollection($catalogCollectionId: String!) {
+  requestCatalogCollection(catalogCollectionId: $catalogCollectionId) {
+    id
+    name
+    access
+    ownerShortname
+    isRequested
+    isShared
+    isOwner
+    isOwnerOrAdmin
+  }
+}

@@ -2297,6 +2297,20 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Failed to remove access. Please try again or contact support.',
       transferOwnershipCollectionDescription:
         'You are about to transfer all ownership rights of the catalog collection <b>{catalogCollectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      deleteCatalogCollectionTitle: 'Delete Catalog Collection',
+      deleteCatalogCollectionDescription:
+        'Are you sure you want to delete the catalog collection "{name}"? This will remove all objects from the catalog collection and prevent users from accessing these objects through the catalog collection.',
+      deleteConfirm: 'Delete',
+      deletionSuccessful: 'The catalog collection was successfully deleted.',
+      deletionFailed:
+        'An error occurred while deleting the catalog collection. Please try again or contact the support.',
+      requestCatalogCollectionAccess: 'Request Access to Catalog Collection',
+      requestCatalogCollectionAccessDescription:
+        'Here you can request access to the catalog collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared catalog collection and its objects.',
+      requestAccessSuccess:
+        'The access request for the catalog collection was successfully submitted.',
+      requestAccessFailed:
+        'An error occurred while requesting the catalog collection. Please try again or contact the support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

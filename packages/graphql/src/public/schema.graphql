@@ -1341,6 +1341,7 @@ type Mutation {
   declineObjectSharingRequest(permissionId: Int!, userId: String!): Boolean!
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
+  deleteCatalogCollection(catalogCollectionId: String!): String
   deleteCourse(id: String!): Course
   deleteFeedback(id: Int!): Feedback
   deleteFeedbackResponse(id: Int!): Feedback
@@ -1407,6 +1408,7 @@ type Mutation {
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestAnswerCollection(catalogCollectionId: String, collectionId: Int!): CatalogObject
+  requestCatalogCollection(catalogCollectionId: String!): CatalogCollection
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback

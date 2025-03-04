@@ -17046,6 +17046,35 @@
             "deprecationReason": null
           },
           {
+            "name": "deleteCatalogCollection",
+            "description": null,
+            "args": [
+              {
+                "name": "catalogCollectionId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "deleteCourse",
             "description": null,
             "args": [
@@ -20455,6 +20484,35 @@
             "type": {
               "kind": "OBJECT",
               "name": "CatalogObject",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "requestCatalogCollection",
+            "description": null,
+            "args": [
+              {
+                "name": "catalogCollectionId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "CatalogCollection",
               "ofType": null
             },
             "isDeprecated": false,
