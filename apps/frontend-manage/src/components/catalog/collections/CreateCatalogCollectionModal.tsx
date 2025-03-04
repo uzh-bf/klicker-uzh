@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   CreateCatalogCollectionDocument,
+  GetCatalogCollectionsListDocument,
   ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -57,6 +58,27 @@ function CreateCatalogCollectionModal({
                 variables: {
                   name: values.name,
                   access: values.access as ObjectAccess,
+                },
+                update: (cache, { data }) => {
+                  if (!data?.createCatalogCollection) return
+
+                  const prevCollections = cache.readQuery({
+                    query: GetCatalogCollectionsListDocument,
+                  })
+
+                  if (!prevCollections?.getCatalogCollectionsList) {
+                    return
+                  }
+
+                  cache.writeQuery({
+                    query: GetCatalogCollectionsListDocument,
+                    data: {
+                      getCatalogCollectionsList: [
+                        ...(prevCollections.getCatalogCollectionsList ?? []),
+                        data.createCatalogCollection,
+                      ],
+                    },
+                  })
                 },
               })
 

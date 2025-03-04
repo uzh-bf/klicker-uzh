@@ -2295,6 +2295,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessRemovalSuccessful: 'Access has been successfully removed.',
       accessRemovalFailed:
         'Failed to remove access. Please try again or contact support.',
+      transferOwnershipCollectionDescription:
+        'You are about to transfer all ownership rights of the catalog collection <b>{catalogCollectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

@@ -10,6 +10,7 @@ import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogCollectionSharingModal from '../collections/CatalogCollectionSharingModal'
+import TransferCatalogCollectionOwnershipModal from '../collections/TransferCatalogCollectionOwnershipModal'
 
 function CatalogCollectionListItem({
   collection,
@@ -20,6 +21,7 @@ function CatalogCollectionListItem({
   const router = useRouter()
 
   const [sharingModal, setSharingModal] = useState(false)
+  const [transferModal, setTransferModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [requestModal, setRequestModal] = useState(false)
 
@@ -30,14 +32,14 @@ function CatalogCollectionListItem({
     isRequestable:
       collection.access === ObjectAccess.Restricted &&
       !collection.isRequested &&
-      !collection.isShared,
+      !collection.isShared &&
+      !collection.isOwner,
     isViewable: collection.isShared,
     setSharingModal,
     setDeletionModal,
     setRequestModal,
   })
 
-  // TODO: ownership transfer method for catalog collection
   // TODO: deletion modal
   // TODO: request modal
 
@@ -101,15 +103,24 @@ function CatalogCollectionListItem({
           />
         ) : null}
       </div>
+
       {collection.isOwnerOrAdmin ? (
-        <CatalogCollectionSharingModal
-          catalogCollectionId={collection.id}
-          catalogCollectionName={collection.name}
-          open={sharingModal}
-          onClose={() => setSharingModal(false)}
-          isOwner={collection.isOwner ?? false}
-          onOwnershipTransfer={async () => null} // TODO: implement
-        />
+        <>
+          <CatalogCollectionSharingModal
+            catalogCollectionId={collection.id}
+            catalogCollectionName={collection.name}
+            open={sharingModal}
+            onClose={() => setSharingModal(false)}
+            isOwner={collection.isOwner ?? false}
+            onOwnershipTransfer={() => setTransferModal(true)}
+          />
+          <TransferCatalogCollectionOwnershipModal
+            catalogCollectionId={collection.id}
+            catalogCollectionName={collection.name}
+            open={transferModal}
+            onClose={() => setTransferModal(false)}
+          />
+        </>
       ) : null}
     </>
   )

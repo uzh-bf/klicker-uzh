@@ -1,0 +1,11 @@
+mutation TransferCatalogCollectionOwnership(
+  $catalogCollectionId: String!
+  $usernameOrEmail: String!
+) {
+  transferCatalogCollectionOwnership(
+    catalogCollectionId: $catalogCollectionId
+    usernameOrEmail: $usernameOrEmail
+  ) {
+    ...PermissionInfoData
+  }
+}

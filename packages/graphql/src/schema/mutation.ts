@@ -1470,6 +1470,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      transferCatalogCollectionOwnership: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PermissionInfo,
+        args: {
+          catalogCollectionId: t.arg.string({ required: true }),
+          usernameOrEmail: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.transferCatalogCollectionOwnership(args, ctx)
+        },
+      }),
+
       removeCatalogObjectAssignment: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {

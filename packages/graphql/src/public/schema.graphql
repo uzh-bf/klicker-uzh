@@ -1423,6 +1423,7 @@ type Mutation {
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [ArchivedElement!]
+  transferCatalogCollectionOwnership(catalogCollectionId: String!, usernameOrEmail: String!): PermissionInfo
   transferCollectionOwnership(collectionId: Int!, usernameOrEmail: String!): PermissionInfo
   unpublishGroupActivity(id: String!): GroupActivity
   unpublishMicroLearning(id: String!): MicroLearning

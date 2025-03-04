@@ -98,6 +98,66 @@ export async function validateCatalogCollectionPermissions(
   return { valid: true, catalogCollection }
 }
 
+// function that verifies that a user has sufficient permissions to edit an object in the catalog
+// - for items in the default collection, the permissions on the object are checked
+// - for items in a catalog collection, the permissions on the catalog collection are checked
+async function verifyCatalogItemEditPermissions(
+  { assignmentId }: { assignmentId: number },
+  ctx: ContextWithUser
+) {
+  // fetch current assignment
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      id: assignmentId,
+    },
+    include: {
+      answerCollection: {
+        select: {
+          id: true,
+        },
+      },
+      // ... add more object types once they are supported for sharing
+    },
+  })
+
+  if (!assignment) {
+    return false
+  }
+
+  // boolean to check for sufficient permissions
+  let sufficientPermissions = false
+
+  // ! Case 1: Object in Catalog Collection -> access level on catalog collection decides permissions
+  // write permissions are required for content management of catalog collection
+  if (assignment.catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID) {
+    const { valid } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId: assignment.catalogCollectionId,
+        acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+      },
+      ctx
+    )
+    sufficientPermissions = valid
+  }
+  // ! Case 2: Object in top-level collection -> access level on object decides permissions
+  else {
+    if (assignment.answerCollection?.id) {
+      // verify that the user has access to the answer collection
+      const { valid } = await validateAnswerCollectionPermissions(
+        {
+          collectionId: assignment.answerCollection.id,
+          acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+        },
+        ctx
+      )
+      sufficientPermissions = valid
+    }
+    // ... add more object types once they are supported for sharing
+  }
+
+  return sufficientPermissions
+}
+
 // #endregion
 
 // ! Catalog Objects
@@ -197,9 +257,6 @@ export async function getCatalogCollectionInfo(
         permission.permissionStatus === DB.PermissionStatus.GRANTED
     )
 
-  console.log(collection)
-  console.log(isEditor)
-
   return {
     ...collection,
     ownerShortname: collection.owner?.shortname,
@@ -209,344 +266,6 @@ export async function getCatalogCollectionInfo(
     isOwner: collection.ownerId === ctx.user.sub,
     isOwnerOrAdmin,
   }
-}
-
-// TODO: when querying catalog collections, only show the ones that have elements inside of them or the user is the owner or has at least writing access (= filter out public without collections elements)
-// TODO: in UI show hint if someone only has read access on restricted catalog collection or no access on public catalog collection that with these access rights, nothing can be added
-
-// #endregion
-
-// ! Catalog Operations
-// #region
-
-// function to retrieve all catalog collections except from public ones without any linked objects
-export async function getCatalogCollectionsList(ctx: ContextWithUser) {
-  const collections = await ctx.prisma.catalogCollection.findMany({
-    where: {
-      id: {
-        not: MISSING_CATALOG_COLLECTION_ID,
-      },
-    },
-    include: {
-      _count: {
-        select: {
-          objectAssignments: true,
-        },
-      },
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-      },
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
-    },
-  })
-
-  const mappedCollections = collections
-    .filter(
-      (collection) =>
-        !(
-          collection.ownerId !== ctx.user.sub &&
-          collection.access === DB.ObjectAccess.PUBLIC &&
-          collection._count.objectAssignments === 0
-        )
-    )
-    .map((collection) => {
-      const isRequested = collection.permissions.some(
-        (permission) =>
-          permission.permissionStatus === DB.PermissionStatus.REQUESTED
-      )
-      const isShared = collection.permissions.some(
-        (permission) =>
-          permission.permissionStatus === DB.PermissionStatus.GRANTED
-      )
-      const isOwnerOrAdmin =
-        collection.ownerId === ctx.user.sub ||
-        collection.permissions.some(
-          (permission) =>
-            permission.accessLevel === DB.AccessLevel.ADMIN &&
-            permission.permissionStatus === DB.PermissionStatus.GRANTED
-        )
-
-      return {
-        ...collection,
-        ownerShortname: collection.owner?.shortname,
-        isRequested,
-        isShared,
-        isOwner: collection.ownerId === ctx.user.sub,
-        isOwnerOrAdmin,
-      }
-    })
-
-  return mappedCollections
-}
-
-// function to retrieve information on a single answer collection that is available in the catalog (no private collections)
-export async function getSingleAnswerCollectionCatalog(
-  {
-    collectionId,
-    catalogCollectionId,
-  }: { collectionId: number; catalogCollectionId?: string | null },
-  ctx: ContextWithUser
-) {
-  // fetch the answer collection
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-    },
-    include: {
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-          permissionStatus: DB.PermissionStatus.GRANTED,
-        },
-      },
-      entries: true,
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
-    },
-  })
-
-  if (!collection) {
-    return null
-  }
-
-  // verify that the user has access to the catalog collection the answer collection is contained in
-  const validAccess = catalogCollectionId
-    ? await verifyCatalogCollectionBrowsable(
-        {
-          catalogCollectionId:
-            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-        },
-        ctx
-      )
-    : true
-
-  if (!validAccess) {
-    return null
-  }
-
-  // fetch the corresponding assignement to access the access enum value
-  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
-    where: {
-      answerCollectionId_catalogCollectionId: {
-        answerCollectionId: collectionId,
-        catalogCollectionId:
-          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-      },
-    },
-  })
-
-  if (!assignment) {
-    return null
-  }
-
-  // only if collection is public, the entries should be revealed
-  if (assignment.access === DB.ObjectAccess.PUBLIC) {
-    return {
-      ...collection,
-      objectAccess: assignment.access,
-      accessType: AccessType.SHARED,
-      ownerShortname: collection.owner?.shortname,
-    }
-  } else {
-    return {
-      ...collection,
-      entries: [],
-      objectAccess: assignment.access,
-      accessType: AccessType.SHARED,
-      ownerShortname: collection.owner?.shortname,
-    }
-  }
-}
-
-export async function getCatalogObjects(
-  { catalogCollectionId }: { catalogCollectionId?: string | null },
-  ctx: ContextWithUser
-) {
-  const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
-    where: {
-      id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-    },
-    include: {
-      objectAssignments: {
-        include: {
-          answerCollection: {
-            where: {
-              ownerId: {
-                not: null,
-              },
-            },
-            select: {
-              id: true,
-              name: true,
-              ownerId: true,
-              owner: {
-                select: {
-                  shortname: true,
-                },
-              },
-              permissions: {
-                where: {
-                  userId: ctx.user.sub,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-
-  const mappedAnswerCollections: CatalogObject[] =
-    catalogCollection?.objectAssignments.flatMap((assignment) => {
-      if (assignment.answerCollection) {
-        const answerCollection = assignment.answerCollection
-        const permission = answerCollection.permissions[0]
-
-        return {
-          id: answerCollection.id,
-          name: answerCollection.name,
-          assignmentId: assignment.id,
-          objectType: CatalogObjectType.ANSWER_COLLECTION,
-          access: assignment.access,
-          ownerShortname: answerCollection.owner?.shortname,
-          isRequested:
-            answerCollection.permissions.length > 0 &&
-            typeof permission !== 'undefined' &&
-            permission.permissionStatus === DB.PermissionStatus.REQUESTED,
-          isShared:
-            answerCollection.permissions.length > 0 &&
-            typeof permission !== 'undefined' &&
-            permission.permissionStatus === DB.PermissionStatus.GRANTED,
-          isOwner: answerCollection.ownerId === ctx.user.sub,
-          isOwnerOrAdmin:
-            answerCollection.ownerId === ctx.user.sub ||
-            permission?.accessLevel === DB.AccessLevel.ADMIN,
-        }
-      }
-
-      return []
-    }) ?? []
-
-  return mappedAnswerCollections
-}
-
-// function that verifies that a user has sufficient permissions to edit an object in the catalog
-// - for items in the default collection, the permissions on the object are checked
-// - for items in a catalog collection, the permissions on the catalog collection are checked
-async function verifyCatalogItemEditPermissions(
-  { assignmentId }: { assignmentId: number },
-  ctx: ContextWithUser
-) {
-  // fetch current assignment
-  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
-    where: {
-      id: assignmentId,
-    },
-    include: {
-      answerCollection: {
-        select: {
-          id: true,
-        },
-      },
-      // ... add more object types once they are supported for sharing
-    },
-  })
-
-  if (!assignment) {
-    return false
-  }
-
-  // boolean to check for sufficient permissions
-  let sufficientPermissions = false
-
-  // ! Case 1: Object in Catalog Collection -> access level on catalog collection decides permissions
-  // write permissions are required for content management of catalog collection
-  if (assignment.catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID) {
-    const { valid } = await validateCatalogCollectionPermissions(
-      {
-        catalogCollectionId: assignment.catalogCollectionId,
-        acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
-      },
-      ctx
-    )
-    sufficientPermissions = valid
-  }
-  // ! Case 2: Object in top-level collection -> access level on object decides permissions
-  else {
-    if (assignment.answerCollection?.id) {
-      // verify that the user has access to the answer collection
-      const { valid } = await validateAnswerCollectionPermissions(
-        {
-          collectionId: assignment.answerCollection.id,
-          acceptedAccessLevels: [DB.AccessLevel.ADMIN],
-        },
-        ctx
-      )
-      sufficientPermissions = valid
-    }
-    // ... add more object types once they are supported for sharing
-  }
-
-  return sufficientPermissions
-}
-
-export async function changeCatalogObjectAccessLevel(
-  {
-    assignmentId,
-    accessLevel,
-  }: { assignmentId: number; accessLevel: DB.ObjectAccess },
-  ctx: ContextWithUser
-) {
-  const sufficientPermissions = await verifyCatalogItemEditPermissions(
-    { assignmentId },
-    ctx
-  )
-  if (!sufficientPermissions) {
-    return false
-  }
-
-  // change the access level of the assignment
-  const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.update(
-    {
-      where: {
-        id: assignmentId,
-      },
-      data: {
-        access: accessLevel,
-      },
-    }
-  )
-
-  return !!updatedAssignment.id
-}
-
-export async function removeCatalogObjectAssignment(
-  { assignmentId }: { assignmentId: number },
-  ctx: ContextWithUser
-) {
-  const sufficientPermissions = await verifyCatalogItemEditPermissions(
-    { assignmentId },
-    ctx
-  )
-  if (!sufficientPermissions) {
-    return false
-  }
-
-  // change the access level of the assignment
-  const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.delete(
-    { where: { id: assignmentId } }
-  )
-
-  return !!updatedAssignment.id
 }
 
 export async function changeCatalogCollectionAccessLevel(
@@ -848,6 +567,415 @@ export async function getCatalogCollectionPermissions(
     })
 }
 
+export async function transferCatalogCollectionOwnership(
+  {
+    catalogCollectionId,
+    usernameOrEmail,
+  }: {
+    catalogCollectionId: string
+    usernameOrEmail: string
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the specified user exists
+  const newOwner = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [
+        {
+          shortname: usernameOrEmail,
+        },
+        {
+          email: usernameOrEmail,
+        },
+      ],
+    },
+    include: {
+      sharedObjects: {
+        where: {
+          catalogCollectionId,
+        },
+      },
+    },
+  })
+
+  if (!newOwner) {
+    return null
+  }
+
+  // verify that the current user has ownership of the collection
+  const collection = await ctx.prisma.catalogCollection.findUnique({
+    where: {
+      id: catalogCollectionId,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // update the owner of the collection and grant admin permissions to the current user
+  const updatedCollection = await ctx.prisma.catalogCollection.update({
+    where: {
+      id: catalogCollectionId,
+    },
+    data: {
+      owner: {
+        connect: {
+          id: newOwner.id,
+        },
+      },
+      permissions: {
+        upsert: {
+          where: {
+            catalogCollectionId_userId: {
+              catalogCollectionId,
+              userId: ctx.user.sub,
+            },
+          },
+          create: {
+            accessLevel: DB.AccessLevel.ADMIN,
+            permissionStatus: DB.PermissionStatus.GRANTED,
+            user: {
+              connect: {
+                id: ctx.user.sub,
+              },
+            },
+            objectOwner: {
+              connect: {
+                id: newOwner.id,
+              },
+            },
+          },
+          update: {
+            accessLevel: DB.AccessLevel.ADMIN,
+            permissionStatus: DB.PermissionStatus.GRANTED,
+          },
+        },
+      },
+    },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              shortname: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // if the new owner previously had a permission on the collection, delete it
+  if (newOwner.sharedObjects.length > 0) {
+    await ctx.prisma.permission.delete({
+      where: {
+        catalogCollectionId_userId: {
+          catalogCollectionId,
+          userId: newOwner.id,
+        },
+      },
+    })
+  }
+
+  // return info for new admin permission and corresponding cache update
+  const permission = updatedCollection.permissions[0]
+  return permission && permission.user
+    ? {
+        permissionId: permission.id,
+        userId: permission.user.id,
+        username: permission.user.shortname,
+        userEmail: permission.user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        accessLevel: permission.accessLevel,
+        isRevokable: true,
+        isOwn: true,
+      }
+    : null
+}
+
+export async function changeCatalogObjectAccessLevel(
+  {
+    assignmentId,
+    accessLevel,
+  }: { assignmentId: number; accessLevel: DB.ObjectAccess },
+  ctx: ContextWithUser
+) {
+  const sufficientPermissions = await verifyCatalogItemEditPermissions(
+    { assignmentId },
+    ctx
+  )
+  if (!sufficientPermissions) {
+    return false
+  }
+
+  // change the access level of the assignment
+  const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.update(
+    {
+      where: {
+        id: assignmentId,
+      },
+      data: {
+        access: accessLevel,
+      },
+    }
+  )
+
+  return !!updatedAssignment.id
+}
+
+// function to retrieve all catalog collections except from public ones without any linked objects
+export async function getCatalogCollectionsList(ctx: ContextWithUser) {
+  const collections = await ctx.prisma.catalogCollection.findMany({
+    where: {
+      id: {
+        not: MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+    include: {
+      _count: {
+        select: {
+          objectAssignments: true,
+        },
+      },
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+        },
+      },
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  const mappedCollections = collections
+    .filter(
+      (collection) =>
+        !(
+          collection.ownerId !== ctx.user.sub &&
+          collection.access === DB.ObjectAccess.PUBLIC &&
+          collection._count.objectAssignments === 0
+        )
+    )
+    .map((collection) => {
+      const isRequested = collection.permissions.some(
+        (permission) =>
+          permission.permissionStatus === DB.PermissionStatus.REQUESTED
+      )
+      const isShared = collection.permissions.some(
+        (permission) =>
+          permission.permissionStatus === DB.PermissionStatus.GRANTED
+      )
+      const isOwnerOrAdmin =
+        collection.ownerId === ctx.user.sub ||
+        collection.permissions.some(
+          (permission) =>
+            permission.accessLevel === DB.AccessLevel.ADMIN &&
+            permission.permissionStatus === DB.PermissionStatus.GRANTED
+        )
+
+      return {
+        ...collection,
+        ownerShortname: collection.owner?.shortname,
+        isRequested,
+        isShared,
+        isOwner: collection.ownerId === ctx.user.sub,
+        isOwnerOrAdmin,
+      }
+    })
+
+  return mappedCollections
+}
+
+// #endregion
+
+// ! Catalog Operations
+// #region
+
+// function to retrieve information on a single answer collection that is available in the catalog (no private collections)
+export async function getSingleAnswerCollectionCatalog(
+  {
+    collectionId,
+    catalogCollectionId,
+  }: { collectionId: number; catalogCollectionId?: string | null },
+  ctx: ContextWithUser
+) {
+  // fetch the answer collection
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+    },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+          permissionStatus: DB.PermissionStatus.GRANTED,
+        },
+      },
+      entries: true,
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // verify that the user has access to the catalog collection the answer collection is contained in
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable(
+        {
+          catalogCollectionId:
+            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
+        ctx
+      )
+    : true
+
+  if (!validAccess) {
+    return null
+  }
+
+  // fetch the corresponding assignement to access the access enum value
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+  })
+
+  if (!assignment) {
+    return null
+  }
+
+  // only if collection is public, the entries should be revealed
+  if (assignment.access === DB.ObjectAccess.PUBLIC) {
+    return {
+      ...collection,
+      objectAccess: assignment.access,
+      accessType: AccessType.SHARED,
+      ownerShortname: collection.owner?.shortname,
+    }
+  } else {
+    return {
+      ...collection,
+      entries: [],
+      objectAccess: assignment.access,
+      accessType: AccessType.SHARED,
+      ownerShortname: collection.owner?.shortname,
+    }
+  }
+}
+
+export async function getCatalogObjects(
+  { catalogCollectionId }: { catalogCollectionId?: string | null },
+  ctx: ContextWithUser
+) {
+  const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
+    where: {
+      id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+    },
+    include: {
+      objectAssignments: {
+        include: {
+          answerCollection: {
+            where: {
+              ownerId: {
+                not: null,
+              },
+            },
+            select: {
+              id: true,
+              name: true,
+              ownerId: true,
+              owner: {
+                select: {
+                  shortname: true,
+                },
+              },
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const mappedAnswerCollections: CatalogObject[] =
+    catalogCollection?.objectAssignments.flatMap((assignment) => {
+      if (assignment.answerCollection) {
+        const answerCollection = assignment.answerCollection
+        const permission = answerCollection.permissions[0]
+
+        return {
+          id: answerCollection.id,
+          name: answerCollection.name,
+          assignmentId: assignment.id,
+          objectType: CatalogObjectType.ANSWER_COLLECTION,
+          access: assignment.access,
+          ownerShortname: answerCollection.owner?.shortname,
+          isRequested:
+            answerCollection.permissions.length > 0 &&
+            typeof permission !== 'undefined' &&
+            permission.permissionStatus === DB.PermissionStatus.REQUESTED,
+          isShared:
+            answerCollection.permissions.length > 0 &&
+            typeof permission !== 'undefined' &&
+            permission.permissionStatus === DB.PermissionStatus.GRANTED,
+          isOwner: answerCollection.ownerId === ctx.user.sub,
+          isOwnerOrAdmin:
+            answerCollection.ownerId === ctx.user.sub ||
+            permission?.accessLevel === DB.AccessLevel.ADMIN,
+        }
+      }
+
+      return []
+    }) ?? []
+
+  return mappedAnswerCollections
+}
+
+export async function removeCatalogObjectAssignment(
+  { assignmentId }: { assignmentId: number },
+  ctx: ContextWithUser
+) {
+  const sufficientPermissions = await verifyCatalogItemEditPermissions(
+    { assignmentId },
+    ctx
+  )
+  if (!sufficientPermissions) {
+    return false
+  }
+
+  // change the access level of the assignment
+  const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.delete(
+    { where: { id: assignmentId } }
+  )
+
+  return !!updatedAssignment.id
+}
+
 export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
   // fetch all answer collections, where the user is the owner or has been granted admin access
   const collections = await ctx.prisma.answerCollection.findMany({
@@ -922,7 +1050,20 @@ export async function addAnswerCollectionToCatalog(
     return null
   }
 
-  // TODO: check if the user has sufficient permissions on the catalog collection
+  // verify that the user has sufficient permissions on the catalog collection to add objects (if collection is defined)
+  if (catalogCollectionId) {
+    const { valid } = await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId,
+        acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+      },
+      ctx
+    )
+
+    if (!valid) {
+      return null
+    }
+  }
 
   // upsert the assignemnt of the answer collection to the catalog collection
   const assignment = await ctx.prisma.catalogCollectionAssignment.upsert({

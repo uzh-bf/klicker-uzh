@@ -1,6 +1,7 @@
 import {
   faClock,
   faCopy,
+  faFolder,
   faHandPointer,
 } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -39,6 +40,7 @@ function CatalogObjectItem({
   const t = useTranslations()
   const objectTypeIcons: Record<CatalogObjectType, IconDefinition> = {
     [CatalogObjectType.AnswerCollection]: faList,
+    [CatalogObjectType.CatalogCollection]: faFolder,
   }
 
   const actionsDisabled = object.isOwner || object.isShared

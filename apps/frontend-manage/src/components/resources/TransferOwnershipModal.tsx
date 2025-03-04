@@ -4,8 +4,8 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
-import OwnershipTransferErrorToast from './OwnershipTransferErrorToast'
-import OwnershipTransferSuccessToast from './OwnershipTransferSuccessToast'
+import OwnershipTransferErrorToast from './answerCollections/OwnershipTransferErrorToast'
+import OwnershipTransferSuccessToast from './answerCollections/OwnershipTransferSuccessToast'
 
 function TransferOwnershipModal({
   open,

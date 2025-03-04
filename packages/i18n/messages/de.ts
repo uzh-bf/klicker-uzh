@@ -2327,6 +2327,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
       accessRemovalFailed:
         'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      transferOwnershipCollectionDescription:
+        'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{catalogCollectionName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
