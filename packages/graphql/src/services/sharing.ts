@@ -78,7 +78,7 @@ export async function validateCatalogCollectionPermissions(
   })
 
   if (!catalogCollection) {
-    return { valid: false, collection: null }
+    return { valid: false, catalogCollection: null }
   }
 
   return { valid: true, catalogCollection }
