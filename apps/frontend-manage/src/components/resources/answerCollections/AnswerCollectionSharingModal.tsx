@@ -70,7 +70,7 @@ function AnswerCollectionSharingModal({
         title={t('manage.resources.shareAnswerCollection')}
         open={open}
         onClose={onClose}
-        dataCloseButton={{ cy: 'close-remove-answer-collection' }}
+        dataCloseButton={{ cy: 'close-share-answer-collection' }}
         className={{
           content: 'h-max max-h-full max-w-5xl',
         }}

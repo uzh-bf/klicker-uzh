@@ -69,7 +69,7 @@ function CatalogCollectionSharingModal({
         title={t('manage.catalog.shareCatalogCollection')}
         open={open}
         onClose={onClose}
-        dataCloseButton={{ cy: 'close-remove-catalog-collection' }}
+        dataCloseButton={{ cy: 'close-share-catalog-collection' }}
         className={{
           content: 'h-max max-h-full max-w-5xl',
         }}

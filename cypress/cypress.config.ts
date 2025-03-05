@@ -146,6 +146,8 @@ export default defineConfig({
           }
         },
         async verifyDeletionAnswerCollections() {
+          const NUM_SEEDED_ANSWER_COLLECTIONS = 3 // 3 seeded answer collections that should not be removed through workflows
+
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
           }
@@ -160,7 +162,29 @@ export default defineConfig({
 
           try {
             const count = await prisma.answerCollection.count()
-            return count === 3 // 3 seeded answer collections that should not be removed through workflows
+            return count === NUM_SEEDED_ANSWER_COLLECTIONS
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async verifyDeletionCatalogCollections() {
+          const NUM_SEEDED_CATALOG_COLLECTIONS = 1 // 1 seeded default catalog collections that should not be removed through workflows
+
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const count = await prisma.catalogCollection.count()
+            return count === NUM_SEEDED_CATALOG_COLLECTIONS
           } finally {
             await prisma.$disconnect()
           }
