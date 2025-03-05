@@ -32,13 +32,13 @@ describe('Create, edit and share answer collections', function () {
 
   function grantCollectionAccess({
     collectionName,
-    accessLevel,
-    accessLevelCy,
+    permissionLevel,
+    permissionLevelCy,
     username,
   }: {
     collectionName: string
-    accessLevel: string
-    accessLevelCy: string
+    permissionLevel: string
+    permissionLevelCy: string
     username: string
   }) {
     cy.get('[data-cy="resources"]').click()
@@ -50,14 +50,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
     cy.get('[data-cy="new-permission-username-or-email"]').type(username)
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get(`[data-cy="access-level-${accessLevelCy}"]`).click()
-    cy.get('[data-cy="new-permission-access-level"]').contains(accessLevel)
+    cy.get(`[data-cy="access-level-${permissionLevelCy}"]`).click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(permissionLevel)
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${username}"]`)
       .should('exist')
-      .contains(accessLevel)
+      .contains(permissionLevel)
   }
   // #endregion
 
@@ -392,7 +392,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.restricted.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'restricted',
+      permissionLevel: 'restricted',
     })
 
     // check that import and request functionalities are not available for owner (but deletion is)
@@ -812,7 +812,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.restricted.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'restricted',
+      permissionLevel: 'restricted',
     })
   })
 
@@ -957,7 +957,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.public.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'public',
+      permissionLevel: 'public',
     })
 
     // answer collection should be visible to owner, but cannot be requested / imported
@@ -1293,7 +1293,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.private.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'restricted',
+      permissionLevel: 'restricted',
     })
   })
 
@@ -1502,8 +1502,8 @@ describe('Create, edit and share answer collections', function () {
     grantCollectionAccess({
       collectionName: this.data.direct.name,
       username: Cypress.env('LECTURER_IND_SHORTNAME'),
-      accessLevel: messages.manage.resources.accessREAD,
-      accessLevelCy: 'READ',
+      permissionLevel: messages.manage.resources.accessREAD,
+      permissionLevelCy: 'READ',
     })
   })
 
@@ -1514,7 +1514,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.direct.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'restricted',
+      permissionLevel: 'restricted',
     })
   })
 

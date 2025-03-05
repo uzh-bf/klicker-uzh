@@ -3,29 +3,29 @@ import {
   faCircleXmark,
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AccessLevel } from '@klicker-uzh/graphql/dist/ops'
+import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 function PermissionsTable({
-  activeAccessLevel,
+  activePermissionLevel,
   actions,
 }: {
-  activeAccessLevel?: AccessLevel
+  activePermissionLevel?: PermissionLevel
   actions: { action: string; permissions: boolean[] }[]
 }) {
   const t = useTranslations()
 
   // map access levels to indices
-  const accessLevelToColumnIndex = {
-    [AccessLevel.Read]: 1, // Read is the second column (index 1)
-    [AccessLevel.Write]: 2, // Write is the third column (index 2)
-    [AccessLevel.Admin]: 3, // Admin is the fourth column (index 3)
-    [AccessLevel.Execute]: -1, // Execution rights are not present in this table
+  const permissionLevelToColumnIndex = {
+    [PermissionLevel.Read]: 1, // Read is the second column (index 1)
+    [PermissionLevel.Write]: 2, // Write is the third column (index 2)
+    [PermissionLevel.Admin]: 3, // Admin is the fourth column (index 3)
+    [PermissionLevel.Execute]: -1, // Execution rights are not present in this table
   }
 
   // get the active column index based on the corresponding access level
-  const activeColumnIndex = activeAccessLevel
-    ? accessLevelToColumnIndex[activeAccessLevel]
+  const activeColumnIndex = activePermissionLevel
+    ? permissionLevelToColumnIndex[activePermissionLevel]
     : -1
 
   return (

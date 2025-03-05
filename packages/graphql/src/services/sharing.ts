@@ -1,6 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
-  AccessType,
   CatalogObject,
   CatalogObjectType,
   ObjectSharingRequest,
@@ -28,10 +27,10 @@ async function verifyCatalogCollectionBrowsable(
     await validateCatalogCollectionPermissions(
       {
         catalogCollectionId,
-        acceptedAccessLevels: [
-          DB.AccessLevel.READ,
-          DB.AccessLevel.WRITE,
-          DB.AccessLevel.ADMIN,
+        acceptedPermissionLevels: [
+          DB.PermissionLevel.READ,
+          DB.PermissionLevel.WRITE,
+          DB.PermissionLevel.ADMIN,
         ],
       },
       ctx
@@ -47,10 +46,10 @@ async function verifyCatalogCollectionBrowsable(
 export async function validateCatalogCollectionPermissions(
   {
     catalogCollectionId,
-    acceptedAccessLevels,
+    acceptedPermissionLevels,
   }: {
     catalogCollectionId: string
-    acceptedAccessLevels: DB.AccessLevel[]
+    acceptedPermissionLevels: DB.PermissionLevel[]
   },
   ctx: ContextWithUser
 ) {
@@ -63,8 +62,8 @@ export async function validateCatalogCollectionPermissions(
         where: {
           userId: ctx.user.sub,
           permissionStatus: DB.PermissionStatus.GRANTED,
-          accessLevel: {
-            in: acceptedAccessLevels,
+          permissionLevel: {
+            in: acceptedPermissionLevels,
           },
         },
         // TODO: handle user groups
@@ -118,7 +117,10 @@ async function verifyCatalogItemEditPermissions(
     const { valid } = await validateCatalogCollectionPermissions(
       {
         catalogCollectionId: assignment.catalogCollectionId,
-        acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+        acceptedPermissionLevels: [
+          DB.PermissionLevel.WRITE,
+          DB.PermissionLevel.ADMIN,
+        ],
       },
       ctx
     )
@@ -131,7 +133,7 @@ async function verifyCatalogItemEditPermissions(
       const { valid } = await validateAnswerCollectionPermissions(
         {
           collectionId: assignment.answerCollection.id,
-          acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+          acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
         },
         ctx
       )
@@ -240,15 +242,15 @@ export async function getCatalogCollectionInfo(
   const isEditor =
     collection.permissions.some(
       (permission) =>
-        (permission.accessLevel === DB.AccessLevel.WRITE ||
-          permission.accessLevel === DB.AccessLevel.ADMIN) &&
+        (permission.permissionLevel === DB.PermissionLevel.WRITE ||
+          permission.permissionLevel === DB.PermissionLevel.ADMIN) &&
         permission.permissionStatus === DB.PermissionStatus.GRANTED
     ) || collection.ownerId === ctx.user.sub
   const isOwnerOrAdmin =
     collection.ownerId === ctx.user.sub ||
     collection.permissions.some(
       (permission) =>
-        permission.accessLevel === DB.AccessLevel.ADMIN &&
+        permission.permissionLevel === DB.PermissionLevel.ADMIN &&
         permission.permissionStatus === DB.PermissionStatus.GRANTED
     )
 
@@ -263,15 +265,15 @@ export async function getCatalogCollectionInfo(
   }
 }
 
-export async function changeCatalogCollectionAccessLevel(
+export async function changeCatalogCollectionPermissionLevel(
   {
     catalogCollectionId,
     permissionId,
-    accessLevel,
+    permissionLevel,
   }: {
     catalogCollectionId: string
     permissionId: number
-    accessLevel: DB.AccessLevel
+    permissionLevel: DB.PermissionLevel
   },
   ctx: ContextWithUser
 ) {
@@ -279,7 +281,7 @@ export async function changeCatalogCollectionAccessLevel(
   const { valid } = await validateCatalogCollectionPermissions(
     {
       catalogCollectionId,
-      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
     },
     ctx
   )
@@ -295,7 +297,7 @@ export async function changeCatalogCollectionAccessLevel(
       catalogCollectionId,
     },
     data: {
-      accessLevel,
+      permissionLevel,
     },
     include: {
       user: {
@@ -326,7 +328,7 @@ export async function changeCatalogCollectionAccessLevel(
     userEmail: permission.user?.email,
     userGroupId: undefined,
     userGroupName: undefined,
-    accessLevel: permission.accessLevel,
+    permissionLevel: permission.permissionLevel,
   }
 }
 
@@ -344,7 +346,7 @@ export async function changeCatalogCollectionObjectAccess(
   const { valid } = await validateCatalogCollectionPermissions(
     {
       catalogCollectionId,
-      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
     },
     ctx
   )
@@ -385,7 +387,10 @@ export async function changeCatalogCollectionName(
   const { valid } = await validateCatalogCollectionPermissions(
     {
       catalogCollectionId,
-      acceptedAccessLevels: [DB.AccessLevel.ADMIN, DB.AccessLevel.WRITE],
+      acceptedPermissionLevels: [
+        DB.PermissionLevel.ADMIN,
+        DB.PermissionLevel.WRITE,
+      ],
     },
     ctx
   )
@@ -429,7 +434,7 @@ export async function revokeCatalogCollectionAccess(
   const { valid } = await validateCatalogCollectionPermissions(
     {
       catalogCollectionId,
-      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
     },
     ctx
   )
@@ -476,12 +481,12 @@ export async function revokeCatalogCollectionAccess(
 export async function shareCatalogCollection(
   {
     catalogCollectionId,
-    accessLevel,
+    permissionLevel,
     usernameOrEmail,
     userGroupId,
   }: {
     catalogCollectionId: string
-    accessLevel: DB.AccessLevel
+    permissionLevel: DB.PermissionLevel
     usernameOrEmail?: string | null
     userGroupId?: number | null
   },
@@ -492,7 +497,7 @@ export async function shareCatalogCollection(
     await validateCatalogCollectionPermissions(
       {
         catalogCollectionId,
-        acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+        acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
       },
       ctx
     )
@@ -536,7 +541,7 @@ export async function shareCatalogCollection(
         },
       },
       create: {
-        accessLevel,
+        permissionLevel,
         permissionStatus: DB.PermissionStatus.GRANTED,
         catalogCollection: {
           connect: {
@@ -555,7 +560,7 @@ export async function shareCatalogCollection(
         },
       },
       update: {
-        accessLevel,
+        permissionLevel,
         permissionStatus: DB.PermissionStatus.GRANTED,
       },
     })
@@ -573,7 +578,7 @@ export async function shareCatalogCollection(
       userEmail: user.email,
       userGroupId: undefined,
       userGroupName: undefined,
-      accessLevel: permission.accessLevel,
+      permissionLevel: permission.permissionLevel,
       isRevokable: true,
       isOwn: false,
     }
@@ -600,7 +605,7 @@ export async function getCatalogCollectionPermissions(
             some: {
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
-              accessLevel: DB.AccessLevel.ADMIN,
+              permissionLevel: DB.PermissionLevel.ADMIN,
             },
           },
         },
@@ -638,7 +643,7 @@ export async function getCatalogCollectionPermissions(
       userEmail: permission.user?.email,
       userGroupId: undefined,
       userGroupName: undefined,
-      accessLevel: permission.accessLevel,
+      permissionLevel: permission.permissionLevel,
       isRevokable: true,
       isOwn: permission.user?.id === ctx.user.sub,
     }))
@@ -717,7 +722,7 @@ export async function transferCatalogCollectionOwnership(
             },
           },
           create: {
-            accessLevel: DB.AccessLevel.ADMIN,
+            permissionLevel: DB.PermissionLevel.ADMIN,
             permissionStatus: DB.PermissionStatus.GRANTED,
             user: {
               connect: {
@@ -731,7 +736,7 @@ export async function transferCatalogCollectionOwnership(
             },
           },
           update: {
-            accessLevel: DB.AccessLevel.ADMIN,
+            permissionLevel: DB.PermissionLevel.ADMIN,
             permissionStatus: DB.PermissionStatus.GRANTED,
           },
         },
@@ -777,18 +782,15 @@ export async function transferCatalogCollectionOwnership(
         userEmail: permission.user.email,
         userGroupId: undefined,
         userGroupName: undefined,
-        accessLevel: permission.accessLevel,
+        permissionLevel: permission.permissionLevel,
         isRevokable: true,
         isOwn: true,
       }
     : null
 }
 
-export async function changeCatalogObjectAccessLevel(
-  {
-    assignmentId,
-    accessLevel,
-  }: { assignmentId: number; accessLevel: DB.ObjectAccess },
+export async function changeCatalogObjectAccess(
+  { assignmentId, access }: { assignmentId: number; access: DB.ObjectAccess },
   ctx: ContextWithUser
 ) {
   const sufficientPermissions = await verifyCatalogItemEditPermissions(
@@ -806,7 +808,7 @@ export async function changeCatalogObjectAccessLevel(
         id: assignmentId,
       },
       data: {
-        access: accessLevel,
+        access,
       },
     }
   )
@@ -863,15 +865,15 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
       const isEditor =
         collection.permissions.some(
           (permission) =>
-            (permission.accessLevel === DB.AccessLevel.WRITE ||
-              permission.accessLevel === DB.AccessLevel.ADMIN) &&
+            (permission.permissionLevel === DB.PermissionLevel.WRITE ||
+              permission.permissionLevel === DB.PermissionLevel.ADMIN) &&
             permission.permissionStatus === DB.PermissionStatus.GRANTED
         ) || collection.ownerId === ctx.user.sub
       const isOwnerOrAdmin =
         collection.ownerId === ctx.user.sub ||
         collection.permissions.some(
           (permission) =>
-            permission.accessLevel === DB.AccessLevel.ADMIN &&
+            permission.permissionLevel === DB.PermissionLevel.ADMIN &&
             permission.permissionStatus === DB.PermissionStatus.GRANTED
         )
 
@@ -927,7 +929,7 @@ export async function requestCatalogCollection(
   // create a new permission request
   await ctx.prisma.permission.create({
     data: {
-      accessLevel: DB.AccessLevel.READ,
+      permissionLevel: DB.PermissionLevel.READ,
       permissionStatus: DB.PermissionStatus.REQUESTED,
       catalogCollection: {
         connect: {
@@ -985,7 +987,7 @@ export async function deleteCatalogCollection(
   const { valid } = await validateCatalogCollectionPermissions(
     {
       catalogCollectionId,
-      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
     },
     ctx
   )
@@ -1082,7 +1084,7 @@ export async function getSingleAnswerCollectionCatalog(
     return {
       ...collection,
       objectAccess: assignment.access,
-      accessType: AccessType.SHARED,
+      // accessType: AccessType.SHARED, // TODO: replace with isShared boolean or something similar
       ownerShortname: collection.owner?.shortname,
     }
   } else {
@@ -1090,7 +1092,7 @@ export async function getSingleAnswerCollectionCatalog(
       ...collection,
       entries: [],
       objectAccess: assignment.access,
-      accessType: AccessType.SHARED,
+      // accessType: AccessType.SHARED, // TODO: replace with isShared boolean or something similar
       ownerShortname: collection.owner?.shortname,
     }
   }
@@ -1170,7 +1172,7 @@ export async function getCatalogObjects(
           isOwner: answerCollection.ownerId === ctx.user.sub,
           isOwnerOrAdmin:
             answerCollection.ownerId === ctx.user.sub ||
-            permission?.accessLevel === DB.AccessLevel.ADMIN,
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN,
         }
       }
 
@@ -1216,7 +1218,7 @@ export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
             some: {
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
-              accessLevel: DB.AccessLevel.ADMIN,
+              permissionLevel: DB.PermissionLevel.ADMIN,
             },
           },
         },
@@ -1255,7 +1257,7 @@ export async function addAnswerCollectionToCatalog(
             some: {
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
-              accessLevel: DB.AccessLevel.ADMIN,
+              permissionLevel: DB.PermissionLevel.ADMIN,
             },
           },
         },
@@ -1279,7 +1281,10 @@ export async function addAnswerCollectionToCatalog(
     const { valid } = await validateCatalogCollectionPermissions(
       {
         catalogCollectionId,
-        acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+        acceptedPermissionLevels: [
+          DB.PermissionLevel.WRITE,
+          DB.PermissionLevel.ADMIN,
+        ],
       },
       ctx
     )
@@ -1397,7 +1402,7 @@ export async function requestAnswerCollection(
   // create a new permission request
   const permissionRequest = await ctx.prisma.permission.create({
     data: {
-      accessLevel: DB.AccessLevel.READ,
+      permissionLevel: DB.PermissionLevel.READ,
       permissionStatus: DB.PermissionStatus.REQUESTED,
       answerCollection: {
         connect: {
@@ -1648,12 +1653,12 @@ export async function resolveObjectSharingRequest(
   {
     permissionId,
     userId,
-    accessLevel,
+    permissionLevel,
     approved,
   }: {
     permissionId: number
     userId: string
-    accessLevel?: DB.AccessLevel
+    permissionLevel?: DB.PermissionLevel
     approved: boolean
   },
   ctx: ContextWithUser
@@ -1663,7 +1668,7 @@ export async function resolveObjectSharingRequest(
     where: {
       id: permissionId,
       userId,
-      accessLevel: DB.AccessLevel.READ, // access requests are always assigned read access level
+      permissionLevel: DB.PermissionLevel.READ, // access requests are always assigned read access level
       permissionStatus: DB.PermissionStatus.REQUESTED,
       objectOwnerId: ctx.user.sub,
     },
@@ -1681,7 +1686,7 @@ export async function resolveObjectSharingRequest(
       },
       data: {
         permissionStatus: DB.PermissionStatus.GRANTED,
-        accessLevel,
+        permissionLevel,
       },
     })
   } else {

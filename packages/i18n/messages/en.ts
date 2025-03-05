@@ -300,7 +300,7 @@ export default {
       admin: 'Admin',
       owner: 'Owner',
       userGroup: 'User group',
-      accessLevel: 'Access level',
+      permissionLevel: 'Access level',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -2190,7 +2190,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeOwnPermissionsWarning:
         'You are about to revoke your individual access rights to this resource. Once confirmed, you might no longer be able to access or modify this resource. This action cannot be undone. Are you sure you want to proceed?',
       changeOwnPermissionsWarning:
-        'You are about to change your own access level to {accessLevel}. This might limit your ability to perform certain actions on this resource, including changing your access level back. Are you sure you want to proceed?',
+        'You are about to change your own access level to {permissionLevel}. This might limit your ability to perform certain actions on this resource, including changing your access level back. Are you sure you want to proceed?',
     },
     userGroups: {
       comingSoon:
@@ -2220,9 +2220,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sharingRequestsExplanation:
         'Please review the following access requests for your shared objects. Accepting a sharing request will grant the requesting user access to the corresponding object without creating a copy. Any modifications other users with write access to your objects make are directly visible to all users of the object.',
       approveSharingRequest: 'Approve sharing request',
-      specifyAccessLevel:
+      specifyObjectPermissionLevel:
         'Please select an access level for sharing the object {objectName} (type: {objectType}) with the user {userShortname}. Please note that when granting editing rights, any changes by other users directly take effect on the shared object. For more information on the permission levels, please refer to the table below.',
-      accessLevel: 'Access Level',
       approvalSuccessful: 'The sharing request was successfully approved.',
       approvalFailed:
         'An error occurred while approving the sharing request. Please try again or contact the support.',
@@ -2238,7 +2237,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please select the object type and visibility first and then the specific object you want to add to this catalog collection.',
       objectTypeTooltip:
         'The type of object that will be added to the catalog collection',
-      accessLevelTitle: 'Access Level',
       objectTypeRequired: 'Please select an object type',
       accessRequired: 'Please select an access level',
       objectRequired: 'Please select an object to add',

@@ -4,18 +4,6 @@ schema {
   subscription: Subscription
 }
 
-enum AccessLevel {
-  ADMIN
-  EXECUTE
-  READ
-  WRITE
-}
-
-enum AccessType {
-  OWNER
-  SHARED
-}
-
 type Achievement {
   descriptionDE: String
   descriptionEN: String
@@ -95,22 +83,20 @@ enum ActivityType {
 }
 
 type AnswerCollection {
-  accessType: AccessType!
   description: String!
   entries: [AnswerCollectionEntry!]
   id: Int!
-  isDeletionAllowed: Boolean
-  isEditable: Boolean
+  isEditor: Boolean
   isImported: Boolean
+  isManager: Boolean
   isOwner: Boolean
   isRemovable: Boolean
-  isShareable: Boolean
+  isShared: Boolean
   name: String!
   numOfEntries: Int
   numSharedUsers: Int
   ownerShortname: String
-  sharingLevel: AccessLevel
-  sharingStatus: PermissionStatus
+  permissionLevel: PermissionLevel
 }
 
 type AnswerCollectionEntry {
@@ -1312,15 +1298,15 @@ type Mutation {
   addAnswerCollectionToCatalog(access: ObjectAccess!, catalogCollectionId: String, collectionId: Int!): CatalogObject
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
-  approveObjectSharingRequest(accessLevel: AccessLevel!, permissionId: Int!, userId: String!): Boolean!
+  approveObjectSharingRequest(permissionId: Int!, permissionLevel: PermissionLevel!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
-  changeCatalogCollectionAccessLevel(accessLevel: AccessLevel!, catalogCollectionId: String!, permissionId: Int!): PermissionInfo
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean!
-  changeCatalogObjectAccessLevel(accessLevel: ObjectAccess!, assignmentId: Int!): Boolean!
-  changeCollectionAccessLevel(accessLevel: AccessLevel!, collectionId: Int!, permissionId: Int!): PermissionInfo
+  changeCatalogCollectionPermissionLevel(catalogCollectionId: String!, permissionId: Int!, permissionLevel: PermissionLevel!): PermissionInfo
+  changeCatalogObjectAccess(access: ObjectAccess!, assignmentId: Int!): Boolean!
+  changeCollectionPermissionLevel(collectionId: Int!, permissionId: Int!, permissionLevel: PermissionLevel!): PermissionInfo
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
   changeLiveQuizName(displayName: String!, id: String!, name: String!): LiveQuiz
@@ -1419,8 +1405,8 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
-  shareAnswerCollection(accessLevel: AccessLevel!, collectionId: Int!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
-  shareCatalogCollection(accessLevel: AccessLevel!, catalogCollectionId: String!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
+  shareAnswerCollection(collectionId: Int!, permissionLevel: PermissionLevel!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
+  shareCatalogCollection(catalogCollectionId: String!, permissionLevel: PermissionLevel!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -1740,14 +1726,21 @@ type PerformanceRates {
 }
 
 type PermissionInfo {
-  accessLevel: AccessLevel!
   isOwn: Boolean
   isRevokable: Boolean
   permissionId: Int!
+  permissionLevel: PermissionLevel!
   userEmail: String
   userGroupName: String
   userId: String
   username: String
+}
+
+enum PermissionLevel {
+  ADMIN
+  EXECUTE
+  READ
+  WRITE
 }
 
 enum PermissionStatus {

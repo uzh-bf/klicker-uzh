@@ -1,18 +1,18 @@
 import { useMutation } from '@apollo/client'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
 import {
-  AccessLevel,
   ApproveObjectSharingRequestDocument,
   CatalogObjectType,
   CountCatalogSharingRequestsDocument,
   GetCatalogSharingRequestsDocument,
   ObjectSharingRequest,
+  PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, SelectField, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import AnswerCollectionPermissionsTable from '~/components/resources/answerCollections/AnswerCollectionPermissionsTable'
-import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
+import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
 import CatalogCollectionPermissionsTable from '../collections/CatalogCollectionPermissionsTable'
 
 function SharingRequestApprovalModal({
@@ -27,10 +27,10 @@ function SharingRequestApprovalModal({
   onSuccess: () => void
 }) {
   const t = useTranslations()
-  const [accessLevel, setAccessLevel] = useState(AccessLevel.Read)
+  const [permissionLevel, setPermissionLevel] = useState(PermissionLevel.Read)
   const [errorToast, setErrorToast] = useState(false)
 
-  const accessLevelSelectItems = useAccessLevelSelection({
+  const permissionLevelSelectItems = usePermissionLevelSelection({
     type: request.objectType,
   })
 
@@ -47,7 +47,7 @@ function SharingRequestApprovalModal({
       title={t('manage.catalog.approveSharingRequest')}
     >
       <div>
-        {t('manage.catalog.specifyAccessLevel', {
+        {t('manage.catalog.specifyObjectPermissionLevel', {
           objectName: request.objectName,
           objectType: t(`manage.catalog.objectType${request.objectType}`),
           userShortname: request.userShortname,
@@ -55,10 +55,10 @@ function SharingRequestApprovalModal({
       </div>
       <SelectField
         required
-        value={accessLevel}
-        label={t('manage.catalog.accessLevel')}
-        items={accessLevelSelectItems}
-        onChange={(newValue) => setAccessLevel(newValue as AccessLevel)}
+        value={permissionLevel}
+        label={t('shared.generic.permissionLevel')}
+        items={permissionLevelSelectItems}
+        onChange={(newValue) => setPermissionLevel(newValue as PermissionLevel)}
         className={{ label: 'text-base', select: { trigger: 'h-9' } }}
         data={{ cy: 'access-level-select' }}
       />
@@ -85,7 +85,7 @@ function SharingRequestApprovalModal({
               variables: {
                 permissionId: request.permissionId,
                 userId: request.userId,
-                accessLevel,
+                permissionLevel,
               },
               optimisticResponse: {
                 approveObjectSharingRequest: true,
@@ -149,10 +149,14 @@ function SharingRequestApprovalModal({
 
       <div className="mt-6">
         {request.objectType === CatalogObjectType.CatalogCollection ? (
-          <CatalogCollectionPermissionsTable activeAccessLevel={accessLevel} />
+          <CatalogCollectionPermissionsTable
+            activePermissionLevel={permissionLevel}
+          />
         ) : null}
         {request.objectType === CatalogObjectType.AnswerCollection ? (
-          <AnswerCollectionPermissionsTable activeAccessLevel={accessLevel} />
+          <AnswerCollectionPermissionsTable
+            activePermissionLevel={permissionLevel}
+          />
         ) : null}
       </div>
 

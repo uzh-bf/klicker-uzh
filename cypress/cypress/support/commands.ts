@@ -186,12 +186,12 @@ Cypress.Commands.add(
 interface AddObjectToCatalogArgs {
   objectName: string
   objectType: CatalogObjectType
-  accessLevel: 'public' | 'restricted'
+  permissionLevel: 'public' | 'restricted'
 }
 
 Cypress.Commands.add(
   'addObjectToCatalog',
-  ({ objectName, objectType, accessLevel }: AddObjectToCatalogArgs) => {
+  ({ objectName, objectType, permissionLevel }: AddObjectToCatalogArgs) => {
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
 
     cy.get('[data-cy="object-type-selection"]').click()
@@ -206,7 +206,7 @@ Cypress.Commands.add(
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
     cy.get('[data-cy="object-access-public"]').should('exist')
-    cy.get(`[data-cy="object-access-${accessLevel}"]`).click()
+    cy.get(`[data-cy="object-access-${permissionLevel}"]`).click()
 
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.findByText(objectName).click()
@@ -1395,7 +1395,7 @@ declare global {
       addObjectToCatalog({
         objectName,
         objectType,
-        accessLevel,
+        permissionLevel,
       }: AddObjectToCatalogArgs): Chainable<void>
       createQuestionSC({
         title,

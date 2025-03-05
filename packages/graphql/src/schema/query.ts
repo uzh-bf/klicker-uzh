@@ -980,6 +980,7 @@ export const Query = builder.queryType({
         },
       }),
 
+      // TODO: try to remove this type of a catalog answer collection and replace it with something generic, if possible
       getCatalogAnswerCollections: asUser.field({
         nullable: true,
         type: [CatalogSelectionObject],

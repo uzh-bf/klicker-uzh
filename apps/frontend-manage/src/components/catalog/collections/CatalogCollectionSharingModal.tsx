@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   CatalogObjectType,
-  ChangeCatalogCollectionAccessLevelDocument,
+  ChangeCatalogCollectionPermissionLevelDocument,
   GetCatalogCollectionInfoDocument,
   GetCatalogCollectionPermissionsDocument,
   GetCatalogObjectsDocument,
@@ -54,8 +54,8 @@ function CatalogCollectionSharingModal({
   const [shareCatalogCollection] = useMutation(ShareCatalogCollectionDocument)
 
   // mutation to change the access level of a certain permission
-  const [changeCatalogCollectionAccessLevel, { loading: changeLoading }] =
-    useMutation(ChangeCatalogCollectionAccessLevelDocument)
+  const [changeCatalogCollectionPermissionLevel, { loading: changeLoading }] =
+    useMutation(ChangeCatalogCollectionPermissionLevelDocument)
 
   // mutation to revoke access for a certain permission
   const [revokeCatalogCollectionAccess] = useMutation(
@@ -91,15 +91,18 @@ function CatalogCollectionSharingModal({
             permissionsLoading={permissionsLoading}
             changeLoading={changeLoading}
             isOwner={isOwner}
-            onAccessLevelChange={async ({ permissionId, newAccessLevel }) => {
-              await changeCatalogCollectionAccessLevel({
+            onPermissionLevelChange={async ({
+              permissionId,
+              newPermissionLevel,
+            }) => {
+              await changeCatalogCollectionPermissionLevel({
                 variables: {
                   catalogCollectionId,
                   permissionId,
-                  accessLevel: newAccessLevel,
+                  permissionLevel: newPermissionLevel,
                 },
                 update: (cache, { data }) => {
-                  if (!data?.changeCatalogCollectionAccessLevel) return
+                  if (!data?.changeCatalogCollectionPermissionLevel) return
 
                   const prevPermissions = cache.readQuery({
                     query: GetCatalogCollectionPermissionsDocument,
@@ -113,9 +116,9 @@ function CatalogCollectionSharingModal({
                   }
 
                   const modifiedPermissionId =
-                    data.changeCatalogCollectionAccessLevel!.permissionId
-                  const newAccessLevel =
-                    data.changeCatalogCollectionAccessLevel!.accessLevel
+                    data.changeCatalogCollectionPermissionLevel!.permissionId
+                  const newPermissionLevel =
+                    data.changeCatalogCollectionPermissionLevel!.permissionLevel
                   cache.writeQuery({
                     query: GetCatalogCollectionPermissionsDocument,
                     variables: {
@@ -126,7 +129,10 @@ function CatalogCollectionSharingModal({
                         prevPermissions.getCatalogCollectionPermissions.map(
                           (permission) =>
                             permission.permissionId === modifiedPermissionId
-                              ? { ...permission, accessLevel: newAccessLevel }
+                              ? {
+                                  ...permission,
+                                  permissionLevel: newPermissionLevel,
+                                }
                               : permission
                         ),
                     },
@@ -216,7 +222,7 @@ function CatalogCollectionSharingModal({
                     typeof values.usernameOrEmail === 'undefined'
                       ? values.userGroupId
                       : undefined,
-                  accessLevel: values.accessLevel,
+                  permissionLevel: values.permissionLevel,
                 },
                 update: (cache, { data }) => {
                   if (!data?.shareCatalogCollection) return

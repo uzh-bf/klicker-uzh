@@ -18,8 +18,8 @@ export const PermissionStatus = builder.enumType('PermissionStatus', {
   values: Object.values(DB.PermissionStatus),
 })
 
-export const AccessLevel = builder.enumType('AccessLevel', {
-  values: Object.values(DB.AccessLevel),
+export const PermissionLevel = builder.enumType('PermissionLevel', {
+  values: Object.values(DB.PermissionLevel),
 })
 
 // ----- CATALOG OBJECTS -----
@@ -114,7 +114,7 @@ interface IPermissionInfo {
   username?: string
   userEmail?: string
   userGroupName?: string
-  accessLevel: DB.AccessLevel
+  permissionLevel: DB.PermissionLevel
   isRevokable?: boolean
   isOwn?: boolean
 }
@@ -127,7 +127,7 @@ export const PermissionInfo = PermissionInfoRef.implement({
     username: t.exposeString('username', { nullable: true }),
     userEmail: t.exposeString('userEmail', { nullable: true }),
     userGroupName: t.exposeString('userGroupName', { nullable: true }),
-    accessLevel: t.expose('accessLevel', { type: AccessLevel }),
+    permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
     isRevokable: t.exposeBoolean('isRevokable', { nullable: true }),
     isOwn: t.exposeBoolean('isOwn', { nullable: true }),
   }),

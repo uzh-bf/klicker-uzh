@@ -2,15 +2,15 @@ query GetSingleAnswerCollection($id: Int!) {
   getSingleAnswerCollection(id: $id) {
     id
     name
-    accessType
-    sharingStatus
-    sharingLevel
     description
     ownerShortname
     numSharedUsers
+    permissionLevel
 
     isOwner
-    isEditable
+    isManager
+    isEditor
+    isShared
 
     entries {
       id

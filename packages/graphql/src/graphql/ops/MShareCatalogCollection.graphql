@@ -1,12 +1,12 @@
 mutation ShareCatalogCollection(
   $catalogCollectionId: String!
-  $accessLevel: AccessLevel!
+  $permissionLevel: PermissionLevel!
   $usernameOrEmail: String
   $userGroupId: Int
 ) {
   shareCatalogCollection(
     catalogCollectionId: $catalogCollectionId
-    accessLevel: $accessLevel
+    permissionLevel: $permissionLevel
     usernameOrEmail: $usernameOrEmail
     userGroupId: $userGroupId
   ) {

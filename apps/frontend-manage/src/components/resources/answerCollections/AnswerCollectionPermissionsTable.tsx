@@ -1,17 +1,17 @@
-import { AccessLevel } from '@klicker-uzh/graphql/dist/ops'
+import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import PermissionsTable from '../sharing/PermissionsTable'
 
 function AnswerCollectionPermissionsTable({
-  activeAccessLevel,
+  activePermissionLevel,
 }: {
-  activeAccessLevel?: AccessLevel
+  activePermissionLevel?: PermissionLevel
 }) {
   const t = useTranslations()
 
   return (
     <PermissionsTable
-      activeAccessLevel={activeAccessLevel}
+      activePermissionLevel={activePermissionLevel}
       actions={[
         {
           action: t('manage.resources.viewUseCollectionContent'),

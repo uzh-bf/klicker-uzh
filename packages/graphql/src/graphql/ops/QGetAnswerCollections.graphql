@@ -2,8 +2,7 @@ query GetAnswerCollections {
   getAnswerCollections {
     id
     name
-    accessType
-    sharingStatus
+    isShared
 
     entries {
       id

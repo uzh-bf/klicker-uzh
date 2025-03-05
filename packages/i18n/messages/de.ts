@@ -301,7 +301,7 @@ export default {
       admin: 'Admin',
       owner: 'Besitzer',
       userGroup: 'Benutzergruppe',
-      accessLevel: 'Zugriffsrechte',
+      permissionLevel: 'Zugriffsrechte',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -2218,7 +2218,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeOwnPermissionsWarning:
         'Sie sind dabei, Ihren individuellen Zugriff auf diese Ressource zu entziehen. Nach der Bestätigung können Sie unter Umständen nicht mehr auf die Ressource zugreifen. Diese Aktion kann nicht rückgängig gemacht werden. Möchten Sie wirklich fortfahren?',
       changeOwnPermissionsWarning:
-        'Sie sind dabei, Ihre eigenen Zugriffsrechte auf {accessLevel} zu ändern. Dies kann Ihre Möglichkeit einschränken, bestimmte Aktionen mit dieser Ressource durchzuführen, einschließlich der erneuten Änderung Ihrer Zugriffsrechte. Möchten Sie wirklich fortfahren?',
+        'Sie sind dabei, Ihre eigenen Zugriffsrechte auf {permissionLevel} zu ändern. Dies kann Ihre Möglichkeit einschränken, bestimmte Aktionen mit dieser Ressource durchzuführen, einschließlich der erneuten Änderung Ihrer Zugriffsrechte. Möchten Sie wirklich fortfahren?',
     },
     userGroups: {
       comingSoon:
@@ -2248,9 +2248,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sharingRequestsExplanation:
         'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
       approveSharingRequest: 'Zugriffsanfrage bestätigen',
-      specifyAccessLevel:
+      specifyObjectPermissionLevel:
         'Bitte wählen Sie eine Zugriffsebene für das Teilen des Objekts "{objectName}" (Typ: {objectType}) mit dem Nutzer {userShortname} aus. Bitte beachten Sie, dass bei der Gewährung von Bearbeitungsrechten Änderungen anderer Nutzer direkt auf das geteilte Objekt wirken. Weitere Informationen zu den Berechtigungsstufen finden Sie in der Tabelle unten.',
-      accessLevel: 'Zugriffsebene',
       approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich bestätigt.',
       approvalFailed:
         'Beim Bestätigen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
@@ -2266,7 +2265,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie über die folgenden Auswahlmöglichkeiten zuerst den Objekttyp und die Sichtbarkeit und im Anschluss das konkrete Objekt, welches Sie zu dieser Katalogsammlung hinzufügen möchten.',
       objectTypeTooltip:
         'Der Typ des Objekts, das zur Katalogsammlung hinzugefügt wird',
-      accessLevelTitle: 'Zugriffsebene',
       objectTypeRequired: 'Bitte wählen Sie einen Objekttyp aus',
       accessRequired: 'Bitte wählen Sie eine Zugriffsebene aus',
       objectRequired: 'Bitte wählen Sie ein Objekt aus',

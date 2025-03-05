@@ -1,11 +1,11 @@
 mutation ApproveObjectSharingRequest(
   $permissionId: Int!
   $userId: String!
-  $accessLevel: AccessLevel!
+  $permissionLevel: PermissionLevel!
 ) {
   approveObjectSharingRequest(
     permissionId: $permissionId
     userId: $userId
-    accessLevel: $accessLevel
+    permissionLevel: $permissionLevel
   )
 }

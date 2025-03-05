@@ -1,43 +1,43 @@
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
-  AccessLevel,
   CatalogObjectType,
   PermissionInfo,
+  PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Select, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
+import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
 import ModifyOwnPermissionsModal from './ModifyOwnPermissionsModal'
 
 function ExistingPermissionEntries({
   type,
   permissions,
   changeLoading,
-  onAccessLevelChange,
+  onPermissionLevelChange,
   onPermissionRemoval,
 }: {
   type: CatalogObjectType
   permissions: PermissionInfo[]
   changeLoading: boolean
-  onAccessLevelChange: ({
+  onPermissionLevelChange: ({
     permissionId,
-    newAccessLevel,
+    newPermissionLevel,
   }: {
     permissionId: number
-    newAccessLevel: AccessLevel
+    newPermissionLevel: PermissionLevel
   }) => Promise<void>
   onPermissionRemoval: (permissionId: number) => Promise<void>
 }) {
-  const accessLevelSelectItems = useAccessLevelSelection({ type })
+  const permissionLevelSelectItems = usePermissionLevelSelection({ type })
   const t = useTranslations()
 
   // state for managing the permission modification modal
   const [modifyOwnPermissionsModal, setModifyOwnPermissionsModal] = useState<{
     open: boolean
     permissionId?: number
-    newAccessLevel?: AccessLevel
+    newPermissionLevel?: PermissionLevel
     action: 'change' | 'remove'
   }>({
     open: false,
@@ -45,22 +45,22 @@ function ExistingPermissionEntries({
   })
 
   // handle access level change with confirmation for own permissions
-  const handleAccessLevelChange = async (
+  const handlePermissionLevelChange = async (
     permissionId: number,
-    newAccessLevel: AccessLevel,
+    newPermissionLevel: PermissionLevel,
     isOwn: boolean
   ) => {
     if (isOwn) {
       setModifyOwnPermissionsModal({
         open: true,
         permissionId,
-        newAccessLevel,
+        newPermissionLevel,
         action: 'change',
       })
     } else {
-      await onAccessLevelChange({
+      await onPermissionLevelChange({
         permissionId,
-        newAccessLevel,
+        newPermissionLevel,
       })
     }
   }
@@ -84,9 +84,9 @@ function ExistingPermissionEntries({
   // confirm modifying own permissions
   const confirmModifyOwnPermissions = async () => {
     if (modifyOwnPermissionsModal.action === 'change') {
-      await onAccessLevelChange({
+      await onPermissionLevelChange({
         permissionId: modifyOwnPermissionsModal.permissionId!,
-        newAccessLevel: modifyOwnPermissionsModal.newAccessLevel!,
+        newPermissionLevel: modifyOwnPermissionsModal.newPermissionLevel!,
       })
     } else {
       await onPermissionRemoval(modifyOwnPermissionsModal.permissionId!)
@@ -160,13 +160,13 @@ function ExistingPermissionEntries({
             </td>
             <td className="px-4 py-1.5 text-gray-900">
               <Select
-                value={permission.accessLevel}
-                items={accessLevelSelectItems}
+                value={permission.permissionLevel}
+                items={permissionLevelSelectItems}
                 disabled={changeLoading}
                 onChange={async (value) => {
-                  await handleAccessLevelChange(
+                  await handlePermissionLevelChange(
                     permission.permissionId,
-                    value as AccessLevel,
+                    value as PermissionLevel,
                     permission.isOwn ?? false
                   )
                 }}
@@ -209,7 +209,7 @@ function ExistingPermissionEntries({
         }
         onConfirm={confirmModifyOwnPermissions}
         action={modifyOwnPermissionsModal.action}
-        newAccessLevel={modifyOwnPermissionsModal.newAccessLevel}
+        newPermissionLevel={modifyOwnPermissionsModal.newPermissionLevel}
       />
     </>
   )

@@ -1,8 +1,8 @@
 import { faPeopleArrows } from '@fortawesome/free-solid-svg-icons'
 import {
-  AccessLevel,
   CatalogObjectType,
   PermissionInfo,
+  PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
@@ -16,7 +16,7 @@ function GrantedPermissionsTable({
   permissionsLoading,
   changeLoading,
   isOwner,
-  onAccessLevelChange,
+  onPermissionLevelChange,
   onPermissionRemoval,
   onNewPermissionSuccess,
   onNewPermissionFailure,
@@ -28,12 +28,12 @@ function GrantedPermissionsTable({
   permissionsLoading: boolean
   changeLoading: boolean
   isOwner: boolean
-  onAccessLevelChange: ({
+  onPermissionLevelChange: ({
     permissionId,
-    newAccessLevel,
+    newPermissionLevel,
   }: {
     permissionId: number
-    newAccessLevel: AccessLevel
+    newPermissionLevel: PermissionLevel
   }) => Promise<void>
   onPermissionRemoval: (permissionId: number) => Promise<void>
   onNewPermissionSuccess: () => void
@@ -42,11 +42,11 @@ function GrantedPermissionsTable({
   shareObjectCallback: ({
     usernameOrEmail,
     userGroupId,
-    accessLevel,
+    permissionLevel,
   }: {
     usernameOrEmail?: string
     userGroupId?: number
-    accessLevel: AccessLevel
+    permissionLevel: PermissionLevel
   }) => Promise<boolean>
 }) {
   const t = useTranslations()
@@ -81,7 +81,7 @@ function GrantedPermissionsTable({
               {t('shared.generic.userGroup')}
             </th>
             <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
-              {t('shared.generic.accessLevel')}
+              {t('shared.generic.permissionLevel')}
             </th>
             <th className="w-10" />
           </tr>
@@ -100,7 +100,7 @@ function GrantedPermissionsTable({
                 type={type}
                 permissions={permissions ?? []}
                 changeLoading={changeLoading}
-                onAccessLevelChange={onAccessLevelChange}
+                onPermissionLevelChange={onPermissionLevelChange}
                 onPermissionRemoval={onPermissionRemoval}
               />
               <DirectSharingForm

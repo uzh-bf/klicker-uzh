@@ -1,5 +1,8 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { AccessLevel, CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CatalogObjectType,
+  PermissionLevel,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSelectField,
@@ -9,7 +12,7 @@ import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
+import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
 
 function DirectSharingForm({
   type,
@@ -23,15 +26,15 @@ function DirectSharingForm({
   shareObjectCallback: ({
     usernameOrEmail,
     userGroupId,
-    accessLevel,
+    permissionLevel,
   }: {
     usernameOrEmail?: string
     userGroupId?: number
-    accessLevel: AccessLevel
+    permissionLevel: PermissionLevel
   }) => Promise<boolean>
 }) {
   const t = useTranslations()
-  const accessLevelSelectItems = useAccessLevelSelection({ type })
+  const permissionLevelSelectItems = usePermissionLevelSelection({ type })
 
   return (
     <Formik
@@ -39,7 +42,7 @@ function DirectSharingForm({
       initialValues={{
         usernameOrEmail: '',
         userGroupId: undefined,
-        accessLevel: AccessLevel.Read,
+        permissionLevel: PermissionLevel.Read,
       }}
       onSubmit={async (values, { setSubmitting, resetForm }) => {
         setSubmitting(true)
@@ -52,7 +55,7 @@ function DirectSharingForm({
           const success = await shareObjectCallback({
             usernameOrEmail: values.usernameOrEmail,
             userGroupId: values.userGroupId,
-            accessLevel: values.accessLevel,
+            permissionLevel: values.permissionLevel,
           })
 
           if (success) {
@@ -72,7 +75,7 @@ function DirectSharingForm({
         .shape({
           usernameOrEmail: Yup.string(),
           userGroupId: Yup.number(),
-          accessLevel: Yup.string().required(),
+          permissionLevel: Yup.string().required(),
         })
         .test(
           'either-user-or-group',
@@ -117,9 +120,9 @@ function DirectSharingForm({
           </td>
           <td className="px-4 py-1.5 text-sm text-gray-900">
             <FormikSelectField
-              name="accessLevel"
-              id="accessLevel"
-              items={accessLevelSelectItems}
+              name="permissionLevel"
+              id="permissionLevel"
+              items={permissionLevelSelectItems}
               disabled={isSubmitting}
               className={{
                 select: {

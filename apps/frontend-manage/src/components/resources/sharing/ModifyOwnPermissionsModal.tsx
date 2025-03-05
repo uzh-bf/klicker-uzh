@@ -1,4 +1,4 @@
-import { AccessLevel } from '@klicker-uzh/graphql/dist/ops'
+import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
@@ -7,7 +7,7 @@ interface ModifyOwnPermissionsModalProps {
   onClose: () => void
   onConfirm: () => void
   action: 'change' | 'remove'
-  newAccessLevel?: AccessLevel
+  newPermissionLevel?: PermissionLevel
 }
 
 function ModifyOwnPermissionsModal({
@@ -15,7 +15,7 @@ function ModifyOwnPermissionsModal({
   onClose,
   onConfirm,
   action,
-  newAccessLevel,
+  newPermissionLevel,
 }: ModifyOwnPermissionsModalProps) {
   const t = useTranslations()
 
@@ -36,8 +36,8 @@ function ModifyOwnPermissionsModal({
         ) : (
           <p className="text-sm" data-cy="change-own-access-warning">
             {t('manage.resources.changeOwnPermissionsWarning', {
-              accessLevel: t(
-                `manage.resources.access${newAccessLevel ?? AccessLevel.Read}`
+              permissionLevel: t(
+                `manage.resources.access${newPermissionLevel ?? PermissionLevel.Read}`
               ),
             })}
           </p>

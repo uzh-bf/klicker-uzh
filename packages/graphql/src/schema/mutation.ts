@@ -64,11 +64,11 @@ import {
 } from './question.js'
 import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
-  AccessLevel,
   CatalogCollection,
   CatalogObject,
   ObjectAccess,
   PermissionInfo,
+  PermissionLevel,
 } from './sharing.js'
 import {
   FileUploadSAS,
@@ -1364,7 +1364,7 @@ export const Mutation = builder.mutationType({
         type: PermissionInfo,
         args: {
           collectionId: t.arg.int({ required: true }),
-          accessLevel: t.arg({ type: AccessLevel, required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           usernameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
         },
@@ -1385,16 +1385,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCollectionAccessLevel: t.withAuth(asUserFullAccess).field({
+      changeCollectionPermissionLevel: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
         args: {
           collectionId: t.arg.int({ required: true }),
           permissionId: t.arg.int({ required: true }),
-          accessLevel: t.arg({ type: AccessLevel, required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.changeCollectionAccessLevel(args, ctx)
+          return ResourcesService.changeCollectionPermissionLevel(args, ctx)
         },
       }),
 
@@ -1421,14 +1421,14 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCatalogObjectAccessLevel: t.withAuth(asUserFullAccess).boolean({
+      changeCatalogObjectAccess: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
           assignmentId: t.arg.int({ required: true }),
-          accessLevel: t.arg({ type: ObjectAccess, required: true }),
+          access: t.arg({ type: ObjectAccess, required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.changeCatalogObjectAccessLevel(args, ctx)
+          return SharingService.changeCatalogObjectAccess(args, ctx)
         },
       }),
 
@@ -1477,18 +1477,23 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCatalogCollectionAccessLevel: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PermissionInfo,
-        args: {
-          catalogCollectionId: t.arg.string({ required: true }),
-          permissionId: t.arg.int({ required: true }),
-          accessLevel: t.arg({ type: AccessLevel, required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SharingService.changeCatalogCollectionAccessLevel(args, ctx)
-        },
-      }),
+      changeCatalogCollectionPermissionLevel: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: PermissionInfo,
+          args: {
+            catalogCollectionId: t.arg.string({ required: true }),
+            permissionId: t.arg.int({ required: true }),
+            permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          },
+          resolve(_, args, ctx) {
+            return SharingService.changeCatalogCollectionPermissionLevel(
+              args,
+              ctx
+            )
+          },
+        }),
 
       revokeCatalogCollectionAccess: t.withAuth(asUserFullAccess).int({
         nullable: true,
@@ -1506,7 +1511,7 @@ export const Mutation = builder.mutationType({
         type: PermissionInfo,
         args: {
           catalogCollectionId: t.arg.string({ required: true }),
-          accessLevel: t.arg({ type: AccessLevel, required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           usernameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
         },
@@ -1542,7 +1547,7 @@ export const Mutation = builder.mutationType({
         args: {
           permissionId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
-          accessLevel: t.arg({ type: AccessLevel, required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
         },
         resolve(_, args, ctx) {
           return SharingService.resolveObjectSharingRequest(
