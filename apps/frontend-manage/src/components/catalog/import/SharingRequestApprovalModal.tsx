@@ -3,6 +3,7 @@ import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
 import {
   AccessLevel,
   ApproveObjectSharingRequestDocument,
+  CatalogObjectType,
   CountCatalogSharingRequestsDocument,
   GetCatalogSharingRequestsDocument,
   ObjectSharingRequest,
@@ -12,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import AnswerCollectionPermissionsTable from '~/components/resources/answerCollections/AnswerCollectionPermissionsTable'
 import useAccessLevelSelection from '../../../lib/hooks/useAccessLevelSelection'
+import CatalogCollectionPermissionsTable from '../collections/CatalogCollectionPermissionsTable'
 
 function SharingRequestApprovalModal({
   request,
@@ -146,7 +148,12 @@ function SharingRequestApprovalModal({
       </div>
 
       <div className="mt-6">
-        <AnswerCollectionPermissionsTable activeAccessLevel={accessLevel} />
+        {request.objectType === CatalogObjectType.CatalogCollection ? (
+          <CatalogCollectionPermissionsTable activeAccessLevel={accessLevel} />
+        ) : null}
+        {request.objectType === CatalogObjectType.AnswerCollection ? (
+          <AnswerCollectionPermissionsTable activeAccessLevel={accessLevel} />
+        ) : null}
       </div>
 
       <Toast

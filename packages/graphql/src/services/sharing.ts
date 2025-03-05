@@ -1563,15 +1563,29 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
       objectPermissions: {
         where: {
           permissionStatus: DB.PermissionStatus.REQUESTED,
-          answerCollectionId: {
-            not: null,
-          },
+          OR: [
+            {
+              catalogCollectionId: {
+                not: null,
+              },
+            },
+            {
+              answerCollectionId: {
+                not: null,
+              },
+            },
+          ],
         },
         include: {
           user: {
             select: {
               shortname: true,
               email: true,
+            },
+          },
+          catalogCollection: {
+            select: {
+              name: true,
             },
           },
           answerCollection: {
@@ -1590,8 +1604,24 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
 
   const sharingRequests = user.objectPermissions.reduce<ObjectSharingRequest[]>(
     (acc, request) => {
-      // sharing request for answer collection
+      // sharing request for catalog collection
       if (
+        typeof request.catalogCollection !== 'undefined' &&
+        request.catalogCollection !== null &&
+        request.user
+      ) {
+        acc.push({
+          permissionId: request.id,
+          objectName: request.catalogCollection.name,
+          objectType: CatalogObjectType.CATALOG_COLLECTION,
+          userId: request.userId!,
+          userShortname: request.user.shortname,
+          userEmail: request.user.email,
+        })
+      }
+
+      // sharing request for answer collection
+      else if (
         typeof request.answerCollection !== 'undefined' &&
         request.answerCollection !== null &&
         request.user
