@@ -2288,6 +2288,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
       deleteCollection: 'Delete Collection',
+      removeObject: 'Remove Object',
       transferOwnership: 'Transfer Ownership',
       sharingSuccessful: 'The catalog collection was shared successfully.',
       sharingFailed:

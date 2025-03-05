@@ -2,25 +2,28 @@ import { useMutation } from '@apollo/client'
 import {
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
+  GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   TransferCollectionOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import TransferOwnershipModal from '../TransferOwnershipModal'
 
-interface TransferCollectionOwnershipModalProps {
+interface TransferAnswerCollectionOwnershipModalProps {
   open: boolean
   onClose: () => void
   collectionId: number
   collectionName: string
+  catalogCollectionId?: string
 }
 
-function TransferCollectionOwnershipModal({
+function TransferAnswerCollectionOwnershipModal({
   open,
   onClose,
   collectionId,
   collectionName,
-}: TransferCollectionOwnershipModalProps) {
+  catalogCollectionId,
+}: TransferAnswerCollectionOwnershipModalProps) {
   const t = useTranslations()
   const [transferCollectionOwnership] = useMutation(
     TransferCollectionOwnershipDocument
@@ -49,6 +52,10 @@ function TransferCollectionOwnershipModal({
               query: GetAnswerCollectionPermissionsDocument,
               variables: { collectionId },
             },
+            {
+              query: GetCatalogObjectsDocument,
+              variables: { catalogCollectionId },
+            },
           ],
         })
 
@@ -62,4 +69,4 @@ function TransferCollectionOwnershipModal({
   )
 }
 
-export default TransferCollectionOwnershipModal
+export default TransferAnswerCollectionOwnershipModal

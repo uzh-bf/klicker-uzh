@@ -12,11 +12,11 @@ import { Dispatch, SetStateAction, useState } from 'react'
 import useAnswerCollectionActionsDropdown from '~/lib/hooks/useAnswerCollectionActionsDropdown'
 import ObjectPermissionLevel from '../ObjectPermissionLevel'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
+import AnswerCollectionSharingModal from './AnswerCollectionSharingModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
 import CollectionRemovalModal from './CollectionRemovalModal'
-import CollectionSharingModal from './CollectionSharingModal'
-import TransferCollectionOwnershipModal from './TransferCollectionOwnershipModal'
+import TransferAnswerCollectionOwnershipModal from './TransferAnswerCollectionOwnershipModal'
 
 function AnswerCollectionItem({
   collection,
@@ -142,14 +142,15 @@ function AnswerCollectionItem({
       {/* sharing functionalities modals to add / revoke / ... access */}
       {collection.isShareable && (
         <>
-          <CollectionSharingModal
-            collection={collection}
+          <AnswerCollectionSharingModal
+            collectionId={collection.id}
+            collectionName={collection.name}
             open={sharingModal}
             onClose={() => setSharingModal(false)}
             onOwnershipTransfer={() => setTransferModalOpen(true)}
             isOwner={collection.isOwner ?? false}
           />
-          <TransferCollectionOwnershipModal
+          <TransferAnswerCollectionOwnershipModal
             open={transferModalOpen}
             onClose={() => setTransferModalOpen(false)}
             collectionId={collection.id}

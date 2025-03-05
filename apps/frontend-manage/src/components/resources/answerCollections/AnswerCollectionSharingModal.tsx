@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  AnswerCollection,
   CatalogObjectType,
   ChangeCollectionAccessLevelDocument,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
+  GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   RevokeCollectionAccessDocument,
   ShareAnswerCollectionDocument,
@@ -19,14 +19,18 @@ import CollectionSharingSuccessToast from '../sharing/CollectionSharingSuccessTo
 import GrantedPermissionsTable from '../sharing/GrantedPermissionsTable'
 import AnswerCollectionPermissionsTable from './AnswerCollectionPermissionsTable'
 
-function CollectionSharingModal({
-  collection,
+function AnswerCollectionSharingModal({
+  collectionId,
+  collectionName,
+  catalogCollectionId,
   open,
   onClose,
   onOwnershipTransfer,
   isOwner,
 }: {
-  collection: AnswerCollection
+  collectionId: number
+  collectionName: string
+  catalogCollectionId?: string
   open: boolean
   onClose: () => void
   onOwnershipTransfer: () => void
@@ -42,7 +46,7 @@ function CollectionSharingModal({
   const { data, loading: permissionsLoading } = useQuery(
     GetAnswerCollectionPermissionsDocument,
     {
-      variables: { collectionId: collection.id },
+      variables: { collectionId: collectionId },
       skip: !open,
     }
   )
@@ -73,7 +77,7 @@ function CollectionSharingModal({
       >
         <div>
           {t.rich('manage.resources.infoCollectionSharing', {
-            name: collection.name,
+            name: collectionName,
             b: (text) => <b>{text}</b>,
           })}
         </div>
@@ -91,7 +95,7 @@ function CollectionSharingModal({
             onAccessLevelChange={async ({ permissionId, newAccessLevel }) => {
               await changeCollectionAccessLevel({
                 variables: {
-                  collectionId: collection.id,
+                  collectionId: collectionId,
                   permissionId,
                   accessLevel: newAccessLevel,
                 },
@@ -101,7 +105,7 @@ function CollectionSharingModal({
                   const prevPermissions = cache.readQuery({
                     query: GetAnswerCollectionPermissionsDocument,
                     variables: {
-                      collectionId: collection.id,
+                      collectionId: collectionId,
                     },
                   })
 
@@ -116,7 +120,7 @@ function CollectionSharingModal({
                   cache.writeQuery({
                     query: GetAnswerCollectionPermissionsDocument,
                     variables: {
-                      collectionId: collection.id,
+                      collectionId: collectionId,
                     },
                     data: {
                       getAnswerCollectionPermissions:
@@ -132,6 +136,10 @@ function CollectionSharingModal({
                 refetchQueries: [
                   GetAnswerCollectionsInfoDocument,
                   GetCatalogSharingRequestsDocument,
+                  {
+                    query: GetCatalogObjectsDocument,
+                    variables: { catalogCollectionId },
+                  },
                 ],
               })
             }}
@@ -139,14 +147,14 @@ function CollectionSharingModal({
               try {
                 const result = await revokeCollectionAccess({
                   variables: {
-                    collectionId: collection.id,
+                    collectionId: collectionId,
                     permissionId,
                   },
                   update: (cache, { data }) => {
                     const prevPermissions = cache.readQuery({
                       query: GetAnswerCollectionPermissionsDocument,
                       variables: {
-                        collectionId: collection.id,
+                        collectionId: collectionId,
                       },
                     })
 
@@ -161,7 +169,7 @@ function CollectionSharingModal({
                     cache.writeQuery({
                       query: GetAnswerCollectionPermissionsDocument,
                       variables: {
-                        collectionId: collection.id,
+                        collectionId: collectionId,
                       },
                       data: {
                         getAnswerCollectionPermissions:
@@ -175,6 +183,10 @@ function CollectionSharingModal({
                   refetchQueries: [
                     GetAnswerCollectionsInfoDocument,
                     GetCatalogSharingRequestsDocument,
+                    {
+                      query: GetCatalogObjectsDocument,
+                      variables: { catalogCollectionId },
+                    },
                   ],
                 })
 
@@ -193,7 +205,7 @@ function CollectionSharingModal({
             shareObjectCallback={async (values) => {
               const newPermission = await shareAnswerCollection({
                 variables: {
-                  collectionId: collection.id,
+                  collectionId: collectionId,
                   usernameOrEmail: values.usernameOrEmail,
                   userGroupId:
                     typeof values.usernameOrEmail === 'undefined'
@@ -207,7 +219,7 @@ function CollectionSharingModal({
                   const prevPermissions = cache.readQuery({
                     query: GetAnswerCollectionPermissionsDocument,
                     variables: {
-                      collectionId: collection.id,
+                      collectionId: collectionId,
                     },
                   })
 
@@ -227,7 +239,7 @@ function CollectionSharingModal({
                   cache.writeQuery({
                     query: GetAnswerCollectionPermissionsDocument,
                     variables: {
-                      collectionId: collection.id,
+                      collectionId: collectionId,
                     },
                     data: {
                       getAnswerCollectionPermissions: newPermissions,
@@ -237,6 +249,10 @@ function CollectionSharingModal({
                 refetchQueries: [
                   GetAnswerCollectionsInfoDocument,
                   GetCatalogSharingRequestsDocument,
+                  {
+                    query: GetCatalogObjectsDocument,
+                    variables: { catalogCollectionId },
+                  },
                 ],
               })
 
@@ -268,4 +284,4 @@ function CollectionSharingModal({
   )
 }
 
-export default CollectionSharingModal
+export default AnswerCollectionSharingModal
