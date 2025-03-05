@@ -1,13 +1,8 @@
-import {
-  faClock,
-  faCopy,
-  faFolder,
-  faHandPointer,
-} from '@fortawesome/free-regular-svg-icons'
+import { faClock, faFolder } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
+  faEllipsisVertical,
   faList,
-  faX,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -16,10 +11,12 @@ import {
   CatalogObjectType,
   ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
+import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import ObjectAccessRequestModal from './ObjectAccessRequestModal'
@@ -52,10 +49,21 @@ function CatalogObjectItem({
   const [removalModal, setRemovalModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(object.access)
 
+  // Use the new dropdown hook
+  const dropdownItems = useCatalogObjectActionsDropdown({
+    object,
+    actionsDisabled,
+    managedAccess,
+    setImportModal,
+    setRequestModal,
+    setRequestCancellationModal,
+    setRemovalModal,
+  })
+
   return (
     <>
       <div
-        className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:bg-slate-100"
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={() => {
           if (
             actionsDisabled ||
@@ -88,68 +96,17 @@ function CatalogObjectItem({
             </div>
           ) : null}
         </div>
-        <div className="flex flex-row items-center gap-4">
-          {!actionsDisabled && object.access === ObjectAccess.Public ? (
-            <Button
-              basic
-              className={{
-                root: twMerge(
-                  'hover:text-primary-100 h-7 px-1 py-0 text-sm',
-                  object.access === ObjectAccess.Public && 'font-semibold'
-                ),
-              }}
-              onClick={(e) => {
-                e?.stopPropagation()
-                setImportModal(true)
-              }}
-              data={{ cy: `import-object-${object.name}` }}
-            >
-              <Button.Icon icon={faCopy} />
-              <Button.Label>{t('manage.catalog.importObject')}</Button.Label>
-            </Button>
-          ) : null}
-          {!actionsDisabled && !object.isRequested ? (
-            <Button
-              basic
-              className={{
-                root: twMerge(
-                  'hover:text-primary-100 h-7 px-1 py-0 text-sm',
-                  object.access === ObjectAccess.Restricted && 'font-semibold'
-                ),
-              }}
-              onClick={(e) => {
-                e?.stopPropagation()
-                setRequestModal(true)
-              }}
-              data={{ cy: `request-access-${object.name}` }}
-            >
-              <Button.Icon icon={faHandPointer} />
-              <Button.Label>{t('manage.catalog.requestAccess')}</Button.Label>
-            </Button>
-          ) : null}
+        <div
+          className={twMerge(
+            'flex flex-row items-center gap-2',
+            dropdownItems.length === 0 && 'mr-9'
+          )}
+        >
           {object.isRequested ? (
-            <>
-              <div className="flex flex-row items-center gap-1.5">
-                <FontAwesomeIcon icon={faClock} />
-                <div>{t('manage.catalog.accessRequested')}</div>
-              </div>
-              <Button
-                basic
-                className={{
-                  root: 'hover:text-primary-100 h-7 px-1 py-0 text-sm',
-                }}
-                onClick={(e) => {
-                  e?.stopPropagation()
-                  setRequestCancellationModal(true)
-                }}
-                data={{ cy: `cancel-request-${object.name}` }}
-              >
-                <Button.Icon icon={faHandPointer} />
-                <Button.Label>
-                  {t('manage.resources.cancelRequest')}
-                </Button.Label>
-              </Button>
-            </>
+            <div className="flex flex-row items-center gap-1.5">
+              <FontAwesomeIcon icon={faClock} />
+              <div>{t('manage.catalog.accessRequested')}</div>
+            </div>
           ) : null}
           {object.isShared ? (
             <div className="flex flex-row items-center gap-1.5">
@@ -157,8 +114,9 @@ function CatalogObjectItem({
               <div>{t('manage.catalog.accessGranted')}</div>
             </div>
           ) : null}
+
           {managedAccess ? (
-            <div className="flex flex-row gap-2">
+            <div className="ml-2">
               <ObjectAccessSelection
                 compact
                 value={object.access}
@@ -168,18 +126,25 @@ function CatalogObjectItem({
                 }}
                 cyPrefix={object.name}
               />
-              <Button
-                destructive
-                onClick={(e) => {
-                  e?.stopPropagation()
-                  setRemovalModal(true)
-                }}
-                className={{ root: 'h-7 w-7' }}
-                data={{ cy: `remove-object-${object.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faX} />
-              </Button>
             </div>
+          ) : null}
+
+          {dropdownItems.length > 0 ? (
+            <Dropdown
+              items={dropdownItems}
+              trigger={
+                <ForwardRefButton
+                  basic
+                  className={{
+                    root: 'rounded-full p-1.5 text-gray-500 hover:bg-gray-100',
+                  }}
+                >
+                  <Button.Icon withoutLabel icon={faEllipsisVertical} />
+                </ForwardRefButton>
+              }
+              className={{ viewport: 'z-20' }}
+              data={{ cy: `actions-dropdown-${object.name}` }}
+            />
           ) : null}
         </div>
       </div>

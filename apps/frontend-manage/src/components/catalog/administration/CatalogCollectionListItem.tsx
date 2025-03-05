@@ -114,15 +114,17 @@ function CatalogCollectionListItem({
             </div>
           ) : null}
           {collection.isOwnerOrAdmin ? (
-            <ObjectAccessSelection
-              compact
-              value={collection.access}
-              onChange={(access) => {
-                setNewAccess(access as ObjectAccess)
-                setChangeAccessModal(true)
-              }}
-              cyPrefix={collection.name}
-            />
+            <div className="ml-2">
+              <ObjectAccessSelection
+                compact
+                value={collection.access}
+                onChange={(access) => {
+                  setNewAccess(access as ObjectAccess)
+                  setChangeAccessModal(true)
+                }}
+                cyPrefix={collection.name}
+              />
+            </div>
           ) : null}
           {dropdownItems.length > 0 ? (
             <Dropdown
@@ -138,6 +140,7 @@ function CatalogCollectionListItem({
                 </ForwardRefButton>
               }
               className={{ viewport: 'z-20' }}
+              data={{ cy: `catalog-collection-${collection.name}-actions` }}
             />
           ) : null}
         </div>
