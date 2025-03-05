@@ -192,13 +192,15 @@ function CatalogCollectionListItem({
             open={changeAccessModal}
             onClose={() => setChangeAccessModal(false)}
           />
-          <CatalogCollectionNameChangeModal
-            catalogCollectionId={collection.id}
-            name={collection.name}
-            open={nameChangeModal}
-            onClose={() => setNameChangeModal(false)}
-          />
         </>
+      ) : null}
+      {collection.isEditor ? (
+        <CatalogCollectionNameChangeModal
+          catalogCollectionId={collection.id}
+          name={collection.name}
+          open={nameChangeModal}
+          onClose={() => setNameChangeModal(false)}
+        />
       ) : null}
 
       {isRequestable && (

@@ -385,7 +385,7 @@ export async function changeCatalogCollectionName(
   const { valid } = await validateCatalogCollectionPermissions(
     {
       catalogCollectionId,
-      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      acceptedAccessLevels: [DB.AccessLevel.ADMIN, DB.AccessLevel.WRITE],
     },
     ctx
   )
