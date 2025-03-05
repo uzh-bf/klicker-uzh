@@ -1,0 +1,36 @@
+{
+  "AC1": {
+    "name": "AC1",
+    "description": "This is an answer collection",
+    "items": [
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten"
+    ]
+  },
+  "AC2": {
+    "name": "AC2",
+    "description": "This is an answer collection",
+    "items": [
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+      "Twenty"
+    ]
+  },
+  "CCPublic": "Public Catalog Collection",
+  "CCRestricted": "Restricted Catalog Collection"
+}
