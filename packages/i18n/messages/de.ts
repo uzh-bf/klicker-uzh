@@ -2344,6 +2344,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zugriffsanfrage für die Katalogsammlung wurde erfolgreich übermittelt.',
       requestAccessFailed:
         'Bei der Anforderung des Zugriffs auf die Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      collectionNameRequired:
+        'Bitte geben Sie einen Namen für die Katalog-Sammlung an.',
+      changeCatalogCollectionName: 'Namen der Katalog-Sammlung ändern',
+      catalogCollectionNameChangeSuccess:
+        'Der Name der Katalog-Sammlung wurde erfolgreich geändert.',
+      catalogCollectionNameChangeError:
+        'Beim Ändern des Namens der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

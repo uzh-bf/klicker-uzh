@@ -1,0 +1,9 @@
+mutation ChangeCatalogCollectionName(
+  $catalogCollectionId: String!
+  $name: String!
+) {
+  changeCatalogCollectionName(
+    catalogCollectionId: $catalogCollectionId
+    name: $name
+  )
+}

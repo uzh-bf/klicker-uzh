@@ -6,6 +6,7 @@ query GetCatalogCollectionsList {
     ownerShortname
     isRequested
     isShared
+    isEditor
     isOwner
     isOwnerOrAdmin
   }

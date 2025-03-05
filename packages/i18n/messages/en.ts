@@ -2312,6 +2312,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The access request for the catalog collection was successfully submitted.',
       requestAccessFailed:
         'An error occurred while requesting the catalog collection. Please try again or contact the support.',
+      collectionNameRequired: 'Please enter a name for the catalog collection.',
+      changeCatalogCollectionName: 'Change Catalog Collection Name',
+      catalogCollectionNameChangeSuccess:
+        'The name of the catalog collection was successfully changed.',
+      catalogCollectionNameChangeError:
+        'An error occurred while changing the name of the catalog collection. Please try again.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
