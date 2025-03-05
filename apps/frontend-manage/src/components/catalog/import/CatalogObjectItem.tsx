@@ -24,6 +24,7 @@ import ObjectChangeAccessModal from './ObjectChangeAccessModal'
 import ObjectImportModal from './ObjectImportModal'
 import ObjectRemovalModal from './ObjectRemovalModal'
 import ObjectRequestCancellationModal from './ObjectRequestCancellationModal.tsx'
+import ObjectSharingModal from './ObjectSharingModal'
 
 function CatalogObjectItem({
   object,
@@ -46,6 +47,7 @@ function CatalogObjectItem({
     useState(false)
   const [importModal, setImportModal] = useState(false)
   const [changeAccessModal, setChangeAccessModal] = useState(false)
+  const [sharingModal, setSharingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(object.access)
 
@@ -57,6 +59,7 @@ function CatalogObjectItem({
     setImportModal,
     setRequestModal,
     setRequestCancellationModal,
+    setSharingModal,
     setRemovalModal,
   })
 
@@ -148,37 +151,59 @@ function CatalogObjectItem({
           ) : null}
         </div>
       </div>
-      <ObjectAccessRequestModal
-        object={object}
-        open={requestModal}
-        catalogCollectionId={catalogCollectionId}
-        onClose={() => setRequestModal(false)}
-      />
-      <ObjectImportModal
-        object={object}
-        open={importModal}
-        catalogCollectionId={catalogCollectionId}
-        onClose={() => setImportModal(false)}
-      />
-      <ObjectRequestCancellationModal
-        object={object}
-        open={requestCancellationModal}
-        catalogCollectionId={catalogCollectionId}
-        onClose={() => setRequestCancellationModal(false)}
-      />
-      <ObjectChangeAccessModal
-        object={object}
-        newAccess={newAccess}
-        open={changeAccessModal}
-        catalogCollectionId={catalogCollectionId}
-        onClose={() => setChangeAccessModal(false)}
-      />
-      <ObjectRemovalModal
-        object={object}
-        open={removalModal}
-        catalogCollectionId={catalogCollectionId}
-        onClose={() => setRemovalModal(false)}
-      />
+      {!actionsDisabled && !object.isRequested ? (
+        <ObjectAccessRequestModal
+          object={object}
+          open={requestModal}
+          catalogCollectionId={catalogCollectionId}
+          onClose={() => setRequestModal(false)}
+        />
+      ) : null}
+      {!actionsDisabled && object.access === ObjectAccess.Public ? (
+        <ObjectImportModal
+          object={object}
+          open={importModal}
+          catalogCollectionId={catalogCollectionId}
+          onClose={() => setImportModal(false)}
+        />
+      ) : null}
+      {object.isRequested ? (
+        <ObjectRequestCancellationModal
+          object={object}
+          open={requestCancellationModal}
+          catalogCollectionId={catalogCollectionId}
+          onClose={() => setRequestCancellationModal(false)}
+        />
+      ) : null}
+      {managedAccess ? (
+        <>
+          <ObjectChangeAccessModal
+            object={object}
+            newAccess={newAccess}
+            open={changeAccessModal}
+            catalogCollectionId={catalogCollectionId}
+            onClose={() => setChangeAccessModal(false)}
+          />
+          <ObjectRemovalModal
+            object={object}
+            open={removalModal}
+            catalogCollectionId={catalogCollectionId}
+            onClose={() => setRemovalModal(false)}
+          />
+        </>
+      ) : null}
+      {object.isOwnerOrAdmin ? (
+        <ObjectSharingModal
+          objectId={object.id ?? undefined}
+          objectUuid={object.uuid ?? undefined}
+          objectName={object.name}
+          objectType={object.objectType}
+          catalogCollectionId={catalogCollectionId}
+          isOwner={object.isOwner}
+          open={sharingModal}
+          onClose={() => setSharingModal(false)}
+        />
+      ) : null}
     </>
   )
 }

@@ -2320,6 +2320,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyPermissions: 'Berechtigungen bearbeiten',
       revokeAccess: 'Zugriff entziehen',
       deleteCollection: 'Sammlung löschen',
+      removeObject: 'Objekt entfernen',
       transferOwnership: 'Eigentumsrechte übertragen',
       sharingSuccessful: 'Die Katalog-Sammlung wurde erfolgreich geteilt.',
       sharingFailed:
