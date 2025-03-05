@@ -1,5 +1,9 @@
 import { faClock, faFolder } from '@fortawesome/free-regular-svg-icons'
-import { faCheck, faEllipsisVertical } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCheck,
+  faEllipsisVertical,
+  faPencil,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CatalogCollection, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
@@ -12,6 +16,7 @@ import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogCollectionChangeAccessModal from '../collections/CatalogCollectionChangeAccessModal'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
 import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
+import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
 import CatalogCollectionRequestAccessModal from '../collections/CatalogCollectionRequestAccessModal'
 import CatalogCollectionRequestAccessSuccessToast from '../collections/CatalogCollectionRequestAccessSuccessToast'
 import CatalogCollectionSharingModal from '../collections/CatalogCollectionSharingModal'
@@ -32,6 +37,7 @@ function CatalogCollectionListItem({
   const [deletionModal, setDeletionModal] = useState(false)
   const [requestModal, setRequestModal] = useState(false)
   const [changeAccessModal, setChangeAccessModal] = useState(false)
+  const [nameChangeModal, setNameChangeModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(collection.access)
 
   // toast states
@@ -92,6 +98,17 @@ function CatalogCollectionListItem({
           />
           <FontAwesomeIcon icon={faFolder} className="h-4 w-4" />
           <div>{collection.name}</div>
+          {collection.isEditor && (
+            <FontAwesomeIcon
+              icon={faPencil}
+              onClick={(e) => {
+                e.stopPropagation()
+                setNameChangeModal(true)
+              }}
+              className="hover:cursor-pointer"
+              data-cy={`change-catalog-collection-name-${collection.name}`}
+            />
+          )}
           {collection.ownerShortname ? (
             <div className="text-xs text-slate-500">
               {t('manage.resources.byOwner', {
@@ -176,6 +193,14 @@ function CatalogCollectionListItem({
             onClose={() => setChangeAccessModal(false)}
           />
         </>
+      ) : null}
+      {collection.isEditor ? (
+        <CatalogCollectionNameChangeModal
+          catalogCollectionId={collection.id}
+          name={collection.name}
+          open={nameChangeModal}
+          onClose={() => setNameChangeModal(false)}
+        />
       ) : null}
 
       {isRequestable && (

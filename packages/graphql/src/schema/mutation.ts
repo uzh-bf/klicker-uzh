@@ -1445,6 +1445,17 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      changeCatalogCollectionName: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
+        args: {
+          catalogCollectionId: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.changeCatalogCollectionName(args, ctx)
+        },
+      }),
+
       requestCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogCollection,

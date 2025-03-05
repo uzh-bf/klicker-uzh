@@ -1317,6 +1317,7 @@ type Mutation {
   cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
   changeCatalogCollectionAccessLevel(accessLevel: AccessLevel!, catalogCollectionId: String!, permissionId: Int!): PermissionInfo
+  changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean!
   changeCatalogObjectAccessLevel(accessLevel: ObjectAccess!, assignmentId: Int!): Boolean!
   changeCollectionAccessLevel(accessLevel: AccessLevel!, collectionId: Int!, permissionId: Int!): PermissionInfo

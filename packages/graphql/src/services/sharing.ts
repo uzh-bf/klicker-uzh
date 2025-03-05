@@ -57,23 +57,18 @@ export async function validateCatalogCollectionPermissions(
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              accessLevel: {
-                in: acceptedAccessLevels,
-              },
-            },
+    },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+          permissionStatus: DB.PermissionStatus.GRANTED,
+          accessLevel: {
+            in: acceptedAccessLevels,
           },
         },
         // TODO: handle user groups
-      ],
+      },
     },
   })
 
@@ -81,7 +76,11 @@ export async function validateCatalogCollectionPermissions(
     return { valid: false, catalogCollection: null }
   }
 
-  return { valid: true, catalogCollection }
+  const validAccess =
+    catalogCollection.permissions.length > 0 ||
+    catalogCollection.ownerId === ctx.user.sub
+
+  return { valid: validAccess, catalogCollection }
 }
 
 // function that verifies that a user has sufficient permissions to edit an object in the catalog
@@ -361,6 +360,47 @@ export async function changeCatalogCollectionObjectAccess(
     },
     data: {
       access,
+    },
+  })
+
+  if (!updatedCollection) {
+    return false
+  }
+
+  // invalidate cache for the updated collection
+  ctx.emitter.emit('invalidate', {
+    typename: 'CatalogCollection',
+    id: updatedCollection.id,
+  })
+
+  // return success
+  return true
+}
+
+export async function changeCatalogCollectionName(
+  { catalogCollectionId, name }: { catalogCollectionId: string; name: string },
+  ctx: ContextWithUser
+) {
+  // verify that user has sufficient access (at least WRITE) to change the catalog collection access level
+  const { valid } = await validateCatalogCollectionPermissions(
+    {
+      catalogCollectionId,
+      acceptedAccessLevels: [DB.AccessLevel.ADMIN, DB.AccessLevel.WRITE],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return false
+  }
+
+  // update the access level of the catalog collection
+  const updatedCollection = await ctx.prisma.catalogCollection.update({
+    where: {
+      id: catalogCollectionId,
+    },
+    data: {
+      name,
     },
   })
 
@@ -820,6 +860,13 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
         (permission) =>
           permission.permissionStatus === DB.PermissionStatus.GRANTED
       )
+      const isEditor =
+        collection.permissions.some(
+          (permission) =>
+            (permission.accessLevel === DB.AccessLevel.WRITE ||
+              permission.accessLevel === DB.AccessLevel.ADMIN) &&
+            permission.permissionStatus === DB.PermissionStatus.GRANTED
+        ) || collection.ownerId === ctx.user.sub
       const isOwnerOrAdmin =
         collection.ownerId === ctx.user.sub ||
         collection.permissions.some(
@@ -833,6 +880,7 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
         ownerShortname: collection.owner?.shortname,
         isRequested,
         isShared,
+        isEditor,
         isOwner: collection.ownerId === ctx.user.sub,
         isOwnerOrAdmin,
       }
@@ -1515,15 +1563,29 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
       objectPermissions: {
         where: {
           permissionStatus: DB.PermissionStatus.REQUESTED,
-          answerCollectionId: {
-            not: null,
-          },
+          OR: [
+            {
+              catalogCollectionId: {
+                not: null,
+              },
+            },
+            {
+              answerCollectionId: {
+                not: null,
+              },
+            },
+          ],
         },
         include: {
           user: {
             select: {
               shortname: true,
               email: true,
+            },
+          },
+          catalogCollection: {
+            select: {
+              name: true,
             },
           },
           answerCollection: {
@@ -1542,8 +1604,24 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
 
   const sharingRequests = user.objectPermissions.reduce<ObjectSharingRequest[]>(
     (acc, request) => {
-      // sharing request for answer collection
+      // sharing request for catalog collection
       if (
+        typeof request.catalogCollection !== 'undefined' &&
+        request.catalogCollection !== null &&
+        request.user
+      ) {
+        acc.push({
+          permissionId: request.id,
+          objectName: request.catalogCollection.name,
+          objectType: CatalogObjectType.CATALOG_COLLECTION,
+          userId: request.userId!,
+          userShortname: request.user.shortname,
+          userEmail: request.user.email,
+        })
+      }
+
+      // sharing request for answer collection
+      else if (
         typeof request.answerCollection !== 'undefined' &&
         request.answerCollection !== null &&
         request.user

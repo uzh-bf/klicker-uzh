@@ -35,7 +35,7 @@ function CatalogSharingRequest({
     >
       <div>
         <div className="flex flex-row items-center gap-4">
-          <div className="-mb-0.5 font-bold">{request.objectName}</div>
+          <div className="font-bold">{request.objectName}</div>
           <div className="rounded bg-slate-300 px-1">
             {t(`manage.catalog.objectType${request.objectType}`)}
           </div>
