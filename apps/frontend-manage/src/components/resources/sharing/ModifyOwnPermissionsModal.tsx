@@ -37,7 +37,7 @@ function ModifyOwnPermissionsModal({
           <p className="text-sm" data-cy="change-own-access-warning">
             {t('manage.resources.changeOwnPermissionsWarning', {
               permissionLevel: t(
-                `manage.resources.access${newPermissionLevel ?? PermissionLevel.Read}`
+                `manage.resources.permissions${newPermissionLevel ?? PermissionLevel.Read}`
               ),
             })}
           </p>

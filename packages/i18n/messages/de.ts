@@ -2096,8 +2096,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       access: 'Zugriff',
       accessTooltip:
         "Wählen Sie aus, ob dieses Objekt durch alle Nutzer mit Zugriff auf die ausgewählte Katalog-Sammlung importiert werden kann. Bei einem 'eingeschränkten' Zugriff müssen andere Nutzer diesen explizit beantragen.",
-      accessPUBLIC: 'Öffentlich',
-      accessRESTRICTED: 'Eingeschränkt',
       catalogCollection: 'Katalog-Sammlung',
       descriptionTooltip:
         'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
@@ -2113,10 +2111,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte fügen Sie mindestens zwei Einträge zu Ihrer Sammlung hinzu.',
       uniqueValuesRequired:
         'Alle Optionen in einer Antwort-Sammlung müssen einen einzigartigen Wert haben. Bitte stellen Sie sicher, dass keine zwei Antwortoptionen übereinstimmen.',
-      infoAccessPUBLIC:
-        'Öffentliche Objekte können von allen Nutzern mit Zugriff auf die entsprechende Katalog-Sammlung eingesehen und importiert werden.',
-      infoAccessRESTRICTED:
-        'Eingeschränkte Objekte können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung abhängig von den vergebenen Rechten genutzt werden.',
       collectionCreationSuccess:
         'Die Antwort-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
@@ -2190,10 +2184,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zugriffs-Anfrage wurde erfolgreich zurückgezogen.',
       cancellationFailed:
         'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      accessREAD: 'Lesezugriff',
-      accessWRITE: 'Schreibzugriff',
-      accessADMIN: 'Admin-Zugriff',
-      accessEXECUTE: 'Ausführungsrechte',
+      permissionsREAD: 'Leserechte',
+      permissionsWRITE: 'Schreibrechte',
+      permissionsADMIN: 'Admin-rechte',
+      permissionsEXECUTE: 'Ausführungsrechte',
       noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
       usernameEmailOrGroupRequired:
         'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
@@ -2226,6 +2220,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     catalog: {
       accessTypes: 'Zugriffs-Typen',
+      accessPUBLIC: 'Öffentlich',
+      accessRESTRICTED: 'Eingeschränkt',
+      infoAccessPUBLIC:
+        'Öffentliche Objekte können von allen Nutzern mit Zugriff auf die entsprechende Katalog-Sammlung eingesehen und importiert werden.',
+      infoAccessRESTRICTED:
+        'Eingeschränkte Objekte können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung abhängig von den vergebenen Rechten genutzt werden.',
       objectType: 'Objekt-Typ',
       all: 'Alle',
       sharingRequests: 'Zugriffs-Anfragen',

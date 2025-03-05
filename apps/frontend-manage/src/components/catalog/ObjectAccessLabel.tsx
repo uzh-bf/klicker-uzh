@@ -24,7 +24,7 @@ function ObjectAccessLabel({
         )}
       >
         <FontAwesomeIcon icon={faLockOpen} />
-        {!iconOnly ? t(`manage.resources.access${ObjectAccess.Public}`) : null}
+        {!iconOnly ? t(`manage.catalog.access${ObjectAccess.Public}`) : null}
       </div>
     )
   }
@@ -37,9 +37,7 @@ function ObjectAccessLabel({
       )}
     >
       <FontAwesomeIcon icon={faUserLock} />
-      {!iconOnly
-        ? t(`manage.resources.access${ObjectAccess.Restricted}`)
-        : null}
+      {!iconOnly ? t(`manage.catalog.access${ObjectAccess.Restricted}`) : null}
     </div>
   )
 }

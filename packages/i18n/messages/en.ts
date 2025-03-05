@@ -2071,8 +2071,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       access: 'Access',
       accessTooltip:
         'Choose whether this object can be imported by all users with access to the selected catalog collection. With "restricted" access, other users must explicitly request access.',
-      accessPUBLIC: 'Public',
-      accessRESTRICTED: 'Restricted',
       catalogCollection: 'Catalog Collection',
       descriptionTooltip:
         'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
@@ -2088,10 +2086,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'At least two answer entries are required to create an answer collection.',
       uniqueValuesRequired:
         'All options in an answer collection need to have a unique value. Please make sure that no two answers options coincide.',
-      infoAccessPUBLIC:
-        'Public objects can be viewed and imported by all users with access to the corresponding catalog collection.',
-      infoAccessRESTRICTED:
-        'Restricted objects can be requested by other users in the catalog and used after your approval depending on the granted rights.',
       collectionCreationSuccess:
         'The answer collection was created successfully.',
       collectionCreationError:
@@ -2164,10 +2158,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       cancellationSuccessful: 'The access request was successfully withdrawn.',
       cancellationFailed:
         'An error occurred while withdrawing the access request. Please try again or contact the support.',
-      accessREAD: 'Read access',
-      accessWRITE: 'Write access',
-      accessADMIN: 'Admin access',
-      accessEXECUTE: 'Execution access',
+      permissionsREAD: 'Read permissions',
+      permissionsWRITE: 'Write permissions',
+      permissionsADMIN: 'Admin permissions',
+      permissionsEXECUTE: 'Execution permissions',
       noUserGroupSelected: 'No user group selected',
       usernameEmailOrGroupRequired:
         'Please enter a username / email address or select a user group.',
@@ -2198,6 +2192,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     catalog: {
       accessTypes: 'Access Types',
+      accessPUBLIC: 'Public',
+      accessRESTRICTED: 'Restricted',
+      infoAccessPUBLIC:
+        'Public objects can be viewed and imported by all users with access to the corresponding catalog collection.',
+      infoAccessRESTRICTED:
+        'Restricted objects can be requested by other users in the catalog and used after your approval depending on the granted rights.',
       objectType: 'Object Type',
       all: 'All',
       sharingRequests: 'Sharing Requests',

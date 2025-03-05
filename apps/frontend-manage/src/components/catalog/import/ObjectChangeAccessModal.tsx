@@ -39,7 +39,7 @@ function ObjectChangeAccessModal({
           {t('manage.catalog.changeAccessDescription', {
             objectType: t(`shared.types.${object.objectType}`),
             objectName: object.name,
-            newAccess: t(`manage.resources.access${newAccess}`),
+            newAccess: t(`manage.catalog.access${newAccess}`),
           })}
         </div>
         <div className="mt-2 flex flex-row justify-end gap-2">
