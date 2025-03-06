@@ -13,10 +13,9 @@ import { twMerge } from 'tailwind-merge'
 
 function useAnswerCollectionActionsDropdown({
   isOwner,
-  isShareable,
-  isEditable,
+  isManager,
+  isEditor,
   isRemovable,
-  isDeletionAllowed,
   setSharingModal,
   setEditModal,
   setViewingModal,
@@ -24,10 +23,9 @@ function useAnswerCollectionActionsDropdown({
   setDeletionModal,
 }: {
   isOwner: boolean
-  isShareable: boolean
-  isEditable: boolean
+  isManager: boolean
+  isEditor: boolean
   isRemovable: boolean
-  isDeletionAllowed: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setEditModal: Dispatch<SetStateAction<boolean>>
   setViewingModal: Dispatch<SetStateAction<boolean>>
@@ -51,7 +49,7 @@ function useAnswerCollectionActionsDropdown({
     )
 
     // sharing functionalities
-    if (isShareable) {
+    if (isManager) {
       items.push({
         id: 'share',
         label: (
@@ -68,7 +66,7 @@ function useAnswerCollectionActionsDropdown({
       })
     }
 
-    if (isEditable) {
+    if (isEditor) {
       // editing permissions on the answer collection
       items.push({
         id: 'edit',
@@ -118,7 +116,7 @@ function useAnswerCollectionActionsDropdown({
       })
     }
 
-    if (isDeletionAllowed) {
+    if (isManager) {
       // deletion functionalities
       items.push({
         id: 'delete',
@@ -141,7 +139,18 @@ function useAnswerCollectionActionsDropdown({
     }
 
     return items
-  }, [t, isOwner, isShareable, isEditable, isRemovable, isDeletionAllowed])
+  }, [
+    t,
+    isOwner,
+    isManager,
+    isEditor,
+    isRemovable,
+    setSharingModal,
+    setEditModal,
+    setViewingModal,
+    setRemovalModal,
+    setDeletionModal,
+  ])
 }
 
 export default useAnswerCollectionActionsDropdown

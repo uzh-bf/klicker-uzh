@@ -1,9 +1,6 @@
-mutation ChangeCatalogObjectAccessLevel(
+mutation ChangeCatalogObjectAccess(
   $assignmentId: Int!
-  $accessLevel: ObjectAccess!
+  $access: ObjectAccess!
 ) {
-  changeCatalogObjectAccessLevel(
-    assignmentId: $assignmentId
-    accessLevel: $accessLevel
-  )
+  changeCatalogObjectAccess(assignmentId: $assignmentId, access: $access)
 }

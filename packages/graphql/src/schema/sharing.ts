@@ -18,8 +18,8 @@ export const PermissionStatus = builder.enumType('PermissionStatus', {
   values: Object.values(DB.PermissionStatus),
 })
 
-export const AccessLevel = builder.enumType('AccessLevel', {
-  values: Object.values(DB.AccessLevel),
+export const PermissionLevel = builder.enumType('PermissionLevel', {
+  values: Object.values(DB.PermissionLevel),
 })
 
 // ----- CATALOG OBJECTS -----
@@ -28,9 +28,9 @@ interface ICatalogCollection extends DB.CatalogCollection {
   ownerShortname?: string
   isRequested: boolean // pending permission request
   isShared: boolean // granted permission
-  isEditor?: boolean // WRITE / ADMIN / OWNER permissions
   isOwner?: boolean // OWNER permissions
-  isOwnerOrAdmin: boolean // ADMIN / OWNER permissions
+  isManager: boolean // ADMIN / OWNER permissions
+  isEditor?: boolean // WRITE / ADMIN / OWNER permissions
 }
 export const CatalogCollectionRef =
   builder.objectRef<ICatalogCollection>('CatalogCollection')
@@ -40,11 +40,11 @@ export const CatalogCollection = CatalogCollectionRef.implement({
     name: t.exposeString('name'),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+    isManager: t.exposeBoolean('isManager'),
+    isEditor: t.exposeBoolean('isEditor', { nullable: true }),
     isRequested: t.exposeBoolean('isRequested'),
     isShared: t.exposeBoolean('isShared'),
-    isEditor: t.exposeBoolean('isEditor', { nullable: true }),
-    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
-    isOwnerOrAdmin: t.exposeBoolean('isOwnerOrAdmin'),
   }),
 })
 
@@ -59,10 +59,10 @@ export const CatalogObject = CatalogObjectRef.implement({
     assignmentId: t.exposeInt('assignmentId'),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner'),
+    isManager: t.exposeBoolean('isManager'),
     isRequested: t.exposeBoolean('isRequested'),
     isShared: t.exposeBoolean('isShared'),
-    isOwner: t.exposeBoolean('isOwner'),
-    isOwnerOrAdmin: t.exposeBoolean('isOwnerOrAdmin'),
   }),
 })
 
@@ -114,7 +114,7 @@ interface IPermissionInfo {
   username?: string
   userEmail?: string
   userGroupName?: string
-  accessLevel: DB.AccessLevel
+  permissionLevel: DB.PermissionLevel
   isRevokable?: boolean
   isOwn?: boolean
 }
@@ -127,7 +127,7 @@ export const PermissionInfo = PermissionInfoRef.implement({
     username: t.exposeString('username', { nullable: true }),
     userEmail: t.exposeString('userEmail', { nullable: true }),
     userGroupName: t.exposeString('userGroupName', { nullable: true }),
-    accessLevel: t.expose('accessLevel', { type: AccessLevel }),
+    permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
     isRevokable: t.exposeBoolean('isRevokable', { nullable: true }),
     isOwn: t.exposeBoolean('isOwn', { nullable: true }),
   }),

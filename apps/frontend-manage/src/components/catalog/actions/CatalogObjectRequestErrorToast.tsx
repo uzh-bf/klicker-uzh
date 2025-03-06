@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function RequestCancellationErrorToast({
+function CatalogObjectRequestErrorToast({
   open,
   onClose,
 }: {
@@ -16,11 +16,10 @@ function RequestCancellationErrorToast({
       type="error"
       openExternal={open}
       onCloseExternal={onClose}
-      duration={3000}
     >
-      {t('manage.resources.cancellationFailed')}
+      {t('manage.catalog.requestCatalogObjectFailed')}
     </Toast>
   )
 }
 
-export default RequestCancellationErrorToast
+export default CatalogObjectRequestErrorToast

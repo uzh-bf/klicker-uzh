@@ -32,13 +32,13 @@ describe('Create, edit and share answer collections', function () {
 
   function grantCollectionAccess({
     collectionName,
-    accessLevel,
-    accessLevelCy,
+    permissionLevel,
+    permissionLevelCy,
     username,
   }: {
     collectionName: string
-    accessLevel: string
-    accessLevelCy: string
+    permissionLevel: string
+    permissionLevelCy: string
     username: string
   }) {
     cy.get('[data-cy="resources"]').click()
@@ -50,14 +50,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
     cy.get('[data-cy="new-permission-username-or-email"]').type(username)
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get(`[data-cy="access-level-${accessLevelCy}"]`).click()
-    cy.get('[data-cy="new-permission-access-level"]').contains(accessLevel)
+    cy.get(`[data-cy="permission-level-${permissionLevelCy}"]`).click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(permissionLevel)
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${username}"]`)
       .should('exist')
-      .contains(accessLevel)
+      .contains(permissionLevel)
   }
   // #endregion
 
@@ -392,7 +392,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.restricted.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'restricted',
+      permissionLevel: 'restricted',
     })
 
     // check that import and request functionalities are not available for owner (but deletion is)
@@ -467,12 +467,12 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="cancel-answer-collection-request"]').click()
+    cy.get('[data-cy="cancel-request-access"]').click()
     cy.get(
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
@@ -491,7 +491,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
@@ -550,14 +550,14 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="cancel-request-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="confirm-cancel-sharing-request"]').click()
+    cy.get('[data-cy="confirm-request-cancellation"]').click()
 
     // request the answer collection again (should be possible)
     cy.get(
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending again
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
@@ -574,11 +574,11 @@ describe('Create, edit and share answer collections', function () {
     ).click()
 
     // approval modal
-    cy.get('[data-cy="access-level-select"]').contains(
-      messages.manage.resources.accessREAD
+    cy.get('[data-cy="permission-level-select"]').contains(
+      messages.manage.resources.permissionsREAD
     )
-    cy.get('[data-cy="access-level-select"]').click()
-    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -601,7 +601,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="share-answer-collection"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessREAD)
+      .contains(messages.manage.resources.permissionsREAD)
   })
 
   it('Verify that restricted answer collection is visible in resources for user pro1', function () {
@@ -747,14 +747,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
 
     cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).contains(
-      messages.manage.resources.accessRESTRICTED
+      messages.manage.catalog.accessRESTRICTED
     )
     cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).click()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).contains(
-      messages.manage.resources.accessPUBLIC
+      messages.manage.catalog.accessPUBLIC
     )
   })
 
@@ -812,7 +812,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.restricted.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'restricted',
+      permissionLevel: 'restricted',
     })
   })
 
@@ -828,14 +828,14 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_INST_EMAIL')
     )
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessADMIN
+      messages.manage.resources.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessADMIN)
+      .contains(messages.manage.resources.permissionsADMIN)
   })
 
   it('Verify that user pro2 should now be able to add this collection to the catalog', function () {
@@ -957,7 +957,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.public.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'public',
+      permissionLevel: 'public',
     })
 
     // answer collection should be visible to owner, but cannot be requested / imported
@@ -984,7 +984,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.public.name}"]`).click()
     cy.findByText(messages.manage.catalog.requestPublicResource)
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).contains(
@@ -1001,7 +1001,7 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).contains(
@@ -1042,11 +1042,11 @@ describe('Create, edit and share answer collections', function () {
     ).click()
 
     // approval modal
-    cy.get('[data-cy="access-level-select"]').contains(
-      messages.manage.resources.accessREAD
+    cy.get('[data-cy="permission-level-select"]').contains(
+      messages.manage.resources.permissionsREAD
     )
-    cy.get('[data-cy="access-level-select"]').click()
-    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -1069,7 +1069,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="share-answer-collection"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessREAD)
+      .contains(messages.manage.resources.permissionsREAD)
   })
 
   it("Verify that the public answer collection is visible in resources for user 'pro1'", function () {
@@ -1121,14 +1121,14 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
     cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="close-answer-collection-import-modal"]').click()
+    cy.get('[data-cy="close-object-import-modal"]').click()
 
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
     cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="cancel-answer-collection-import"]').click()
+    cy.get('[data-cy="cancel-object-import"]').click()
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
     cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-import"]').click()
+    cy.get('[data-cy="confirm-object-import"]').click()
 
     // check that the collection is visible in resources
     cy.get('[data-cy="resources"]').click()
@@ -1293,7 +1293,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.private.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'restricted',
+      permissionLevel: 'restricted',
     })
   })
 
@@ -1306,7 +1306,7 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.private.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).contains(
@@ -1320,14 +1320,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
 
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
-      messages.manage.resources.accessRESTRICTED
+      messages.manage.catalog.accessRESTRICTED
     )
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).click()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
-      messages.manage.resources.accessPUBLIC
+      messages.manage.catalog.accessPUBLIC
     )
   })
 
@@ -1377,7 +1377,7 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.private.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).contains(
@@ -1391,13 +1391,13 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
 
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
-      messages.manage.resources.accessPUBLIC
+      messages.manage.catalog.accessPUBLIC
     )
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
-      messages.manage.resources.accessRESTRICTED
+      messages.manage.catalog.accessRESTRICTED
     )
   })
 
@@ -1423,11 +1423,11 @@ describe('Create, edit and share answer collections', function () {
     ).click()
 
     // approval modal
-    cy.get('[data-cy="access-level-select"]').contains(
-      messages.manage.resources.accessREAD
+    cy.get('[data-cy="permission-level-select"]').contains(
+      messages.manage.resources.permissionsREAD
     )
-    cy.get('[data-cy="access-level-select"]').click()
-    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -1502,8 +1502,8 @@ describe('Create, edit and share answer collections', function () {
     grantCollectionAccess({
       collectionName: this.data.direct.name,
       username: Cypress.env('LECTURER_IND_SHORTNAME'),
-      accessLevel: messages.manage.resources.accessREAD,
-      accessLevelCy: 'READ',
+      permissionLevel: messages.manage.resources.permissionsREAD,
+      permissionLevelCy: 'READ',
     })
   })
 
@@ -1514,7 +1514,7 @@ describe('Create, edit and share answer collections', function () {
     cy.addObjectToCatalog({
       objectName: this.data.direct.name,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
-      accessLevel: 'restricted',
+      permissionLevel: 'restricted',
     })
   })
 
@@ -1545,7 +1545,7 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.direct.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.direct.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
   })
 
   it("Verify that the sharing request by user 'pro2' is visible in the catalog and give direct access to the answer collection", function () {
@@ -1568,14 +1568,14 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_INST_EMAIL')
     )
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessREAD
+      messages.manage.resources.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessREAD)
+      .contains(messages.manage.resources.permissionsREAD)
   })
 
   it("Verify that the access request by user 'pro2' has been resolved automatically", function () {
@@ -1771,14 +1771,14 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_IND_SHORTNAME')
     )
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessREAD
+      messages.manage.resources.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessREAD)
+      .contains(messages.manage.resources.permissionsREAD)
   })
 
   it("Grant WRITE permissions to user 'pro2'", function () {
@@ -1796,16 +1796,16 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_INST_SHORTNAME')
     )
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-WRITE"]').click()
+    cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessWRITE
+      messages.manage.resources.permissionsWRITE
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessWRITE)
+      .contains(messages.manage.resources.permissionsWRITE)
   })
 
   it("Grant ADMIN permissions to user 'pro3'", function () {
@@ -1823,16 +1823,16 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_INST2_SHORTNAME')
     )
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessADMIN
+      messages.manage.resources.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessADMIN)
+      .contains(messages.manage.resources.permissionsADMIN)
   })
 
   it("Verify that user 'pro1' can view the answer collection", function () {
@@ -2018,13 +2018,13 @@ describe('Create, edit and share answer collections', function () {
     // verify that all permissions are visible
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessREAD)
+    ).contains(messages.manage.resources.permissionsREAD)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessWRITE)
+    ).contains(messages.manage.resources.permissionsWRITE)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
   })
 
   it("Verify that user 'pro3' can modify the permissions of user 'pro1' to WRITE", function () {
@@ -2039,14 +2039,14 @@ describe('Create, edit and share answer collections', function () {
     // change the permissions of user pro1 to WRITE
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessREAD)
+    ).contains(messages.manage.resources.permissionsREAD)
     cy.get(
-      `[data-cy="access-level-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      `[data-cy="permission-level-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).click()
-    cy.get('[data-cy="access-level-WRITE"]').click()
+    cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessWRITE)
+    ).contains(messages.manage.resources.permissionsWRITE)
   })
 
   it("Verify that user 'pro1' has been granted write permissions and test edit permissions", function () {
@@ -2065,14 +2065,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="share-answer-collection"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessWRITE)
+    ).contains(messages.manage.resources.permissionsWRITE)
     cy.get(
-      `[data-cy="access-level-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+      `[data-cy="permission-level-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).click()
-    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessREAD)
+    ).contains(messages.manage.resources.permissionsREAD)
 
     // verify that none of the permissions can be revoked (as they are all used)
     cy.get(
@@ -2194,14 +2194,14 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_IND_SHORTNAME')
     )
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessREAD
+      messages.manage.resources.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessREAD)
+      .contains(messages.manage.resources.permissionsREAD)
   })
 
   it("Transfer ownership to user 'pro2' using the e-mail address", function () {
@@ -2226,7 +2226,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="transfer-ownership"]').should('not.exist')
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessADMIN)
+      .contains(messages.manage.resources.permissionsADMIN)
   })
 
   it("Verify that user 'pro2' is the new owner with an overview of all permissions", function () {
@@ -2241,10 +2241,10 @@ describe('Create, edit and share answer collections', function () {
     // verify that all permissions are visible
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessREAD)
+    ).contains(messages.manage.resources.permissionsREAD)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
   })
 
   it("Verify that user 'pro1' still has read access to the answer collection", function () {
@@ -2285,10 +2285,10 @@ describe('Create, edit and share answer collections', function () {
     ).should('not.exist')
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
   })
 
   it("Verify that user 'pro1' is the new owner with an overview of all permissions", function () {
@@ -2306,10 +2306,10 @@ describe('Create, edit and share answer collections', function () {
     ).should('not.exist')
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
   })
 
   it('Change own access rights from admin permissions to read access for main user', function () {
@@ -2323,16 +2323,16 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
     cy.get(
-      `[data-cy="access-level-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+      `[data-cy="permission-level-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).click()
-    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="cancel-modify-own-permissions"]').click()
     cy.get(
-      `[data-cy="access-level-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+      `[data-cy="permission-level-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).click()
-    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="confirm-modify-own-permissions"]').click()
 
     // modal has been closed and permission updated
@@ -2341,7 +2341,7 @@ describe('Create, edit and share answer collections', function () {
     ).should('not.exist')
     cy.get(
       `[data-cy="answer-collection-${this.data.ownership.name}"]`
-    ).contains(messages.manage.resources.accessREAD)
+    ).contains(messages.manage.resources.permissionsREAD)
     cy.get(
       `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
     ).click()
@@ -2364,14 +2364,14 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessREAD)
+    ).contains(messages.manage.resources.permissionsREAD)
     cy.get(
-      `[data-cy="access-level-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
+      `[data-cy="permission-level-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).click()
-    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
   })
 
   it('Have the main user revoke its own access through the use of admin rights', function () {
@@ -2385,7 +2385,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.accessADMIN)
+    ).contains(messages.manage.resources.permissionsADMIN)
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).click()

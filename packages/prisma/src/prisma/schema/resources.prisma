@@ -150,7 +150,7 @@ model MediaFile {
 
 // ----- SHARING & PERMISSIONS -----
 // #region
-enum AccessLevel {
+enum PermissionLevel {
     READ // read access (no modifications, no deletion, no sharing)
     WRITE // edit access (no deletion, no sharing)
     EXECUTE // e.g. for live quizzes: only inspect evaluation
@@ -183,7 +183,7 @@ model UserGroup {
 model Permission {
     id Int @id @default(autoincrement())
 
-    accessLevel      AccessLevel
+    permissionLevel  PermissionLevel
     permissionStatus PermissionStatus
 
     // user or user group requesting access

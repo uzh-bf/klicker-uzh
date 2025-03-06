@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   CatalogObject,
-  ChangeCatalogObjectAccessLevelDocument,
+  ChangeCatalogObjectAccessDocument,
   GetCatalogObjectsDocument,
   ObjectAccess,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -22,8 +22,8 @@ function ObjectChangeAccessModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  const [changeCatalogObjectAccessLevel, { loading }] = useMutation(
-    ChangeCatalogObjectAccessLevelDocument
+  const [changeCatalogObjectAccess, { loading }] = useMutation(
+    ChangeCatalogObjectAccessDocument
   )
 
   return (
@@ -39,7 +39,7 @@ function ObjectChangeAccessModal({
           {t('manage.catalog.changeAccessDescription', {
             objectType: t(`shared.types.${object.objectType}`),
             objectName: object.name,
-            newAccess: t(`manage.resources.access${newAccess}`),
+            newAccess: t(`manage.catalog.access${newAccess}`),
           })}
         </div>
         <div className="mt-2 flex flex-row justify-end gap-2">
@@ -54,14 +54,14 @@ function ObjectChangeAccessModal({
             primary
             loading={loading}
             onClick={async () => {
-              const res = await changeCatalogObjectAccessLevel({
+              const res = await changeCatalogObjectAccess({
                 variables: {
                   assignmentId: object.assignmentId,
-                  accessLevel: newAccess,
+                  access: newAccess,
                 },
                 update: (cache, { data }) => {
                   // check if request was successful
-                  const success = data?.changeCatalogObjectAccessLevel
+                  const success = data?.changeCatalogObjectAccess
                   if (!success) return
 
                   // update list of answer collections
@@ -91,7 +91,7 @@ function ObjectChangeAccessModal({
                 },
               })
 
-              if (res.data?.changeCatalogObjectAccessLevel) {
+              if (res.data?.changeCatalogObjectAccess) {
                 onClose()
               }
             }}

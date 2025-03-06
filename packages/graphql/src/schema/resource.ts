@@ -1,11 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
-import { AccessType as AccessTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { AccessLevel, ObjectAccess, PermissionStatus } from './sharing.js'
-
-export const AccessType = builder.enumType('AccessType', {
-  values: Object.values(AccessTypeEnum),
-})
+import { PermissionLevel } from './sharing.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -24,19 +19,17 @@ export const AnswerCollectionEntry = AnswerCollectionEntryRef.implement({
 })
 
 interface IAnswerCollection extends DB.AnswerCollection {
-  accessType: AccessTypeEnum
   entries?: DB.AnswerCollectionEntry[]
   numOfEntries?: number
-  sharingStatus?: DB.PermissionStatus
-  sharingLevel?: DB.AccessLevel
+  permissionLevel?: DB.PermissionLevel
   ownerShortname?: string
   numSharedUsers?: number
-  isOwner?: boolean // flag to signal ownership
+  isOwner?: boolean // = OWNER
+  isManager?: boolean // = OWNER / ADMIN
+  isEditor?: boolean // = OWNER / ADMIN / WRITE
   isImported?: boolean // imported flag for UI icon
-  isEditable?: boolean // flag for contend editing permissions
-  isShareable?: boolean // flag for sharing permissions (incl. catalog assignment, access removal, etc.)
-  isRemovable?: boolean // flag if the collection can be removed from the own account
-  isDeletionAllowed?: boolean // flag if the user has permissions to delete the collection
+  isShared?: boolean // flag to signal whether the object is owned or shared
+  isRemovable?: boolean // flag to signal the existence of dependent objects
 }
 
 export const AnswerCollectionRef =
@@ -45,7 +38,6 @@ export const AnswerCollection = AnswerCollectionRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     name: t.exposeString('name'),
-    accessType: t.expose('accessType', { type: AccessType }),
     description: t.exposeString('description'),
     entries: t.expose('entries', {
       type: [AnswerCollectionEntryRef],
@@ -53,43 +45,18 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     }),
     numOfEntries: t.exposeInt('numOfEntries', { nullable: true }),
 
-    sharingStatus: t.expose('sharingStatus', {
-      type: PermissionStatus,
-      nullable: true,
-    }),
-    sharingLevel: t.expose('sharingLevel', {
-      type: AccessLevel,
+    permissionLevel: t.expose('permissionLevel', {
+      type: PermissionLevel,
       nullable: true,
     }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     numSharedUsers: t.exposeInt('numSharedUsers', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+    isManager: t.exposeBoolean('isManager', { nullable: true }),
+    isEditor: t.exposeBoolean('isEditor', { nullable: true }),
     isImported: t.exposeBoolean('isImported', { nullable: true }),
-    isEditable: t.exposeBoolean('isEditable', { nullable: true }),
-    isShareable: t.exposeBoolean('isShareable', { nullable: true }),
+    isShared: t.exposeBoolean('isShared', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
-    isDeletionAllowed: t.exposeBoolean('isDeletionAllowed', { nullable: true }),
-  }),
-})
-
-interface ICatalogAnswerCollection extends DB.AnswerCollection {
-  objectAccess: DB.ObjectAccess
-  ownerShortname?: string
-  entries?: DB.AnswerCollectionEntry[]
-}
-export const CatalogAnswerCollectionRef =
-  builder.objectRef<ICatalogAnswerCollection>('CatalogAnswerCollection')
-export const CatalogAnswerCollection = CatalogAnswerCollectionRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    name: t.exposeString('name'),
-    description: t.exposeString('description'),
-    objectAccess: t.expose('objectAccess', { type: ObjectAccess }),
-    ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
-    entries: t.expose('entries', {
-      type: [AnswerCollectionEntryRef],
-      nullable: true,
-    }),
   }),
 })
 

@@ -43,10 +43,9 @@ function AnswerCollectionItem({
 
   const dropdownItems = useAnswerCollectionActionsDropdown({
     isOwner: collection.isOwner ?? false,
-    isShareable: collection.isShareable ?? false,
-    isEditable: collection.isEditable ?? false,
+    isManager: collection.isManager ?? false,
+    isEditor: collection.isEditor ?? false,
     isRemovable: collection.isRemovable ?? false,
-    isDeletionAllowed: collection.isDeletionAllowed ?? false,
     setSharingModal,
     setEditModal,
     setViewingModal,
@@ -70,8 +69,10 @@ function AnswerCollectionItem({
               />
             )}
             <span className="font-medium">{collection.name}</span>
-            {collection.sharingLevel && (
-              <ObjectPermissionLevel accessLevel={collection.sharingLevel} />
+            {collection.permissionLevel && (
+              <ObjectPermissionLevel
+                permissionLevel={collection.permissionLevel}
+              />
             )}
           </div>
 
@@ -96,7 +97,7 @@ function AnswerCollectionItem({
         </div>
 
         <div className="flex items-center gap-4">
-          {collection.isShareable && (collection.numSharedUsers ?? 0) > 0 && (
+          {collection.isManager && (collection.numSharedUsers ?? 0) > 0 && (
             <div className="flex items-center text-sm text-gray-600">
               <span className="mr-1">{collection.numSharedUsers}</span>
               <FontAwesomeIcon icon={faUserGroup} />
@@ -123,14 +124,14 @@ function AnswerCollectionItem({
       </div>
 
       {/* editing and viewing modal components */}
-      {collection.isEditable && (
+      {collection.isEditor && (
         <AnswerCollectionEditModal
           collectionId={collection.id}
           open={editModal}
           onClose={() => setEditModal(false)}
         />
       )}
-      {!collection.isEditable && (
+      {!collection.isEditor && (
         <AnswerCollectionViewingModal
           collectionId={collection.id}
           open={viewingModal}
@@ -140,7 +141,7 @@ function AnswerCollectionItem({
       )}
 
       {/* sharing functionalities modals to add / revoke / ... access */}
-      {collection.isShareable && (
+      {collection.isManager && (
         <>
           <AnswerCollectionSharingModal
             collectionId={collection.id}
@@ -156,19 +157,17 @@ function AnswerCollectionItem({
             collectionId={collection.id}
             collectionName={collection.name}
           />
+          <CollectionDeletionModal
+            collection={collection}
+            deletionModal={deletionModal}
+            setDeletionModal={setDeletionModal}
+            setDeletionSuccess={setDeletionSuccess}
+            setDeletionFailure={setDeletionFailure}
+          />
         </>
       )}
 
-      {/* answer collection deletion functionality for owner and admins */}
-      {collection.isDeletionAllowed && (
-        <CollectionDeletionModal
-          collection={collection}
-          deletionModal={deletionModal}
-          setDeletionModal={setDeletionModal}
-          setDeletionSuccess={setDeletionSuccess}
-          setDeletionFailure={setDeletionFailure}
-        />
-      )}
+      {/* removal modal for non-owners */}
       {!collection.isOwner && (
         <CollectionRemovalModal
           collection={collection}

@@ -2,19 +2,17 @@ query GetAnswerCollectionsInfo {
   getAnswerCollectionsInfo {
     id
     name
-    accessType
-    sharingStatus
-    sharingLevel
     description
     ownerShortname
     numSharedUsers
     numOfEntries
+    permissionLevel
 
     isOwner
+    isManager
+    isEditor
     isImported
-    isEditable
-    isShareable
+    isShared
     isRemovable
-    isDeletionAllowed
   }
 }

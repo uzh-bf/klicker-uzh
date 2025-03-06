@@ -11,19 +11,17 @@ import { twMerge } from 'tailwind-merge'
 
 function useCatalogCollectionActionsDropdown({
   catalogCollectionId,
-  isShareable,
-  isDeletable,
+  isManager,
+  isShared,
   isRequestable,
-  isViewable,
   setSharingModal,
   setDeletionModal,
   setRequestModal,
 }: {
   catalogCollectionId: string
-  isShareable: boolean
-  isDeletable: boolean
+  isManager: boolean
+  isShared: boolean
   isRequestable: boolean
-  isViewable: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setRequestModal: Dispatch<SetStateAction<boolean>>
@@ -35,7 +33,7 @@ function useCatalogCollectionActionsDropdown({
     const items = []
 
     // sharing functionality for admin and owner
-    if (isShareable) {
+    if (isManager) {
       items.push({
         id: 'share',
         label: (
@@ -56,7 +54,7 @@ function useCatalogCollectionActionsDropdown({
     }
 
     // deletion functionality for admin and owner
-    if (isDeletable) {
+    if (isManager) {
       items.push({
         id: 'delete',
         label: (
@@ -97,7 +95,7 @@ function useCatalogCollectionActionsDropdown({
 
     // ! before re-introducing this dropdown item, fix issue that router.push does not seem to work properly here
     // viewing functionality for shared access
-    // if (isViewable) {
+    // if (isShared) {
     //   items.push({
     //     id: 'view',
     //     label: (
@@ -117,8 +115,7 @@ function useCatalogCollectionActionsDropdown({
     return items
   }, [
     t,
-    isShareable,
-    isDeletable,
+    isManager,
     isRequestable,
     setSharingModal,
     setDeletionModal,

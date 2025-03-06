@@ -1,5 +1,4 @@
 import * as DB from '@klicker-uzh/prisma'
-import { AccessType } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 
 // ! Answer Collections
@@ -31,10 +30,10 @@ async function incrementCollectionVersion(
 export async function validateAnswerCollectionPermissions(
   {
     collectionId,
-    acceptedAccessLevels,
+    acceptedPermissionLevels,
   }: {
     collectionId: number
-    acceptedAccessLevels: DB.AccessLevel[]
+    acceptedPermissionLevels: DB.PermissionLevel[]
   },
   ctx: ContextWithUser
 ) {
@@ -50,8 +49,8 @@ export async function validateAnswerCollectionPermissions(
             some: {
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
-              accessLevel: {
-                in: acceptedAccessLevels,
+              permissionLevel: {
+                in: acceptedPermissionLevels,
               },
             },
           },
@@ -124,19 +123,19 @@ export async function createAnswerCollection(
 
   return {
     ...newCollection,
-    accessType: AccessType.OWNER,
     numSharedUsers: newCollection._count?.permissions,
     numOfEntries: newCollection._count.entries,
     isOwner: true,
+    isManager: true,
+    isEditor: true,
     isImported: false,
-    isEditable: true,
-    isShareable: true,
+    isShared: false,
     isRemovable: true,
-    isDeletionAllowed: true,
   }
 }
 
-export async function getAnswerCollections(ctx: ContextWithUser) {
+// fetch all answer collections, which are available to be included in elements
+export async function getAnswerCollectionsElements(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
       id: ctx.user.sub,
@@ -145,29 +144,8 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       answerCollections: {
         include: {
           entries: {
-            include: {
-              _count: {
-                select: {
-                  itemUsages: true,
-                },
-              },
-            },
             orderBy: {
               value: 'asc',
-            },
-          },
-          _count: {
-            select: {
-              linkedElements: {
-                where: {
-                  ownerId: ctx.user.sub,
-                },
-              },
-              permissions: {
-                where: {
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-              },
             },
           },
         },
@@ -185,30 +163,12 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
         include: {
           answerCollection: {
             include: {
-              _count: {
-                select: {
-                  linkedElements: {
-                    where: {
-                      ownerId: ctx.user.sub,
-                    },
-                  },
-                },
-              },
               owner: {
                 select: {
                   shortname: true,
                 },
               },
-              // entries are only relevant for users with granted access
               entries: {
-                include: {
-                  _count: {
-                    select: {
-                      // solution usage information is only relevant for write access
-                      itemUsages: true,
-                    },
-                  },
-                },
                 orderBy: {
                   value: 'asc',
                 },
@@ -227,14 +187,13 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
   return [
     ...user.answerCollections.map((collection) => ({
       ...collection,
-      accessType: AccessType.OWNER,
+      isShared: false,
     })),
     ...user.sharedObjects.flatMap((object) =>
       object.answerCollection
         ? {
             ...object.answerCollection,
-            accessType: AccessType.SHARED,
-            sharingStatus: DB.PermissionStatus.GRANTED,
+            isShared: true,
           }
         : []
     ),
@@ -305,27 +264,28 @@ export async function getSingleAnswerCollection(
   if (collection.ownerId === ctx.user.sub) {
     return {
       ...collection,
-      accessType: AccessType.OWNER,
-      numSharedUsers: collection._count?.permissions,
       entries: collection.entries.map((entry) => ({
         ...entry,
         numSolutionUsages: entry._count?.itemUsages,
       })),
+      numSharedUsers: collection._count?.permissions,
       isOwner: true,
-      isEditable: true,
+      isManager: true,
+      isEditor: true,
+      isShared: false,
     }
   } else {
-    const accessLevel = collection.permissions[0]?.accessLevel
+    const permissionLevel = collection.permissions[0]?.permissionLevel
     return {
       ...collection,
-      accessType: AccessType.SHARED,
-      sharingStatus: DB.PermissionStatus.GRANTED, // need to be granted for query above to succeed
-      sharingLevel: accessLevel ?? DB.AccessLevel.READ,
+      permissionLevel: permissionLevel ?? DB.PermissionLevel.READ,
       ownerShortname: collection.owner?.shortname,
       isOwner: false,
-      isEditable:
-        accessLevel === DB.AccessLevel.WRITE ||
-        accessLevel === DB.AccessLevel.ADMIN,
+      isManager: permissionLevel === DB.PermissionLevel.ADMIN,
+      isEditor:
+        permissionLevel === DB.PermissionLevel.WRITE ||
+        permissionLevel === DB.PermissionLevel.ADMIN,
+      isShared: true,
     }
   }
 }
@@ -346,7 +306,7 @@ export async function getAnswerCollectionPermissions(
             some: {
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
-              accessLevel: DB.AccessLevel.ADMIN,
+              permissionLevel: DB.PermissionLevel.ADMIN,
             },
           },
         },
@@ -419,7 +379,7 @@ export async function getAnswerCollectionPermissions(
       userEmail: permission.user?.email,
       userGroupId: undefined,
       userGroupName: undefined,
-      accessLevel: permission.accessLevel,
+      permissionLevel: permission.permissionLevel,
       isRevokable: !usersWithUsage[permission.user?.id ?? ''],
       isOwn: permission.user?.id === ctx.user.sub,
     }))
@@ -498,7 +458,7 @@ export async function transferCollectionOwnership(
             },
           },
           create: {
-            accessLevel: DB.AccessLevel.ADMIN,
+            permissionLevel: DB.PermissionLevel.ADMIN,
             permissionStatus: DB.PermissionStatus.GRANTED,
             user: {
               connect: {
@@ -512,7 +472,7 @@ export async function transferCollectionOwnership(
             },
           },
           update: {
-            accessLevel: DB.AccessLevel.ADMIN,
+            permissionLevel: DB.PermissionLevel.ADMIN,
             permissionStatus: DB.PermissionStatus.GRANTED,
           },
         },
@@ -558,7 +518,7 @@ export async function transferCollectionOwnership(
         userEmail: permission.user.email,
         userGroupId: undefined,
         userGroupName: undefined,
-        accessLevel: permission.accessLevel,
+        permissionLevel: permission.permissionLevel,
         isRevokable: true,
         isOwn: true,
       }
@@ -568,12 +528,12 @@ export async function transferCollectionOwnership(
 export async function shareAnswerCollection(
   {
     collectionId,
-    accessLevel,
+    permissionLevel,
     usernameOrEmail,
     userGroupId,
   }: {
     collectionId: number
-    accessLevel: DB.AccessLevel
+    permissionLevel: DB.PermissionLevel
     usernameOrEmail?: string | null
     userGroupId?: number | null
   },
@@ -583,7 +543,7 @@ export async function shareAnswerCollection(
   const { valid, collection } = await validateAnswerCollectionPermissions(
     {
       collectionId,
-      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
     },
     ctx
   )
@@ -627,7 +587,7 @@ export async function shareAnswerCollection(
         },
       },
       create: {
-        accessLevel,
+        permissionLevel,
         permissionStatus: DB.PermissionStatus.GRANTED,
         answerCollection: {
           connect: {
@@ -646,7 +606,7 @@ export async function shareAnswerCollection(
         },
       },
       update: {
-        accessLevel,
+        permissionLevel,
         permissionStatus: DB.PermissionStatus.GRANTED,
       },
     })
@@ -664,7 +624,7 @@ export async function shareAnswerCollection(
       userEmail: user.email,
       userGroupId: undefined,
       userGroupName: undefined,
-      accessLevel: permission.accessLevel,
+      permissionLevel: permission.permissionLevel,
       isRevokable: true,
       isOwn: false,
     }
@@ -675,15 +635,15 @@ export async function shareAnswerCollection(
   }
 }
 
-export async function changeCollectionAccessLevel(
+export async function changeCollectionPermissionLevel(
   {
     collectionId,
     permissionId,
-    accessLevel,
+    permissionLevel,
   }: {
     collectionId: number
     permissionId: number
-    accessLevel: DB.AccessLevel
+    permissionLevel: DB.PermissionLevel
   },
   ctx: ContextWithUser
 ) {
@@ -691,7 +651,7 @@ export async function changeCollectionAccessLevel(
   const { valid } = await validateAnswerCollectionPermissions(
     {
       collectionId,
-      acceptedAccessLevels: [DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
     },
     ctx
   )
@@ -707,7 +667,7 @@ export async function changeCollectionAccessLevel(
       answerCollectionId: collectionId,
     },
     data: {
-      accessLevel,
+      permissionLevel,
     },
     include: {
       user: {
@@ -738,7 +698,7 @@ export async function changeCollectionAccessLevel(
     userEmail: permission.user?.email,
     userGroupId: undefined,
     userGroupName: undefined,
-    accessLevel: permission.accessLevel,
+    permissionLevel: permission.permissionLevel,
   }
 }
 
@@ -781,7 +741,7 @@ export async function revokeCollectionAccess(
             some: {
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
-              accessLevel: DB.AccessLevel.ADMIN,
+              permissionLevel: DB.PermissionLevel.ADMIN,
             },
           },
         },
@@ -888,15 +848,14 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
 
   const ownedCollections = user.answerCollections.map((collection) => ({
     ...collection,
-    accessType: AccessType.OWNER,
     numSharedUsers: collection._count?.permissions,
     numOfEntries: collection._count.entries,
     isOwner: true,
+    isManager: true,
+    isEditor: true,
     isImported: collection.originalId !== null,
-    isEditable: true, // owner always has editing permissions
-    isShareable: true, // owner always has sharing permissions
-    isRemovable: collection._count.linkedElements === 0, // can be removed from own account if not linked to any elements
-    isDeletionAllowed: true, // owner always has deletion objects
+    isShared: false,
+    isRemovable: collection._count.linkedElements === 0,
   }))
 
   const sharedCollections = user.sharedObjects.flatMap((object) => {
@@ -908,19 +867,17 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
 
     return {
       ...collection,
-      accessType: AccessType.SHARED,
       numOfEntries: collection._count.entries,
-      sharingStatus: object.permissionStatus,
-      sharingLevel: object.accessLevel,
+      permissionLevel: object.permissionLevel,
       ownerShortname: collection.owner?.shortname,
       isOwner: false,
+      isManager: object.permissionLevel === DB.PermissionLevel.ADMIN,
+      isEditor:
+        object.permissionLevel === DB.PermissionLevel.WRITE ||
+        object.permissionLevel === DB.PermissionLevel.ADMIN,
       isImported: false, // shared objects cannot be imported
-      isEditable:
-        object.accessLevel === DB.AccessLevel.WRITE ||
-        object.accessLevel === DB.AccessLevel.ADMIN, // only users with write or admin access can edit shared answer collections
-      isShareable: object.accessLevel === DB.AccessLevel.ADMIN, // only users with admin access can share a shared answer collection
-      isRemovable: collection._count.linkedElements === 0, // can be removed from own account if not linked to any elements
-      isDeletionAllowed: object.accessLevel === DB.AccessLevel.ADMIN, // only users with admin access can delete answer collections
+      isShared: true,
+      isRemovable: collection._count.linkedElements === 0,
     }
   })
 
@@ -952,8 +909,8 @@ export async function modifyAnswerCollection(
             some: {
               userId: ctx.user.sub,
               permissionStatus: DB.PermissionStatus.GRANTED,
-              accessLevel: {
-                in: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+              permissionLevel: {
+                in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
               },
             },
           },
@@ -1009,7 +966,7 @@ export async function modifyAnswerCollection(
     return {
       ...updateResult,
       numSharedUsers: collection._count.permissions,
-      accessType: AccessType.OWNER,
+      isShared: false,
     }
   })
 
@@ -1278,7 +1235,10 @@ export async function editAnswerCollectionEntry(
   const { valid } = await validateAnswerCollectionPermissions(
     {
       collectionId,
-      acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [
+        DB.PermissionLevel.WRITE,
+        DB.PermissionLevel.ADMIN,
+      ],
     },
     ctx
   )
@@ -1314,7 +1274,10 @@ export async function deleteAnswerCollectionEntry(
   const { valid } = await validateAnswerCollectionPermissions(
     {
       collectionId,
-      acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [
+        DB.PermissionLevel.WRITE,
+        DB.PermissionLevel.ADMIN,
+      ],
     },
     ctx
   )
@@ -1353,7 +1316,10 @@ export async function addAnswerCollectionOption(
   const { valid } = await validateAnswerCollectionPermissions(
     {
       collectionId,
-      acceptedAccessLevels: [DB.AccessLevel.WRITE, DB.AccessLevel.ADMIN],
+      acceptedPermissionLevels: [
+        DB.PermissionLevel.WRITE,
+        DB.PermissionLevel.ADMIN,
+      ],
     },
     ctx
   )

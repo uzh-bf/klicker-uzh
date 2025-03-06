@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function RequestCancellationSuccessToast({
+function CatalogObjectRequestSuccessToast({
   open,
   onClose,
 }: {
@@ -16,11 +16,11 @@ function RequestCancellationSuccessToast({
       type="success"
       openExternal={open}
       onCloseExternal={onClose}
-      duration={3000}
+      duration={3500}
     >
-      {t('manage.resources.cancellationSuccessful')}
+      {t('manage.catalog.importCatalogObjectSuccess')}
     </Toast>
   )
 }
 
-export default RequestCancellationSuccessToast
+export default CatalogObjectRequestSuccessToast

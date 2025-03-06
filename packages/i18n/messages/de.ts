@@ -301,7 +301,7 @@ export default {
       admin: 'Admin',
       owner: 'Besitzer',
       userGroup: 'Benutzergruppe',
-      accessLevel: 'Zugriffsrechte',
+      permissionLevel: 'Zugriffsrechte',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -2096,8 +2096,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       access: 'Zugriff',
       accessTooltip:
         "Wählen Sie aus, ob dieses Objekt durch alle Nutzer mit Zugriff auf die ausgewählte Katalog-Sammlung importiert werden kann. Bei einem 'eingeschränkten' Zugriff müssen andere Nutzer diesen explizit beantragen.",
-      accessPUBLIC: 'Öffentlich',
-      accessRESTRICTED: 'Eingeschränkt',
       catalogCollection: 'Katalog-Sammlung',
       descriptionTooltip:
         'Beschreiben Sie den Inhalt und Zweck der Antwort-Sammlung. Bei geteilten Antwortsammlungen wird diese Beschreibung den anderen Nutzern bereits vor dem Import oder gewährten Zugriff angezeigt.',
@@ -2113,10 +2111,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte fügen Sie mindestens zwei Einträge zu Ihrer Sammlung hinzu.',
       uniqueValuesRequired:
         'Alle Optionen in einer Antwort-Sammlung müssen einen einzigartigen Wert haben. Bitte stellen Sie sicher, dass keine zwei Antwortoptionen übereinstimmen.',
-      infoAccessPUBLIC:
-        'Öffentliche Objekte können von allen Nutzern mit Zugriff auf die entsprechende Katalog-Sammlung eingesehen und importiert werden.',
-      infoAccessRESTRICTED:
-        'Eingeschränkte Objekte können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung abhängig von den vergebenen Rechten genutzt werden.',
       collectionCreationSuccess:
         'Die Antwort-Sammlung wurde erfolgreich erstellt.',
       collectionCreationError:
@@ -2134,17 +2128,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
-      requestAccessMessage:
-        'Hier können Sie den Zugriff auf die Antwort-Sammlung "<b>{name}</b>" (von {owner}) beantragen. Der Besitzer wird im Rahmen der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, steht Ihnen die gesamte Antwort-Sammlung automatisch bei der Erstellung der entsprechenden Fragetypen und auf dieser Seite zur Einsicht zur Verfügung.',
-      importCollectionMessage:
-        'Hier können Sie eine Kopie der Antwort-Sammlung "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie die importierte Antwort-Sammlung direkt verwenden oder bei Bedarf anpassen. Änderungen an der ursprünglichen Antwort-Sammlung haben keinen Einfluss auf Ihre importierte Kopie.',
       showAnswers: 'Antworten anzeigen',
-      importCollection: 'Antwort-Sammlung importieren',
-      requestAccess: 'Zugriff beantragen',
-      importError:
-        'Beim Importieren der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      requestError:
-        'Beim Anfragen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       viewCollection: 'Sammlung ansehen',
       editCollection: 'Sammlung bearbeiten',
       shareCollection: 'Sammlung teilen',
@@ -2183,17 +2167,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removalFailed:
         'Beim Entfernen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
-      confirmCancelRequest:
-        'Bitte bestätigen Sie, dass Sie die Zugriffs-Anfrage für die Antwort-Sammlung "{name}" zurückziehen möchten. Sie können später erneut Zugriff auf die Antwort-Sammlung beantragen.',
-      confirmCancellation: 'Rückzug bestätigen',
-      cancellationSuccessful:
-        'Die Zugriffs-Anfrage wurde erfolgreich zurückgezogen.',
-      cancellationFailed:
-        'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      accessREAD: 'Lesezugriff',
-      accessWRITE: 'Schreibzugriff',
-      accessADMIN: 'Admin-Zugriff',
-      accessEXECUTE: 'Ausführungsrechte',
+      permissionsREAD: 'Leserechte',
+      permissionsWRITE: 'Schreibrechte',
+      permissionsADMIN: 'Admin-rechte',
+      permissionsEXECUTE: 'Ausführungsrechte',
       noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
       usernameEmailOrGroupRequired:
         'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
@@ -2218,7 +2195,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeOwnPermissionsWarning:
         'Sie sind dabei, Ihren individuellen Zugriff auf diese Ressource zu entziehen. Nach der Bestätigung können Sie unter Umständen nicht mehr auf die Ressource zugreifen. Diese Aktion kann nicht rückgängig gemacht werden. Möchten Sie wirklich fortfahren?',
       changeOwnPermissionsWarning:
-        'Sie sind dabei, Ihre eigenen Zugriffsrechte auf {accessLevel} zu ändern. Dies kann Ihre Möglichkeit einschränken, bestimmte Aktionen mit dieser Ressource durchzuführen, einschließlich der erneuten Änderung Ihrer Zugriffsrechte. Möchten Sie wirklich fortfahren?',
+        'Sie sind dabei, Ihre eigenen Zugriffsrechte auf {permissionLevel} zu ändern. Dies kann Ihre Möglichkeit einschränken, bestimmte Aktionen mit dieser Ressource durchzuführen, einschließlich der erneuten Änderung Ihrer Zugriffsrechte. Möchten Sie wirklich fortfahren?',
     },
     userGroups: {
       comingSoon:
@@ -2226,6 +2203,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     catalog: {
       accessTypes: 'Zugriffs-Typen',
+      accessPUBLIC: 'Öffentlich',
+      accessRESTRICTED: 'Eingeschränkt',
+      infoAccessPUBLIC:
+        'Öffentliche Objekte können von allen Nutzern mit Zugriff auf die entsprechende Katalog-Sammlung eingesehen und importiert werden.',
+      infoAccessRESTRICTED:
+        'Eingeschränkte Objekte können von anderen Nutzern im Katalog angefragt und nach Ihrer Zustimmung abhängig von den vergebenen Rechten genutzt werden.',
       objectType: 'Objekt-Typ',
       all: 'Alle',
       sharingRequests: 'Zugriffs-Anfragen',
@@ -2236,21 +2219,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
       importObject: 'Objekt importieren',
+      importObjectType: '{object} importieren',
       accessRequested: 'Zugriff beantragt',
       accessGranted: 'Zugriff gewährt',
-      answerCollectionRequestSuccess:
-        'Der Zugriff auf die ausgewählte Antwort-Sammlung wurde erfolgreich beantragt.',
       importPublicResource: 'Öffentliche Ressource importieren',
-      answerCollectionImportSuccess:
-        'Eine Kopie der Antwort-Sammlung wurde erfolgreich in Ihr Konto importiert.',
       requestPublicResource:
         'Durch das Beantragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den gewährten Berechtigungen. Gewährte Berechtigungen können vom Besitzer entzogen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die Option "Importieren".',
       sharingRequestsExplanation:
         'Bitte überprüfen Sie die folgenden Zugriffsanfragen für Ihre geteilten Objekte. Durch das Akzeptieren einer Zugriffsanfrage wird dem anfragenden Nutzer Zugriff auf das entsprechende Objekt gewährt, ohne eine Kopie zu erstellen. Alle Änderungen, die andere Nutzer mit Schreibzugriff auf Ihre Objekte vornehmen, sind direkt für alle Nutzer des Objekts sichtbar.',
       approveSharingRequest: 'Zugriffsanfrage bestätigen',
-      specifyAccessLevel:
+      specifyObjectPermissionLevel:
         'Bitte wählen Sie eine Zugriffsebene für das Teilen des Objekts "{objectName}" (Typ: {objectType}) mit dem Nutzer {userShortname} aus. Bitte beachten Sie, dass bei der Gewährung von Bearbeitungsrechten Änderungen anderer Nutzer direkt auf das geteilte Objekt wirken. Weitere Informationen zu den Berechtigungsstufen finden Sie in der Tabelle unten.',
-      accessLevel: 'Zugriffsebene',
       approvalSuccessful: 'Die Zugriffsanfrage wurde erfolgreich bestätigt.',
       approvalFailed:
         'Beim Bestätigen der Zugriffsanfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
@@ -2266,7 +2245,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie über die folgenden Auswahlmöglichkeiten zuerst den Objekttyp und die Sichtbarkeit und im Anschluss das konkrete Objekt, welches Sie zu dieser Katalogsammlung hinzufügen möchten.',
       objectTypeTooltip:
         'Der Typ des Objekts, das zur Katalogsammlung hinzugefügt wird',
-      accessLevelTitle: 'Zugriffsebene',
       objectTypeRequired: 'Bitte wählen Sie einen Objekttyp aus',
       accessRequired: 'Bitte wählen Sie eine Zugriffsebene aus',
       objectRequired: 'Bitte wählen Sie ein Objekt aus',
@@ -2337,13 +2315,30 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deletionSuccessful: 'Die Katalogsammlung wurde erfolgreich gelöscht.',
       deletionFailed:
         'Beim Löschen der Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
-      requestCatalogCollectionAccess: 'Zugriff auf Katalogsammlung anfordern',
-      requestCatalogCollectionAccessDescription:
-        'Hier können Sie Zugriff auf die Katalogsammlung "<b>{name}</b>" (von {owner}) anfordern. Der Besitzer wird als Teil der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail-Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
-      requestAccessSuccess:
-        'Die Zugriffsanfrage für die Katalogsammlung wurde erfolgreich übermittelt.',
-      requestAccessFailed:
-        'Bei der Anforderung des Zugriffs auf die Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      requestCatalogObjectAccess: 'Zugriff auf {object} anfordern',
+      requestCatalogObjectAccessDescription:
+        'Hier können Sie Zugriff auf "<b>{name}</b>" (von {owner}) anfordern. Der Besitzer wird als Teil der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail-Adresse</b> sehen.',
+      requestSuccessInfoCATALOG_COLLECTION:
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
+      requestSuccessInfoANSWER_COLLECTION:
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Antwort-Sammlung und können diese in Ihren Auswahl-Fragen und Fallstudien verwenden.',
+      requestCatalogObjectSuccess:
+        'Die Zugriffsanfrage wurde erfolgreich übermittelt.',
+      requestCatalogObjectFailed:
+        'Bei der Anforderung des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      importCatalogObjectDescription:
+        'Hier können Sie eine Kopie von "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie das Objekt direkt verwenden oder bei Bedarf anpassen. Änderungen am ursprünglichen Objekt haben keinen Einfluss auf Ihre importierte Kopie.',
+      importCatalogObjectSuccess:
+        'Das Objekt wurde erfolgreich in Ihr Konto importiert.',
+      importCatalogObjectFailed:
+        'Beim Importieren des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      cancelCatalogObjectRequest: 'Zugriffsanfrage zurückziehen',
+      cancelCatalogObjectRequestDescription: `Bitte bestätigen Sie, dass Sie die Zugriffsanfrage für "{name}" (von {owner}) zurückziehen möchten. Sie können später erneut Zugriff auf das Objekt beantragen.`,
+      cancelRequest: 'Anfrage zurückziehen',
+      requestCancellationSuccess:
+        'Die Zugriffsanfrage wurde erfolgreich zurückgezogen.',
+      requestCancellationFailed:
+        'Beim Zurückziehen der Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
       collectionNameRequired:
         'Bitte geben Sie einen Namen für die Katalog-Sammlung an.',
       changeCatalogCollectionName: 'Namen der Katalog-Sammlung ändern',

@@ -13,11 +13,6 @@ export enum DisplayMode {
   GRID = 'GRID',
 }
 
-export enum AccessType {
-  OWNER = 'OWNER',
-  SHARED = 'SHARED',
-}
-
 export enum CatalogObjectType {
   ANSWER_COLLECTION = 'ANSWER_COLLECTION',
   CATALOG_COLLECTION = 'CATALOG_COLLECTION',
@@ -136,10 +131,10 @@ export type CatalogObject = {
   assignmentId: number
   access: ObjectAccess
   ownerShortname?: string
+  isOwner: boolean
+  isManager: boolean
   isRequested: boolean
   isShared: boolean
-  isOwner: boolean
-  isOwnerOrAdmin: boolean
 }
 
 // #endregion

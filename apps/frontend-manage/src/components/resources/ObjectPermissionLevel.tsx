@@ -6,23 +6,27 @@ import {
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AccessLevel } from '@klicker-uzh/graphql/dist/ops'
+import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { Badge } from '@uzh-bf/design-system/dist/future'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
-const AccessLevelIcons: Record<
-  AccessLevel,
+const PermissionLevelIcons: Record<
+  PermissionLevel,
   { icon: IconDefinition; color: string }
 > = {
-  [AccessLevel.Read]: { icon: faEye, color: 'text-blue-600' },
-  [AccessLevel.Execute]: { icon: faPersonRunning, color: 'text-green-600' },
-  [AccessLevel.Write]: { icon: faPencil, color: 'text-orange-600' },
-  [AccessLevel.Admin]: { icon: faUserTie, color: 'text-red-600' },
+  [PermissionLevel.Read]: { icon: faEye, color: 'text-blue-600' },
+  [PermissionLevel.Execute]: { icon: faPersonRunning, color: 'text-green-600' },
+  [PermissionLevel.Write]: { icon: faPencil, color: 'text-orange-600' },
+  [PermissionLevel.Admin]: { icon: faUserTie, color: 'text-red-600' },
 }
 
-function ObjectPermissionLevel({ accessLevel }: { accessLevel: AccessLevel }) {
-  const { icon, color } = AccessLevelIcons[accessLevel]
+function ObjectPermissionLevel({
+  permissionLevel,
+}: {
+  permissionLevel: PermissionLevel
+}) {
+  const { icon, color } = PermissionLevelIcons[permissionLevel]
   const t = useTranslations()
 
   return (
@@ -32,7 +36,7 @@ function ObjectPermissionLevel({ accessLevel }: { accessLevel: AccessLevel }) {
     >
       <FontAwesomeIcon icon={icon} size="sm" />
       <span className="text-sm">
-        {t(`manage.resources.access${accessLevel}`)}
+        {t(`manage.resources.permissions${permissionLevel}`)}
       </span>
     </Badge>
   )

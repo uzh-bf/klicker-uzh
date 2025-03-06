@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CatalogCollectionRequestAccessErrorToast({
+function CatalogRequestCancellationSuccessToast({
   open,
   onClose,
 }: {
@@ -13,13 +13,14 @@ function CatalogCollectionRequestAccessErrorToast({
   return (
     <Toast
       dismissible
-      type="error"
+      type="success"
       openExternal={open}
       onCloseExternal={onClose}
+      duration={3500}
     >
-      {t('manage.catalog.requestAccessFailed')}
+      {t('manage.catalog.requestCancellationSuccess')}
     </Toast>
   )
 }
 
-export default CatalogCollectionRequestAccessErrorToast
+export default CatalogRequestCancellationSuccessToast

@@ -48,7 +48,7 @@ function ObjectTypeSelection({
         </div>
       </div>
       <UserNotification
-        message={t(`manage.resources.infoAccess${accessValue}`)}
+        message={t(`manage.catalog.infoAccess${accessValue}`)}
         className={{ root: 'mt-3' }}
       />
     </div>

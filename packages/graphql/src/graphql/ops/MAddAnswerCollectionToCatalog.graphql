@@ -15,9 +15,9 @@ mutation AddAnswerCollectionToCatalog(
     assignmentId
     access
     ownerShortname
+    isOwner
+    isManager
     isRequested
     isShared
-    isOwner
-    isOwnerOrAdmin
   }
 }

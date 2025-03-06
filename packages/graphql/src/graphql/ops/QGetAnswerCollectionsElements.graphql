@@ -1,0 +1,12 @@
+query GetAnswerCollectionsElements {
+  getAnswerCollectionsElements {
+    id
+    name
+    isShared
+
+    entries {
+      id
+      value
+    }
+  }
+}

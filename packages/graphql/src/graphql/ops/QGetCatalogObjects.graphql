@@ -7,9 +7,9 @@ query GetCatalogObjects($catalogCollectionId: String) {
     assignmentId
     access
     ownerShortname
+    isOwner
+    isManager
     isRequested
     isShared
-    isOwner
-    isOwnerOrAdmin
   }
 }

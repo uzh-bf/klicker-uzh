@@ -1,12 +1,12 @@
 mutation ShareAnswerCollection(
   $collectionId: Int!
-  $accessLevel: AccessLevel!
+  $permissionLevel: PermissionLevel!
   $usernameOrEmail: String
   $userGroupId: Int
 ) {
   shareAnswerCollection(
     collectionId: $collectionId
-    accessLevel: $accessLevel
+    permissionLevel: $permissionLevel
     usernameOrEmail: $usernameOrEmail
     userGroupId: $userGroupId
   ) {

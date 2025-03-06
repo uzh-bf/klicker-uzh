@@ -1,0 +1,14 @@
+mutation ChangeCollectionPermissionLevel(
+  $collectionId: Int!
+  $permissionId: Int!
+  $permissionLevel: PermissionLevel!
+) {
+  changeCollectionPermissionLevel(
+    collectionId: $collectionId
+    permissionId: $permissionId
+    permissionLevel: $permissionLevel
+  ) {
+    permissionId
+    permissionLevel
+  }
+}

@@ -300,7 +300,7 @@ export default {
       admin: 'Admin',
       owner: 'Owner',
       userGroup: 'User group',
-      accessLevel: 'Access level',
+      permissionLevel: 'Access level',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -2071,8 +2071,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       access: 'Access',
       accessTooltip:
         'Choose whether this object can be imported by all users with access to the selected catalog collection. With "restricted" access, other users must explicitly request access.',
-      accessPUBLIC: 'Public',
-      accessRESTRICTED: 'Restricted',
       catalogCollection: 'Catalog Collection',
       descriptionTooltip:
         'Describe the content and purpose of the answer collection. For shared answer collections, this description will be shown to other users before importing or granting access.',
@@ -2088,10 +2086,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'At least two answer entries are required to create an answer collection.',
       uniqueValuesRequired:
         'All options in an answer collection need to have a unique value. Please make sure that no two answers options coincide.',
-      infoAccessPUBLIC:
-        'Public objects can be viewed and imported by all users with access to the corresponding catalog collection.',
-      infoAccessRESTRICTED:
-        'Restricted objects can be requested by other users in the catalog and used after your approval depending on the granted rights.',
       collectionCreationSuccess:
         'The answer collection was created successfully.',
       collectionCreationError:
@@ -2109,17 +2103,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The changes to the answer collection have been saved successfully.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
-      requestAccessMessage:
-        'Here you can request access to the answer collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared answer collection in your questions.',
-      importCollectionMessage:
-        'Here you can import a copy of the answer collection "<b>{name}</b>" (by {owner}) to your own account. After the import is completed, you can directly use the imported answer collection or modify it as needed. Changes to the original answer collection will not affect your imported copy.',
       showAnswers: 'Show Answers',
-      importCollection: 'Import Answer Collection',
-      requestAccess: 'Request Access',
-      importError:
-        'An error occurred while importing the answer collection. Please try again or contact the support.',
-      requestError:
-        'An error occurred while requesting the answer collection. Please try again or contact the support.',
       viewCollection: 'View Collection',
       editCollection: 'Edit Collection',
       shareCollection: 'Share Collection',
@@ -2158,16 +2142,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removalFailed:
         'An error occurred while removing the answer collection. Please try again or contact the support.',
       cancelSharingRequest: 'Cancel Sharing Request',
-      confirmCancelRequest:
-        'Please confirm that you want to cancel the sharing request for the answer collection "{name}". You can request access to the answer collection again later.',
-      confirmCancellation: 'Confirm cancellation',
-      cancellationSuccessful: 'The access request was successfully withdrawn.',
-      cancellationFailed:
-        'An error occurred while withdrawing the access request. Please try again or contact the support.',
-      accessREAD: 'Read access',
-      accessWRITE: 'Write access',
-      accessADMIN: 'Admin access',
-      accessEXECUTE: 'Execution access',
+      permissionsREAD: 'Read permissions',
+      permissionsWRITE: 'Write permissions',
+      permissionsADMIN: 'Admin permissions',
+      permissionsEXECUTE: 'Execution permissions',
       noUserGroupSelected: 'No user group selected',
       usernameEmailOrGroupRequired:
         'Please enter a username / email address or select a user group.',
@@ -2190,7 +2168,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeOwnPermissionsWarning:
         'You are about to revoke your individual access rights to this resource. Once confirmed, you might no longer be able to access or modify this resource. This action cannot be undone. Are you sure you want to proceed?',
       changeOwnPermissionsWarning:
-        'You are about to change your own access level to {accessLevel}. This might limit your ability to perform certain actions on this resource, including changing your access level back. Are you sure you want to proceed?',
+        'You are about to change your own access level to {permissionLevel}. This might limit your ability to perform certain actions on this resource, including changing your access level back. Are you sure you want to proceed?',
     },
     userGroups: {
       comingSoon:
@@ -2198,6 +2176,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     },
     catalog: {
       accessTypes: 'Access Types',
+      accessPUBLIC: 'Public',
+      accessRESTRICTED: 'Restricted',
+      infoAccessPUBLIC:
+        'Public objects can be viewed and imported by all users with access to the corresponding catalog collection.',
+      infoAccessRESTRICTED:
+        'Restricted objects can be requested by other users in the catalog and used after your approval depending on the granted rights.',
       objectType: 'Object Type',
       all: 'All',
       sharingRequests: 'Sharing Requests',
@@ -2208,21 +2192,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
       importObject: 'Import Object',
+      importObjectType: 'Import {object}',
       accessRequested: 'Access requested',
       accessGranted: 'Access granted',
-      answerCollectionRequestSuccess:
-        'The access to the selected answer collection was successfully requested.',
       importPublicResource: 'Import Public Resource',
-      answerCollectionImportSuccess:
-        'A copy of the answer collection was successfully imported into your account.',
       requestPublicResource:
         "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
       sharingRequestsExplanation:
         'Please review the following access requests for your shared objects. Accepting a sharing request will grant the requesting user access to the corresponding object without creating a copy. Any modifications other users with write access to your objects make are directly visible to all users of the object.',
       approveSharingRequest: 'Approve sharing request',
-      specifyAccessLevel:
+      specifyObjectPermissionLevel:
         'Please select an access level for sharing the object {objectName} (type: {objectType}) with the user {userShortname}. Please note that when granting editing rights, any changes by other users directly take effect on the shared object. For more information on the permission levels, please refer to the table below.',
-      accessLevel: 'Access Level',
       approvalSuccessful: 'The sharing request was successfully approved.',
       approvalFailed:
         'An error occurred while approving the sharing request. Please try again or contact the support.',
@@ -2238,7 +2218,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please select the object type and visibility first and then the specific object you want to add to this catalog collection.',
       objectTypeTooltip:
         'The type of object that will be added to the catalog collection',
-      accessLevelTitle: 'Access Level',
       objectTypeRequired: 'Please select an object type',
       accessRequired: 'Please select an access level',
       objectRequired: 'Please select an object to add',
@@ -2305,13 +2284,30 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deletionSuccessful: 'The catalog collection was successfully deleted.',
       deletionFailed:
         'An error occurred while deleting the catalog collection. Please try again or contact the support.',
-      requestCatalogCollectionAccess: 'Request Access to Catalog Collection',
-      requestCatalogCollectionAccessDescription:
-        'Here you can request access to the catalog collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared catalog collection and its objects.',
-      requestAccessSuccess:
-        'The access request for the catalog collection was successfully submitted.',
-      requestAccessFailed:
-        'An error occurred while requesting the catalog collection. Please try again or contact the support.',
+      requestCatalogObjectAccess: 'Request Access to {object}',
+      requestCatalogObjectAccessDescription:
+        'Here you can request access to "{name}" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request.',
+      requestSuccessInfoCATALOG_COLLECTION:
+        'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
+      requestSuccessInfoANSWER_COLLECTION:
+        'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
+      requestCatalogObjectSuccess:
+        'The access request was successfully submitted.',
+      requestCatalogObjectFailed:
+        'An error occurred while requesting the access. Please try again or contact the support.',
+      importCatalogObjectDescription:
+        'Here you can import a copy of "{name}" (by {owner}) into your own account. After the import is completed, you can directly use the imported object or modify it as needed. Changes to the original object will not affect your imported copy.',
+      importCatalogObjectSuccess:
+        'The object was successfully imported into your account.',
+      importCatalogObjectFailed:
+        'An error occurred while importing the object. Please try again or contact the support.',
+      cancelCatalogObjectRequest: 'Cancel Object Sharing Request',
+      cancelCatalogObjectRequestDescription: `Please confirm that you want to cancel the sharing request for "{name}" (by {owner})? You can request access to the object again later.`,
+      cancelRequest: 'Cancel Request',
+      requestCancellationSuccess:
+        'The access request was successfully withdrawn.',
+      requestCancellationFailed:
+        'An error occurred while withdrawing the access request. Please try again or contact the support.',
       collectionNameRequired: 'Please enter a name for the catalog collection.',
       changeCatalogCollectionName: 'Change Catalog Collection Name',
       catalogCollectionNameChangeSuccess:

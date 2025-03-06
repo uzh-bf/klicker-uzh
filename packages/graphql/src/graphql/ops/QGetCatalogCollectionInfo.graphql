@@ -5,8 +5,8 @@ query GetCatalogCollectionInfo($catalogCollectionId: String) {
     access
     ownerShortname
     isRequested
-    isShared
+    isManager
     isEditor
-    isOwnerOrAdmin
+    isShared
   }
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   CatalogObjectType,
-  ChangeCollectionAccessLevelDocument,
+  ChangeCollectionPermissionLevelDocument,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogObjectsDocument,
@@ -56,9 +56,8 @@ function AnswerCollectionSharingModal({
   const [shareAnswerCollection] = useMutation(ShareAnswerCollectionDocument)
 
   // mutation to change the access level of a certain permission
-  const [changeCollectionAccessLevel, { loading: changeLoading }] = useMutation(
-    ChangeCollectionAccessLevelDocument
-  )
+  const [changeCollectionPermissionLevel, { loading: changeLoading }] =
+    useMutation(ChangeCollectionPermissionLevelDocument)
 
   // mutation to revoke access for a certain permission
   const [revokeCollectionAccess] = useMutation(RevokeCollectionAccessDocument)
@@ -92,15 +91,18 @@ function AnswerCollectionSharingModal({
             permissionsLoading={permissionsLoading}
             changeLoading={changeLoading}
             isOwner={isOwner}
-            onAccessLevelChange={async ({ permissionId, newAccessLevel }) => {
-              await changeCollectionAccessLevel({
+            onPermissionLevelChange={async ({
+              permissionId,
+              newPermissionLevel,
+            }) => {
+              await changeCollectionPermissionLevel({
                 variables: {
                   collectionId: collectionId,
                   permissionId,
-                  accessLevel: newAccessLevel,
+                  permissionLevel: newPermissionLevel,
                 },
                 update: (cache, { data }) => {
-                  if (!data?.changeCollectionAccessLevel) return
+                  if (!data?.changeCollectionPermissionLevel) return
 
                   const prevPermissions = cache.readQuery({
                     query: GetAnswerCollectionPermissionsDocument,
@@ -114,9 +116,9 @@ function AnswerCollectionSharingModal({
                   }
 
                   const modifiedPermissionId =
-                    data.changeCollectionAccessLevel!.permissionId
-                  const newAccessLevel =
-                    data.changeCollectionAccessLevel!.accessLevel
+                    data.changeCollectionPermissionLevel!.permissionId
+                  const newPermissionLevel =
+                    data.changeCollectionPermissionLevel!.permissionLevel
                   cache.writeQuery({
                     query: GetAnswerCollectionPermissionsDocument,
                     variables: {
@@ -127,7 +129,10 @@ function AnswerCollectionSharingModal({
                         prevPermissions.getAnswerCollectionPermissions.map(
                           (permission) =>
                             permission.permissionId === modifiedPermissionId
-                              ? { ...permission, accessLevel: newAccessLevel }
+                              ? {
+                                  ...permission,
+                                  permissionLevel: newPermissionLevel,
+                                }
                               : permission
                         ),
                     },
@@ -211,7 +216,7 @@ function AnswerCollectionSharingModal({
                     typeof values.usernameOrEmail === 'undefined'
                       ? values.userGroupId
                       : undefined,
-                  accessLevel: values.accessLevel,
+                  permissionLevel: values.permissionLevel,
                 },
                 update: (cache, { data }) => {
                   if (!data?.shareAnswerCollection) return

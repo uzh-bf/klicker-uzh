@@ -40,7 +40,7 @@ function CatalogCollectionChangeAccessModal({
               `shared.types.${CatalogObjectType.CatalogCollection}`
             ),
             objectName: catalogCollection.name,
-            newAccess: t(`manage.resources.access${newAccess}`),
+            newAccess: t(`manage.catalog.access${newAccess}`),
           })}
         </div>
         <div className="mt-2 flex flex-row justify-end gap-2">

@@ -19,11 +19,14 @@ import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
-import ObjectAccessRequestModal from './ObjectAccessRequestModal'
+import CatalogImportModal from './CatalogImportModal'
+import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
+import CatalogObjectRequestSuccessToast from './CatalogObjectRequestSuccessToast'
+import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
+import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellationSuccessToast'
+import CatalogRequestModal from './CatalogRequestModal'
 import ObjectChangeAccessModal from './ObjectChangeAccessModal'
-import ObjectImportModal from './ObjectImportModal'
 import ObjectRemovalModal from './ObjectRemovalModal'
-import ObjectRequestCancellationModal from './ObjectRequestCancellationModal.tsx'
 import ObjectSharingModal from './ObjectSharingModal'
 
 function CatalogObjectItem({
@@ -40,8 +43,9 @@ function CatalogObjectItem({
     [CatalogObjectType.AnswerCollection]: faList,
     [CatalogObjectType.CatalogCollection]: faFolder,
   }
-
   const actionsDisabled = object.isOwner || object.isShared
+
+  // modal states
   const [requestModal, setRequestModal] = useState(false)
   const [requestCancellationModal, setRequestCancellationModal] =
     useState(false)
@@ -50,6 +54,14 @@ function CatalogObjectItem({
   const [sharingModal, setSharingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(object.access)
+
+  // toast states
+  const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
+  const [showImportSuccessToast, setShowImportSuccessToast] = useState(false)
+  const [
+    showRequestCancellationSuccessToast,
+    setShowRequestCancellationSuccessToast,
+  ] = useState(false)
 
   // Use the new dropdown hook
   const dropdownItems = useCatalogObjectActionsDropdown({
@@ -151,30 +163,71 @@ function CatalogObjectItem({
           ) : null}
         </div>
       </div>
+
+      {/* functionality for users without access to request it for restricted catalog collections */}
       {!actionsDisabled && !object.isRequested ? (
-        <ObjectAccessRequestModal
-          object={object}
+        <CatalogRequestModal
           open={requestModal}
-          catalogCollectionId={catalogCollectionId}
+          onSuccess={() => {
+            setShowRequestSuccessToast(true)
+            setRequestModal(false)
+          }}
           onClose={() => setRequestModal(false)}
+          objectType={CatalogObjectType.AnswerCollection}
+          objectId={object.id ?? object.uuid!}
+          objectName={object.name}
+          objectOwner={object.ownerShortname}
+          objectAccess={object.access}
+          catalogCollectionId={catalogCollectionId}
         />
       ) : null}
+      <CatalogObjectRequestSuccessToast
+        open={showRequestSuccessToast}
+        onClose={() => setShowRequestSuccessToast(false)}
+      />
+
+      {/* functionality for users to import a copy of a publicly available object */}
       {!actionsDisabled && object.access === ObjectAccess.Public ? (
-        <ObjectImportModal
-          object={object}
+        <CatalogImportModal
           open={importModal}
-          catalogCollectionId={catalogCollectionId}
+          onSuccess={() => {
+            setShowImportSuccessToast(true)
+            setImportModal(false)
+          }}
           onClose={() => setImportModal(false)}
-        />
-      ) : null}
-      {object.isRequested ? (
-        <ObjectRequestCancellationModal
-          object={object}
-          open={requestCancellationModal}
+          objectType={object.objectType}
+          objectId={object.id ?? object.uuid!}
+          objectName={object.name}
+          objectOwner={object.ownerShortname}
           catalogCollectionId={catalogCollectionId}
-          onClose={() => setRequestCancellationModal(false)}
         />
       ) : null}
+      <CatalogObjectImportSuccessToast
+        open={showImportSuccessToast}
+        onClose={() => setShowImportSuccessToast(false)}
+      />
+
+      {/* functionality to cancel request for requested catalog object */}
+      {object.isRequested ? (
+        <CatalogRequestCancellationModal
+          open={requestCancellationModal}
+          onSuccess={() => {
+            setShowRequestCancellationSuccessToast(true)
+            setRequestCancellationModal(false)
+          }}
+          onClose={() => setRequestCancellationModal(false)}
+          objectType={object.objectType}
+          objectId={object.id ?? object.uuid!}
+          objectName={object.name}
+          objectOwner={object.ownerShortname}
+          catalogCollectionId={catalogCollectionId}
+        />
+      ) : null}
+      <CatalogRequestCancellationSuccessToast
+        open={showRequestCancellationSuccessToast}
+        onClose={() => setShowRequestCancellationSuccessToast(false)}
+      />
+
       {managedAccess ? (
         <>
           <ObjectChangeAccessModal
@@ -192,7 +245,7 @@ function CatalogObjectItem({
           />
         </>
       ) : null}
-      {object.isOwnerOrAdmin ? (
+      {object.isManager ? (
         <ObjectSharingModal
           objectId={object.id ?? undefined}
           objectUuid={object.uuid ?? undefined}
