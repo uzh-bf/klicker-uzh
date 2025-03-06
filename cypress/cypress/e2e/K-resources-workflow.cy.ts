@@ -550,7 +550,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="cancel-request-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="confirm-cancel-sharing-request"]').click()
+    cy.get('[data-cy="confirm-request-cancellation"]').click()
 
     // request the answer collection again (should be possible)
     cy.get(

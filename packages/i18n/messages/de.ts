@@ -2167,13 +2167,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removalFailed:
         'Beim Entfernen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
-      confirmCancelRequest:
-        'Bitte bestätigen Sie, dass Sie die Zugriffs-Anfrage für die Antwort-Sammlung "{name}" zurückziehen möchten. Sie können später erneut Zugriff auf die Antwort-Sammlung beantragen.',
-      confirmCancellation: 'Rückzug bestätigen',
-      cancellationSuccessful:
-        'Die Zugriffs-Anfrage wurde erfolgreich zurückgezogen.',
-      cancellationFailed:
-        'Beim Zurückziehen der Zugriffs-Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       permissionsREAD: 'Leserechte',
       permissionsWRITE: 'Schreibrechte',
       permissionsADMIN: 'Admin-rechte',
@@ -2339,6 +2332,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Objekt wurde erfolgreich in Ihr Konto importiert.',
       importCatalogObjectFailed:
         'Beim Importieren des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      cancelCatalogObjectRequest: 'Zugriffsanfrage zurückziehen',
+      cancelCatalogObjectRequestDescription: `Bitte bestätigen Sie, dass Sie die Zugriffsanfrage für "{name}" (von {owner}) zurückziehen möchten. Sie können später erneut Zugriff auf das Objekt beantragen.`,
+      cancelRequest: 'Anfrage zurückziehen',
+      requestCancellationSuccess:
+        'Die Zugriffsanfrage wurde erfolgreich zurückgezogen.',
+      requestCancellationFailed:
+        'Beim Zurückziehen der Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
       collectionNameRequired:
         'Bitte geben Sie einen Namen für die Katalog-Sammlung an.',
       changeCatalogCollectionName: 'Namen der Katalog-Sammlung ändern',

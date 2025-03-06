@@ -22,10 +22,11 @@ import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogImportModal from './CatalogImportModal'
 import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
 import CatalogObjectRequestSuccessToast from './CatalogObjectRequestSuccessToast'
+import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
+import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellationSuccessToast'
 import CatalogRequestModal from './CatalogRequestModal'
 import ObjectChangeAccessModal from './ObjectChangeAccessModal'
 import ObjectRemovalModal from './ObjectRemovalModal'
-import ObjectRequestCancellationModal from './ObjectRequestCancellationModal.tsx'
 import ObjectSharingModal from './ObjectSharingModal'
 
 function CatalogObjectItem({
@@ -57,6 +58,10 @@ function CatalogObjectItem({
   // toast states
   const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
   const [showImportSuccessToast, setShowImportSuccessToast] = useState(false)
+  const [
+    showRequestCancellationSuccessToast,
+    setShowRequestCancellationSuccessToast,
+  ] = useState(false)
 
   // Use the new dropdown hook
   const dropdownItems = useCatalogObjectActionsDropdown({
@@ -202,14 +207,27 @@ function CatalogObjectItem({
         onClose={() => setShowImportSuccessToast(false)}
       />
 
+      {/* functionality to cancel request for requested catalog object */}
       {object.isRequested ? (
-        <ObjectRequestCancellationModal
-          object={object}
+        <CatalogRequestCancellationModal
           open={requestCancellationModal}
-          catalogCollectionId={catalogCollectionId}
+          onSuccess={() => {
+            setShowRequestCancellationSuccessToast(true)
+            setRequestCancellationModal(false)
+          }}
           onClose={() => setRequestCancellationModal(false)}
+          objectType={object.objectType}
+          objectId={object.id ?? object.uuid!}
+          objectName={object.name}
+          objectOwner={object.ownerShortname}
+          catalogCollectionId={catalogCollectionId}
         />
       ) : null}
+      <CatalogRequestCancellationSuccessToast
+        open={showRequestCancellationSuccessToast}
+        onClose={() => setShowRequestCancellationSuccessToast(false)}
+      />
+
       {managedAccess ? (
         <>
           <ObjectChangeAccessModal

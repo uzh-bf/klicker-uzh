@@ -2142,12 +2142,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removalFailed:
         'An error occurred while removing the answer collection. Please try again or contact the support.',
       cancelSharingRequest: 'Cancel Sharing Request',
-      confirmCancelRequest:
-        'Please confirm that you want to cancel the sharing request for the answer collection "{name}". You can request access to the answer collection again later.',
-      confirmCancellation: 'Confirm cancellation',
-      cancellationSuccessful: 'The access request was successfully withdrawn.',
-      cancellationFailed:
-        'An error occurred while withdrawing the access request. Please try again or contact the support.',
       permissionsREAD: 'Read permissions',
       permissionsWRITE: 'Write permissions',
       permissionsADMIN: 'Admin permissions',
@@ -2307,6 +2301,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The object was successfully imported into your account.',
       importCatalogObjectFailed:
         'An error occurred while importing the object. Please try again or contact the support.',
+      cancelCatalogObjectRequest: 'Cancel Object Sharing Request',
+      cancelCatalogObjectRequestDescription: `Please confirm that you want to cancel the sharing request for "{name}" (by {owner})? You can request access to the object again later.`,
+      cancelRequest: 'Cancel Request',
+      requestCancellationSuccess:
+        'The access request was successfully withdrawn.',
+      requestCancellationFailed:
+        'An error occurred while withdrawing the access request. Please try again or contact the support.',
       collectionNameRequired: 'Please enter a name for the catalog collection.',
       changeCatalogCollectionName: 'Change Catalog Collection Name',
       catalogCollectionNameChangeSuccess:
