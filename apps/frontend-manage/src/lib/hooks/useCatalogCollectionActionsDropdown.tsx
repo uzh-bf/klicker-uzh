@@ -11,7 +11,7 @@ import { twMerge } from 'tailwind-merge'
 
 function useCatalogCollectionActionsDropdown({
   catalogCollectionId,
-  isOwnerOrAdmin,
+  isManager,
   isShared,
   isRequestable,
   setSharingModal,
@@ -19,7 +19,7 @@ function useCatalogCollectionActionsDropdown({
   setRequestModal,
 }: {
   catalogCollectionId: string
-  isOwnerOrAdmin: boolean
+  isManager: boolean
   isShared: boolean
   isRequestable: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
@@ -33,7 +33,7 @@ function useCatalogCollectionActionsDropdown({
     const items = []
 
     // sharing functionality for admin and owner
-    if (isOwnerOrAdmin) {
+    if (isManager) {
       items.push({
         id: 'share',
         label: (
@@ -54,7 +54,7 @@ function useCatalogCollectionActionsDropdown({
     }
 
     // deletion functionality for admin and owner
-    if (isOwnerOrAdmin) {
+    if (isManager) {
       items.push({
         id: 'delete',
         label: (
@@ -115,8 +115,8 @@ function useCatalogCollectionActionsDropdown({
     return items
   }, [
     t,
+    isManager,
     isRequestable,
-    isOwnerOrAdmin,
     setSharingModal,
     setDeletionModal,
     setRequestModal,

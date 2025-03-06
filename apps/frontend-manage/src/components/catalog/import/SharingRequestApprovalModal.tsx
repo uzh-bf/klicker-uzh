@@ -60,7 +60,7 @@ function SharingRequestApprovalModal({
         items={permissionLevelSelectItems}
         onChange={(newValue) => setPermissionLevel(newValue as PermissionLevel)}
         className={{ label: 'text-base', select: { trigger: 'h-9' } }}
-        data={{ cy: 'access-level-select' }}
+        data={{ cy: 'permission-level-select' }}
       />
       <div className="mt-3 flex flex-row justify-between">
         <Button

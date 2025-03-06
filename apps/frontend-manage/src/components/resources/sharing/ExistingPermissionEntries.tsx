@@ -175,8 +175,8 @@ function ExistingPermissionEntries({
                 }}
                 data={{
                   cy: permission.username
-                    ? `access-level-permission-${permission.username}`
-                    : `access-level-permission-${permission.userGroupName}`,
+                    ? `permission-level-${permission.username}`
+                    : `permission-level-${permission.userGroupName}`,
                 }}
               />
             </td>

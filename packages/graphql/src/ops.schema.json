@@ -4050,19 +4050,7 @@
             "deprecationReason": null
           },
           {
-            "name": "isOwner",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "Boolean",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "isOwnerOrAdmin",
+            "name": "isManager",
             "description": null,
             "args": [],
             "type": {
@@ -4073,6 +4061,18 @@
                 "name": "Boolean",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isOwner",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -4194,7 +4194,7 @@
             "deprecationReason": null
           },
           {
-            "name": "isOwner",
+            "name": "isManager",
             "description": null,
             "args": [],
             "type": {
@@ -4210,7 +4210,7 @@
             "deprecationReason": null
           },
           {
-            "name": "isOwnerOrAdmin",
+            "name": "isOwner",
             "description": null,
             "args": [],
             "type": {

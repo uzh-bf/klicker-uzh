@@ -136,7 +136,7 @@ function ObjectImport({
                     managedAccess={
                       typeof catalogCollectionId !== 'undefined'
                         ? collectionEditor
-                        : object.isOwnerOrAdmin
+                        : object.isManager
                     }
                   />
                 ))}

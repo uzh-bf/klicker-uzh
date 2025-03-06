@@ -4,10 +4,10 @@ query GetCatalogCollectionsList {
     name
     access
     ownerShortname
+    isOwner
+    isManager
+    isEditor
     isRequested
     isShared
-    isEditor
-    isOwner
-    isOwnerOrAdmin
   }
 }

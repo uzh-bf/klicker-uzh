@@ -192,7 +192,7 @@ function CatalogObjectItem({
           />
         </>
       ) : null}
-      {object.isOwnerOrAdmin ? (
+      {object.isManager ? (
         <ObjectSharingModal
           objectId={object.id ?? undefined}
           objectUuid={object.uuid ?? undefined}

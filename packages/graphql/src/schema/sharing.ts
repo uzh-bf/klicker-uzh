@@ -28,9 +28,9 @@ interface ICatalogCollection extends DB.CatalogCollection {
   ownerShortname?: string
   isRequested: boolean // pending permission request
   isShared: boolean // granted permission
-  isEditor?: boolean // WRITE / ADMIN / OWNER permissions
   isOwner?: boolean // OWNER permissions
-  isOwnerOrAdmin: boolean // ADMIN / OWNER permissions
+  isManager: boolean // ADMIN / OWNER permissions
+  isEditor?: boolean // WRITE / ADMIN / OWNER permissions
 }
 export const CatalogCollectionRef =
   builder.objectRef<ICatalogCollection>('CatalogCollection')
@@ -40,11 +40,11 @@ export const CatalogCollection = CatalogCollectionRef.implement({
     name: t.exposeString('name'),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+    isManager: t.exposeBoolean('isManager'),
+    isEditor: t.exposeBoolean('isEditor', { nullable: true }),
     isRequested: t.exposeBoolean('isRequested'),
     isShared: t.exposeBoolean('isShared'),
-    isEditor: t.exposeBoolean('isEditor', { nullable: true }),
-    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
-    isOwnerOrAdmin: t.exposeBoolean('isOwnerOrAdmin'),
   }),
 })
 
@@ -59,10 +59,10 @@ export const CatalogObject = CatalogObjectRef.implement({
     assignmentId: t.exposeInt('assignmentId'),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner'),
+    isManager: t.exposeBoolean('isManager'),
     isRequested: t.exposeBoolean('isRequested'),
     isShared: t.exposeBoolean('isShared'),
-    isOwner: t.exposeBoolean('isOwner'),
-    isOwnerOrAdmin: t.exposeBoolean('isOwnerOrAdmin'),
   }),
 })
 

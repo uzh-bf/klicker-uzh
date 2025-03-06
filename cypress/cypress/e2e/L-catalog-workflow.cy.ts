@@ -55,14 +55,14 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="add-object-to-catalog-button"]').should('exist')
     cy.get(`[data-cy="catalog-object-${data.AC1.name}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessPUBLIC)
+      .contains(messages.manage.catalog.accessPUBLIC)
     cy.get(`[data-cy="actions-dropdown-${data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${data.AC1.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
 
     cy.get(`[data-cy="catalog-object-${data.AC2.name}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessRESTRICTED)
+      .contains(messages.manage.catalog.accessRESTRICTED)
     cy.get(`[data-cy="actions-dropdown-${data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${data.AC2.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
@@ -112,14 +112,14 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessADMIN
+      messages.manage.resources.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessADMIN)
+      .contains(messages.manage.resources.permissionsADMIN)
 
     // WRITE permissions for user pro2
     cy.get('[data-cy="new-permission-username-or-email"]')
@@ -127,14 +127,14 @@ describe('Test all functionalities of catalog collections and objects contained 
       .clear()
       .type(Cypress.env('LECTURER_INST_EMAIL'))
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-WRITE"]').click()
+    cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessWRITE
+      messages.manage.resources.permissionsWRITE
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessWRITE)
+      .contains(messages.manage.resources.permissionsWRITE)
 
     // READ permissions for user pro3
     cy.get('[data-cy="new-permission-username-or-email"]')
@@ -142,14 +142,14 @@ describe('Test all functionalities of catalog collections and objects contained 
       .clear()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessREAD
+      messages.manage.resources.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessREAD)
+      .contains(messages.manage.resources.permissionsREAD)
   })
 
   it('Create public and private catalog collections CCPublic and CCPrivate', function () {
@@ -163,12 +163,12 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .type(this.data.CCPublic)
     cy.get('[data-cy="modal-object-access"]').contains(
-      messages.manage.resources.accessPUBLIC
+      messages.manage.catalog.accessPUBLIC
     )
     cy.get('[data-cy="create-catalog-collection-submit"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessPUBLIC)
+      .contains(messages.manage.catalog.accessPUBLIC)
 
     // create a restricted catalog collection
     cy.get('[data-cy="create-catalog-collection-button"]').click()
@@ -178,12 +178,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
-      messages.manage.resources.accessRESTRICTED
+      messages.manage.catalog.accessRESTRICTED
     )
     cy.get('[data-cy="create-catalog-collection-submit"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessRESTRICTED)
+      .contains(messages.manage.catalog.accessRESTRICTED)
   })
 
   it('Verify correct visibility of catalog collections to users', function () {
@@ -224,7 +224,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
-      messages.manage.resources.accessPUBLIC
+      messages.manage.catalog.accessPUBLIC
     )
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
@@ -236,7 +236,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="submit-add-object-button"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.AC1.name}"]`).should('exist')
     cy.get(`[data-cy="catalog-object-${this.data.AC1.name}"]`).contains(
-      messages.manage.resources.accessPUBLIC
+      messages.manage.catalog.accessPUBLIC
     )
 
     // add AC1 as public object to restricted catalog collection
@@ -250,7 +250,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
-      messages.manage.resources.accessPUBLIC
+      messages.manage.catalog.accessPUBLIC
     )
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
@@ -262,7 +262,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="submit-add-object-button"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.AC1.name}"]`).should('exist')
     cy.get(`[data-cy="catalog-object-${this.data.AC1.name}"]`).contains(
-      messages.manage.resources.accessPUBLIC
+      messages.manage.catalog.accessPUBLIC
     )
   })
 
@@ -325,13 +325,13 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="approve-sharing-request-${this.data.CCRestricted}-pro1"]`
     ).click()
-    cy.get('[data-cy="access-level-select"]').contains(
-      messages.manage.resources.accessREAD
+    cy.get('[data-cy="permission-level-select"]').contains(
+      messages.manage.resources.permissionsREAD
     )
-    cy.get('[data-cy="access-level-select"]').click()
-    cy.get('[data-cy="access-level-WRITE"]').click()
-    cy.get('[data-cy="access-level-select"]').contains(
-      messages.manage.resources.accessWRITE
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get('[data-cy="permission-level-select"]').contains(
+      messages.manage.resources.permissionsWRITE
     )
     cy.get('[data-cy="confirm-approval"]').click()
 
@@ -344,14 +344,14 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL'))
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessADMIN
+      messages.manage.resources.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessADMIN)
+      .contains(messages.manage.resources.permissionsADMIN)
 
     // Share directly with pro3 (READ permissions)
     cy.get('[data-cy="new-permission-username-or-email"]')
@@ -359,14 +359,14 @@ describe('Test all functionalities of catalog collections and objects contained 
       .clear()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME'))
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-READ"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessREAD
+      messages.manage.resources.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessREAD)
+      .contains(messages.manage.resources.permissionsREAD)
   })
 
   it('Share CCPublic with user pro1 and ADMIN permissions', function () {
@@ -381,14 +381,14 @@ describe('Test all functionalities of catalog collections and objects contained 
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME'))
     cy.get('[data-cy="new-permission-access-level"]').click()
-    cy.get('[data-cy="access-level-ADMIN"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.accessADMIN
+      messages.manage.resources.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessADMIN)
+      .contains(messages.manage.resources.permissionsADMIN)
   })
 
   it('Add AC2 to both catalog collections with restricted visibility using WRITE / ADMIN permissions respectively', function () {
@@ -406,7 +406,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
-      messages.manage.resources.accessRESTRICTED
+      messages.manage.catalog.accessRESTRICTED
     )
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
@@ -418,7 +418,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="submit-add-object-button"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.AC2.name}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessRESTRICTED)
+      .contains(messages.manage.catalog.accessRESTRICTED)
 
     // add AC2 as restricted object to restricted catalog collection
     cy.get('[data-cy="leave-catalog-collection"]').click()
@@ -431,7 +431,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
-      messages.manage.resources.accessRESTRICTED
+      messages.manage.catalog.accessRESTRICTED
     )
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
@@ -442,7 +442,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
     cy.get('[data-cy="submit-add-object-button"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.AC2.name}"]`).contains(
-      messages.manage.resources.accessRESTRICTED
+      messages.manage.catalog.accessRESTRICTED
     )
   })
 
@@ -487,14 +487,14 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="add-object-to-catalog-button"]').should('exist')
     cy.get(`[data-cy="catalog-object-${this.data.AC1.name}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessPUBLIC)
+      .contains(messages.manage.catalog.accessPUBLIC)
     cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
 
     cy.get(`[data-cy="catalog-object-${this.data.AC2.name}"]`)
       .should('exist')
-      .contains(messages.manage.resources.accessRESTRICTED)
+      .contains(messages.manage.catalog.accessRESTRICTED)
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${this.data.AC2.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()

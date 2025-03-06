@@ -4,9 +4,9 @@ mutation RequestCatalogCollection($catalogCollectionId: String!) {
     name
     access
     ownerShortname
+    isOwner
+    isManager
     isRequested
     isShared
-    isOwner
-    isOwnerOrAdmin
   }
 }

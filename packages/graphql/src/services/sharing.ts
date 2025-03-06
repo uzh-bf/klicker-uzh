@@ -182,9 +182,11 @@ export async function createCatalogCollection(
   return {
     ...collection,
     ownerShortname: collection.owner?.shortname,
+    isOwner: true,
+    isManager: true,
+    isEditor: true,
     isRequested: false,
     isShared: false,
-    isOwnerOrAdmin: true,
   }
 }
 
@@ -239,6 +241,13 @@ export async function getCatalogCollectionInfo(
   const isShared = collection.permissions.some(
     (permission) => permission.permissionStatus === DB.PermissionStatus.GRANTED
   )
+  const isManager =
+    collection.ownerId === ctx.user.sub ||
+    collection.permissions.some(
+      (permission) =>
+        permission.permissionLevel === DB.PermissionLevel.ADMIN &&
+        permission.permissionStatus === DB.PermissionStatus.GRANTED
+    )
   const isEditor =
     collection.permissions.some(
       (permission) =>
@@ -246,22 +255,15 @@ export async function getCatalogCollectionInfo(
           permission.permissionLevel === DB.PermissionLevel.ADMIN) &&
         permission.permissionStatus === DB.PermissionStatus.GRANTED
     ) || collection.ownerId === ctx.user.sub
-  const isOwnerOrAdmin =
-    collection.ownerId === ctx.user.sub ||
-    collection.permissions.some(
-      (permission) =>
-        permission.permissionLevel === DB.PermissionLevel.ADMIN &&
-        permission.permissionStatus === DB.PermissionStatus.GRANTED
-    )
 
   return {
     ...collection,
     ownerShortname: collection.owner?.shortname,
+    isOwner: collection.ownerId === ctx.user.sub,
+    isManager,
+    isEditor,
     isRequested,
     isShared,
-    isEditor,
-    isOwner: collection.ownerId === ctx.user.sub,
-    isOwnerOrAdmin,
   }
 }
 
@@ -862,6 +864,13 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
         (permission) =>
           permission.permissionStatus === DB.PermissionStatus.GRANTED
       )
+      const isManager =
+        collection.ownerId === ctx.user.sub ||
+        collection.permissions.some(
+          (permission) =>
+            permission.permissionLevel === DB.PermissionLevel.ADMIN &&
+            permission.permissionStatus === DB.PermissionStatus.GRANTED
+        )
       const isEditor =
         collection.permissions.some(
           (permission) =>
@@ -869,22 +878,15 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
               permission.permissionLevel === DB.PermissionLevel.ADMIN) &&
             permission.permissionStatus === DB.PermissionStatus.GRANTED
         ) || collection.ownerId === ctx.user.sub
-      const isOwnerOrAdmin =
-        collection.ownerId === ctx.user.sub ||
-        collection.permissions.some(
-          (permission) =>
-            permission.permissionLevel === DB.PermissionLevel.ADMIN &&
-            permission.permissionStatus === DB.PermissionStatus.GRANTED
-        )
 
       return {
         ...collection,
         ownerShortname: collection.owner?.shortname,
+        isOwner: collection.ownerId === ctx.user.sub,
+        isManager,
+        isEditor,
         isRequested,
         isShared,
-        isEditor,
-        isOwner: collection.ownerId === ctx.user.sub,
-        isOwnerOrAdmin,
       }
     })
 
@@ -968,10 +970,11 @@ export async function requestCatalogCollection(
   return {
     ...catalogCollection,
     ownerShortname: catalogCollection.owner?.shortname,
+    isOwner: false,
+    isManager: false,
+    isEditor: false,
     isRequested: true,
     isShared: false,
-    isOwner: false,
-    isOwnerOrAdmin: false,
   }
 }
 
@@ -1161,6 +1164,10 @@ export async function getCatalogObjects(
           objectType: CatalogObjectType.ANSWER_COLLECTION,
           access: assignment.access,
           ownerShortname: answerCollection.owner?.shortname,
+          isOwner: answerCollection.ownerId === ctx.user.sub,
+          isManager:
+            answerCollection.ownerId === ctx.user.sub ||
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN,
           isRequested:
             answerCollection.permissions.length > 0 &&
             typeof permission !== 'undefined' &&
@@ -1169,10 +1176,6 @@ export async function getCatalogObjects(
             answerCollection.permissions.length > 0 &&
             typeof permission !== 'undefined' &&
             permission.permissionStatus === DB.PermissionStatus.GRANTED,
-          isOwner: answerCollection.ownerId === ctx.user.sub,
-          isOwnerOrAdmin:
-            answerCollection.ownerId === ctx.user.sub ||
-            permission?.permissionLevel === DB.PermissionLevel.ADMIN,
         }
       }
 
@@ -1329,10 +1332,10 @@ export async function addAnswerCollectionToCatalog(
     assignmentId: assignment.id,
     access: assignment.access,
     ownerShortname: collection.owner?.shortname,
+    isOwner: collection.ownerId === ctx.user.sub,
+    isManager: true,
     isRequested: false,
     isShared: true,
-    isOwner: collection.ownerId === ctx.user.sub,
-    isOwnerOrAdmin: true,
   }
 }
 
@@ -1448,10 +1451,10 @@ export async function requestAnswerCollection(
         assignmentId: assignment.id,
         access: assignment.access,
         ownerShortname: permissionRequest.objectOwner?.shortname,
+        isOwner: false,
+        isManager: false,
         isRequested: true,
         isShared: false,
-        isOwner: false,
-        isOwnerOrAdmin: false,
       }
     : null
 }

@@ -357,8 +357,8 @@ type CatalogCollection {
   access: ObjectAccess!
   id: String!
   isEditor: Boolean
+  isManager: Boolean!
   isOwner: Boolean
-  isOwnerOrAdmin: Boolean!
   isRequested: Boolean!
   isShared: Boolean!
   name: String!
@@ -369,8 +369,8 @@ type CatalogObject {
   access: ObjectAccess!
   assignmentId: Int!
   id: Int
+  isManager: Boolean!
   isOwner: Boolean!
-  isOwnerOrAdmin: Boolean!
   isRequested: Boolean!
   isShared: Boolean!
   name: String!

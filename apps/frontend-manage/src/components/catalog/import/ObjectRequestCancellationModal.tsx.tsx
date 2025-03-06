@@ -18,19 +18,6 @@ function ObjectRequestCancellationModal({
   const [successToast, setSuccessToast] = useState(false)
   const [failureToast, setFailureToast] = useState(false)
 
-  const SuccessFailureToasts = () => (
-    <>
-      <RequestCancellationSuccessToast
-        open={successToast}
-        onClose={() => setSuccessToast(false)}
-      />
-      <RequestCancellationErrorToast
-        open={failureToast}
-        onClose={() => setFailureToast(false)}
-      />
-    </>
-  )
-
   if (object.objectType === CatalogObjectType.AnswerCollection) {
     return (
       <>
@@ -42,7 +29,14 @@ function ObjectRequestCancellationModal({
           onSuccess={() => setSuccessToast(true)}
           onFailure={() => setFailureToast(true)}
         />
-        <SuccessFailureToasts />
+        <RequestCancellationSuccessToast
+          open={successToast}
+          onClose={() => setSuccessToast(false)}
+        />
+        <RequestCancellationErrorToast
+          open={failureToast}
+          onClose={() => setFailureToast(false)}
+        />
       </>
     )
   }

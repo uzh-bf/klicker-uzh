@@ -54,7 +54,7 @@ function CatalogCollectionListItem({
 
   const dropdownItems = useCatalogCollectionActionsDropdown({
     catalogCollectionId: collection.id,
-    isOwnerOrAdmin: collection.isOwnerOrAdmin,
+    isManager: collection.isManager,
     isShared: collection.isShared,
     isRequestable,
     setSharingModal,
@@ -71,7 +71,7 @@ function CatalogCollectionListItem({
           if (
             collection.access === ObjectAccess.Public ||
             collection.isShared ||
-            collection.isOwnerOrAdmin
+            collection.isManager
           ) {
             router.push(
               `resources/catalog`,
@@ -129,7 +129,7 @@ function CatalogCollectionListItem({
               <div>{t('manage.catalog.accessGranted')}</div>
             </div>
           ) : null}
-          {collection.isOwnerOrAdmin ? (
+          {collection.isManager ? (
             <div className="ml-2">
               <ObjectAccessSelection
                 compact
@@ -162,7 +162,7 @@ function CatalogCollectionListItem({
         </div>
       </div>
 
-      {collection.isOwnerOrAdmin ? (
+      {collection.isManager ? (
         <>
           <CatalogCollectionSharingModal
             catalogCollectionId={collection.id}

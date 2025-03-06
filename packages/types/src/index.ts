@@ -131,10 +131,10 @@ export type CatalogObject = {
   assignmentId: number
   access: ObjectAccess
   ownerShortname?: string
+  isOwner: boolean
+  isManager: boolean
   isRequested: boolean
   isShared: boolean
-  isOwner: boolean
-  isOwnerOrAdmin: boolean
 }
 
 // #endregion

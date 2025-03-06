@@ -84,7 +84,7 @@ function useCatalogObjectActionsDropdown({
     }
 
     // sufficient permissions on the object (ADMIN / OWNER) are always deciding for whether or not to show the sharing dialog
-    if (object.isOwnerOrAdmin) {
+    if (object.isManager) {
       items.push({
         id: 'share',
         label: (
