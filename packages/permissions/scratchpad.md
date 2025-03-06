@@ -167,6 +167,57 @@ This implementation provides a flexible and secure way to share activities while
 
 7. **Error Handling**: Implement proper error handling and null checks to prevent runtime errors, especially when dealing with user input or external data.
 
+## Current Task: Permission Derivation from Database Schema
+
+### Requirements
+
+1. Update our permission model to align with the provided database schema:
+   - PermissionLevel: READ, WRITE, EXECUTE, ADMIN
+   - PermissionStatus: REQUESTED, GRANTED
+   - UserGroup structure with members and admins
+   - Various resource types that can have permissions
+
+2. Implement a function that:
+   - Takes a list of direct permissions from the database
+   - Derives all effective permissions (including group permissions)
+   - Deduplicates permissions (max 1 permission per user-resource pair)
+   - Resolves permission precedence (higher specificity wins)
+   - Returns a comprehensive list of effective permissions
+
+### Progress
+- [X] Update permission model types to match database schema
+- [X] Implement permission derivation function
+- [X] Add deduplication and precedence resolution
+- [X] Test with sample data
+
+### Implementation Summary
+
+1. **Database Permission Model**:
+   - Created types that match the Prisma schema: `PermissionLevel`, `PermissionStatus`, `ResourceType`
+   - Implemented interfaces for `UserGroup` and `DatabasePermission`
+   - Added mapping functions between database models and our internal models
+
+2. **Permission Derivation Function**:
+   - Implemented `deriveEffectivePermissions` function that:
+     - Takes raw database permissions and user groups
+     - Processes direct user permissions first
+     - Processes group permissions and resolves conflicts
+     - Handles owner permissions with highest precedence
+     - Returns deduplicated permissions with proper precedence
+
+3. **Precedence Rules**:
+   - Direct permissions take precedence over group permissions
+   - Owner permissions take precedence over everything
+   - For group permissions, higher permission levels take precedence
+   - Requested permissions are filtered out (only granted permissions are considered)
+
+4. **Testing**:
+   - Created comprehensive test cases with various scenarios:
+     - Direct vs. group permission conflicts
+     - Multiple group memberships
+     - Owner permissions
+     - Requested vs. granted permissions
+
 ## Current Task: Enhanced Activity Sharing with PermissionScope
 
 ### Requirements
