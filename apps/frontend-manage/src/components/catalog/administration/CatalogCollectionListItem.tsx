@@ -5,7 +5,11 @@ import {
   faPencil,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CatalogCollection, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CatalogCollection,
+  CatalogObjectType,
+  ObjectAccess,
+} from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -13,12 +17,12 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectAccessLabel from '../ObjectAccessLabel'
+import CatalogObjectRequestSuccessToast from '../actions/CatalogObjectRequestSuccessToast'
+import CatalogRequestModal from '../actions/CatalogRequestModal'
 import CatalogCollectionChangeAccessModal from '../collections/CatalogCollectionChangeAccessModal'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
 import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
-import CatalogCollectionRequestAccessModal from '../collections/CatalogCollectionRequestAccessModal'
-import CatalogCollectionRequestAccessSuccessToast from '../collections/CatalogCollectionRequestAccessSuccessToast'
 import CatalogCollectionSharingModal from '../collections/CatalogCollectionSharingModal'
 import TransferCatalogCollectionOwnershipModal from '../collections/TransferCatalogCollectionOwnershipModal'
 import ObjectAccessSelection from './ObjectAccessSelection'
@@ -185,6 +189,10 @@ function CatalogCollectionListItem({
             onClose={() => setDeletionModal(false)}
             onSuccess={() => setShowDeletionSuccessToast(true)}
           />
+          <CatalogCollectionDeletionSuccessToast
+            open={showDeletionSuccessToast}
+            onClose={() => setShowDeletionSuccessToast(false)}
+          />
           <CatalogCollectionChangeAccessModal
             catalogCollection={collection}
             newAccess={newAccess}
@@ -202,24 +210,24 @@ function CatalogCollectionListItem({
         />
       ) : null}
 
-      {isRequestable && (
-        <CatalogCollectionRequestAccessModal
-          catalogCollectionId={collection.id}
-          catalogCollectionName={collection.name}
-          ownerShortname={collection.ownerShortname ?? undefined}
+      {/* // functionality for users without access to request it for restricted catalog collections */}
+      {isRequestable ? (
+        <CatalogRequestModal
+          objectType={CatalogObjectType.CatalogCollection}
+          objectId={collection.id}
+          objectName={collection.name}
+          objectOwner={collection.ownerShortname}
           open={requestModal}
+          onSuccess={() => {
+            setShowRequestSuccessToast(true)
+            setRequestModal(false)
+          }}
           onClose={() => setRequestModal(false)}
-          onSuccess={() => setShowRequestSuccessToast(true)}
         />
-      )}
-
-      <CatalogCollectionRequestAccessSuccessToast
+      ) : null}
+      <CatalogObjectRequestSuccessToast
         open={showRequestSuccessToast}
         onClose={() => setShowRequestSuccessToast(false)}
-      />
-      <CatalogCollectionDeletionSuccessToast
-        open={showDeletionSuccessToast}
-        onClose={() => setShowDeletionSuccessToast(false)}
       />
     </>
   )

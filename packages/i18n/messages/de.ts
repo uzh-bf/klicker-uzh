@@ -2335,13 +2335,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deletionSuccessful: 'Die Katalogsammlung wurde erfolgreich gelöscht.',
       deletionFailed:
         'Beim Löschen der Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
-      requestCatalogCollectionAccess: 'Zugriff auf Katalogsammlung anfordern',
-      requestCatalogCollectionAccessDescription:
-        'Hier können Sie Zugriff auf die Katalogsammlung "<b>{name}</b>" (von {owner}) anfordern. Der Besitzer wird als Teil der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail-Adresse</b> sehen. Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
-      requestAccessSuccess:
-        'Die Zugriffsanfrage für die Katalogsammlung wurde erfolgreich übermittelt.',
-      requestAccessFailed:
-        'Bei der Anforderung des Zugriffs auf die Katalogsammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      requestCatalogObjectAccess: 'Zugriff auf {object} anfordern',
+      requestCatalogObjectAccessDescription:
+        'Hier können Sie Zugriff auf "<b>{name}</b>" (von {owner}) anfordern. Der Besitzer wird als Teil der Anfrage Ihren <b>Kurznamen</b> und Ihre <b>E-Mail-Adresse</b> sehen.',
+      requestSuccessInfoCATALOG_COLLECTION:
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
+      requestSuccessInfoANSWER_COLLECTION:
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Antwort-Sammlung und können diese in Ihren Auswahl-Fragen und Fallstudien verwenden.',
+      requestCatalogObjectSuccess:
+        'Die Zugriffsanfrage wurde erfolgreich übermittelt.',
+      requestCatalogObjectFailed:
+        'Bei der Anforderung des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
       collectionNameRequired:
         'Bitte geben Sie einen Namen für die Katalog-Sammlung an.',
       changeCatalogCollectionName: 'Namen der Katalog-Sammlung ändern',

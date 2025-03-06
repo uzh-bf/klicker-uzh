@@ -2303,13 +2303,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deletionSuccessful: 'The catalog collection was successfully deleted.',
       deletionFailed:
         'An error occurred while deleting the catalog collection. Please try again or contact the support.',
-      requestCatalogCollectionAccess: 'Request Access to Catalog Collection',
-      requestCatalogCollectionAccessDescription:
-        'Here you can request access to the catalog collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared catalog collection and its objects.',
-      requestAccessSuccess:
-        'The access request for the catalog collection was successfully submitted.',
-      requestAccessFailed:
-        'An error occurred while requesting the catalog collection. Please try again or contact the support.',
+      requestCatalogObjectAccess: 'Request Access to {object}',
+      requestCatalogObjectAccessDescription:
+        'Here you can request access to "{name}" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request.',
+      requestSuccessInfoCATALOG_COLLECTION:
+        'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
+      requestSuccessInfoANSWER_COLLECTION:
+        'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
+      requestCatalogObjectSuccess:
+        'The access request was successfully submitted.',
+      requestCatalogObjectFailed:
+        'An error occurred while requesting the access. Please try again or contact the support.',
       collectionNameRequired: 'Please enter a name for the catalog collection.',
       changeCatalogCollectionName: 'Change Catalog Collection Name',
       catalogCollectionNameChangeSuccess:

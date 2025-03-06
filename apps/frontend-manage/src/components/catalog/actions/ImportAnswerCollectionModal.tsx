@@ -2,18 +2,17 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
 import { faBan } from '@fortawesome/free-solid-svg-icons'
 import {
-  GetCatalogObjectsDocument,
   GetSingleAnswerCollectionCatalogDocument,
-  ObjectAccess,
-  RequestAnswerCollectionDocument,
+  ImportAnswerCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, Modal, Toast, UserNotification } from '@uzh-bf/design-system'
+import { Button, Modal, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
-function RequestAnswerCollectionModal({
+// TODO: generalize this modal and only insert small part with customization depending on the object type
+function ImportAnswerCollectionModal({
   id,
   open,
   catalogCollectionId,
@@ -28,6 +27,7 @@ function RequestAnswerCollectionModal({
 }) {
   const t = useTranslations()
   const [showError, setShowError] = useState(false)
+  const [showEntries, setShowEntries] = useState(false)
 
   // fetch answer collection
   const { data, loading } = useQuery(GetSingleAnswerCollectionCatalogDocument, {
@@ -37,45 +37,10 @@ function RequestAnswerCollectionModal({
     },
   })
 
-  const [requestAnswerCollection, { loading: requestLoading }] = useMutation(
-    RequestAnswerCollectionDocument,
+  const [importAnswerCollection, { loading: importLoading }] = useMutation(
+    ImportAnswerCollectionDocument,
     {
       variables: { collectionId: id, catalogCollectionId },
-      update: (cache, { data }) => {
-        // check if request was successful
-        const requestedCollection = data?.requestAnswerCollection
-        if (!requestedCollection) return
-
-        // update lists of answer collections
-        const catalogObjects = cache.readQuery({
-          query: GetCatalogObjectsDocument,
-          variables: {
-            catalogCollectionId,
-          },
-        })
-
-        if (catalogObjects?.getCatalogObjects) {
-          const updatedObjects = catalogObjects?.getCatalogObjects.map(
-            (obj) => {
-              if (obj.id === id) {
-                return requestedCollection
-              }
-
-              return obj
-            }
-          )
-
-          cache.writeQuery({
-            query: GetCatalogObjectsDocument,
-            variables: {
-              catalogCollectionId,
-            },
-            data: {
-              getCatalogObjects: updatedObjects,
-            },
-          })
-        }
-      },
     }
   )
 
@@ -87,40 +52,68 @@ function RequestAnswerCollectionModal({
       onClose={(e) => {
         e?.stopPropagation()
         onClose()
+        setShowEntries(false)
       }}
-      title={t('manage.catalog.requestAccess')}
+      title={t('manage.catalog.importPublicResource')}
       className={{ content: 'text-sm' }}
+      dataCloseButton={{ cy: 'close-answer-collection-import-modal' }}
     >
       {loading || !collection ? (
         <Loader />
       ) : (
         <>
-          {collection.objectAccess === ObjectAccess.Public ? (
-            <UserNotification
-              type="warning"
-              message={t('manage.catalog.requestPublicResource')}
-              className={{ root: 'mb-2' }}
-            />
-          ) : null}
           <div>
-            {t.rich('manage.resources.requestAccessMessage', {
+            {t.rich('manage.resources.importCollectionMessage', {
               name: collection.name,
               owner: collection.ownerShortname,
               b: (text) => <b>{text}</b>,
             })}
           </div>
-          <div className="border-uzh-grey-100 mt-2 rounded border border-solid p-2">
+          <div className="border-uzh-grey-100 mt-2 rounded border border-solid bg-slate-100 p-2">
             <Markdown
               content={`**Description:** ${collection.description}`}
-              data={{ cy: 'request-answer-collection-description' }}
+              data={{ cy: 'import-answer-collection-description' }}
             />
+            <div>
+              {showEntries ? (
+                <div className="mt-2">
+                  <div className="font-bold">
+                    {t('manage.resources.answerOptions')}
+                  </div>
+                  <ul className="list-inside list-disc">
+                    {collection.entries?.map((entry, ix) => (
+                      <li
+                        key={entry.id}
+                        data-cy={`public-collection-answer-option-${ix}`}
+                      >
+                        {entry.value}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <Button
+                  basic
+                  className={{
+                    root: 'text-primary-100 px-0 py-0 hover:bg-transparent',
+                  }}
+                  onClick={() => setShowEntries(true)}
+                  data={{ cy: 'public-collection-show-answers' }}
+                >
+                  <Button.Label>
+                    {t('manage.resources.showAnswers')}
+                  </Button.Label>
+                </Button>
+              )}
+            </div>
           </div>
           <div className="mt-3 flex flex-row justify-between">
             <Button
               className={{ root: 'h-8 border-red-600 py-0' }}
-              data={{ cy: 'cancel-answer-collection-request' }}
+              data={{ cy: 'cancel-answer-collection-import' }}
               onClick={(e) => {
                 e?.stopPropagation()
+                setShowEntries(false)
                 onClose()
               }}
             >
@@ -132,26 +125,28 @@ function RequestAnswerCollectionModal({
               className={{ root: 'h-8 py-0' }}
               onClick={async (e) => {
                 e?.stopPropagation()
-                const res = await requestAnswerCollection()
-                if (res.data?.requestAnswerCollection) {
+                const res = await importAnswerCollection()
+                if (res.data?.importAnswerCollection) {
                   onSuccess()
                   onClose()
                 } else {
                   setShowError(true)
                 }
               }}
-              loading={requestLoading}
-              data={{ cy: 'confirm-answer-collection-request' }}
+              loading={importLoading}
+              data={{ cy: 'confirm-answer-collection-import' }}
             >
               <Button.Icon icon={faPaperPlane} />
-              <Button.Label>{t('manage.resources.requestAccess')}</Button.Label>
+              <Button.Label>
+                {t('manage.resources.importCollection')}
+              </Button.Label>
             </Button>
           </div>
           <Toast
             openExternal={showError}
             onCloseExternal={() => setShowError(false)}
           >
-            {t('manage.resources.requestError')}
+            {t('manage.resources.importError')}
           </Toast>
         </>
       )}
@@ -159,4 +154,4 @@ function RequestAnswerCollectionModal({
   )
 }
 
-export default RequestAnswerCollectionModal
+export default ImportAnswerCollectionModal

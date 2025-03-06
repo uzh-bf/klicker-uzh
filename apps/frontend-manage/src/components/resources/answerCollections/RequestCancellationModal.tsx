@@ -9,6 +9,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
+// TODO: generalize this modal and only insert small part with customization depending on the object type (if necessary)
 function RequestCancellationModal({
   id,
   open,
