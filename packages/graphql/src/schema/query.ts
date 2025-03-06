@@ -999,6 +999,18 @@ export const Query = builder.queryType({
           return SharingService.getSingleAnswerCollectionCatalog(args, ctx)
         },
       }),
+
+      getAnswerCollectionCatalogInfo: asUser.field({
+        nullable: true,
+        type: AnswerCollection,
+        args: {
+          collectionId: t.arg.int({ required: true }),
+          catalogCollectionId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.getAnswerCollectionCatalogInfo(args, ctx)
+        },
+      }),
     }
   },
 })

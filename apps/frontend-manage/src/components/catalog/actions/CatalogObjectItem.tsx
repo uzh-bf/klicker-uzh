@@ -19,7 +19,8 @@ import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
-import ObjectAccessRequestModal from './ObjectAccessRequestModal'
+import CatalogObjectRequestSuccessToast from './CatalogObjectRequestSuccessToast'
+import CatalogRequestModal from './CatalogRequestModal'
 import ObjectChangeAccessModal from './ObjectChangeAccessModal'
 import ObjectImportModal from './ObjectImportModal'
 import ObjectRemovalModal from './ObjectRemovalModal'
@@ -40,8 +41,9 @@ function CatalogObjectItem({
     [CatalogObjectType.AnswerCollection]: faList,
     [CatalogObjectType.CatalogCollection]: faFolder,
   }
-
   const actionsDisabled = object.isOwner || object.isShared
+
+  // modal states
   const [requestModal, setRequestModal] = useState(false)
   const [requestCancellationModal, setRequestCancellationModal] =
     useState(false)
@@ -50,6 +52,9 @@ function CatalogObjectItem({
   const [sharingModal, setSharingModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [newAccess, setNewAccess] = useState<ObjectAccess>(object.access)
+
+  // toast states
+  const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
 
   // Use the new dropdown hook
   const dropdownItems = useCatalogObjectActionsDropdown({
@@ -151,14 +156,29 @@ function CatalogObjectItem({
           ) : null}
         </div>
       </div>
+
+      {/* // functionality for users without access to request it for restricted catalog collections */}
       {!actionsDisabled && !object.isRequested ? (
-        <ObjectAccessRequestModal
-          object={object}
+        <CatalogRequestModal
           open={requestModal}
-          catalogCollectionId={catalogCollectionId}
+          onSuccess={() => {
+            setShowRequestSuccessToast(true)
+            setRequestModal(false)
+          }}
           onClose={() => setRequestModal(false)}
+          objectType={CatalogObjectType.AnswerCollection}
+          objectId={object.id ?? object.uuid!}
+          objectName={object.name}
+          objectOwner={object.ownerShortname}
+          objectAccess={object.access}
+          catalogCollectionId={catalogCollectionId}
         />
       ) : null}
+      <CatalogObjectRequestSuccessToast
+        open={showRequestSuccessToast}
+        onClose={() => setShowRequestSuccessToast(false)}
+      />
+
       {!actionsDisabled && object.access === ObjectAccess.Public ? (
         <ObjectImportModal
           object={object}

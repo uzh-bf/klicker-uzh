@@ -1,8 +1,12 @@
-import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal } from '@uzh-bf/design-system'
+import { faPaperPlane } from '@fortawesome/free-regular-svg-icons'
+import { faBan } from '@fortawesome/free-solid-svg-icons'
+import { CatalogObjectType, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import CatalogObjectRequestErrorToast from './CatalogObjectRequestErrorToast'
+import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useRequestCatalogObject from './useRequestCatalogObject'
 
 function CatalogRequestModal({
@@ -13,6 +17,8 @@ function CatalogRequestModal({
   objectId,
   objectName,
   objectOwner,
+  objectAccess,
+  catalogCollectionId,
 }: {
   open: boolean
   onSuccess: () => void
@@ -21,12 +27,15 @@ function CatalogRequestModal({
   objectId: string | number
   objectName: string
   objectOwner?: string | null
+  objectAccess: ObjectAccess
+  catalogCollectionId?: string
 }) {
   const t = useTranslations()
   const [errorToast, setErrorToast] = useState(false)
   const { onRequest, requesting } = useRequestCatalogObject({
     objectType,
     objectId,
+    catalogCollectionId,
     onError: () => setErrorToast(true),
   })
 
@@ -34,11 +43,22 @@ function CatalogRequestModal({
     <>
       <Modal
         open={open}
-        onClose={onClose}
+        onClose={(e) => {
+          e?.stopPropagation()
+          setErrorToast(false)
+          onClose()
+        }}
         title={t('manage.catalog.requestCatalogObjectAccess', {
           object: t(`shared.types.${objectType}`),
         })}
       >
+        {objectAccess === ObjectAccess.Public ? (
+          <UserNotification
+            type="warning"
+            message={t('manage.catalog.requestPublicResource')}
+            className={{ root: 'mb-3' }}
+          />
+        ) : null}
         <div>
           {t.rich('manage.catalog.requestCatalogObjectAccessDescription', {
             name: objectName,
@@ -47,16 +67,28 @@ function CatalogRequestModal({
           })}{' '}
           {t(`manage.catalog.requestSuccessInfo${objectType}`)}
         </div>
-        {/* // TODO: add custom information component depending on object type */}
-        <div>CUSTOM INFO / PREVIEW PLACEHOLDER</div>
-        <div className="mt-4 flex justify-end space-x-2">
-          <Button onClick={onClose} data={{ cy: 'cancel-request-access' }}>
-            {t('shared.generic.cancel')}
+        <Suspense fallback={<Loader />}>
+          <CatalogAdditionalObjectInfo
+            objectType={objectType}
+            objectId={objectId}
+          />
+        </Suspense>
+        <div className="mt-4 flex justify-between space-x-2">
+          <Button
+            onClick={(e) => {
+              e?.stopPropagation()
+              onClose()
+            }}
+            data={{ cy: 'cancel-request-access' }}
+          >
+            <Button.Icon icon={faBan} />
+            <Button.Label>{t('shared.generic.cancel')}</Button.Label>
           </Button>
           <Button
             primary
             loading={requesting}
-            onClick={async () => {
+            onClick={async (e) => {
+              e?.stopPropagation()
               const success = await onRequest()
 
               if (success) {
@@ -67,7 +99,8 @@ function CatalogRequestModal({
             }}
             data={{ cy: 'confirm-request-access' }}
           >
-            {t('manage.catalog.requestAccess')}
+            <Button.Icon icon={faPaperPlane} />
+            <Button.Label>{t('manage.catalog.requestAccess')}</Button.Label>
           </Button>
         </div>
       </Modal>

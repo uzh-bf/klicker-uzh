@@ -1,0 +1,17 @@
+query GetAnswerCollectionCatalogInfo(
+  $collectionId: Int!
+  $catalogCollectionId: String
+) {
+  getAnswerCollectionCatalogInfo(
+    collectionId: $collectionId
+    catalogCollectionId: $catalogCollectionId
+  ) {
+    id
+    name
+    description
+    entries {
+      id
+      value
+    }
+  }
+}

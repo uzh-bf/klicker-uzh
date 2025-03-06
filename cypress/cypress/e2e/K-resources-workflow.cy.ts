@@ -467,12 +467,12 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="cancel-answer-collection-request"]').click()
+    cy.get('[data-cy="cancel-request-access"]').click()
     cy.get(
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
@@ -491,7 +491,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
@@ -557,7 +557,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
     ).realClick()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending again
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).contains(
@@ -984,7 +984,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.public.name}"]`).click()
     cy.findByText(messages.manage.catalog.requestPublicResource)
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).contains(
@@ -1001,7 +1001,7 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.public.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).contains(
@@ -1306,7 +1306,7 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.private.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).contains(
@@ -1377,7 +1377,7 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.private.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending
     cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).contains(
@@ -1545,7 +1545,7 @@ describe('Create, edit and share answer collections', function () {
     )
     cy.get(`[data-cy="actions-dropdown-${this.data.direct.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.direct.name}"]`).click()
-    cy.get('[data-cy="confirm-answer-collection-request"]').click()
+    cy.get('[data-cy="confirm-request-access"]').click()
   })
 
   it("Verify that the sharing request by user 'pro2' is visible in the catalog and give direct access to the answer collection", function () {

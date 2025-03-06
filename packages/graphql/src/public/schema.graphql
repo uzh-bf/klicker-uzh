@@ -1798,6 +1798,7 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
   getAnswerCollectionPermissions(collectionId: Int!): [PermissionInfo!]
   getAnswerCollectionsElements: [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]

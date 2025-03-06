@@ -1101,6 +1101,80 @@ export async function getSingleAnswerCollectionCatalog(
   }
 }
 
+// function to retrieve information on a single answer collection that is available in the catalog (no private collections)
+export async function getAnswerCollectionCatalogInfo(
+  {
+    collectionId,
+    catalogCollectionId,
+  }: { collectionId: number; catalogCollectionId?: string | null },
+  ctx: ContextWithUser
+) {
+  // fetch the answer collection
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+    },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user.sub,
+          permissionStatus: DB.PermissionStatus.GRANTED,
+        },
+      },
+      entries: true,
+      owner: {
+        select: {
+          shortname: true,
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // verify that the user has access to the catalog collection the answer collection is contained in
+  const validAccess = catalogCollectionId
+    ? await verifyCatalogCollectionBrowsable(
+        {
+          catalogCollectionId:
+            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+        },
+        ctx
+      )
+    : true
+
+  if (!validAccess) {
+    return null
+  }
+
+  // fetch the corresponding assignement to access the access enum value
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      answerCollectionId_catalogCollectionId: {
+        answerCollectionId: collectionId,
+        catalogCollectionId:
+          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+      },
+    },
+  })
+
+  if (!assignment) {
+    return null
+  }
+
+  // only if collection is public, the entries should be revealed
+  if (assignment.access === DB.ObjectAccess.PUBLIC) {
+    return collection
+  } else {
+    return {
+      ...collection,
+      entries: [],
+    }
+  }
+}
+
 export async function getCatalogObjects(
   { catalogCollectionId }: { catalogCollectionId?: string | null },
   ctx: ContextWithUser

@@ -201,7 +201,7 @@ Cypress.Commands.add(
     )
 
     cy.get('[data-cy="modal-object-access"]').contains(
-      messages.manage.resources.accessRESTRICTED
+      messages.manage.catalog.accessRESTRICTED
     )
     cy.get('[data-cy="modal-object-access"]').click()
     cy.get('[data-cy="object-access-restricted"]').should('exist')

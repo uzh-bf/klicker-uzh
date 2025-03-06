@@ -2103,17 +2103,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The changes to the answer collection have been saved successfully.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
-      requestAccessMessage:
-        'Here you can request access to the answer collection "<b>{name}</b>" (by {owner}). The owner will be able to see your <b>shortname</b> and <b>e-mail address</b> on your sharing request. Once your request is accepted, you can directly use the shared answer collection in your questions.',
       importCollectionMessage:
         'Here you can import a copy of the answer collection "<b>{name}</b>" (by {owner}) to your own account. After the import is completed, you can directly use the imported answer collection or modify it as needed. Changes to the original answer collection will not affect your imported copy.',
       showAnswers: 'Show Answers',
       importCollection: 'Import Answer Collection',
-      requestAccess: 'Request Access',
       importError:
         'An error occurred while importing the answer collection. Please try again or contact the support.',
-      requestError:
-        'An error occurred while requesting the answer collection. Please try again or contact the support.',
       viewCollection: 'View Collection',
       editCollection: 'Edit Collection',
       shareCollection: 'Share Collection',
@@ -2210,8 +2205,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       importObject: 'Import Object',
       accessRequested: 'Access requested',
       accessGranted: 'Access granted',
-      answerCollectionRequestSuccess:
-        'The access to the selected answer collection was successfully requested.',
       importPublicResource: 'Import Public Resource',
       answerCollectionImportSuccess:
         'A copy of the answer collection was successfully imported into your account.',

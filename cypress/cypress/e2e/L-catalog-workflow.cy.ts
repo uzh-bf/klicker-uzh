@@ -520,7 +520,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
-    cy.get(`[data-cy="cancel-answer-collection-request"]`).click()
+    cy.get(`[data-cy="cancel-request-access"]`).click()
   })
 
   it('Verify that user pro3 can see and request access to objects in restricted answer collection with READ permissions', function () {
@@ -543,7 +543,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
-    cy.get(`[data-cy="cancel-answer-collection-request"]`).click()
+    cy.get(`[data-cy="cancel-request-access"]`).click()
   })
   // #endregion
 
@@ -562,7 +562,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
-    cy.get(`[data-cy="cancel-answer-collection-request"]`).click()
+    cy.get(`[data-cy="cancel-request-access"]`).click()
 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
@@ -573,7 +573,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
-    cy.get(`[data-cy="cancel-answer-collection-request"]`).click()
+    cy.get(`[data-cy="cancel-request-access"]`).click()
     cy.logoutLecturer()
 
     // pro1 - ADMIN of AC1 and OWNER of AC2 with corresponding sharing permissions
@@ -616,7 +616,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
-    cy.get(`[data-cy="cancel-answer-collection-request"]`).click()
+    cy.get(`[data-cy="cancel-request-access"]`).click()
 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()

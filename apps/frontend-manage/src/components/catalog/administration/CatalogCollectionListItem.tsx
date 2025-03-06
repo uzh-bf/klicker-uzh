@@ -213,16 +213,17 @@ function CatalogCollectionListItem({
       {/* // functionality for users without access to request it for restricted catalog collections */}
       {isRequestable ? (
         <CatalogRequestModal
-          objectType={CatalogObjectType.CatalogCollection}
-          objectId={collection.id}
-          objectName={collection.name}
-          objectOwner={collection.ownerShortname}
           open={requestModal}
           onSuccess={() => {
             setShowRequestSuccessToast(true)
             setRequestModal(false)
           }}
           onClose={() => setRequestModal(false)}
+          objectType={CatalogObjectType.CatalogCollection}
+          objectId={collection.id}
+          objectName={collection.name}
+          objectOwner={collection.ownerShortname}
+          objectAccess={collection.access}
         />
       ) : null}
       <CatalogObjectRequestSuccessToast
