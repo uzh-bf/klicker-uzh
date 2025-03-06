@@ -1799,7 +1799,7 @@ type Query {
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getAnswerCollectionPermissions(collectionId: Int!): [PermissionInfo!]
-  getAnswerCollections: [AnswerCollection!]
+  getAnswerCollectionsElements: [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]

@@ -54,10 +54,9 @@ function CatalogCollectionListItem({
 
   const dropdownItems = useCatalogCollectionActionsDropdown({
     catalogCollectionId: collection.id,
-    isShareable: collection.isOwnerOrAdmin,
-    isDeletable: collection.isOwnerOrAdmin,
+    isOwnerOrAdmin: collection.isOwnerOrAdmin,
+    isShared: collection.isShared,
     isRequestable,
-    isViewable: collection.isShared,
     setSharingModal,
     setDeletionModal,
     setRequestModal,

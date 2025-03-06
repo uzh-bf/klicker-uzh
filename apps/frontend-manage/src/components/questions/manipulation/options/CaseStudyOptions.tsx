@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -10,7 +10,6 @@ import CaseStudyCasesFields, {
 } from './CaseStudyCasesFields'
 import CaseStudyCollectionSelection from './CaseStudyCollectionSelection'
 import CaseStudyCriteriaFields from './CaseStudyCriteriaFields'
-import useFormCollections from './useFormCollections'
 
 interface CaseStudyOptionsProps extends CaseStudySetterProps {
   hasSampleSolution: boolean
@@ -29,14 +28,10 @@ function CaseStudyOptions({
   const [selectedItems, setSelectedItems] = useState<
     { id: number; name: string }[]
   >([])
-  const { data, loading } = useQuery(GetAnswerCollectionsDocument, {
+  const { data, loading } = useQuery(GetAnswerCollectionsElementsDocument, {
     fetchPolicy: 'network-only',
   })
-
-  // combine all collections that are accessible to the user
-  const collections = useFormCollections({
-    dbCollections: data?.getAnswerCollections,
-  })
+  const collections = data?.getAnswerCollectionsElements ?? []
 
   if (loading) {
     return <Loader />

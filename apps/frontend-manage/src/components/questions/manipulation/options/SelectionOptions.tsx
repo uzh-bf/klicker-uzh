@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { GetAnswerCollectionsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormikNumberField,
@@ -15,7 +15,6 @@ import { Dispatch, SetStateAction } from 'react'
 import Select from 'react-select'
 import { ElementFormTypesSelection } from '../types'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
-import useFormCollections from './useFormCollections'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
@@ -32,12 +31,8 @@ function SelectionOptions({
 }: SelectionOptionsProps) {
   const t = useTranslations()
   const [field, _, helpers] = useField<number[]>('options.correctAnswers')
-  const { data, loading } = useQuery(GetAnswerCollectionsDocument)
-
-  // combine all collections that are accessible to the user
-  const collections = useFormCollections({
-    dbCollections: data?.getAnswerCollections,
-  })
+  const { data, loading } = useQuery(GetAnswerCollectionsElementsDocument)
+  const collections = data?.getAnswerCollectionsElements ?? []
 
   // get all answer options from the selected collections
   const collectionAnswers = useSelectAnswerCollectionOptions({

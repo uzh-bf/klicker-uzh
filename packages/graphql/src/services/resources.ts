@@ -134,7 +134,8 @@ export async function createAnswerCollection(
   }
 }
 
-export async function getAnswerCollections(ctx: ContextWithUser) {
+// fetch all answer collections, which are available to be included in elements
+export async function getAnswerCollectionsElements(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: {
       id: ctx.user.sub,
@@ -143,29 +144,8 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
       answerCollections: {
         include: {
           entries: {
-            include: {
-              _count: {
-                select: {
-                  itemUsages: true,
-                },
-              },
-            },
             orderBy: {
               value: 'asc',
-            },
-          },
-          _count: {
-            select: {
-              linkedElements: {
-                where: {
-                  ownerId: ctx.user.sub,
-                },
-              },
-              permissions: {
-                where: {
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-              },
             },
           },
         },
@@ -183,30 +163,12 @@ export async function getAnswerCollections(ctx: ContextWithUser) {
         include: {
           answerCollection: {
             include: {
-              _count: {
-                select: {
-                  linkedElements: {
-                    where: {
-                      ownerId: ctx.user.sub,
-                    },
-                  },
-                },
-              },
               owner: {
                 select: {
                   shortname: true,
                 },
               },
-              // entries are only relevant for users with granted access
               entries: {
-                include: {
-                  _count: {
-                    select: {
-                      // solution usage information is only relevant for write access
-                      itemUsages: true,
-                    },
-                  },
-                },
                 orderBy: {
                   value: 'asc',
                 },

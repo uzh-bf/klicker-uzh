@@ -43,10 +43,9 @@ function AnswerCollectionItem({
 
   const dropdownItems = useAnswerCollectionActionsDropdown({
     isOwner: collection.isOwner ?? false,
-    isShareable: collection.isShareable ?? false,
-    isEditable: collection.isEditable ?? false,
+    isManager: collection.isManager ?? false,
+    isEditor: collection.isEditor ?? false,
     isRemovable: collection.isRemovable ?? false,
-    isDeletionAllowed: collection.isDeletionAllowed ?? false,
     setSharingModal,
     setEditModal,
     setViewingModal,

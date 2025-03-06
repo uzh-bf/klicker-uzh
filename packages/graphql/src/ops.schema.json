@@ -26298,7 +26298,7 @@
             "deprecationReason": null
           },
           {
-            "name": "getAnswerCollections",
+            "name": "getAnswerCollectionsElements",
             "description": null,
             "args": [],
             "type": {

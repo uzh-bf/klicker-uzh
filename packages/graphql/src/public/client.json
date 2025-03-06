@@ -144,7 +144,7 @@
    "GetActiveUserCourses": "877f83a65cb320f69a51a5bf243f0d62bb8cce9e4c1d0bcab8cec8dd367bed86",
    "GetActivityAnalytics": "bcbe895236bd0027e2db37d5884645cfa3230e90a7ce6de893783c5fdc54fa1b",
    "GetAnswerCollectionPermissions": "4c8c78e454c7417fd14c674ff1497d3412058cafc2afdaa291c52b8e529d32e1",
-   "GetAnswerCollections": "9395bc56d0a8f9d6fadeae4d4cfebaefc4b9a5c15e9397bd0d258e26d7011afe",
+   "GetAnswerCollectionsElements": "a8c8fb70e26df472180f8fbc5e0642d425f2ae74f8cde3f88490b0d31b14d0be",
    "GetAnswerCollectionsInfo": "ab7bd3a1fed2c964c849bc011c18da4fce868901e8b57843590f8371fa919b44",
    "GetArtificialInstance": "d4592eed84c19c311bdabf1ef165de0ebabc743dbce61beb1e526e2c6b3a01c8",
    "GetBasicCourseInformation": "14169116abd9278adb08977b9c153403e6065ab0c3d02a6beb38017e1c8b19d6",

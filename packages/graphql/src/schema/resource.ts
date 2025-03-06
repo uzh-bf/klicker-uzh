@@ -60,6 +60,7 @@ export const AnswerCollection = AnswerCollectionRef.implement({
   }),
 })
 
+// TODO: replace this type with something generic and generic sharing modals (should be the same for everything)
 interface ICatalogAnswerCollection extends DB.AnswerCollection {
   objectAccess: DB.ObjectAccess
   ownerShortname?: string

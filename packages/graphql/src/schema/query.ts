@@ -886,11 +886,11 @@ export const Query = builder.queryType({
         },
       }),
 
-      getAnswerCollections: asUser.field({
+      getAnswerCollectionsElements: asUser.field({
         nullable: true,
         type: [AnswerCollection],
         resolve(_, __, ctx) {
-          return ResourcesService.getAnswerCollections(ctx)
+          return ResourcesService.getAnswerCollectionsElements(ctx)
         },
       }),
 
@@ -980,7 +980,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      // TODO: try to remove this type of a catalog answer collection and replace it with something generic, if possible
       getCatalogAnswerCollections: asUser.field({
         nullable: true,
         type: [CatalogSelectionObject],
