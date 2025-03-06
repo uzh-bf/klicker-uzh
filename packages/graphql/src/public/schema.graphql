@@ -344,15 +344,6 @@ input CaseStudySolutionInput {
   itemId: Int!
 }
 
-type CatalogAnswerCollection {
-  description: String!
-  entries: [AnswerCollectionEntry!]
-  id: Int!
-  name: String!
-  objectAccess: ObjectAccess!
-  ownerShortname: String
-}
-
 type CatalogCollection {
   access: ObjectAccess!
   id: String!
@@ -1835,7 +1826,6 @@ type Query {
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleAnswerCollection(id: Int!): AnswerCollection
-  getSingleAnswerCollectionCatalog(catalogCollectionId: String, collectionId: Int!): CatalogAnswerCollection
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]

@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import builder from '../builder.js'
-import { ObjectAccess, PermissionLevel } from './sharing.js'
+import { PermissionLevel } from './sharing.js'
 
 // ----- ANSWER COLLECTIONS -----
 // #region
@@ -57,28 +57,6 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     isImported: t.exposeBoolean('isImported', { nullable: true }),
     isShared: t.exposeBoolean('isShared', { nullable: true }),
     isRemovable: t.exposeBoolean('isRemovable', { nullable: true }),
-  }),
-})
-
-// TODO: remove this type once the modified and generalized setup is in place
-interface ICatalogAnswerCollection extends DB.AnswerCollection {
-  objectAccess: DB.ObjectAccess
-  ownerShortname?: string
-  entries?: DB.AnswerCollectionEntry[]
-}
-export const CatalogAnswerCollectionRef =
-  builder.objectRef<ICatalogAnswerCollection>('CatalogAnswerCollection')
-export const CatalogAnswerCollection = CatalogAnswerCollectionRef.implement({
-  fields: (t) => ({
-    id: t.exposeInt('id'),
-    name: t.exposeString('name'),
-    description: t.exposeString('description'),
-    objectAccess: t.expose('objectAccess', { type: ObjectAccess }),
-    ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
-    entries: t.expose('entries', {
-      type: [AnswerCollectionEntryRef],
-      nullable: true,
-    }),
   }),
 })
 

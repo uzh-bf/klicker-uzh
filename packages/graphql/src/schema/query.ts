@@ -62,7 +62,7 @@ import {
   InstanceUpdateActivityInfo,
   Tag,
 } from './question.js'
-import { AnswerCollection, CatalogAnswerCollection } from './resource.js'
+import { AnswerCollection } from './resource.js'
 import {
   CatalogCollection,
   CatalogObject,
@@ -985,18 +985,6 @@ export const Query = builder.queryType({
         type: [CatalogSelectionObject],
         resolve(_, __, ctx) {
           return SharingService.getCatalogAnswerCollections(ctx)
-        },
-      }),
-
-      getSingleAnswerCollectionCatalog: asUser.field({
-        nullable: true,
-        type: CatalogAnswerCollection,
-        args: {
-          collectionId: t.arg.int({ required: true }),
-          catalogCollectionId: t.arg.string({ required: false }),
-        },
-        resolve(_, args, ctx) {
-          return SharingService.getSingleAnswerCollectionCatalog(args, ctx)
         },
       }),
 
