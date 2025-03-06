@@ -9,7 +9,8 @@
   },
   "scripts": {
     "activitySharingDemo": "tsx activity-sharing.ts",
-    "demo": "tsx index.ts"
+    "demo": "tsx index.ts",
+    "permissionTests": "tsx permissionDerivationTests.ts"
   },
   "type": "module"
 }
