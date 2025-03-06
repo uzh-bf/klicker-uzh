@@ -2128,12 +2128,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
-      importCollectionMessage:
-        'Hier können Sie eine Kopie der Antwort-Sammlung "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie die importierte Antwort-Sammlung direkt verwenden oder bei Bedarf anpassen. Änderungen an der ursprünglichen Antwort-Sammlung haben keinen Einfluss auf Ihre importierte Kopie.',
       showAnswers: 'Antworten anzeigen',
-      importCollection: 'Antwort-Sammlung importieren',
-      importError:
-        'Beim Importieren der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       viewCollection: 'Sammlung ansehen',
       editCollection: 'Sammlung bearbeiten',
       shareCollection: 'Sammlung teilen',
@@ -2231,11 +2226,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
       importObject: 'Objekt importieren',
+      importObjectType: '{object} importieren',
       accessRequested: 'Zugriff beantragt',
       accessGranted: 'Zugriff gewährt',
       importPublicResource: 'Öffentliche Ressource importieren',
-      answerCollectionImportSuccess:
-        'Eine Kopie der Antwort-Sammlung wurde erfolgreich in Ihr Konto importiert.',
       requestPublicResource:
         'Durch das Beantragen des Zugriffs auf eine öffentliche Ressource können Sie das ursprüngliche geteilte Objekt einsehen und/oder bearbeiten, abhängig von den gewährten Berechtigungen. Gewährte Berechtigungen können vom Besitzer entzogen werden. Um eine unabhängige Kopie des Objekts in Ihr eigenes Konto zu importieren, verwenden Sie bitte die Option "Importieren".',
       sharingRequestsExplanation:
@@ -2339,6 +2333,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zugriffsanfrage wurde erfolgreich übermittelt.',
       requestCatalogObjectFailed:
         'Bei der Anforderung des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
+      importCatalogObjectDescription:
+        'Hier können Sie eine Kopie von "<b>{name}</b>" (von {owner}) in Ihr eigenes Konto importieren. Nach dem Import können Sie das Objekt direkt verwenden oder bei Bedarf anpassen. Änderungen am ursprünglichen Objekt haben keinen Einfluss auf Ihre importierte Kopie.',
+      importCatalogObjectSuccess:
+        'Das Objekt wurde erfolgreich in Ihr Konto importiert.',
+      importCatalogObjectFailed:
+        'Beim Importieren des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support.',
       collectionNameRequired:
         'Bitte geben Sie einen Namen für die Katalog-Sammlung an.',
       changeCatalogCollectionName: 'Namen der Katalog-Sammlung ändern',

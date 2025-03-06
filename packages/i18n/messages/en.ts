@@ -2103,12 +2103,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The changes to the answer collection have been saved successfully.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
-      importCollectionMessage:
-        'Here you can import a copy of the answer collection "<b>{name}</b>" (by {owner}) to your own account. After the import is completed, you can directly use the imported answer collection or modify it as needed. Changes to the original answer collection will not affect your imported copy.',
       showAnswers: 'Show Answers',
-      importCollection: 'Import Answer Collection',
-      importError:
-        'An error occurred while importing the answer collection. Please try again or contact the support.',
       viewCollection: 'View Collection',
       editCollection: 'Edit Collection',
       shareCollection: 'Share Collection',
@@ -2203,11 +2198,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
       importObject: 'Import Object',
+      importObjectType: 'Import {object}',
       accessRequested: 'Access requested',
       accessGranted: 'Access granted',
       importPublicResource: 'Import Public Resource',
-      answerCollectionImportSuccess:
-        'A copy of the answer collection was successfully imported into your account.',
       requestPublicResource:
         "By requesting access to a public resource, you will be able to inspect and/or modify the original shared object, depending on the provided permissions. Granted permissions can be revoked by the owner. To import an independent copy of the object into your own account, please use the 'Import' option.",
       sharingRequestsExplanation:
@@ -2307,6 +2301,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The access request was successfully submitted.',
       requestCatalogObjectFailed:
         'An error occurred while requesting the access. Please try again or contact the support.',
+      importCatalogObjectDescription:
+        'Here you can import a copy of "{name}" (by {owner}) into your own account. After the import is completed, you can directly use the imported object or modify it as needed. Changes to the original object will not affect your imported copy.',
+      importCatalogObjectSuccess:
+        'The object was successfully imported into your account.',
+      importCatalogObjectFailed:
+        'An error occurred while importing the object. Please try again or contact the support.',
       collectionNameRequired: 'Please enter a name for the catalog collection.',
       changeCatalogCollectionName: 'Change Catalog Collection Name',
       catalogCollectionNameChangeSuccess:

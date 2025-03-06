@@ -19,10 +19,11 @@ import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
+import CatalogImportModal from './CatalogImportModal'
+import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
 import CatalogObjectRequestSuccessToast from './CatalogObjectRequestSuccessToast'
 import CatalogRequestModal from './CatalogRequestModal'
 import ObjectChangeAccessModal from './ObjectChangeAccessModal'
-import ObjectImportModal from './ObjectImportModal'
 import ObjectRemovalModal from './ObjectRemovalModal'
 import ObjectRequestCancellationModal from './ObjectRequestCancellationModal.tsx'
 import ObjectSharingModal from './ObjectSharingModal'
@@ -55,6 +56,7 @@ function CatalogObjectItem({
 
   // toast states
   const [showRequestSuccessToast, setShowRequestSuccessToast] = useState(false)
+  const [showImportSuccessToast, setShowImportSuccessToast] = useState(false)
 
   // Use the new dropdown hook
   const dropdownItems = useCatalogObjectActionsDropdown({
@@ -157,7 +159,7 @@ function CatalogObjectItem({
         </div>
       </div>
 
-      {/* // functionality for users without access to request it for restricted catalog collections */}
+      {/* functionality for users without access to request it for restricted catalog collections */}
       {!actionsDisabled && !object.isRequested ? (
         <CatalogRequestModal
           open={requestModal}
@@ -179,14 +181,27 @@ function CatalogObjectItem({
         onClose={() => setShowRequestSuccessToast(false)}
       />
 
+      {/* functionality for users to import a copy of a publicly available object */}
       {!actionsDisabled && object.access === ObjectAccess.Public ? (
-        <ObjectImportModal
-          object={object}
+        <CatalogImportModal
           open={importModal}
-          catalogCollectionId={catalogCollectionId}
+          onSuccess={() => {
+            setShowImportSuccessToast(true)
+            setImportModal(false)
+          }}
           onClose={() => setImportModal(false)}
+          objectType={object.objectType}
+          objectId={object.id ?? object.uuid!}
+          objectName={object.name}
+          objectOwner={object.ownerShortname}
+          catalogCollectionId={catalogCollectionId}
         />
       ) : null}
+      <CatalogObjectImportSuccessToast
+        open={showImportSuccessToast}
+        onClose={() => setShowImportSuccessToast(false)}
+      />
+
       {object.isRequested ? (
         <ObjectRequestCancellationModal
           object={object}
