@@ -21,7 +21,7 @@ function useObjectPermissions({
     loading: catalogCollectionPermissionsLoading,
   } = useQuery(GetCatalogCollectionPermissionsDocument, {
     variables: { catalogCollectionId: objectId as string },
-    skip: !open || objectType !== CatalogObjectType.CatalogCollection,
+    skip: skip || objectType !== CatalogObjectType.CatalogCollection,
   })
 
   // query for answer collections
