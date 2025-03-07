@@ -1293,11 +1293,11 @@ type Mutation {
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
+  changeAnswerCollectionPermissionLevel(collectionId: Int!, permissionId: Int!, permissionLevel: PermissionLevel!): PermissionInfo
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean!
   changeCatalogCollectionPermissionLevel(catalogCollectionId: String!, permissionId: Int!, permissionLevel: PermissionLevel!): PermissionInfo
   changeCatalogObjectAccess(access: ObjectAccess!, assignmentId: Int!): Boolean!
-  changeCollectionPermissionLevel(collectionId: Int!, permissionId: Int!, permissionLevel: PermissionLevel!): PermissionInfo
   changeEmailSettings(projectUpdates: Boolean!): User
   changeInitialSettings(locale: LocaleType!, sendUpdates: Boolean!, shortname: String!): User
   changeLiveQuizName(displayName: String!, id: String!, name: String!): LiveQuiz
@@ -1391,8 +1391,8 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
+  revokeAnswerCollectionAccess(collectionId: Int!, permissionId: Int!): Int
   revokeCatalogCollectionAccess(catalogCollectionId: String!, permissionId: Int!): Int
-  revokeCollectionAccess(collectionId: Int!, permissionId: Int!): Int
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!

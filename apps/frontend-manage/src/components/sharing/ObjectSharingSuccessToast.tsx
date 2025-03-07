@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CollectionAccessRemovalErrorToast({
+function ObjectSharingSuccessToast({
   open,
   onClose,
 }: {
@@ -13,15 +13,15 @@ function CollectionAccessRemovalErrorToast({
   return (
     <Toast
       dismissible
-      type="error"
+      type="success"
       openExternal={open}
       onCloseExternal={onClose}
-      duration={6000}
+      duration={3000}
       className={{ root: 'max-w-[30rem]' }}
     >
-      {t('manage.resources.accessRemovalFailed')}
+      {t('manage.sharing.sharingSuccessful')}
     </Toast>
   )
 }
 
-export default CollectionAccessRemovalErrorToast
+export default ObjectSharingSuccessToast

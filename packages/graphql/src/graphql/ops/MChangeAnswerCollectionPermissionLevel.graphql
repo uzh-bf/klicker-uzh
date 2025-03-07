@@ -1,9 +1,9 @@
-mutation ChangeCollectionPermissionLevel(
+mutation ChangeAnswerCollectionPermissionLevel(
   $collectionId: Int!
   $permissionId: Int!
   $permissionLevel: PermissionLevel!
 ) {
-  changeCollectionPermissionLevel(
+  changeAnswerCollectionPermissionLevel(
     collectionId: $collectionId
     permissionId: $permissionId
     permissionLevel: $permissionLevel

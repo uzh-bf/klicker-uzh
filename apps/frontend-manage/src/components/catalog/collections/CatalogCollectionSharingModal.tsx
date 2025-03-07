@@ -19,6 +19,7 @@ import CatalogCollectionPermissionsTable from './CatalogCollectionPermissionsTab
 import CatalogCollectionSharingErrorToast from './CatalogCollectionSharingErrorToast'
 import CatalogCollectionSharingSuccessToast from './CatalogCollectionSharingSuccessToast'
 
+// TODO: replace this and child components with the new unified sharing components
 function CatalogCollectionSharingModal({
   catalogCollectionId,
   catalogCollectionName,
@@ -210,9 +211,6 @@ function CatalogCollectionSharingModal({
                 setRemovalFailure(true)
               }
             }}
-            onNewPermissionSuccess={() => setSharingSuccess(true)}
-            onNewPermissionFailure={() => setSharingFailure(true)}
-            onOwnershipTransfer={onOwnershipTransfer}
             shareObjectCallback={async (values) => {
               const newPermission = await shareCatalogCollection({
                 variables: {
@@ -275,6 +273,9 @@ function CatalogCollectionSharingModal({
                   ?.permissionId !== 'undefined'
               )
             }}
+            onSharingSuccess={() => setSharingSuccess(true)}
+            onSharingFailure={() => setSharingFailure(true)}
+            onOwnershipTransfer={onOwnershipTransfer}
           />
         </div>
       </Modal>

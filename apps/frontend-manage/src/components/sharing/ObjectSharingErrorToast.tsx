@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CollectionSharingSuccessToast({
+function ObjectSharingErrorToast({
   open,
   onClose,
 }: {
@@ -13,15 +13,15 @@ function CollectionSharingSuccessToast({
   return (
     <Toast
       dismissible
-      type="success"
+      type="error"
       openExternal={open}
       onCloseExternal={onClose}
       duration={3000}
       className={{ root: 'max-w-[30rem]' }}
     >
-      {t('manage.resources.sharingSuccessful')}
+      {t('manage.sharing.sharingFailed')}
     </Toast>
   )
 }
 
-export default CollectionSharingSuccessToast
+export default ObjectSharingErrorToast

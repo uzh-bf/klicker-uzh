@@ -12,11 +12,10 @@ import {
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
-import useAnswerCollectionActionsDropdown from '~/lib/hooks/useAnswerCollectionActionsDropdown'
+import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
-import TransferOwnershipModal from '../../sharing/TransferOwnershipModal'
+import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
-import AnswerCollectionSharingModal from './AnswerCollectionSharingModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
 import CollectionRemovalModal from './CollectionRemovalModal'
@@ -146,20 +145,13 @@ function AnswerCollectionItem({
       {/* sharing functionalities modals to add / revoke / ... access */}
       {collection.isManager && (
         <>
-          <AnswerCollectionSharingModal
-            collectionId={collection.id}
-            collectionName={collection.name}
+          <ObjectSharingModalWrapper
+            objectId={collection.id}
+            objectName={collection.name}
+            objectType={CatalogObjectType.AnswerCollection}
+            isOwner={collection.isOwner ?? false}
             open={sharingModal}
             onClose={() => setSharingModal(false)}
-            onOwnershipTransfer={() => setTransferModalOpen(true)}
-            isOwner={collection.isOwner ?? false}
-          />
-          <TransferOwnershipModal
-            open={transferModalOpen}
-            onClose={() => setTransferModalOpen(false)}
-            objectId={collection.id}
-            objectType={CatalogObjectType.AnswerCollection}
-            objectName={collection.name}
           />
           <CollectionDeletionModal
             collection={collection}

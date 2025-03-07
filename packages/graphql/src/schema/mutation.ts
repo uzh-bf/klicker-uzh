@@ -1385,27 +1385,32 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCollectionPermissionLevel: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PermissionInfo,
-        args: {
-          collectionId: t.arg.int({ required: true }),
-          permissionId: t.arg.int({ required: true }),
-          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ResourcesService.changeCollectionPermissionLevel(args, ctx)
-        },
-      }),
+      changeAnswerCollectionPermissionLevel: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: PermissionInfo,
+          args: {
+            collectionId: t.arg.int({ required: true }),
+            permissionId: t.arg.int({ required: true }),
+            permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          },
+          resolve(_, args, ctx) {
+            return ResourcesService.changeAnswerCollectionPermissionLevel(
+              args,
+              ctx
+            )
+          },
+        }),
 
-      revokeCollectionAccess: t.withAuth(asUserFullAccess).int({
+      revokeAnswerCollectionAccess: t.withAuth(asUserFullAccess).int({
         nullable: true,
         args: {
           permissionId: t.arg.int({ required: true }),
           collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.revokeCollectionAccess(args, ctx)
+          return ResourcesService.revokeAnswerCollectionAccess(args, ctx)
         },
       }),
 
