@@ -2,7 +2,6 @@ import { useMutation } from '@apollo/client'
 import { faBan, faCheck } from '@fortawesome/free-solid-svg-icons'
 import {
   ApproveObjectSharingRequestDocument,
-  CatalogObjectType,
   CountCatalogSharingRequestsDocument,
   GetCatalogSharingRequestsDocument,
   ObjectSharingRequest,
@@ -12,8 +11,7 @@ import { Button, Modal, SelectField, Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
-import AnswerCollectionPermissionsTable from '../../resources/answerCollections/AnswerCollectionPermissionsTable'
-import CatalogCollectionPermissionsTable from '../collections/CatalogCollectionPermissionsTable'
+import PermissionsTable from '../../sharing/PermissionsTable'
 
 function SharingRequestApprovalModal({
   request,
@@ -148,16 +146,10 @@ function SharingRequestApprovalModal({
       </div>
 
       <div className="mt-6">
-        {request.objectType === CatalogObjectType.CatalogCollection ? (
-          <CatalogCollectionPermissionsTable
-            activePermissionLevel={permissionLevel}
-          />
-        ) : null}
-        {request.objectType === CatalogObjectType.AnswerCollection ? (
-          <AnswerCollectionPermissionsTable
-            activePermissionLevel={permissionLevel}
-          />
-        ) : null}
+        <PermissionsTable
+          objectType={request.objectType}
+          activePermissionLevel={permissionLevel}
+        />
       </div>
 
       <Toast

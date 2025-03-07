@@ -13,9 +13,9 @@ import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import GrantedPermissionsTable from '../../sharing/GrantedPermissionsTable'
+import PermissionsTable from '../../sharing/PermissionsTable'
 import CatalogCollectionAccessRemovalErrorToast from './CatalogCollectionAccessRemovalErrorToast'
 import CatalogCollectionAccessRemovalSuccessToast from './CatalogCollectionAccessRemovalSuccessToast'
-import CatalogCollectionPermissionsTable from './CatalogCollectionPermissionsTable'
 import CatalogCollectionSharingErrorToast from './CatalogCollectionSharingErrorToast'
 import CatalogCollectionSharingSuccessToast from './CatalogCollectionSharingSuccessToast'
 
@@ -82,7 +82,7 @@ function CatalogCollectionSharingModal({
           })}
         </div>
         <div className="my-4">
-          <CatalogCollectionPermissionsTable />
+          <PermissionsTable objectType={CatalogObjectType.CatalogCollection} />
         </div>
 
         <div className="mt-8">

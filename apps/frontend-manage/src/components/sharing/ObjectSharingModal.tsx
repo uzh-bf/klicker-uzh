@@ -2,12 +2,12 @@ import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import AnswerCollectionPermissionsTable from '../resources/answerCollections/AnswerCollectionPermissionsTable'
 import GrantedPermissionsTable from './GrantedPermissionsTable'
 import ObjectAccessRemovalErrorToast from './ObjectAccessRemovalErrorToast'
 import ObjectAccessRemovalSuccessToast from './ObjectAccessRemovalSuccessToast'
 import ObjectSharingErrorToast from './ObjectSharingErrorToast'
 import ObjectSharingSuccessToast from './ObjectSharingSuccessToast'
+import PermissionsTable from './PermissionsTable'
 import useObjectPermissions from './useObjectPermissions'
 import useObjectSharing from './useObjectSharing'
 import usePermissionLevelChange from './usePermissionLevelChange'
@@ -89,8 +89,7 @@ function ObjectSharingModal({
           })}
         </div>
         <div className="my-4">
-          {/* // TODO: replace this through more generic component */}
-          <AnswerCollectionPermissionsTable />
+          <PermissionsTable objectType={objectType} />
         </div>
 
         <div className="mt-8">
