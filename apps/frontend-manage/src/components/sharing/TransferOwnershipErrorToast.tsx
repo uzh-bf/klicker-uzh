@@ -1,27 +1,28 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface OwnershipTransferSuccessToastProps {
+interface TransferOwnershipErrorToastProps {
   open: boolean
   onClose: () => void
 }
 
-function OwnershipTransferSuccessToast({
+function TransferOwnershipErrorToast({
   open,
   onClose,
-}: OwnershipTransferSuccessToastProps) {
+}: TransferOwnershipErrorToastProps) {
   const t = useTranslations()
 
   return (
     <Toast
-      type="success"
+      dismissible
+      type="error"
       openExternal={open}
       onCloseExternal={onClose}
       className={{ root: 'max-w-[32rem]' }}
     >
-      {t('manage.resources.ownershipTransferSuccess')}
+      {t('manage.sharing.ownershipTransferError')}
     </Toast>
   )
 }
 
-export default OwnershipTransferSuccessToast
+export default TransferOwnershipErrorToast

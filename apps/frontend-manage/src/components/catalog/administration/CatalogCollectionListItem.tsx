@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
+import TransferOwnershipModal from '../../sharing/TransferOwnershipModal'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogObjectRequestSuccessToast from '../actions/CatalogObjectRequestSuccessToast'
 import CatalogRequestModal from '../actions/CatalogRequestModal'
@@ -24,7 +25,6 @@ import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDele
 import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
 import CatalogCollectionSharingModal from '../collections/CatalogCollectionSharingModal'
-import TransferCatalogCollectionOwnershipModal from '../collections/TransferCatalogCollectionOwnershipModal'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
 function CatalogCollectionListItem({
@@ -176,11 +176,12 @@ function CatalogCollectionListItem({
             isOwner={collection.isOwner ?? false}
             onOwnershipTransfer={() => setTransferModal(true)}
           />
-          <TransferCatalogCollectionOwnershipModal
-            catalogCollectionId={collection.id}
-            catalogCollectionName={collection.name}
+          <TransferOwnershipModal
             open={transferModal}
             onClose={() => setTransferModal(false)}
+            objectId={collection.id}
+            objectType={CatalogObjectType.CatalogCollection}
+            objectName={collection.name}
           />
           <CatalogCollectionDeletionModal
             catalogCollectionId={collection.id}
@@ -201,6 +202,7 @@ function CatalogCollectionListItem({
           />
         </>
       ) : null}
+
       {collection.isEditor ? (
         <CatalogCollectionNameChangeModal
           catalogCollectionId={collection.id}
@@ -210,7 +212,7 @@ function CatalogCollectionListItem({
         />
       ) : null}
 
-      {/* // functionality for users without access to request it for restricted catalog collections */}
+      {/* functionality for users without access to request it for restricted catalog collections */}
       {isRequestable ? (
         <CatalogRequestModal
           open={requestModal}

@@ -12,7 +12,7 @@ import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
-import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
+import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
 
 function DirectSharingForm({
   type,
@@ -79,7 +79,7 @@ function DirectSharingForm({
         })
         .test(
           'either-user-or-group',
-          t('manage.resources.usernameEmailOrGroupRequired'),
+          t('manage.sharing.usernameEmailOrGroupRequired'),
           function (values) {
             const { usernameOrEmail, userGroupId } = values
             return (
@@ -88,7 +88,7 @@ function DirectSharingForm({
           }
         )}
     >
-      {({ values, isSubmitting, isValid, submitForm }) => (
+      {({ isSubmitting, isValid, submitForm }) => (
         <tr className="border-t border-gray-200 hover:bg-gray-50">
           <td className="px-4 py-3 text-sm text-gray-900">
             <FormikTextField
@@ -107,7 +107,7 @@ function DirectSharingForm({
             <FormikSelectField
               name="userGroupId"
               id="userGroupId"
-              placeholder={t('manage.resources.noUserGroupSelected')}
+              placeholder={t('manage.sharing.noUserGroupSelected')}
               items={[]} // TODO: query and add available user groups
               disabled={isSubmitting}
               className={{

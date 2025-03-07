@@ -2140,8 +2140,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyCatalogAssignments: 'Katalog-Zuweisungen bearbeiten',
       modifyPermissions: 'Berechtigungen bearbeiten',
       revokeAccess: 'Zugriff entziehen',
-      transferOwnership: 'Eigentumsrechte übertragen',
-      grantedPermissions: 'Bestehende Berechtigungen',
       sharingSuccessful: 'Die Antwort-Sammlung wurde erfolgreich geteilt.',
       sharingFailed:
         'Beim Teilen der Antwort-Sammlung ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
@@ -2167,35 +2165,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removalFailed:
         'Beim Entfernen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
-      permissionsREAD: 'Leserechte',
-      permissionsWRITE: 'Schreibrechte',
-      permissionsADMIN: 'Admin-rechte',
-      permissionsEXECUTE: 'Ausführungsrechte',
-      noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
-      usernameEmailOrGroupRequired:
-        'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
       transferOwnershipTitle: 'Eigentumsübertragung der Sammlung',
-      importantInformation: 'Wichtige Information',
-      transferOwnershipCollectionDescription:
-        'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{collectionName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
-      confirmTransfer: 'Eigentumsrechte übertragen',
-      ownershipTransferSuccess:
-        'Die Eigentumsrechte wurden erfolgreich übertragen.',
-      ownershipTransferError:
-        'Bei der Übertragung der Eigentumsrechte ist leider ein Fehler aufgetreten. Bitte stellen Sie sicher, dass E-Mail Adresse / Nutzername korrekt sind.',
-      usernameOrEmailRequired:
-        'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',
       accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
       accessRemovalFailed:
         'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      revokeAccessDisabledTooltip:
-        'Der Zugriff kann nicht entzogen werden, da dieser Nutzer die Sammlung aktiv verwendet.',
-      modifyOwnPermissionsTitle: 'Eigenen Zugriff ändern',
-      ownAccess: '(Sie)',
-      removeOwnPermissionsWarning:
-        'Sie sind dabei, Ihren individuellen Zugriff auf diese Ressource zu entziehen. Nach der Bestätigung können Sie unter Umständen nicht mehr auf die Ressource zugreifen. Diese Aktion kann nicht rückgängig gemacht werden. Möchten Sie wirklich fortfahren?',
-      changeOwnPermissionsWarning:
-        'Sie sind dabei, Ihre eigenen Zugriffsrechte auf {permissionLevel} zu ändern. Dies kann Ihre Möglichkeit einschränken, bestimmte Aktionen mit dieser Ressource durchzuführen, einschließlich der erneuten Änderung Ihrer Zugriffsrechte. Möchten Sie wirklich fortfahren?',
     },
     userGroups: {
       comingSoon:
@@ -2299,15 +2272,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       revokeAccess: 'Zugriff entziehen',
       deleteCollection: 'Sammlung löschen',
       removeObject: 'Objekt entfernen',
-      transferOwnership: 'Eigentumsrechte übertragen',
       sharingSuccessful: 'Die Katalog-Sammlung wurde erfolgreich geteilt.',
       sharingFailed:
         'Beim Teilen der Katalog-Sammlung ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
       accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
       accessRemovalFailed:
         'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      transferOwnershipCollectionDescription:
-        'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{catalogCollectionName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       deleteCatalogCollectionTitle: 'Katalogsammlung löschen',
       deleteCatalogCollectionDescription:
         'Sind Sie sicher, dass Sie die Katalogsammlung "{name}" löschen möchten? Dies entfernt alle Objekte aus der Katalogsammlung und verhindert, dass Benutzer über die Katalogsammlung auf diese Objekte zugreifen können.',
@@ -2346,6 +2316,37 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Name der Katalog-Sammlung wurde erfolgreich geändert.',
       catalogCollectionNameChangeError:
         'Beim Ändern des Namens der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+    },
+    sharing: {
+      permissionsREAD: 'Leserechte',
+      permissionsWRITE: 'Schreibrechte',
+      permissionsADMIN: 'Admin-rechte',
+      permissionsEXECUTE: 'Ausführungsrechte',
+      grantedPermissions: 'Bestehende Berechtigungen',
+      transferOwnership: 'Eigentumsrechte übertragen',
+      importantInformation: 'Wichtige Information',
+      usernameOrEmailRequired:
+        'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',
+      confirmTransferOwnership: 'Eigentumsrechte übertragen',
+      ownershipTransferSuccess:
+        'Die Eigentumsrechte wurden erfolgreich übertragen.',
+      ownershipTransferError:
+        'Bei der Übertragung der Eigentumsrechte ist leider ein Fehler aufgetreten. Bitte stellen Sie sicher, dass E-Mail Adresse / Nutzername korrekt sind.',
+      modifyOwnPermissionsTitle: 'Eigenen Zugriff ändern',
+      ownAccess: '(Sie)',
+      removeOwnPermissionsWarning:
+        'Sie sind dabei, Ihren individuellen Zugriff auf diese Ressource zu entziehen. Nach der Bestätigung können Sie unter Umständen nicht mehr auf die Ressource zugreifen. Diese Aktion kann nicht rückgängig gemacht werden. Möchten Sie wirklich fortfahren?',
+      changeOwnPermissionsWarning:
+        'Sie sind dabei, Ihre eigenen Zugriffsrechte auf {permissionLevel} zu ändern. Dies kann Ihre Möglichkeit einschränken, bestimmte Aktionen mit dieser Ressource durchzuführen, einschließlich der erneuten Änderung Ihrer Zugriffsrechte. Möchten Sie wirklich fortfahren?',
+      revokeAccessDisabledTooltip:
+        'Der Zugriff kann nicht entzogen werden, da dieser Nutzer die Sammlung aktiv verwendet.',
+      noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
+      usernameEmailOrGroupRequired:
+        'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
+      infoTransferOwnershipCATALOG_COLLECTION:
+        'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipANSWER_COLLECTION:
+        'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

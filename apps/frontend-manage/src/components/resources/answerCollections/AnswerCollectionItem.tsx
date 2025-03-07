@@ -5,18 +5,21 @@ import {
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
+import {
+  AnswerCollection,
+  CatalogObjectType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import useAnswerCollectionActionsDropdown from '~/lib/hooks/useAnswerCollectionActionsDropdown'
-import ObjectPermissionLevel from '../ObjectPermissionLevel'
+import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
+import TransferOwnershipModal from '../../sharing/TransferOwnershipModal'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionSharingModal from './AnswerCollectionSharingModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
 import CollectionRemovalModal from './CollectionRemovalModal'
-import TransferAnswerCollectionOwnershipModal from './TransferAnswerCollectionOwnershipModal'
 
 function AnswerCollectionItem({
   collection,
@@ -151,11 +154,12 @@ function AnswerCollectionItem({
             onOwnershipTransfer={() => setTransferModalOpen(true)}
             isOwner={collection.isOwner ?? false}
           />
-          <TransferAnswerCollectionOwnershipModal
+          <TransferOwnershipModal
             open={transferModalOpen}
             onClose={() => setTransferModalOpen(false)}
-            collectionId={collection.id}
-            collectionName={collection.name}
+            objectId={collection.id}
+            objectType={CatalogObjectType.AnswerCollection}
+            objectName={collection.name}
           />
           <CollectionDeletionModal
             collection={collection}

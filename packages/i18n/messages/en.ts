@@ -2115,8 +2115,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       modifyCatalogAssignments: 'Modify Catalog Assignments',
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
-      transferOwnership: 'Transfer Ownership',
-      grantedPermissions: 'Granted Permissions',
       sharingSuccessful: 'The answer collection was shared successfully.',
       sharingFailed:
         'An error occurred while sharing the answer collection or the specified user could not be found.',
@@ -2142,33 +2140,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removalFailed:
         'An error occurred while removing the answer collection. Please try again or contact the support.',
       cancelSharingRequest: 'Cancel Sharing Request',
-      permissionsREAD: 'Read permissions',
-      permissionsWRITE: 'Write permissions',
-      permissionsADMIN: 'Admin permissions',
-      permissionsEXECUTE: 'Execution permissions',
-      noUserGroupSelected: 'No user group selected',
-      usernameEmailOrGroupRequired:
-        'Please enter a username / email address or select a user group.',
       transferOwnershipTitle: 'Transfer Collection Ownership',
-      importantInformation: 'Important Information',
-      transferOwnershipCollectionDescription:
-        'You are about to transfer all ownership rights of the answer collection <b>{collectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
-      confirmTransfer: 'Transfer Ownership',
-      ownershipTransferSuccess: 'Ownership successfully transferred',
-      ownershipTransferError:
-        'An error occurred while transferring ownership. Please make sure the email address or username is correct and try again.',
-      usernameOrEmailRequired: 'Please enter a username or email address.',
       accessRemovalSuccessful: 'Access has been successfully removed.',
       accessRemovalFailed:
         'Failed to remove access. Please try again or contact support.',
-      revokeAccessDisabledTooltip:
-        'The access to the answer collection cannot be revoked because this user is actively using the collection.',
-      modifyOwnPermissionsTitle: 'Modify your own access',
-      ownAccess: '(you)',
-      removeOwnPermissionsWarning:
-        'You are about to revoke your individual access rights to this resource. Once confirmed, you might no longer be able to access or modify this resource. This action cannot be undone. Are you sure you want to proceed?',
-      changeOwnPermissionsWarning:
-        'You are about to change your own access level to {permissionLevel}. This might limit your ability to perform certain actions on this resource, including changing your access level back. Are you sure you want to proceed?',
     },
     userGroups: {
       comingSoon:
@@ -2268,15 +2243,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       revokeAccess: 'Revoke Access',
       deleteCollection: 'Delete Collection',
       removeObject: 'Remove Object',
-      transferOwnership: 'Transfer Ownership',
       sharingSuccessful: 'The catalog collection was shared successfully.',
       sharingFailed:
         'An error occurred while sharing the catalog collection or the specified user could not be found.',
       accessRemovalSuccessful: 'Access has been successfully removed.',
       accessRemovalFailed:
         'Failed to remove access. Please try again or contact support.',
-      transferOwnershipCollectionDescription:
-        'You are about to transfer all ownership rights of the catalog collection <b>{catalogCollectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       deleteCatalogCollectionTitle: 'Delete Catalog Collection',
       deleteCatalogCollectionDescription:
         'Are you sure you want to delete the catalog collection "{name}"? This will remove all objects from the catalog collection and prevent users from accessing these objects through the catalog collection.',
@@ -2314,6 +2286,35 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the catalog collection was successfully changed.',
       catalogCollectionNameChangeError:
         'An error occurred while changing the name of the catalog collection. Please try again.',
+    },
+    sharing: {
+      permissionsREAD: 'Read permissions',
+      permissionsWRITE: 'Write permissions',
+      permissionsADMIN: 'Admin permissions',
+      permissionsEXECUTE: 'Execution permissions',
+      grantedPermissions: 'Granted Permissions',
+      transferOwnership: 'Transfer Ownership',
+      importantInformation: 'Important Information',
+      usernameOrEmailRequired: 'Please enter a username or email address.',
+      confirmTransferOwnership: 'Transfer Ownership',
+      ownershipTransferSuccess: 'Ownership successfully transferred',
+      ownershipTransferError:
+        'An error occurred while transferring ownership. Please make sure the email address or username is correct and try again.',
+      modifyOwnPermissionsTitle: 'Modify your own access',
+      ownAccess: '(you)',
+      removeOwnPermissionsWarning:
+        'You are about to revoke your individual access rights to this resource. Once confirmed, you might no longer be able to access or modify this resource. This action cannot be undone. Are you sure you want to proceed?',
+      changeOwnPermissionsWarning:
+        'You are about to change your own access level to {permissionLevel}. This might limit your ability to perform certain actions on this resource, including changing your access level back. Are you sure you want to proceed?',
+      revokeAccessDisabledTooltip:
+        'The access to the answer collection cannot be revoked because this user is actively using the collection.',
+      noUserGroupSelected: 'No user group selected',
+      usernameEmailOrGroupRequired:
+        'Please enter a username / email address or select a user group.',
+      infoTransferOwnershipCATALOG_COLLECTION:
+        'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipANSWER_COLLECTION:
+        'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

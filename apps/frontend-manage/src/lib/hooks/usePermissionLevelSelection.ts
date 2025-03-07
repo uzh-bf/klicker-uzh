@@ -15,7 +15,7 @@ function usePermissionLevelSelection({ type }: { type: CatalogObjectType }) {
     PermissionLevel.Write,
     PermissionLevel.Admin,
   ].map((level) => ({
-    label: t(`manage.resources.permissions${level}`),
+    label: t(`manage.sharing.permissions${level}`),
     value: level,
     data: { cy: `permission-level-${level}` },
   }))

@@ -12,7 +12,7 @@ import {
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import GrantedPermissionsTable from '../../resources/sharing/GrantedPermissionsTable'
+import GrantedPermissionsTable from '../../sharing/GrantedPermissionsTable'
 import CatalogCollectionAccessRemovalErrorToast from './CatalogCollectionAccessRemovalErrorToast'
 import CatalogCollectionAccessRemovalSuccessToast from './CatalogCollectionAccessRemovalSuccessToast'
 import CatalogCollectionPermissionsTable from './CatalogCollectionPermissionsTable'

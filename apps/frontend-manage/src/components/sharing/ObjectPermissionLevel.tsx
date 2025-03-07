@@ -36,7 +36,7 @@ function ObjectPermissionLevel({
     >
       <FontAwesomeIcon icon={icon} size="sm" />
       <span className="text-sm">
-        {t(`manage.resources.permissions${permissionLevel}`)}
+        {t(`manage.sharing.permissions${permissionLevel}`)}
       </span>
     </Badge>
   )

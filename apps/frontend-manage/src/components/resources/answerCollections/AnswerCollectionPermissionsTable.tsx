@@ -1,6 +1,6 @@
 import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import PermissionsTable from '../sharing/PermissionsTable'
+import PermissionsTable from '../../sharing/PermissionsTable'
 
 function AnswerCollectionPermissionsTable({
   activePermissionLevel,
@@ -42,7 +42,7 @@ function AnswerCollectionPermissionsTable({
           permissions: [false, false, true, true],
         },
         {
-          action: t('manage.resources.transferOwnership'),
+          action: t('manage.sharing.transferOwnership'),
           permissions: [false, false, false, true],
         },
       ]}
