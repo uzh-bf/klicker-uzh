@@ -3,10 +3,13 @@ import {
   CatalogObjectType,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
+  GetCatalogCollectionInfoDocument,
+  GetCatalogCollectionPermissionsDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   PermissionLevel,
   ShareAnswerCollectionDocument,
+  ShareCatalogCollectionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to revoke the permission for a certain object
@@ -34,16 +37,91 @@ function useObjectSharing({
 } {
   const [shareAnswerCollection, { loading: sharingAnswerCollection }] =
     useMutation(ShareAnswerCollectionDocument)
+  const [shareCatalogCollection, { loading: sharingCatalogCollection }] =
+    useMutation(ShareCatalogCollectionDocument)
 
   if (objectType === CatalogObjectType.CatalogCollection) {
-    // TODO: implement
-    return {
-      onShareObject: async () => {
-        console.error('Unsupported object type', objectType)
+    const onShareCatalogCollection = async ({
+      usernameOrEmail,
+      userGroupId,
+      permissionLevel,
+    }: {
+      usernameOrEmail?: string
+      userGroupId?: number
+      permissionLevel: PermissionLevel
+    }) => {
+      try {
+        const res = await shareCatalogCollection({
+          variables: {
+            catalogCollectionId: objectId as string,
+            usernameOrEmail: usernameOrEmail,
+            userGroupId:
+              typeof usernameOrEmail === 'undefined' ? userGroupId : undefined,
+            permissionLevel: permissionLevel,
+          },
+          update: (cache, { data }) => {
+            if (!data?.shareCatalogCollection) return
+
+            const prevPermissions = cache.readQuery({
+              query: GetCatalogCollectionPermissionsDocument,
+              variables: {
+                catalogCollectionId: objectId as string,
+              },
+            })
+
+            if (!prevPermissions?.getCatalogCollectionPermissions) {
+              return
+            }
+
+            // replace the permission that was just added (if it already exists) and add it otherwise
+            const newPermissions =
+              prevPermissions.getCatalogCollectionPermissions.filter(
+                (permission) =>
+                  permission.permissionId !==
+                  data.shareCatalogCollection!.permissionId
+              )
+            newPermissions.push(data.shareCatalogCollection)
+
+            cache.writeQuery({
+              query: GetCatalogCollectionPermissionsDocument,
+              variables: {
+                catalogCollectionId: objectId as string,
+              },
+              data: {
+                getCatalogCollectionPermissions: newPermissions,
+              },
+            })
+          },
+          refetchQueries: [
+            {
+              query: GetCatalogCollectionInfoDocument,
+              variables: { catalogCollectionId },
+            },
+            {
+              query: GetCatalogObjectsDocument,
+              variables: { catalogCollectionId },
+            },
+            GetCatalogSharingRequestsDocument,
+          ],
+        })
+
+        if (
+          typeof res?.data?.shareCatalogCollection?.permissionId !== 'undefined'
+        ) {
+          return true
+        } else {
+          return false
+        }
+      } catch (error) {
+        console.error(error)
         onError()
         return false
-      },
-      objectSharing: false,
+      }
+    }
+
+    return {
+      onShareObject: onShareCatalogCollection,
+      objectSharing: sharingCatalogCollection,
     }
   } else if (objectType === CatalogObjectType.AnswerCollection) {
     const onShareAnswerCollection = async ({

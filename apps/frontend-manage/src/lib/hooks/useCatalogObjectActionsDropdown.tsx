@@ -1,7 +1,11 @@
 import { faCopy, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { faArrowUpFromBracket, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CatalogObject, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CatalogObject,
+  CatalogObjectType,
+  ObjectAccess,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 
@@ -93,7 +97,7 @@ function useCatalogObjectActionsDropdown({
               icon={faArrowUpFromBracket}
               className="mr-2.5 h-4 w-4"
             />
-            {t('manage.catalog.shareCatalogCollection')}
+            {t(`manage.sharing.share${CatalogObjectType.CatalogCollection}`)}
           </div>
         ),
         onClick: (e: React.MouseEvent<HTMLDivElement>) => {

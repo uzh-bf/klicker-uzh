@@ -2223,11 +2223,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       collectionCreationError:
         'An error occurred while creating the catalog collection. Please try again.',
       backToCatalogOverview: 'back to Catalog Overview',
-      shareCatalogCollection: 'Share Collection',
       deleteCatalogCollection: 'Delete Collection',
       openCatalogCollection: 'Open Collection',
-      infoCatalogCollectionSharing:
-        'This view allows you to share the catalog collection "<b>{name}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
       browseCatalogCollection: 'Browse Collection / Request Included Objects',
       modifyContent: 'Modify Content',
       modifyPermissions: 'Modify Permissions',
@@ -2304,6 +2301,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
+      infoSharingCATALOG_COLLECTION:
+        'This view allows you to share the catalog collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
       sharingSuccessful: 'The object was shared successfully.',
       sharingFailed:
         'An error occurred while sharing the object or the specified user could not be found.',

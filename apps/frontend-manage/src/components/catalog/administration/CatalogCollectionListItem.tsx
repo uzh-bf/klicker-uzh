@@ -16,7 +16,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
-import TransferOwnershipModal from '../../sharing/TransferOwnershipModal'
+import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogObjectRequestSuccessToast from '../actions/CatalogObjectRequestSuccessToast'
 import CatalogRequestModal from '../actions/CatalogRequestModal'
@@ -24,7 +24,6 @@ import CatalogCollectionChangeAccessModal from '../collections/CatalogCollection
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
 import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
-import CatalogCollectionSharingModal from '../collections/CatalogCollectionSharingModal'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
 function CatalogCollectionListItem({
@@ -37,7 +36,6 @@ function CatalogCollectionListItem({
 
   // modal states
   const [sharingModal, setSharingModal] = useState(false)
-  const [transferModal, setTransferModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
   const [requestModal, setRequestModal] = useState(false)
   const [changeAccessModal, setChangeAccessModal] = useState(false)
@@ -168,20 +166,13 @@ function CatalogCollectionListItem({
 
       {collection.isManager ? (
         <>
-          <CatalogCollectionSharingModal
-            catalogCollectionId={collection.id}
-            catalogCollectionName={collection.name}
+          <ObjectSharingModalWrapper
             open={sharingModal}
             onClose={() => setSharingModal(false)}
-            isOwner={collection.isOwner ?? false}
-            onOwnershipTransfer={() => setTransferModal(true)}
-          />
-          <TransferOwnershipModal
-            open={transferModal}
-            onClose={() => setTransferModal(false)}
-            objectId={collection.id}
-            objectType={CatalogObjectType.CatalogCollection}
+            objectUuid={collection.id}
             objectName={collection.name}
+            objectType={CatalogObjectType.CatalogCollection}
+            isOwner={collection.isOwner ?? false}
           />
           <CatalogCollectionDeletionModal
             catalogCollectionId={collection.id}

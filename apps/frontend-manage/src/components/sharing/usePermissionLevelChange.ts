@@ -2,8 +2,11 @@ import { useMutation } from '@apollo/client'
 import {
   CatalogObjectType,
   ChangeAnswerCollectionPermissionLevelDocument,
+  ChangeCatalogCollectionPermissionLevelDocument,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
+  GetCatalogCollectionInfoDocument,
+  GetCatalogCollectionPermissionsDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   PermissionLevel,
@@ -32,15 +35,93 @@ function usePermissionLevelChange({
     changeAnswerCollectionPermissionLevel,
     { loading: answerCollectionPermissionChanging },
   ] = useMutation(ChangeAnswerCollectionPermissionLevelDocument)
+  const [
+    changeCatalogCollectionPermissionLevel,
+    { loading: catalogCollectionPermissionChanging },
+  ] = useMutation(ChangeCatalogCollectionPermissionLevelDocument)
 
   if (objectType === CatalogObjectType.CatalogCollection) {
-    // TODO: implement
-    return {
-      onPermissionLevelChange: async () => {
-        console.error('Unsupported object type', objectType)
+    const onCatalogCollectionPermissionChange = async ({
+      permissionId,
+      newPermissionLevel,
+    }: {
+      permissionId: number
+      newPermissionLevel: PermissionLevel
+    }) => {
+      try {
+        const res = await changeCatalogCollectionPermissionLevel({
+          variables: {
+            catalogCollectionId: objectId as string,
+            permissionId,
+            permissionLevel: newPermissionLevel,
+          },
+          update: (cache, { data }) => {
+            if (!data?.changeCatalogCollectionPermissionLevel) return
+
+            const prevPermissions = cache.readQuery({
+              query: GetCatalogCollectionPermissionsDocument,
+              variables: {
+                catalogCollectionId: objectId as string,
+              },
+            })
+
+            if (!prevPermissions?.getCatalogCollectionPermissions) {
+              return
+            }
+
+            const modifiedPermissionId =
+              data.changeCatalogCollectionPermissionLevel!.permissionId
+            const newPermissionLevel =
+              data.changeCatalogCollectionPermissionLevel!.permissionLevel
+            cache.writeQuery({
+              query: GetCatalogCollectionPermissionsDocument,
+              variables: {
+                catalogCollectionId: objectId as string,
+              },
+              data: {
+                getCatalogCollectionPermissions:
+                  prevPermissions.getCatalogCollectionPermissions.map(
+                    (permission) =>
+                      permission.permissionId === modifiedPermissionId
+                        ? {
+                            ...permission,
+                            permissionLevel: newPermissionLevel,
+                          }
+                        : permission
+                  ),
+              },
+            })
+          },
+          refetchQueries: [
+            {
+              query: GetCatalogCollectionInfoDocument,
+              variables: { catalogCollectionId },
+            },
+            {
+              query: GetCatalogObjectsDocument,
+              variables: { catalogCollectionId },
+            },
+            GetCatalogSharingRequestsDocument,
+          ],
+        })
+
+        if (
+          typeof res.data?.changeCatalogCollectionPermissionLevel
+            ?.permissionId !== 'undefined'
+        ) {
+          return true
+        } else {
+          return false
+        }
+      } catch (error) {
+        console.error(error)
         return false
-      },
-      permissionChanging: false,
+      }
+    }
+
+    return {
+      onPermissionLevelChange: onCatalogCollectionPermissionChange,
+      permissionChanging: catalogCollectionPermissionChanging,
     }
   } else if (objectType === CatalogObjectType.AnswerCollection) {
     const onAnswerCollectionPermissionChange = async ({

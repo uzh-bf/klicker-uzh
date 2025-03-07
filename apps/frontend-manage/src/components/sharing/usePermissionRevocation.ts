@@ -3,9 +3,12 @@ import {
   CatalogObjectType,
   GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
+  GetCatalogCollectionInfoDocument,
+  GetCatalogCollectionPermissionsDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
   RevokeAnswerCollectionAccessDocument,
+  RevokeCatalogCollectionAccessDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to revoke the permission for a certain object
@@ -31,16 +34,80 @@ function usePermissionRevocation({
     revokeAnswerCollectionAccess,
     { loading: revokingAnswerCollectionAccess },
   ] = useMutation(RevokeAnswerCollectionAccessDocument)
+  const [
+    revokeCatalogCollectionAccess,
+    { loading: revokingCatalogCollectionAccess },
+  ] = useMutation(RevokeCatalogCollectionAccessDocument)
 
   if (objectType === CatalogObjectType.CatalogCollection) {
-    // TODO: implement
-    return {
-      onPermissionRevocation: async () => {
-        console.error('Unsupported object type', objectType)
+    const onRequestCatalogCollection = async ({
+      permissionId,
+    }: {
+      permissionId: number
+    }) => {
+      try {
+        const res = await revokeCatalogCollectionAccess({
+          variables: {
+            catalogCollectionId: objectId as string,
+            permissionId,
+          },
+          update: (cache, { data }) => {
+            const prevPermissions = cache.readQuery({
+              query: GetCatalogCollectionPermissionsDocument,
+              variables: {
+                catalogCollectionId: objectId as string,
+              },
+            })
+
+            const removedId = data?.revokeCatalogCollectionAccess
+            if (
+              !prevPermissions?.getCatalogCollectionPermissions ||
+              typeof removedId === 'undefined'
+            ) {
+              return
+            }
+
+            cache.writeQuery({
+              query: GetCatalogCollectionPermissionsDocument,
+              variables: {
+                catalogCollectionId: objectId as string,
+              },
+              data: {
+                getCatalogCollectionPermissions:
+                  prevPermissions.getCatalogCollectionPermissions.filter(
+                    (permission) => permission.permissionId !== removedId
+                  ),
+              },
+            })
+          },
+          refetchQueries: [
+            {
+              query: GetCatalogCollectionInfoDocument,
+              variables: { catalogCollectionId },
+            },
+            {
+              query: GetCatalogObjectsDocument,
+              variables: { catalogCollectionId },
+            },
+            GetCatalogSharingRequestsDocument,
+          ],
+        })
+
+        if (res.data?.revokeCatalogCollectionAccess) {
+          return true
+        } else {
+          return false
+        }
+      } catch (error) {
+        console.error(error)
         onError()
         return false
-      },
-      permissionRevoking: false,
+      }
+    }
+
+    return {
+      onPermissionRevocation: onRequestCatalogCollection,
+      permissionRevoking: revokingCatalogCollectionAccess,
     }
   } else if (objectType === CatalogObjectType.AnswerCollection) {
     const onRequestAnswerCollection = async ({

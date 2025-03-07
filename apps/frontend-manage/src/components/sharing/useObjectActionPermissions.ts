@@ -19,7 +19,7 @@ function useObjectActionPermissions({
         permissions: [false, true, true, true],
       },
       {
-        action: t('manage.catalog.shareCatalogCollection'),
+        action: t(`manage.sharing.share${CatalogObjectType.CatalogCollection}`),
         permissions: [false, false, true, true],
       },
       {

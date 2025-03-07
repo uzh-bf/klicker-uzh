@@ -24,7 +24,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="transfer-ownership"]').should(
       ownership ? 'exist' : 'not.exist'
     )
-    cy.get('[data-cy="close-share-catalog-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
 
     cy.get(
       `[data-cy="catalog-collection-${data.CCPublic}-actions"]`
@@ -461,7 +461,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="share-catalog-collection"]').click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
     cy.get('[data-cy="new-permission-username-or-email"]').should('exist')
-    cy.get('[data-cy="close-share-catalog-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
 
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
