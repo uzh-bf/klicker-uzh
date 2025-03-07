@@ -1,7 +1,7 @@
 import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { useState } from 'react'
 import AnswerCollectionSharingModal from '../../resources/answerCollections/AnswerCollectionSharingModal'
-import TransferAnswerCollectionOwnershipModal from '../../resources/answerCollections/TransferAnswerCollectionOwnershipModal'
+import TransferOwnershipModal from '../../sharing/TransferOwnershipModal'
 
 function ObjectSharingModal({
   objectId,
@@ -24,6 +24,7 @@ function ObjectSharingModal({
 }) {
   const [transferModalOpen, setTransferModalOpen] = useState(false)
 
+  // TODO: once the sharing modal has been generalized as well, think about directly adding these two modals to the component above
   if (
     objectType === CatalogObjectType.AnswerCollection &&
     typeof objectId === 'number'
@@ -39,11 +40,12 @@ function ObjectSharingModal({
           onClose={onClose}
           onOwnershipTransfer={() => setTransferModalOpen(true)}
         />
-        <TransferAnswerCollectionOwnershipModal
+        <TransferOwnershipModal
           open={transferModalOpen}
           onClose={() => setTransferModalOpen(false)}
-          collectionId={objectId}
-          collectionName={objectName}
+          objectId={objectId}
+          objectType={CatalogObjectType.AnswerCollection}
+          objectName={objectName}
           catalogCollectionId={catalogCollectionId}
         />
       </>

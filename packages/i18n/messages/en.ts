@@ -2141,8 +2141,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while removing the answer collection. Please try again or contact the support.',
       cancelSharingRequest: 'Cancel Sharing Request',
       transferOwnershipTitle: 'Transfer Collection Ownership',
-      transferOwnershipCollectionDescription:
-        'You are about to transfer all ownership rights of the answer collection <b>{collectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       accessRemovalSuccessful: 'Access has been successfully removed.',
       accessRemovalFailed:
         'Failed to remove access. Please try again or contact support.',
@@ -2251,8 +2249,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessRemovalSuccessful: 'Access has been successfully removed.',
       accessRemovalFailed:
         'Failed to remove access. Please try again or contact support.',
-      transferOwnershipCollectionDescription:
-        'You are about to transfer all ownership rights of the catalog collection <b>{catalogCollectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       deleteCatalogCollectionTitle: 'Delete Catalog Collection',
       deleteCatalogCollectionDescription:
         'Are you sure you want to delete the catalog collection "{name}"? This will remove all objects from the catalog collection and prevent users from accessing these objects through the catalog collection.',
@@ -2315,6 +2311,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noUserGroupSelected: 'No user group selected',
       usernameEmailOrGroupRequired:
         'Please enter a username / email address or select a user group.',
+      infoTransferOwnershipCATALOG_COLLECTION:
+        'You are about to transfer all ownership rights of the catalog collection <b>{catalogCollectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipANSWER_COLLECTION:
+        'You are about to transfer all ownership rights of the answer collection <b>{collectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

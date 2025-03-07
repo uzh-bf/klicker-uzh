@@ -18,7 +18,7 @@ function useRequestCatalogObject({
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
-}) {
+}): { onRequest: () => Promise<boolean>; requesting: boolean } {
   const [requestCatalogCollection, { loading: requestingCatalogCollection }] =
     useMutation(RequestCatalogCollectionDocument)
   const [requestAnswerCollection, { loading: requestingAnswerCollection }] =
@@ -134,6 +134,7 @@ function useRequestCatalogObject({
     onRequest: async () => {
       console.error('Unsupported object type', objectType)
       onError()
+      return false
     },
     requesting: false,
   }

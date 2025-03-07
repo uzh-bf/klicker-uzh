@@ -1,4 +1,5 @@
 import { faExchangeAlt } from '@fortawesome/free-solid-svg-icons'
+import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
@@ -6,21 +7,32 @@ import { useState } from 'react'
 import * as Yup from 'yup'
 import TransferOwnershipErrorToast from './TransferOwnershipErrorToast'
 import TransferOwnershipSuccessToast from './TransferOwnershipSuccessToast'
+import useTransferObjectOwnership from './useTransferObjectOwnership'
 
 function TransferOwnershipModal({
   open,
   onClose,
-  info,
-  onTransferCallback,
+  objectId,
+  objectType,
+  objectName,
+  catalogCollectionId,
 }: {
   open: boolean
   onClose: () => void
-  info: React.ReactNode
-  onTransferCallback: (usernameOrEmail: string) => Promise<boolean>
+  objectId: number | string
+  objectType: CatalogObjectType
+  objectName: string
+  catalogCollectionId?: string
 }) {
   const t = useTranslations()
   const [transferSuccess, setTransferSuccess] = useState(false)
   const [transferFailure, setTransferFailure] = useState(false)
+  const { onTransfer, transferring } = useTransferObjectOwnership({
+    objectType,
+    objectId,
+    catalogCollectionId,
+    onError: () => setTransferFailure(true),
+  })
 
   return (
     <>
@@ -37,7 +49,12 @@ function TransferOwnershipModal({
             <div className="mb-2 text-base font-bold text-gray-800">
               {t('manage.sharing.importantInformation')}
             </div>
-            <p className="text-gray-600">{info}</p>
+            <p className="text-gray-600">
+              {t.rich(`manage.sharing.infoTransferOwnership${objectType}`, {
+                objectName,
+                b: (text) => <strong>{text}</strong>,
+              })}
+            </p>
           </div>
 
           <Formik
@@ -49,7 +66,7 @@ function TransferOwnershipModal({
             })}
             onSubmit={async (values, { setSubmitting, resetForm }) => {
               try {
-                const success = await onTransferCallback(values.usernameOrEmail)
+                const success = await onTransfer(values.usernameOrEmail)
 
                 if (success) {
                   setTransferSuccess(true)
@@ -94,7 +111,7 @@ function TransferOwnershipModal({
                   <Button
                     primary
                     type="submit"
-                    disabled={isSubmitting || !isValid}
+                    disabled={isSubmitting || transferring || !isValid}
                     data={{ cy: 'confirm-ownership-transfer' }}
                   >
                     <Button.Icon icon={faExchangeAlt} />
