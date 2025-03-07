@@ -2344,9 +2344,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       usernameEmailOrGroupRequired:
         'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
       infoTransferOwnershipCATALOG_COLLECTION:
-        'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{catalogCollectionName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+        'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipANSWER_COLLECTION:
-        'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{collectionName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+        'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

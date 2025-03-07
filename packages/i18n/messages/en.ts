@@ -2312,9 +2312,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       usernameEmailOrGroupRequired:
         'Please enter a username / email address or select a user group.',
       infoTransferOwnershipCATALOG_COLLECTION:
-        'You are about to transfer all ownership rights of the catalog collection <b>{catalogCollectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+        'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:
-        'You are about to transfer all ownership rights of the answer collection <b>{collectionName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+        'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
