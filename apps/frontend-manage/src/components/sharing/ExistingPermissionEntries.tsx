@@ -8,7 +8,7 @@ import { Button, Select, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import usePermissionLevelSelection from '../../../lib/hooks/usePermissionLevelSelection'
+import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
 import ModifyOwnPermissionsModal from './ModifyOwnPermissionsModal'
 
 function ExistingPermissionEntries({
@@ -149,9 +149,7 @@ function ExistingPermissionEntries({
             <td className="px-4 py-3 text-sm text-gray-900">
               {permission.username
                 ? `${permission.username} (${permission.userEmail})${
-                    permission.isOwn
-                      ? ' ' + t('manage.resources.ownAccess')
-                      : ''
+                    permission.isOwn ? ' ' + t('manage.sharing.ownAccess') : ''
                   }`
                 : '-'}
             </td>
@@ -185,7 +183,7 @@ function ExistingPermissionEntries({
                 <AccessRevokationButton permission={permission} />
               ) : (
                 <Tooltip
-                  tooltip={t('manage.resources.revokeAccessDisabledTooltip')}
+                  tooltip={t('manage.sharing.revokeAccessDisabledTooltip')}
                   className={{ tooltip: 'max-w-[30rem] text-sm' }}
                 >
                   <AccessRevokationButton

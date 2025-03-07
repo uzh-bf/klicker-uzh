@@ -4,8 +4,8 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
-import OwnershipTransferErrorToast from './answerCollections/OwnershipTransferErrorToast'
-import OwnershipTransferSuccessToast from './answerCollections/OwnershipTransferSuccessToast'
+import TransferOwnershipErrorToast from './TransferOwnershipErrorToast'
+import TransferOwnershipSuccessToast from './TransferOwnershipSuccessToast'
 
 function TransferOwnershipModal({
   open,
@@ -26,7 +26,7 @@ function TransferOwnershipModal({
     <>
       <Modal
         escapeDisabled
-        title={t('manage.resources.transferOwnership')}
+        title={t('manage.sharing.transferOwnership')}
         open={open}
         onClose={onClose}
         className={{ content: 'max-w-lg' }}
@@ -35,7 +35,7 @@ function TransferOwnershipModal({
         <div className="space-y-3">
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
             <div className="mb-2 text-base font-bold text-gray-800">
-              {t('manage.resources.importantInformation')}
+              {t('manage.sharing.importantInformation')}
             </div>
             <p className="text-gray-600">{info}</p>
           </div>
@@ -44,7 +44,7 @@ function TransferOwnershipModal({
             initialValues={{ usernameOrEmail: '' }}
             validationSchema={Yup.object().shape({
               usernameOrEmail: Yup.string().required(
-                t('manage.resources.usernameOrEmailRequired')
+                t('manage.sharing.usernameOrEmailRequired')
               ),
             })}
             onSubmit={async (values, { setSubmitting, resetForm }) => {
@@ -99,7 +99,7 @@ function TransferOwnershipModal({
                   >
                     <Button.Icon icon={faExchangeAlt} />
                     <Button.Label>
-                      {t('manage.resources.confirmTransfer')}
+                      {t('manage.sharing.confirmTransferOwnership')}
                     </Button.Label>
                   </Button>
                 </div>
@@ -109,11 +109,11 @@ function TransferOwnershipModal({
         </div>
       </Modal>
 
-      <OwnershipTransferSuccessToast
+      <TransferOwnershipSuccessToast
         open={transferSuccess}
         onClose={() => setTransferSuccess(false)}
       />
-      <OwnershipTransferErrorToast
+      <TransferOwnershipErrorToast
         open={transferFailure}
         onClose={() => setTransferFailure(false)}
       />

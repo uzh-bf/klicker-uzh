@@ -12,11 +12,11 @@ import {
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import CollectionAccessRemovalErrorToast from '../sharing/CollectionAccessRemovalErrorToast'
-import CollectionAccessRemovalSuccessToast from '../sharing/CollectionAccessRemovalSuccessToast'
-import CollectionSharingErrorToast from '../sharing/CollectionSharingErrorToast'
-import CollectionSharingSuccessToast from '../sharing/CollectionSharingSuccessToast'
-import GrantedPermissionsTable from '../sharing/GrantedPermissionsTable'
+import CollectionAccessRemovalErrorToast from '../../sharing/CollectionAccessRemovalErrorToast'
+import CollectionAccessRemovalSuccessToast from '../../sharing/CollectionAccessRemovalSuccessToast'
+import CollectionSharingErrorToast from '../../sharing/CollectionSharingErrorToast'
+import CollectionSharingSuccessToast from '../../sharing/CollectionSharingSuccessToast'
+import GrantedPermissionsTable from '../../sharing/GrantedPermissionsTable'
 import AnswerCollectionPermissionsTable from './AnswerCollectionPermissionsTable'
 
 function AnswerCollectionSharingModal({

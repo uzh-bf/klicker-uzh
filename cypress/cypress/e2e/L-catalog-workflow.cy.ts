@@ -114,12 +114,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsADMIN
+      messages.manage.sharing.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsADMIN)
+      .contains(messages.manage.sharing.permissionsADMIN)
 
     // WRITE permissions for user pro2
     cy.get('[data-cy="new-permission-username-or-email"]')
@@ -129,12 +129,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsWRITE
+      messages.manage.sharing.permissionsWRITE
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsWRITE)
+      .contains(messages.manage.sharing.permissionsWRITE)
 
     // READ permissions for user pro3
     cy.get('[data-cy="new-permission-username-or-email"]')
@@ -144,12 +144,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsREAD)
+      .contains(messages.manage.sharing.permissionsREAD)
   })
 
   it('Create public and private catalog collections CCPublic and CCPrivate', function () {
@@ -326,12 +326,12 @@ describe('Test all functionalities of catalog collections and objects contained 
       `[data-cy="approve-sharing-request-${this.data.CCRestricted}-pro1"]`
     ).click()
     cy.get('[data-cy="permission-level-select"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="permission-level-select"]').click()
     cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="permission-level-select"]').contains(
-      messages.manage.resources.permissionsWRITE
+      messages.manage.sharing.permissionsWRITE
     )
     cy.get('[data-cy="confirm-approval"]').click()
 
@@ -346,12 +346,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsADMIN
+      messages.manage.sharing.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsADMIN)
+      .contains(messages.manage.sharing.permissionsADMIN)
 
     // Share directly with pro3 (READ permissions)
     cy.get('[data-cy="new-permission-username-or-email"]')
@@ -361,12 +361,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsREAD)
+      .contains(messages.manage.sharing.permissionsREAD)
   })
 
   it('Share CCPublic with user pro1 and ADMIN permissions', function () {
@@ -383,12 +383,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsADMIN
+      messages.manage.sharing.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsADMIN)
+      .contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it('Add AC2 to both catalog collections with restricted visibility using WRITE / ADMIN permissions respectively', function () {

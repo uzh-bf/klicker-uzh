@@ -201,6 +201,7 @@ function CatalogCollectionListItem({
           />
         </>
       ) : null}
+
       {collection.isEditor ? (
         <CatalogCollectionNameChangeModal
           catalogCollectionId={collection.id}
@@ -210,7 +211,7 @@ function CatalogCollectionListItem({
         />
       ) : null}
 
-      {/* // functionality for users without access to request it for restricted catalog collections */}
+      {/* functionality for users without access to request it for restricted catalog collections */}
       {isRequestable ? (
         <CatalogRequestModal
           open={requestModal}

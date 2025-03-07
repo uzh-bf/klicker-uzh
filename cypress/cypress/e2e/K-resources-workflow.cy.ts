@@ -575,7 +575,7 @@ describe('Create, edit and share answer collections', function () {
 
     // approval modal
     cy.get('[data-cy="permission-level-select"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="permission-level-select"]').click()
     cy.get('[data-cy="permission-level-READ"]').click()
@@ -601,7 +601,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="share-answer-collection"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsREAD)
+      .contains(messages.manage.sharing.permissionsREAD)
   })
 
   it('Verify that restricted answer collection is visible in resources for user pro1', function () {
@@ -830,12 +830,12 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsADMIN
+      messages.manage.sharing.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsADMIN)
+      .contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it('Verify that user pro2 should now be able to add this collection to the catalog', function () {
@@ -1043,7 +1043,7 @@ describe('Create, edit and share answer collections', function () {
 
     // approval modal
     cy.get('[data-cy="permission-level-select"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="permission-level-select"]').click()
     cy.get('[data-cy="permission-level-READ"]').click()
@@ -1069,7 +1069,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="share-answer-collection"]').click()
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsREAD)
+      .contains(messages.manage.sharing.permissionsREAD)
   })
 
   it("Verify that the public answer collection is visible in resources for user 'pro1'", function () {
@@ -1424,7 +1424,7 @@ describe('Create, edit and share answer collections', function () {
 
     // approval modal
     cy.get('[data-cy="permission-level-select"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="permission-level-select"]').click()
     cy.get('[data-cy="permission-level-READ"]').click()
@@ -1502,7 +1502,7 @@ describe('Create, edit and share answer collections', function () {
     grantCollectionAccess({
       collectionName: this.data.direct.name,
       username: Cypress.env('LECTURER_IND_SHORTNAME'),
-      permissionLevel: messages.manage.resources.permissionsREAD,
+      permissionLevel: messages.manage.sharing.permissionsREAD,
       permissionLevelCy: 'READ',
     })
   })
@@ -1568,14 +1568,14 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_INST_EMAIL')
     )
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsREAD)
+      .contains(messages.manage.sharing.permissionsREAD)
   })
 
   it("Verify that the access request by user 'pro2' has been resolved automatically", function () {
@@ -1771,14 +1771,14 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_IND_SHORTNAME')
     )
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsREAD)
+      .contains(messages.manage.sharing.permissionsREAD)
   })
 
   it("Grant WRITE permissions to user 'pro2'", function () {
@@ -1798,14 +1798,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsWRITE
+      messages.manage.sharing.permissionsWRITE
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsWRITE)
+      .contains(messages.manage.sharing.permissionsWRITE)
   })
 
   it("Grant ADMIN permissions to user 'pro3'", function () {
@@ -1825,14 +1825,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsADMIN
+      messages.manage.sharing.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsADMIN)
+      .contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it("Verify that user 'pro1' can view the answer collection", function () {
@@ -2018,13 +2018,13 @@ describe('Create, edit and share answer collections', function () {
     // verify that all permissions are visible
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsREAD)
+    ).contains(messages.manage.sharing.permissionsREAD)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsWRITE)
+    ).contains(messages.manage.sharing.permissionsWRITE)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it("Verify that user 'pro3' can modify the permissions of user 'pro1' to WRITE", function () {
@@ -2039,14 +2039,14 @@ describe('Create, edit and share answer collections', function () {
     // change the permissions of user pro1 to WRITE
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsREAD)
+    ).contains(messages.manage.sharing.permissionsREAD)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).click()
     cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsWRITE)
+    ).contains(messages.manage.sharing.permissionsWRITE)
   })
 
   it("Verify that user 'pro1' has been granted write permissions and test edit permissions", function () {
@@ -2065,14 +2065,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="share-answer-collection"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsWRITE)
+    ).contains(messages.manage.sharing.permissionsWRITE)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).click()
     cy.get('[data-cy="permission-level-READ"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsREAD)
+    ).contains(messages.manage.sharing.permissionsREAD)
 
     // verify that none of the permissions can be revoked (as they are all used)
     cy.get(
@@ -2194,14 +2194,14 @@ describe('Create, edit and share answer collections', function () {
       Cypress.env('LECTURER_IND_SHORTNAME')
     )
     cy.get('[data-cy="new-permission-access-level"]').contains(
-      messages.manage.resources.permissionsREAD
+      messages.manage.sharing.permissionsREAD
     )
     cy.get('[data-cy="new-permission-submit"]').click()
 
     // verify that permission has been created correctly
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsREAD)
+      .contains(messages.manage.sharing.permissionsREAD)
   })
 
   it("Transfer ownership to user 'pro2' using the e-mail address", function () {
@@ -2226,7 +2226,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="transfer-ownership"]').should('not.exist')
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
       .should('exist')
-      .contains(messages.manage.resources.permissionsADMIN)
+      .contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it("Verify that user 'pro2' is the new owner with an overview of all permissions", function () {
@@ -2241,10 +2241,10 @@ describe('Create, edit and share answer collections', function () {
     // verify that all permissions are visible
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsREAD)
+    ).contains(messages.manage.sharing.permissionsREAD)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it("Verify that user 'pro1' still has read access to the answer collection", function () {
@@ -2285,10 +2285,10 @@ describe('Create, edit and share answer collections', function () {
     ).should('not.exist')
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it("Verify that user 'pro1' is the new owner with an overview of all permissions", function () {
@@ -2306,10 +2306,10 @@ describe('Create, edit and share answer collections', function () {
     ).should('not.exist')
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it('Change own access rights from admin permissions to read access for main user', function () {
@@ -2323,7 +2323,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).click()
@@ -2341,7 +2341,7 @@ describe('Create, edit and share answer collections', function () {
     ).should('not.exist')
     cy.get(
       `[data-cy="answer-collection-${this.data.ownership.name}"]`
-    ).contains(messages.manage.resources.permissionsREAD)
+    ).contains(messages.manage.sharing.permissionsREAD)
     cy.get(
       `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
     ).click()
@@ -2364,14 +2364,14 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsREAD)
+    ).contains(messages.manage.sharing.permissionsREAD)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).click()
     cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
   })
 
   it('Have the main user revoke its own access through the use of admin rights', function () {
@@ -2385,7 +2385,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).contains(messages.manage.resources.permissionsADMIN)
+    ).contains(messages.manage.sharing.permissionsADMIN)
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).click()

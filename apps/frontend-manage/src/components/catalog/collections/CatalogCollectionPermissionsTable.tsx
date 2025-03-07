@@ -1,6 +1,6 @@
 import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import PermissionsTable from '../../resources/sharing/PermissionsTable'
+import PermissionsTable from '../../sharing/PermissionsTable'
 
 function CatalogCollectionPermissionsTable({
   activePermissionLevel,
@@ -38,7 +38,7 @@ function CatalogCollectionPermissionsTable({
           permissions: [false, false, true, true],
         },
         {
-          action: t('manage.catalog.transferOwnership'),
+          action: t('manage.sharing.transferOwnership'),
           permissions: [false, false, false, true],
         },
       ]}

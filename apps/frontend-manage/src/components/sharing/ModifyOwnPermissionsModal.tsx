@@ -23,7 +23,7 @@ function ModifyOwnPermissionsModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={t('manage.resources.modifyOwnPermissionsTitle')}
+      title={t('manage.sharing.modifyOwnPermissionsTitle')}
       className={{ content: 'max-w-lg' }}
       dataCloseButton={{ cy: 'close-modify-own-permissions-modal' }}
       hideCloseButton
@@ -31,13 +31,13 @@ function ModifyOwnPermissionsModal({
       <div className="mb-6">
         {action === 'remove' ? (
           <p className="text-sm" data-cy="remove-own-access-warning">
-            {t('manage.resources.removeOwnPermissionsWarning')}
+            {t('manage.sharing.removeOwnPermissionsWarning')}
           </p>
         ) : (
           <p className="text-sm" data-cy="change-own-access-warning">
-            {t('manage.resources.changeOwnPermissionsWarning', {
+            {t('manage.sharing.changeOwnPermissionsWarning', {
               permissionLevel: t(
-                `manage.resources.permissions${newPermissionLevel ?? PermissionLevel.Read}`
+                `manage.sharing.permissions${newPermissionLevel ?? PermissionLevel.Read}`
               ),
             })}
           </p>

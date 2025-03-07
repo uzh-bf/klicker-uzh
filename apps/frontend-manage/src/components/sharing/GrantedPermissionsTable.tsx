@@ -7,8 +7,8 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import DirectSharingForm from '../sharing/DirectSharingForm'
-import ExistingPermissionEntries from '../sharing/ExistingPermissionEntries'
+import DirectSharingForm from './DirectSharingForm'
+import ExistingPermissionEntries from './ExistingPermissionEntries'
 
 function GrantedPermissionsTable({
   type,
@@ -54,7 +54,7 @@ function GrantedPermissionsTable({
   return (
     <>
       <div className="flex flex-row justify-between">
-        <H3>{t('manage.resources.grantedPermissions')}</H3>
+        <H3>{t('manage.sharing.grantedPermissions')}</H3>
         {isOwner && (
           <Button
             basic
@@ -65,9 +65,7 @@ function GrantedPermissionsTable({
             data={{ cy: 'transfer-ownership' }}
           >
             <Button.Icon icon={faPeopleArrows} />
-            <Button.Label>
-              {t('manage.resources.transferOwnership')}
-            </Button.Label>
+            <Button.Label>{t('manage.sharing.transferOwnership')}</Button.Label>
           </Button>
         )}
       </div>
