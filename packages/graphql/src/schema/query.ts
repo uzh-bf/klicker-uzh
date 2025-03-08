@@ -920,7 +920,7 @@ export const Query = builder.queryType({
           collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.getAnswerCollectionPermissions(args, ctx)
+          return SharingService.getAnswerCollectionPermissions(args, ctx)
         },
       }),
 

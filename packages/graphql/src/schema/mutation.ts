@@ -1364,7 +1364,7 @@ export const Mutation = builder.mutationType({
           collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.cancelAnswerCollectionRequest(args, ctx)
+          return SharingService.cancelAnswerCollectionRequest(args, ctx)
         },
       }),
 
@@ -1400,7 +1400,7 @@ export const Mutation = builder.mutationType({
           userGroupId: t.arg.int({ required: false }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.shareAnswerCollection(args, ctx)
+          return SharingService.shareAnswerCollection(args, ctx)
         },
       }),
 
@@ -1412,7 +1412,7 @@ export const Mutation = builder.mutationType({
           usernameOrEmail: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.transferCollectionOwnership(args, ctx)
+          return SharingService.transferCollectionOwnership(args, ctx)
         },
       }),
 
