@@ -1386,8 +1386,8 @@ type Mutation {
   removeAnswerCollection(collectionId: Int!): Int
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
-  requestAnswerCollection(catalogCollectionId: String, collectionId: Int!): CatalogObject
   requestCatalogCollection(catalogCollectionId: String!): CatalogCollection
+  requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!): CatalogObject
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback

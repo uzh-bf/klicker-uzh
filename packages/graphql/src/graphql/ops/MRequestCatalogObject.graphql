@@ -1,0 +1,13 @@
+mutation RequestCatalogObject(
+  $objectId: String!
+  $objectType: CatalogObjectType!
+  $catalogCollectionId: String
+) {
+  requestCatalogObject(
+    objectId: $objectId
+    objectType: $objectType
+    catalogCollectionId: $catalogCollectionId
+  ) {
+    ...CatalogObjectData
+  }
+}

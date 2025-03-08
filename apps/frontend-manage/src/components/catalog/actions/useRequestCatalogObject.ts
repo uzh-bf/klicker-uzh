@@ -3,8 +3,8 @@ import {
   CatalogObjectType,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
-  RequestAnswerCollectionDocument,
   RequestCatalogCollectionDocument,
+  RequestCatalogObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger access request creation, returns success boolean
@@ -21,8 +21,8 @@ function useRequestCatalogObject({
 }): { onRequest: () => Promise<boolean>; requesting: boolean } {
   const [requestCatalogCollection, { loading: requestingCatalogCollection }] =
     useMutation(RequestCatalogCollectionDocument)
-  const [requestAnswerCollection, { loading: requestingAnswerCollection }] =
-    useMutation(RequestAnswerCollectionDocument)
+  const [requestCatalogObject, { loading: requestingCatalogObject }] =
+    useMutation(RequestCatalogObjectDocument)
 
   if (objectType === CatalogObjectType.CatalogCollection) {
     const onRequestCatalogCollection = async () => {
@@ -72,14 +72,18 @@ function useRequestCatalogObject({
       requesting: requestingCatalogCollection,
     }
   } else if (objectType === CatalogObjectType.AnswerCollection) {
-    const onRequestAnswerCollection = async () => {
+    const onRequestCatalogObject = async () => {
       try {
-        const res = await requestAnswerCollection({
-          variables: { collectionId: objectId as number, catalogCollectionId },
+        const res = await requestCatalogObject({
+          variables: {
+            objectId: String(objectId),
+            objectType,
+            catalogCollectionId,
+          },
           update: (cache, { data }) => {
             // check if request was successful
-            const requestedCollection = data?.requestAnswerCollection
-            if (!requestedCollection) return
+            const requestedObject = data?.requestCatalogObject
+            if (!requestedObject) return
 
             // update lists of answer collections
             const catalogObjects = cache.readQuery({
@@ -93,7 +97,7 @@ function useRequestCatalogObject({
               const updatedObjects = catalogObjects?.getCatalogObjects.map(
                 (obj) => {
                   if (obj.id === objectId) {
-                    return requestedCollection
+                    return requestedObject
                   }
 
                   return obj
@@ -113,7 +117,7 @@ function useRequestCatalogObject({
           },
         })
 
-        if (res.data?.requestAnswerCollection?.id) {
+        if (res.data?.requestCatalogObject?.id) {
           return true
         } else {
           return false
@@ -125,8 +129,8 @@ function useRequestCatalogObject({
     }
 
     return {
-      onRequest: onRequestAnswerCollection,
-      requesting: requestingAnswerCollection,
+      onRequest: onRequestCatalogObject,
+      requesting: requestingCatalogObject,
     }
   }
 

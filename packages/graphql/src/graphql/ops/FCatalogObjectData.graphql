@@ -1,0 +1,13 @@
+fragment CatalogObjectData on CatalogObject {
+  id
+  uuid
+  name
+  objectType
+  assignmentId
+  access
+  ownerShortname
+  isOwner
+  isManager
+  isRequested
+  isShared
+}

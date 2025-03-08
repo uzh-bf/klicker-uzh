@@ -1327,15 +1327,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      requestAnswerCollection: t.withAuth(asUserFullAccess).field({
+      requestCatalogObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SharingService.requestAnswerCollection(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+            return SharingService.requestAnswerCollection(
+              {
+                collectionId: parseInt(args.objectId),
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
+          }
         },
       }),
 

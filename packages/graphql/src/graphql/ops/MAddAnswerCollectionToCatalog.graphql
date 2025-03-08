@@ -8,16 +8,6 @@ mutation AddAnswerCollectionToCatalog(
     access: $access
     catalogCollectionId: $catalogCollectionId
   ) {
-    id
-    uuid
-    name
-    objectType
-    assignmentId
-    access
-    ownerShortname
-    isOwner
-    isManager
-    isRequested
-    isShared
+    ...CatalogObjectData
   }
 }
