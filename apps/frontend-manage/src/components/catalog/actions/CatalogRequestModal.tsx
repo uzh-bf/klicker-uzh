@@ -5,7 +5,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
-import CatalogObjectRequestErrorToast from './CatalogObjectRequestErrorToast'
+import CatalogRequestErrorToast from './CatalogRequestErrorToast'
 import CatalogAdditionalObjectInfo from './info/CatalogAdditionalObjectInfo'
 import useRequestCatalogObject from './useRequestCatalogObject'
 
@@ -105,7 +105,7 @@ function CatalogRequestModal({
         </div>
       </Modal>
 
-      <CatalogObjectRequestErrorToast
+      <CatalogRequestErrorToast
         open={errorToast}
         onClose={() => setErrorToast(false)}
       />

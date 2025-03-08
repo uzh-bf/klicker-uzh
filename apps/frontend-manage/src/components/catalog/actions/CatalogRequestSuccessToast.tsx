@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CatalogObjectRequestSuccessToast({
+function CatalogRequestSuccessToast({
   open,
   onClose,
 }: {
@@ -23,4 +23,4 @@ function CatalogObjectRequestSuccessToast({
   )
 }
 
-export default CatalogObjectRequestSuccessToast
+export default CatalogRequestSuccessToast

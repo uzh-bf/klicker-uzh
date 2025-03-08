@@ -20,13 +20,13 @@ import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObject
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
+import CatalogChangeAccessModal from './CatalogChangeAccessModal'
 import CatalogImportModal from './CatalogImportModal'
 import CatalogObjectImportSuccessToast from './CatalogObjectImportSuccessToast'
-import CatalogObjectRequestSuccessToast from './CatalogObjectRequestSuccessToast'
 import CatalogRequestCancellationModal from './CatalogRequestCancellationModal'
 import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellationSuccessToast'
 import CatalogRequestModal from './CatalogRequestModal'
-import ObjectChangeAccessModal from './ObjectChangeAccessModal'
+import CatalogRequestSuccessToast from './CatalogRequestSuccessToast'
 import ObjectRemovalModal from './ObjectRemovalModal'
 
 function CatalogObjectItem({
@@ -181,7 +181,7 @@ function CatalogObjectItem({
           catalogCollectionId={catalogCollectionId}
         />
       ) : null}
-      <CatalogObjectRequestSuccessToast
+      <CatalogRequestSuccessToast
         open={showRequestSuccessToast}
         onClose={() => setShowRequestSuccessToast(false)}
       />
@@ -230,12 +230,14 @@ function CatalogObjectItem({
 
       {managedAccess ? (
         <>
-          <ObjectChangeAccessModal
-            object={object}
-            newAccess={newAccess}
+          <CatalogChangeAccessModal
             open={changeAccessModal}
-            catalogCollectionId={catalogCollectionId}
             onClose={() => setChangeAccessModal(false)}
+            objectType={object.objectType}
+            objectName={object.name}
+            assignmentId={object.assignmentId}
+            newAccess={newAccess}
+            catalogCollectionId={catalogCollectionId}
           />
           <ObjectRemovalModal
             object={object}
