@@ -1,10 +1,12 @@
-mutation ChangeAnswerCollectionPermissionLevel(
-  $collectionId: Int!
+mutation ChangePermissionLevel(
+  $objectId: String!
+  $objectType: CatalogObjectType!
   $permissionId: Int!
   $permissionLevel: PermissionLevel!
 ) {
-  changeAnswerCollectionPermissionLevel(
-    collectionId: $collectionId
+  changePermissionLevel(
+    objectId: $objectId
+    objectType: $objectType
     permissionId: $permissionId
     permissionLevel: $permissionLevel
   ) {

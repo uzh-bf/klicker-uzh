@@ -1412,16 +1412,15 @@ export type Mutation = {
   bookmarkElementStack?: Maybe<Array<Scalars['Int']['output']>>;
   cancelLiveQuiz?: Maybe<LiveQuiz>;
   cancelObjectSharingRequest: Scalars['Boolean']['output'];
-  changeAnswerCollectionPermissionLevel?: Maybe<PermissionInfo>;
   changeCatalogCollectionName?: Maybe<Scalars['Boolean']['output']>;
   changeCatalogCollectionObjectAccess: Scalars['Boolean']['output'];
-  changeCatalogCollectionPermissionLevel?: Maybe<PermissionInfo>;
   changeCatalogObjectAccess: Scalars['Boolean']['output'];
   changeEmailSettings?: Maybe<User>;
   changeInitialSettings?: Maybe<User>;
   changeLiveQuizName?: Maybe<LiveQuiz>;
   changeLiveQuizSettings?: Maybe<LiveQuiz>;
   changeParticipantLocale?: Maybe<Participant>;
+  changePermissionLevel?: Maybe<PermissionInfo>;
   changeShortname?: Maybe<User>;
   changeUserLocale?: Maybe<User>;
   createAnswerCollection?: Maybe<AnswerCollection>;
@@ -1604,13 +1603,6 @@ export type MutationCancelObjectSharingRequestArgs = {
 };
 
 
-export type MutationChangeAnswerCollectionPermissionLevelArgs = {
-  collectionId: Scalars['Int']['input'];
-  permissionId: Scalars['Int']['input'];
-  permissionLevel: PermissionLevel;
-};
-
-
 export type MutationChangeCatalogCollectionNameArgs = {
   catalogCollectionId: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -1620,13 +1612,6 @@ export type MutationChangeCatalogCollectionNameArgs = {
 export type MutationChangeCatalogCollectionObjectAccessArgs = {
   access: ObjectAccess;
   catalogCollectionId: Scalars['String']['input'];
-};
-
-
-export type MutationChangeCatalogCollectionPermissionLevelArgs = {
-  catalogCollectionId: Scalars['String']['input'];
-  permissionId: Scalars['Int']['input'];
-  permissionLevel: PermissionLevel;
 };
 
 
@@ -1666,6 +1651,14 @@ export type MutationChangeLiveQuizSettingsArgs = {
 
 export type MutationChangeParticipantLocaleArgs = {
   locale: LocaleType;
+};
+
+
+export type MutationChangePermissionLevelArgs = {
+  objectId: Scalars['String']['input'];
+  objectType: CatalogObjectType;
+  permissionId: Scalars['Int']['input'];
+  permissionLevel: PermissionLevel;
 };
 
 
@@ -3701,15 +3694,6 @@ export type CancelObjectSharingRequestMutationVariables = Exact<{
 
 export type CancelObjectSharingRequestMutation = { __typename?: 'Mutation', cancelObjectSharingRequest: boolean };
 
-export type ChangeAnswerCollectionPermissionLevelMutationVariables = Exact<{
-  collectionId: Scalars['Int']['input'];
-  permissionId: Scalars['Int']['input'];
-  permissionLevel: PermissionLevel;
-}>;
-
-
-export type ChangeAnswerCollectionPermissionLevelMutation = { __typename?: 'Mutation', changeAnswerCollectionPermissionLevel?: { __typename?: 'PermissionInfo', permissionId: number, permissionLevel: PermissionLevel } | null };
-
 export type ChangeCatalogCollectionNameMutationVariables = Exact<{
   catalogCollectionId: Scalars['String']['input'];
   name: Scalars['String']['input'];
@@ -3725,15 +3709,6 @@ export type ChangeCatalogCollectionObjectAccessMutationVariables = Exact<{
 
 
 export type ChangeCatalogCollectionObjectAccessMutation = { __typename?: 'Mutation', changeCatalogCollectionObjectAccess: boolean };
-
-export type ChangeCatalogCollectionPermissionLevelMutationVariables = Exact<{
-  catalogCollectionId: Scalars['String']['input'];
-  permissionId: Scalars['Int']['input'];
-  permissionLevel: PermissionLevel;
-}>;
-
-
-export type ChangeCatalogCollectionPermissionLevelMutation = { __typename?: 'Mutation', changeCatalogCollectionPermissionLevel?: { __typename?: 'PermissionInfo', permissionId: number, permissionLevel: PermissionLevel } | null };
 
 export type ChangeCatalogObjectAccessMutationVariables = Exact<{
   assignmentId: Scalars['Int']['input'];
@@ -4782,6 +4757,16 @@ export type VoteFeedbackResponseMutationVariables = Exact<{
 
 export type VoteFeedbackResponseMutation = { __typename?: 'Mutation', voteFeedbackResponse?: { __typename?: 'FeedbackResponse', id: number, positiveReactions: number, negativeReactions: number } | null };
 
+export type ChangePermissionLevelMutationVariables = Exact<{
+  objectId: Scalars['String']['input'];
+  objectType: CatalogObjectType;
+  permissionId: Scalars['Int']['input'];
+  permissionLevel: PermissionLevel;
+}>;
+
+
+export type ChangePermissionLevelMutation = { __typename?: 'Mutation', changePermissionLevel?: { __typename?: 'PermissionInfo', permissionId: number, permissionLevel: PermissionLevel } | null };
+
 export type CheckParticipantNameAvailableQueryVariables = Exact<{
   username: Scalars['String']['input'];
 }>;
@@ -5439,10 +5424,8 @@ export const ApproveObjectSharingRequestDocument = {"kind":"Document","definitio
 export const BookmarkElementStackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"BookmarkElementStack"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"bookmarked"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"bookmarkElementStack"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stackId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stackId"}}},{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}},{"kind":"Argument","name":{"kind":"Name","value":"bookmarked"},"value":{"kind":"Variable","name":{"kind":"Name","value":"bookmarked"}}}]}]}}]} as unknown as DocumentNode<BookmarkElementStackMutation, BookmarkElementStackMutationVariables>;
 export const CancelLiveQuizDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CancelLiveQuiz"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cancelLiveQuiz"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<CancelLiveQuizMutation, CancelLiveQuizMutationVariables>;
 export const CancelObjectSharingRequestDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CancelObjectSharingRequest"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"objectId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"objectType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CatalogObjectType"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cancelObjectSharingRequest"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"objectId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"objectId"}}},{"kind":"Argument","name":{"kind":"Name","value":"objectType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"objectType"}}}]}]}}]} as unknown as DocumentNode<CancelObjectSharingRequestMutation, CancelObjectSharingRequestMutationVariables>;
-export const ChangeAnswerCollectionPermissionLevelDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeAnswerCollectionPermissionLevel"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"collectionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"permissionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PermissionLevel"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeAnswerCollectionPermissionLevel"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"collectionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"collectionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"permissionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"permissionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"permissionLevel"},"value":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"permissionId"}},{"kind":"Field","name":{"kind":"Name","value":"permissionLevel"}}]}}]}}]} as unknown as DocumentNode<ChangeAnswerCollectionPermissionLevelMutation, ChangeAnswerCollectionPermissionLevelMutationVariables>;
 export const ChangeCatalogCollectionNameDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeCatalogCollectionName"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeCatalogCollectionName"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"catalogCollectionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}}]}]}}]} as unknown as DocumentNode<ChangeCatalogCollectionNameMutation, ChangeCatalogCollectionNameMutationVariables>;
 export const ChangeCatalogCollectionObjectAccessDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeCatalogCollectionObjectAccess"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"access"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectAccess"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeCatalogCollectionObjectAccess"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"catalogCollectionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"access"},"value":{"kind":"Variable","name":{"kind":"Name","value":"access"}}}]}]}}]} as unknown as DocumentNode<ChangeCatalogCollectionObjectAccessMutation, ChangeCatalogCollectionObjectAccessMutationVariables>;
-export const ChangeCatalogCollectionPermissionLevelDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeCatalogCollectionPermissionLevel"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"permissionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PermissionLevel"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeCatalogCollectionPermissionLevel"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"catalogCollectionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"permissionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"permissionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"permissionLevel"},"value":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"permissionId"}},{"kind":"Field","name":{"kind":"Name","value":"permissionLevel"}}]}}]}}]} as unknown as DocumentNode<ChangeCatalogCollectionPermissionLevelMutation, ChangeCatalogCollectionPermissionLevelMutationVariables>;
 export const ChangeCatalogObjectAccessDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeCatalogObjectAccess"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"assignmentId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"access"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectAccess"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeCatalogObjectAccess"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"assignmentId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"assignmentId"}}},{"kind":"Argument","name":{"kind":"Name","value":"access"},"value":{"kind":"Variable","name":{"kind":"Name","value":"access"}}}]}]}}]} as unknown as DocumentNode<ChangeCatalogObjectAccessMutation, ChangeCatalogObjectAccessMutationVariables>;
 export const ChangeEmailSettingsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeEmailSettings"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"projectUpdates"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeEmailSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"projectUpdates"},"value":{"kind":"Variable","name":{"kind":"Name","value":"projectUpdates"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"sendProjectUpdates"}}]}}]}}]} as unknown as DocumentNode<ChangeEmailSettingsMutation, ChangeEmailSettingsMutationVariables>;
 export const ChangeInitialSettingsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangeInitialSettings"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"shortname"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"locale"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"LocaleType"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sendUpdates"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changeInitialSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"shortname"},"value":{"kind":"Variable","name":{"kind":"Name","value":"shortname"}}},{"kind":"Argument","name":{"kind":"Name","value":"locale"},"value":{"kind":"Variable","name":{"kind":"Name","value":"locale"}}},{"kind":"Argument","name":{"kind":"Name","value":"sendUpdates"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sendUpdates"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"shortname"}},{"kind":"Field","name":{"kind":"Name","value":"locale"}},{"kind":"Field","name":{"kind":"Name","value":"firstLogin"}},{"kind":"Field","name":{"kind":"Name","value":"catalyst"}},{"kind":"Field","name":{"kind":"Name","value":"catalystTier"}}]}}]}}]} as unknown as DocumentNode<ChangeInitialSettingsMutation, ChangeInitialSettingsMutationVariables>;
@@ -5564,6 +5547,7 @@ export const UpdateWeeklyTimelineEntriesDocument = {"kind":"Document","definitio
 export const UpdateWeeklyTimelineEntriesCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateWeeklyTimelineEntriesCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateWeeklyTimelineEntriesCourse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}]}]}}]} as unknown as DocumentNode<UpdateWeeklyTimelineEntriesCourseMutation, UpdateWeeklyTimelineEntriesCourseMutationVariables>;
 export const UpvoteFeedbackDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpvoteFeedback"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"feedbackId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"increment"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"upvoteFeedback"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"feedbackId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"feedbackId"}}},{"kind":"Argument","name":{"kind":"Name","value":"increment"},"value":{"kind":"Variable","name":{"kind":"Name","value":"increment"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}}]}}]}}]} as unknown as DocumentNode<UpvoteFeedbackMutation, UpvoteFeedbackMutationVariables>;
 export const VoteFeedbackResponseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"VoteFeedbackResponse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"incrementUpvote"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"incrementDownvote"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"voteFeedbackResponse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"incrementUpvote"},"value":{"kind":"Variable","name":{"kind":"Name","value":"incrementUpvote"}}},{"kind":"Argument","name":{"kind":"Name","value":"incrementDownvote"},"value":{"kind":"Variable","name":{"kind":"Name","value":"incrementDownvote"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"positiveReactions"}},{"kind":"Field","name":{"kind":"Name","value":"negativeReactions"}}]}}]}}]} as unknown as DocumentNode<VoteFeedbackResponseMutation, VoteFeedbackResponseMutationVariables>;
+export const ChangePermissionLevelDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ChangePermissionLevel"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"objectId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"objectType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CatalogObjectType"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"permissionId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PermissionLevel"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"changePermissionLevel"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"objectId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"objectId"}}},{"kind":"Argument","name":{"kind":"Name","value":"objectType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"objectType"}}},{"kind":"Argument","name":{"kind":"Name","value":"permissionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"permissionId"}}},{"kind":"Argument","name":{"kind":"Name","value":"permissionLevel"},"value":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"permissionId"}},{"kind":"Field","name":{"kind":"Name","value":"permissionLevel"}}]}}]}}]} as unknown as DocumentNode<ChangePermissionLevelMutation, ChangePermissionLevelMutationVariables>;
 export const CheckParticipantNameAvailableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckParticipantNameAvailable"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"username"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkParticipantNameAvailable"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"username"},"value":{"kind":"Variable","name":{"kind":"Name","value":"username"}}}]}]}}]} as unknown as DocumentNode<CheckParticipantNameAvailableQuery, CheckParticipantNameAvailableQueryVariables>;
 export const CheckPrivatePreviewAvailableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckPrivatePreviewAvailable"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkPrivatePreviewAvailable"}}]}}]} as unknown as DocumentNode<CheckPrivatePreviewAvailableQuery, CheckPrivatePreviewAvailableQueryVariables>;
 export const CheckPublicPreviewAvailableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckPublicPreviewAvailable"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkPublicPreviewAvailable"}}]}}]} as unknown as DocumentNode<CheckPublicPreviewAvailableQuery, CheckPublicPreviewAvailableQueryVariables>;

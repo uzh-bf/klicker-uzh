@@ -265,73 +265,6 @@ export async function getCatalogCollectionInfo(
   }
 }
 
-export async function changeCatalogCollectionPermissionLevel(
-  {
-    catalogCollectionId,
-    permissionId,
-    permissionLevel,
-  }: {
-    catalogCollectionId: string
-    permissionId: number
-    permissionLevel: DB.PermissionLevel
-  },
-  ctx: ContextWithUser
-) {
-  // verify that the requesting user has sufficient permissions to modify access level (ADMIN or OWNER)
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
-  // update the access level of the permission
-  const permission = await ctx.prisma.permission.update({
-    where: {
-      id: permissionId,
-      catalogCollectionId,
-    },
-    data: {
-      permissionLevel,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          shortname: true,
-          email: true,
-        },
-      },
-    },
-  })
-
-  // if the permission did not exist in the first place, return null
-  if (!permission) {
-    return null
-  }
-
-  // invalidate permission
-  ctx.emitter.emit('invalidate', {
-    typename: 'Permission',
-    id: permission.id,
-  })
-
-  return {
-    permissionId: permission.id,
-    userId: permission.user?.id,
-    username: permission.user?.shortname,
-    userEmail: permission.user?.email,
-    userGroupId: undefined,
-    userGroupName: undefined,
-    permissionLevel: permission.permissionLevel,
-  }
-}
-
 export async function changeCatalogCollectionObjectAccess(
   {
     catalogCollectionId,
@@ -421,61 +354,6 @@ export async function changeCatalogCollectionName(
 
   // return success
   return true
-}
-
-export async function revokeCatalogCollectionAccess(
-  {
-    permissionId,
-    catalogCollectionId,
-  }: { permissionId: number; catalogCollectionId: string },
-  ctx: ContextWithUser
-) {
-  // verify that the requesting user has sufficient permissions to revoke access (ADMIN or OWNER)
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
-  // verify that the permission belongs to the specified catalog collection
-  const permission = await ctx.prisma.permission.findUnique({
-    where: {
-      id: permissionId,
-      catalogCollectionId,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-        },
-      },
-    },
-  })
-
-  if (!permission || permission.id !== permissionId) {
-    return null
-  }
-
-  // delete the permission
-  const deletedPermission = await ctx.prisma.permission.delete({
-    where: {
-      id: permissionId,
-    },
-  })
-
-  // invalidate permission
-  ctx.emitter.emit('invalidate', {
-    typename: 'Permission',
-    id: deletedPermission.id,
-  })
-
-  return deletedPermission.id
 }
 
 export async function changeCatalogObjectAccess(
@@ -1031,6 +909,278 @@ export async function resolveObjectSharingRequest(
   })
 
   return true
+}
+// #endregion
+
+// ! Permission Levels and Permission Revocation
+// #region
+export async function changeCatalogCollectionPermissionLevel(
+  {
+    catalogCollectionId,
+    permissionId,
+    permissionLevel,
+  }: {
+    catalogCollectionId: string
+    permissionId: number
+    permissionLevel: DB.PermissionLevel
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the requesting user has sufficient permissions to modify access level (ADMIN or OWNER)
+  const { valid } = await validateCatalogCollectionPermissions(
+    {
+      catalogCollectionId,
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
+  // update the access level of the permission
+  const permission = await ctx.prisma.permission.update({
+    where: {
+      id: permissionId,
+      catalogCollectionId,
+    },
+    data: {
+      permissionLevel,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          shortname: true,
+          email: true,
+        },
+      },
+    },
+  })
+
+  // if the permission did not exist in the first place, return null
+  if (!permission) {
+    return null
+  }
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permission.id,
+  })
+
+  return {
+    permissionId: permission.id,
+    userId: permission.user?.id,
+    username: permission.user?.shortname,
+    userEmail: permission.user?.email,
+    userGroupId: undefined,
+    userGroupName: undefined,
+    permissionLevel: permission.permissionLevel,
+  }
+}
+
+export async function revokeCatalogCollectionAccess(
+  {
+    permissionId,
+    catalogCollectionId,
+  }: { permissionId: number; catalogCollectionId: string },
+  ctx: ContextWithUser
+) {
+  // verify that the requesting user has sufficient permissions to revoke access (ADMIN or OWNER)
+  const { valid } = await validateCatalogCollectionPermissions(
+    {
+      catalogCollectionId,
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
+  // verify that the permission belongs to the specified catalog collection
+  const permission = await ctx.prisma.permission.findUnique({
+    where: {
+      id: permissionId,
+      catalogCollectionId,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  })
+
+  if (!permission || permission.id !== permissionId) {
+    return null
+  }
+
+  // delete the permission
+  const deletedPermission = await ctx.prisma.permission.delete({
+    where: {
+      id: permissionId,
+    },
+  })
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: deletedPermission.id,
+  })
+
+  return deletedPermission.id
+}
+
+export async function changeAnswerCollectionPermissionLevel(
+  {
+    collectionId,
+    permissionId,
+    permissionLevel,
+  }: {
+    collectionId: number
+    permissionId: number
+    permissionLevel: DB.PermissionLevel
+  },
+  ctx: ContextWithUser
+) {
+  // verify that user has either owner or admin access
+  const { valid } = await validateAnswerCollectionPermissions(
+    {
+      collectionId,
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
+  // update the access level of the permission
+  const permission = await ctx.prisma.permission.update({
+    where: {
+      id: permissionId,
+      answerCollectionId: collectionId,
+    },
+    data: {
+      permissionLevel,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          shortname: true,
+          email: true,
+        },
+      },
+    },
+  })
+
+  // if the permission did not exist in the first place, return null
+  if (!permission) {
+    return null
+  }
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permission.id,
+  })
+
+  return {
+    permissionId: permission.id,
+    userId: permission.user?.id,
+    username: permission.user?.shortname,
+    userEmail: permission.user?.email,
+    userGroupId: undefined,
+    userGroupName: undefined,
+    permissionLevel: permission.permissionLevel,
+  }
+}
+
+export async function revokeAnswerCollectionAccess(
+  {
+    permissionId,
+    collectionId,
+  }: { permissionId: number; collectionId: number },
+  ctx: ContextWithUser
+) {
+  // verify that the permission belongs to the specified collection
+  const permission = await ctx.prisma.permission.findUnique({
+    where: {
+      id: permissionId,
+      answerCollectionId: collectionId,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  })
+
+  if (!permission || permission.id !== permissionId) {
+    return null
+  }
+
+  // verify that the requesting user has sufficient permissions to revoke access (ADMIN or OWNER)
+  const collection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: collectionId,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              permissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      // TODO: the access should also not be revokable if the collection is used in a shared element
+      linkedElements: {
+        where: {
+          ownerId: permission.user?.id,
+        },
+      },
+    },
+  })
+
+  if (!collection) {
+    return null
+  }
+
+  // verify that the collection is not used (access cannot be removed in these cases)
+  if (collection.linkedElements.length > 0) {
+    return null
+  }
+
+  // delete the permission
+  const deletedPermission = await ctx.prisma.permission.delete({
+    where: {
+      id: permissionId,
+    },
+  })
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: deletedPermission.id,
+  })
+
+  return deletedPermission.id
 }
 // #endregion
 

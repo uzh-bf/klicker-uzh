@@ -1417,24 +1417,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeAnswerCollectionPermissionLevel: t
-        .withAuth(asUserFullAccess)
-        .field({
-          nullable: true,
-          type: PermissionInfo,
-          args: {
-            collectionId: t.arg.int({ required: true }),
-            permissionId: t.arg.int({ required: true }),
-            permissionLevel: t.arg({ type: PermissionLevel, required: true }),
-          },
-          resolve(_, args, ctx) {
-            return ResourcesService.changeAnswerCollectionPermissionLevel(
-              args,
-              ctx
-            )
-          },
-        }),
-
       revokeAnswerCollectionAccess: t.withAuth(asUserFullAccess).int({
         nullable: true,
         args: {
@@ -1442,7 +1424,7 @@ export const Mutation = builder.mutationType({
           collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.revokeAnswerCollectionAccess(args, ctx)
+          return SharingService.revokeAnswerCollectionAccess(args, ctx)
         },
       }),
 
@@ -1514,24 +1496,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCatalogCollectionPermissionLevel: t
-        .withAuth(asUserFullAccess)
-        .field({
-          nullable: true,
-          type: PermissionInfo,
-          args: {
-            catalogCollectionId: t.arg.string({ required: true }),
-            permissionId: t.arg.int({ required: true }),
-            permissionLevel: t.arg({ type: PermissionLevel, required: true }),
-          },
-          resolve(_, args, ctx) {
-            return SharingService.changeCatalogCollectionPermissionLevel(
-              args,
-              ctx
-            )
-          },
-        }),
-
       revokeCatalogCollectionAccess: t.withAuth(asUserFullAccess).int({
         nullable: true,
         args: {
@@ -1554,6 +1518,42 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return SharingService.shareCatalogCollection(args, ctx)
+        },
+      }),
+
+      changePermissionLevel: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PermissionInfo,
+        args: {
+          permissionId: t.arg.int({ required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.changeCatalogCollectionPermissionLevel(
+              {
+                catalogCollectionId: args.objectId,
+                permissionId: args.permissionId,
+                permissionLevel: args.permissionLevel,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.changeAnswerCollectionPermissionLevel(
+              {
+                collectionId: parseInt(args.objectId),
+                permissionId: args.permissionId,
+                permissionLevel: args.permissionLevel,
+              },
+              ctx
+            )
+          }
+
+          return null
         },
       }),
 
