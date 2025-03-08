@@ -1313,6 +1313,8 @@ export const Mutation = builder.mutationType({
               ctx
             )
           }
+
+          return null
         },
       }),
 
@@ -1333,6 +1335,7 @@ export const Mutation = builder.mutationType({
               ctx
             )
           }
+
           return false
         },
       }),
@@ -1355,16 +1358,26 @@ export const Mutation = builder.mutationType({
               ctx
             )
           }
+
+          return null
         },
       }),
 
-      cancelAnswerCollectionRequest: t.withAuth(asUserFullAccess).boolean({
+      cancelObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.cancelAnswerCollectionRequest(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+            return SharingService.cancelAnswerCollectionRequest(
+              { collectionId: parseInt(args.objectId) },
+              ctx
+            )
+          }
+
+          return false
         },
       }),
 

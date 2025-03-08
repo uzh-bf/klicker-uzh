@@ -1291,8 +1291,8 @@ type Mutation {
   addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!): CatalogObject
   approveObjectSharingRequest(permissionId: Int!, permissionLevel: PermissionLevel!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
-  cancelAnswerCollectionRequest(collectionId: Int!): Boolean!
   cancelLiveQuiz(id: String!): LiveQuiz
+  cancelObjectSharingRequest(objectId: String!, objectType: CatalogObjectType!): Boolean!
   changeAnswerCollectionPermissionLevel(collectionId: Int!, permissionId: Int!, permissionLevel: PermissionLevel!): PermissionInfo
   changeCatalogCollectionName(catalogCollectionId: String!, name: String!): Boolean
   changeCatalogCollectionObjectAccess(access: ObjectAccess!, catalogCollectionId: String!): Boolean!
