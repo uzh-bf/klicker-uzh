@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CatalogObjectRequestSuccessToast({
+function ObjectRemovalSuccessToast({
   open,
   onClose,
 }: {
@@ -16,11 +16,11 @@ function CatalogObjectRequestSuccessToast({
       type="success"
       openExternal={open}
       onCloseExternal={onClose}
-      duration={3500}
+      duration={3000}
     >
-      {t('manage.catalog.requestCatalogObjectSuccess')}
+      {t('manage.sharing.removalSuccessful')}
     </Toast>
   )
 }
 
-export default CatalogObjectRequestSuccessToast
+export default ObjectRemovalSuccessToast

@@ -18,9 +18,9 @@ import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessLabel from '../ObjectAccessLabel'
-import CatalogObjectRequestSuccessToast from '../actions/CatalogObjectRequestSuccessToast'
+import CatalogChangeAccessModal from '../actions/CatalogChangeAccessModal'
 import CatalogRequestModal from '../actions/CatalogRequestModal'
-import CatalogCollectionChangeAccessModal from '../collections/CatalogCollectionChangeAccessModal'
+import CatalogObjectRequestSuccessToast from '../actions/CatalogRequestSuccessToast'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
 import CatalogCollectionDeletionSuccessToast from '../collections/CatalogCollectionDeletionSuccessToast'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
@@ -185,11 +185,13 @@ function CatalogCollectionListItem({
             open={showDeletionSuccessToast}
             onClose={() => setShowDeletionSuccessToast(false)}
           />
-          <CatalogCollectionChangeAccessModal
-            catalogCollection={collection}
-            newAccess={newAccess}
+          <CatalogChangeAccessModal
             open={changeAccessModal}
             onClose={() => setChangeAccessModal(false)}
+            objectType={CatalogObjectType.CatalogCollection}
+            objectName={collection.name}
+            newAccess={newAccess}
+            catalogCollectionId={collection.id}
           />
         </>
       ) : null}

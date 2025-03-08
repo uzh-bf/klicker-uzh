@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CatalogObjectRequestErrorToast({
+function ObjectRemovalErrorToast({
   open,
   onClose,
 }: {
@@ -16,10 +16,11 @@ function CatalogObjectRequestErrorToast({
       type="error"
       openExternal={open}
       onCloseExternal={onClose}
+      duration={3000}
     >
-      {t('manage.catalog.requestCatalogObjectFailed')}
+      {t('manage.sharing.removalFailed')}
     </Toast>
   )
 }
 
-export default CatalogObjectRequestErrorToast
+export default ObjectRemovalErrorToast

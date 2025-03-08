@@ -27,7 +27,7 @@ describe('Create, edit and share answer collections', function () {
   function removeAnswerCollection({ name }: { name: string }) {
     cy.get(`[data-cy="answer-collection-actions-${name}"]`).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
-    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-object"]').click()
   }
 
   function grantCollectionAccess({
@@ -718,7 +718,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
     ).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
-    cy.get('[data-cy="close-remove-answer-collection"]').click()
+    cy.get('[data-cy="close-remove-object"]').click()
   })
 
   it('Verify that all answer options of the restricted answer collection can be edited and deleted again by owner', function () {

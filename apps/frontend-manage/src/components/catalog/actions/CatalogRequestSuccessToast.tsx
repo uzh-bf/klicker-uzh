@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CollectionRemovalErrorToast({
+function CatalogRequestSuccessToast({
   open,
   onClose,
 }: {
@@ -13,14 +13,14 @@ function CollectionRemovalErrorToast({
   return (
     <Toast
       dismissible
-      type="error"
+      type="success"
       openExternal={open}
       onCloseExternal={onClose}
-      duration={3000}
+      duration={3500}
     >
-      {t('manage.resources.removalFailed')}
+      {t('manage.catalog.requestCatalogObjectSuccess')}
     </Toast>
   )
 }
 
-export default CollectionRemovalErrorToast
+export default CatalogRequestSuccessToast
