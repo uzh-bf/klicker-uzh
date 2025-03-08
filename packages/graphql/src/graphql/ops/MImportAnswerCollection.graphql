@@ -1,9 +1,0 @@
-mutation ImportAnswerCollection(
-  $collectionId: Int!
-  $catalogCollectionId: String
-) {
-  importAnswerCollection(
-    collectionId: $collectionId
-    catalogCollectionId: $catalogCollectionId
-  )
-}

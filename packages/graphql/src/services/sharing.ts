@@ -43,7 +43,7 @@ async function verifyCatalogCollectionBrowsable(
 }
 
 // helper function to check for a specific access level on the catalog collection
-export async function validateCatalogCollectionPermissions(
+async function validateCatalogCollectionPermissions(
   {
     catalogCollectionId,
     acceptedPermissionLevels,
@@ -128,7 +128,7 @@ async function verifyCatalogItemEditPermissions(
   }
   // ! Case 2: Object in top-level collection -> access level on object decides permissions
   else {
-    if (assignment.answerCollection?.id) {
+    if (typeof assignment.answerCollection?.id !== 'undefined') {
       // verify that the user has access to the answer collection
       const { valid } = await validateAnswerCollectionPermissions(
         {
@@ -1458,7 +1458,7 @@ export async function importAnswerCollection(
   }: { collectionId: number; catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
-  // get answer collection, verify public access and check if access has already been granted
+  // get answer collection
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
@@ -1487,7 +1487,7 @@ export async function importAnswerCollection(
     return false
   }
 
-  // get catalog assignment of this answer collection
+  // get catalog assignment of this answer collection, verify public access
   const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
     where: {
       answerCollectionId_catalogCollectionId: {
@@ -1502,11 +1502,22 @@ export async function importAnswerCollection(
     return false
   }
 
+  // count number of times the answer collection has been imported before
+  const importCount = await ctx.prisma.answerCollection.count({
+    where: {
+      originalId: collection.id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
   // create new answer collection with the content of the original one
   await ctx.prisma.answerCollection.create({
     data: {
       originalId: collection.id,
-      name: collection.name,
+      name:
+        importCount > 0
+          ? `${collection.name} (${importCount})`
+          : collection.name,
       description: collection.description,
       owner: {
         connect: {

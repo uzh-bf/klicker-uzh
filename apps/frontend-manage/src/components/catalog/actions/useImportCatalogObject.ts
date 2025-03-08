@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   CatalogObjectType,
-  ImportAnswerCollectionDocument,
+  ImportCatalogObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger object import, returns success boolean
@@ -16,39 +16,43 @@ function useImportCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
-  const [importAnswerCollection, { loading: importingAnswerCollection }] =
-    useMutation(ImportAnswerCollectionDocument)
+  const [importCatalogObject, { loading: importingCatalogObject }] =
+    useMutation(ImportCatalogObjectDocument)
 
-  if (objectType === CatalogObjectType.AnswerCollection) {
-    const onImportAnswerCollection = async () => {
-      try {
-        const res = await importAnswerCollection({
-          variables: { collectionId: objectId as number, catalogCollectionId },
-        })
+  if (objectType === CatalogObjectType.CatalogCollection) {
+    return {
+      onImport: async () => {
+        console.error('Unsupported object type', objectType)
+        onError()
+      },
+      importing: false,
+    }
+  }
 
-        if (res.data?.importAnswerCollection) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
+  const onImportCatalogObject = async () => {
+    try {
+      const res = await importCatalogObject({
+        variables: {
+          objectId: String(objectId),
+          objectType,
+          catalogCollectionId,
+        },
+      })
+
+      if (res.data?.importCatalogObject) {
+        return true
+      } else {
         return false
       }
-    }
-
-    return {
-      onImport: onImportAnswerCollection,
-      importing: importingAnswerCollection,
+    } catch (error) {
+      console.error(error)
+      return false
     }
   }
 
   return {
-    onImport: async () => {
-      console.error('Unsupported object type', objectType)
-      onError()
-    },
-    importing: false,
+    onImport: onImportCatalogObject,
+    importing: importingCatalogObject,
   }
 }
 

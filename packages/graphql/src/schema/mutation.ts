@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { CatalogObjectType as CatalogObjectTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
@@ -66,6 +67,7 @@ import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
   CatalogCollection,
   CatalogObject,
+  CatalogObjectType,
   ObjectAccess,
   PermissionInfo,
   PermissionLevel,
@@ -1304,14 +1306,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      importAnswerCollection: t.withAuth(asUserFullAccess).boolean({
+      importCatalogObject: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SharingService.importAnswerCollection(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+            return SharingService.importAnswerCollection(
+              {
+                collectionId: parseInt(args.objectId),
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
+          }
+          return false
         },
       }),
 

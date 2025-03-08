@@ -75,7 +75,7 @@ function useTransferObjectOwnership({
       usernameOrEmail: string
     ) => {
       try {
-        const res = await await transferCollectionOwnership({
+        const res = await transferCollectionOwnership({
           variables: {
             collectionId: objectId as number,
             usernameOrEmail,
