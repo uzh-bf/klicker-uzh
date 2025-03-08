@@ -7,8 +7,7 @@ import {
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
   PermissionLevel,
-  ShareAnswerCollectionDocument,
-  ShareCatalogCollectionDocument,
+  ShareObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to revoke the permission for a certain object
@@ -34,173 +33,91 @@ function useObjectSharing({
   }) => Promise<boolean>
   objectSharing: boolean
 } {
-  const [shareAnswerCollection, { loading: sharingAnswerCollection }] =
-    useMutation(ShareAnswerCollectionDocument)
-  const [shareCatalogCollection, { loading: sharingCatalogCollection }] =
-    useMutation(ShareCatalogCollectionDocument)
+  const [shareObject, { loading: sharingObject }] =
+    useMutation(ShareObjectDocument)
 
-  if (objectType === CatalogObjectType.CatalogCollection) {
-    const onShareCatalogCollection = async ({
-      usernameOrEmail,
-      userGroupId,
-      permissionLevel,
-    }: {
-      usernameOrEmail?: string
-      userGroupId?: number
-      permissionLevel: PermissionLevel
-    }) => {
-      try {
-        const res = await shareCatalogCollection({
-          variables: {
-            catalogCollectionId: objectId as string,
-            usernameOrEmail: usernameOrEmail,
-            userGroupId:
-              typeof usernameOrEmail === 'undefined' ? userGroupId : undefined,
-            permissionLevel: permissionLevel,
-          },
-          update: (cache, { data }) => {
-            if (!data?.shareCatalogCollection) return
+  const onShareObject = async ({
+    usernameOrEmail,
+    userGroupId,
+    permissionLevel,
+  }: {
+    usernameOrEmail?: string
+    userGroupId?: number
+    permissionLevel: PermissionLevel
+  }) => {
+    try {
+      const res = await shareObject({
+        variables: {
+          objectId: String(objectId),
+          objectType,
+          usernameOrEmail: usernameOrEmail,
+          userGroupId:
+            typeof usernameOrEmail === 'undefined' ? userGroupId : undefined,
+          permissionLevel: permissionLevel,
+        },
+        update: (cache, { data }) => {
+          if (!data?.shareObject) return
 
-            const prevPermissions = cache.readQuery({
-              query: GetObjectPermissionsDocument,
-              variables: { objectId: String(objectId), objectType },
-            })
+          const prevPermissions = cache.readQuery({
+            query: GetObjectPermissionsDocument,
+            variables: { objectId: String(objectId), objectType },
+          })
 
-            if (!prevPermissions?.getObjectPermissions) {
-              return
-            }
+          if (!prevPermissions?.getObjectPermissions) {
+            return
+          }
 
-            // replace the permission that was just added (if it already exists) and add it otherwise
-            const newPermissions = prevPermissions.getObjectPermissions.filter(
-              (permission) =>
-                permission.permissionId !==
-                data.shareCatalogCollection!.permissionId
-            )
-            newPermissions.push(data.shareCatalogCollection)
+          // replace the permission that was just added (if it already exists) and add it otherwise
+          const newPermissions = prevPermissions.getObjectPermissions.filter(
+            (permission) =>
+              permission.permissionId !== data.shareObject!.permissionId
+          )
+          newPermissions.push(data.shareObject)
 
-            cache.writeQuery({
-              query: GetObjectPermissionsDocument,
-              variables: { objectId: String(objectId), objectType },
-              data: {
-                getObjectPermissions: newPermissions,
-              },
-            })
-          },
-          refetchQueries: [
-            {
-              query: GetCatalogCollectionInfoDocument,
-              variables: { catalogCollectionId },
+          cache.writeQuery({
+            query: GetObjectPermissionsDocument,
+            variables: { objectId: String(objectId), objectType },
+            data: {
+              getObjectPermissions: newPermissions,
             },
-            {
-              query: GetCatalogObjectsDocument,
-              variables: { catalogCollectionId },
-            },
-            GetCatalogSharingRequestsDocument,
-          ],
-        })
+          })
+        },
+        refetchQueries: [
+          GetCatalogSharingRequestsDocument,
+          {
+            query: GetCatalogObjectsDocument,
+            variables: { catalogCollectionId },
+          },
+          ...(objectType === CatalogObjectType.CatalogCollection
+            ? [
+                {
+                  query: GetCatalogCollectionInfoDocument,
+                  variables: { catalogCollectionId: objectId },
+                },
+              ]
+            : []),
+          ...(objectType === CatalogObjectType.AnswerCollection
+            ? [GetAnswerCollectionsInfoDocument]
+            : []),
+        ],
+      })
 
-        if (
-          typeof res?.data?.shareCatalogCollection?.permissionId !== 'undefined'
-        ) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
+      if (typeof res?.data?.shareObject?.permissionId !== 'undefined') {
+        return true
+      } else {
         onError()
         return false
       }
-    }
-
-    return {
-      onShareObject: onShareCatalogCollection,
-      objectSharing: sharingCatalogCollection,
-    }
-  } else if (objectType === CatalogObjectType.AnswerCollection) {
-    const onShareAnswerCollection = async ({
-      usernameOrEmail,
-      userGroupId,
-      permissionLevel,
-    }: {
-      usernameOrEmail?: string
-      userGroupId?: number
-      permissionLevel: PermissionLevel
-    }) => {
-      try {
-        const res = await shareAnswerCollection({
-          variables: {
-            collectionId: objectId as number,
-            usernameOrEmail: usernameOrEmail,
-            userGroupId:
-              typeof usernameOrEmail === 'undefined' ? userGroupId : undefined,
-            permissionLevel: permissionLevel,
-          },
-          update: (cache, { data }) => {
-            if (!data?.shareAnswerCollection) return
-
-            const prevPermissions = cache.readQuery({
-              query: GetObjectPermissionsDocument,
-              variables: { objectId: String(objectId), objectType },
-            })
-
-            if (!prevPermissions?.getObjectPermissions) {
-              return
-            }
-
-            // replace the permission that was just added (if it already exists) and add it otherwise
-            const newPermissions = prevPermissions.getObjectPermissions.filter(
-              (permission) =>
-                permission.permissionId !==
-                data.shareAnswerCollection!.permissionId
-            )
-            newPermissions.push(data.shareAnswerCollection)
-
-            cache.writeQuery({
-              query: GetObjectPermissionsDocument,
-              variables: { objectId: String(objectId), objectType },
-              data: {
-                getObjectPermissions: newPermissions,
-              },
-            })
-          },
-          refetchQueries: [
-            GetAnswerCollectionsInfoDocument,
-            GetCatalogSharingRequestsDocument,
-            {
-              query: GetCatalogObjectsDocument,
-              variables: { catalogCollectionId },
-            },
-          ],
-        })
-
-        if (
-          typeof res?.data?.shareAnswerCollection?.permissionId !== 'undefined'
-        ) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
-        onError()
-        return false
-      }
-    }
-
-    return {
-      onShareObject: onShareAnswerCollection,
-      objectSharing: sharingAnswerCollection,
+    } catch (error) {
+      console.error(error)
+      onError()
+      return false
     }
   }
 
   return {
-    onShareObject: async () => {
-      console.error('Unsupported object type', objectType)
-      onError()
-      return false
-    },
-    objectSharing: false,
+    onShareObject,
+    objectSharing: sharingObject,
   }
 }
 

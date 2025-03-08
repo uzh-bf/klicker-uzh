@@ -1403,20 +1403,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      shareAnswerCollection: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PermissionInfo,
-        args: {
-          collectionId: t.arg.int({ required: true }),
-          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
-          usernameOrEmail: t.arg.string({ required: false }),
-          userGroupId: t.arg.int({ required: false }),
-        },
-        resolve(_, args, ctx) {
-          return SharingService.shareAnswerCollection(args, ctx)
-        },
-      }),
-
       createCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogCollection,
@@ -1485,17 +1471,42 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      shareCatalogCollection: t.withAuth(asUserFullAccess).field({
+      shareObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
         args: {
-          catalogCollectionId: t.arg.string({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           usernameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SharingService.shareCatalogCollection(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.shareCatalogCollection(
+              {
+                catalogCollectionId: args.objectId,
+                permissionLevel: args.permissionLevel,
+                usernameOrEmail: args.usernameOrEmail,
+                userGroupId: args.userGroupId,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.shareAnswerCollection(
+              {
+                collectionId: parseInt(args.objectId),
+                permissionLevel: args.permissionLevel,
+                usernameOrEmail: args.usernameOrEmail,
+                userGroupId: args.userGroupId,
+              },
+              ctx
+            )
+          }
+
+          return null
         },
       }),
 

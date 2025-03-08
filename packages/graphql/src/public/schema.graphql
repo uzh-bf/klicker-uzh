@@ -1394,8 +1394,7 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
-  shareAnswerCollection(collectionId: Int!, permissionLevel: PermissionLevel!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
-  shareCatalogCollection(catalogCollectionId: String!, permissionLevel: PermissionLevel!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
+  shareObject(objectId: String!, objectType: CatalogObjectType!, permissionLevel: PermissionLevel!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
