@@ -4,6 +4,7 @@ import {
   faPencil,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { CatalogObjectType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
@@ -42,7 +43,7 @@ function useCatalogCollectionActionsDropdown({
               icon={faArrowUpFromBracket}
               className="mr-2.5 h-4 w-4"
             />
-            {t('manage.catalog.shareCatalogCollection')}
+            {t(`manage.sharing.share${CatalogObjectType.CatalogCollection}`)}
           </div>
         ),
         onClick: (e: React.MouseEvent<HTMLDivElement>) => {

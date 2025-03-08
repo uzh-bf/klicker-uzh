@@ -3,17 +3,23 @@ import {
   faCircleXmark,
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PermissionLevel } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CatalogObjectType,
+  PermissionLevel,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import useObjectActionPermissions from './useObjectActionPermissions'
 
 function PermissionsTable({
+  objectType,
   activePermissionLevel,
-  actions,
 }: {
+  objectType: CatalogObjectType
   activePermissionLevel?: PermissionLevel
-  actions: { action: string; permissions: boolean[] }[]
 }) {
   const t = useTranslations()
+
+  const actionPermissions = useObjectActionPermissions({ objectType })
 
   // map access levels to indices
   const permissionLevelToColumnIndex = {
@@ -51,7 +57,7 @@ function PermissionsTable({
         </tr>
       </thead>
       <tbody className="bg-white">
-        {actions.map(({ action, permissions }) => (
+        {actionPermissions.map(({ action, permissions }) => (
           <tr
             key={action}
             className="border-t border-gray-200 hover:bg-gray-50"

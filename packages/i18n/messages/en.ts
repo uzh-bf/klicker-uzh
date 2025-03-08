@@ -2107,17 +2107,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       viewCollection: 'View Collection',
       editCollection: 'Edit Collection',
       shareCollection: 'Share Collection',
-      shareAnswerCollection: 'Share Answer Collection',
-      infoCollectionSharing:
-        'This view allows you to share the answer collection "<b>{name}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       viewUseCollectionContent: 'View Content / Use Collection',
       modifyContent: 'Modify Content',
       modifyCatalogAssignments: 'Modify Catalog Assignments',
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
-      sharingSuccessful: 'The answer collection was shared successfully.',
-      sharingFailed:
-        'An error occurred while sharing the answer collection or the specified user could not be found.',
       requestedAccess: 'Requested Access',
       deleteCollection: 'Delete collection',
       deletionDisabledInUse:
@@ -2141,9 +2135,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while removing the answer collection. Please try again or contact the support.',
       cancelSharingRequest: 'Cancel Sharing Request',
       transferOwnershipTitle: 'Transfer Collection Ownership',
-      accessRemovalSuccessful: 'Access has been successfully removed.',
-      accessRemovalFailed:
-        'Failed to remove access. Please try again or contact support.',
     },
     userGroups: {
       comingSoon:
@@ -2232,23 +2223,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       collectionCreationError:
         'An error occurred while creating the catalog collection. Please try again.',
       backToCatalogOverview: 'back to Catalog Overview',
-      shareCatalogCollection: 'Share Collection',
       deleteCatalogCollection: 'Delete Collection',
       openCatalogCollection: 'Open Collection',
-      infoCatalogCollectionSharing:
-        'This view allows you to share the catalog collection "<b>{name}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
       browseCatalogCollection: 'Browse Collection / Request Included Objects',
       modifyContent: 'Modify Content',
       modifyPermissions: 'Modify Permissions',
       revokeAccess: 'Revoke Access',
       deleteCollection: 'Delete Collection',
       removeObject: 'Remove Object',
-      sharingSuccessful: 'The catalog collection was shared successfully.',
-      sharingFailed:
-        'An error occurred while sharing the catalog collection or the specified user could not be found.',
-      accessRemovalSuccessful: 'Access has been successfully removed.',
-      accessRemovalFailed:
-        'Failed to remove access. Please try again or contact support.',
       deleteCatalogCollectionTitle: 'Delete Catalog Collection',
       deleteCatalogCollectionDescription:
         'Are you sure you want to delete the catalog collection "{name}"? This will remove all objects from the catalog collection and prevent users from accessing these objects through the catalog collection.',
@@ -2315,6 +2297,18 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:
         'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      shareANSWER_COLLECTION: 'Share Answer Collection',
+      shareCATALOG_COLLECTION: 'Share Catalog Collection',
+      infoSharingANSWER_COLLECTION:
+        'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
+      infoSharingCATALOG_COLLECTION:
+        'This view allows you to share the catalog collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
+      sharingSuccessful: 'The object was shared successfully.',
+      sharingFailed:
+        'An error occurred while sharing the object or the specified user could not be found.',
+      accessRemovalSuccessful: 'Access has been successfully removed.',
+      accessRemovalFailed:
+        'Failed to remove access. Please try again or contact support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

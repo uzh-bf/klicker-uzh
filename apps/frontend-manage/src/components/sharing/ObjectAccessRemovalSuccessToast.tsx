@@ -1,7 +1,7 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function CollectionAccessRemovalSuccessToast({
+function ObjectAccessRemovalSuccessToast({
   open,
   onClose,
 }: {
@@ -19,9 +19,9 @@ function CollectionAccessRemovalSuccessToast({
       duration={4000}
       className={{ root: 'max-w-[30rem]' }}
     >
-      {t('manage.resources.accessRemovalSuccessful')}
+      {t('manage.sharing.accessRemovalSuccessful')}
     </Toast>
   )
 }
 
-export default CollectionAccessRemovalSuccessToast
+export default ObjectAccessRemovalSuccessToast

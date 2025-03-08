@@ -24,7 +24,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="transfer-ownership"]').should(
       ownership ? 'exist' : 'not.exist'
     )
-    cy.get('[data-cy="close-share-catalog-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
 
     cy.get(
       `[data-cy="catalog-collection-${data.CCPublic}-actions"]`
@@ -461,7 +461,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="share-catalog-collection"]').click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
     cy.get('[data-cy="new-permission-username-or-email"]').should('exist')
-    cy.get('[data-cy="close-share-catalog-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
 
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
@@ -558,7 +558,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
-    cy.get('[data-cy="close-share-answer-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
@@ -569,7 +569,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
-    cy.get('[data-cy="close-share-answer-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
@@ -584,22 +584,22 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('not.exist')
-    cy.get('[data-cy="close-share-answer-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
-    cy.get('[data-cy="close-share-answer-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('not.exist')
-    cy.get('[data-cy="close-share-answer-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
-    cy.get('[data-cy="close-share-answer-collection"]').click()
+    cy.get('[data-cy="close-share-object"]').click()
     cy.logoutLecturer()
 
     // pro2 - ADMIN of catalog collection CC2 but without permissions on answer collections should not be able to access sharing dialogs

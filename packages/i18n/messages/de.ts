@@ -2132,17 +2132,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       viewCollection: 'Sammlung ansehen',
       editCollection: 'Sammlung bearbeiten',
       shareCollection: 'Sammlung teilen',
-      shareAnswerCollection: 'Antwort-Sammlung teilen',
-      infoCollectionSharing:
-        'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{name}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       viewUseCollectionContent: 'Inhalt einsehen / Sammlung verwenden',
       modifyContent: 'Inhalt bearbeiten',
       modifyCatalogAssignments: 'Katalog-Zuweisungen bearbeiten',
       modifyPermissions: 'Berechtigungen bearbeiten',
       revokeAccess: 'Zugriff entziehen',
-      sharingSuccessful: 'Die Antwort-Sammlung wurde erfolgreich geteilt.',
-      sharingFailed:
-        'Beim Teilen der Antwort-Sammlung ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
       requestedAccess: 'Zugriff beantragt',
       deleteCollection: 'Sammlung löschen',
       deletionDisabledInUse:
@@ -2166,9 +2160,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Entfernen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
       transferOwnershipTitle: 'Eigentumsübertragung der Sammlung',
-      accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
-      accessRemovalFailed:
-        'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
     userGroups: {
       comingSoon:
@@ -2261,23 +2252,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       collectionCreationError:
         'Bei der Erstellung der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
       backToCatalogOverview: 'zurück zur Katalog-Übersicht',
-      shareCatalogCollection: 'Sammlung teilen',
       deleteCatalogCollection: 'Sammlung löschen',
       openCatalogCollection: 'Sammlung öffnen',
-      infoCatalogCollectionSharing:
-        'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{name}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       browseCatalogCollection: 'Sammlung durchsuchen / Objekte anfragen',
       modifyContent: 'Inhalt bearbeiten',
       modifyPermissions: 'Berechtigungen bearbeiten',
       revokeAccess: 'Zugriff entziehen',
       deleteCollection: 'Sammlung löschen',
       removeObject: 'Objekt entfernen',
-      sharingSuccessful: 'Die Katalog-Sammlung wurde erfolgreich geteilt.',
-      sharingFailed:
-        'Beim Teilen der Katalog-Sammlung ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
-      accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
-      accessRemovalFailed:
-        'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       deleteCatalogCollectionTitle: 'Katalogsammlung löschen',
       deleteCatalogCollectionDescription:
         'Sind Sie sicher, dass Sie die Katalogsammlung "{name}" löschen möchten? Dies entfernt alle Objekte aus der Katalogsammlung und verhindert, dass Benutzer über die Katalogsammlung auf diese Objekte zugreifen können.',
@@ -2347,6 +2329,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipANSWER_COLLECTION:
         'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
+      shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
+      infoSharingANSWER_COLLECTION:
+        'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingCATALOG_COLLECTION:
+        'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      sharingSuccessful: 'Das Objekt wurde erfolgreich geteilt.',
+      sharingFailed:
+        'Beim Teilen des Objekts ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
+      accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
+      accessRemovalFailed:
+        'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

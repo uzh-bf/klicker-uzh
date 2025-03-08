@@ -1,15 +1,13 @@
 import { Toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface CatalogCollectionSharingErrorToastProps {
-  open: boolean
-  onClose: () => void
-}
-
-function CatalogCollectionSharingErrorToast({
+function ObjectSharingErrorToast({
   open,
   onClose,
-}: CatalogCollectionSharingErrorToastProps) {
+}: {
+  open: boolean
+  onClose: () => void
+}) {
   const t = useTranslations()
 
   return (
@@ -18,10 +16,12 @@ function CatalogCollectionSharingErrorToast({
       type="error"
       openExternal={open}
       onCloseExternal={onClose}
+      duration={3000}
+      className={{ root: 'max-w-[30rem]' }}
     >
-      {t('manage.catalog.sharingFailed')}
+      {t('manage.sharing.sharingFailed')}
     </Toast>
   )
 }
 
-export default CatalogCollectionSharingErrorToast
+export default ObjectSharingErrorToast

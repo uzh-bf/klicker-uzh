@@ -635,7 +635,7 @@ export async function shareAnswerCollection(
   }
 }
 
-export async function changeCollectionPermissionLevel(
+export async function changeAnswerCollectionPermissionLevel(
   {
     collectionId,
     permissionId,
@@ -702,7 +702,7 @@ export async function changeCollectionPermissionLevel(
   }
 }
 
-export async function revokeCollectionAccess(
+export async function revokeAnswerCollectionAccess(
   {
     permissionId,
     collectionId,

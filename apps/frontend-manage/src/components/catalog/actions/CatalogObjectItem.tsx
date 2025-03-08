@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
+import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
 import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogImportModal from './CatalogImportModal'
@@ -27,7 +28,6 @@ import CatalogRequestCancellationSuccessToast from './CatalogRequestCancellation
 import CatalogRequestModal from './CatalogRequestModal'
 import ObjectChangeAccessModal from './ObjectChangeAccessModal'
 import ObjectRemovalModal from './ObjectRemovalModal'
-import ObjectSharingModal from './ObjectSharingModal'
 
 function CatalogObjectItem({
   object,
@@ -246,16 +246,27 @@ function CatalogObjectItem({
         </>
       ) : null}
       {object.isManager ? (
-        <ObjectSharingModal
-          objectId={object.id ?? undefined}
-          objectUuid={object.uuid ?? undefined}
-          objectName={object.name}
-          objectType={object.objectType}
-          catalogCollectionId={catalogCollectionId}
-          isOwner={object.isOwner}
-          open={sharingModal}
-          onClose={() => setSharingModal(false)}
-        />
+        object.uuid ? (
+          <ObjectSharingModalWrapper
+            objectUuid={object.uuid}
+            objectName={object.name}
+            objectType={object.objectType}
+            catalogCollectionId={catalogCollectionId}
+            isOwner={object.isOwner}
+            open={sharingModal}
+            onClose={() => setSharingModal(false)}
+          />
+        ) : (
+          <ObjectSharingModalWrapper
+            objectId={object.id!}
+            objectName={object.name}
+            objectType={object.objectType}
+            catalogCollectionId={catalogCollectionId}
+            isOwner={object.isOwner}
+            open={sharingModal}
+            onClose={() => setSharingModal(false)}
+          />
+        )
       ) : null}
     </>
   )
