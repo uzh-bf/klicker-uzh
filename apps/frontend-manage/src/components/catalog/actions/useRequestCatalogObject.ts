@@ -59,10 +59,12 @@ function useRequestCatalogObject({
         if (res.data?.requestCatalogCollection?.id) {
           return true
         } else {
+          onError()
           return false
         }
       } catch (error) {
         console.error(error)
+        onError()
         return false
       }
     }
@@ -121,10 +123,12 @@ function useRequestCatalogObject({
       if (res.data?.requestCatalogObject?.id) {
         return true
       } else {
+        onError()
         return false
       }
     } catch (error) {
       console.error(error)
+      onError()
       return false
     }
   }

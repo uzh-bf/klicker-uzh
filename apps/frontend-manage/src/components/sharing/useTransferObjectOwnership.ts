@@ -39,7 +39,7 @@ function useTransferObjectOwnership({
           // be removed in addition to the added new admin permission for the previous owner
           {
             query: GetObjectPermissionsDocument,
-            variables: { objectId, objectType },
+            variables: { objectId: String(objectId), objectType },
           },
           ...(objectType === CatalogObjectType.CatalogCollection
             ? [GetCatalogCollectionsListDocument]
