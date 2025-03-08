@@ -1390,8 +1390,7 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
-  revokeAnswerCollectionAccess(collectionId: Int!, permissionId: Int!): Int
-  revokeCatalogCollectionAccess(catalogCollectionId: String!, permissionId: Int!): Int
+  revokeObjectAccess(objectId: String!, objectType: CatalogObjectType!, permissionId: Int!): Int
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!

@@ -1,0 +1,11 @@
+mutation RevokeObjectAccess(
+  $permissionId: Int!
+  $objectId: String!
+  $objectType: CatalogObjectType!
+) {
+  revokeObjectAccess(
+    permissionId: $permissionId
+    objectId: $objectId
+    objectType: $objectType
+  )
+}

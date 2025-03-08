@@ -87,7 +87,7 @@ function usePermissionLevelChange({
             ? [
                 {
                   query: GetCatalogCollectionInfoDocument,
-                  variables: { catalogCollectionId },
+                  variables: { catalogCollectionId: objectId },
                 },
               ]
             : []),
@@ -111,7 +111,7 @@ function usePermissionLevelChange({
   }
 
   return {
-    onPermissionLevelChange: onPermissionLevelChange,
+    onPermissionLevelChange,
     permissionChanging: permissionLevelChanging,
   }
 }

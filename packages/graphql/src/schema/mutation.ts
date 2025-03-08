@@ -1417,17 +1417,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      revokeAnswerCollectionAccess: t.withAuth(asUserFullAccess).int({
-        nullable: true,
-        args: {
-          permissionId: t.arg.int({ required: true }),
-          collectionId: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SharingService.revokeAnswerCollectionAccess(args, ctx)
-        },
-      }),
-
       createCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogCollection,
@@ -1496,17 +1485,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      revokeCatalogCollectionAccess: t.withAuth(asUserFullAccess).int({
-        nullable: true,
-        args: {
-          permissionId: t.arg.int({ required: true }),
-          catalogCollectionId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SharingService.revokeCatalogCollectionAccess(args, ctx)
-        },
-      }),
-
       shareCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
@@ -1518,6 +1496,38 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return SharingService.shareCatalogCollection(args, ctx)
+        },
+      }),
+
+      revokeObjectAccess: t.withAuth(asUserFullAccess).int({
+        nullable: true,
+        args: {
+          permissionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.revokeCatalogCollectionAccess(
+              {
+                permissionId: args.permissionId,
+                catalogCollectionId: args.objectId,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.revokeAnswerCollectionAccess(
+              {
+                permissionId: args.permissionId,
+                collectionId: parseInt(args.objectId),
+              },
+              ctx
+            )
+          }
+
+          return null
         },
       }),
 

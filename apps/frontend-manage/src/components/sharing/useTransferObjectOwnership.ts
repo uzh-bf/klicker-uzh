@@ -26,7 +26,7 @@ function useTransferObjectOwnership({
   const [transferObjectOwnership, { loading: transferringOwnership }] =
     useMutation(TransferObjectOwnershipDocument)
 
-  const onTransferOwnership = async (usernameOrEmail: string) => {
+  const onTransfer = async (usernameOrEmail: string) => {
     try {
       const res = await transferObjectOwnership({
         variables: {
@@ -71,7 +71,7 @@ function useTransferObjectOwnership({
   }
 
   return {
-    onTransfer: onTransferOwnership,
+    onTransfer,
     transferring: transferringOwnership,
   }
 }
