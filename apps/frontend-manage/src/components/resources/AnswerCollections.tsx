@@ -4,12 +4,12 @@ import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useState } from 'react'
+import ObjectRemovalErrorToast from '../sharing/ObjectRemovalErrorToast'
+import ObjectRemovalSuccessToast from '../sharing/ObjectRemovalSuccessToast'
 import AnswerCollectionCreation from './answerCollections/AnswerCollectionCreation'
 import AnswerCollectionList from './answerCollections/AnswerCollectionList'
 import CollectionDeletionErrorToast from './answerCollections/CollectionDeletionErrorToast'
 import CollectionDeletionSuccessToast from './answerCollections/CollectionDeletionSuccessToast'
-import CollectionRemovalErrorToast from './answerCollections/CollectionRemovalErrorToast'
-import CollectionRemovalSuccessToast from './answerCollections/CollectionRemovalSuccessToast'
 
 function AnswerCollections() {
   const t = useTranslations()
@@ -58,11 +58,11 @@ function AnswerCollections() {
         open={deletionFailure}
         onClose={() => setDeletionFailure(false)}
       />
-      <CollectionRemovalSuccessToast
+      <ObjectRemovalSuccessToast
         open={removalSuccess}
         onClose={() => setRemovalSuccess(false)}
       />
-      <CollectionRemovalErrorToast
+      <ObjectRemovalErrorToast
         open={removalFailure}
         onClose={() => setRemovalFailure(false)}
       />

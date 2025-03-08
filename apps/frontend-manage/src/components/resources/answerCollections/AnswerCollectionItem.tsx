@@ -14,11 +14,11 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
+import CollectionRemovalModal from '../../sharing/ObjectRemovalModal'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import AnswerCollectionEditModal from './AnswerCollectionEditModal'
 import AnswerCollectionViewingModal from './AnswerCollectionViewingModal'
 import CollectionDeletionModal from './CollectionDeletionModal'
-import CollectionRemovalModal from './CollectionRemovalModal'
 
 function AnswerCollectionItem({
   collection,
@@ -166,7 +166,9 @@ function AnswerCollectionItem({
       {/* removal modal for non-owners */}
       {!collection.isOwner && (
         <CollectionRemovalModal
-          collection={collection}
+          objectId={collection.id}
+          objectType={CatalogObjectType.AnswerCollection}
+          objectName={collection.name}
           removalModal={removalModal}
           setRemovalModal={setRemovalModal}
           setRemovalSuccess={setRemovalSuccess}

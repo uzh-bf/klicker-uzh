@@ -2151,13 +2151,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deletionSuccessful: 'Die Antwort-Sammlung wurde erfolgreich gelöscht.',
       deletionFailed:
         'Beim Löschen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
-      removeAnswerCollection: 'Antwort-Sammlung entfernen',
-      confirmCollectionRemoval:
-        'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil entfernen möchten?',
-      confirmRemoval: 'Entfernung bestätigen',
-      removalSuccessful: 'Die Antwort-Sammlung wurde erfolgreich entfernt.',
-      removalFailed:
-        'Beim Entfernen der Antwort-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       cancelSharingRequest: 'Zugriffs-Anfrage zurückziehen',
       transferOwnershipTitle: 'Eigentumsübertragung der Sammlung',
     },
@@ -2343,6 +2336,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accessRemovalSuccessful: 'Der Zugriff wurde erfolgreich entfernt.',
       accessRemovalFailed:
         'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      removeCATALOG_COLLECTION: 'Katalog-Sammlung entfernen',
+      removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
+      confirmRemovalCATALOG_COLLECTION:
+        'Sind Sie sicher, dass Sie die Katalog-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalANSWER_COLLECTION:
+        'Sind Sie sicher, dass Sie die Antwort-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemoval: 'Entfernung bestätigen',
+      removalSuccessful:
+        'Das Objekt wurde erfolgreich aus Ihrem Konto entfernt.',
+      removalFailed:
+        'Beim Entfernen des Objekts ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:

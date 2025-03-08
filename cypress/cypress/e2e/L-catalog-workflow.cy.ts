@@ -642,7 +642,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       `[data-cy="answer-collection-actions-${this.data.AC1.name}"]`
     ).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
-    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-object"]').click()
     cy.logoutLecturer()
 
     // remove the shared answer collections from pro2
@@ -653,7 +653,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       `[data-cy="answer-collection-actions-${this.data.AC1.name}"]`
     ).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
-    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-object"]').click()
     cy.logoutLecturer()
 
     // remove the shared answer collections from pro3
@@ -664,7 +664,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       `[data-cy="answer-collection-actions-${this.data.AC1.name}"]`
     ).click()
     cy.get('[data-cy="remove-answer-collection"]').click()
-    cy.get('[data-cy="confirm-remove-answer-collection"]').click()
+    cy.get('[data-cy="confirm-remove-object"]').click()
     cy.logoutLecturer()
 
     // delete answer collection AC1

@@ -2126,13 +2126,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deletionSuccessful: 'The answer collection was successfully deleted.',
       deletionFailed:
         'An error occurred while deleting the answer collection. Please try again or contact the support.',
-      removeAnswerCollection: 'Remove Answer Collection',
-      confirmCollectionRemoval:
-        'Are you sure you want to remove the answer collection "{name}" from your profile?',
-      confirmRemoval: 'Confirm removal',
-      removalSuccessful: 'The answer collection was successfully removed.',
-      removalFailed:
-        'An error occurred while removing the answer collection. Please try again or contact the support.',
       cancelSharingRequest: 'Cancel Sharing Request',
       transferOwnershipTitle: 'Transfer Collection Ownership',
     },
@@ -2311,6 +2304,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       accessRemovalSuccessful: 'Access has been successfully removed.',
       accessRemovalFailed:
         'Failed to remove access. Please try again or contact support.',
+      removeCATALOG_COLLECTION: 'Remove Catalog Collection',
+      removeANSWER_COLLECTION: 'Remove Answer Collection',
+      confirmRemovalCATALOG_COLLECTION:
+        'Are you sure you want to remove the catalog collection "{objectName}" from your profile?',
+      confirmRemovalANSWER_COLLECTION:
+        'Are you sure you want to remove the answer collection "{objectName}" from your profile?',
+      confirmRemoval: 'Confirm removal',
+      removalSuccessful:
+        'The object has been removed successfully from your account.',
+      removalFailed:
+        'An error occurred while removing the object. Please try again or contact the support.',
     },
     groupActivity: {
       activityMissingOrNotCompleted:
