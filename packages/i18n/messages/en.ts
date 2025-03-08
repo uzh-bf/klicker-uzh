@@ -2268,6 +2268,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the catalog collection was successfully changed.',
       catalogCollectionNameChangeError:
         'An error occurred while changing the name of the catalog collection. Please try again.',
+      changeAccessError:
+        'An error occurred while changing the object visibility. Please try again.',
     },
     sharing: {
       permissionsREAD: 'Read permissions',
