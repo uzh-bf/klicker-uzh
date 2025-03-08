@@ -3,12 +3,11 @@ import {
   CatalogObjectType,
   ChangeAnswerCollectionPermissionLevelDocument,
   ChangeCatalogCollectionPermissionLevelDocument,
-  GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
-  GetCatalogCollectionPermissionsDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
+  GetObjectPermissionsDocument,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -59,13 +58,11 @@ function usePermissionLevelChange({
             if (!data?.changeCatalogCollectionPermissionLevel) return
 
             const prevPermissions = cache.readQuery({
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: {
-                catalogCollectionId: objectId as string,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             })
 
-            if (!prevPermissions?.getCatalogCollectionPermissions) {
+            if (!prevPermissions?.getObjectPermissions) {
               return
             }
 
@@ -74,21 +71,18 @@ function usePermissionLevelChange({
             const newPermissionLevel =
               data.changeCatalogCollectionPermissionLevel!.permissionLevel
             cache.writeQuery({
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: {
-                catalogCollectionId: objectId as string,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
               data: {
-                getCatalogCollectionPermissions:
-                  prevPermissions.getCatalogCollectionPermissions.map(
-                    (permission) =>
-                      permission.permissionId === modifiedPermissionId
-                        ? {
-                            ...permission,
-                            permissionLevel: newPermissionLevel,
-                          }
-                        : permission
-                  ),
+                getObjectPermissions: prevPermissions.getObjectPermissions.map(
+                  (permission) =>
+                    permission.permissionId === modifiedPermissionId
+                      ? {
+                          ...permission,
+                          permissionLevel: newPermissionLevel,
+                        }
+                      : permission
+                ),
               },
             })
           },
@@ -142,13 +136,11 @@ function usePermissionLevelChange({
             if (!data?.changeAnswerCollectionPermissionLevel) return
 
             const prevPermissions = cache.readQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId: objectId as number,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             })
 
-            if (!prevPermissions?.getAnswerCollectionPermissions) {
+            if (!prevPermissions?.getObjectPermissions) {
               return
             }
 
@@ -157,21 +149,18 @@ function usePermissionLevelChange({
             const newPermissionLevel =
               data.changeAnswerCollectionPermissionLevel!.permissionLevel
             cache.writeQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId: objectId as number,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
               data: {
-                getAnswerCollectionPermissions:
-                  prevPermissions.getAnswerCollectionPermissions.map(
-                    (permission) =>
-                      permission.permissionId === modifiedPermissionId
-                        ? {
-                            ...permission,
-                            permissionLevel: newPermissionLevel,
-                          }
-                        : permission
-                  ),
+                getObjectPermissions: prevPermissions.getObjectPermissions.map(
+                  (permission) =>
+                    permission.permissionId === modifiedPermissionId
+                      ? {
+                          ...permission,
+                          permissionLevel: newPermissionLevel,
+                        }
+                      : permission
+                ),
               },
             })
           },

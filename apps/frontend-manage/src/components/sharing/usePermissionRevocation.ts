@@ -1,12 +1,11 @@
 import { useMutation } from '@apollo/client'
 import {
   CatalogObjectType,
-  GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
-  GetCatalogCollectionPermissionsDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
+  GetObjectPermissionsDocument,
   RevokeAnswerCollectionAccessDocument,
   RevokeCatalogCollectionAccessDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -53,28 +52,24 @@ function usePermissionRevocation({
           },
           update: (cache, { data }) => {
             const prevPermissions = cache.readQuery({
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: {
-                catalogCollectionId: objectId as string,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             })
 
             const removedId = data?.revokeCatalogCollectionAccess
             if (
-              !prevPermissions?.getCatalogCollectionPermissions ||
+              !prevPermissions?.getObjectPermissions ||
               typeof removedId === 'undefined'
             ) {
               return
             }
 
             cache.writeQuery({
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: {
-                catalogCollectionId: objectId as string,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
               data: {
-                getCatalogCollectionPermissions:
-                  prevPermissions.getCatalogCollectionPermissions.filter(
+                getObjectPermissions:
+                  prevPermissions.getObjectPermissions.filter(
                     (permission) => permission.permissionId !== removedId
                   ),
               },
@@ -123,28 +118,24 @@ function usePermissionRevocation({
           },
           update: (cache, { data }) => {
             const prevPermissions = cache.readQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId: objectId as number,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             })
 
             const removedId = data?.revokeAnswerCollectionAccess
             if (
-              !prevPermissions?.getAnswerCollectionPermissions ||
+              !prevPermissions?.getObjectPermissions ||
               typeof removedId === 'undefined'
             ) {
               return
             }
 
             cache.writeQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId: objectId as number,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
               data: {
-                getAnswerCollectionPermissions:
-                  prevPermissions.getAnswerCollectionPermissions.filter(
+                getObjectPermissions:
+                  prevPermissions.getObjectPermissions.filter(
                     (permission) => permission.permissionId !== removedId
                   ),
               },

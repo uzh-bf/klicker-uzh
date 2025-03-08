@@ -1790,14 +1790,12 @@ type Query {
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
-  getAnswerCollectionPermissions(collectionId: Int!): [PermissionInfo!]
   getAnswerCollectionsElements: [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogAnswerCollections: [CatalogSelectionObject!]
   getCatalogCollectionInfo(catalogCollectionId: String): CatalogCollection
-  getCatalogCollectionPermissions(catalogCollectionId: String!): [PermissionInfo!]
   getCatalogCollectionsList: [CatalogCollection!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
@@ -1819,6 +1817,7 @@ type Query {
   getLoginToken: User
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
+  getObjectPermissions(objectId: String!, objectType: CatalogObjectType!): [PermissionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation

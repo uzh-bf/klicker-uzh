@@ -1,12 +1,11 @@
 import { useMutation } from '@apollo/client'
 import {
   CatalogObjectType,
-  GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
-  GetCatalogCollectionPermissionsDocument,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
+  GetObjectPermissionsDocument,
   TransferCatalogCollectionOwnershipDocument,
   TransferCollectionOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -48,8 +47,8 @@ function useTransferObjectOwnership({
             // use refetch query instead of cache update, because new owner permissions might also
             // be removed in addition to the added new admin permission for the previous owner
             {
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: { catalogCollectionId: objectId as string },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId, objectType },
             },
             GetCatalogCollectionsListDocument,
           ],
@@ -86,8 +85,8 @@ function useTransferObjectOwnership({
             {
               // use refetch query instead of cache update, because new owner permissions might also
               // be removed in addition to the added new admin permission for the previous owner
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: { collectionId: objectId as number },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId, objectType },
             },
             {
               query: GetCatalogObjectsDocument,

@@ -1,12 +1,11 @@
 import { useMutation } from '@apollo/client'
 import {
   CatalogObjectType,
-  GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
-  GetCatalogCollectionPermissionsDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
+  GetObjectPermissionsDocument,
   PermissionLevel,
   ShareAnswerCollectionDocument,
   ShareCatalogCollectionDocument,
@@ -63,32 +62,27 @@ function useObjectSharing({
             if (!data?.shareCatalogCollection) return
 
             const prevPermissions = cache.readQuery({
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: {
-                catalogCollectionId: objectId as string,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             })
 
-            if (!prevPermissions?.getCatalogCollectionPermissions) {
+            if (!prevPermissions?.getObjectPermissions) {
               return
             }
 
             // replace the permission that was just added (if it already exists) and add it otherwise
-            const newPermissions =
-              prevPermissions.getCatalogCollectionPermissions.filter(
-                (permission) =>
-                  permission.permissionId !==
-                  data.shareCatalogCollection!.permissionId
-              )
+            const newPermissions = prevPermissions.getObjectPermissions.filter(
+              (permission) =>
+                permission.permissionId !==
+                data.shareCatalogCollection!.permissionId
+            )
             newPermissions.push(data.shareCatalogCollection)
 
             cache.writeQuery({
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: {
-                catalogCollectionId: objectId as string,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
               data: {
-                getCatalogCollectionPermissions: newPermissions,
+                getObjectPermissions: newPermissions,
               },
             })
           },
@@ -146,32 +140,27 @@ function useObjectSharing({
             if (!data?.shareAnswerCollection) return
 
             const prevPermissions = cache.readQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId: objectId as number,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             })
 
-            if (!prevPermissions?.getAnswerCollectionPermissions) {
+            if (!prevPermissions?.getObjectPermissions) {
               return
             }
 
             // replace the permission that was just added (if it already exists) and add it otherwise
-            const newPermissions =
-              prevPermissions.getAnswerCollectionPermissions.filter(
-                (permission) =>
-                  permission.permissionId !==
-                  data.shareAnswerCollection!.permissionId
-              )
+            const newPermissions = prevPermissions.getObjectPermissions.filter(
+              (permission) =>
+                permission.permissionId !==
+                data.shareAnswerCollection!.permissionId
+            )
             newPermissions.push(data.shareAnswerCollection)
 
             cache.writeQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId: objectId as number,
-              },
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
               data: {
-                getAnswerCollectionPermissions: newPermissions,
+                getObjectPermissions: newPermissions,
               },
             })
           },
