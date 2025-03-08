@@ -1,5 +1,0 @@
-query GetAnswerCollectionPermissions($collectionId: Int!) {
-  getAnswerCollectionPermissions(collectionId: $collectionId) {
-    ...PermissionInfoData
-  }
-}

@@ -1,14 +1,12 @@
 import { useMutation } from '@apollo/client'
 import {
   CatalogObjectType,
-  GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
-  GetCatalogCollectionPermissionsDocument,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
-  TransferCatalogCollectionOwnershipDocument,
-  TransferCollectionOwnershipDocument,
+  GetObjectPermissionsDocument,
+  TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useTransferObjectOwnership({
@@ -25,101 +23,56 @@ function useTransferObjectOwnership({
   onTransfer: (usernameOrEmail: string) => Promise<boolean>
   transferring: boolean
 } {
-  const [
-    transferCatalogCollectionOwnership,
-    { loading: transferringCatalogCollection },
-  ] = useMutation(TransferCatalogCollectionOwnershipDocument)
-  const [
-    transferCollectionOwnership,
-    { loading: transferringAnswerCollection },
-  ] = useMutation(TransferCollectionOwnershipDocument)
+  const [transferObjectOwnership, { loading: transferringOwnership }] =
+    useMutation(TransferObjectOwnershipDocument)
 
-  if (objectType === CatalogObjectType.CatalogCollection) {
-    const onTransferOwnershipCatalogCollection = async (
-      usernameOrEmail: string
-    ) => {
-      try {
-        const res = await transferCatalogCollectionOwnership({
-          variables: {
-            catalogCollectionId: objectId as string,
-            usernameOrEmail,
+  const onTransfer = async (usernameOrEmail: string) => {
+    try {
+      const res = await transferObjectOwnership({
+        variables: {
+          objectId: String(objectId),
+          objectType,
+          usernameOrEmail,
+        },
+        refetchQueries: [
+          // use refetch query instead of cache update, because new owner permissions might also
+          // be removed in addition to the added new admin permission for the previous owner
+          {
+            query: GetObjectPermissionsDocument,
+            variables: { objectId: String(objectId), objectType },
           },
-          refetchQueries: [
-            // use refetch query instead of cache update, because new owner permissions might also
-            // be removed in addition to the added new admin permission for the previous owner
-            {
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: { catalogCollectionId: objectId as string },
-            },
-            GetCatalogCollectionsListDocument,
-          ],
-        })
+          ...(objectType === CatalogObjectType.CatalogCollection
+            ? [GetCatalogCollectionsListDocument]
+            : []),
+          ...(objectType === CatalogObjectType.AnswerCollection
+            ? [
+                {
+                  query: GetCatalogObjectsDocument,
+                  variables: { catalogCollectionId },
+                },
+                GetAnswerCollectionsInfoDocument,
+                GetCatalogSharingRequestsDocument,
+              ]
+            : []),
+        ],
+      })
 
-        if (res.data?.transferCatalogCollectionOwnership) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
+      if (res.data?.transferObjectOwnership) {
+        return true
+      } else {
+        onError()
         return false
       }
-    }
-
-    return {
-      onTransfer: onTransferOwnershipCatalogCollection,
-      transferring: transferringCatalogCollection,
-    }
-  } else if (objectType === CatalogObjectType.AnswerCollection) {
-    const onTransferOwnershipAnswerCollection = async (
-      usernameOrEmail: string
-    ) => {
-      try {
-        const res = await await transferCollectionOwnership({
-          variables: {
-            collectionId: objectId as number,
-            usernameOrEmail,
-          },
-          refetchQueries: [
-            GetAnswerCollectionsInfoDocument,
-            GetCatalogSharingRequestsDocument,
-            {
-              // use refetch query instead of cache update, because new owner permissions might also
-              // be removed in addition to the added new admin permission for the previous owner
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: { collectionId: objectId as number },
-            },
-            {
-              query: GetCatalogObjectsDocument,
-              variables: { catalogCollectionId },
-            },
-          ],
-        })
-
-        if (res.data?.transferCollectionOwnership) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
-        return false
-      }
-    }
-
-    return {
-      onTransfer: onTransferOwnershipAnswerCollection,
-      transferring: transferringAnswerCollection,
+    } catch (error) {
+      console.error(error)
+      onError()
+      return false
     }
   }
 
   return {
-    onTransfer: async () => {
-      console.error('Unsupported object type', objectType)
-      onError()
-      return false
-    },
-    transferring: false,
+    onTransfer,
+    transferring: transferringOwnership,
   }
 }
 

@@ -1,14 +1,12 @@
 import { useMutation } from '@apollo/client'
 import {
   CatalogObjectType,
-  GetAnswerCollectionPermissionsDocument,
   GetAnswerCollectionsInfoDocument,
   GetCatalogCollectionInfoDocument,
-  GetCatalogCollectionPermissionsDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
-  RevokeAnswerCollectionAccessDocument,
-  RevokeCatalogCollectionAccessDocument,
+  GetObjectPermissionsDocument,
+  RevokeObjectAccessDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to revoke the permission for a certain object
@@ -30,161 +28,82 @@ function usePermissionRevocation({
   }) => Promise<boolean>
   permissionRevoking: boolean
 } {
-  const [
-    revokeAnswerCollectionAccess,
-    { loading: revokingAnswerCollectionAccess },
-  ] = useMutation(RevokeAnswerCollectionAccessDocument)
-  const [
-    revokeCatalogCollectionAccess,
-    { loading: revokingCatalogCollectionAccess },
-  ] = useMutation(RevokeCatalogCollectionAccessDocument)
+  const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
+    RevokeObjectAccessDocument
+  )
 
-  if (objectType === CatalogObjectType.CatalogCollection) {
-    const onRequestCatalogCollection = async ({
-      permissionId,
-    }: {
-      permissionId: number
-    }) => {
-      try {
-        const res = await revokeCatalogCollectionAccess({
-          variables: {
-            catalogCollectionId: objectId as string,
-            permissionId,
-          },
-          update: (cache, { data }) => {
-            const prevPermissions = cache.readQuery({
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: {
-                catalogCollectionId: objectId as string,
-              },
-            })
+  const onPermissionRevocation = async ({
+    permissionId,
+  }: {
+    permissionId: number
+  }) => {
+    try {
+      const res = await revokeObjectAccess({
+        variables: {
+          permissionId,
+          objectId: String(objectId),
+          objectType,
+        },
+        update: (cache, { data }) => {
+          const prevPermissions = cache.readQuery({
+            query: GetObjectPermissionsDocument,
+            variables: { objectId: String(objectId), objectType },
+          })
 
-            const removedId = data?.revokeCatalogCollectionAccess
-            if (
-              !prevPermissions?.getCatalogCollectionPermissions ||
-              typeof removedId === 'undefined'
-            ) {
-              return
-            }
+          const removedId = data?.revokeObjectAccess
+          if (
+            !prevPermissions?.getObjectPermissions ||
+            typeof removedId === 'undefined'
+          ) {
+            return
+          }
 
-            cache.writeQuery({
-              query: GetCatalogCollectionPermissionsDocument,
-              variables: {
-                catalogCollectionId: objectId as string,
-              },
-              data: {
-                getCatalogCollectionPermissions:
-                  prevPermissions.getCatalogCollectionPermissions.filter(
-                    (permission) => permission.permissionId !== removedId
-                  ),
-              },
-            })
-          },
-          refetchQueries: [
-            {
-              query: GetCatalogCollectionInfoDocument,
-              variables: { catalogCollectionId },
+          cache.writeQuery({
+            query: GetObjectPermissionsDocument,
+            variables: { objectId: String(objectId), objectType },
+            data: {
+              getObjectPermissions: prevPermissions.getObjectPermissions.filter(
+                (permission) => permission.permissionId !== removedId
+              ),
             },
-            {
-              query: GetCatalogObjectsDocument,
-              variables: { catalogCollectionId },
-            },
-            GetCatalogSharingRequestsDocument,
-          ],
-        })
+          })
+        },
+        refetchQueries: [
+          GetCatalogSharingRequestsDocument,
+          {
+            query: GetCatalogObjectsDocument,
+            variables: { catalogCollectionId },
+          },
+          ...(objectType === CatalogObjectType.CatalogCollection
+            ? [
+                {
+                  query: GetCatalogCollectionInfoDocument,
+                  variables: { catalogCollectionId: objectId },
+                },
+              ]
+            : []),
+          ...(objectType === CatalogObjectType.AnswerCollection
+            ? [GetAnswerCollectionsInfoDocument]
+            : []),
+        ],
+      })
 
-        if (res.data?.revokeCatalogCollectionAccess) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
+      if (res.data?.revokeObjectAccess) {
+        return true
+      } else {
         onError()
         return false
       }
-    }
-
-    return {
-      onPermissionRevocation: onRequestCatalogCollection,
-      permissionRevoking: revokingCatalogCollectionAccess,
-    }
-  } else if (objectType === CatalogObjectType.AnswerCollection) {
-    const onRequestAnswerCollection = async ({
-      permissionId,
-    }: {
-      permissionId: number
-    }) => {
-      try {
-        const res = await revokeAnswerCollectionAccess({
-          variables: {
-            collectionId: objectId as number,
-            permissionId,
-          },
-          update: (cache, { data }) => {
-            const prevPermissions = cache.readQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId: objectId as number,
-              },
-            })
-
-            const removedId = data?.revokeAnswerCollectionAccess
-            if (
-              !prevPermissions?.getAnswerCollectionPermissions ||
-              typeof removedId === 'undefined'
-            ) {
-              return
-            }
-
-            cache.writeQuery({
-              query: GetAnswerCollectionPermissionsDocument,
-              variables: {
-                collectionId: objectId as number,
-              },
-              data: {
-                getAnswerCollectionPermissions:
-                  prevPermissions.getAnswerCollectionPermissions.filter(
-                    (permission) => permission.permissionId !== removedId
-                  ),
-              },
-            })
-          },
-          refetchQueries: [
-            GetAnswerCollectionsInfoDocument,
-            GetCatalogSharingRequestsDocument,
-            {
-              query: GetCatalogObjectsDocument,
-              variables: { catalogCollectionId },
-            },
-          ],
-        })
-
-        if (res.data?.revokeAnswerCollectionAccess) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
-        onError()
-        return false
-      }
-    }
-
-    return {
-      onPermissionRevocation: onRequestAnswerCollection,
-      permissionRevoking: revokingAnswerCollectionAccess,
+    } catch (error) {
+      console.error(error)
+      onError()
+      return false
     }
   }
 
   return {
-    onPermissionRevocation: async () => {
-      console.error('Unsupported object type', objectType)
-      onError()
-      return false
-    },
-    permissionRevoking: false,
+    onPermissionRevocation,
+    permissionRevoking: revokingObjectAccess,
   }
 }
 

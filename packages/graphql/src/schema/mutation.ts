@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { CatalogObjectType as CatalogObjectTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
@@ -66,6 +67,7 @@ import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
   CatalogCollection,
   CatalogObject,
+  CatalogObjectType,
   ObjectAccess,
   PermissionInfo,
   PermissionLevel,
@@ -1291,49 +1293,91 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      addAnswerCollectionToCatalog: t.withAuth(asUserFullAccess).field({
+      addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           access: t.arg({ type: ObjectAccess, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SharingService.addAnswerCollectionToCatalog(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+            return SharingService.addAnswerCollectionToCatalog(
+              {
+                collectionId: parseInt(args.objectId),
+                access: args.access,
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
+          }
+
+          return null
         },
       }),
 
-      importAnswerCollection: t.withAuth(asUserFullAccess).boolean({
+      importCatalogObject: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SharingService.importAnswerCollection(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+            return SharingService.importAnswerCollection(
+              {
+                collectionId: parseInt(args.objectId),
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
+          }
+
+          return false
         },
       }),
 
-      requestAnswerCollection: t.withAuth(asUserFullAccess).field({
+      requestCatalogObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SharingService.requestAnswerCollection(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+            return SharingService.requestAnswerCollection(
+              {
+                collectionId: parseInt(args.objectId),
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
+          }
+
+          return null
         },
       }),
 
-      cancelAnswerCollectionRequest: t.withAuth(asUserFullAccess).boolean({
+      cancelObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.cancelAnswerCollectionRequest(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+            return SharingService.cancelAnswerCollectionRequest(
+              { collectionId: parseInt(args.objectId) },
+              ctx
+            )
+          }
+
+          return false
         },
       }),
 
@@ -1356,61 +1400,6 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.deleteAnswerCollection(args, ctx)
-        },
-      }),
-
-      shareAnswerCollection: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PermissionInfo,
-        args: {
-          collectionId: t.arg.int({ required: true }),
-          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
-          usernameOrEmail: t.arg.string({ required: false }),
-          userGroupId: t.arg.int({ required: false }),
-        },
-        resolve(_, args, ctx) {
-          return ResourcesService.shareAnswerCollection(args, ctx)
-        },
-      }),
-
-      transferCollectionOwnership: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PermissionInfo,
-        args: {
-          collectionId: t.arg.int({ required: true }),
-          usernameOrEmail: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ResourcesService.transferCollectionOwnership(args, ctx)
-        },
-      }),
-
-      changeAnswerCollectionPermissionLevel: t
-        .withAuth(asUserFullAccess)
-        .field({
-          nullable: true,
-          type: PermissionInfo,
-          args: {
-            collectionId: t.arg.int({ required: true }),
-            permissionId: t.arg.int({ required: true }),
-            permissionLevel: t.arg({ type: PermissionLevel, required: true }),
-          },
-          resolve(_, args, ctx) {
-            return ResourcesService.changeAnswerCollectionPermissionLevel(
-              args,
-              ctx
-            )
-          },
-        }),
-
-      revokeAnswerCollectionAccess: t.withAuth(asUserFullAccess).int({
-        nullable: true,
-        args: {
-          permissionId: t.arg.int({ required: true }),
-          collectionId: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return ResourcesService.revokeAnswerCollectionAccess(args, ctx)
         },
       }),
 
@@ -1482,58 +1471,143 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changeCatalogCollectionPermissionLevel: t
-        .withAuth(asUserFullAccess)
-        .field({
-          nullable: true,
-          type: PermissionInfo,
-          args: {
-            catalogCollectionId: t.arg.string({ required: true }),
-            permissionId: t.arg.int({ required: true }),
-            permissionLevel: t.arg({ type: PermissionLevel, required: true }),
-          },
-          resolve(_, args, ctx) {
-            return SharingService.changeCatalogCollectionPermissionLevel(
-              args,
-              ctx
-            )
-          },
-        }),
-
-      revokeCatalogCollectionAccess: t.withAuth(asUserFullAccess).int({
-        nullable: true,
-        args: {
-          permissionId: t.arg.int({ required: true }),
-          catalogCollectionId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SharingService.revokeCatalogCollectionAccess(args, ctx)
-        },
-      }),
-
-      shareCatalogCollection: t.withAuth(asUserFullAccess).field({
+      shareObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
         args: {
-          catalogCollectionId: t.arg.string({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           usernameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SharingService.shareCatalogCollection(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.shareCatalogCollection(
+              {
+                catalogCollectionId: args.objectId,
+                permissionLevel: args.permissionLevel,
+                usernameOrEmail: args.usernameOrEmail,
+                userGroupId: args.userGroupId,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.shareAnswerCollection(
+              {
+                collectionId: parseInt(args.objectId),
+                permissionLevel: args.permissionLevel,
+                usernameOrEmail: args.usernameOrEmail,
+                userGroupId: args.userGroupId,
+              },
+              ctx
+            )
+          }
+
+          return null
         },
       }),
 
-      transferCatalogCollectionOwnership: t.withAuth(asUserFullAccess).field({
+      revokeObjectAccess: t.withAuth(asUserFullAccess).int({
+        nullable: true,
+        args: {
+          permissionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.revokeCatalogCollectionAccess(
+              {
+                permissionId: args.permissionId,
+                catalogCollectionId: args.objectId,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.revokeAnswerCollectionAccess(
+              {
+                permissionId: args.permissionId,
+                collectionId: parseInt(args.objectId),
+              },
+              ctx
+            )
+          }
+
+          return null
+        },
+      }),
+
+      changePermissionLevel: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
         args: {
-          catalogCollectionId: t.arg.string({ required: true }),
+          permissionId: t.arg.int({ required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.changeCatalogCollectionPermissionLevel(
+              {
+                catalogCollectionId: args.objectId,
+                permissionId: args.permissionId,
+                permissionLevel: args.permissionLevel,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.changeAnswerCollectionPermissionLevel(
+              {
+                collectionId: parseInt(args.objectId),
+                permissionId: args.permissionId,
+                permissionLevel: args.permissionLevel,
+              },
+              ctx
+            )
+          }
+
+          return null
+        },
+      }),
+
+      transferObjectOwnership: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PermissionInfo,
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           usernameOrEmail: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.transferCatalogCollectionOwnership(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.transferCatalogCollectionOwnership(
+              {
+                catalogCollectionId: args.objectId,
+                usernameOrEmail: args.usernameOrEmail,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.transferAnswerCollectionOwnership(
+              {
+                collectionId: parseInt(args.objectId),
+                usernameOrEmail: args.usernameOrEmail,
+              },
+              ctx
+            )
+          }
+
+          return null
         },
       }),
 

@@ -1,0 +1,8 @@
+query GetObjectPermissions(
+  $objectId: String!
+  $objectType: CatalogObjectType!
+) {
+  getObjectPermissions(objectId: $objectId, objectType: $objectType) {
+    ...PermissionInfoData
+  }
+}

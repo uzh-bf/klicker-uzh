@@ -1,0 +1,15 @@
+mutation AddObjectToCatalog(
+  $objectId: String!
+  $objectType: CatalogObjectType!
+  $access: ObjectAccess!
+  $catalogCollectionId: String
+) {
+  addObjectToCatalog(
+    objectId: $objectId
+    objectType: $objectType
+    access: $access
+    catalogCollectionId: $catalogCollectionId
+  ) {
+    ...CatalogObjectData
+  }
+}

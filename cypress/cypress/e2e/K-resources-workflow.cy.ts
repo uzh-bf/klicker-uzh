@@ -2134,8 +2134,6 @@ describe('Create, edit and share answer collections', function () {
     ).should('be.disabled')
   })
 
-  // TODO: once available, delete the question from user pro2, verify that the access can then be revoked, share the question from user pro3 with pro2 and verify that access revokal is no longer possible, remove access to question again and revoke access
-
   it("Cleanup: Remove the created question and answer collection for user 'pro2'", function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="library"]').click()

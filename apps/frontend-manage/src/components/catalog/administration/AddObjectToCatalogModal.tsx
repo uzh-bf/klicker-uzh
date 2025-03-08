@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
-  AddAnswerCollectionToCatalogDocument,
+  AddObjectToCatalogDocument,
   CatalogObjectType,
   GetCatalogObjectsDocument,
   ObjectAccess,
@@ -34,12 +34,7 @@ function AddObjectToCatalogModal({
   onError,
 }: AddObjectToCatalogModalProps) {
   const t = useTranslations()
-
-  // submission functions
-  const [addAnswerCollectionToCatalog] = useMutation(
-    AddAnswerCollectionToCatalogDocument
-  )
-  // ... add more for other object types
+  const [addObjectToCatalog] = useMutation(AddObjectToCatalogDocument)
 
   return (
     <Modal
@@ -83,50 +78,45 @@ function AddObjectToCatalogModal({
           }
 
           try {
-            let success = false
+            const res = await addObjectToCatalog({
+              variables: {
+                objectId: values.objectId,
+                objectType: values.objectType,
+                access: values.access,
+                catalogCollectionId,
+              },
+              update: (cache, { data }) => {
+                if (!data?.addObjectToCatalog) return
 
-            if (values.objectType === CatalogObjectType.AnswerCollection) {
-              const res = await addAnswerCollectionToCatalog({
-                variables: {
-                  collectionId: parseInt(values.objectId),
-                  access: values.access,
-                  catalogCollectionId,
-                },
-                update: (cache, { data }) => {
-                  if (!data?.addAnswerCollectionToCatalog) return
+                const prevObjects = cache.readQuery({
+                  query: GetCatalogObjectsDocument,
+                  variables: {
+                    catalogCollectionId,
+                  },
+                })
 
-                  const prevObjects = cache.readQuery({
-                    query: GetCatalogObjectsDocument,
-                    variables: {
-                      catalogCollectionId,
-                    },
-                  })
+                if (!prevObjects?.getCatalogObjects) {
+                  return
+                }
 
-                  if (!prevObjects?.getCatalogObjects) {
-                    return
-                  }
+                const modifiedObjectId = data.addObjectToCatalog.id
+                const newObject = data.addObjectToCatalog
+                const newObjects = prevObjects.getCatalogObjects
+                  .filter((obj) => obj.id !== modifiedObjectId)
+                  .concat(newObject)
 
-                  const modifiedObjectId = data.addAnswerCollectionToCatalog.id
-                  const newObject = data.addAnswerCollectionToCatalog
-                  const newObjects = prevObjects.getCatalogObjects
-                    .filter((obj) => obj.id !== modifiedObjectId)
-                    .concat(newObject)
-
-                  cache.writeQuery({
-                    query: GetCatalogObjectsDocument,
-                    variables: {
-                      catalogCollectionId,
-                    },
-                    data: {
-                      getCatalogObjects: newObjects,
-                    },
-                  })
-                },
-              })
-
-              success = !!res.data?.addAnswerCollectionToCatalog
-            }
-            // ... add more for other object types
+                cache.writeQuery({
+                  query: GetCatalogObjectsDocument,
+                  variables: {
+                    catalogCollectionId,
+                  },
+                  data: {
+                    getCatalogObjects: newObjects,
+                  },
+                })
+              },
+            })
+            const success = !!res.data?.addObjectToCatalog
 
             if (success) {
               resetForm()

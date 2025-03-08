@@ -3,8 +3,8 @@ import {
   CatalogObjectType,
   GetCatalogCollectionsListDocument,
   GetCatalogObjectsDocument,
-  RequestAnswerCollectionDocument,
   RequestCatalogCollectionDocument,
+  RequestCatalogObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 // function to trigger access request creation, returns success boolean
@@ -21,8 +21,8 @@ function useRequestCatalogObject({
 }): { onRequest: () => Promise<boolean>; requesting: boolean } {
   const [requestCatalogCollection, { loading: requestingCatalogCollection }] =
     useMutation(RequestCatalogCollectionDocument)
-  const [requestAnswerCollection, { loading: requestingAnswerCollection }] =
-    useMutation(RequestAnswerCollectionDocument)
+  const [requestCatalogObject, { loading: requestingCatalogObject }] =
+    useMutation(RequestCatalogObjectDocument)
 
   if (objectType === CatalogObjectType.CatalogCollection) {
     const onRequestCatalogCollection = async () => {
@@ -59,10 +59,12 @@ function useRequestCatalogObject({
         if (res.data?.requestCatalogCollection?.id) {
           return true
         } else {
+          onError()
           return false
         }
       } catch (error) {
         console.error(error)
+        onError()
         return false
       }
     }
@@ -71,72 +73,69 @@ function useRequestCatalogObject({
       onRequest: onRequestCatalogCollection,
       requesting: requestingCatalogCollection,
     }
-  } else if (objectType === CatalogObjectType.AnswerCollection) {
-    const onRequestAnswerCollection = async () => {
-      try {
-        const res = await requestAnswerCollection({
-          variables: { collectionId: objectId as number, catalogCollectionId },
-          update: (cache, { data }) => {
-            // check if request was successful
-            const requestedCollection = data?.requestAnswerCollection
-            if (!requestedCollection) return
+  }
 
-            // update lists of answer collections
-            const catalogObjects = cache.readQuery({
+  const onRequestCatalogObject = async () => {
+    try {
+      const res = await requestCatalogObject({
+        variables: {
+          objectId: String(objectId),
+          objectType,
+          catalogCollectionId,
+        },
+        update: (cache, { data }) => {
+          // check if request was successful
+          const requestedObject = data?.requestCatalogObject
+          if (!requestedObject) return
+
+          // update lists of answer collections
+          const catalogObjects = cache.readQuery({
+            query: GetCatalogObjectsDocument,
+            variables: {
+              catalogCollectionId,
+            },
+          })
+
+          if (catalogObjects?.getCatalogObjects) {
+            const updatedObjects = catalogObjects?.getCatalogObjects.map(
+              (obj) => {
+                if (obj.id === objectId) {
+                  return requestedObject
+                }
+
+                return obj
+              }
+            )
+
+            cache.writeQuery({
               query: GetCatalogObjectsDocument,
               variables: {
                 catalogCollectionId,
               },
+              data: {
+                getCatalogObjects: updatedObjects,
+              },
             })
+          }
+        },
+      })
 
-            if (catalogObjects?.getCatalogObjects) {
-              const updatedObjects = catalogObjects?.getCatalogObjects.map(
-                (obj) => {
-                  if (obj.id === objectId) {
-                    return requestedCollection
-                  }
-
-                  return obj
-                }
-              )
-
-              cache.writeQuery({
-                query: GetCatalogObjectsDocument,
-                variables: {
-                  catalogCollectionId,
-                },
-                data: {
-                  getCatalogObjects: updatedObjects,
-                },
-              })
-            }
-          },
-        })
-
-        if (res.data?.requestAnswerCollection?.id) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
+      if (res.data?.requestCatalogObject?.id) {
+        return true
+      } else {
+        onError()
         return false
       }
-    }
-
-    return {
-      onRequest: onRequestAnswerCollection,
-      requesting: requestingAnswerCollection,
+    } catch (error) {
+      console.error(error)
+      onError()
+      return false
     }
   }
 
   return {
-    onRequest: async () => {
-      console.error('Unsupported object type', objectType)
-      onError()
-      return false
-    },
-    requesting: false,
+    onRequest: onRequestCatalogObject,
+    requesting: requestingCatalogObject,
   }
 }
 

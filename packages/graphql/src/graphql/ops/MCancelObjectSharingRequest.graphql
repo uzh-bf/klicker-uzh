@@ -1,0 +1,6 @@
+mutation CancelObjectSharingRequest(
+  $objectId: String!
+  $objectType: CatalogObjectType!
+) {
+  cancelObjectSharingRequest(objectId: $objectId, objectType: $objectType)
+}

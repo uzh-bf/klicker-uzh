@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
+import { CatalogObjectType as CatalogObjectTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as AnalyticsService from '../services/analytics.js'
@@ -66,6 +67,7 @@ import { AnswerCollection } from './resource.js'
 import {
   CatalogCollection,
   CatalogObject,
+  CatalogObjectType,
   CatalogSelectionObject,
   ObjectSharingRequest,
   PermissionInfo,
@@ -913,25 +915,33 @@ export const Query = builder.queryType({
         },
       }),
 
-      getAnswerCollectionPermissions: asUser.field({
+      getObjectPermissions: asUser.field({
         nullable: true,
         type: [PermissionInfo],
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
         resolve(_, args, ctx) {
-          return ResourcesService.getAnswerCollectionPermissions(args, ctx)
-        },
-      }),
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.getCatalogCollectionPermissions(
+              {
+                catalogCollectionId: args.objectId,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.getAnswerCollectionPermissions(
+              {
+                collectionId: parseInt(args.objectId),
+              },
+              ctx
+            )
+          }
 
-      getCatalogCollectionPermissions: asUser.field({
-        nullable: true,
-        type: [PermissionInfo],
-        args: {
-          catalogCollectionId: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SharingService.getCatalogCollectionPermissions(args, ctx)
+          return null
         },
       }),
 

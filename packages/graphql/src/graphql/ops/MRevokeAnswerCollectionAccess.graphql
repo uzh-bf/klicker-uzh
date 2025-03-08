@@ -1,9 +1,0 @@
-mutation RevokeAnswerCollectionAccess(
-  $permissionId: Int!
-  $collectionId: Int!
-) {
-  revokeAnswerCollectionAccess(
-    permissionId: $permissionId
-    collectionId: $collectionId
-  )
-}
