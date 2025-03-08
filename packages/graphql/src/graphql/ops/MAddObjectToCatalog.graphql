@@ -1,10 +1,12 @@
-mutation AddAnswerCollectionToCatalog(
-  $collectionId: Int!
+mutation AddObjectToCatalog(
+  $objectId: String!
+  $objectType: CatalogObjectType!
   $access: ObjectAccess!
   $catalogCollectionId: String
 ) {
-  addAnswerCollectionToCatalog(
-    collectionId: $collectionId
+  addObjectToCatalog(
+    objectId: $objectId
+    objectType: $objectType
     access: $access
     catalogCollectionId: $catalogCollectionId
   ) {

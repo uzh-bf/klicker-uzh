@@ -1293,16 +1293,26 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      addAnswerCollectionToCatalog: t.withAuth(asUserFullAccess).field({
+      addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,
         args: {
-          collectionId: t.arg.int({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           access: t.arg({ type: ObjectAccess, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          return SharingService.addAnswerCollectionToCatalog(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
+            return SharingService.addAnswerCollectionToCatalog(
+              {
+                collectionId: parseInt(args.objectId),
+                access: args.access,
+                catalogCollectionId: args.catalogCollectionId,
+              },
+              ctx
+            )
+          }
         },
       }),
 

@@ -1286,9 +1286,9 @@ type Mutation {
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
   addAnswerCollectionOption(collectionId: Int!, value: String!): AnswerCollectionEntry
-  addAnswerCollectionToCatalog(access: ObjectAccess!, catalogCollectionId: String, collectionId: Int!): CatalogObject
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
+  addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!): CatalogObject
   approveObjectSharingRequest(permissionId: Int!, permissionLevel: PermissionLevel!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelAnswerCollectionRequest(collectionId: Int!): Boolean!

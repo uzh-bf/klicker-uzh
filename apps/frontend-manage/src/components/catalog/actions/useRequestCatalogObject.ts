@@ -71,76 +71,67 @@ function useRequestCatalogObject({
       onRequest: onRequestCatalogCollection,
       requesting: requestingCatalogCollection,
     }
-  } else if (objectType === CatalogObjectType.AnswerCollection) {
-    const onRequestCatalogObject = async () => {
-      try {
-        const res = await requestCatalogObject({
-          variables: {
-            objectId: String(objectId),
-            objectType,
-            catalogCollectionId,
-          },
-          update: (cache, { data }) => {
-            // check if request was successful
-            const requestedObject = data?.requestCatalogObject
-            if (!requestedObject) return
+  }
 
-            // update lists of answer collections
-            const catalogObjects = cache.readQuery({
+  const onRequestCatalogObject = async () => {
+    try {
+      const res = await requestCatalogObject({
+        variables: {
+          objectId: String(objectId),
+          objectType,
+          catalogCollectionId,
+        },
+        update: (cache, { data }) => {
+          // check if request was successful
+          const requestedObject = data?.requestCatalogObject
+          if (!requestedObject) return
+
+          // update lists of answer collections
+          const catalogObjects = cache.readQuery({
+            query: GetCatalogObjectsDocument,
+            variables: {
+              catalogCollectionId,
+            },
+          })
+
+          if (catalogObjects?.getCatalogObjects) {
+            const updatedObjects = catalogObjects?.getCatalogObjects.map(
+              (obj) => {
+                if (obj.id === objectId) {
+                  return requestedObject
+                }
+
+                return obj
+              }
+            )
+
+            cache.writeQuery({
               query: GetCatalogObjectsDocument,
               variables: {
                 catalogCollectionId,
               },
+              data: {
+                getCatalogObjects: updatedObjects,
+              },
             })
+          }
+        },
+      })
 
-            if (catalogObjects?.getCatalogObjects) {
-              const updatedObjects = catalogObjects?.getCatalogObjects.map(
-                (obj) => {
-                  if (obj.id === objectId) {
-                    return requestedObject
-                  }
-
-                  return obj
-                }
-              )
-
-              cache.writeQuery({
-                query: GetCatalogObjectsDocument,
-                variables: {
-                  catalogCollectionId,
-                },
-                data: {
-                  getCatalogObjects: updatedObjects,
-                },
-              })
-            }
-          },
-        })
-
-        if (res.data?.requestCatalogObject?.id) {
-          return true
-        } else {
-          return false
-        }
-      } catch (error) {
-        console.error(error)
+      if (res.data?.requestCatalogObject?.id) {
+        return true
+      } else {
         return false
       }
-    }
-
-    return {
-      onRequest: onRequestCatalogObject,
-      requesting: requestingCatalogObject,
+    } catch (error) {
+      console.error(error)
+      return false
     }
   }
 
   return {
-    onRequest: async () => {
-      console.error('Unsupported object type', objectType)
-      onError()
-      return false
-    },
-    requesting: false,
+    onRequest: onRequestCatalogObject,
+    requesting: requestingCatalogObject,
   }
 }
 

@@ -1264,6 +1264,17 @@ export async function addAnswerCollectionToCatalog(
           shortname: true,
         },
       },
+      _count: {
+        select: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              permissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          },
+        },
+      },
     },
   })
 
@@ -1327,7 +1338,7 @@ export async function addAnswerCollectionToCatalog(
     isOwner: collection.ownerId === ctx.user.sub,
     isManager: true,
     isRequested: false,
-    isShared: true,
+    isShared: collection._count.permissions > 0,
   }
 }
 
