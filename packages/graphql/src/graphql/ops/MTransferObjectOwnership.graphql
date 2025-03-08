@@ -1,0 +1,13 @@
+mutation TransferObjectOwnership(
+  $objectId: String!
+  $objectType: CatalogObjectType!
+  $usernameOrEmail: String!
+) {
+  transferObjectOwnership(
+    objectId: $objectId
+    objectType: $objectType
+    usernameOrEmail: $usernameOrEmail
+  ) {
+    ...PermissionInfoData
+  }
+}

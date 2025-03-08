@@ -21239,11 +21239,11 @@
             "deprecationReason": null
           },
           {
-            "name": "transferCatalogCollectionOwnership",
+            "name": "transferObjectOwnership",
             "description": null,
             "args": [
               {
-                "name": "catalogCollectionId",
+                "name": "objectId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -21259,43 +21259,14 @@
                 "deprecationReason": null
               },
               {
-                "name": "usernameOrEmail",
+                "name": "objectType",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
                   "name": null,
                   "ofType": {
-                    "kind": "SCALAR",
-                    "name": "String",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "OBJECT",
-              "name": "PermissionInfo",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "transferCollectionOwnership",
-            "description": null,
-            "args": [
-              {
-                "name": "collectionId",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int",
+                    "kind": "ENUM",
+                    "name": "CatalogObjectType",
                     "ofType": null
                   }
                 },

@@ -1417,18 +1417,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      transferCollectionOwnership: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PermissionInfo,
-        args: {
-          collectionId: t.arg.int({ required: true }),
-          usernameOrEmail: t.arg.string({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return SharingService.transferCollectionOwnership(args, ctx)
-        },
-      }),
-
       changeAnswerCollectionPermissionLevel: t
         .withAuth(asUserFullAccess)
         .field({
@@ -1569,15 +1557,36 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      transferCatalogCollectionOwnership: t.withAuth(asUserFullAccess).field({
+      transferObjectOwnership: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
         args: {
-          catalogCollectionId: t.arg.string({ required: true }),
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
           usernameOrEmail: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.transferCatalogCollectionOwnership(args, ctx)
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return SharingService.transferCatalogCollectionOwnership(
+              {
+                catalogCollectionId: args.objectId,
+                usernameOrEmail: args.usernameOrEmail,
+              },
+              ctx
+            )
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            return SharingService.transferAnswerCollectionOwnership(
+              {
+                collectionId: parseInt(args.objectId),
+                usernameOrEmail: args.usernameOrEmail,
+              },
+              ctx
+            )
+          }
+
+          return null
         },
       }),
 

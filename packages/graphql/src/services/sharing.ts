@@ -1448,7 +1448,7 @@ export async function getAnswerCollectionPermissions(
     })
 }
 
-export async function transferCollectionOwnership(
+export async function transferAnswerCollectionOwnership(
   {
     collectionId,
     usernameOrEmail,
