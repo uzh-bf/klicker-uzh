@@ -732,7 +732,7 @@ export async function requestAnswerCollection(
     collection.ownerId === null ||
     collection.permissions.length > 0
   ) {
-    return null
+    return false
   }
 
   // verify that the user has access to the catalog collection the answer collection is contained in
@@ -741,22 +741,7 @@ export async function requestAnswerCollection(
     : true
 
   if (!validAccess) {
-    return null
-  }
-
-  // get catalog assignment of this answer collection
-  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
-    where: {
-      answerCollectionId_catalogCollectionId: {
-        answerCollectionId: collectionId,
-        catalogCollectionId:
-          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-      },
-    },
-  })
-
-  if (!assignment) {
-    return null
+    return false
   }
 
   // create a new permission request
@@ -780,40 +765,18 @@ export async function requestAnswerCollection(
         },
       },
     },
-    include: {
-      answerCollection: true,
-      objectOwner: {
-        select: {
-          shortname: true,
-        },
-      },
-    },
   })
 
   // TODO: notify owner of the collection by e-mail that there is a new access request
 
   // invalidate cache for the imported collection
-  const updatedCollection = permissionRequest.answerCollection
   ctx.emitter.emit('invalidate', {
     typename: 'AnswerCollection',
-    id: updatedCollection?.id,
+    id: permissionRequest.answerCollectionId,
   })
 
   // return updated catalog object
-  return updatedCollection
-    ? {
-        id: updatedCollection.id,
-        name: updatedCollection.name,
-        objectType: CatalogObjectType.ANSWER_COLLECTION,
-        assignmentId: assignment.id,
-        access: assignment.access,
-        ownerShortname: permissionRequest.objectOwner?.shortname,
-        isOwner: false,
-        isManager: false,
-        isRequested: true,
-        isShared: false,
-      }
-    : null
+  return permissionRequest ? true : false
 }
 
 export async function cancelAnswerCollectionRequest(
@@ -938,7 +901,7 @@ export async function changeCatalogCollectionPermissionLevel(
   )
 
   if (!valid) {
-    return null
+    return false
   }
 
   // update the access level of the permission
@@ -950,20 +913,11 @@ export async function changeCatalogCollectionPermissionLevel(
     data: {
       permissionLevel,
     },
-    include: {
-      user: {
-        select: {
-          id: true,
-          shortname: true,
-          email: true,
-        },
-      },
-    },
   })
 
   // if the permission did not exist in the first place, return null
   if (!permission) {
-    return null
+    return false
   }
 
   // invalidate permission
@@ -972,15 +926,7 @@ export async function changeCatalogCollectionPermissionLevel(
     id: permission.id,
   })
 
-  return {
-    permissionId: permission.id,
-    userId: permission.user?.id,
-    username: permission.user?.shortname,
-    userEmail: permission.user?.email,
-    userGroupId: undefined,
-    userGroupName: undefined,
-    permissionLevel: permission.permissionLevel,
-  }
+  return true
 }
 
 export async function revokeCatalogCollectionAccess(
@@ -1060,7 +1006,7 @@ export async function changeAnswerCollectionPermissionLevel(
   )
 
   if (!valid) {
-    return null
+    return false
   }
 
   // update the access level of the permission
@@ -1072,20 +1018,11 @@ export async function changeAnswerCollectionPermissionLevel(
     data: {
       permissionLevel,
     },
-    include: {
-      user: {
-        select: {
-          id: true,
-          shortname: true,
-          email: true,
-        },
-      },
-    },
   })
 
   // if the permission did not exist in the first place, return null
   if (!permission) {
-    return null
+    return false
   }
 
   // invalidate permission
@@ -1094,15 +1031,7 @@ export async function changeAnswerCollectionPermissionLevel(
     id: permission.id,
   })
 
-  return {
-    permissionId: permission.id,
-    userId: permission.user?.id,
-    username: permission.user?.shortname,
-    userEmail: permission.user?.email,
-    userGroupId: undefined,
-    userGroupName: undefined,
-    permissionLevel: permission.permissionLevel,
-  }
+  return true
 }
 
 export async function revokeAnswerCollectionAccess(

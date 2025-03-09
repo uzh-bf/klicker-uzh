@@ -9,8 +9,5 @@ mutation ChangePermissionLevel(
     objectType: $objectType
     permissionId: $permissionId
     permissionLevel: $permissionLevel
-  ) {
-    permissionId
-    permissionLevel
-  }
+  )
 }

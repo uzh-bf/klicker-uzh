@@ -1340,9 +1340,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      requestCatalogObject: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: CatalogObject,
+      requestCatalogObject: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
@@ -1359,7 +1358,7 @@ export const Mutation = builder.mutationType({
             )
           }
 
-          return null
+          return false
         },
       }),
 
@@ -1542,9 +1541,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changePermissionLevel: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PermissionInfo,
+      changePermissionLevel: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
         args: {
           permissionId: t.arg.int({ required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
@@ -1574,7 +1572,7 @@ export const Mutation = builder.mutationType({
             )
           }
 
-          return null
+          return false
         },
       }),
 
