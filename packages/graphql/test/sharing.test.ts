@@ -3,8 +3,9 @@ import {
   PermissionLevel,
   PermissionStatus,
   PrismaClient,
+  UserLoginScope,
+  UserRole,
 } from '@klicker-uzh/prisma'
-import * as dotenv from 'dotenv'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -12,54 +13,42 @@ import {
   createCatalogCollection,
   shareCatalogCollection,
 } from '../src/services/sharing.js'
-
-// Load environment variables from .env file if exists
-dotenv.config()
-
-// Mock user for testing - using proper UUIDs
-const mockUser = {
-  id: '123e4567-e89b-12d3-a456-426614174000',
-  sub: '123e4567-e89b-12d3-a456-426614174000',
-  email: 'test@example.com',
-  shortname: 'testuser',
-}
-
-// Secondary test user - using proper UUIDs
-const secondUser = {
-  id: '223e4567-e89b-12d3-a456-426614174001',
-  sub: '223e4567-e89b-12d3-a456-426614174001',
-  email: 'second@example.com',
-  shortname: 'seconduser',
-}
-
-// Setup test database configuration
-// Use the DATABASE_URL environment variable if available (for CI or local dev)
-// This should point to a Postgres database
+import {
+  userFive,
+  userFour,
+  userOne,
+  userThree,
+  userTwo,
+} from './sharingData.js'
+// setup test database configuration
+// use the DATABASE_URL environment variable if available (for CI or local dev)
 const getDatabaseUrl = () => {
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL
   }
 
-  // For local development, fall back to a default PostgreSQL connection
+  // as a fallback, use default PostgreSQL connection
   return 'postgresql://klicker:klicker@localhost:5432/klicker'
 }
 
 describe('Sharing Service', () => {
-  // Set up a test database client
+  // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
-  let ctx: ContextWithUser
+  let userOneCtx: ContextWithUser
+  let userTwoCtx: ContextWithUser
+  let userThreeCtx: ContextWithUser
+  let userFourCtx: ContextWithUser
 
-  // Setup before running tests
   beforeAll(async () => {
-    // Configure database
+    // configure database
     const databaseUrl = getDatabaseUrl()
     console.log(
       `Attempting to connect to database: ${databaseUrl.split('@')[1]}`
-    ) // Log DB info without credentials
+    )
 
     try {
-      // Initialize PrismaClient with the database URL
+      // initialize PrismaClient with the database URL
       prisma = new PrismaClient({
         datasources: {
           db: { url: databaseUrl },
@@ -67,72 +56,53 @@ describe('Sharing Service', () => {
         log: ['error', 'warn'],
       })
 
-      // Test database connection - with robust error handling
+      // test database connection
       await prisma.$connect()
       console.log('Database connection successful!')
 
-      // Create EventEmitter for test context
+      // create EventEmitter for test context
       emitter = new EventEmitter()
 
-      // Create test user in database if it doesn't exist
-      await prisma.user.upsert({
-        where: { id: mockUser.id },
-        update: {},
-        create: {
-          id: mockUser.id,
-          email: mockUser.email,
-          shortname: mockUser.shortname,
-        },
-      })
+      // upsert all users in the database
+      const users = await Promise.all(
+        [userOne, userTwo, userThree, userFour, userFive].map(
+          async (user) =>
+            await prisma.user.upsert({
+              where: { id: user.id },
+              update: {},
+              create: {
+                id: user.id,
+                email: user.email,
+                shortname: user.shortname,
+              },
+            })
+        )
+      )
 
-      // Create second test user
-      await prisma.user.upsert({
-        where: { id: secondUser.id },
-        update: {},
-        create: {
-          id: secondUser.id,
-          email: secondUser.email,
-          shortname: secondUser.shortname,
+      // mock context with userd including all required properties
+      userOneCtx = {
+        user: {
+          sub: userOne.sub,
+          role: UserRole.ADMIN,
+          scope: UserLoginScope.ACCOUNT_OWNER,
+          catalystInstitutional: true,
+          catalystIndividual: true,
         },
-      })
-
-      // Mock context with user including all required properties
-      ctx = {
-        user: mockUser,
         prisma,
         emitter,
-        // Add missing required properties from ContextWithUser
-        redisExec: jest.fn(),
-        pubSub: { publish: jest.fn() },
+        redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
+        pubSub: { publish: jest.fn(), subscribe: jest.fn() },
         req: {} as any,
         res: {} as any,
-      } as unknown as ContextWithUser
+      }
     } catch (error) {
       console.error('Failed to initialize test environment:', error)
-      // Rather than skipping tests with a flag, fail them immediately
       throw new Error(`Database connection failed: ${error}`)
     }
   })
 
-  // Clean up after all tests
+  // disconnect from the database
   afterAll(async () => {
-    // Clean up created test users
-    try {
-      // Clean up all catalog collections created by test users
-      await prisma.catalogCollection.deleteMany({
-        where: {
-          ownerId: { in: [mockUser.id, secondUser.id] },
-        },
-      })
-
-      // Clean up users
-      await prisma.user.deleteMany({
-        where: { id: { in: [mockUser.id, secondUser.id] } },
-      })
-    } catch (error) {
-      console.error('Error cleaning up test data:', error)
-    }
-
     await prisma.$disconnect()
   })
 
@@ -143,14 +113,14 @@ describe('Sharing Service', () => {
         name: collectionName,
         access: ObjectAccess.RESTRICTED,
       },
-      ctx
+      userOneCtx
     )
 
     // Check result structure
     expect(result).toMatchObject({
       name: collectionName,
       access: ObjectAccess.RESTRICTED,
-      ownerId: mockUser.id,
+      ownerId: userOne.id,
       isOwner: true,
       isManager: true,
       isEditor: true,
@@ -165,7 +135,7 @@ describe('Sharing Service', () => {
 
     expect(collectionInDb).toBeTruthy()
     expect(collectionInDb?.name).toBe(collectionName)
-    expect(collectionInDb?.ownerId).toBe(mockUser.id)
+    expect(collectionInDb?.ownerId).toBe(userOne.id)
   })
 
   it('should update a catalog collection name', async () => {
@@ -175,7 +145,7 @@ describe('Sharing Service', () => {
         name: 'Initial Collection Name',
         access: ObjectAccess.RESTRICTED,
       },
-      ctx
+      userOneCtx
     )
 
     const updatedName = 'Updated Collection Name'
@@ -184,7 +154,7 @@ describe('Sharing Service', () => {
         catalogCollectionId: initialCollection.id,
         name: updatedName,
       },
-      ctx
+      userOneCtx
     )
 
     // Verify update was successful
@@ -205,7 +175,7 @@ describe('Sharing Service', () => {
         name: 'Collection to Share',
         access: ObjectAccess.RESTRICTED,
       },
-      ctx
+      userOneCtx
     )
 
     // Share the collection with the second user
@@ -213,14 +183,14 @@ describe('Sharing Service', () => {
       {
         catalogCollectionId: collectionToShare.id,
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: secondUser.email,
+        usernameOrEmail: userTwo.email,
       },
-      ctx
+      userOneCtx
     )
 
     // Check result structure
     expect(result).toBeTruthy()
-    expect(result?.userId).toBe(secondUser.id)
+    expect(result?.userId).toBe(userTwo.id)
     expect(result?.permissionLevel).toBe(PermissionLevel.READ)
     expect(result?.isRevokable).toBe(true)
 
@@ -228,7 +198,7 @@ describe('Sharing Service', () => {
     const permission = await prisma.permission.findFirst({
       where: {
         catalogCollectionId: collectionToShare.id,
-        userId: secondUser.id,
+        userId: userTwo.id,
       },
     })
 
