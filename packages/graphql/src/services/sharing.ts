@@ -13,35 +13,6 @@ const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
 // ! Helper functions
 // #region
 
-// verify that a user has access to a specific catalog collection (= can browse its content)
-// this is fullfiled if the the catalog collection is either public or the user has been granted access
-async function verifyCatalogCollectionBrowsable(
-  { catalogCollectionId }: { catalogCollectionId: string },
-  ctx: ContextWithUser
-) {
-  if (catalogCollectionId === MISSING_CATALOG_COLLECTION_ID) {
-    return true
-  }
-
-  const { valid, catalogCollection } =
-    await validateCatalogCollectionPermissions(
-      {
-        catalogCollectionId,
-        acceptedPermissionLevels: [
-          DB.PermissionLevel.READ,
-          DB.PermissionLevel.WRITE,
-          DB.PermissionLevel.ADMIN,
-        ],
-      },
-      ctx
-    )
-
-  return (
-    catalogCollection &&
-    (valid || catalogCollection.access === DB.ObjectAccess.PUBLIC)
-  )
-}
-
 // helper function to check for a specific access level on the catalog collection
 async function validateCatalogCollectionPermissions(
   {
@@ -82,10 +53,39 @@ async function validateCatalogCollectionPermissions(
   return { valid: validAccess, catalogCollection }
 }
 
+// verify that a user has access to a specific catalog collection (= can browse its content)
+// this is fullfiled if the the catalog collection is either public or the user has been granted access
+async function verifyCatalogCollectionBrowsable(
+  { catalogCollectionId }: { catalogCollectionId: string },
+  ctx: ContextWithUser
+) {
+  if (catalogCollectionId === MISSING_CATALOG_COLLECTION_ID) {
+    return true
+  }
+
+  const { valid, catalogCollection } =
+    await validateCatalogCollectionPermissions(
+      {
+        catalogCollectionId,
+        acceptedPermissionLevels: [
+          DB.PermissionLevel.READ,
+          DB.PermissionLevel.WRITE,
+          DB.PermissionLevel.ADMIN,
+        ],
+      },
+      ctx
+    )
+
+  return (
+    catalogCollection &&
+    (valid || catalogCollection.access === DB.ObjectAccess.PUBLIC)
+  )
+}
+
 // function that verifies that a user has sufficient permissions to edit an object in the catalog
 // - for items in the default collection, the permissions on the object are checked
 // - for items in a catalog collection, the permissions on the catalog collection are checked
-async function verifyCatalogItemEditPermissions(
+async function verifyCatalogObjectEditPermissions(
   { assignmentId }: { assignmentId: number },
   ctx: ContextWithUser
 ) {
@@ -360,7 +360,7 @@ export async function changeCatalogObjectAccess(
   { assignmentId, access }: { assignmentId: number; access: DB.ObjectAccess },
   ctx: ContextWithUser
 ) {
-  const sufficientPermissions = await verifyCatalogItemEditPermissions(
+  const sufficientPermissions = await verifyCatalogObjectEditPermissions(
     { assignmentId },
     ctx
   )
@@ -380,7 +380,15 @@ export async function changeCatalogObjectAccess(
     }
   )
 
-  return !!updatedAssignment.id
+  // invalidate cache for the updated assignment
+  ctx.emitter.emit('invalidate', {
+    typename: 'CatalogCollectionAssignment',
+    id: updatedAssignment.id,
+  })
+
+  return (
+    updatedAssignment.id !== null && typeof updatedAssignment.id !== 'undefined'
+  )
 }
 
 export async function getCatalogCollectionsList(ctx: ContextWithUser) {
@@ -551,7 +559,7 @@ export async function deleteCatalogCollection(
   },
   ctx: ContextWithUser
 ) {
-  // verify that the user has sufficient access to delete the catalog collection
+  // verify that the user has sufficient permissions (ADMIN or OWNER) to delete the catalog collection
   const { valid } = await validateCatalogCollectionPermissions(
     {
       catalogCollectionId,
@@ -729,13 +737,7 @@ export async function requestAnswerCollection(
 
   // verify that the user has access to the catalog collection the answer collection is contained in
   const validAccess = catalogCollectionId
-    ? await verifyCatalogCollectionBrowsable(
-        {
-          catalogCollectionId:
-            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-        },
-        ctx
-      )
+    ? await verifyCatalogCollectionBrowsable({ catalogCollectionId }, ctx)
     : true
 
   if (!validAccess) {
@@ -1190,6 +1192,7 @@ export async function getCatalogCollectionPermissions(
   { catalogCollectionId }: { catalogCollectionId: string },
   ctx: ContextWithUser
 ) {
+  // verify that sufficient permissions are given (ADMIN / OWNER for sharing) and load linked permissions
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId,
@@ -1206,6 +1209,7 @@ export async function getCatalogCollectionPermissions(
             },
           },
         },
+        // TODO: also include permissions from user groups
       ],
     },
     include: {
@@ -1501,6 +1505,7 @@ export async function getAnswerCollectionPermissions(
   { collectionId }: { collectionId: number },
   ctx: ContextWithUser
 ) {
+  // verify that the requesting user has sufficient permissions to view the permissions (sharing for ADMIN or OWNER)
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
@@ -1517,6 +1522,7 @@ export async function getAnswerCollectionPermissions(
             },
           },
         },
+        // TODO: also include permissions from user groups
       ],
     },
     include: {
@@ -1746,7 +1752,7 @@ export async function shareAnswerCollection(
   },
   ctx: ContextWithUser
 ) {
-  // verify that user has either owner or admin access
+  // verify that user has either owner or admin access (sufficient permissions for sharing)
   const { valid, collection } = await validateAnswerCollectionPermissions(
     {
       collectionId,
@@ -1852,20 +1858,6 @@ export async function importAnswerCollection(
   }: { collectionId: number; catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
-  // get answer collection
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-    },
-    include: {
-      entries: true,
-    },
-  })
-
-  if (!collection || collection.ownerId === null) {
-    return false
-  }
-
   // verify that the user has access to the catalog collection the answer collection is contained in
   const validAccess = catalogCollectionId
     ? await verifyCatalogCollectionBrowsable(
@@ -1890,9 +1882,23 @@ export async function importAnswerCollection(
           catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
       },
     },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+    },
   })
 
+  // make sure that the answer collection is assigned to the specified catalog collection and that it is public (import allowed)
   if (!assignment || assignment.access !== DB.ObjectAccess.PUBLIC) {
+    return false
+  }
+
+  // make sure that the answer collection exists and that the requesting user is not the owner
+  const collection = assignment.answerCollection
+  if (!collection || collection.ownerId === ctx.user.sub) {
     return false
   }
 
@@ -1948,8 +1954,7 @@ export async function getAnswerCollectionCatalogInfo(
   }: { collectionId: number; catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
-  // function to retrieve information on a single answer collection that is available in the catalog (no private collections)
-  // fetch the answer collection
+  // fetch answer collection and verify that the user has access to it
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
@@ -1970,19 +1975,17 @@ export async function getAnswerCollectionCatalogInfo(
     },
   })
 
-  if (!collection) {
+  // check if the user has access to the collection
+  if (
+    !collection ||
+    (collection.permissions.length === 0 && collection.ownerId !== ctx.user.sub)
+  ) {
     return null
   }
 
   // verify that the user has access to the catalog collection the answer collection is contained in
   const validAccess = catalogCollectionId
-    ? await verifyCatalogCollectionBrowsable(
-        {
-          catalogCollectionId:
-            catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-        },
-        ctx
-      )
+    ? await verifyCatalogCollectionBrowsable({ catalogCollectionId }, ctx)
     : true
 
   if (!validAccess) {
@@ -2103,7 +2106,7 @@ export async function removeCatalogObjectAssignment(
   { assignmentId }: { assignmentId: number },
   ctx: ContextWithUser
 ) {
-  const sufficientPermissions = await verifyCatalogItemEditPermissions(
+  const sufficientPermissions = await verifyCatalogObjectEditPermissions(
     { assignmentId },
     ctx
   )
@@ -2116,7 +2119,9 @@ export async function removeCatalogObjectAssignment(
     { where: { id: assignmentId } }
   )
 
-  return !!updatedAssignment.id
+  return (
+    updatedAssignment.id !== null && typeof updatedAssignment.id !== 'undefined'
+  )
 }
 
 export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
