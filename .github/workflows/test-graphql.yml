@@ -18,40 +18,18 @@ jobs:
       contents: read
       packages: write
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: klicker_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - uses: pnpm/action-setup@v2
         with:
           version: 9.15.4
           run_install: true
-      - name: Test functions
-        shell: bash
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/klicker_test
-        run: |
-          cd packages/prisma
-          pnpm run build
-          cd ../types
-          pnpm run build
-          cd ../util
-          pnpm run build
-          cd ../grading
-          pnpm run build
-          cd ../graphql
-          pnpm run test
+
+      - name: Run tests using Docker
+        working-directory: ./packages/graphql
+        run: pnpm run test:docker
