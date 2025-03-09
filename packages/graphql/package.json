@@ -93,7 +93,8 @@
     "script": "ENV=development doppler run --config dev -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:stg": "ENV=development doppler run --config stg -- tsx",
-    "test": "jest"
+    "test": "jest",
+    "test:docker": "bash ./run-docker-tests.sh"
   },
   "engines": {
     "node": "=20"

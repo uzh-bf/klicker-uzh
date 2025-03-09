@@ -17,6 +17,22 @@ jobs:
     permissions:
       contents: read
       packages: write
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: klicker_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -26,6 +42,8 @@ jobs:
           run_install: true
       - name: Test functions
         shell: bash
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/klicker_test
         run: |
           cd packages/prisma
           pnpm run build
