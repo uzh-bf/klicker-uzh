@@ -100,7 +100,7 @@ function useRequestCatalogObject({
             const updatedObjects = catalogObjects?.getCatalogObjects.map(
               (obj) => {
                 if (obj.id === objectId) {
-                  return requestedObject
+                  return { ...obj, isRequested: true }
                 }
 
                 return obj
@@ -120,7 +120,7 @@ function useRequestCatalogObject({
         },
       })
 
-      if (res.data?.requestCatalogObject?.id) {
+      if (res.data?.requestCatalogObject) {
         return true
       } else {
         onError()

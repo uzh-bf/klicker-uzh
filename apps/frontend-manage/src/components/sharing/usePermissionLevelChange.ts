@@ -59,15 +59,13 @@ function usePermissionLevelChange({
             return
           }
 
-          const modifiedPermissionId = data.changePermissionLevel.permissionId
-          const newPermissionLevel = data.changePermissionLevel.permissionLevel
           cache.writeQuery({
             query: GetObjectPermissionsDocument,
             variables: { objectId: String(objectId), objectType },
             data: {
               getObjectPermissions: prevPermissions.getObjectPermissions.map(
                 (permission) =>
-                  permission.permissionId === modifiedPermissionId
+                  permission.permissionId === permissionId
                     ? {
                         ...permission,
                         permissionLevel: newPermissionLevel,
@@ -97,9 +95,7 @@ function usePermissionLevelChange({
         ],
       })
 
-      if (
-        typeof res.data?.changePermissionLevel?.permissionId !== 'undefined'
-      ) {
+      if (res.data?.changePermissionLevel) {
         return true
       } else {
         return false

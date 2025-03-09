@@ -7,7 +7,5 @@ mutation RequestCatalogObject(
     objectId: $objectId
     objectType: $objectType
     catalogCollectionId: $catalogCollectionId
-  ) {
-    ...CatalogObjectData
-  }
+  )
 }

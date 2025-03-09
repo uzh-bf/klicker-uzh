@@ -1303,18 +1303,23 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
-            return SharingService.addAnswerCollectionToCatalog(
-              {
-                collectionId: parseInt(args.objectId),
-                access: args.access,
-                catalogCollectionId: args.catalogCollectionId,
-              },
-              ctx
-            )
-          }
-
-          return null
+          return SharingService.addObjectToCatalog(
+            {
+              access: args.access,
+              catalogCollectionId: args.catalogCollectionId,
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
         },
       }),
 
@@ -1340,26 +1345,30 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      requestCatalogObject: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: CatalogObject,
+      requestCatalogObject: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
         args: {
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
-            return SharingService.requestAnswerCollection(
-              {
-                collectionId: parseInt(args.objectId),
-                catalogCollectionId: args.catalogCollectionId,
-              },
-              ctx
-            )
-          }
-
-          return null
+          return SharingService.requestCatalogObject(
+            {
+              catalogCollectionId: args.catalogCollectionId,
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
         },
       }),
 
@@ -1370,12 +1379,21 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
         resolve(_, args, ctx) {
-          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
-            return SharingService.cancelAnswerCollectionRequest(
-              { collectionId: parseInt(args.objectId) },
-              ctx
-            )
-          }
+          return SharingService.cancelObjectSharingRequest(
+            {
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
 
           return false
         },
@@ -1492,21 +1510,26 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (
-            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-          ) {
-            return SharingService.shareAnswerCollection(
+          } else {
+            return SharingService.shareCatalogObject(
               {
-                collectionId: parseInt(args.objectId),
                 permissionLevel: args.permissionLevel,
                 usernameOrEmail: args.usernameOrEmail,
                 userGroupId: args.userGroupId,
+                answerCollectionId:
+                  args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                    ? parseInt(args.objectId)
+                    : undefined,
+                elementId: undefined,
+                courseId: undefined,
+                liveQuizId: undefined,
+                practiceQuizId: undefined,
+                microLearningId: undefined,
+                groupActivityId: undefined,
               },
               ctx
             )
           }
-
-          return null
         },
       }),
 
@@ -1542,9 +1565,8 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      changePermissionLevel: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PermissionInfo,
+      changePermissionLevel: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
         args: {
           permissionId: t.arg.int({ required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
@@ -1561,20 +1583,25 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (
-            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-          ) {
-            return SharingService.changeAnswerCollectionPermissionLevel(
+          } else {
+            return SharingService.changeCatalogObjectPermissionLevel(
               {
-                collectionId: parseInt(args.objectId),
                 permissionId: args.permissionId,
                 permissionLevel: args.permissionLevel,
+                answerCollectionId:
+                  args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                    ? parseInt(args.objectId)
+                    : undefined,
+                elementId: undefined,
+                courseId: undefined,
+                liveQuizId: undefined,
+                practiceQuizId: undefined,
+                microLearningId: undefined,
+                groupActivityId: undefined,
               },
               ctx
             )
           }
-
-          return null
         },
       }),
 
