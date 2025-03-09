@@ -1303,18 +1303,23 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
-            return SharingService.addAnswerCollectionToCatalog(
-              {
-                collectionId: parseInt(args.objectId),
-                access: args.access,
-                catalogCollectionId: args.catalogCollectionId,
-              },
-              ctx
-            )
-          }
-
-          return null
+          return SharingService.addObjectToCatalog(
+            {
+              access: args.access,
+              catalogCollectionId: args.catalogCollectionId,
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
         },
       }),
 
@@ -1348,20 +1353,26 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
-          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
-            return SharingService.requestAnswerCollection(
-              {
-                collectionId: parseInt(args.objectId),
-                catalogCollectionId: args.catalogCollectionId,
-              },
-              ctx
-            )
-          }
-
-          return false
+          return SharingService.requestCatalogObject(
+            {
+              catalogCollectionId: args.catalogCollectionId,
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
         },
       }),
 
+      // TODO: try to combine the corresponding mutations
       cancelObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1470,6 +1481,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: try to combine the corresponding mutations (at least for objects)
       shareObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
@@ -1541,6 +1553,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: try to combine the corresponding mutations
       changePermissionLevel: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {

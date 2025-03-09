@@ -702,39 +702,30 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
   return sharingRequests
 }
 
-export async function requestAnswerCollection(
+export async function requestCatalogObject(
+  // one of the object ids should be defined for the object that is to be added to the catalog
+  // otherwise, the function will return failure
   {
-    collectionId,
-    catalogCollectionId,
-  }: { collectionId: number; catalogCollectionId?: string | null },
+    catalogCollectionId, // catalog collection id to which the shared object should be added to
+    answerCollectionId,
+    elementId,
+    courseId,
+    liveQuizId,
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+  }: {
+    catalogCollectionId?: string | null
+    answerCollectionId?: number
+    elementId?: number
+    courseId?: string
+    liveQuizId?: string
+    practiceQuizId?: string
+    microLearningId?: string
+    groupActivityId?: string
+  },
   ctx: ContextWithUser
 ) {
-  // fetch the answer collection including potential pending permission requests
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      ownerId: {
-        not: null,
-      },
-    },
-    include: {
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-      },
-    },
-  })
-
-  // check if granted / requested permission already exist and if there is still an owner that can grant access
-  if (
-    !collection ||
-    collection.ownerId === null ||
-    collection.permissions.length > 0
-  ) {
-    return false
-  }
-
   // verify that the user has access to the catalog collection the answer collection is contained in
   const validAccess = catalogCollectionId
     ? await verifyCatalogCollectionBrowsable({ catalogCollectionId }, ctx)
@@ -744,16 +735,61 @@ export async function requestAnswerCollection(
     return false
   }
 
+  // collect the required object information to create the permission request
+  let objectInfo:
+    | {
+        ownerId: string | null
+        existingPermissions: boolean
+      }
+    | undefined = undefined
+
+  if (typeof answerCollectionId !== 'undefined') {
+    // fetch the answer collection including potential pending permission requests
+    const collection = await ctx.prisma.answerCollection.findUnique({
+      where: {
+        id: answerCollectionId,
+        ownerId: {
+          not: null,
+        },
+      },
+      include: {
+        permissions: {
+          where: {
+            userId: ctx.user.sub,
+          },
+        },
+      },
+    })
+
+    if (!collection) {
+      return false
+    }
+
+    // set the object information
+    objectInfo = {
+      ownerId: collection.ownerId,
+      existingPermissions: collection.permissions.length > 0,
+    }
+  }
+  // TODO: ... add more object types once they are supported for sharing
+  else {
+    return false
+  }
+
+  // check if granted / requested permission already exist and if there is still an owner that can grant access
+  if (
+    typeof objectInfo === 'undefined' ||
+    objectInfo.ownerId === null ||
+    objectInfo.existingPermissions
+  ) {
+    return false
+  }
+
   // create a new permission request
   const permissionRequest = await ctx.prisma.permission.create({
     data: {
       permissionLevel: DB.PermissionLevel.READ,
       permissionStatus: DB.PermissionStatus.REQUESTED,
-      answerCollection: {
-        connect: {
-          id: collectionId,
-        },
-      },
       user: {
         connect: {
           id: ctx.user.sub,
@@ -761,19 +797,78 @@ export async function requestAnswerCollection(
       },
       objectOwner: {
         connect: {
-          id: collection.ownerId,
+          id: objectInfo.ownerId,
         },
       },
+      answerCollection:
+        typeof answerCollectionId !== 'undefined'
+          ? {
+              connect: {
+                id: answerCollectionId,
+              },
+            }
+          : undefined,
+      element:
+        typeof elementId !== 'undefined'
+          ? {
+              connect: {
+                id: elementId,
+              },
+            }
+          : undefined,
+      course:
+        typeof courseId !== 'undefined'
+          ? {
+              connect: {
+                id: courseId,
+              },
+            }
+          : undefined,
+      liveQuiz:
+        typeof liveQuizId !== 'undefined'
+          ? {
+              connect: {
+                id: liveQuizId,
+              },
+            }
+          : undefined,
+      practiceQuiz:
+        typeof practiceQuizId !== 'undefined'
+          ? {
+              connect: {
+                id: practiceQuizId,
+              },
+            }
+          : undefined,
+      microLearning:
+        typeof microLearningId !== 'undefined'
+          ? {
+              connect: {
+                id: microLearningId,
+              },
+            }
+          : undefined,
+      groupActivity:
+        typeof groupActivityId !== 'undefined'
+          ? {
+              connect: {
+                id: groupActivityId,
+              },
+            }
+          : undefined,
     },
   })
 
   // TODO: notify owner of the collection by e-mail that there is a new access request
 
-  // invalidate cache for the imported collection
-  ctx.emitter.emit('invalidate', {
-    typename: 'AnswerCollection',
-    id: permissionRequest.answerCollectionId,
-  })
+  // invalidate cache for the imported object
+  if (typeof answerCollectionId !== 'undefined') {
+    ctx.emitter.emit('invalidate', {
+      typename: 'AnswerCollection',
+      id: answerCollectionId,
+    })
+  }
+  // TODO: ... add more object types once they are supported for
 
   // return updated catalog object
   return permissionRequest ? true : false
@@ -2083,61 +2178,32 @@ export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
   }))
 }
 
-export async function addAnswerCollectionToCatalog(
+export async function addObjectToCatalog(
+  // one of the object ids should be defined for the object that is to be added to the catalog
+  // otherwise, the function will return null
   {
-    collectionId,
     access,
-    catalogCollectionId,
+    catalogCollectionId, // catalog collection id to which the shared object should be added to
+    answerCollectionId,
+    elementId,
+    courseId,
+    liveQuizId,
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
   }: {
-    collectionId: number
     access: DB.ObjectAccess
     catalogCollectionId?: string | null
+    answerCollectionId?: number
+    elementId?: number
+    courseId?: string
+    liveQuizId?: string
+    practiceQuizId?: string
+    microLearningId?: string
+    groupActivityId?: string
   },
   ctx: ContextWithUser
 ) {
-  // verify that the user has sufficient permissions on the answer collection
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
-          },
-        },
-      ],
-    },
-    include: {
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
-      _count: {
-        select: {
-          permissions: {
-            where: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  if (!collection) {
-    return null
-  }
-
   // verify that the user has sufficient permissions on the catalog collection to add objects (if collection is defined)
   if (catalogCollectionId) {
     const { valid } = await validateCatalogCollectionPermissions(
@@ -2156,27 +2222,205 @@ export async function addAnswerCollectionToCatalog(
     }
   }
 
+  // collect shared object information in corresponding object
+  let objectInfo: {
+    objectId?: number
+    objectUuid?: string
+    objectType: CatalogObjectType
+    objectName: string
+    ownerShortname?: string
+    ownerId?: string | null
+    isShared: boolean
+  } | null = null
+
+  // verify that the user has sufficient permissions on object
+  if (typeof answerCollectionId !== 'undefined') {
+    const answerCollection = await ctx.prisma.answerCollection.findUnique({
+      where: {
+        id: answerCollectionId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        owner: {
+          select: {
+            shortname: true,
+          },
+        },
+        _count: {
+          select: {
+            permissions: {
+              where: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!answerCollection) {
+      return null
+    }
+
+    // set object info
+    objectInfo = {
+      objectId: answerCollection.id,
+      objectUuid: String(answerCollection.id),
+      objectType: CatalogObjectType.ANSWER_COLLECTION,
+      objectName: answerCollection.name,
+      ownerShortname: answerCollection.owner?.shortname,
+      ownerId: answerCollection.ownerId,
+      isShared: answerCollection._count.permissions > 0,
+    }
+  }
+  // TODO: ... implement more supported object types
+  else {
+    return null
+  }
+
+  // if the object info was not set, return null
+  if (typeof objectInfo === 'undefined' || objectInfo === null) {
+    return null
+  }
+
   // upsert the assignemnt of the answer collection to the catalog collection
   const assignment = await ctx.prisma.catalogCollectionAssignment.upsert({
     where: {
-      answerCollectionId_catalogCollectionId: {
-        answerCollectionId: collectionId,
-        catalogCollectionId:
-          catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
-      },
+      answerCollectionId_catalogCollectionId:
+        typeof answerCollectionId !== 'undefined'
+          ? {
+              answerCollectionId,
+              catalogCollectionId:
+                catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      elementId_catalogCollectionId:
+        typeof elementId !== 'undefined'
+          ? {
+              elementId,
+              catalogCollectionId:
+                catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      courseId_catalogCollectionId:
+        typeof courseId !== 'undefined'
+          ? {
+              courseId,
+              catalogCollectionId:
+                catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      liveQuizId_catalogCollectionId:
+        typeof liveQuizId !== 'undefined'
+          ? {
+              liveQuizId,
+              catalogCollectionId:
+                catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      practiceQuizId_catalogCollectionId:
+        typeof practiceQuizId !== 'undefined'
+          ? {
+              practiceQuizId,
+              catalogCollectionId:
+                catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      microLearningId_catalogCollectionId:
+        typeof microLearningId !== 'undefined'
+          ? {
+              microLearningId,
+              catalogCollectionId:
+                catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      groupActivityId_catalogCollectionId:
+        typeof groupActivityId !== 'undefined'
+          ? {
+              groupActivityId,
+              catalogCollectionId:
+                catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
     },
     create: {
       access,
-      answerCollection: {
-        connect: {
-          id: collectionId,
-        },
-      },
       catalogCollection: {
         connect: {
           id: catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
         },
       },
+      answerCollection:
+        typeof answerCollectionId !== 'undefined'
+          ? {
+              connect: {
+                id: answerCollectionId,
+              },
+            }
+          : undefined,
+      element:
+        typeof elementId !== 'undefined'
+          ? {
+              connect: {
+                id: elementId,
+              },
+            }
+          : undefined,
+      course:
+        typeof courseId !== 'undefined'
+          ? {
+              connect: {
+                id: courseId,
+              },
+            }
+          : undefined,
+      liveQuiz:
+        typeof liveQuizId !== 'undefined'
+          ? {
+              connect: {
+                id: liveQuizId,
+              },
+            }
+          : undefined,
+      practiceQuiz:
+        typeof practiceQuizId !== 'undefined'
+          ? {
+              connect: {
+                id: practiceQuizId,
+              },
+            }
+          : undefined,
+      microLearning:
+        typeof microLearningId !== 'undefined'
+          ? {
+              connect: {
+                id: microLearningId,
+              },
+            }
+          : undefined,
+      groupActivity:
+        typeof groupActivityId !== 'undefined'
+          ? {
+              connect: {
+                id: groupActivityId,
+              },
+            }
+          : undefined,
     },
     update: {
       access,
@@ -2185,16 +2429,16 @@ export async function addAnswerCollectionToCatalog(
 
   // return the updated catalog object
   return {
-    id: collection.id,
-    name: collection.name,
-    objectType: CatalogObjectType.ANSWER_COLLECTION,
+    id: objectInfo.objectId,
+    name: objectInfo.objectName,
+    objectType: objectInfo.objectType,
     assignmentId: assignment.id,
     access: assignment.access,
-    ownerShortname: collection.owner?.shortname,
-    isOwner: collection.ownerId === ctx.user.sub,
+    ownerShortname: objectInfo.ownerShortname,
+    isOwner: objectInfo.ownerId === ctx.user.sub,
     isManager: true,
     isRequested: false,
-    isShared: collection._count.permissions > 0,
+    isShared: objectInfo.isShared,
   }
 }
 // #endregion
