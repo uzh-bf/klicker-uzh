@@ -874,22 +874,79 @@ export async function requestCatalogObject(
   return permissionRequest ? true : false
 }
 
-export async function cancelAnswerCollectionRequest(
+export async function cancelObjectSharingRequest(
   {
-    collectionId,
+    answerCollectionId,
+    elementId,
+    courseId,
+    liveQuizId,
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
   }: {
-    collectionId: number
+    answerCollectionId?: number
+    elementId?: number
+    courseId?: string
+    liveQuizId?: string
+    practiceQuizId?: string
+    microLearningId?: string
+    groupActivityId?: string
   },
   ctx: ContextWithUser
 ) {
   // verify that the user has requested access to the collection
   const permission = await ctx.prisma.permission.findUnique({
     where: {
-      answerCollectionId_userId: {
-        answerCollectionId: collectionId,
-        userId: ctx.user.sub,
-      },
       permissionStatus: DB.PermissionStatus.REQUESTED,
+      answerCollectionId_userId:
+        typeof answerCollectionId !== 'undefined'
+          ? {
+              answerCollectionId,
+              userId: ctx.user.sub,
+            }
+          : undefined,
+      elementId_userId:
+        typeof elementId !== 'undefined'
+          ? {
+              elementId,
+              userId: ctx.user.sub,
+            }
+          : undefined,
+      courseId_userId:
+        typeof courseId !== 'undefined'
+          ? {
+              courseId,
+              userId: ctx.user.sub,
+            }
+          : undefined,
+      liveQuizId_userId:
+        typeof liveQuizId !== 'undefined'
+          ? {
+              liveQuizId,
+              userId: ctx.user.sub,
+            }
+          : undefined,
+      practiceQuizId_userId:
+        typeof practiceQuizId !== 'undefined'
+          ? {
+              practiceQuizId,
+              userId: ctx.user.sub,
+            }
+          : undefined,
+      microLearningId_userId:
+        typeof microLearningId !== 'undefined'
+          ? {
+              microLearningId,
+              userId: ctx.user.sub,
+            }
+          : undefined,
+      groupActivityId_userId:
+        typeof groupActivityId !== 'undefined'
+          ? {
+              groupActivityId,
+              userId: ctx.user.sub,
+            }
+          : undefined,
     },
   })
 
@@ -1024,6 +1081,80 @@ export async function changeCatalogCollectionPermissionLevel(
   return true
 }
 
+export async function changeCatalogObjectPermissionLevel(
+  {
+    permissionId,
+    permissionLevel,
+    answerCollectionId,
+    elementId,
+    courseId,
+    liveQuizId,
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+  }: {
+    permissionId: number
+    permissionLevel: DB.PermissionLevel
+    answerCollectionId?: number
+    elementId?: number
+    courseId?: string
+    liveQuizId?: string
+    practiceQuizId?: string
+    microLearningId?: string
+    groupActivityId?: string
+  },
+  ctx: ContextWithUser
+) {
+  // verify that the user has sufficient permissions on the object in question
+  if (typeof answerCollectionId !== 'undefined') {
+    const { valid } = await validateAnswerCollectionPermissions(
+      {
+        collectionId: answerCollectionId,
+        acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
+      },
+      ctx
+    )
+
+    if (!valid) {
+      return false
+    }
+  }
+  // TODO: ... add more object types once they are supported for sharing
+  else {
+    return false
+  }
+
+  // update the access level of the permission
+  const permission = await ctx.prisma.permission.update({
+    where: {
+      id: permissionId,
+      answerCollectionId,
+      elementId,
+      courseId,
+      liveQuizId,
+      practiceQuizId,
+      microLearningId,
+      groupActivityId,
+    },
+    data: {
+      permissionLevel,
+    },
+  })
+
+  // if the permission did not exist in the first place, return null
+  if (!permission) {
+    return false
+  }
+
+  // invalidate permission
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permission.id,
+  })
+
+  return true
+}
+
 export async function revokeCatalogCollectionAccess(
   {
     permissionId,
@@ -1077,56 +1208,6 @@ export async function revokeCatalogCollectionAccess(
   })
 
   return deletedPermission.id
-}
-
-export async function changeAnswerCollectionPermissionLevel(
-  {
-    collectionId,
-    permissionId,
-    permissionLevel,
-  }: {
-    collectionId: number
-    permissionId: number
-    permissionLevel: DB.PermissionLevel
-  },
-  ctx: ContextWithUser
-) {
-  // verify that user has either owner or admin access
-  const { valid } = await validateAnswerCollectionPermissions(
-    {
-      collectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return false
-  }
-
-  // update the access level of the permission
-  const permission = await ctx.prisma.permission.update({
-    where: {
-      id: permissionId,
-      answerCollectionId: collectionId,
-    },
-    data: {
-      permissionLevel,
-    },
-  })
-
-  // if the permission did not exist in the first place, return null
-  if (!permission) {
-    return false
-  }
-
-  // invalidate permission
-  ctx.emitter.emit('invalidate', {
-    typename: 'Permission',
-    id: permission.id,
-  })
-
-  return true
 }
 
 export async function revokeAnswerCollectionAccess(
@@ -1762,31 +1843,48 @@ export async function transferAnswerCollectionOwnership(
     : null
 }
 
-export async function shareAnswerCollection(
+export async function shareCatalogObject(
   {
-    collectionId,
     permissionLevel,
     usernameOrEmail,
     userGroupId,
+    answerCollectionId,
+    elementId,
+    courseId,
+    liveQuizId,
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
   }: {
-    collectionId: number
     permissionLevel: DB.PermissionLevel
     usernameOrEmail?: string | null
     userGroupId?: number | null
+    answerCollectionId?: number
+    elementId?: number
+    courseId?: string
+    liveQuizId?: string
+    practiceQuizId?: string
+    microLearningId?: string
+    groupActivityId?: string
   },
   ctx: ContextWithUser
 ) {
   // verify that user has either owner or admin access (sufficient permissions for sharing)
-  const { valid, collection } = await validateAnswerCollectionPermissions(
-    {
-      collectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
+  let objectOwner: string | undefined | null = null
 
-  if (!valid) {
-    return null
+  if (typeof answerCollectionId !== 'undefined') {
+    const { valid, collection } = await validateAnswerCollectionPermissions(
+      {
+        collectionId: answerCollectionId,
+        acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
+      },
+      ctx
+    )
+
+    objectOwner = collection?.ownerId
+    if (!valid) {
+      return null
+    }
   }
 
   // create new permission with the defined access level
@@ -1811,26 +1909,66 @@ export async function shareAnswerCollection(
     })
 
     const userId = user?.id
-    if (!userId || collection?.ownerId === userId) {
+    if (!userId || objectOwner === userId) {
       return null
     }
 
     // upsert new permission for the answer collection under consideration
     const permission = await ctx.prisma.permission.upsert({
       where: {
-        answerCollectionId_userId: {
-          answerCollectionId: collectionId,
-          userId,
-        },
+        answerCollectionId_userId:
+          typeof answerCollectionId !== 'undefined'
+            ? {
+                answerCollectionId,
+                userId,
+              }
+            : undefined,
+        elementId_userId:
+          typeof elementId !== 'undefined'
+            ? {
+                elementId,
+                userId,
+              }
+            : undefined,
+        courseId_userId:
+          typeof courseId !== 'undefined'
+            ? {
+                courseId,
+                userId,
+              }
+            : undefined,
+        liveQuizId_userId:
+          typeof liveQuizId !== 'undefined'
+            ? {
+                liveQuizId,
+                userId,
+              }
+            : undefined,
+        practiceQuizId_userId:
+          typeof practiceQuizId !== 'undefined'
+            ? {
+                practiceQuizId,
+                userId,
+              }
+            : undefined,
+        microLearningId_userId:
+          typeof microLearningId !== 'undefined'
+            ? {
+                microLearningId,
+                userId,
+              }
+            : undefined,
+        groupActivityId_userId:
+          typeof groupActivityId !== 'undefined'
+            ? {
+                groupActivityId,
+                userId,
+              }
+            : undefined,
       },
       create: {
         permissionLevel,
         permissionStatus: DB.PermissionStatus.GRANTED,
-        answerCollection: {
-          connect: {
-            id: collectionId,
-          },
-        },
         user: {
           connect: {
             id: userId,
@@ -1841,6 +1979,62 @@ export async function shareAnswerCollection(
             id: ctx.user.sub,
           },
         },
+        answerCollection:
+          typeof answerCollectionId !== 'undefined'
+            ? {
+                connect: {
+                  id: answerCollectionId,
+                },
+              }
+            : undefined,
+        element:
+          typeof elementId !== 'undefined'
+            ? {
+                connect: {
+                  id: elementId,
+                },
+              }
+            : undefined,
+        course:
+          typeof courseId !== 'undefined'
+            ? {
+                connect: {
+                  id: courseId,
+                },
+              }
+            : undefined,
+        liveQuiz:
+          typeof liveQuizId !== 'undefined'
+            ? {
+                connect: {
+                  id: liveQuizId,
+                },
+              }
+            : undefined,
+        practiceQuiz:
+          typeof practiceQuizId !== 'undefined'
+            ? {
+                connect: {
+                  id: practiceQuizId,
+                },
+              }
+            : undefined,
+        microLearning:
+          typeof microLearningId !== 'undefined'
+            ? {
+                connect: {
+                  id: microLearningId,
+                },
+              }
+            : undefined,
+        groupActivity:
+          typeof groupActivityId !== 'undefined'
+            ? {
+                connect: {
+                  id: groupActivityId,
+                },
+              }
+            : undefined,
       },
       update: {
         permissionLevel,

@@ -1372,7 +1372,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: try to combine the corresponding mutations
       cancelObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1380,12 +1379,21 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
         resolve(_, args, ctx) {
-          if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
-            return SharingService.cancelAnswerCollectionRequest(
-              { collectionId: parseInt(args.objectId) },
-              ctx
-            )
-          }
+          return SharingService.cancelObjectSharingRequest(
+            {
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
 
           return false
         },
@@ -1481,7 +1489,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: try to combine the corresponding mutations (at least for objects)
       shareObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
@@ -1503,21 +1510,26 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (
-            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-          ) {
-            return SharingService.shareAnswerCollection(
+          } else {
+            return SharingService.shareCatalogObject(
               {
-                collectionId: parseInt(args.objectId),
                 permissionLevel: args.permissionLevel,
                 usernameOrEmail: args.usernameOrEmail,
                 userGroupId: args.userGroupId,
+                answerCollectionId:
+                  args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                    ? parseInt(args.objectId)
+                    : undefined,
+                elementId: undefined,
+                courseId: undefined,
+                liveQuizId: undefined,
+                practiceQuizId: undefined,
+                microLearningId: undefined,
+                groupActivityId: undefined,
               },
               ctx
             )
           }
-
-          return null
         },
       }),
 
@@ -1553,7 +1565,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: try to combine the corresponding mutations
       changePermissionLevel: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1572,20 +1583,25 @@ export const Mutation = builder.mutationType({
               },
               ctx
             )
-          } else if (
-            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-          ) {
-            return SharingService.changeAnswerCollectionPermissionLevel(
+          } else {
+            return SharingService.changeCatalogObjectPermissionLevel(
               {
-                collectionId: parseInt(args.objectId),
                 permissionId: args.permissionId,
                 permissionLevel: args.permissionLevel,
+                answerCollectionId:
+                  args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                    ? parseInt(args.objectId)
+                    : undefined,
+                elementId: undefined,
+                courseId: undefined,
+                liveQuizId: undefined,
+                practiceQuizId: undefined,
+                microLearningId: undefined,
+                groupActivityId: undefined,
               },
               ctx
             )
           }
-
-          return false
         },
       }),
 
