@@ -95,7 +95,7 @@ function usePermissionLevelChange({
         ],
       })
 
-      if (typeof res.data?.changePermissionLevel) {
+      if (res.data?.changePermissionLevel) {
         return true
       } else {
         return false
