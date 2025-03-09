@@ -31,7 +31,6 @@ jobs:
           run_install: true
 
       - name: Run tests using Docker
-        working-directory: ./packages/graphql
         run: |
           cd packages/prisma
           pnpm run build
