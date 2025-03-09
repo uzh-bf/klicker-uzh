@@ -32,4 +32,14 @@ jobs:
 
       - name: Run tests using Docker
         working-directory: ./packages/graphql
-        run: pnpm run test:docker
+        run: |
+          cd packages/prisma
+          pnpm run build
+          cd ../types
+          pnpm run build
+          cd ../util
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../graphql
+          pnpm run test:docker
