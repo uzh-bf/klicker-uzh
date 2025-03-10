@@ -9,8 +9,12 @@ import {
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
+  addAnswerCollectionOption,
+  deleteAnswerCollectionEntry,
+  editAnswerCollectionEntry,
   getAnswerCollectionsElements,
   getSingleAnswerCollection,
+  modifyAnswerCollection,
 } from '../src/services/resources.js'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -518,7 +522,229 @@ describe('Unit tests for sharing service', () => {
     expect(collection2UserOne).toBeNull()
   })
 
-  // TODO: verify that only user 1, 2, 3 are allowed to modifiy content (edit options, name, etc.)
+  it("Verify that only users with WRITE / ADMIN / OWNER permissions are allowed to modify the answer collection's content", async () => {
+    // test the modification of the answer collection's name and description with OWNER AND ADMIN permissions
+    const updatedCollection1 = await modifyAnswerCollection(
+      {
+        id: AC1Id,
+        name: `${answerCollection1.name} (Updated)`,
+        description: `${answerCollection1.description} (Updated)`,
+      },
+      userOneCtx
+    )
+    expect(updatedCollection1).toBeTruthy()
+    expect(updatedCollection1!.name).toBe(`${answerCollection1.name} (Updated)`)
+    expect(updatedCollection1!.description).toBe(
+      `${answerCollection1.description} (Updated)`
+    )
+
+    const updatedCollection2 = await modifyAnswerCollection(
+      {
+        id: AC2Id,
+        name: `${answerCollection2.name} (Updated)`,
+        description: `${answerCollection2.description} (Updated)`,
+      },
+      userTwoCtx
+    )
+    expect(updatedCollection2).toBeTruthy()
+    expect(updatedCollection2!.name).toBe(`${answerCollection2.name} (Updated)`)
+    expect(updatedCollection2!.description).toBe(
+      `${answerCollection2.description} (Updated)`
+    )
+
+    // undo changes with WRITE permissions
+    const updatedCollection3 = await modifyAnswerCollection(
+      {
+        id: AC1Id,
+        name: answerCollection1.name,
+        description: answerCollection1.description,
+      },
+      userThreeCtx
+    )
+    expect(updatedCollection3).toBeTruthy()
+    expect(updatedCollection3!.name).toBe(answerCollection1.name)
+    expect(updatedCollection3!.description).toBe(answerCollection1.description)
+
+    const updatedCollection4 = await modifyAnswerCollection(
+      {
+        id: AC2Id,
+        name: answerCollection2.name,
+        description: answerCollection2.description,
+      },
+      userThreeCtx
+    )
+    expect(updatedCollection4).toBeTruthy()
+    expect(updatedCollection4!.name).toBe(answerCollection2.name)
+    expect(updatedCollection4!.description).toBe(answerCollection2.description)
+
+    // verify that WRITE permissions are correctly verified
+    const updatedCollection5 = await modifyAnswerCollection(
+      {
+        id: AC1Id,
+        name: `${answerCollection1.name} (Updated)`,
+        description: `${answerCollection1.description} (Updated)`,
+      },
+      userFourCtx
+    )
+    expect(updatedCollection5).toBeNull()
+
+    const updatedCollection6 = await modifyAnswerCollection(
+      {
+        id: AC2Id,
+        name: `${answerCollection2.name} (Updated)`,
+        description: `${answerCollection2.description} (Updated)`,
+      },
+      userFiveCtx
+    )
+    expect(updatedCollection6).toBeNull()
+
+    // verify that changing and answer collection entry value required WRITE permissions (at least)
+    const dbAC1 = await prisma.answerCollection.findUnique({
+      where: { id: AC1Id },
+      include: { entries: true },
+    })
+    expect(dbAC1).toBeTruthy()
+    expect(dbAC1!.entries).toHaveLength(4)
+    const entry1 = dbAC1!.entries[0]
+
+    const updatedEntry1 = await editAnswerCollectionEntry(
+      {
+        id: entry1!.id,
+        value: `${entry1!.value} (Updated)`,
+        collectionId: AC1Id,
+      },
+      userOneCtx
+    )
+    expect(updatedEntry1).toBeTruthy()
+    expect(updatedEntry1!.value).toBe(`${entry1!.value} (Updated)`)
+
+    const updatedEntry2 = await editAnswerCollectionEntry(
+      {
+        id: entry1!.id,
+        value: `${entry1!.value} (Updated 2)`,
+        collectionId: AC1Id,
+      },
+      userTwoCtx
+    )
+    expect(updatedEntry2).toBeTruthy()
+    expect(updatedEntry2!.value).toBe(`${entry1!.value} (Updated 2)`)
+
+    const updatedEntry3 = await editAnswerCollectionEntry(
+      {
+        id: entry1!.id,
+        value: entry1!.value,
+        collectionId: AC1Id,
+      },
+      userThreeCtx
+    )
+    expect(updatedEntry3).toBeTruthy()
+    expect(updatedEntry3!.value).toBe(entry1!.value)
+
+    const updatedEntry4 = await editAnswerCollectionEntry(
+      {
+        id: entry1!.id,
+        value: `${entry1!.value} (Updated 4)`,
+        collectionId: AC1Id,
+      },
+      userFourCtx
+    )
+    expect(updatedEntry4).toBeNull()
+
+    const updatedEntry5 = await editAnswerCollectionEntry(
+      {
+        id: entry1!.id,
+        value: `${entry1!.value} (Updated 5)`,
+        collectionId: AC1Id,
+      },
+      userFiveCtx
+    )
+    expect(updatedEntry5).toBeNull()
+
+    // verify that users with WRITE permissions can add and remove entries from an answer collection
+    for (const ctx of [userOneCtx, userTwoCtx, userThreeCtx]) {
+      // add new value to answer collection
+      const newEntryValue = `New Entry ${ctx.user.sub}`
+      const newEntry = await addAnswerCollectionOption(
+        {
+          collectionId: AC1Id,
+          value: newEntryValue,
+        },
+        ctx
+      )
+      expect(newEntry).toBeTruthy()
+      expect(newEntry!.value).toBe(newEntryValue)
+
+      // verify that new entry has been added to answer collection
+      const dbAC1Updated = await prisma.answerCollection.findUnique({
+        where: { id: AC1Id },
+        include: { entries: true },
+      })
+      expect(dbAC1Updated).toBeTruthy()
+      expect(dbAC1Updated!.entries).toHaveLength(5)
+      expect(dbAC1Updated!.entries.map((entry) => entry.value)).toEqual(
+        expect.arrayContaining([...answerCollection1.entries, newEntryValue])
+      )
+
+      // remove the new entry again
+      const removedEntry = await deleteAnswerCollectionEntry(
+        {
+          id: newEntry!.id,
+          collectionId: AC1Id,
+        },
+        ctx
+      )
+      expect(removedEntry).toBeTruthy()
+      expect(removedEntry).toBe(newEntry!.id)
+
+      // verify that the entry has been removed from the answer collection
+      const dbAC1Removed = await prisma.answerCollection.findUnique({
+        where: { id: AC1Id },
+        include: { entries: true },
+      })
+      expect(dbAC1Removed).toBeTruthy()
+      expect(dbAC1Removed!.entries).toHaveLength(4)
+      expect(dbAC1Removed!.entries.map((entry) => entry.value)).toEqual(
+        expect.arrayContaining(answerCollection1.entries)
+      )
+    }
+
+    // verify that answers without WRITE permissions cannot add or remove entries
+    for (const ctx of [userFourCtx, userFiveCtx]) {
+      const newEntry = await addAnswerCollectionOption(
+        {
+          collectionId: AC1Id,
+          value: 'Dummy Content',
+        },
+        ctx
+      )
+      expect(newEntry).toBeNull()
+
+      // verify that answer colleciton has not been modified
+      const dbAC1AfterAddition = await prisma.answerCollection.findUnique({
+        where: { id: AC1Id },
+        include: { entries: true },
+      })
+      expect(dbAC1AfterAddition).toBeTruthy()
+      expect(dbAC1AfterAddition!.entries).toHaveLength(4)
+
+      const removedEntry = await deleteAnswerCollectionEntry(
+        {
+          id: 0,
+          collectionId: AC1Id,
+        },
+        ctx
+      )
+      expect(removedEntry).toBeNull()
+
+      // verify that answer colleciton has not been modified
+      const dbAC1AfterRemoval = await prisma.answerCollection.findUnique({
+        where: { id: AC1Id },
+        include: { entries: true },
+      })
+      expect(dbAC1AfterRemoval).toBeTruthy()
+      expect(dbAC1AfterRemoval!.entries).toHaveLength(4)
+    }
+  })
 
   // TODO: verify that only user 1, 2 can share the collection - use direct sharing, remove permission again afterwards
 
@@ -555,95 +781,4 @@ describe('Unit tests for sharing service', () => {
   // TODO: verify that users 1 can transfer ownership of catalog collection (and transfer it back afterwards)
 
   // TODO: verify that users 1, 2 can delete catalog collections
-
-  // it('should update a catalog collection name', async () => {
-  // const collectionName = 'Test Collection'
-  // const result = await createCatalogCollection(
-  //   {
-  //     name: collectionName,
-  //     access: ObjectAccess.RESTRICTED,
-  //   },
-  //   userOneCtx
-  // )
-  // // Check result structure
-  // expect(result).toMatchObject({
-  //   name: collectionName,
-  //   access: ObjectAccess.RESTRICTED,
-  //   ownerId: userOne.id,
-  //   isOwner: true,
-  //   isManager: true,
-  //   isEditor: true,
-  //   isRequested: false,
-  //   isShared: false,
-  // })
-  // // Verify database state
-  // const collectionInDb = await prisma.catalogCollection.findUnique({
-  //   where: { id: result.id },
-  // })
-  // expect(collectionInDb).toBeTruthy()
-  // expect(collectionInDb?.name).toBe(collectionName)
-  // expect(collectionInDb?.ownerId).toBe(userOne.id)
-  // // First create a collection to update
-  // const initialCollection = await createCatalogCollection(
-  //   {
-  //     name: 'Initial Collection Name',
-  //     access: ObjectAccess.RESTRICTED,
-  //   },
-  //   userOneCtx
-  // )
-  // const updatedName = 'Updated Collection Name'
-  // const result = await changeCatalogCollectionName(
-  //   {
-  //     catalogCollectionId: initialCollection.id,
-  //     name: updatedName,
-  //   },
-  //   userOneCtx
-  // )
-  // // Verify update was successful
-  // expect(result).toBe(true)
-  // // Verify database state reflects the update
-  // const updatedCollection = await prisma.catalogCollection.findUnique({
-  //   where: { id: initialCollection.id },
-  // })
-  // expect(updatedCollection?.name).toBe(updatedName)
-  // })
-
-  // it('should share a catalog collection with another user', async () => {
-  // // First create a collection to share
-  // const collectionToShare = await createCatalogCollection(
-  //   {
-  //     name: 'Collection to Share',
-  //     access: ObjectAccess.RESTRICTED,
-  //   },
-  //   userOneCtx
-  // )
-
-  // // Share the collection with the second user
-  // const result = await shareCatalogCollection(
-  //   {
-  //     catalogCollectionId: collectionToShare.id,
-  //     permissionLevel: PermissionLevel.READ,
-  //     usernameOrEmail: userTwo.email,
-  //   },
-  //   userOneCtx
-  // )
-
-  // // Check result structure
-  // expect(result).toBeTruthy()
-  // expect(result?.userId).toBe(userTwo.id)
-  // expect(result?.permissionLevel).toBe(PermissionLevel.READ)
-  // expect(result?.isRevokable).toBe(true)
-
-  // // Verify database state
-  // const permission = await prisma.permission.findFirst({
-  //   where: {
-  //     catalogCollectionId: collectionToShare.id,
-  //     userId: userTwo.id,
-  //   },
-  // })
-
-  // expect(permission).toBeTruthy()
-  // expect(permission?.permissionLevel).toBe(PermissionLevel.READ)
-  // expect(permission?.permissionStatus).toBe(PermissionStatus.GRANTED)
-  // })
 })
