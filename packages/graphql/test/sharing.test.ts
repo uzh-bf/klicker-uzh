@@ -1,4 +1,5 @@
 import {
+  ElementType,
   ObjectAccess,
   PermissionLevel,
   PermissionStatus,
@@ -6,10 +7,12 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
+import { CatalogObjectType } from '@klicker-uzh/types'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   addAnswerCollectionOption,
+  deleteAnswerCollection,
   deleteAnswerCollectionEntry,
   editAnswerCollectionEntry,
   getAnswerCollectionsElements,
@@ -17,8 +20,13 @@ import {
   modifyAnswerCollection,
 } from '../src/services/resources.js'
 import {
+  addObjectToCatalog,
+  changeCatalogObjectPermissionLevel,
+  getCatalogAnswerCollections,
   MISSING_CATALOG_COLLECTION_ID,
+  revokeAnswerCollectionAccess,
   shareCatalogObject,
+  transferAnswerCollectionOwnership,
 } from '../src/services/sharing.js'
 import {
   answerCollection1,
@@ -746,17 +754,746 @@ describe('Unit tests for sharing service', () => {
     }
   })
 
-  // TODO: verify that only user 1, 2 can share the collection - use direct sharing, remove permission again afterwards
+  it('Verify that only users with ADMIN and OWNER permissions on an answer collection can add it to a catalog', async () => {
+    // verify that the query for the catalog addition only returns the collections that can be added
+    const availableCollectionsUserOne =
+      await getCatalogAnswerCollections(userOneCtx)
+    expect(availableCollectionsUserOne).toHaveLength(2)
+    expect(
+      availableCollectionsUserOne.map((collection) => collection.name)
+    ).toEqual(
+      expect.arrayContaining([answerCollection1.name, answerCollection2.name])
+    )
 
-  // TODO: verify that only user 1, 2 can add the answer collections to a catalog (1 public, 1 restricted)
+    const availableCollectionsUserTwo =
+      await getCatalogAnswerCollections(userTwoCtx)
+    expect(availableCollectionsUserTwo).toHaveLength(2)
+    expect(
+      availableCollectionsUserTwo.map((collection) => collection.name)
+    ).toEqual(
+      expect.arrayContaining([answerCollection1.name, answerCollection2.name])
+    )
 
-  // TODO: verify that only user 1, 2 can modify the permissions of the answer collections
+    const availableCollectionsUserThree =
+      await getCatalogAnswerCollections(userThreeCtx)
+    expect(availableCollectionsUserThree).toHaveLength(0)
+
+    const availableCollectionsUserFour =
+      await getCatalogAnswerCollections(userFourCtx)
+    expect(availableCollectionsUserFour).toHaveLength(0)
+
+    const availableCollectionsUserFive =
+      await getCatalogAnswerCollections(userFiveCtx)
+    expect(availableCollectionsUserFive).toHaveLength(0)
+
+    // verify that only users with sufficient permissions on the object can add it to the catalog at the top-level (AC1 as public, AC2 as restricted)
+    const res1 = await addObjectToCatalog(
+      {
+        access: ObjectAccess.PUBLIC,
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        answerCollectionId: AC1Id,
+      },
+      userOneCtx
+    )
+    expect(res1).toBeTruthy()
+    expect(res1!.id).toBe(AC1Id)
+    expect(res1!.objectType).toBe(CatalogObjectType.ANSWER_COLLECTION)
+    expect(res1!.access).toBe(ObjectAccess.PUBLIC)
+    expect(res1!.ownerShortname).toBe(userOne.shortname)
+    expect(res1!.isOwner).toBe(true)
+    expect(res1!.isManager).toBe(true)
+    expect(res1!.isRequested).toBe(false)
+    expect(res1!.isShared).toBe(false)
+
+    const res2 = await addObjectToCatalog(
+      {
+        access: ObjectAccess.RESTRICTED,
+        answerCollectionId: AC2Id,
+      },
+      userTwoCtx
+    )
+    expect(res2).toBeTruthy()
+    expect(res2!.id).toBe(AC2Id)
+    expect(res2!.objectType).toBe(CatalogObjectType.ANSWER_COLLECTION)
+    expect(res2!.access).toBe(ObjectAccess.RESTRICTED)
+    expect(res2!.ownerShortname).toBe(userOne.shortname)
+    expect(res2!.isOwner).toBe(false)
+    expect(res2!.isManager).toBe(true)
+    expect(res2!.isRequested).toBe(false)
+    expect(res2!.isShared).toBe(true)
+
+    // verify that users with insufficient permissions cannot add the answer collections to the catalog
+    const res3 = await addObjectToCatalog(
+      {
+        access: ObjectAccess.RESTRICTED,
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        answerCollectionId: AC1Id,
+      },
+      userThreeCtx
+    )
+    expect(res3).toBeNull()
+
+    const res4 = await addObjectToCatalog(
+      {
+        access: ObjectAccess.RESTRICTED,
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        answerCollectionId: AC1Id,
+      },
+      userFourCtx
+    )
+    expect(res4).toBeNull()
+
+    const res5 = await addObjectToCatalog(
+      {
+        access: ObjectAccess.RESTRICTED,
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        answerCollectionId: AC1Id,
+      },
+      userFiveCtx
+    )
+    expect(res5).toBeNull()
+
+    // verify if the assignments have been stored correctly in the database
+    const AC1Assignment = await prisma.catalogCollectionAssignment.findUnique({
+      where: {
+        answerCollectionId_catalogCollectionId: {
+          answerCollectionId: AC1Id,
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        },
+      },
+    })
+    expect(AC1Assignment).toBeTruthy()
+    expect(AC1Assignment!.access).toBe(ObjectAccess.PUBLIC)
+
+    const AC2Assignment = await prisma.catalogCollectionAssignment.findUnique({
+      where: {
+        answerCollectionId_catalogCollectionId: {
+          answerCollectionId: AC2Id,
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        },
+      },
+    })
+    expect(AC2Assignment).toBeTruthy()
+    expect(AC2Assignment!.access).toBe(ObjectAccess.RESTRICTED)
+  })
+
+  it('Verify that only object ADMIN / OWNER can modify the individual permission levels', async () => {
+    // fetch the permission that should be modified and verify its initial value
+    const permission = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFour.id,
+        },
+      },
+    })
+    expect(permission).toBeTruthy()
+    expect(permission!.permissionLevel).toBe(PermissionLevel.READ)
+
+    // change the permission READ -> WRITE
+    const success1 = await changeCatalogObjectPermissionLevel(
+      {
+        permissionId: permission!.id,
+        permissionLevel: PermissionLevel.WRITE,
+        answerCollectionId: AC1Id,
+      },
+      userOneCtx
+    )
+    expect(success1).toBeTruthy()
+
+    // verify that the permission has been updated in the database
+    const updatedPermission = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFour.id,
+        },
+      },
+    })
+    expect(updatedPermission).toBeTruthy()
+    expect(updatedPermission!.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    // use admin permissions to change the permission level back to READ
+    const success2 = await changeCatalogObjectPermissionLevel(
+      {
+        permissionId: updatedPermission!.id,
+        permissionLevel: PermissionLevel.READ,
+        answerCollectionId: AC1Id,
+      },
+      userTwoCtx
+    )
+    expect(success2).toBeTruthy()
+
+    // verify that the permission has been updated in the database
+    const updatedPermission2 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFour.id,
+        },
+      },
+    })
+    expect(updatedPermission2).toBeTruthy()
+    expect(updatedPermission2!.permissionLevel).toBe(PermissionLevel.READ)
+
+    // verify that all other users do not have sufficient permissions on the object for a permission level change
+    const success3 = await changeCatalogObjectPermissionLevel(
+      {
+        permissionId: updatedPermission2!.id,
+        permissionLevel: PermissionLevel.WRITE,
+        answerCollectionId: AC1Id,
+      },
+      userThreeCtx
+    )
+    expect(success3).toBeFalsy()
+
+    const success4 = await changeCatalogObjectPermissionLevel(
+      {
+        permissionId: updatedPermission2!.id,
+        permissionLevel: PermissionLevel.WRITE,
+        answerCollectionId: AC1Id,
+      },
+      userFourCtx
+    )
+    expect(success4).toBeFalsy()
+
+    const success5 = await changeCatalogObjectPermissionLevel(
+      {
+        permissionId: updatedPermission2!.id,
+        permissionLevel: PermissionLevel.WRITE,
+        answerCollectionId: AC1Id,
+      },
+      userFiveCtx
+    )
+    expect(success5).toBeFalsy()
+
+    // verify that the permission has not been updated in the database
+    const updatedPermission3 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFour.id,
+        },
+      },
+    })
+    expect(updatedPermission3).toBeTruthy()
+    expect(updatedPermission3!.permissionLevel).toBe(PermissionLevel.READ)
+  })
 
   // TODO: verify that only user 1, 2 can revoke access to the answer collections (as long as not used in a question - create a question with it by user 5?) - include cleanup
+  it("Verify that permissions to an answer collection can only be revoked as long as they are unused and only by the object's ADMIN or OWNER", async () => {
+    // create a new READ permission for user 5 on AC1
+    const permission1 = await prisma.permission.upsert({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.READ,
+        permissionStatus: PermissionStatus.GRANTED,
+        answerCollection: {
+          connect: {
+            id: AC1Id,
+          },
+        },
+        user: {
+          connect: {
+            id: userFive.id,
+          },
+        },
+        objectOwner: {
+          connect: {
+            id: userOne.id,
+          },
+        },
+      },
+      update: {},
+    })
 
-  // TODO: verify that only user 1 can transfer ownership and then give it back again from user 2
+    // delete the permission through the corresponding mutation by owner
+    const deletedPermissionId1 = await revokeAnswerCollectionAccess(
+      {
+        permissionId: permission1.id,
+        collectionId: AC1Id,
+      },
+      userOneCtx
+    )
+    expect(deletedPermissionId1).toBe(permission1.id)
 
-  // TODO: verify that only user 1, 2 can delete the answer collections
+    const dbPermission1 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(dbPermission1).toBeNull()
+
+    // create a new WRITE permission for user 5 on AC1
+    const permission2 = await prisma.permission.upsert({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.WRITE,
+        permissionStatus: PermissionStatus.GRANTED,
+        answerCollection: {
+          connect: {
+            id: AC1Id,
+          },
+        },
+        user: {
+          connect: {
+            id: userFive.id,
+          },
+        },
+        objectOwner: {
+          connect: {
+            id: userOne.id,
+          },
+        },
+      },
+      update: {},
+    })
+
+    // delete the permission through the corresponding mutation by admin
+    const deletedPermissionId2 = await revokeAnswerCollectionAccess(
+      {
+        permissionId: permission2.id,
+        collectionId: AC1Id,
+      },
+      userTwoCtx
+    )
+    expect(deletedPermissionId2).toBe(permission2.id)
+
+    const dbPermission2 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(dbPermission2).toBeNull()
+
+    // create a new ADMIN permission for user 5 on AC1
+    const permission3 = await prisma.permission.upsert({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.ADMIN,
+        permissionStatus: PermissionStatus.GRANTED,
+        answerCollection: {
+          connect: {
+            id: AC1Id,
+          },
+        },
+        user: {
+          connect: {
+            id: userFive.id,
+          },
+        },
+        objectOwner: {
+          connect: {
+            id: userOne.id,
+          },
+        },
+      },
+      update: {},
+    })
+
+    // verify that the permission cannot be deleted by any other user with insufficient permissions
+    const deletedPermissionId3 = await revokeAnswerCollectionAccess(
+      {
+        permissionId: permission3.id,
+        collectionId: AC1Id,
+      },
+      userThreeCtx
+    )
+    expect(deletedPermissionId3).toBeNull()
+
+    const deletedPermissionId4 = await revokeAnswerCollectionAccess(
+      {
+        permissionId: permission3.id,
+        collectionId: AC1Id,
+      },
+      userFourCtx
+    )
+    expect(deletedPermissionId4).toBeNull()
+
+    // create a question with the answer collection
+    const selectionQuestion = await prisma.element.create({
+      data: {
+        type: ElementType.SELECTION,
+        name: 'Question with answer collection',
+        content: 'Question with answer collection',
+        options: {},
+        answerCollection: {
+          connect: {
+            id: AC1Id,
+          },
+        },
+        owner: {
+          connect: {
+            id: userFive.id,
+          },
+        },
+      },
+    })
+
+    // verify that the permission cannot be revoked any longer
+    const removalSuccess1 = await revokeAnswerCollectionAccess(
+      {
+        permissionId: permission3.id,
+        collectionId: AC1Id,
+      },
+      userOneCtx
+    )
+    expect(removalSuccess1).toBeNull()
+
+    const removalSuccess2 = await revokeAnswerCollectionAccess(
+      {
+        permissionId: permission3.id,
+        collectionId: AC1Id,
+      },
+      userTwoCtx
+    )
+    expect(removalSuccess2).toBeNull()
+
+    // delete the question and verify that user 5 can revoke own access using admin permissions
+    await prisma.element.delete({
+      where: {
+        id: selectionQuestion.id,
+      },
+    })
+
+    const permissionSelfRemoval = await revokeAnswerCollectionAccess(
+      {
+        permissionId: permission3.id,
+        collectionId: AC1Id,
+      },
+      userFiveCtx
+    )
+    expect(permissionSelfRemoval).toBe(permission3.id)
+
+    const dbPermission3 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(dbPermission3).toBeNull()
+  })
+
+  it('Verify that only an answer collection OWNER can transfer the corresponding rights', async () => {
+    // verify that users without owner permissions cannot transfer ownership
+    const failure1 = await transferAnswerCollectionOwnership(
+      {
+        collectionId: AC1Id,
+        usernameOrEmail: userTwo.email,
+      },
+      userTwoCtx
+    )
+    expect(failure1).toBeNull()
+
+    const failure2 = await transferAnswerCollectionOwnership(
+      {
+        collectionId: AC1Id,
+        usernameOrEmail: userThree.email,
+      },
+      userThreeCtx
+    )
+    expect(failure2).toBeNull()
+
+    const failure3 = await transferAnswerCollectionOwnership(
+      {
+        collectionId: AC1Id,
+        usernameOrEmail: userFour.email,
+      },
+      userFourCtx
+    )
+    expect(failure3).toBeNull()
+
+    const failure4 = await transferAnswerCollectionOwnership(
+      {
+        collectionId: AC1Id,
+        usernameOrEmail: userFive.email,
+      },
+      userFiveCtx
+    )
+    expect(failure4).toBeNull()
+
+    // verify that the function fails if the specified user does not exist
+    const failure5 = await transferAnswerCollectionOwnership(
+      {
+        collectionId: AC1Id,
+        usernameOrEmail: 'missing_user_name',
+      },
+      userOneCtx
+    )
+    expect(failure5).toBeNull()
+
+    // transfer ownership from user 1 to user 2, verify that admin permissions are awarded to user 1, permissions for user 2 are removed
+    const dbPermissionUserTwoOld = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(dbPermissionUserTwoOld).toBeTruthy()
+    expect(dbPermissionUserTwoOld!.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    const successPermission1 = await transferAnswerCollectionOwnership(
+      {
+        collectionId: AC1Id,
+        usernameOrEmail: userTwo.email,
+      },
+      userOneCtx
+    )
+    expect(successPermission1).toBeTruthy()
+    expect(successPermission1!.userId).toBe(userOne.id)
+    expect(successPermission1!.username).toBe(userOne.shortname)
+    expect(successPermission1!.userEmail).toBe(userOne.email)
+    expect(successPermission1!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(successPermission1!.isRevokable).toBe(true)
+    expect(successPermission1!.isOwn).toBe(true)
+
+    const dbPermission1 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(dbPermission1).toBeTruthy()
+    expect(dbPermission1!.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    const dbPermission2 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(dbPermission2).toBeNull()
+
+    // transfer ownership back to user 1 and verify permission modifications
+    const successfulPermission2 = await transferAnswerCollectionOwnership(
+      {
+        collectionId: AC1Id,
+        usernameOrEmail: userOne.email,
+      },
+      userTwoCtx
+    )
+    expect(successfulPermission2).toBeTruthy()
+    expect(successfulPermission2!.userId).toBe(userTwo.id)
+    expect(successfulPermission2!.username).toBe(userTwo.shortname)
+    expect(successfulPermission2!.userEmail).toBe(userTwo.email)
+    expect(successfulPermission2!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(successfulPermission2!.isRevokable).toBe(true)
+    expect(successfulPermission2!.isOwn).toBe(true)
+
+    const dbPermission3 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(dbPermission3).toBeTruthy()
+    expect(dbPermission3!.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    const dbPermission4 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(dbPermission4).toBeNull()
+  })
+
+  it('Verify that only users with ADMIN or OWNER permissions can delete an answer collection', async () => {
+    // create two new answer collections
+    const name1 = `${answerCollection1.name} (New)`
+    const name2 = `${answerCollection2.name} (New)`
+
+    for (const collection of [
+      { ...answerCollection1, name: name1 },
+      { ...answerCollection2, name: name2 },
+    ]) {
+      await prisma.answerCollection.upsert({
+        where: {
+          ownerId_name: {
+            ownerId: userOne.id,
+            name: collection.name,
+          },
+        },
+        create: {
+          name: collection.name,
+          description: collection.description,
+          entries: {
+            create: collection.entries.map((entry) => ({
+              value: entry,
+            })),
+          },
+          owner: {
+            connect: {
+              id: userOne.id,
+            },
+          },
+        },
+        update: {
+          name: collection.name,
+          description: collection.description,
+        },
+        include: {
+          entries: true,
+        },
+      })
+    }
+
+    const newAC1Id = (await prisma.answerCollection.findUnique({
+      where: {
+        ownerId_name: {
+          ownerId: userOne.id,
+          name: name1,
+        },
+      },
+    }))!.id
+    const newAC2Id = (await prisma.answerCollection.findUnique({
+      where: {
+        ownerId_name: {
+          ownerId: userOne.id,
+          name: name2,
+        },
+      },
+    }))!.id
+
+    // seed permissions for users 2, 3, 4 (ADMIN, WRITE, READ)
+    for (const { user, permissionLevel } of [
+      { user: userTwo, permissionLevel: PermissionLevel.ADMIN },
+      { user: userThree, permissionLevel: PermissionLevel.WRITE },
+      { user: userFour, permissionLevel: PermissionLevel.READ },
+    ]) {
+      await prisma.permission.create({
+        data: {
+          permissionLevel,
+          permissionStatus: PermissionStatus.GRANTED,
+          answerCollection: {
+            connect: {
+              id: newAC1Id,
+            },
+          },
+          user: {
+            connect: {
+              id: user.id,
+            },
+          },
+          objectOwner: {
+            connect: {
+              id: userOne.id,
+            },
+          },
+        },
+      })
+      await prisma.permission.create({
+        data: {
+          permissionLevel,
+          permissionStatus: PermissionStatus.GRANTED,
+          answerCollection: {
+            connect: {
+              id: newAC2Id,
+            },
+          },
+          user: {
+            connect: {
+              id: user.id,
+            },
+          },
+          objectOwner: {
+            connect: {
+              id: userOne.id,
+            },
+          },
+        },
+      })
+    }
+
+    // try to delete answer collection with insufficient permissions
+    const deletionFailure1 = await deleteAnswerCollection(
+      { collectionId: newAC1Id },
+      userThreeCtx
+    )
+    expect(deletionFailure1).toBeNull()
+
+    const deletionFailure2 = await deleteAnswerCollection(
+      { collectionId: newAC2Id },
+      userFourCtx
+    )
+    expect(deletionFailure2).toBeNull()
+
+    const deletionFailure3 = await deleteAnswerCollection(
+      { collectionId: newAC1Id },
+      userFiveCtx
+    )
+    expect(deletionFailure3).toBeNull()
+
+    // delete first answer collection through user with ADMIN permissions
+    const deletedACId = await deleteAnswerCollection(
+      { collectionId: newAC1Id },
+      userTwoCtx
+    )
+    expect(deletedACId).toBe(newAC1Id)
+
+    // delete the second answer collection through user with OWNER permissions
+    const deletedACId2 = await deleteAnswerCollection(
+      { collectionId: newAC2Id },
+      userOneCtx
+    )
+    expect(deletedACId2).toBe(newAC2Id)
+
+    // make sure that all permissions have been automatically been revoked (since unused)
+    for (const user of [userTwo, userThree, userFour]) {
+      const dbPermission1 = await prisma.permission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: newAC1Id,
+            userId: user.id,
+          },
+        },
+      })
+      expect(dbPermission1).toBeNull()
+
+      const dbPermission2 = await prisma.permission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: newAC2Id,
+            userId: user.id,
+          },
+        },
+      })
+      expect(dbPermission2).toBeNull()
+    }
+  })
 
   // TODO: create two catalog collections (1 public, 1 restricted)
 

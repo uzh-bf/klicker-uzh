@@ -25,6 +25,16 @@ async function validateCatalogCollectionPermissions(
   },
   ctx: ContextWithUser
 ) {
+  if (catalogCollectionId === MISSING_CATALOG_COLLECTION_ID) {
+    const defaultCollection = await ctx.prisma.catalogCollection.findUnique({
+      where: {
+        id: MISSING_CATALOG_COLLECTION_ID,
+      },
+    })
+
+    return { valid: true, catalogCollection: defaultCollection }
+  }
+
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId,
@@ -1812,6 +1822,23 @@ export async function transferAnswerCollectionOwnership(
           },
         },
       },
+      linkedElements: {
+        where: {
+          OR: [
+            {
+              ownerId: ctx.user.sub,
+            },
+            {
+              permissions: {
+                some: {
+                  userId: ctx.user.sub,
+                  permissionStatus: DB.PermissionStatus.GRANTED,
+                },
+              },
+            },
+          ],
+        },
+      },
     },
   })
 
@@ -1838,7 +1865,7 @@ export async function transferAnswerCollectionOwnership(
         userGroupId: undefined,
         userGroupName: undefined,
         permissionLevel: permission.permissionLevel,
-        isRevokable: true,
+        isRevokable: updatedCollection.linkedElements.length === 0,
         isOwn: true,
       }
     : null
