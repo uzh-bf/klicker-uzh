@@ -493,7 +493,22 @@ export async function deleteAnswerCollection(
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
-      ownerId: ctx.user.sub,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN],
+              },
+            },
+          },
+        },
+      ],
     },
     include: {
       _count: {

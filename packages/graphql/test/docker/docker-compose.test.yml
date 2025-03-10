@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: klicker_test
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  test:
+    build:
+      context: ../..
+      dockerfile: test/docker/Dockerfile.test
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/klicker_test
+      NODE_ENV: test
+      PNPM_HOME: '/tmp/.pnpm'
+    volumes:
+      - ../../../../:/usr/src/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Run as root to avoid permission issues with volume mounts
+    user: root

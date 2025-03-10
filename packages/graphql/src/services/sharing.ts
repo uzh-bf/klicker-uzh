@@ -8,7 +8,8 @@ import type { ContextWithUser } from '../lib/context.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
 
 // ! do not modify - required for the import of objects not assigned to any catalogue
-const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
+export const MISSING_CATALOG_COLLECTION_ID =
+  'fde06b3c-d515-4907-99cf-c2ba67583155'
 
 // ! Helper functions
 // #region
@@ -24,6 +25,16 @@ async function validateCatalogCollectionPermissions(
   },
   ctx: ContextWithUser
 ) {
+  if (catalogCollectionId === MISSING_CATALOG_COLLECTION_ID) {
+    const defaultCollection = await ctx.prisma.catalogCollection.findUnique({
+      where: {
+        id: MISSING_CATALOG_COLLECTION_ID,
+      },
+    })
+
+    return { valid: true, catalogCollection: defaultCollection }
+  }
+
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId,
@@ -1811,6 +1822,23 @@ export async function transferAnswerCollectionOwnership(
           },
         },
       },
+      linkedElements: {
+        where: {
+          OR: [
+            {
+              ownerId: ctx.user.sub,
+            },
+            {
+              permissions: {
+                some: {
+                  userId: ctx.user.sub,
+                  permissionStatus: DB.PermissionStatus.GRANTED,
+                },
+              },
+            },
+          ],
+        },
+      },
     },
   })
 
@@ -1837,7 +1865,7 @@ export async function transferAnswerCollectionOwnership(
         userGroupId: undefined,
         userGroupName: undefined,
         permissionLevel: permission.permissionLevel,
-        isRevokable: true,
+        isRevokable: updatedCollection.linkedElements.length === 0,
         isOwn: true,
       }
     : null
