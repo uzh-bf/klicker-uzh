@@ -1,3 +1,5 @@
+import { ObjectAccess } from '@klicker-uzh/prisma'
+
 // mock user 1
 export const userOne = {
   id: 'b086deed-291d-4dc3-9271-c84d4c2840f2',
@@ -50,4 +52,16 @@ export const answerCollection2 = {
   name: 'Answer Collection 2',
   description: 'This is the second answer collection',
   entries: ['entry5', 'entry6', 'entry7', 'entry8'],
+}
+
+// catalog collection 1 (public)
+export const catalogCollection1 = {
+  name: 'Public Catalog Collection',
+  access: ObjectAccess.PUBLIC,
+}
+
+// catalog collection 2 (restricted)
+export const catalogCollection2 = {
+  name: 'Restricted Catalog Collection',
+  access: ObjectAccess.RESTRICTED,
 }
