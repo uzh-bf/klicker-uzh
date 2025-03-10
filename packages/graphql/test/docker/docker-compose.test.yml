@@ -15,14 +15,14 @@ services:
 
   test:
     build:
-      context: .
-      dockerfile: Dockerfile.test
+      context: ../..
+      dockerfile: test/docker/Dockerfile.test
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/klicker_test
       NODE_ENV: test
       PNPM_HOME: '/tmp/.pnpm'
     volumes:
-      - ../../:/usr/src/app
+      - ../../../../:/usr/src/app
     depends_on:
       postgres:
         condition: service_healthy

@@ -45,8 +45,6 @@ pnpm run prisma:reset:raw -f\n\
 # Run tests\n\
 echo "Running tests..."\n\
 cd /usr/src/app/packages/graphql\n\
-\n\
-# Run all tests together\n\
 DATABASE_URL=$DATABASE_URL pnpm jest --verbose\n\
 \n\
 TEST_EXIT=$?\n\
