@@ -337,7 +337,9 @@ function LiveQuiz({
                   </Button.Label>
                 </Button>
               )}
-              {PublicationStatus.Draft === quiz.status &&
+              {/* // TODO: re-introduce template button */}
+              {false &&
+                PublicationStatus.Draft === quiz.status &&
                 privatePreviewData?.checkPrivatePreviewAvailable && (
                   <Button
                     className={{ root: 'px-3 py-1 text-sm' }}

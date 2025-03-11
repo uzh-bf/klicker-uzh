@@ -8,7 +8,6 @@ function CatalogAdditionalObjectInfo({
   objectId: string | number
   objectType: CatalogObjectType
 }) {
-  // TODO: implement approach for answer collections
   if (objectType === CatalogObjectType.AnswerCollection) {
     return <CatalogInfoAnswerCollection id={objectId as number} />
   }

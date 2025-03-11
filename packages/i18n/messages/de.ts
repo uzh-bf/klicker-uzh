@@ -1515,7 +1515,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       convertCopyTemplateInfo:
         'Vorlagen unterstützen Sie dabei, strukturell ähnliche Aktivitäten in KlickerUZH zu erfassen oder die Struktur der Aktivität mit anderen Nutzern zu teilen. Bitte wählen Sie, ob die bestehende Aktivität oder eine Kopie davon in eine Vorlage umgewandelt werden soll. Vorlagen stehen nicht mehr zur Bearbeitung zur Verfügung und können nicht ausgeführt werden.',
       noInstances:
-        'Die ausgewählte Aktivität enthält keine Elemente. Sie kann daher nicht in ein Template umgewandelt werden.',
+        'Die ausgewählte Aktivität enthält keine Elemente und kann daher nicht in ein Template umgewandelt werden.',
       resourcesRequiredMissing:
         'Einige Elemente in dieser Aktivität sind von Ressourcen (z.B. Antwort-Sammlungen) abhängig, welche gelöscht oder aus dem Konto entfernt wurden (bei geteiltem Zugriff). Bitte ersetzen Sie diese Elemente, bevor Sie die Aktivität in eine Vorlage umwandeln.',
       noResourceAccessRequired:
