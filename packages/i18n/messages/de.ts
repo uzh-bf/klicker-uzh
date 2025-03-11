@@ -302,6 +302,7 @@ export default {
       owner: 'Besitzer',
       userGroup: 'Benutzergruppe',
       permissionLevel: 'Zugriffsrechte',
+      template: 'Vorlage',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -1505,6 +1506,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie einen Anzeigenamen für Ihren Hinweis ein.',
       clueContentMissing: 'Bitte geben Sie den Inhalt Ihres Hinweises ein.',
       clueValueMissing: 'Bitte geben Sie den Wert Ihres Hinweises ein.',
+    },
+    template: {
+      convertToTemplate: '{activityType} in Vorlage umwandeln',
+      conversionType: 'Konvertierungstyp wählen',
+      convertOption: 'In Vorlage umwandeln',
+      copyOption: 'Kopie als Vorlage erstellen',
+      convertCopyTemplateInfo:
+        'Vorlagen unterstützen Sie dabei, strukturell ähnliche Aktivitäten in KlickerUZH zu erfassen oder die Struktur der Aktivität mit anderen Nutzern zu teilen. Bitte wählen Sie, ob die bestehende Aktivität oder eine Kopie davon in eine Vorlage umgewandelt werden soll. Vorlagen stehen nicht mehr zur Bearbeitung zur Verfügung und können nicht ausgeführt werden.',
+      confirmationsTitle: 'Erforderliche Bestätigungen',
+      confirmContentVisibility:
+        'Ich verstehe, dass der Inhalt dieser gesamten Aktivität (einschließlich Fragen) für jeden Nutzer mit Zugriff auf diese Vorlage sichtbar sein wird.',
+      confirmQuestionAccess:
+        'Ich verstehe, dass der Zugriff auf meine Fragen nicht geteilt wird. Wenn ein anderer Nutzer diese Vorlage ohne Änderungen verwendet, werden neue Fragen mit demselben Inhalt in dessen Konto erstellt.',
+      confirmResourceAccess:
+        'Ich verstehe, dass wenn Elemente in dieser Aktivität von Ressourcen abhängen (z.B. Antwort-Sammlungen), der Zugriff auf diese automatisch geteilt werden kann (Lese-Berechtigungen), wenn ein Benutzer diese Informationen nicht ersetzt und keinen Zugriff auf die entsprechende Ressource hat.',
+      templateInformation: 'Vorlagen-Informationen',
+      templateInformationDescription:
+        'Bitte geben Sie die folgenden Informationen für Ihre Vorlage an. Diese werden Benutzern angezeigt, wenn sie Ihre Vorlage importieren oder verwenden.',
+      descriptionTooltip:
+        'Die Beschreibung wird Benutzern angezeigt, wenn sie verfügbare Vorlagen im Katalog durchsuchen.',
+      descriptionPlaceholder:
+        'Geben Sie eine Beschreibung ein, was diese Vorlage enthält und wofür sie verwendet werden kann...',
+      instructionsTooltip:
+        'Die Anweisungen werden oben in der Vorlage angezeigt, wenn ein Benutzer eine neue Aktivität daraus erstellt.',
+      instructionsPlaceholder:
+        'Geben Sie Anweisungen ein, wie diese Vorlage effektiv genutzt werden kann...',
+      createTemplate: 'Vorlage erstellen',
+      createTemplateCopy: 'Vorlage-Kopie erstellen',
+      descriptionRequired: 'Eine Beschreibung ist erforderlich',
+      instructionsRequired: 'Anweisungen sind erforderlich',
     },
     formErrors: {
       resolveErrors:

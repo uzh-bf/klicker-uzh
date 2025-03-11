@@ -2753,7 +2753,8 @@ export enum PublicationStatus {
   Ended = 'ENDED',
   Graded = 'GRADED',
   Published = 'PUBLISHED',
-  Scheduled = 'SCHEDULED'
+  Scheduled = 'SCHEDULED',
+  Template = 'TEMPLATE'
 }
 
 export type PushSubscription = {

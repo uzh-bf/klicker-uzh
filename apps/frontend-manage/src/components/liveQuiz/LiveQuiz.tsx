@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faClock, faCopy } from '@fortawesome/free-regular-svg-icons'
 import {
   IconDefinition,
@@ -6,6 +6,7 @@ import {
   faCalendarDays,
   faCheck,
   faCode,
+  faFilePen,
   faPencil,
   faPlay,
   faQrcode,
@@ -14,6 +15,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityType,
+  CheckPrivatePreviewAvailableDocument,
   DeleteLiveQuizDocument,
   GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
@@ -29,6 +32,7 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { WizardMode } from '../activities/ElementCreation'
 import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
+import TemplateConversionModal from '../courses/modals/TemplateConversionModal'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
 import LiveQuizQRModal from './cockpit/LiveQuizQRModal'
@@ -52,6 +56,13 @@ function LiveQuiz({
 }) {
   const t = useTranslations()
   const router = useRouter()
+
+  const { data: privatePreviewData } = useQuery(
+    CheckPrivatePreviewAvailableDocument,
+    {
+      fetchPolicy: 'cache-first',
+    }
+  )
 
   const [startLiveQuiz, { loading: startingQuiz }] = useMutation(
     StartLiveQuizDocument,
@@ -113,6 +124,12 @@ function LiveQuiz({
   const [qrModalOpen, setQrModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
+
+  const [conversionModal, setConversionModal] = useState<{
+    open: boolean
+    activityId: string
+    activityType: ActivityType
+  }>({ open: false, activityId: '', activityType: ActivityType.LiveQuiz })
 
   const timeIcon: Record<PublicationStatus, IconDefinition> = {
     [PublicationStatus.Draft]: faCalendarDays,
@@ -320,6 +337,23 @@ function LiveQuiz({
                   </Button.Label>
                 </Button>
               )}
+              {PublicationStatus.Draft === quiz.status &&
+                privatePreviewData?.checkPrivatePreviewAvailable && (
+                  <Button
+                    className={{ root: 'px-3 py-1 text-sm' }}
+                    onClick={() =>
+                      setConversionModal({
+                        open: true,
+                        activityId: quiz.id,
+                        activityType: ActivityType.LiveQuiz,
+                      })
+                    }
+                    data={{ cy: `template-from-live-quiz-${quiz.name}` }}
+                  >
+                    <Button.Icon icon={faFilePen} />
+                    <Button.Label>{t('shared.generic.template')}</Button.Label>
+                  </Button>
+                )}
               {(PublicationStatus.Draft === quiz.status ||
                 PublicationStatus.Scheduled === quiz.status ||
                 PublicationStatus.Ended === quiz.status) && (
@@ -415,6 +449,12 @@ function LiveQuiz({
         displayName={quiz.displayName}
         open={changeName}
         setOpen={setChangeName}
+      />
+      <TemplateConversionModal
+        open={conversionModal.open}
+        setOpen={(open) => setConversionModal({ ...conversionModal, open })}
+        activityId={conversionModal.activityId}
+        activityType={conversionModal.activityType}
       />
     </>
   )
