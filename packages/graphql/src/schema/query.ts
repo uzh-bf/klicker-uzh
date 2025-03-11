@@ -15,6 +15,7 @@ import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import {
+  ActivityType,
   CourseActivityAnalytics,
   CoursePerformanceAnalytics,
   ElementFeedback,
@@ -65,6 +66,7 @@ import {
 } from './question.js'
 import { AnswerCollection } from './resource.js'
 import {
+  ActivityTemplateInfo,
   CatalogCollection,
   CatalogObject,
   CatalogObjectType,
@@ -912,6 +914,18 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return ResourcesService.getSingleAnswerCollection(args, ctx)
+        },
+      }),
+
+      checkTemplateInfoAvailable: asUser.field({
+        nullable: true,
+        type: ActivityTemplateInfo,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.checkTemplateInfoAvailable(args, ctx)
         },
       }),
 

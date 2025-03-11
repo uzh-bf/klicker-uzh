@@ -1514,13 +1514,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       copyOption: 'Kopie als Vorlage erstellen',
       convertCopyTemplateInfo:
         'Vorlagen unterstützen Sie dabei, strukturell ähnliche Aktivitäten in KlickerUZH zu erfassen oder die Struktur der Aktivität mit anderen Nutzern zu teilen. Bitte wählen Sie, ob die bestehende Aktivität oder eine Kopie davon in eine Vorlage umgewandelt werden soll. Vorlagen stehen nicht mehr zur Bearbeitung zur Verfügung und können nicht ausgeführt werden.',
+      noInstances:
+        'Die ausgewählte Aktivität enthält keine Elemente. Sie kann daher nicht in ein Template umgewandelt werden.',
+      resourcesRequiredMissing:
+        'Einige Elemente in dieser Aktivität sind von Ressourcen (z.B. Antwort-Sammlungen) abhängig, welche gelöscht oder aus dem Konto entfernt wurden (bei geteiltem Zugriff). Bitte ersetzen Sie diese Elemente, bevor Sie die Aktivität in eine Vorlage umwandeln.',
+      noResourceAccessRequired:
+        'Diese Aktivität enthält keine Elemente, die von Ressourcen abhängen.',
       confirmationsTitle: 'Erforderliche Bestätigungen',
       confirmContentVisibility:
         'Ich verstehe, dass der Inhalt dieser gesamten Aktivität (einschließlich Fragen) für jeden Nutzer mit Zugriff auf diese Vorlage sichtbar sein wird.',
       confirmQuestionAccess:
         'Ich verstehe, dass der Zugriff auf meine Fragen nicht geteilt wird. Wenn ein anderer Nutzer diese Vorlage ohne Änderungen verwendet, werden neue Fragen mit demselben Inhalt in dessen Konto erstellt.',
       confirmResourceAccess:
-        'Ich verstehe, dass wenn Elemente in dieser Aktivität von Ressourcen abhängen (z.B. Antwort-Sammlungen), der Zugriff auf diese automatisch geteilt werden kann (Lese-Berechtigungen), wenn ein Benutzer diese Informationen nicht ersetzt und keinen Zugriff auf die entsprechende Ressource hat.',
+        'Ich verstehe, dass Elemente in dieser Aktivität von Ressourcen abhängen (z.B. Antwort-Sammlungen), und dass der Zugriff auf diese automatisch geteilt wird (Lese-Berechtigungen), wenn ein Benutzer diese Informationen nicht ersetzt und keinen Zugriff auf die entsprechende Ressource hat.',
       templateInformation: 'Vorlagen-Informationen',
       templateInformationDescription:
         'Bitte geben Sie die folgenden Informationen für Ihre Vorlage an. Diese werden Benutzern angezeigt, wenn sie Ihre Vorlage importieren oder verwenden.',

@@ -1,0 +1,14 @@
+query CheckTemplateInfoAvailable(
+  $activityId: String!
+  $activityType: ActivityType!
+) {
+  checkTemplateInfoAvailable(
+    activityId: $activityId
+    activityType: $activityType
+  ) {
+    noInstances
+    noResourcesRequired
+    resourcesRequiredExist
+    resourcesRequiredMissing
+  }
+}

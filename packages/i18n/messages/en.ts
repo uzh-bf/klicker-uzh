@@ -1499,13 +1499,19 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       copyOption: 'Create Copy as Template',
       convertCopyTemplateInfo:
         'Templates help you to create structurally similar activities in KlickerUZH or share the structure of one of your activities. Please choose whether the existing activity or a copy of it should be converted into a template. Templates are no longer available for editing and cannot be executed.',
+      noInstances:
+        'The selected activity does not contain any elements. Therefore, it cannot be converted into a template.',
+      resourcesRequiredMissing:
+        'Some elements in this activity depend on resources (e.g., answer collections) that have been deleted or removed from the account (in case of shared access). Please replace these elements before converting the activity into a template.',
+      noResourceAccessRequired:
+        'This activity does not contain any elements that depend on resources (e.g., answer collections).',
       confirmationsTitle: 'Required Confirmations',
       confirmContentVisibility:
         'I understand that the content of this entire activity (including questions) will be visible to anyone with access to this template.',
       confirmQuestionAccess:
         'I understand that access to my questions will not be shared. If another user uses this template without modifications, new questions with the same content will be created in their account.',
       confirmResourceAccess:
-        'I understand that if elements in this activity depend on resources (e.g., answer collections), access to them may be automatically shared (read permissions) if a user does not replace this information and does not have access to the corresponding resource.',
+        'I understand that elements in this activity depend on resources (e.g., answer collections), access to them will be automatically shared (read permissions) if a user does not replace this information and does not have access to the corresponding resource already.',
       templateInformation: 'Template Information',
       templateInformationDescription:
         'Please provide the following information for your template. It will be shown to users when they import or use your template.',
