@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.32...v3.3.0-alpha.33) (2025-03-11)
+
+
+### Features
+
+* implement direct sharing functionality for answer collections ([#4527](https://github.com/uzh-bf/klicker-uzh/issues/4527)) ([a783aeb](https://github.com/uzh-bf/klicker-uzh/commit/a783aeb88956c8c5fa842e8a02ea85eedfdac08b))
+* introduce catalog collections and corresponding sharing functionalities ([#4536](https://github.com/uzh-bf/klicker-uzh/issues/4536)) ([ac9cf0f](https://github.com/uzh-bf/klicker-uzh/commit/ac9cf0f696cfb4fc65900d6956b562f2c67b7bb5))
+* introduce write and admin permission levels for answer collections ([#4529](https://github.com/uzh-bf/klicker-uzh/issues/4529)) ([4f1c0ae](https://github.com/uzh-bf/klicker-uzh/commit/4f1c0ae406773c3c227cc51772c58a2115823d72))
+
+
+### Bug Fixes
+
+* ensure that live quiz is removed from course on corresponding wizard selection when editing ([#4551](https://github.com/uzh-bf/klicker-uzh/issues/4551)) ([df74b24](https://github.com/uzh-bf/klicker-uzh/commit/df74b24cf4f8b5c4422339eddc1842ea06d4973f))
+
+
+### Refactors
+
+* combine access change modals into single component and generalize access requests ([#4546](https://github.com/uzh-bf/klicker-uzh/issues/4546)) ([cc0492d](https://github.com/uzh-bf/klicker-uzh/commit/cc0492d38b95ffb30e3f91f69d7591ffb64531a5))
+* combine sharing modals into generic approach with properly separated logic ([#4545](https://github.com/uzh-bf/klicker-uzh/issues/4545)) ([67aab2d](https://github.com/uzh-bf/klicker-uzh/commit/67aab2d3502eed0c2f6511bf3587757dc4c33d8e))
+* simplify data structures and logic for sharing and catalog collections ([#4541](https://github.com/uzh-bf/klicker-uzh/issues/4541)) ([2db9bf9](https://github.com/uzh-bf/klicker-uzh/commit/2db9bf9ad066de92c4994ba44c75c40fe158a410))
+* simplify service functions to leverage shared logic between object types ([#4548](https://github.com/uzh-bf/klicker-uzh/issues/4548)) ([ed91c0b](https://github.com/uzh-bf/klicker-uzh/commit/ed91c0b75d0691627b16b7d78d681b622cef132f))
+* unify graphql catalog and sharing operations for different object types with same return types ([#4547](https://github.com/uzh-bf/klicker-uzh/issues/4547)) ([277e868](https://github.com/uzh-bf/klicker-uzh/commit/277e868a96c24ff418cc6ff7adeddfa4733d6db8))
+* unify ownership transfer modals across different object types ([#4543](https://github.com/uzh-bf/klicker-uzh/issues/4543)) ([8716bf6](https://github.com/uzh-bf/klicker-uzh/commit/8716bf6f2c9181333a81acade4919dfa1d2559ce))
+
+
+### Enhancements
+
+* add badges to illustrate access level and make sure permission form clears after submission ([34a1d11](https://github.com/uzh-bf/klicker-uzh/commit/34a1d11968a6802d491d4b0d2406cbd41c12e81b))
+* add functionality for editors to change name of catalog collection and approve associated requests ([#4539](https://github.com/uzh-bf/klicker-uzh/issues/4539)) ([aa5715c](https://github.com/uzh-bf/klicker-uzh/commit/aa5715c31ade9c9e62aed692402bde57344213ad))
+* add unit testing with database interactions for graphql package ([#4549](https://github.com/uzh-bf/klicker-uzh/issues/4549)) ([8c60f85](https://github.com/uzh-bf/klicker-uzh/commit/8c60f85ee3eaaf548e8a32934bc9c9cd855644d0))
+* **apps/frontend-manage:** replace actions on catalog objects with dropdown and update test suite ([#4537](https://github.com/uzh-bf/klicker-uzh/issues/4537)) ([fee8faf](https://github.com/uzh-bf/klicker-uzh/commit/fee8fafa38438d43f47a053dbe7729173fc3759e))
+* **apps/frontend-manage:** show sharing functionalities for object admin or owner on catalog object ([#4538](https://github.com/uzh-bf/klicker-uzh/issues/4538)) ([8aca9bb](https://github.com/uzh-bf/klicker-uzh/commit/8aca9bb1915f2f2747b0cb8f8be50224110c9173))
+* extend links between objects and catalog collections to many-to-many relation ([#4533](https://github.com/uzh-bf/klicker-uzh/issues/4533)) ([abe2006](https://github.com/uzh-bf/klicker-uzh/commit/abe20062cfc7d028a707bddad24b364358d484b4))
+* implement possibility to revoke access to unused answer collections ([#4532](https://github.com/uzh-bf/klicker-uzh/issues/4532)) ([a1230d9](https://github.com/uzh-bf/klicker-uzh/commit/a1230d94d6d7f9745cb1069082a9cc6161f67a1b))
+* implement possibility to transfer ownership of an answer collection ([#4531](https://github.com/uzh-bf/klicker-uzh/issues/4531)) ([5329b1b](https://github.com/uzh-bf/klicker-uzh/commit/5329b1b6ab47ea8cca535857813ff28df1b69d68))
+* introduce activity template database structures and add hidden UI elements for template creation dialog ([#4550](https://github.com/uzh-bf/klicker-uzh/issues/4550)) ([04e14ab](https://github.com/uzh-bf/klicker-uzh/commit/04e14ab5950e7147bf7272ad0953f680431608c5))
+* reorganize page structure and improve actions and modals for answer collections ([#4526](https://github.com/uzh-bf/klicker-uzh/issues/4526)) ([d65f772](https://github.com/uzh-bf/klicker-uzh/commit/d65f772b736373bfe0e4a8d6b99f3e1cb18f8fa7))
+
 ## [3.3.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.31...v3.3.0-alpha.32) (2025-02-28)
 
 
