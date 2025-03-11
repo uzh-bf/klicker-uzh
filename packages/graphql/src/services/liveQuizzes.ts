@@ -538,17 +538,30 @@ export async function manipulateLiveQuiz(
     owner: {
       connect: { id: ctx.user.sub },
     },
-    course: courseId
-      ? {
-          connect: { id: courseId },
-        }
-      : undefined,
   }
 
   const element = await ctx.prisma.liveQuiz.upsert({
     where: { id: id ?? uuidv4() },
-    create: createOrUpdateJSON,
-    update: createOrUpdateJSON,
+    create: {
+      ...createOrUpdateJSON,
+      course:
+        courseId !== null
+          ? {
+              connect: { id: courseId },
+            }
+          : undefined,
+    },
+    update: {
+      ...createOrUpdateJSON,
+      course:
+        courseId !== null
+          ? {
+              connect: { id: courseId },
+            }
+          : {
+              disconnect: true,
+            },
+    },
     include: {
       course: true,
       blocks: {
