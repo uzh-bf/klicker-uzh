@@ -165,6 +165,7 @@ export function processElementData(
       elementId: element.id,
       options: {
         ...element.options,
+        answerCollectionId: element.answerCollection.id,
         items: caseStudyItems,
       } as ElementOptionsCaseStudy,
     }

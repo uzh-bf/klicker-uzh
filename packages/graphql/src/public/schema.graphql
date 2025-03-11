@@ -75,6 +75,13 @@ type ActivitySummary {
   numOfResponses: Int!
 }
 
+type ActivityTemplateInfo {
+  noInstances: Boolean!
+  noResourcesRequired: Boolean!
+  resourcesRequiredExist: Boolean!
+  resourcesRequiredMissing: Boolean!
+}
+
 enum ActivityType {
   GROUP_ACTIVITY
   LIVE_QUIZ
@@ -1760,6 +1767,7 @@ enum PublicationStatus {
   GRADED
   PUBLISHED
   SCHEDULED
+  TEMPLATE
 }
 
 type PushSubscription {
@@ -1774,6 +1782,7 @@ type Query {
   checkPrivatePreviewAvailable: Boolean!
   checkPublicPreviewAvailable: Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
+  checkTemplateInfoAvailable(activityId: String!, activityType: ActivityType!): ActivityTemplateInfo
   checkValidCoursePin(pin: Int!): String
   cockpitQuiz(id: String!): LiveQuiz
   controlCourse(id: String!): Course

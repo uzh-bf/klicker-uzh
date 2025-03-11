@@ -1,8 +1,11 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  ActivityType,
+  CaseStudyElementData,
   CatalogObject,
   CatalogObjectType,
   ObjectSharingRequest,
+  SelectionElementData,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
@@ -2663,4 +2666,180 @@ export async function addObjectToCatalog(
     isShared: objectInfo.isShared,
   }
 }
+// #endregion
+
+// ! Template Functionalities
+// #region
+
+export async function checkTemplateInfoAvailable(
+  {
+    activityId,
+    activityType,
+  }: { activityId: string; activityType: ActivityType },
+  ctx: ContextWithUser
+) {
+  // fetch all element instances included in the activity that should be converted
+  let instances: DB.ElementInstance[] = []
+  if (activityType === ActivityType.LIVE_QUIZ) {
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: {
+        id: activityId,
+      },
+      include: {
+        blocks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!liveQuiz) {
+      return null
+    }
+
+    instances = liveQuiz.blocks.flatMap((block) => block.elements)
+  } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+    const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+      where: {
+        id: activityId,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!practiceQuiz) {
+      return null
+    }
+
+    instances = practiceQuiz.stacks.flatMap((stack) => stack.elements)
+  } else if (activityType === ActivityType.MICRO_LEARNING) {
+    const microLearning = await ctx.prisma.microLearning.findUnique({
+      where: {
+        id: activityId,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!microLearning) {
+      return null
+    }
+
+    instances = microLearning.stacks.flatMap((stack) => stack.elements)
+  } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+    const groupActivity = await ctx.prisma.groupActivity.findUnique({
+      where: {
+        id: activityId,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    if (!groupActivity) {
+      return null
+    }
+
+    instances = groupActivity.stacks.flatMap((stack) => stack.elements)
+  } else {
+    return null
+  }
+
+  // if no instances are found, return this
+  if (instances.length === 0) {
+    return {
+      noInstances: true,
+      noResourcesRequired: false,
+      resourcesRequiredExist: false,
+      resourcesRequiredMissing: false,
+    }
+  }
+
+  // extract all answer collection ids (and potential other resources once supported)
+  const answerCollectionIds = Array.from(
+    new Set(
+      instances
+        .filter(
+          (instance) =>
+            instance.elementType === DB.ElementType.SELECTION ||
+            instance.elementType === DB.ElementType.CASE_STUDY
+        )
+        .map((instance) =>
+          instance.elementType === DB.ElementType.SELECTION
+            ? (instance.elementData as SelectionElementData).options
+                .answerCollection!.id
+            : (instance.elementData as CaseStudyElementData).options
+                .answerCollectionId!
+        )
+    )
+  )
+
+  // if no resources are used in the instances, return this
+  if (answerCollectionIds.length === 0) {
+    return {
+      noInstances: false,
+      noResourcesRequired: true,
+      resourcesRequiredExist: false,
+      resourcesRequiredMissing: false,
+    }
+  }
+
+  // check if all answer collections are available to the user
+  const answerCollections = await ctx.prisma.answerCollection.findMany({
+    where: {
+      id: {
+        in: answerCollectionIds,
+      },
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+    },
+  })
+
+  // check if all required answer collections exist
+  if (answerCollections.length === answerCollectionIds.length) {
+    return {
+      noInstances: false,
+      noResourcesRequired: false,
+      resourcesRequiredExist: true,
+      resourcesRequiredMissing: false,
+    }
+  } else {
+    return {
+      noInstances: false,
+      noResourcesRequired: false,
+      resourcesRequiredExist: false,
+      resourcesRequiredMissing: true,
+    }
+  }
+}
+
 // #endregion

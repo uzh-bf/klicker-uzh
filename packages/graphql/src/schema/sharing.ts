@@ -133,3 +133,27 @@ export const PermissionInfo = PermissionInfoRef.implement({
   }),
 })
 // #endregion
+
+// ! Templates
+// #region
+
+interface IActivityTemplateInfo {
+  noInstances: boolean
+  noResourcesRequired: boolean
+  resourcesRequiredExist: boolean
+  resourcesRequiredMissing: boolean
+}
+
+export const ActivityTemplateInfoRef = builder.objectRef<IActivityTemplateInfo>(
+  'ActivityTemplateInfo'
+)
+export const ActivityTemplateInfo = ActivityTemplateInfoRef.implement({
+  fields: (t) => ({
+    noInstances: t.exposeBoolean('noInstances'),
+    noResourcesRequired: t.exposeBoolean('noResourcesRequired'),
+    resourcesRequiredExist: t.exposeBoolean('resourcesRequiredExist'),
+    resourcesRequiredMissing: t.exposeBoolean('resourcesRequiredMissing'),
+  }),
+})
+
+// #endregion
