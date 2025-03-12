@@ -1032,7 +1032,6 @@ export async function manipulateGroupActivity(
     status: PublicationStatus.DRAFT,
     scheduledStartAt: startDate,
     scheduledEndAt: endDate,
-    parameters: {},
     pointsMultiplier: multiplier,
     clues: {
       connectOrCreate: [

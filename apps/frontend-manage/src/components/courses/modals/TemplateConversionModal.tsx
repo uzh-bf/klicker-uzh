@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faCopy, faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
@@ -9,10 +9,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
   CheckTemplateInfoAvailableDocument,
+  CreateActivityTemplateDocument,
+  GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
+  FormikTextField,
   FormLabel,
   Modal,
   UserNotification,
@@ -29,6 +32,8 @@ interface TemplateConversionModalProps {
   setOpen: (open: boolean) => void
   activityId: string
   activityType: ActivityType
+  onSuccess: () => void
+  onError: () => void
 }
 
 function TemplateConversionModal({
@@ -36,6 +41,8 @@ function TemplateConversionModal({
   setOpen,
   activityId,
   activityType,
+  onSuccess,
+  onError,
 }: TemplateConversionModalProps) {
   const t = useTranslations()
   const [currentStep, setCurrentStep] = useState(0)
@@ -54,6 +61,9 @@ function TemplateConversionModal({
     skip: !open,
   })
   const templateInfo = data?.checkTemplateInfoAvailable
+
+  // mutation for template creation
+  const [createActivityTemplate] = useMutation(CreateActivityTemplateDocument)
 
   useEffect(() => {
     if (templateInfo?.noResourcesRequired) {
@@ -77,6 +87,7 @@ function TemplateConversionModal({
 
   return (
     <Modal
+      escapeDisabled
       title={t('manage.template.convertToTemplate', {
         activityType: t(`shared.types.${activityType}`),
       })}
@@ -87,11 +98,13 @@ function TemplateConversionModal({
       <Formik
         validateOnMount
         initialValues={{
+          name: '',
           description: '',
           instructions: '',
           conversionType: null as 'convert' | 'copy' | null,
         }}
         validationSchema={Yup.object().shape({
+          name: Yup.string().required(t('manage.template.nameRequired')),
           description: Yup.string()
             .required(t('manage.template.descriptionRequired'))
             .test({
@@ -109,11 +122,29 @@ function TemplateConversionModal({
           conversionType: Yup.mixed().oneOf(['convert', 'copy']).required(),
         })}
         onSubmit={async (values) => {
-          // TODO: handle form submission
-          console.log(values)
+          try {
+            const result = await createActivityTemplate({
+              variables: {
+                activityId,
+                activityType,
+                templateName: values.name,
+                templateDescription: values.description,
+                templateInstructions: values.instructions,
+                copyBeforeConversion: values.conversionType === 'copy',
+              },
+              refetchQueries: [GetUserLiveQuizzesDocument],
+            })
 
-          // TODO: error and success handling with toasts
-          handleModalClose()
+            if (result.data?.createActivityTemplate) {
+              onSuccess()
+              handleModalClose()
+            } else {
+              onError()
+            }
+          } catch (error) {
+            console.error(error)
+            onError()
+          }
         }}
       >
         {({ isSubmitting, isValid, values, setFieldValue }) => {
@@ -254,6 +285,12 @@ function TemplateConversionModal({
                   <div className="text-gray-600">
                     {t('manage.template.templateInformationDescription')}
                   </div>
+                  <FormikTextField
+                    required
+                    name="name"
+                    label={t('shared.generic.name')}
+                    tooltip={t('manage.template.nameTooltip')}
+                  />
                   <EditorField
                     required
                     fieldName="description"

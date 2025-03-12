@@ -7,6 +7,8 @@ import {
   ObjectSharingRequest,
   SelectionElementData,
 } from '@klicker-uzh/types'
+import { getInitialInstanceStatistics } from '@klicker-uzh/util'
+import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
 
@@ -2674,19 +2676,54 @@ export async function addObjectToCatalog(
 // ! Template Functionalities
 // #region
 
-export async function checkTemplateInfoAvailable(
+async function getActivityAnswerCollectionIds(
   {
     activityId,
     activityType,
   }: { activityId: string; activityType: ActivityType },
   ctx: ContextWithUser
-) {
+): Promise<{
+  error: boolean
+  activity:
+    | (DB.LiveQuiz & {
+        blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
+      })
+    | (DB.PracticeQuiz & {
+        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+      })
+    | (DB.MicroLearning & {
+        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+      })
+    | (DB.GroupActivity & {
+        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+        parameters: DB.GroupActivityParameter[]
+        clues: DB.GroupActivityClue[]
+      })
+    | null
+  noInstances: boolean
+  answerCollectionIds: number[]
+}> {
+  // helper function that finds the ids of all answer collections linked to elements in an activity
   // fetch all element instances included in the activity that should be converted
   let instances: DB.ElementInstance[] = []
+  let activity
   if (activityType === ActivityType.LIVE_QUIZ) {
     const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
       where: {
         id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+              },
+            },
+          },
+        ],
       },
       include: {
         blocks: {
@@ -2698,14 +2735,33 @@ export async function checkTemplateInfoAvailable(
     })
 
     if (!liveQuiz) {
-      return null
+      return {
+        error: true,
+        activity: null,
+        noInstances: false,
+        answerCollectionIds: [],
+      }
     }
 
+    activity = liveQuiz
     instances = liveQuiz.blocks.flatMap((block) => block.elements)
   } else if (activityType === ActivityType.PRACTICE_QUIZ) {
     const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+              },
+            },
+          },
+        ],
       },
       include: {
         stacks: {
@@ -2717,14 +2773,33 @@ export async function checkTemplateInfoAvailable(
     })
 
     if (!practiceQuiz) {
-      return null
+      return {
+        error: true,
+        activity: null,
+        noInstances: false,
+        answerCollectionIds: [],
+      }
     }
 
+    activity = practiceQuiz
     instances = practiceQuiz.stacks.flatMap((stack) => stack.elements)
   } else if (activityType === ActivityType.MICRO_LEARNING) {
     const microLearning = await ctx.prisma.microLearning.findUnique({
       where: {
         id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+              },
+            },
+          },
+        ],
       },
       include: {
         stacks: {
@@ -2736,14 +2811,33 @@ export async function checkTemplateInfoAvailable(
     })
 
     if (!microLearning) {
-      return null
+      return {
+        error: true,
+        activity: null,
+        noInstances: false,
+        answerCollectionIds: [],
+      }
     }
 
+    activity = microLearning
     instances = microLearning.stacks.flatMap((stack) => stack.elements)
   } else if (activityType === ActivityType.GROUP_ACTIVITY) {
     const groupActivity = await ctx.prisma.groupActivity.findUnique({
       where: {
         id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+              },
+            },
+          },
+        ],
       },
       include: {
         stacks: {
@@ -2751,25 +2845,38 @@ export async function checkTemplateInfoAvailable(
             elements: true,
           },
         },
+        parameters: true,
+        clues: true,
       },
     })
 
     if (!groupActivity) {
-      return null
+      return {
+        error: true,
+        activity: null,
+        noInstances: false,
+        answerCollectionIds: [],
+      }
     }
 
+    activity = groupActivity
     instances = groupActivity.stacks.flatMap((stack) => stack.elements)
   } else {
-    return null
+    return {
+      error: true,
+      activity: null,
+      noInstances: false,
+      answerCollectionIds: [],
+    }
   }
 
   // if no instances are found, return this
   if (instances.length === 0) {
     return {
+      error: false,
+      activity,
       noInstances: true,
-      noResourcesRequired: false,
-      resourcesRequiredExist: false,
-      resourcesRequiredMissing: false,
+      answerCollectionIds: [],
     }
   }
 
@@ -2791,6 +2898,35 @@ export async function checkTemplateInfoAvailable(
         )
     )
   )
+
+  return { error: false, activity, noInstances: false, answerCollectionIds }
+}
+
+export async function checkTemplateInfoAvailable(
+  {
+    activityId,
+    activityType,
+  }: { activityId: string; activityType: ActivityType },
+  ctx: ContextWithUser
+) {
+  // fetch all answer collections linked to elements in the activity
+  const { error, noInstances, answerCollectionIds } =
+    (await getActivityAnswerCollectionIds({ activityId, activityType }, ctx)) ??
+    {}
+
+  if (error) {
+    return null
+  }
+
+  // if no instances are found, return this
+  if (noInstances) {
+    return {
+      noInstances: true,
+      noResourcesRequired: false,
+      resourcesRequiredExist: false,
+      resourcesRequiredMissing: false,
+    }
+  }
 
   // if no resources are used in the instances, return this
   if (answerCollectionIds.length === 0) {
@@ -2842,6 +2978,418 @@ export async function checkTemplateInfoAvailable(
       resourcesRequiredExist: false,
       resourcesRequiredMissing: true,
     }
+  }
+}
+
+// TODO: once shared activity overview is available, return suitable activity type for more efficient query update (instead of refetch query)
+export async function createActivityTemplate(
+  {
+    activityId,
+    activityType,
+    templateName,
+    templateDescription,
+    templateInstructions,
+    copyBeforeConversion,
+  }: {
+    activityId: string
+    activityType: ActivityType
+    templateName: string
+    templateDescription: string
+    templateInstructions: string
+    copyBeforeConversion: boolean
+  },
+  ctx: ContextWithUser
+) {
+  // fetch all answer collections linked to elements in the activity
+  const { error, activity, noInstances, answerCollectionIds } =
+    await getActivityAnswerCollectionIds({ activityId, activityType }, ctx)
+
+  if (error || noInstances) {
+    return false
+  }
+
+  if (copyBeforeConversion) {
+    if (activityType === ActivityType.LIVE_QUIZ) {
+      if (!activity) {
+        return false
+      }
+      const liveQuiz = activity as DB.LiveQuiz & {
+        blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
+      }
+
+      const liveQuizTemplate = await ctx.prisma.liveQuiz.create({
+        data: {
+          name: templateName,
+          displayName: liveQuiz.displayName,
+          description: liveQuiz.description,
+          status: DB.PublicationStatus.TEMPLATE,
+          pointsMultiplier: liveQuiz.pointsMultiplier,
+          defaultPoints: liveQuiz.defaultPoints,
+          defaultCorrectPoints: liveQuiz.defaultCorrectPoints,
+          maxBonusPoints: liveQuiz.maxBonusPoints,
+          timeToZeroBonus: liveQuiz.timeToZeroBonus,
+          isGamificationEnabled: liveQuiz.isGamificationEnabled,
+          isConfusionFeedbackEnabled: liveQuiz.isConfusionFeedbackEnabled,
+          isLiveQAEnabled: liveQuiz.isLiveQAEnabled,
+          isModerationEnabled: liveQuiz.isModerationEnabled,
+          // add blocks with elements
+          blocks: {
+            create: liveQuiz.blocks.map((block) => ({
+              order: block.order,
+              timeLimit: block.timeLimit,
+              elements: {
+                create: block.elements.map((element) => ({
+                  elementType: element.elementType,
+                  migrationId: uuidv4(),
+                  order: element.order,
+                  type: DB.ElementInstanceType.LIVE_QUIZ,
+                  elementData: element.elementData,
+                  options: element.options,
+                  results: element.results,
+                  anonymousResults: element.anonymousResults,
+                  instanceStatistics: {
+                    create: getInitialInstanceStatistics(
+                      DB.ElementInstanceType.LIVE_QUIZ
+                    ),
+                  },
+                  element: {
+                    connect: { id: element.elementId },
+                  },
+                  owner: {
+                    connect: { id: ctx.user.sub },
+                  },
+                })),
+              },
+            })),
+          },
+          // add template information
+          templateInfo: {
+            create: {
+              description: templateDescription,
+              instructions: templateInstructions,
+              answerCollections:
+                answerCollectionIds.length > 0
+                  ? {
+                      connect: answerCollectionIds.map((id) => ({ id })),
+                    }
+                  : undefined,
+            },
+          },
+          // creator of template becomes new owner of the template activity
+          owner: {
+            connect: {
+              id: ctx.user.sub,
+            },
+          },
+        },
+      })
+
+      return true
+    } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+      if (!activity) {
+        return false
+      }
+      const practiceQuiz = activity as DB.PracticeQuiz & {
+        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+      }
+
+      const practiceQuizTemplate = await ctx.prisma.practiceQuiz.create({
+        data: {
+          name: templateName,
+          displayName: practiceQuiz.displayName,
+          description: practiceQuiz.description,
+          status: DB.PublicationStatus.TEMPLATE,
+          pointsMultiplier: practiceQuiz.pointsMultiplier,
+          orderType: practiceQuiz.orderType,
+          resetTimeDays: practiceQuiz.resetTimeDays,
+          // add stacks with elements
+          stacks: {
+            create: practiceQuiz.stacks.map((stack) => ({
+              type: DB.ElementStackType.PRACTICE_QUIZ,
+              order: stack.order,
+              displayName: stack.displayName,
+              description: stack.description,
+              elements: {
+                create: stack.elements.map((element) => ({
+                  elementType: element.elementType,
+                  migrationId: uuidv4(),
+                  order: element.order,
+                  type: DB.ElementInstanceType.PRACTICE_QUIZ,
+                  elementData: element.elementData,
+                  options: element.options,
+                  results: element.results,
+                  anonymousResults: element.anonymousResults,
+                  instanceStatistics: {
+                    create: getInitialInstanceStatistics(
+                      DB.ElementInstanceType.PRACTICE_QUIZ
+                    ),
+                  },
+                  element: {
+                    connect: { id: element.elementId },
+                  },
+                  owner: {
+                    connect: { id: ctx.user.sub },
+                  },
+                })),
+              },
+            })),
+          },
+          // add template information
+          templateInfo: {
+            create: {
+              description: templateDescription,
+              instructions: templateInstructions,
+              answerCollections:
+                answerCollectionIds.length > 0
+                  ? {
+                      connect: answerCollectionIds.map((id) => ({ id })),
+                    }
+                  : undefined,
+            },
+          },
+          // templates from asynchronous activities are linked to the same course
+          course: {
+            connect: { id: practiceQuiz.courseId },
+          },
+          // creator of template becomes new owner of the template activity
+          owner: { connect: { id: ctx.user.sub } },
+        },
+      })
+
+      return false
+    } else if (activityType === ActivityType.MICRO_LEARNING) {
+      if (!activity) {
+        return false
+      }
+      const microLearning = activity as DB.MicroLearning & {
+        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+      }
+
+      const microLearningTemplate = await ctx.prisma.microLearning.create({
+        data: {
+          name: templateName,
+          displayName: microLearning.displayName,
+          description: microLearning.description,
+          status: DB.PublicationStatus.TEMPLATE,
+          pointsMultiplier: microLearning.pointsMultiplier,
+          scheduledStartAt: microLearning.scheduledStartAt,
+          scheduledEndAt: microLearning.scheduledEndAt,
+          // add stacks with elements
+          stacks: {
+            create: microLearning.stacks.map((stack) => ({
+              type: DB.ElementStackType.MICROLEARNING,
+              order: stack.order,
+              displayName: stack.displayName,
+              description: stack.description,
+              elements: {
+                create: stack.elements.map((element) => ({
+                  elementType: element.elementType,
+                  migrationId: uuidv4(),
+                  order: element.order,
+                  type: DB.ElementInstanceType.MICROLEARNING,
+                  elementData: element.elementData,
+                  options: element.options,
+                  results: element.results,
+                  anonymousResults: element.anonymousResults,
+                  instanceStatistics: {
+                    create: getInitialInstanceStatistics(
+                      DB.ElementInstanceType.MICROLEARNING
+                    ),
+                  },
+                  element: {
+                    connect: { id: element.elementId },
+                  },
+                  owner: {
+                    connect: { id: ctx.user.sub },
+                  },
+                })),
+              },
+            })),
+          },
+          // add template information
+          templateInfo: {
+            create: {
+              description: templateDescription,
+              instructions: templateInstructions,
+              answerCollections:
+                answerCollectionIds.length > 0
+                  ? {
+                      connect: answerCollectionIds.map((id) => ({ id })),
+                    }
+                  : undefined,
+            },
+          },
+          // templates from asynchronous activities are linked to the same course
+          course: {
+            connect: { id: microLearning.courseId },
+          },
+          // creator of template becomes new owner of the template activity
+          owner: { connect: { id: ctx.user.sub } },
+        },
+      })
+
+      return true
+    } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+      if (!activity) {
+        return false
+      }
+      const groupActivity = activity as DB.GroupActivity & {
+        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+        parameters: DB.GroupActivityParameter[]
+        clues: DB.GroupActivityClue[]
+      }
+
+      const groupActivityTemplate = await ctx.prisma.groupActivity.create({
+        data: {
+          name: templateName,
+          displayName: groupActivity.displayName,
+          description: groupActivity.description,
+          status: DB.PublicationStatus.TEMPLATE,
+          pointsMultiplier: groupActivity.pointsMultiplier,
+          scheduledStartAt: groupActivity.scheduledStartAt,
+          scheduledEndAt: groupActivity.scheduledEndAt,
+          // copy parameters and clues
+          parameters: {
+            create: groupActivity.parameters,
+          },
+          clues: {
+            create: groupActivity.clues,
+          },
+          // add stacks with elements
+          stacks: {
+            create: groupActivity.stacks.map((stack) => ({
+              type: DB.ElementStackType.GROUP_ACTIVITY,
+              order: stack.order,
+              displayName: stack.displayName,
+              description: stack.description,
+              elements: {
+                create: stack.elements.map((element) => ({
+                  elementType: element.elementType,
+                  migrationId: uuidv4(),
+                  order: element.order,
+                  type: DB.ElementInstanceType.GROUP_ACTIVITY,
+                  elementData: element.elementData,
+                  options: element.options,
+                  results: element.results,
+                  anonymousResults: element.anonymousResults,
+                  instanceStatistics: {
+                    create: getInitialInstanceStatistics(
+                      DB.ElementInstanceType.GROUP_ACTIVITY
+                    ),
+                  },
+                  element: {
+                    connect: { id: element.elementId },
+                  },
+                  owner: {
+                    connect: { id: ctx.user.sub },
+                  },
+                })),
+              },
+            })),
+          },
+          // add template information
+          templateInfo: {
+            create: {
+              description: templateDescription,
+              instructions: templateInstructions,
+              answerCollections:
+                answerCollectionIds.length > 0
+                  ? {
+                      connect: answerCollectionIds.map((id) => ({ id })),
+                    }
+                  : undefined,
+            },
+          },
+          // templates from asynchronous activities are linked to the same course
+          course: {
+            connect: { id: groupActivity.courseId },
+          },
+          // creator of template becomes new owner of the template activity
+          owner: { connect: { id: ctx.user.sub } },
+        },
+      })
+
+      return true
+    }
+  } else {
+    // create new template with the provided information
+    const template = await ctx.prisma.activityTemplate.create({
+      data: {
+        description: templateDescription,
+        instructions: templateInstructions,
+
+        // link to activity
+        liveQuiz:
+          activityType === ActivityType.LIVE_QUIZ
+            ? { connect: { id: activityId } }
+            : undefined,
+        practiceQuiz:
+          activityType === ActivityType.PRACTICE_QUIZ
+            ? { connect: { id: activityId } }
+            : undefined,
+        microLearning:
+          activityType === ActivityType.MICRO_LEARNING
+            ? { connect: { id: activityId } }
+            : undefined,
+        groupActivity:
+          activityType === ActivityType.GROUP_ACTIVITY
+            ? { connect: { id: activityId } }
+            : undefined,
+
+        // connect template to required resources as well
+        answerCollections:
+          answerCollectionIds.length > 0
+            ? {
+                connect: answerCollectionIds.map((id) => ({ id })),
+              }
+            : undefined,
+      },
+    })
+
+    // update the activity status to indicate that it has been converted to a template
+    if (activityType === ActivityType.LIVE_QUIZ) {
+      await ctx.prisma.liveQuiz.update({
+        where: {
+          id: activityId,
+        },
+        data: {
+          name: templateName,
+          status: DB.PublicationStatus.TEMPLATE,
+        },
+      })
+    } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+      await ctx.prisma.practiceQuiz.update({
+        where: {
+          id: activityId,
+        },
+        data: {
+          name: templateName,
+          status: DB.PublicationStatus.TEMPLATE,
+        },
+      })
+    } else if (activityType === ActivityType.MICRO_LEARNING) {
+      await ctx.prisma.microLearning.update({
+        where: {
+          id: activityId,
+        },
+        data: {
+          name: templateName,
+          status: DB.PublicationStatus.TEMPLATE,
+        },
+      })
+    } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+      await ctx.prisma.groupActivity.update({
+        where: {
+          id: activityId,
+        },
+        data: {
+          name: templateName,
+          status: DB.PublicationStatus.TEMPLATE,
+        },
+      })
+    }
+
+    return true
   }
 }
 

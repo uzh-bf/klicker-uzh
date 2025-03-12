@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faClock, faCopy } from '@fortawesome/free-regular-svg-icons'
+import { faWpforms } from '@fortawesome/free-brands-svg-icons'
+import { faClock, faCopy, faFile } from '@fortawesome/free-regular-svg-icons'
 import {
   IconDefinition,
   faArrowUpRightFromSquare,
@@ -33,13 +34,17 @@ import { useState } from 'react'
 import { WizardMode } from '../activities/ElementCreation'
 import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../courses/modals/TemplateConversionModal'
+import TemplateCreationErrorToast from '../courses/modals/TemplateCreationErrorToast'
+import TemplateCreationSuccessToast from '../courses/modals/TemplateCreationSuccessToast'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
 import LiveQuizQRModal from './cockpit/LiveQuizQRModal'
 
 function LiveQuiz({
+  isTemplate = false,
   quiz,
 }: {
+  isTemplate?: boolean
   quiz: Pick<
     LiveQuizType,
     | 'id'
@@ -124,6 +129,8 @@ function LiveQuiz({
   const [qrModalOpen, setQrModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
+  const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
+  const [templateCreationError, setTemplateCreationError] = useState(false)
 
   const [conversionModal, setConversionModal] = useState<{
     open: boolean
@@ -137,6 +144,7 @@ function LiveQuiz({
     [PublicationStatus.Published]: faPlay,
     [PublicationStatus.Ended]: faCheck,
     [PublicationStatus.Graded]: faCheck,
+    [PublicationStatus.Template]: faWpforms,
   }
   const timeStamp: Record<PublicationStatus, string | null> = {
     [PublicationStatus.Draft]: quiz.createdAt,
@@ -144,6 +152,7 @@ function LiveQuiz({
     [PublicationStatus.Published]: quiz.startedAt,
     [PublicationStatus.Ended]: quiz.finishedAt,
     [PublicationStatus.Graded]: quiz.finishedAt,
+    [PublicationStatus.Template]: null,
   }
 
   return (
@@ -170,122 +179,134 @@ function LiveQuiz({
             >
               <div className="flex flex-row items-center gap-3">
                 <H3 className={{ root: 'mb-0' }}>{quiz.name}</H3>
-                <FontAwesomeIcon
-                  icon={faPencil}
-                  size="sm"
-                  onClick={() => setChangeName(true)}
-                  className="hover:cursor-pointer"
-                  data-cy={`change-liveQuiz-name-${quiz.name}`}
-                />
+                {!isTemplate && (
+                  <FontAwesomeIcon
+                    icon={faPencil}
+                    size="sm"
+                    onClick={() => setChangeName(true)}
+                    className="hover:cursor-pointer"
+                    data-cy={`change-liveQuiz-name-${quiz.name}`}
+                  />
+                )}
               </div>
-              <div className="mr-2 flex flex-row">
-                {quiz.blocks?.length !== 0 && (
-                  <>
+              {isTemplate ? (
+                <div className="text-primary-100 flex items-center gap-1 rounded-md px-2 py-1 font-semibold">
+                  <FontAwesomeIcon icon={faFile} className="mr-1" />
+                  {t('shared.generic.template')}
+                </div>
+              ) : (
+                <div className="mr-2 flex flex-row">
+                  {quiz.blocks?.length !== 0 && (
+                    <>
+                      <Button
+                        basic
+                        className={{ root: 'h-7 text-sm' }}
+                        onClick={() => setEmbedModalOpen(true)}
+                        data={{ cy: `show-embedding-modal-${quiz.name}` }}
+                      >
+                        <Button.Icon icon={faCode} />
+                        <Button.Label>
+                          {t('manage.liveQuizzes.embeddingEvaluation')}
+                        </Button.Label>
+                      </Button>
+                      <EmbeddingModal
+                        key={quiz.id}
+                        open={embedModalOpen}
+                        onClose={() => setEmbedModalOpen(false)}
+                        quizId={quiz.id}
+                        elements={quiz.blocks
+                          ?.flatMap((block) => block.elements)
+                          .filter(
+                            (instance) =>
+                              typeof instance !== 'undefined' &&
+                              instance !== null
+                          )}
+                      />
+                    </>
+                  )}
+
+                  {quiz.status !== PublicationStatus.Ended && (
+                    <>
+                      <Button
+                        basic
+                        onClick={() => setQrModalOpen(true)}
+                        className={{ root: 'h-7 text-sm' }}
+                        data={{ cy: `show-qr-modal-${quiz.name}` }}
+                      >
+                        <Button.Icon icon={faQrcode} />
+                        <Button.Label>
+                          {t('manage.general.qrCode')}
+                        </Button.Label>
+                      </Button>
+                      <LiveQuizQRModal
+                        quizId={quiz.id}
+                        open={qrModalOpen}
+                        setOpen={setQrModalOpen}
+                      />
+                    </>
+                  )}
+
+                  {PublicationStatus.Published === quiz.status && (
                     <Button
                       basic
+                      onClick={() => router.push(`/quizzes/${quiz.id}/cockpit`)}
                       className={{ root: 'h-7 text-sm' }}
-                      onClick={() => setEmbedModalOpen(true)}
-                      data={{ cy: `show-embedding-modal-${quiz.name}` }}
+                      data={{ cy: `live-quiz-cockpit-${quiz.name}` }}
                     >
-                      <Button.Icon icon={faCode} />
+                      <Button.Icon icon={faArrowUpRightFromSquare} />
                       <Button.Label>
-                        {t('manage.liveQuizzes.embeddingEvaluation')}
+                        {t('manage.liveQuizzes.lecturerCockpit')}
                       </Button.Label>
                     </Button>
-                    <EmbeddingModal
-                      key={quiz.id}
-                      open={embedModalOpen}
-                      onClose={() => setEmbedModalOpen(false)}
-                      quizId={quiz.id}
-                      elements={quiz.blocks
-                        ?.flatMap((block) => block.elements)
-                        .filter(
-                          (instance) =>
-                            typeof instance !== 'undefined' && instance !== null
-                        )}
-                    />
-                  </>
-                )}
-
-                {quiz.status !== PublicationStatus.Ended && (
-                  <>
+                  )}
+                  {PublicationStatus.Ended === quiz.status && (
                     <Button
                       basic
-                      onClick={() => setQrModalOpen(true)}
+                      onClick={() =>
+                        window.open(`/quizzes/${quiz.id}/evaluation`, '_blank')
+                      }
                       className={{ root: 'h-7 text-sm' }}
-                      data={{ cy: `show-qr-modal-${quiz.name}` }}
+                      data={{ cy: `live-quiz-evaluation-${quiz.name}` }}
                     >
-                      <Button.Icon icon={faQrcode} />
-                      <Button.Label>{t('manage.general.qrCode')}</Button.Label>
+                      <Button.Icon
+                        icon={faArrowUpRightFromSquare}
+                        className={{ root: 'h-3.5 w-3.5' }}
+                      />
+                      <Button.Label>
+                        {t('manage.liveQuizzes.liveQuizEvaluation')}
+                      </Button.Label>
                     </Button>
-                    <LiveQuizQRModal
-                      quizId={quiz.id}
-                      open={qrModalOpen}
-                      setOpen={setQrModalOpen}
+                  )}
+                  {(PublicationStatus.Draft === quiz.status ||
+                    PublicationStatus.Scheduled === quiz.status) && (
+                    <Button
+                      basic
+                      disabled={startingQuiz}
+                      onClick={async () => {
+                        await startLiveQuiz()
+                        router.push(`quizzes/${quiz.id}/cockpit`)
+                      }}
+                      className={{ root: 'h-7 text-sm' }}
+                      data={{ cy: `start-live-quiz-${quiz.name}` }}
+                    >
+                      <Button.Icon
+                        icon={faPlay}
+                        className={{ root: 'h-3.5 w-3.5' }}
+                      />
+                      <Button.Label>
+                        {t('manage.liveQuizzes.startLiveQuiz')}
+                      </Button.Label>
+                    </Button>
+                  )}
+                  <div className="ml-3 flex flex-row items-center gap-1 text-sm">
+                    <FontAwesomeIcon
+                      icon={timeIcon[quiz.status]}
+                      className="mr-1"
                     />
-                  </>
-                )}
-
-                {PublicationStatus.Published === quiz.status && (
-                  <Button
-                    basic
-                    onClick={() => router.push(`/quizzes/${quiz.id}/cockpit`)}
-                    className={{ root: 'h-7 text-sm' }}
-                    data={{ cy: `live-quiz-cockpit-${quiz.name}` }}
-                  >
-                    <Button.Icon icon={faArrowUpRightFromSquare} />
-                    <Button.Label>
-                      {t('manage.liveQuizzes.lecturerCockpit')}
-                    </Button.Label>
-                  </Button>
-                )}
-                {PublicationStatus.Ended === quiz.status && (
-                  <Button
-                    basic
-                    onClick={() =>
-                      window.open(`/quizzes/${quiz.id}/evaluation`, '_blank')
-                    }
-                    className={{ root: 'h-7 text-sm' }}
-                    data={{ cy: `live-quiz-evaluation-${quiz.name}` }}
-                  >
-                    <Button.Icon
-                      icon={faArrowUpRightFromSquare}
-                      className={{ root: 'h-3.5 w-3.5' }}
-                    />
-                    <Button.Label>
-                      {t('manage.liveQuizzes.liveQuizEvaluation')}
-                    </Button.Label>
-                  </Button>
-                )}
-                {(PublicationStatus.Draft === quiz.status ||
-                  PublicationStatus.Scheduled === quiz.status) && (
-                  <Button
-                    basic
-                    disabled={startingQuiz}
-                    onClick={async () => {
-                      await startLiveQuiz()
-                      router.push(`quizzes/${quiz.id}/cockpit`)
-                    }}
-                    className={{ root: 'h-7 text-sm' }}
-                    data={{ cy: `start-live-quiz-${quiz.name}` }}
-                  >
-                    <Button.Icon
-                      icon={faPlay}
-                      className={{ root: 'h-3.5 w-3.5' }}
-                    />
-                    <Button.Label>
-                      {t('manage.liveQuizzes.startLiveQuiz')}
-                    </Button.Label>
-                  </Button>
-                )}
-                <div className="ml-3 flex flex-row items-center gap-1 text-sm">
-                  <FontAwesomeIcon
-                    icon={timeIcon[quiz.status]}
-                    className="mr-1"
-                  />
-                  {dayjs(timeStamp[quiz.status]).format('YYYY-MM-DD HH:mm')}
+                    {dayjs(timeStamp[quiz.status]).format('YYYY-MM-DD HH:mm')}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           }
           closedContent={
@@ -298,24 +319,26 @@ function LiveQuiz({
           }
           primary={
             <div className="float-right flex flex-row gap-1">
-              <Button
-                className={{ root: 'px-3 py-1 text-sm' }}
-                onClick={() =>
-                  router.push({
-                    pathname: '/',
-                    query: {
-                      elementId: quiz.id,
-                      duplicationMode: WizardMode.LiveQuiz,
-                    },
-                  })
-                }
-                data={{ cy: `duplicate-live-quiz-${quiz.name}` }}
-              >
-                <Button.Icon icon={faCopy} />
-                <Button.Label>
-                  {t('manage.liveQuizzes.duplicateLiveQuiz')}
-                </Button.Label>
-              </Button>
+              {quiz.status !== PublicationStatus.Template && (
+                <Button
+                  className={{ root: 'px-3 py-1 text-sm' }}
+                  onClick={() =>
+                    router.push({
+                      pathname: '/',
+                      query: {
+                        elementId: quiz.id,
+                        duplicationMode: WizardMode.LiveQuiz,
+                      },
+                    })
+                  }
+                  data={{ cy: `duplicate-live-quiz-${quiz.name}` }}
+                >
+                  <Button.Icon icon={faCopy} />
+                  <Button.Label>
+                    {t('manage.liveQuizzes.duplicateLiveQuiz')}
+                  </Button.Label>
+                </Button>
+              )}
               {(PublicationStatus.Draft === quiz.status ||
                 PublicationStatus.Scheduled === quiz.status) && (
                 <Button
@@ -337,9 +360,7 @@ function LiveQuiz({
                   </Button.Label>
                 </Button>
               )}
-              {/* // TODO: re-introduce template button */}
-              {false &&
-                PublicationStatus.Draft === quiz.status &&
+              {PublicationStatus.Draft === quiz.status &&
                 privatePreviewData?.checkPrivatePreviewAvailable && (
                   <Button
                     className={{ root: 'px-3 py-1 text-sm' }}
@@ -438,26 +459,39 @@ function LiveQuiz({
           </div>
         </Collapsible>
       </div>
-      <LiveQuizDeletionModal
-        quizId={quiz.id}
-        open={deletionModal}
-        setOpen={setDeletionModal}
-        onDelete={deleteLiveQuiz}
-        deleting={deletingLiveQuiz}
-      />
-      <LiveQuizNameChangeModal
-        quizId={quiz.id}
-        name={quiz.name}
-        displayName={quiz.displayName}
-        open={changeName}
-        setOpen={setChangeName}
-      />
-      <TemplateConversionModal
-        open={conversionModal.open}
-        setOpen={(open) => setConversionModal({ ...conversionModal, open })}
-        activityId={conversionModal.activityId}
-        activityType={conversionModal.activityType}
-      />
+      <div>
+        <LiveQuizDeletionModal
+          quizId={quiz.id}
+          open={deletionModal}
+          setOpen={setDeletionModal}
+          onDelete={deleteLiveQuiz}
+          deleting={deletingLiveQuiz}
+        />
+        <LiveQuizNameChangeModal
+          quizId={quiz.id}
+          name={quiz.name}
+          displayName={quiz.displayName}
+          open={changeName}
+          setOpen={setChangeName}
+        />
+
+        <TemplateConversionModal
+          open={conversionModal.open}
+          setOpen={(open) => setConversionModal({ ...conversionModal, open })}
+          activityId={conversionModal.activityId}
+          activityType={conversionModal.activityType}
+          onSuccess={() => setTemplateCreationSuccess(true)}
+          onError={() => setTemplateCreationError(true)}
+        />
+        <TemplateCreationSuccessToast
+          open={templateCreationSuccess}
+          onClose={() => setTemplateCreationSuccess(false)}
+        />
+        <TemplateCreationErrorToast
+          open={templateCreationError}
+          onClose={() => setTemplateCreationError(false)}
+        />
+      </div>
     </>
   )
 }
