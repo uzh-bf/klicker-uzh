@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.34...v3.3.0-alpha.35) (2025-03-12)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** dynamically adapt position of react-select depending on positioning ([213c794](https://github.com/uzh-bf/klicker-uzh/commit/213c794f91cddc330fdbcc8ed0aa7c0ec4896580))
+* **packages/shared-components:** update hover and disabled styling for choices question response buttons ([1a40646](https://github.com/uzh-bf/klicker-uzh/commit/1a4064601bb4ed730a87dc5b9659fc50c767e5aa))
+
+
+### Refactors
+
+* **apps/frontend-manage:** make catalog collection access routing based ([ba170f1](https://github.com/uzh-bf/klicker-uzh/commit/ba170f19f1b442761d87e3b8ce24b58c2fb895b9))
+
 ## [3.3.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.33...v3.3.0-alpha.34) (2025-03-12)
 
 
