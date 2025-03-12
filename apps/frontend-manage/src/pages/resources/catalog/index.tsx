@@ -1,7 +1,7 @@
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import CatalogBrowser from '../../components/catalog/CatalogBrowser'
-import Layout from '../../components/Layout'
+import CatalogBrowser from '../../../components/catalog/CatalogBrowser'
+import Layout from '../../../components/Layout'
 
 function Catalog() {
   const t = useTranslations()

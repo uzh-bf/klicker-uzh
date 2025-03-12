@@ -14,9 +14,12 @@ import CatalogCollectionCreationSuccessToast from './collections/CatalogCollecti
 import CreateCatalogCollectionButton from './collections/CreateCatalogCollectionButton'
 import CreateCatalogCollectionModal from './collections/CreateCatalogCollectionModal'
 
-function CatalogBrowser() {
+function CatalogBrowser({
+  catalogCollectionId,
+}: {
+  catalogCollectionId?: string
+}) {
   const router = useRouter()
-  const { catalogCollectionId } = router.query
 
   // get current collection metadata (only if inside a collection)
   const { data: metaData, loading: metaDataLoading } = useQuery(
@@ -54,7 +57,7 @@ function CatalogBrowser() {
     !metaData?.getCatalogCollectionInfo &&
     !metaDataLoading
   ) {
-    router.push({ pathname: '/resources/catalog', query: {} })
+    router.push('/resources/catalog')
   }
 
   return (

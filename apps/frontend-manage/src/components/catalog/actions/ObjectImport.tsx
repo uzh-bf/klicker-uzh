@@ -112,7 +112,7 @@ function ObjectImport({
           <div
             className="h-9 border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
             onClick={() => {
-              router.push('/resources/catalog', {}, { shallow: true })
+              router.push('/resources/catalog')
             }}
             data-cy={'leave-catalog-collection'}
           >

@@ -75,13 +75,7 @@ function CatalogCollectionListItem({
             collection.isShared ||
             collection.isManager
           ) {
-            router.push(
-              `resources/catalog`,
-              {
-                query: { catalogCollectionId: collection.id },
-              },
-              { shallow: true }
-            )
+            router.push(`/resources/catalog/${collection.id}`)
           } else if (
             collection.access === ObjectAccess.Restricted ||
             !collection.isRequested
