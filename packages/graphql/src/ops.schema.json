@@ -20885,11 +20885,11 @@
                 "deprecationReason": null
               },
               {
-                "name": "userGroupId",
+                "name": "shortnameOrEmail",
                 "description": null,
                 "type": {
                   "kind": "SCALAR",
-                  "name": "Int",
+                  "name": "String",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -20897,11 +20897,11 @@
                 "deprecationReason": null
               },
               {
-                "name": "usernameOrEmail",
+                "name": "userGroupId",
                 "description": null,
                 "type": {
                   "kind": "SCALAR",
-                  "name": "String",
+                  "name": "Int",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -21232,7 +21232,7 @@
                 "deprecationReason": null
               },
               {
-                "name": "usernameOrEmail",
+                "name": "shortnameOrEmail",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",

@@ -2312,7 +2312,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       grantedPermissions: 'Granted Permissions',
       transferOwnership: 'Transfer Ownership',
       importantInformation: 'Important Information',
-      usernameOrEmailRequired: 'Please enter a username or email address.',
+      shortnameOrEmailRequired: 'Please enter a username or email address.',
       confirmTransferOwnership: 'Transfer Ownership',
       ownershipTransferSuccess: 'Ownership successfully transferred',
       ownershipTransferError:

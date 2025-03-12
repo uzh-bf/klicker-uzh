@@ -24,11 +24,11 @@ function DirectSharingForm({
   onSuccess: () => void
   onFailure: () => void
   shareObjectCallback: ({
-    usernameOrEmail,
+    shortnameOrEmail,
     userGroupId,
     permissionLevel,
   }: {
-    usernameOrEmail?: string
+    shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
   }) => Promise<boolean>
@@ -40,7 +40,7 @@ function DirectSharingForm({
     <Formik
       isInitialValid={false}
       initialValues={{
-        usernameOrEmail: '',
+        shortnameOrEmail: '',
         userGroupId: undefined,
         permissionLevel: PermissionLevel.Read,
       }}
@@ -49,11 +49,11 @@ function DirectSharingForm({
 
         if (
           typeof values.userGroupId !== 'undefined' ||
-          (typeof values.usernameOrEmail !== 'undefined' &&
-            values.usernameOrEmail !== '')
+          (typeof values.shortnameOrEmail !== 'undefined' &&
+            values.shortnameOrEmail !== '')
         ) {
           const success = await shareObjectCallback({
-            usernameOrEmail: values.usernameOrEmail,
+            shortnameOrEmail: values.shortnameOrEmail,
             userGroupId: values.userGroupId,
             permissionLevel: values.permissionLevel,
           })
@@ -73,7 +73,7 @@ function DirectSharingForm({
       }}
       validationSchema={Yup.object()
         .shape({
-          usernameOrEmail: Yup.string(),
+          shortnameOrEmail: Yup.string(),
           userGroupId: Yup.number(),
           permissionLevel: Yup.string().required(),
         })
@@ -81,9 +81,9 @@ function DirectSharingForm({
           'either-user-or-group',
           t('manage.sharing.usernameEmailOrGroupRequired'),
           function (values) {
-            const { usernameOrEmail, userGroupId } = values
+            const { shortnameOrEmail, userGroupId } = values
             return (
-              (!!usernameOrEmail && usernameOrEmail !== '') || !!userGroupId
+              (!!shortnameOrEmail && shortnameOrEmail !== '') || !!userGroupId
             )
           }
         )}
@@ -92,9 +92,11 @@ function DirectSharingForm({
         <tr className="border-t border-gray-200 hover:bg-gray-50">
           <td className="px-4 py-3 text-sm text-gray-900">
             <FormikTextField
-              name="usernameOrEmail"
+              name="shortnameOrEmail"
               placeholder={
-                t('shared.generic.username') + ' / ' + t('shared.generic.email')
+                t('shared.generic.shortname') +
+                ' / ' +
+                t('shared.generic.email')
               }
               disabled={isSubmitting}
               className={{

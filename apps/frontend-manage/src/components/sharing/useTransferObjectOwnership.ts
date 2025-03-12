@@ -20,19 +20,19 @@ function useTransferObjectOwnership({
   catalogCollectionId?: string
   onError: () => void
 }): {
-  onTransfer: (usernameOrEmail: string) => Promise<boolean>
+  onTransfer: (shortnameOrEmail: string) => Promise<boolean>
   transferring: boolean
 } {
   const [transferObjectOwnership, { loading: transferringOwnership }] =
     useMutation(TransferObjectOwnershipDocument)
 
-  const onTransfer = async (usernameOrEmail: string) => {
+  const onTransfer = async (shortnameOrEmail: string) => {
     try {
       const res = await transferObjectOwnership({
         variables: {
           objectId: String(objectId),
           objectType,
-          usernameOrEmail,
+          shortnameOrEmail,
         },
         refetchQueries: [
           // use refetch query instead of cache update, because new owner permissions might also

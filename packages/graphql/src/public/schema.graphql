@@ -1401,14 +1401,14 @@ type Mutation {
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
-  shareObject(objectId: String!, objectType: CatalogObjectType!, permissionLevel: PermissionLevel!, userGroupId: Int, usernameOrEmail: String): PermissionInfo
+  shareObject(objectId: String!, objectType: CatalogObjectType!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [ArchivedElement!]
-  transferObjectOwnership(objectId: String!, objectType: CatalogObjectType!, usernameOrEmail: String!): PermissionInfo
+  transferObjectOwnership(objectId: String!, objectType: CatalogObjectType!, shortnameOrEmail: String!): PermissionInfo
   unpublishGroupActivity(id: String!): GroupActivity
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz

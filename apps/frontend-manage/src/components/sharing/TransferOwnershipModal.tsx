@@ -58,15 +58,15 @@ function TransferOwnershipModal({
           </div>
 
           <Formik
-            initialValues={{ usernameOrEmail: '' }}
+            initialValues={{ shortnameOrEmail: '' }}
             validationSchema={Yup.object().shape({
-              usernameOrEmail: Yup.string().required(
-                t('manage.sharing.usernameOrEmailRequired')
+              shortnameOrEmail: Yup.string().required(
+                t('manage.sharing.shortnameOrEmailRequired')
               ),
             })}
             onSubmit={async (values, { setSubmitting, resetForm }) => {
               try {
-                const success = await onTransfer(values.usernameOrEmail)
+                const success = await onTransfer(values.shortnameOrEmail)
 
                 if (success) {
                   setTransferSuccess(true)
@@ -87,10 +87,10 @@ function TransferOwnershipModal({
               <Form className="space-y-2">
                 <div>
                   <FormikTextField
-                    id="usernameOrEmail"
-                    name="usernameOrEmail"
+                    id="shortnameOrEmail"
+                    name="shortnameOrEmail"
                     label={
-                      t('shared.generic.username') +
+                      t('shared.generic.shortname') +
                       ' / ' +
                       t('shared.generic.email')
                     }

@@ -1,12 +1,12 @@
 mutation TransferObjectOwnership(
   $objectId: String!
   $objectType: CatalogObjectType!
-  $usernameOrEmail: String!
+  $shortnameOrEmail: String!
 ) {
   transferObjectOwnership(
     objectId: $objectId
     objectType: $objectType
-    usernameOrEmail: $usernameOrEmail
+    shortnameOrEmail: $shortnameOrEmail
   ) {
     ...PermissionInfoData
   }

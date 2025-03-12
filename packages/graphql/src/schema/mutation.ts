@@ -1496,7 +1496,7 @@ export const Mutation = builder.mutationType({
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
-          usernameOrEmail: t.arg.string({ required: false }),
+          shortnameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
         },
         resolve(_, args, ctx) {
@@ -1505,7 +1505,7 @@ export const Mutation = builder.mutationType({
               {
                 catalogCollectionId: args.objectId,
                 permissionLevel: args.permissionLevel,
-                usernameOrEmail: args.usernameOrEmail,
+                shortnameOrEmail: args.shortnameOrEmail,
                 userGroupId: args.userGroupId,
               },
               ctx
@@ -1514,7 +1514,7 @@ export const Mutation = builder.mutationType({
             return SharingService.shareCatalogObject(
               {
                 permissionLevel: args.permissionLevel,
-                usernameOrEmail: args.usernameOrEmail,
+                shortnameOrEmail: args.shortnameOrEmail,
                 userGroupId: args.userGroupId,
                 answerCollectionId:
                   args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
@@ -1611,14 +1611,14 @@ export const Mutation = builder.mutationType({
         args: {
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
-          usernameOrEmail: t.arg.string({ required: true }),
+          shortnameOrEmail: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
             return SharingService.transferCatalogCollectionOwnership(
               {
                 catalogCollectionId: args.objectId,
-                usernameOrEmail: args.usernameOrEmail,
+                shortnameOrEmail: args.shortnameOrEmail,
               },
               ctx
             )
@@ -1628,7 +1628,7 @@ export const Mutation = builder.mutationType({
             return SharingService.transferAnswerCollectionOwnership(
               {
                 collectionId: parseInt(args.objectId),
-                usernameOrEmail: args.usernameOrEmail,
+                shortnameOrEmail: args.shortnameOrEmail,
               },
               ctx
             )

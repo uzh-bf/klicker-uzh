@@ -260,7 +260,7 @@ describe('Unit tests for sharing service', () => {
     const res1 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: userFive.email,
+        shortnameOrEmail: userFive.email,
         answerCollectionId: AC1Id,
       },
       userTwoCtx
@@ -269,7 +269,7 @@ describe('Unit tests for sharing service', () => {
     const res2 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: userFive.email,
+        shortnameOrEmail: userFive.email,
         answerCollectionId: AC1Id,
       },
       userThreeCtx
@@ -278,7 +278,7 @@ describe('Unit tests for sharing service', () => {
     const res3 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: userFive.email,
+        shortnameOrEmail: userFive.email,
         answerCollectionId: AC1Id,
       },
       userFourCtx
@@ -289,7 +289,7 @@ describe('Unit tests for sharing service', () => {
     const res4 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: 'missing_user_name',
+        shortnameOrEmail: 'missing_user_name',
         answerCollectionId: AC1Id,
       },
       userTwoCtx
@@ -300,7 +300,7 @@ describe('Unit tests for sharing service', () => {
     const res5 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.ADMIN,
-        usernameOrEmail: userTwo.email,
+        shortnameOrEmail: userTwo.email,
         answerCollectionId: AC1Id,
       },
       userOneCtx
@@ -316,7 +316,7 @@ describe('Unit tests for sharing service', () => {
     const res6 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.WRITE,
-        usernameOrEmail: userThree.shortname,
+        shortnameOrEmail: userThree.shortname,
         answerCollectionId: AC1Id,
       },
       userOneCtx
@@ -332,7 +332,7 @@ describe('Unit tests for sharing service', () => {
     const res7 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: userFour.email,
+        shortnameOrEmail: userFour.email,
         answerCollectionId: AC1Id,
       },
       userOneCtx
@@ -349,7 +349,7 @@ describe('Unit tests for sharing service', () => {
     const res8 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.ADMIN,
-        usernameOrEmail: userTwo.shortname,
+        shortnameOrEmail: userTwo.shortname,
         answerCollectionId: AC2Id,
       },
       userOneCtx
@@ -366,7 +366,7 @@ describe('Unit tests for sharing service', () => {
     const res9 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.WRITE,
-        usernameOrEmail: userThree.email,
+        shortnameOrEmail: userThree.email,
         answerCollectionId: AC2Id,
       },
       userTwoCtx
@@ -382,7 +382,7 @@ describe('Unit tests for sharing service', () => {
     const res10 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: userFour.shortname,
+        shortnameOrEmail: userFour.shortname,
         answerCollectionId: AC2Id,
       },
       userTwoCtx
@@ -399,7 +399,7 @@ describe('Unit tests for sharing service', () => {
     const res11 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: userFive.email,
+        shortnameOrEmail: userFive.email,
         answerCollectionId: AC2Id,
       },
       userThreeCtx
@@ -408,7 +408,7 @@ describe('Unit tests for sharing service', () => {
     const res12 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
-        usernameOrEmail: userFive.shortname,
+        shortnameOrEmail: userFive.shortname,
         answerCollectionId: AC2Id,
       },
       userFourCtx
@@ -1218,7 +1218,7 @@ describe('Unit tests for sharing service', () => {
     const failure1 = await transferAnswerCollectionOwnership(
       {
         collectionId: AC1Id,
-        usernameOrEmail: userTwo.email,
+        shortnameOrEmail: userTwo.email,
       },
       userTwoCtx
     )
@@ -1227,7 +1227,7 @@ describe('Unit tests for sharing service', () => {
     const failure2 = await transferAnswerCollectionOwnership(
       {
         collectionId: AC1Id,
-        usernameOrEmail: userThree.shortname,
+        shortnameOrEmail: userThree.shortname,
       },
       userThreeCtx
     )
@@ -1236,7 +1236,7 @@ describe('Unit tests for sharing service', () => {
     const failure3 = await transferAnswerCollectionOwnership(
       {
         collectionId: AC1Id,
-        usernameOrEmail: userFour.email,
+        shortnameOrEmail: userFour.email,
       },
       userFourCtx
     )
@@ -1245,7 +1245,7 @@ describe('Unit tests for sharing service', () => {
     const failure4 = await transferAnswerCollectionOwnership(
       {
         collectionId: AC1Id,
-        usernameOrEmail: userFive.shortname,
+        shortnameOrEmail: userFive.shortname,
       },
       userFiveCtx
     )
@@ -1255,7 +1255,7 @@ describe('Unit tests for sharing service', () => {
     const failure5 = await transferAnswerCollectionOwnership(
       {
         collectionId: AC1Id,
-        usernameOrEmail: 'missing_user_name',
+        shortnameOrEmail: 'missing_user_name',
       },
       userOneCtx
     )
@@ -1276,7 +1276,7 @@ describe('Unit tests for sharing service', () => {
     const successPermission1 = await transferAnswerCollectionOwnership(
       {
         collectionId: AC1Id,
-        usernameOrEmail: userTwo.email,
+        shortnameOrEmail: userTwo.email,
       },
       userOneCtx
     )
@@ -1313,7 +1313,7 @@ describe('Unit tests for sharing service', () => {
     const successfulPermission2 = await transferAnswerCollectionOwnership(
       {
         collectionId: AC1Id,
-        usernameOrEmail: userOne.email,
+        shortnameOrEmail: userOne.email,
       },
       userTwoCtx
     )
@@ -1548,7 +1548,7 @@ describe('Unit tests for sharing service', () => {
       const newPermission = await shareCatalogCollection(
         {
           catalogCollectionId: publicCatalogId,
-          usernameOrEmail: user.email,
+          shortnameOrEmail: user.email,
           permissionLevel,
         },
         userOneCtx
@@ -1564,7 +1564,7 @@ describe('Unit tests for sharing service', () => {
       const newPermission2 = await shareCatalogCollection(
         {
           catalogCollectionId: restrictedCatalogId,
-          usernameOrEmail: user.shortname,
+          shortnameOrEmail: user.shortname,
           permissionLevel,
         },
         userOneCtx
@@ -2600,7 +2600,7 @@ describe('Unit tests for sharing service', () => {
     const failure1 = await transferCatalogCollectionOwnership(
       {
         catalogCollectionId: restrictedCatalogId,
-        usernameOrEmail: userFour.email,
+        shortnameOrEmail: userFour.email,
       },
       userTwoCtx
     )
@@ -2609,7 +2609,7 @@ describe('Unit tests for sharing service', () => {
     const failure2 = await transferCatalogCollectionOwnership(
       {
         catalogCollectionId: restrictedCatalogId,
-        usernameOrEmail: userFour.email,
+        shortnameOrEmail: userFour.email,
       },
       userThreeCtx
     )
@@ -2618,7 +2618,7 @@ describe('Unit tests for sharing service', () => {
     const failure3 = await transferCatalogCollectionOwnership(
       {
         catalogCollectionId: restrictedCatalogId,
-        usernameOrEmail: userFour.email,
+        shortnameOrEmail: userFour.email,
       },
       userFourCtx
     )
@@ -2627,7 +2627,7 @@ describe('Unit tests for sharing service', () => {
     const failure4 = await transferCatalogCollectionOwnership(
       {
         catalogCollectionId: restrictedCatalogId,
-        usernameOrEmail: userFour.email,
+        shortnameOrEmail: userFour.email,
       },
       userFiveCtx
     )
@@ -2649,7 +2649,7 @@ describe('Unit tests for sharing service', () => {
     const newPermission1 = await transferCatalogCollectionOwnership(
       {
         catalogCollectionId: restrictedCatalogId,
-        usernameOrEmail: userFour.email,
+        shortnameOrEmail: userFour.email,
       },
       userOneCtx
     )
@@ -2695,7 +2695,7 @@ describe('Unit tests for sharing service', () => {
     const newPermission2 = await transferCatalogCollectionOwnership(
       {
         catalogCollectionId: restrictedCatalogId,
-        usernameOrEmail: userOne.shortname,
+        shortnameOrEmail: userOne.shortname,
       },
       userFourCtx
     )

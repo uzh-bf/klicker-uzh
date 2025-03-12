@@ -40,11 +40,11 @@ function GrantedPermissionsTable({
   onSharingFailure: () => void
   onOwnershipTransfer: () => void
   shareObjectCallback: ({
-    usernameOrEmail,
+    shortnameOrEmail,
     userGroupId,
     permissionLevel,
   }: {
-    usernameOrEmail?: string
+    shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
   }) => Promise<boolean>
@@ -73,7 +73,7 @@ function GrantedPermissionsTable({
         <thead>
           <tr className="bg-gray-50">
             <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
-              {t('shared.generic.username')} ({t('shared.generic.email')})
+              {t('shared.generic.shortname')} ({t('shared.generic.email')})
             </th>
             <th className="px-4 py-3 text-left text-sm font-bold text-gray-700">
               {t('shared.generic.userGroup')}

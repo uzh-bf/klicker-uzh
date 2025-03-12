@@ -23,11 +23,11 @@ function useObjectSharing({
   onError: () => void
 }): {
   onShareObject: ({
-    usernameOrEmail,
+    shortnameOrEmail,
     userGroupId,
     permissionLevel,
   }: {
-    usernameOrEmail?: string
+    shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
   }) => Promise<boolean>
@@ -37,11 +37,11 @@ function useObjectSharing({
     useMutation(ShareObjectDocument)
 
   const onShareObject = async ({
-    usernameOrEmail,
+    shortnameOrEmail,
     userGroupId,
     permissionLevel,
   }: {
-    usernameOrEmail?: string
+    shortnameOrEmail?: string
     userGroupId?: number
     permissionLevel: PermissionLevel
   }) => {
@@ -50,9 +50,9 @@ function useObjectSharing({
         variables: {
           objectId: String(objectId),
           objectType,
-          usernameOrEmail: usernameOrEmail,
+          shortnameOrEmail,
           userGroupId:
-            typeof usernameOrEmail === 'undefined' ? userGroupId : undefined,
+            typeof shortnameOrEmail === 'undefined' ? userGroupId : undefined,
           permissionLevel: permissionLevel,
         },
         update: (cache, { data }) => {

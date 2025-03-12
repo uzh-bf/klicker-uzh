@@ -1378,10 +1378,10 @@ export async function getCatalogCollectionPermissions(
 export async function transferCatalogCollectionOwnership(
   {
     catalogCollectionId,
-    usernameOrEmail,
+    shortnameOrEmail,
   }: {
     catalogCollectionId: string
-    usernameOrEmail: string
+    shortnameOrEmail: string
   },
   ctx: ContextWithUser
 ) {
@@ -1390,10 +1390,10 @@ export async function transferCatalogCollectionOwnership(
     where: {
       OR: [
         {
-          shortname: usernameOrEmail,
+          shortname: shortnameOrEmail,
         },
         {
-          email: usernameOrEmail,
+          email: shortnameOrEmail,
         },
       ],
     },
@@ -1513,12 +1513,12 @@ export async function shareCatalogCollection(
   {
     catalogCollectionId,
     permissionLevel,
-    usernameOrEmail,
+    shortnameOrEmail,
     userGroupId,
   }: {
     catalogCollectionId: string
     permissionLevel: DB.PermissionLevel
-    usernameOrEmail?: string | null
+    shortnameOrEmail?: string | null
     userGroupId?: number | null
   },
   ctx: ContextWithUser
@@ -1538,16 +1538,16 @@ export async function shareCatalogCollection(
   }
 
   // create new permission with the defined access level
-  if (usernameOrEmail && usernameOrEmail.length > 0) {
+  if (shortnameOrEmail && shortnameOrEmail.length > 0) {
     // check if a user with the provided username or email exists and is not the owner of the catalog collection
     const user = await ctx.prisma.user.findFirst({
       where: {
         OR: [
           {
-            shortname: usernameOrEmail,
+            shortname: shortnameOrEmail,
           },
           {
-            email: usernameOrEmail,
+            email: shortnameOrEmail,
           },
         ],
       },
@@ -1726,10 +1726,10 @@ export async function getAnswerCollectionPermissions(
 export async function transferAnswerCollectionOwnership(
   {
     collectionId,
-    usernameOrEmail,
+    shortnameOrEmail,
   }: {
     collectionId: number
-    usernameOrEmail: string
+    shortnameOrEmail: string
   },
   ctx: ContextWithUser
 ) {
@@ -1738,10 +1738,10 @@ export async function transferAnswerCollectionOwnership(
     where: {
       OR: [
         {
-          shortname: usernameOrEmail,
+          shortname: shortnameOrEmail,
         },
         {
-          email: usernameOrEmail,
+          email: shortnameOrEmail,
         },
       ],
     },
@@ -1877,7 +1877,7 @@ export async function transferAnswerCollectionOwnership(
 export async function shareCatalogObject(
   {
     permissionLevel,
-    usernameOrEmail,
+    shortnameOrEmail,
     userGroupId,
     answerCollectionId,
     elementId,
@@ -1888,7 +1888,7 @@ export async function shareCatalogObject(
     groupActivityId,
   }: {
     permissionLevel: DB.PermissionLevel
-    usernameOrEmail?: string | null
+    shortnameOrEmail?: string | null
     userGroupId?: number | null
     answerCollectionId?: number
     elementId?: number
@@ -1919,16 +1919,16 @@ export async function shareCatalogObject(
   }
 
   // create new permission with the defined access level
-  if (usernameOrEmail && usernameOrEmail.length > 0) {
+  if (shortnameOrEmail && shortnameOrEmail.length > 0) {
     // check if a user with the provided username or email exists and is not the owner of the collection
     const user = await ctx.prisma.user.findFirst({
       where: {
         OR: [
           {
-            shortname: usernameOrEmail,
+            shortname: shortnameOrEmail,
           },
           {
-            email: usernameOrEmail,
+            email: shortnameOrEmail,
           },
         ],
       },

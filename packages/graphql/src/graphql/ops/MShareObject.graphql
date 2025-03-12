@@ -2,14 +2,14 @@ mutation ShareObject(
   $objectId: String!
   $objectType: CatalogObjectType!
   $permissionLevel: PermissionLevel!
-  $usernameOrEmail: String
+  $shortnameOrEmail: String
   $userGroupId: Int
 ) {
   shareObject(
     objectId: $objectId
     objectType: $objectType
     permissionLevel: $permissionLevel
-    usernameOrEmail: $usernameOrEmail
+    shortnameOrEmail: $shortnameOrEmail
     userGroupId: $userGroupId
   ) {
     ...PermissionInfoData

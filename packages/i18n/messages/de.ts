@@ -2340,7 +2340,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       grantedPermissions: 'Bestehende Berechtigungen',
       transferOwnership: 'Eigentumsrechte übertragen',
       importantInformation: 'Wichtige Information',
-      usernameOrEmailRequired:
+      shortnameOrEmailRequired:
         'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',
       confirmTransferOwnership: 'Eigentumsrechte übertragen',
       ownershipTransferSuccess:
