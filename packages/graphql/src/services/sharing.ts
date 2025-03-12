@@ -2395,6 +2395,9 @@ export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
         },
       ],
     },
+    orderBy: {
+      name: 'asc',
+    },
   })
 
   return collections.map((collection) => ({

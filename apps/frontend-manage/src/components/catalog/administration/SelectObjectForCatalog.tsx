@@ -74,6 +74,7 @@ function SelectObjectForCatalog({
           instanceId="object-selection-catalog-addition"
           isSearchable
           isLoading={isLoading}
+          menuPlacement="top" // open menu towards the top for space reasons on modal
           options={options}
           placeholder={t('manage.catalog.searchObjects')}
           onChange={(selected) => setFieldValue('objectId', selected?.value)}

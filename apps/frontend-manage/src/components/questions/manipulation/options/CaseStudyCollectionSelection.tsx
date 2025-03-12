@@ -113,6 +113,7 @@ function CaseStudyCollectionSelection({
             isMulti
             value={selectedAnswers}
             options={collectionAnswers}
+            menuPlacement="auto"
             classNames={{
               container: () => 'w-full',
             }}

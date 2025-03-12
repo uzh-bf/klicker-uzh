@@ -84,6 +84,7 @@ function SELECTIONAnswerOptions({
               <Select
                 id={`selection-${elementIx}-field-${Number(inputIndex)}`}
                 instanceId={`selection-${elementIx}-field-${Number(inputIndex)}`}
+                menuPlacement="auto"
                 isDisabled={disabled}
                 value={
                   typeof selectedValue !== 'undefined' && selectedValue !== -1
