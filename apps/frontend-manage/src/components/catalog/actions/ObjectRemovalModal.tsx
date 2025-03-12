@@ -26,7 +26,7 @@ function ObjectRemovalModal({
   return (
     <Modal
       open={open}
-      title={t('manage.catalog.removeObjectTitle')}
+      title={t(`manage.catalog.remove${object.objectType}title`)}
       onClose={onClose}
       className={{ content: 'w-full max-w-lg' }}
       data={{ cy: 'remove-object-modal' }}
@@ -38,7 +38,7 @@ function ObjectRemovalModal({
             objectName: object.name,
           })}
         </div>
-        <div className="mt-2 flex flex-row justify-end gap-2">
+        <div className="mt-2 flex flex-row justify-between gap-2">
           <Button
             onClick={onClose}
             className={{ root: 'w-auto' }}
@@ -91,7 +91,7 @@ function ObjectRemovalModal({
             data={{ cy: 'confirm-removal' }}
           >
             <Button.Label>
-              {t('manage.catalog.removeObjectConfirm')}
+              {t(`manage.catalog.remove${object.objectType}`)}
             </Button.Label>
           </Button>
         </div>

@@ -2231,10 +2231,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       changeAccessDescription:
         'Are you sure you want to change the access level of the {objectType} "{objectName}" to {newAccess}?',
       changeAccessConfirm: 'Change Access',
+      removeCATALOG_COLLECTION: 'Remove Catalog Collection',
+      removeCATALOG_COLLECTIONtitle: 'Remove Catalog Collection',
+      removeANSWER_COLLECTION: 'Remove Answer Collection',
+      removeANSWER_COLLECTIONtitle: 'Remove Answer Collection from Catalog',
       removeObjectTitle: 'Remove Object from Catalog Collection',
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
-      removeObjectConfirm: 'Remove Object',
       createCatalogCollection: 'Create Collection',
       createCatalogCollectionTitle: 'Create Catalog Collection',
       createCatalogCollectionDescription:
@@ -2253,7 +2256,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       collectionCreationError:
         'An error occurred while creating the catalog collection. Please try again.',
       backToCatalogOverview: 'back to Catalog Overview',
-      deleteCatalogCollection: 'Delete Collection',
+      deleteCatalogCollection: 'Delete Catalog Collection',
       openCatalogCollection: 'Open Collection',
       browseCatalogCollection: 'Browse Collection / Request Included Objects',
       modifyContent: 'Modify Content',

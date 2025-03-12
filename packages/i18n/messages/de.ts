@@ -2259,10 +2259,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       changeAccessDescription:
         'Sind Sie sicher, dass Sie die Zugriffsrechte für {objectType} "{objectName}" auf {newAccess} ändern möchten?',
       changeAccessConfirm: 'Zugriff ändern',
-      removeObjectTitle: 'Objekt aus Katalog-Sammlung entfernen',
+      removeCATALOG_COLLECTION: 'Katalog-Sammlung entfernen',
+      removeCATALOG_COLLECTIONtitle: 'Katalog-Sammlung entfernen',
+      removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
+      removeANSWER_COLLECTIONtitle: 'Antwort-Sammlung aus Katalog entfernen',
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
-      removeObjectConfirm: 'Objekt entfernen',
       createCatalogCollection: 'Sammlung erstellen',
       createCatalogCollectionTitle: 'Katalog-Sammlung erstellen',
       createCatalogCollectionDescription:
@@ -2282,14 +2284,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       collectionCreationError:
         'Bei der Erstellung der Katalog-Sammlung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
       backToCatalogOverview: 'zurück zur Katalog-Übersicht',
-      deleteCatalogCollection: 'Sammlung löschen',
+      deleteCatalogCollection: 'Katalogsammlung löschen',
       openCatalogCollection: 'Sammlung öffnen',
       browseCatalogCollection: 'Sammlung durchsuchen / Objekte anfragen',
       modifyContent: 'Inhalt bearbeiten',
       modifyPermissions: 'Berechtigungen bearbeiten',
       revokeAccess: 'Zugriff entziehen',
       deleteCollection: 'Sammlung löschen',
-      removeObject: 'Objekt entfernen',
       deleteCatalogCollectionTitle: 'Katalogsammlung löschen',
       deleteCatalogCollectionDescription:
         'Sind Sie sicher, dass Sie die Katalogsammlung "{name}" löschen möchten? Dies entfernt alle Objekte aus der Katalogsammlung und verhindert, dass Benutzer über die Katalogsammlung auf diese Objekte zugreifen können.',

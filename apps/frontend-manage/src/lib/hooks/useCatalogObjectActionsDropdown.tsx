@@ -1,11 +1,7 @@
 import { faCopy, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { faArrowUpFromBracket, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  CatalogObject,
-  CatalogObjectType,
-  ObjectAccess,
-} from '@klicker-uzh/graphql/dist/ops'
+import { CatalogObject, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 
@@ -40,7 +36,9 @@ function useCatalogObjectActionsDropdown({
         label: (
           <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 hover:bg-gray-100">
             <FontAwesomeIcon icon={faCopy} className="mr-2.5 h-4 w-4" />
-            {t('manage.catalog.importObject')}
+            {t('manage.catalog.importObjectType', {
+              object: t(`shared.types.${object.objectType}`),
+            })}
           </div>
         ),
         onClick: (e: React.MouseEvent<HTMLDivElement>) => {
@@ -97,7 +95,7 @@ function useCatalogObjectActionsDropdown({
               icon={faArrowUpFromBracket}
               className="mr-2.5 h-4 w-4"
             />
-            {t(`manage.sharing.share${CatalogObjectType.CatalogCollection}`)}
+            {t(`manage.sharing.share${object.objectType}`)}
           </div>
         ),
         onClick: (e: React.MouseEvent<HTMLDivElement>) => {
@@ -115,7 +113,7 @@ function useCatalogObjectActionsDropdown({
         label: (
           <div className="flex cursor-pointer items-center rounded px-1.5 py-0.5 text-red-600 hover:bg-gray-100">
             <FontAwesomeIcon icon={faX} className="mr-2.5 h-4 w-4" />
-            {t('manage.catalog.removeObject')}
+            {t(`manage.catalog.remove${object.objectType}`)}
           </div>
         ),
         onClick: (e: React.MouseEvent<HTMLDivElement>) => {
@@ -135,6 +133,7 @@ function useCatalogObjectActionsDropdown({
     setImportModal,
     setRequestModal,
     setRequestCancellationModal,
+    setSharingModal,
     setRemovalModal,
   ])
 }
