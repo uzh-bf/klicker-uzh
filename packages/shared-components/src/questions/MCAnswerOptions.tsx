@@ -57,10 +57,12 @@ export function MCAnswerOptions({
                 fluid
                 className={{
                   root: twMerge(
-                    'hover:bg-unset min-h-[2.5rem] border-slate-400',
+                    'min-h-[2.5rem] border-slate-400',
                     !hasFeedback && 'h-full',
                     hasFeedback && 'rounded-b-none',
-                    value?.[choice.ix] && 'bg-primary-20 border-primary-100'
+                    disabled && 'bg-accent disabled:opacity-90',
+                    value?.[choice.ix] &&
+                      'bg-primary-20 border-primary-100 hover:bg-primary-20'
                   ),
                 }}
                 onClick={() =>

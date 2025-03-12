@@ -65,9 +65,10 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'hover:bg-unset h-9 w-9 border-slate-400 !p-0',
+                    'h-9 w-9 border-slate-400 !p-0',
+                    disabled && 'bg-accent disabled:opacity-90',
                     value?.[choice.ix] === true &&
-                      'bg-primary-20 border-primary-100'
+                      'bg-primary-20 border-primary-100 hover:bg-primary-20'
                   ),
                 }}
                 onClick={() => onChange({ ...value, [choice.ix]: true })}
@@ -85,9 +86,10 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'hover:bg-unset h-9 w-9 border-slate-400',
+                    'h-9 w-9 border-slate-400',
+                    disabled && 'bg-accent disabled:opacity-90',
                     value?.[choice.ix] === false &&
-                      'bg-primary-20 border-primary-100'
+                      'bg-primary-20 border-primary-100 hover:bg-primary-20'
                   ),
                 }}
                 onClick={() => onChange({ ...value, [choice.ix]: false })}

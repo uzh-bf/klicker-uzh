@@ -510,6 +510,10 @@
   border-top-right-radius: 0.375rem
 }
 
+.rounded-bl-sm {
+  border-bottom-left-radius: 0.125rem
+}
+
 .border {
   border-width: 1px
 }
@@ -528,6 +532,10 @@
 
 .border-t {
   border-top-width: 1px
+}
+
+.border-t-0 {
+  border-top-width: 0px
 }
 
 .border-solid {
@@ -593,6 +601,10 @@
   border-color: rgb(181 189 197 / var(--tw-border-opacity, 1))
 }
 
+.bg-accent {
+  background-color: hsl(var(--accent))
+}
+
 .bg-gray-100 {
   --tw-bg-opacity: 1;
   background-color: rgb(243 244 246 / var(--tw-bg-opacity, 1))
@@ -611,11 +623,6 @@
 .bg-gray-400 {
   --tw-bg-opacity: 1;
   background-color: rgb(156 163 175 / var(--tw-bg-opacity, 1))
-}
-
-.bg-gray-50 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(249 250 251 / var(--tw-bg-opacity, 1))
 }
 
 .bg-green-200 {
@@ -1059,6 +1066,10 @@
     background-color: rgb(234 88 12 / var(--tw-bg-opacity, 1))
   }
 
+  .hover\:bg-primary-20:hover {
+    background-color: var(--theme-color-primary-20)
+  }
+
   .hover\:bg-red-300:hover {
     --tw-bg-opacity: 1;
     background-color: rgb(252 165 165 / var(--tw-bg-opacity, 1))
@@ -1100,6 +1111,10 @@
 
 .focus\:border-primary-80:focus {
   border-color: var(--theme-color-primary-80)
+}
+
+.disabled\:opacity-90:disabled {
+  opacity: 0.9
 }
 
 .prose-p\:\!m-0 :is(:where(p):not(:where([class~="not-prose"],[class~="not-prose"] *))) {

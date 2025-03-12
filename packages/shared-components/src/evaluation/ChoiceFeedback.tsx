@@ -19,12 +19,12 @@ function ChoiceFeedback({
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center gap-3 rounded-b border bg-gray-50 text-sm'
+        'flex flex-row items-center gap-3 rounded-b border border-t-0 text-sm'
       )}
     >
       <div
         className={twMerge(
-          'flex w-8 flex-col items-center justify-center self-stretch bg-gray-300 px-3 py-2 text-xs text-gray-600',
+          'flex w-8 flex-col items-center justify-center self-stretch rounded-bl-sm bg-gray-300 px-3 py-2 text-xs text-gray-600',
           feedback.correct
             ? 'bg-green-200 text-green-700'
             : 'bg-red-200 text-red-700'
