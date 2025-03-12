@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.33...v3.3.0-alpha.34) (2025-03-12)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** ensure that choices answer options wrap correctly on overflow ([570987b](https://github.com/uzh-bf/klicker-uzh/commit/570987b547a7ec9dd1064196b01ff01a705df3e0))
+
 ## [3.3.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.32...v3.3.0-alpha.33) (2025-03-11)
 
 
