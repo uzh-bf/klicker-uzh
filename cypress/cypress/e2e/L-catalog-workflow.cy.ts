@@ -228,7 +228,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
-      '[id="react-select-object-selection-catalog-addition-option-3"]'
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
     ).click()
     cy.get('[id="object-selection-catalog-addition"]').contains(
       this.data.AC1.name
@@ -254,7 +254,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
-      '[id="react-select-object-selection-catalog-addition-option-3"]'
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
     ).click()
     cy.get('[id="object-selection-catalog-addition"]').contains(
       this.data.AC1.name
