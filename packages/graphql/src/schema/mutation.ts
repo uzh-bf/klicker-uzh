@@ -15,7 +15,7 @@ import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
-import { ElementFeedback } from './analytics.js'
+import { ActivityType, ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import {
@@ -1486,6 +1486,21 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return SharingService.deleteCatalogCollection(args, ctx)
+        },
+      }),
+
+      createActivityTemplate: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+          templateName: t.arg.string({ required: true }),
+          templateDescription: t.arg.string({ required: true }),
+          templateInstructions: t.arg.string({ required: true }),
+          copyBeforeConversion: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.createActivityTemplate(args, ctx)
         },
       }),
 

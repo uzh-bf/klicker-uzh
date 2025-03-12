@@ -1530,6 +1530,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       templateInformation: 'Vorlagen-Informationen',
       templateInformationDescription:
         'Bitte geben Sie die folgenden Informationen für Ihre Vorlage an. Diese werden Benutzern angezeigt, wenn sie Ihre Vorlage importieren oder verwenden.',
+      nameTooltip:
+        'Der Name wird Benutzern angezeigt, wenn sie verfügbare Vorlage über den Katalog suchen.',
+      nameRequired: 'Ein Name für das Aktivitäts-Template ist erforderlich',
       descriptionTooltip:
         'Die Beschreibung wird Benutzern angezeigt, wenn sie verfügbare Vorlagen im Katalog durchsuchen.',
       descriptionPlaceholder:
@@ -1542,6 +1545,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createTemplateCopy: 'Vorlage-Kopie erstellen',
       descriptionRequired: 'Eine Beschreibung ist erforderlich',
       instructionsRequired: 'Anweisungen sind erforderlich',
+      templateCreationSuccess: 'Vorlage wurde erfolgreich erstellt',
+      templateCreationError: 'Vorlage konnte nicht erstellt werden',
     },
     formErrors: {
       resolveErrors:
@@ -1639,6 +1644,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       plannedLiveQuizzes: 'Geplante Live Quizzes',
       preparedLiveQuizzes: 'Vorbereitete Live Quizzes',
       completedLiveQuizzes: 'Abgeschlossene Live Quizzes',
+      liveQuizTemplates: 'Live Quiz Vorlagen',
       embeddingEvaluation: 'Einbettung Evaluation',
       lecturerCockpit: 'Dozierenden Cockpit',
       liveQuizEvaluation: 'Live Quiz Evaluation',

@@ -138,6 +138,7 @@
    "CheckShortnameAvailable": "03a02f5db0a7415ed420529f1ee27248586f2d6593ca514a81a5d4b4037eaf1f",
    "CheckValidCoursePin": "2126ef90ecc0ffc980dd92bbd62dfa48387a97d210d5edf4f6a1116a41fb0483",
    "CountCatalogSharingRequests": "e74997c0befad19b7412afb8dd053b68fe35067d889c2f9ecaf98319bfdfd48b",
+   "createActivityTemplate": "bddac53e278ccf95547c5048e6af744e646f0df940efe7a4b0bdcd0b610c7641",
    "GetActiveUserCourses": "877f83a65cb320f69a51a5bf243f0d62bb8cce9e4c1d0bcab8cec8dd367bed86",
    "GetActivityAnalytics": "bcbe895236bd0027e2db37d5884645cfa3230e90a7ce6de893783c5fdc54fa1b",
    "GetAnswerCollectionCatalogInfo": "c3c4b1990cc245dbf1c006da6cf8269c622981c251eac3a0392b47d87000bc46",

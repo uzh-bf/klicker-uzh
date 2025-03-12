@@ -42,6 +42,12 @@ function LiveQuizList() {
       .sort((a, b) => (dayjs(b.finishedAt) > dayjs(a.finishedAt) ? 1 : -1))
   }, [data])
 
+  const liveQuizTemplates = useMemo(() => {
+    return data?.userLiveQuizzes
+      ?.filter((quiz) => quiz?.status === PublicationStatus.Template)
+      .sort((a, b) => (dayjs(b.finishedAt) > dayjs(a.finishedAt) ? 1 : -1))
+  }, [data])
+
   if (loading) {
     return (
       <Layout displayName={t('shared.generic.liveQuizzes')}>
@@ -83,6 +89,16 @@ function LiveQuizList() {
             </div>
           </div>
         )}
+        {liveQuizTemplates && liveQuizTemplates.length > 0 && (
+          <div>
+            <H2>{t('manage.liveQuizzes.liveQuizTemplates')}</H2>
+            <div className="flex flex-col gap-2">
+              {liveQuizTemplates.map((quiz) => (
+                <LiveQuiz isTemplate key={quiz.id} quiz={quiz} />
+              ))}
+            </div>
+          </div>
+        )}
         {completedLiveQuizzes && completedLiveQuizzes.length > 0 && (
           <div>
             <H2>{t('manage.liveQuizzes.completedLiveQuizzes')}</H2>
@@ -96,7 +112,8 @@ function LiveQuizList() {
         {scheduledLiveQuizzes?.length === 0 &&
           preparedLiveQuizzes?.length === 0 &&
           runningLiveQuizzes?.length === 0 &&
-          completedLiveQuizzes?.length === 0 && (
+          completedLiveQuizzes?.length === 0 &&
+          liveQuizTemplates?.length === 0 && (
             <UserNotification
               type="warning"
               message={t('manage.liveQuizzes.noLiveQuizzes')}

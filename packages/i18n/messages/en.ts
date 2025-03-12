@@ -1515,6 +1515,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       templateInformation: 'Template Information',
       templateInformationDescription:
         'Please provide the following information for your template. It will be shown to users when they import or use your template.',
+      nameTooltip:
+        'The name will be shown to users when they browse available templates in the catalog.',
+      nameRequired: 'A name for the activity template is required',
       descriptionTooltip:
         'The description will be shown to users when they browse available templates in the catalog.',
       descriptionPlaceholder:
@@ -1527,6 +1530,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createTemplateCopy: 'Create Template Copy',
       descriptionRequired: 'A description is required',
       instructionsRequired: 'Instructions are required',
+      templateCreationSuccess: 'Template was successfully created',
+      templateCreationError: 'Template could not be created',
     },
     formErrors: {
       resolveErrors:
@@ -1614,6 +1619,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       plannedLiveQuizzes: 'Planned Live Quizzes',
       preparedLiveQuizzes: 'Prepared Live Quizzes',
       completedLiveQuizzes: 'Completed Live Quizzes',
+      liveQuizTemplates: 'Live Quiz Templates',
       embeddingEvaluation: 'Embed Evaluation',
       lecturerCockpit: 'Lecturer Cockpit',
       liveQuizEvaluation: 'Quiz Evaluation',
