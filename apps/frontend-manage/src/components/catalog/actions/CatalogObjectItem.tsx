@@ -1,4 +1,8 @@
-import { faClock, faFolder } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faFileLines,
+  faFolder,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faEllipsisVertical,
@@ -42,6 +46,7 @@ function CatalogObjectItem({
   const objectTypeIcons: Record<CatalogObjectType, IconDefinition> = {
     [CatalogObjectType.AnswerCollection]: faList,
     [CatalogObjectType.CatalogCollection]: faFolder,
+    [CatalogObjectType.LiveQuizTemplate]: faFileLines,
   }
   const actionsDisabled = object.isOwner || object.isShared
 
@@ -100,7 +105,7 @@ function CatalogObjectItem({
           />
           <FontAwesomeIcon
             icon={objectTypeIcons[object.objectType]}
-            className="w-4"
+            className="h-4 w-4"
           />
           <div>{object.name}</div>
           {object.ownerShortname ? (

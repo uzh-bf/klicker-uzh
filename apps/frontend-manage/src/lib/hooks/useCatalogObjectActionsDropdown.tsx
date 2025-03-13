@@ -1,7 +1,11 @@
 import { faCopy, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { faArrowUpFromBracket, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { CatalogObject, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CatalogObject,
+  CatalogObjectType,
+  ObjectAccess,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo } from 'react'
 
@@ -86,7 +90,11 @@ function useCatalogObjectActionsDropdown({
     }
 
     // sufficient permissions on the object (ADMIN / OWNER) are always deciding for whether or not to show the sharing dialog
-    if (object.isManager) {
+    // TODO: remove the case for live quiz templates once the corresponding sharing functionality is available
+    if (
+      object.isManager &&
+      object.objectType !== CatalogObjectType.LiveQuizTemplate
+    ) {
       items.push({
         id: 'share',
         label: (

@@ -1313,7 +1313,11 @@ export const Mutation = builder.mutationType({
                   : undefined,
               elementId: undefined,
               courseId: undefined,
-              liveQuizId: undefined,
+              liveQuizId:
+                // TODO: add live quiz with or clause
+                args.objectType === CatalogObjectTypeEnum.LIVE_QUIZ_TEMPLATE
+                  ? args.objectId
+                  : undefined,
               practiceQuizId: undefined,
               microLearningId: undefined,
               groupActivityId: undefined,

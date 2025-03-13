@@ -1025,6 +1025,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCatalogLiveQuizTemplates: asUser.field({
+        nullable: true,
+        type: [CatalogSelectionObject],
+        resolve(_, __, ctx) {
+          return SharingService.getCatalogLiveQuizTemplates(ctx)
+        },
+      }),
+
       getAnswerCollectionCatalogInfo: asUser.field({
         nullable: true,
         type: AnswerCollection,

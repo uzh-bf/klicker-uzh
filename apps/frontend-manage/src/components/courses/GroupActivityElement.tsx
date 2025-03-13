@@ -1,5 +1,8 @@
-import { faWpforms } from '@fortawesome/free-brands-svg-icons'
-import { faHandPointer, faTrashCan } from '@fortawesome/free-regular-svg-icons'
+import {
+  faFileLines,
+  faHandPointer,
+  faTrashCan,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
   faCheck,
@@ -115,7 +118,7 @@ function GroupActivityElement({
         color="bg-primary-100"
         className="text-white"
         status={t('shared.generic.template')}
-        icon={faWpforms}
+        icon={faFileLines}
       />
     ),
   }

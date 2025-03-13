@@ -387,6 +387,7 @@ type CatalogObject {
 enum CatalogObjectType {
   ANSWER_COLLECTION
   CATALOG_COLLECTION
+  LIVE_QUIZ_TEMPLATE
 }
 
 type CatalogSelectionObject {
@@ -1811,6 +1812,7 @@ type Query {
   getCatalogAnswerCollections: [CatalogSelectionObject!]
   getCatalogCollectionInfo(catalogCollectionId: String): CatalogCollection
   getCatalogCollectionsList: [CatalogCollection!]
+  getCatalogLiveQuizTemplates: [CatalogSelectionObject!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course

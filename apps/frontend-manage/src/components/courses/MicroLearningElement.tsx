@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faWpforms } from '@fortawesome/free-brands-svg-icons'
 import {
   faCalendar,
   faClock,
+  faFileLines,
   faHandPointer,
   faTrashCan,
 } from '@fortawesome/free-regular-svg-icons'
@@ -114,7 +114,7 @@ function MicroLearningElement({
         color="bg-primary-100"
         className="text-white"
         status={t('shared.generic.template')}
-        icon={faWpforms}
+        icon={faFileLines}
       />
     ),
   }

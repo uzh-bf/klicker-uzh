@@ -47,7 +47,7 @@ function SharingRequestApprovalModal({
       <div>
         {t('manage.catalog.specifyObjectPermissionLevel', {
           objectName: request.objectName,
-          objectType: t(`manage.catalog.objectType${request.objectType}`),
+          objectType: t(`shared.types.${request.objectType}`),
           userShortname: request.userShortname,
         })}
       </div>

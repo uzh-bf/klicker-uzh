@@ -1,6 +1,10 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faWpforms } from '@fortawesome/free-brands-svg-icons'
-import { faClock, faCopy, faFile } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faCopy,
+  faFile,
+  faFileLines,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   IconDefinition,
   faArrowUpRightFromSquare,
@@ -157,7 +161,7 @@ function LiveQuiz({
     [PublicationStatus.Published]: faPlay,
     [PublicationStatus.Ended]: faCheck,
     [PublicationStatus.Graded]: faCheck,
-    [PublicationStatus.Template]: faWpforms,
+    [PublicationStatus.Template]: faFileLines,
   }
   const timeStamp: Record<PublicationStatus, string | null> = {
     [PublicationStatus.Draft]: quiz.createdAt,
