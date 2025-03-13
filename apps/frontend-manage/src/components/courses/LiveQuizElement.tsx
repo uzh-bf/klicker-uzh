@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faWpforms } from '@fortawesome/free-brands-svg-icons'
 import { faClock, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
@@ -82,6 +83,14 @@ function LiveQuizElement({ quiz }: { quiz: LiveQuizListElementType }) {
         color="bg-green-300"
         status={t('shared.generic.completed')}
         icon={faCheck}
+      />
+    ),
+    [PublicationStatus.Template]: (
+      <StatusTag
+        color="bg-primary-100"
+        className="text-white"
+        status={t('shared.generic.template')}
+        icon={faWpforms}
       />
     ),
     [PublicationStatus.Graded]: null,

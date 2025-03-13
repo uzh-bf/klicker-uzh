@@ -38,6 +38,9 @@ export default {
     READY: {
       statusLabel: 'Ready',
     },
+    TEMPLATE: {
+      statusLabel: 'Template',
+    },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',

@@ -7,8 +7,9 @@ const sortingOrderLiveQuizzes: Record<PublicationStatus, number> = {
   [PublicationStatus.Published]: 0,
   [PublicationStatus.Scheduled]: 1,
   [PublicationStatus.Draft]: 2,
-  [PublicationStatus.Ended]: 3,
-  [PublicationStatus.Graded]: 4,
+  [PublicationStatus.Template]: 3,
+  [PublicationStatus.Ended]: 4,
+  [PublicationStatus.Graded]: 5,
 }
 
 function LiveQuizList({
