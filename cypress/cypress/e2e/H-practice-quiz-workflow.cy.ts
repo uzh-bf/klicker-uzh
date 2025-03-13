@@ -214,7 +214,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${this.data.running.name}"]`).contains(
       messages.shared.generic.draft
@@ -328,7 +328,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check on the course overview if the updated practice quiz is visible
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${this.data.running.nameNew}"]`).contains(
       messages.shared.generic.draft

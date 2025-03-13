@@ -2,8 +2,11 @@ import messages from '../../../packages/i18n/messages/en'
 
 describe('Different live-quiz workflows', function () {
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('F-live-quiz.json').then((data) => {
-      this.data = data
+    cy.fixture('questions.json').then((questionData) => {
+      this.data = questionData
+    })
+    cy.fixture('F-live-quiz.json').then((liveQuizData) => {
+      this.data = { ...this.data, ...liveQuizData }
     })
   })
 
@@ -386,7 +389,9 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
 
-    cy.contains('[data-cy="live-quiz-block"]', this.data.course1.quiz.name)
+    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.name}"]`).should(
+      'exist'
+    )
     cy.get(`[data-cy="edit-live-quiz-${this.data.course1.quiz.name}"]`).click()
     cy.get('[data-cy="insert-live-quiz-name"]').should(
       'have.value',
@@ -543,8 +548,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     //  start editing again and check if correct values were saved
-    cy.get('[data-cy="load-live-quiz-list"]').click()
-    cy.contains('[data-cy="live-quiz-block"]', this.data.course1.quiz.nameNew)
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
+      'exist'
+    )
     cy.get(
       `[data-cy="edit-live-quiz-${this.data.course1.quiz.nameNew}"]`
     ).click()
@@ -616,7 +623,9 @@ describe('Different live-quiz workflows', function () {
   it('Duplicate the live quiz', function () {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.contains('[data-cy="live-quiz-block"]', this.data.course1.quiz.nameNew)
+    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
+      'exist'
+    )
 
     // duplicate the live quiz and verify that the content is the same as for the original live quiz
     cy.get(
@@ -645,8 +654,10 @@ describe('Different live-quiz workflows', function () {
       .should('exist')
       .should('contain', this.data.SC1.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-live-quiz-list"]').click()
-    cy.contains('[data-cy="live-quiz-block"]', this.data.course1.quiz.nameDupl)
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameDupl}"]`).should(
+      'exist'
+    )
   })
 
   it('Cleanup: Delete the duplicated live quiz', function () {
@@ -675,7 +686,9 @@ describe('Different live-quiz workflows', function () {
   it('Start the created live quizzes, abort it, and restart & complete it', function () {
     cy.loginLecturer()
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.contains('[data-cy="live-quiz-block"]', this.data.course1.quiz.nameNew)
+    cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
+      'exist'
+    )
 
     // start live quiz and then abort it
     cy.get(
@@ -830,8 +843,10 @@ describe('Different live-quiz workflows', function () {
       type: 'block',
     })
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-live-quiz-list"]').click()
-    cy.get('[data-cy="live-quiz"]').contains(this.data.course2.quiz.name)
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(`[data-cy="live-quiz-${this.data.course2.quiz.name}"]`).should(
+      'exist'
+    )
 
     // start live quiz and first block
     cy.get(`[data-cy="start-live-quiz-${this.data.course2.quiz.name}"]`).click()

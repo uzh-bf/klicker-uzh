@@ -241,7 +241,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(this.data.activity.name).should('exist')
   })
@@ -453,7 +453,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(this.data.running.name).should('exist')
   })

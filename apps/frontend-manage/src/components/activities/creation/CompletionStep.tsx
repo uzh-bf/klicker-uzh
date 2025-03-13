@@ -57,7 +57,7 @@ function CompletionStep({
         )}
 
         <Link href={viewElementHref}>
-          <Button data={{ cy: 'load-live-quiz-list' }}>
+          <Button data={{ cy: 'open-activity-overview' }}>
             <Button.Icon icon={faList} />
             <Button.Label>
               {t('manage.activityWizard.openOverview')}

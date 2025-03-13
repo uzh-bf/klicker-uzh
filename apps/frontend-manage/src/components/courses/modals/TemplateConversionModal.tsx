@@ -93,6 +93,7 @@ function TemplateConversionModal({
       open={open}
       onClose={handleModalClose}
       className={{ content: 'gap-2' }}
+      dataCloseButton={{ cy: 'close-template-conversion-modal' }}
     >
       <Formik
         validateOnMount
@@ -184,6 +185,7 @@ function TemplateConversionModal({
                     <Button
                       primary={values.conversionType === 'convert'}
                       onClick={() => setFieldValue('conversionType', 'convert')}
+                      data={{ cy: 'convert-option-template' }}
                     >
                       <div className="flex items-center justify-center gap-2">
                         <FontAwesomeIcon icon={faArrowsRotate} />
@@ -193,6 +195,7 @@ function TemplateConversionModal({
                     <Button
                       primary={values.conversionType === 'copy'}
                       onClick={() => setFieldValue('conversionType', 'copy')}
+                      data={{ cy: 'copy-option-template' }}
                     >
                       <div className="flex items-center justify-center gap-2">
                         <FontAwesomeIcon icon={faCopy} />
@@ -297,7 +300,7 @@ function TemplateConversionModal({
                       type="submit"
                       disabled={!isValid}
                       loading={isSubmitting}
-                      data={{ cy: 'submit-template-conversion' }}
+                      data={{ cy: 'submit-template-creation' }}
                     >
                       <Button.Icon icon={faSave} loading={isSubmitting} />
                       <Button.Label>

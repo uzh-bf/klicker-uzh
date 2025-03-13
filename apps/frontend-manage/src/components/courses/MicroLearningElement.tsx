@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faWpforms } from '@fortawesome/free-brands-svg-icons'
 import {
   faCalendar,
   faClock,
@@ -108,6 +109,14 @@ function MicroLearningElement({
       />
     ),
     [PublicationStatus.Graded]: null,
+    [PublicationStatus.Template]: (
+      <StatusTag
+        color="bg-primary-100"
+        className="text-white"
+        status={t('shared.generic.template')}
+        icon={faWpforms}
+      />
+    ),
   }
 
   const deletionElement = {

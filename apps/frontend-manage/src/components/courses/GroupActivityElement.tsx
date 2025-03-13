@@ -1,3 +1,4 @@
+import { faWpforms } from '@fortawesome/free-brands-svg-icons'
 import { faHandPointer, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
@@ -107,6 +108,14 @@ function GroupActivityElement({
             ? faCheck
             : faArrowsRotate
         }
+      />
+    ),
+    [PublicationStatus.Template]: (
+      <StatusTag
+        color="bg-primary-100"
+        className="text-white"
+        status={t('shared.generic.template')}
+        icon={faWpforms}
       />
     ),
   }
