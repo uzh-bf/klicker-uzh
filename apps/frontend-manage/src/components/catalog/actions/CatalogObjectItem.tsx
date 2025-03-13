@@ -18,6 +18,7 @@ import {
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
@@ -43,6 +44,7 @@ function CatalogObjectItem({
   managedAccess: boolean
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const objectTypeIcons: Record<CatalogObjectType, IconDefinition> = {
     [CatalogObjectType.AnswerCollection]: faList,
     [CatalogObjectType.CatalogCollection]: faFolder,
@@ -91,9 +93,18 @@ function CatalogObjectItem({
           )
             return
 
-          object.access === ObjectAccess.Public
-            ? setImportModal(true)
-            : setRequestModal(true)
+          if (object.access === ObjectAccess.Public) {
+            if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
+              // primary action for public templates: create activity with template
+              router.push(`/template/${object.uuid}`)
+            } else {
+              // primary action for public objects: import a copy
+              setImportModal(true)
+            }
+          } else {
+            // primary action for restricted objects: request access
+            setRequestModal(true)
+          }
         }}
         data-cy={`catalog-object-${object.name}`}
       >

@@ -2234,6 +2234,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noObjectsFoundInCatalog:
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
+      useTemplate: 'Vorlage verwenden',
       importObject: 'Objekt importieren',
       importObjectType: '{object} importieren',
       accessRequested: 'Zugriff beantragt',
