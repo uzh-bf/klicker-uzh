@@ -298,7 +298,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // navigate to list of microlearnings and check status
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
   })
 
   it('Edit the running microlearnings content', function () {
@@ -418,7 +418,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // go to microlearning list and check if it exists in draft state
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${this.data.running.nameNew}"]`).contains(
       messages.shared.generic.draft
@@ -484,7 +484,7 @@ describe('Different microlearning workflows', function () {
     )
     cy.get('[data-cy="close-stack-description"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${this.data.running.nameNew}"]`).contains(
       messages.shared.generic.draft
@@ -573,7 +573,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // go to microlearning list and check if it exists in draft state
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${this.data.duplication.name}"]`).contains(
       messages.shared.generic.draft
@@ -594,7 +594,7 @@ describe('Different microlearning workflows', function () {
     })
 
     // check if creation was successful
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(`[data-cy="microlearning-${this.data.future.name}"]`).contains(
       messages.shared.generic.draft
@@ -1403,7 +1403,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the practice quiz is listed in the course overview
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(`[data-cy="practice-quiz-${this.data.conversion.pqName}"]`).contains(
       messages.shared.generic.draft

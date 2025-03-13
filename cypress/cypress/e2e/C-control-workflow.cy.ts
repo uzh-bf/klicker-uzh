@@ -31,7 +31,7 @@ describe('Test functionalities of frontend-control application', function () {
     })
 
     // check if the creation was successful
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(`[data-cy="live-quiz-${this.data.quizName}"]`).should('exist')
   })
 

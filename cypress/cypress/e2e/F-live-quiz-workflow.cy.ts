@@ -548,7 +548,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     //  start editing again and check if correct values were saved
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameNew}"]`).should(
       'exist'
     )
@@ -654,7 +654,7 @@ describe('Different live-quiz workflows', function () {
       .should('exist')
       .should('contain', this.data.SC1.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(`[data-cy="live-quiz-${this.data.course1.quiz.nameDupl}"]`).should(
       'exist'
     )
@@ -843,7 +843,7 @@ describe('Different live-quiz workflows', function () {
       type: 'block',
     })
     cy.get('[data-cy="next-or-submit"]').click()
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(`[data-cy="live-quiz-${this.data.course2.quiz.name}"]`).should(
       'exist'
     )
