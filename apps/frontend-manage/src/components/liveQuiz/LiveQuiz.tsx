@@ -128,6 +128,9 @@ function LiveQuiz({
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [qrModalOpen, setQrModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
+  const [editTemplateModal, setEditTemplateModal] = useState<boolean>(false)
+  const [deletionTemplateModal, setDeletionTemplateModal] =
+    useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
   const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
   const [templateCreationError, setTemplateCreationError] = useState(false)
@@ -318,7 +321,7 @@ function LiveQuiz({
             </div>
           }
           primary={
-            <div className="float-right flex flex-row gap-1">
+            <div className="float-right flex flex-row gap-2">
               {quiz.status !== PublicationStatus.Template && (
                 <Button
                   className={{ root: 'px-3 py-1 text-sm' }}
@@ -395,6 +398,35 @@ function LiveQuiz({
                     {t('manage.liveQuizzes.deleteLiveQuiz')}
                   </Button.Label>
                 </Button>
+              )}
+              {quiz.status === PublicationStatus.Template && (
+                <>
+                  <Button
+                    className={{ root: 'px-3 py-1 text-sm' }}
+                    onClick={() => setEditTemplateModal(true)}
+                    data={{ cy: `edit-template-${quiz.name}` }}
+                  >
+                    <Button.Icon icon={faPencil} />
+                    <Button.Label>
+                      {t('manage.template.editTemplate')}
+                    </Button.Label>
+                  </Button>
+                  <Button
+                    className={{
+                      root: 'border-red-600 px-3 py-1 text-sm',
+                    }}
+                    onClick={() => setDeletionTemplateModal(true)}
+                    data={{ cy: `delete-template-${quiz.name}` }}
+                  >
+                    <Button.Icon
+                      icon={faTrash}
+                      className={{ root: 'text-red-600' }}
+                    />
+                    <Button.Label>
+                      {t('manage.template.deleteTemplate')}
+                    </Button.Label>
+                  </Button>
+                </>
               )}
             </div>
           }
@@ -474,6 +506,8 @@ function LiveQuiz({
           open={changeName}
           setOpen={setChangeName}
         />
+        {/* // TODO: add template deletion modal including success and error toasts */}
+        {/* // TODO: add template edit modal (for name, description and instructions editing) including success and error toasts */}
 
         <TemplateConversionModal
           open={conversionModal.open}

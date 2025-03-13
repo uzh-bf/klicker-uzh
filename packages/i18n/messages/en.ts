@@ -1532,6 +1532,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       instructionsRequired: 'Instructions are required',
       templateCreationSuccess: 'Template was successfully created',
       templateCreationError: 'Template could not be created',
+      deleteTemplate: 'Delete template',
+      editTemplate: 'Edit template',
     },
     formErrors: {
       resolveErrors:

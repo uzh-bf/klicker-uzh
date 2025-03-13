@@ -1547,6 +1547,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       instructionsRequired: 'Anweisungen sind erforderlich',
       templateCreationSuccess: 'Vorlage wurde erfolgreich erstellt',
       templateCreationError: 'Vorlage konnte nicht erstellt werden',
+      deleteTemplate: 'Vorlage löschen',
+      editTemplate: 'Vorlage bearbeiten',
     },
     formErrors: {
       resolveErrors:

@@ -293,6 +293,7 @@ function TemplateConversionModal({
                   />
                   <EditorField
                     required
+                    showToolbarOnFocus={false}
                     fieldName="description"
                     label={t('shared.generic.description')}
                     placeholder={t('manage.template.descriptionPlaceholder')}
@@ -300,6 +301,7 @@ function TemplateConversionModal({
                   />
                   <EditorField
                     required
+                    showToolbarOnFocus={false}
                     fieldName="instructions"
                     label={t('shared.generic.instructions')}
                     placeholder={t('manage.template.instructionsPlaceholder')}
