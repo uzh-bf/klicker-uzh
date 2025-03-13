@@ -25,4 +25,4 @@ packages/prisma/src/seed
 out/
 !out/.gitkeep
 .rollup.cache/
-.scratchpad.md
+scratchpad.md
