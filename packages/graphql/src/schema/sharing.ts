@@ -156,4 +156,22 @@ export const ActivityTemplateInfo = ActivityTemplateInfoRef.implement({
   }),
 })
 
+interface IActivityTemplateMetadata {
+  templateId: string
+  name: string
+  description: string
+  instructions: string
+}
+
+export const ActivityTemplateMetadataRef =
+  builder.objectRef<IActivityTemplateMetadata>('ActivityTemplateMetadata')
+export const ActivityTemplateMetadata = ActivityTemplateMetadataRef.implement({
+  fields: (t) => ({
+    templateId: t.exposeString('templateId'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description'),
+    instructions: t.exposeString('instructions'),
+  }),
+})
+
 // #endregion

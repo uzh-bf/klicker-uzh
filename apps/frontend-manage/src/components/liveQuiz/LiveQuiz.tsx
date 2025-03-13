@@ -36,6 +36,12 @@ import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../courses/modals/TemplateConversionModal'
 import TemplateCreationErrorToast from '../courses/modals/TemplateCreationErrorToast'
 import TemplateCreationSuccessToast from '../courses/modals/TemplateCreationSuccessToast'
+import TemplateDeletionErrorToast from '../courses/modals/TemplateDeletionErrorToast'
+import TemplateDeletionModal from '../courses/modals/TemplateDeletionModal'
+import TemplateDeletionSuccessToast from '../courses/modals/TemplateDeletionSuccessToast'
+import TemplateEditErrorToast from '../courses/modals/TemplateEditErrorToast'
+import TemplateEditModal from '../courses/modals/TemplateEditModal'
+import TemplateEditSuccessToast from '../courses/modals/TemplateEditSuccessToast'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
 import LiveQuizQRModal from './cockpit/LiveQuizQRModal'
@@ -128,9 +134,16 @@ function LiveQuiz({
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [qrModalOpen, setQrModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
+  const [editTemplateModal, setEditTemplateModal] = useState<boolean>(false)
+  const [deletionTemplateModal, setDeletionTemplateModal] =
+    useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
   const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
   const [templateCreationError, setTemplateCreationError] = useState(false)
+  const [templateEditSuccess, setTemplateEditSuccess] = useState(false)
+  const [templateEditError, setTemplateEditError] = useState(false)
+  const [templateDeletionSuccess, setTemplateDeletionSuccess] = useState(false)
+  const [templateDeletionError, setTemplateDeletionError] = useState(false)
 
   const [conversionModal, setConversionModal] = useState<{
     open: boolean
@@ -318,7 +331,7 @@ function LiveQuiz({
             </div>
           }
           primary={
-            <div className="float-right flex flex-row gap-1">
+            <div className="float-right flex flex-row gap-2">
               {quiz.status !== PublicationStatus.Template && (
                 <Button
                   className={{ root: 'px-3 py-1 text-sm' }}
@@ -395,6 +408,35 @@ function LiveQuiz({
                     {t('manage.liveQuizzes.deleteLiveQuiz')}
                   </Button.Label>
                 </Button>
+              )}
+              {quiz.status === PublicationStatus.Template && (
+                <>
+                  <Button
+                    className={{ root: 'px-3 py-1 text-sm' }}
+                    onClick={() => setEditTemplateModal(true)}
+                    data={{ cy: `edit-template-${quiz.name}` }}
+                  >
+                    <Button.Icon icon={faPencil} />
+                    <Button.Label>
+                      {t('manage.template.editTemplate')}
+                    </Button.Label>
+                  </Button>
+                  <Button
+                    className={{
+                      root: 'border-red-600 px-3 py-1 text-sm',
+                    }}
+                    onClick={() => setDeletionTemplateModal(true)}
+                    data={{ cy: `delete-template-${quiz.name}` }}
+                  >
+                    <Button.Icon
+                      icon={faTrash}
+                      className={{ root: 'text-red-600' }}
+                    />
+                    <Button.Label>
+                      {t('manage.template.deleteTemplate')}
+                    </Button.Label>
+                  </Button>
+                </>
               )}
             </div>
           }
@@ -474,6 +516,22 @@ function LiveQuiz({
           open={changeName}
           setOpen={setChangeName}
         />
+        <TemplateDeletionModal
+          activityId={quiz.id}
+          activityType={ActivityType.LiveQuiz}
+          open={deletionTemplateModal}
+          setOpen={setDeletionTemplateModal}
+          onSuccess={() => setTemplateDeletionSuccess(true)}
+          onError={() => setTemplateDeletionError(true)}
+        />
+        <TemplateEditModal
+          activityId={quiz.id}
+          activityType={ActivityType.LiveQuiz}
+          open={editTemplateModal}
+          setOpen={setEditTemplateModal}
+          onSuccess={() => setTemplateEditSuccess(true)}
+          onError={() => setTemplateEditError(true)}
+        />
 
         <TemplateConversionModal
           open={conversionModal.open}
@@ -490,6 +548,22 @@ function LiveQuiz({
         <TemplateCreationErrorToast
           open={templateCreationError}
           onClose={() => setTemplateCreationError(false)}
+        />
+        <TemplateEditSuccessToast
+          open={templateEditSuccess}
+          onClose={() => setTemplateEditSuccess(false)}
+        />
+        <TemplateEditErrorToast
+          open={templateEditError}
+          onClose={() => setTemplateEditError(false)}
+        />
+        <TemplateDeletionSuccessToast
+          open={templateDeletionSuccess}
+          onClose={() => setTemplateDeletionSuccess(false)}
+        />
+        <TemplateDeletionErrorToast
+          open={templateDeletionError}
+          onClose={() => setTemplateDeletionError(false)}
         />
       </div>
     </>
