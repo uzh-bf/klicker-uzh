@@ -25,12 +25,12 @@ function UnpublishMicroLearningButton({
   return (
     <Button
       basic
-      disabled={unpublishing}
+      loading={unpublishing}
       className={{ root: 'text-primary-100' }}
       onClick={async () => await unpublishMicrolearning()}
       data={{ cy: `unpublish-microlearning-${microLearning.name}` }}
     >
-      <Button.Icon icon={faLock} />
+      <Button.Icon icon={faLock} loading={unpublishing} />
       <Button.Label>{t('manage.course.unpublishMicrolearning')}</Button.Label>
     </Button>
   )

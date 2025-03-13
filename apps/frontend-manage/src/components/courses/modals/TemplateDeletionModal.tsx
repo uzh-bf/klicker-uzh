@@ -71,7 +71,7 @@ function TemplateDeletionModal({
           loading={deleting}
           data={{ cy: 'confirm-template-deletion' }}
         >
-          <Button.Icon icon={faTrash} />
+          <Button.Icon icon={faTrash} loading={deleting} />
           <Button.Label>{t('manage.template.deleteTemplate')}</Button.Label>
         </Button>
       </div>

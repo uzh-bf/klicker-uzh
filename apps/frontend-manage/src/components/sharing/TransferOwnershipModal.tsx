@@ -111,10 +111,11 @@ function TransferOwnershipModal({
                   <Button
                     primary
                     type="submit"
-                    disabled={isSubmitting || transferring || !isValid}
+                    disabled={transferring || !isValid}
+                    loading={isSubmitting}
                     data={{ cy: 'confirm-ownership-transfer' }}
                   >
-                    <Button.Icon icon={faExchangeAlt} />
+                    <Button.Icon icon={faExchangeAlt} loading={isSubmitting} />
                     <Button.Label>
                       {t('manage.sharing.confirmTransferOwnership')}
                     </Button.Label>

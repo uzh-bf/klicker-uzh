@@ -32,7 +32,7 @@ function SharingRequestApprovalModal({
     type: request.objectType,
   })
 
-  const [approveObjectSharingRequest, { loading: approvaLoading }] =
+  const [approveObjectSharingRequest, { loading: approvalLoading }] =
     useMutation(ApproveObjectSharingRequestDocument)
 
   return (
@@ -74,7 +74,7 @@ function SharingRequestApprovalModal({
         </Button>
         <Button
           primary
-          loading={approvaLoading}
+          loading={approvalLoading}
           className={{ root: 'h-8 py-0' }}
           data={{ cy: 'confirm-approval' }}
           onClick={async (e) => {
@@ -140,7 +140,7 @@ function SharingRequestApprovalModal({
             }
           }}
         >
-          <Button.Icon icon={faCheck} />
+          <Button.Icon icon={faCheck} loading={approvalLoading} />
           <Button.Label>{t('shared.generic.approve')}</Button.Label>
         </Button>
       </div>

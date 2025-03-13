@@ -295,10 +295,11 @@ function TemplateConversionModal({
                     <Button
                       primary
                       type="submit"
-                      disabled={isSubmitting || !isValid}
+                      disabled={!isValid}
+                      loading={isSubmitting}
                       data={{ cy: 'submit-template-conversion' }}
                     >
-                      <Button.Icon icon={faSave} />
+                      <Button.Icon icon={faSave} loading={isSubmitting} />
                       <Button.Label>
                         {t('manage.template.createTemplate')}
                       </Button.Label>

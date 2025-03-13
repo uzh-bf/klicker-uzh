@@ -117,7 +117,7 @@ function AddAnswerCollectionEntry({
             loading={isSubmitting}
             data={{ cy: 'save-new-answer-option' }}
           >
-            <Button.Icon icon={faSave} />
+            <Button.Icon icon={faSave} loading={isSubmitting} />
             <Button.Label>{t('shared.generic.save')}</Button.Label>
           </Button>
         </Form>

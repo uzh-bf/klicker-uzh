@@ -172,9 +172,7 @@ function AddObjectToCatalogModal({
               <Button
                 primary
                 type="submit"
-                disabled={
-                  !isValid || !dirty || isSubmitting || !values.objectId
-                }
+                disabled={!isValid || !dirty || !values.objectId}
                 data={{ cy: 'submit-add-object-button' }}
                 loading={isSubmitting}
               >

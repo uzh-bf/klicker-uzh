@@ -87,7 +87,7 @@ function CatalogCollectionDeletionModal({
             }}
             data={{ cy: 'confirm-delete-collection' }}
           >
-            {t('manage.catalog.deleteConfirm')}
+            <Button.Label>{t('manage.catalog.deleteConfirm')}</Button.Label>
           </Button>
         </div>
       </Modal>

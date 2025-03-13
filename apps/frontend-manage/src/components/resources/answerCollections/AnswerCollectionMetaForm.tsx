@@ -79,7 +79,7 @@ function AnswerCollectionMetaForm({
             }}
             data={{ cy: 'save-changes-answer-collection' }}
           >
-            <Button.Icon icon={faSave} />
+            <Button.Icon icon={faSave} loading={isSubmitting} />
             <Button.Label>{t('manage.resources.saveChanges')}</Button.Label>
           </Button>
         </Form>

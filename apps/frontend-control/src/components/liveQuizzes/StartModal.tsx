@@ -82,7 +82,7 @@ function StartModal({
             cy: 'confirm-start-live-quiz',
           }}
         >
-          {t('shared.generic.start')}
+          <Button.Label>{t('shared.generic.start')}</Button.Label>
         </Button>
       }
       onSecondaryAction={

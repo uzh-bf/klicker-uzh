@@ -38,7 +38,7 @@ function LinkButton({
         data={data}
         disabled={disabled}
       >
-        {icon && <Button.Icon icon={icon} />}
+        {icon && <Button.Icon icon={icon} loading={props?.loading} />}
         <Button.Label className={{ root: 'flex-1 text-left' }}>
           {children}
         </Button.Label>

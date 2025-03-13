@@ -166,7 +166,7 @@ function RunningLiveQuiz() {
               }}
               data={{ cy: 'deactivate-block' }}
             >
-              {t('control.liveQuiz.closeBlock')}
+              <Button.Label>{t('control.liveQuiz.closeBlock')}</Button.Label>
             </Button>
           </div>
         ) : nextBlockOrder !== -1 ? (
@@ -210,9 +210,11 @@ function RunningLiveQuiz() {
               }}
               data={{ cy: 'activate-next-block' }}
             >
-              {t('control.liveQuiz.activateBlockN', {
-                number: nextBlockOrder + 1,
-              })}
+              <Button.Label>
+                {t('control.liveQuiz.activateBlockN', {
+                  number: nextBlockOrder + 1,
+                })}
+              </Button.Label>
             </Button>
           </div>
         ) : (
@@ -235,7 +237,7 @@ function RunningLiveQuiz() {
               }}
               data={{ cy: 'end-live-quiz' }}
             >
-              {t('control.liveQuiz.endQuiz')}
+              <Button.Label>{t('control.liveQuiz.endQuiz')}</Button.Label>
             </Button>
           </div>
         )}

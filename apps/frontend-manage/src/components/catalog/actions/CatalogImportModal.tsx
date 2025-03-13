@@ -88,7 +88,7 @@ function CatalogImportModal({
             }}
             data={{ cy: 'confirm-object-import' }}
           >
-            <Button.Icon icon={faCopy} />
+            <Button.Icon icon={faCopy} loading={importing} />
             <Button.Label>
               {t('manage.catalog.importObjectType', {
                 object: t(`shared.types.${objectType}`),

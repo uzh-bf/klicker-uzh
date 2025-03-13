@@ -60,12 +60,16 @@ function WizardNavigation({
       </div>
       <Button
         primary={lastStep}
-        disabled={isSubmitting || !stepValidity[activeStep] || continueDisabled}
+        disabled={!stepValidity[activeStep] || continueDisabled}
+        loading={isSubmitting}
         type="submit"
         data={{ cy: 'next-or-submit' }}
         className={{ root: 'h-8 w-max' }}
       >
-        <Button.Icon icon={lastStep ? faSave : faArrowRight} />
+        <Button.Icon
+          icon={lastStep ? faSave : faArrowRight}
+          loading={isSubmitting}
+        />
         <Button.Label>
           {lastStep
             ? editMode
