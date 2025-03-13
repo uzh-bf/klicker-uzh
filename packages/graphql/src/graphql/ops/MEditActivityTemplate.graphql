@@ -1,0 +1,17 @@
+mutation EditActivityTemplate(
+  $activityId: String!
+  $activityType: ActivityType!
+  $templateId: String!
+  $name: String!
+  $description: String!
+  $instructions: String!
+) {
+  editActivityTemplate(
+    activityId: $activityId
+    activityType: $activityType
+    templateId: $templateId
+    name: $name
+    description: $description
+    instructions: $instructions
+  )
+}

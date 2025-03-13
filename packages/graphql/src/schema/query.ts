@@ -67,6 +67,7 @@ import {
 import { AnswerCollection } from './resource.js'
 import {
   ActivityTemplateInfo,
+  ActivityTemplateMetadata,
   CatalogCollection,
   CatalogObject,
   CatalogObjectType,
@@ -926,6 +927,18 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return SharingService.checkTemplateInfoAvailable(args, ctx)
+        },
+      }),
+
+      getTemplateInformation: asUser.field({
+        nullable: true,
+        type: ActivityTemplateMetadata,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.getTemplateInformation(args, ctx)
         },
       }),
 

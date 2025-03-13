@@ -15,7 +15,6 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
-  FormikTextField,
   FormLabel,
   Modal,
   UserNotification,
@@ -24,8 +23,8 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
-import EditorField from '../../activities/creation/EditorField'
 import ConfirmationItem from '../../common/ConfirmationItem'
+import TemplateFormFields from './TemplateFormFields'
 
 interface TemplateConversionModalProps {
   open: boolean
@@ -285,28 +284,9 @@ function TemplateConversionModal({
                   <div className="text-gray-600">
                     {t('manage.template.templateInformationDescription')}
                   </div>
-                  <FormikTextField
-                    required
-                    name="name"
-                    label={t('shared.generic.name')}
-                    tooltip={t('manage.template.nameTooltip')}
-                  />
-                  <EditorField
-                    required
-                    showToolbarOnFocus={false}
-                    fieldName="description"
-                    label={t('shared.generic.description')}
-                    placeholder={t('manage.template.descriptionPlaceholder')}
-                    tooltip={t('manage.template.descriptionTooltip')}
-                  />
-                  <EditorField
-                    required
-                    showToolbarOnFocus={false}
-                    fieldName="instructions"
-                    label={t('shared.generic.instructions')}
-                    placeholder={t('manage.template.instructionsPlaceholder')}
-                    tooltip={t('manage.template.instructionsTooltip')}
-                  />
+
+                  <TemplateFormFields />
+
                   <div className="mt-4 flex justify-between">
                     <Button onClick={() => setCurrentStep(0)}>
                       <Button.Icon icon={faArrowLeft} />

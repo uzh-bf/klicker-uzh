@@ -1549,6 +1549,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       templateCreationError: 'Vorlage konnte nicht erstellt werden',
       deleteTemplate: 'Vorlage löschen',
       editTemplate: 'Vorlage bearbeiten',
+      templateEditSuccess: 'Vorlage erfolgreich aktualisiert',
+      templateEditError: 'Fehler beim Aktualisieren der Vorlage',
+      templateDeletionSuccess: 'Vorlage erfolgreich gelöscht',
+      templateDeletionError: 'Fehler beim Löschen der Vorlage',
+      deleteTemplateExplanation:
+        'Bitte bestätigen Sie, dass Sie die ausgewählte Vorlage löschen möchten. Sie wird dadurch auch automatisch aus allen Katalog-Sammlungen entfernt und kann nicht mehr durch andere Nutzer eingesetzt werden.',
+      editTemplateDescription:
+        'Editieren Sie alle Metainformationen der Aktivitätsvorlage, die Sie ändern möchten. Änderungen werden nach dem Speichern sofort wirksam und allen Benutzern der Vorlage angezeigt.',
+      saveChanges: 'Änderungen speichern',
     },
     formErrors: {
       resolveErrors:

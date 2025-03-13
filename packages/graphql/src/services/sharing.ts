@@ -160,6 +160,132 @@ async function verifyCatalogObjectEditPermissions(
 
   return sufficientPermissions
 }
+
+async function validateActivityPermissions(
+  {
+    activityId,
+    activityType,
+    acceptedPermissionLevels,
+  }: {
+    activityId: string
+    activityType: ActivityType
+    acceptedPermissionLevels: DB.PermissionLevel[]
+  },
+  ctx: ContextWithUser
+) {
+  let valid = false
+  let activity:
+    | DB.LiveQuiz
+    | DB.PracticeQuiz
+    | DB.MicroLearning
+    | DB.GroupActivity
+    | null = null
+
+  if (activityType === ActivityType.LIVE_QUIZ) {
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: {
+        id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: { in: acceptedPermissionLevels },
+              },
+            },
+          },
+        ],
+      },
+    })
+
+    if (liveQuiz) {
+      valid = true
+      activity = liveQuiz
+    }
+  } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+    const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+      where: {
+        id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: { in: acceptedPermissionLevels },
+              },
+            },
+          },
+        ],
+      },
+    })
+
+    if (practiceQuiz) {
+      valid = true
+      activity = practiceQuiz
+    }
+  } else if (activityType === ActivityType.MICRO_LEARNING) {
+    const microLearning = await ctx.prisma.microLearning.findUnique({
+      where: {
+        id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: { in: acceptedPermissionLevels },
+              },
+            },
+          },
+        ],
+      },
+    })
+
+    if (microLearning) {
+      valid = true
+      activity = microLearning
+    }
+  } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+    const groupActivity = await ctx.prisma.groupActivity.findUnique({
+      where: {
+        id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: { in: acceptedPermissionLevels },
+              },
+            },
+          },
+        ],
+      },
+    })
+
+    if (groupActivity) {
+      valid = true
+      activity = groupActivity
+    }
+  }
+
+  return { valid, activity }
+}
+
 // #endregion
 
 // ! Catalog Collection Operations
@@ -3312,84 +3438,414 @@ export async function createActivityTemplate(
       return true
     }
   } else {
-    // create new template with the provided information
-    const template = await ctx.prisma.activityTemplate.create({
-      data: {
-        description: templateDescription,
-        instructions: templateInstructions,
+    // create new template with the provided information and update activity status in a transaction
+    const template = await ctx.prisma.$transaction(async (tx) => {
+      const newTemplate = await tx.activityTemplate.create({
+        data: {
+          description: templateDescription,
+          instructions: templateInstructions,
 
-        // link to activity
-        liveQuiz:
-          activityType === ActivityType.LIVE_QUIZ
-            ? { connect: { id: activityId } }
-            : undefined,
-        practiceQuiz:
-          activityType === ActivityType.PRACTICE_QUIZ
-            ? { connect: { id: activityId } }
-            : undefined,
-        microLearning:
-          activityType === ActivityType.MICRO_LEARNING
-            ? { connect: { id: activityId } }
-            : undefined,
-        groupActivity:
-          activityType === ActivityType.GROUP_ACTIVITY
-            ? { connect: { id: activityId } }
-            : undefined,
+          // link to activity
+          liveQuiz:
+            activityType === ActivityType.LIVE_QUIZ
+              ? { connect: { id: activityId } }
+              : undefined,
+          practiceQuiz:
+            activityType === ActivityType.PRACTICE_QUIZ
+              ? { connect: { id: activityId } }
+              : undefined,
+          microLearning:
+            activityType === ActivityType.MICRO_LEARNING
+              ? { connect: { id: activityId } }
+              : undefined,
+          groupActivity:
+            activityType === ActivityType.GROUP_ACTIVITY
+              ? { connect: { id: activityId } }
+              : undefined,
 
-        // connect template to required resources as well
-        answerCollections:
-          answerCollectionIds.length > 0
-            ? {
-                connect: answerCollectionIds.map((id) => ({ id })),
-              }
-            : undefined,
+          // connect template to required resources as well
+          answerCollections:
+            answerCollectionIds.length > 0
+              ? {
+                  connect: answerCollectionIds.map((id) => ({ id })),
+                }
+              : undefined,
+        },
+      })
+
+      // update the activity status to indicate that it has been converted to a template
+      if (activityType === ActivityType.LIVE_QUIZ) {
+        await tx.liveQuiz.update({
+          where: {
+            id: activityId,
+          },
+          data: {
+            name: templateName,
+            status: DB.PublicationStatus.TEMPLATE,
+          },
+        })
+      } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+        await tx.practiceQuiz.update({
+          where: {
+            id: activityId,
+          },
+          data: {
+            name: templateName,
+            status: DB.PublicationStatus.TEMPLATE,
+          },
+        })
+      } else if (activityType === ActivityType.MICRO_LEARNING) {
+        await tx.microLearning.update({
+          where: {
+            id: activityId,
+          },
+          data: {
+            name: templateName,
+            status: DB.PublicationStatus.TEMPLATE,
+          },
+        })
+      } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+        await tx.groupActivity.update({
+          where: {
+            id: activityId,
+          },
+          data: {
+            name: templateName,
+            status: DB.PublicationStatus.TEMPLATE,
+          },
+        })
+      }
+
+      return newTemplate
+    })
+
+    return true
+  }
+}
+
+export async function deleteActivityTemplate(
+  {
+    activityId,
+    activityType,
+  }: {
+    activityId: string
+    activityType: ActivityType
+  },
+  ctx: ContextWithUser
+) {
+  // validate that the user has sufficient permissions on the activity template
+  const { valid } = await validateActivityPermissions(
+    {
+      activityId,
+      activityType,
+      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return null
+  }
+
+  // delete the activity linked to the template (automatically deleting the template through cascading delete)
+  if (activityType === ActivityType.LIVE_QUIZ) {
+    const deletedLiveQuiz = await ctx.prisma.liveQuiz.delete({
+      where: {
+        id: activityId,
       },
     })
 
-    // update the activity status to indicate that it has been converted to a template
-    if (activityType === ActivityType.LIVE_QUIZ) {
-      await ctx.prisma.liveQuiz.update({
-        where: {
-          id: activityId,
-        },
-        data: {
-          name: templateName,
-          status: DB.PublicationStatus.TEMPLATE,
-        },
-      })
-    } else if (activityType === ActivityType.PRACTICE_QUIZ) {
-      await ctx.prisma.practiceQuiz.update({
-        where: {
-          id: activityId,
-        },
-        data: {
-          name: templateName,
-          status: DB.PublicationStatus.TEMPLATE,
-        },
-      })
-    } else if (activityType === ActivityType.MICRO_LEARNING) {
-      await ctx.prisma.microLearning.update({
-        where: {
-          id: activityId,
-        },
-        data: {
-          name: templateName,
-          status: DB.PublicationStatus.TEMPLATE,
-        },
-      })
-    } else if (activityType === ActivityType.GROUP_ACTIVITY) {
-      await ctx.prisma.groupActivity.update({
-        where: {
-          id: activityId,
-        },
-        data: {
-          name: templateName,
-          status: DB.PublicationStatus.TEMPLATE,
-        },
-      })
-    }
+    return deletedLiveQuiz.id
+  } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+    const deletedPracticeQuiz = await ctx.prisma.practiceQuiz.delete({
+      where: {
+        id: activityId,
+      },
+    })
 
+    return deletedPracticeQuiz.id
+  } else if (activityType === ActivityType.MICRO_LEARNING) {
+    const deletedMicroLearning = await ctx.prisma.microLearning.delete({
+      where: {
+        id: activityId,
+      },
+    })
+
+    return deletedMicroLearning.id
+  } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+    const deletedGroupActivity = await ctx.prisma.groupActivity.delete({
+      where: {
+        id: activityId,
+      },
+    })
+
+    return deletedGroupActivity.id
+  }
+
+  return null
+}
+
+export async function getTemplateInformation(
+  {
+    activityId,
+    activityType,
+  }: {
+    activityId: string
+    activityType: ActivityType
+  },
+  ctx: ContextWithUser
+) {
+  if (activityType === ActivityType.LIVE_QUIZ) {
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: {
+        id: activityId,
+        status: DB.PublicationStatus.TEMPLATE,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: {
+                  in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
+                },
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        templateInfo: true,
+      },
+    })
+
+    return liveQuiz && liveQuiz.templateInfo
+      ? {
+          ...liveQuiz.templateInfo,
+          templateId: liveQuiz.templateInfo.id,
+          name: liveQuiz.name,
+        }
+      : null
+  } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+    const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+      where: {
+        id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: {
+                  in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
+                },
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        templateInfo: true,
+      },
+    })
+
+    return practiceQuiz && practiceQuiz.templateInfo
+      ? {
+          ...practiceQuiz.templateInfo,
+          templateId: practiceQuiz.templateInfo.id,
+          name: practiceQuiz.name,
+        }
+      : null
+  } else if (activityType === ActivityType.MICRO_LEARNING) {
+    const microLearning = await ctx.prisma.microLearning.findUnique({
+      where: {
+        id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: {
+                  in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
+                },
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        templateInfo: true,
+      },
+    })
+
+    return microLearning && microLearning.templateInfo
+      ? {
+          ...microLearning.templateInfo,
+          templateId: microLearning.templateInfo.id,
+          name: microLearning.name,
+        }
+      : null
+  } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+    const groupActivity = await ctx.prisma.groupActivity.findUnique({
+      where: {
+        id: activityId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: {
+                  in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
+                },
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        templateInfo: true,
+      },
+    })
+
+    return groupActivity && groupActivity.templateInfo
+      ? {
+          ...groupActivity.templateInfo,
+          templateId: groupActivity.templateInfo.id,
+          name: groupActivity.name,
+        }
+      : null
+  }
+
+  return null
+}
+
+export async function editActivityTemplate(
+  {
+    activityId,
+    activityType,
+    templateId,
+    name,
+    description,
+    instructions,
+  }: {
+    activityId: string
+    activityType: ActivityType
+    templateId: string
+    name: string
+    description: string
+    instructions: string
+  },
+  ctx: ContextWithUser
+) {
+  const { valid, activity } = await validateActivityPermissions(
+    {
+      activityId,
+      activityType,
+      acceptedPermissionLevels: [
+        DB.PermissionLevel.ADMIN,
+        DB.PermissionLevel.WRITE,
+      ],
+    },
+    ctx
+  )
+
+  if (!valid) {
+    return false
+  }
+
+  try {
+    // update the metadata of the template and activity name in a transaction
+    const newTemplate = await ctx.prisma.$transaction(async (tx) => {
+      // update the template metadata
+      const updatedTemplate = await tx.activityTemplate.update({
+        where: {
+          id: templateId,
+          liveQuizId:
+            activityType === ActivityType.LIVE_QUIZ ? activityId : undefined,
+          practiceQuizId:
+            activityType === ActivityType.PRACTICE_QUIZ
+              ? activityId
+              : undefined,
+          microLearningId:
+            activityType === ActivityType.MICRO_LEARNING
+              ? activityId
+              : undefined,
+          groupActivityId:
+            activityType === ActivityType.GROUP_ACTIVITY
+              ? activityId
+              : undefined,
+        },
+        data: {
+          description,
+          instructions,
+        },
+      })
+
+      // update the name of the activity based on activityType
+      if (activityType === ActivityType.LIVE_QUIZ) {
+        await tx.liveQuiz.update({
+          where: {
+            id: activityId,
+            status: DB.PublicationStatus.TEMPLATE,
+          },
+          data: {
+            name,
+          },
+        })
+      } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+        await tx.practiceQuiz.update({
+          where: {
+            id: activityId,
+            status: DB.PublicationStatus.TEMPLATE,
+          },
+          data: {
+            name,
+          },
+        })
+      } else if (activityType === ActivityType.MICRO_LEARNING) {
+        await tx.microLearning.update({
+          where: {
+            id: activityId,
+            status: DB.PublicationStatus.TEMPLATE,
+          },
+          data: {
+            name,
+          },
+        })
+      } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+        await tx.groupActivity.update({
+          where: {
+            id: activityId,
+            status: DB.PublicationStatus.TEMPLATE,
+          },
+          data: {
+            name,
+          },
+        })
+      }
+
+      return updatedTemplate
+    })
+
+    // TODO: once activity overview has been unified (shared types), update the return type for efficient cache updates
     return true
+  } catch (error) {
+    console.log(error)
+    return false
   }
 }
 

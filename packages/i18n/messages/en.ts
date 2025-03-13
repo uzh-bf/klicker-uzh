@@ -1534,6 +1534,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       templateCreationError: 'Template could not be created',
       deleteTemplate: 'Delete template',
       editTemplate: 'Edit template',
+      templateEditSuccess: 'Template updated successfully',
+      templateEditError: 'Error updating template',
+      templateDeletionSuccess: 'Template deleted successfully',
+      templateDeletionError: 'Error deleting template',
+      deleteTemplateExplanation:
+        'Please confirm that you want to delete the selected template. It will be automatically removed from all catalog collections and cannot be used by other users anymore.',
+      editTemplateDescription:
+        'Modify any meta information of the activity template you want to change. Changes will go into effect immediately upon saving and are shown to all users of the template.',
+      saveChanges: 'Save Changes',
     },
     formErrors: {
       resolveErrors:

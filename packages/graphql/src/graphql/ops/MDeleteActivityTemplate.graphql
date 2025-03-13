@@ -1,0 +1,6 @@
+mutation DeleteActivityTemplate(
+  $activityId: String!
+  $activityType: ActivityType!
+) {
+  deleteActivityTemplate(activityId: $activityId, activityType: $activityType)
+}

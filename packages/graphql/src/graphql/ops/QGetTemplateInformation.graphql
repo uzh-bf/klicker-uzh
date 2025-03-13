@@ -1,0 +1,11 @@
+query GetTemplateInformation(
+  $activityId: String!
+  $activityType: ActivityType!
+) {
+  getTemplateInformation(activityId: $activityId, activityType: $activityType) {
+    templateId
+    name
+    description
+    instructions
+  }
+}

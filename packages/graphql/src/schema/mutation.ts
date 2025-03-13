@@ -1504,6 +1504,32 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      editActivityTemplate: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+          templateId: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          description: t.arg.string({ required: true }),
+          instructions: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.editActivityTemplate(args, ctx)
+        },
+      }),
+
+      deleteActivityTemplate: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return SharingService.deleteActivityTemplate(args, ctx)
+        },
+      }),
+
       shareObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
