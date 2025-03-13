@@ -2303,6 +2303,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
       requestSuccessInfoANSWER_COLLECTION:
         'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
+      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
+        'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
       requestCatalogObjectSuccess:
         'The access request was successfully submitted.',
       requestCatalogObjectFailed:
@@ -2357,6 +2359,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:
         'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
+        'You are about to transfer all ownership rights of the live quiz template <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this template, while you will retain admin access. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
       shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
@@ -2379,6 +2383,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Are you sure you want to remove the catalog collection "{objectName}" from your profile?',
       confirmRemovalANSWER_COLLECTION:
         'Are you sure you want to remove the answer collection "{objectName}" from your profile?',
+      confirmRemovalLIVE_QUIZ_TEMPLATE:
+        'Are you sure you want to remove the live quiz template "{objectName}" from your profile?',
       confirmRemoval: 'Confirm removal',
       removalSuccessful:
         'The object has been removed successfully from your account.',

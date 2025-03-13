@@ -39,7 +39,8 @@ function useCatalogObjectActionsDropdown({
   return useMemo(() => {
     const items = []
 
-    // import functionality for public objects that aren't owned or shared (and not templates)
+    // import functionality for public objects that aren't owned or shared
+    // TODO: enable importing live quiz templates once the corresponding functionality is available
     if (
       !actionsDisabled &&
       object.access === ObjectAccess.Public &&
