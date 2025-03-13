@@ -170,7 +170,11 @@ function LiveQuiz({
 
   return (
     <>
-      <div key={quiz.id} className="rounded border p-1" data-cy="live-quiz">
+      <div
+        key={quiz.id}
+        className="rounded border p-1"
+        data-cy={`live-quiz-${quiz.name}`}
+      >
         {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
         {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
@@ -186,10 +190,7 @@ function LiveQuiz({
             }
           }}
           staticContent={
-            <div
-              className="flex flex-row justify-between"
-              data-cy="live-quiz-block"
-            >
+            <div className="flex flex-row justify-between">
               <div className="flex flex-row items-center gap-3">
                 <H3 className={{ root: 'mb-0' }}>{quiz.name}</H3>
                 {!isTemplate && (

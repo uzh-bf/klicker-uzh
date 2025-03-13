@@ -1,0 +1,22 @@
+{
+  "liveQuiz": {
+    "name": "Executable Live Quiz",
+    "displayName": "Executable Live Quiz (Display)",
+    "courseName": "Testkurs",
+    "template1Orig": {
+      "name": "Original Template 1",
+      "description": "Original Template 1 Description",
+      "instructions": "Original Template 1 Instructions"
+    },
+    "template1": {
+      "name": "Template 1",
+      "description": "Template 1 Description",
+      "instructions": "Template 1 Instructions"
+    },
+    "template2": {
+      "name": "Template 2",
+      "description": "Template 2 Description",
+      "instructions": "Template 2 Instructions"
+    }
+  }
+}

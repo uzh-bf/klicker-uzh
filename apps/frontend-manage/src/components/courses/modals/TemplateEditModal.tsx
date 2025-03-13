@@ -50,6 +50,7 @@ function TemplateEditModal({
       onClose={() => setOpen(false)}
       className={{ content: 'gap-2' }}
       data={{ cy: 'edit-template-modal' }}
+      dataCloseButton={{ cy: 'close-edit-template-modal' }}
     >
       {loading || !info ? (
         <Loader />
