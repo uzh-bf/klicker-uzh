@@ -1,3 +1,4 @@
+import { CatalogObjectType } from '@klicker-uzh/types'
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
@@ -15,58 +16,58 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Create the questions required in the live quiz test workflows', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.SC1.title,
-      content: this.data.SC1.content,
-      choices: this.data.SC1.choices,
+      title: this.data.SC.title,
+      content: this.data.SC.content,
+      choices: this.data.SC.choices,
     })
     cy.createQuestionSC({
-      title: this.data.SC2.title,
-      content: this.data.SC2.content,
-      choices: this.data.SC2.choices,
+      title: this.data.SCML.title,
+      content: this.data.SCML.content,
+      choices: this.data.SCML.choices,
     })
 
     cy.createQuestionMC({
-      title: this.data.MC1.title,
-      content: this.data.MC1.content,
-      choices: this.data.MC1.choices,
+      title: this.data.MC.title,
+      content: this.data.MC.content,
+      choices: this.data.MC.choices,
     })
     cy.createQuestionMC({
-      title: this.data.MC2.title,
-      content: this.data.MC2.content,
-      choices: this.data.MC2.choices,
+      title: this.data.MCML.title,
+      content: this.data.MCML.content,
+      choices: this.data.MCML.choices,
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP1.title,
-      content: this.data.KP1.content,
-      choices: this.data.KP1.choices,
+      title: this.data.KP.title,
+      content: this.data.KP.content,
+      choices: this.data.KP.choices,
     })
     cy.createQuestionKPRIM({
-      title: this.data.KP2.title,
-      content: this.data.KP2.content,
-      choices: this.data.KP2.choices,
+      title: this.data.KPML.title,
+      content: this.data.KPML.content,
+      choices: this.data.KPML.choices,
     })
 
     cy.createQuestionNR({
-      title: this.data.NR1.title,
-      content: this.data.NR1.content,
-      ...this.data.NR1.options,
+      title: this.data.NR.title,
+      content: this.data.NR.content,
+      ...this.data.NR.options,
     })
     cy.createQuestionNR({
-      title: this.data.NR2.title,
-      content: this.data.NR2.content,
-      ...this.data.NR2.options,
+      title: this.data.NRML.title,
+      content: this.data.NRML.content,
+      ...this.data.NRML.options,
     })
 
     cy.createQuestionFT({
-      title: this.data.FT1.title,
-      content: this.data.FT1.content,
-      ...this.data.FT1.options,
+      title: this.data.FT.title,
+      content: this.data.FT.content,
+      ...this.data.FT.options,
     })
     cy.createQuestionFT({
-      title: this.data.FT2.title,
-      content: this.data.FT2.content,
-      ...this.data.FT2.options,
+      title: this.data.FTML.title,
+      content: this.data.FTML.content,
+      ...this.data.FTML.options,
     })
 
     cy.get('[data-cy="resources"]').click()
@@ -79,44 +80,44 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE1.title,
-      content: this.data.SE1.content,
-      numberOfInputs: this.data.SE1.inputs,
+      title: this.data.SE.title,
+      content: this.data.SE.content,
+      numberOfInputs: this.data.SE.inputs,
       collectionName: this.data.collection.name,
     })
     cy.createQuestionSE({
-      title: this.data.SE2.title,
-      content: this.data.SE2.content,
-      numberOfInputs: this.data.SE2.inputs,
+      title: this.data.SEML.title,
+      content: this.data.SEML.content,
+      numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
-        this.data.SE2.solutions.includes(i)
+        this.data.SEML.solutions.includes(i)
       ),
     })
 
     cy.createQuestionCS({
-      title: this.data.CS1.title,
-      content: this.data.CS1.content,
-      explanation: this.data.CS1.explanation,
+      title: this.data.CS.title,
+      content: this.data.CS.content,
+      explanation: this.data.CS.explanation,
       collectionName: this.data.collection.name,
       selectedItems: this.data.collection.options.filter((_, i) =>
-        this.data.CS1.selectedItems.includes(i)
+        this.data.CS.selectedItems.includes(i)
       ),
-      criteria: this.data.CS1.criteria,
-      cases: this.data.CS1.cases,
-      solutions: this.data.CS1.solutions,
+      criteria: this.data.CS.criteria,
+      cases: this.data.CS.cases,
+      solutions: this.data.CS.solutions,
     })
     cy.createQuestionCS({
-      title: this.data.CS2.title,
-      content: this.data.CS2.content,
-      explanation: this.data.CS2.explanation,
+      title: this.data.CSML.title,
+      content: this.data.CSML.content,
+      explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
       selectedItems: this.data.collection.options.filter((_, i) =>
-        this.data.CS2.selectedItems.includes(i)
+        this.data.CSML.selectedItems.includes(i)
       ),
-      criteria: this.data.CS2.criteria,
-      cases: this.data.CS2.cases,
-      solutions: this.data.CS2.solutions,
+      criteria: this.data.CSML.criteria,
+      cases: this.data.CSML.cases,
+      solutions: this.data.CSML.solutions,
     })
   })
   // #endregion
@@ -132,24 +133,24 @@ describe('Test all functionalities related to the creation, management, sharing 
       blocks: [
         {
           elements: [
-            this.data.SC1.title,
-            this.data.MC1.title,
-            this.data.KP1.title,
-            this.data.NR1.title,
-            this.data.FT1.title,
-            this.data.SE1.title,
-            this.data.CS1.title,
+            this.data.SC.title,
+            this.data.MC.title,
+            this.data.KP.title,
+            this.data.NR.title,
+            this.data.FT.title,
+            this.data.SE.title,
+            this.data.CS.title,
           ],
         },
         {
           elements: [
-            this.data.SC2.title,
-            this.data.MC2.title,
-            this.data.KP2.title,
-            this.data.NR2.title,
-            this.data.FT2.title,
-            this.data.SE2.title,
-            this.data.CS2.title,
+            this.data.SCML.title,
+            this.data.MCML.title,
+            this.data.KPML.title,
+            this.data.NRML.title,
+            this.data.FTML.title,
+            this.data.SEML.title,
+            this.data.CSML.title,
           ],
         },
       ],
@@ -373,6 +374,39 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="close-edit-template-modal"]').click()
   })
 
+  it('Add the live quiz template to the top level catalog collection', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(
+      `[data-cy="object-type-${CatalogObjectType.LIVE_QUIZ_TEMPLATE}"]`
+    ).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessPUBLIC
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.liveQuiz.template1.name
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(
+      `[data-cy="catalog-object-${this.data.liveQuiz.template1.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="catalog-object-${this.data.liveQuiz.template1.name}"]`
+    ).contains(messages.manage.catalog.accessPUBLIC)
+  })
+
+  // TODO: use live quiz template to create new activities
+
   // #endregion
 
   // ! Cleanup: Deletion of all created templates, activities and questions
@@ -404,20 +438,20 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Delete all created questions', function () {
     cy.loginLecturer()
     const questions = [
-      this.data.SC1.title,
-      this.data.MC1.title,
-      this.data.KP1.title,
-      this.data.NR1.title,
-      this.data.FT1.title,
-      this.data.SE1.title,
-      this.data.CS1.title,
-      this.data.SC2.title,
-      this.data.MC2.title,
-      this.data.KP2.title,
-      this.data.NR2.title,
-      this.data.FT2.title,
-      this.data.SE2.title,
-      this.data.CS2.title,
+      this.data.SC.title,
+      this.data.MC.title,
+      this.data.KP.title,
+      this.data.NR.title,
+      this.data.FT.title,
+      this.data.SE.title,
+      this.data.CS.title,
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KPML.title,
+      this.data.NRML.title,
+      this.data.FTML.title,
+      this.data.SEML.title,
+      this.data.CSML.title,
     ]
     cy.wrap(questions).each((question: string) => {
       cy.deleteElement({ elementName: question })

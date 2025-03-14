@@ -14,6 +14,7 @@ import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
+import * as TemplateService from '../services/templates.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -926,7 +927,7 @@ export const Query = builder.queryType({
           activityType: t.arg({ type: ActivityType, required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.checkTemplateInfoAvailable(args, ctx)
+          return TemplateService.checkTemplateInfoAvailable(args, ctx)
         },
       }),
 
@@ -938,7 +939,7 @@ export const Query = builder.queryType({
           activityType: t.arg({ type: ActivityType, required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.getTemplateInformation(args, ctx)
+          return TemplateService.getTemplateInformation(args, ctx)
         },
       }),
 

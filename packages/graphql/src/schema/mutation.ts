@@ -15,6 +15,7 @@ import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
+import * as TemplateService from '../services/templates.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import { ElementStatus, ElementType } from './elementData.js'
@@ -1504,7 +1505,7 @@ export const Mutation = builder.mutationType({
           copyBeforeConversion: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.createActivityTemplate(args, ctx)
+          return TemplateService.createActivityTemplate(args, ctx)
         },
       }),
 
@@ -1519,7 +1520,7 @@ export const Mutation = builder.mutationType({
           instructions: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.editActivityTemplate(args, ctx)
+          return TemplateService.editActivityTemplate(args, ctx)
         },
       }),
 
@@ -1530,7 +1531,7 @@ export const Mutation = builder.mutationType({
           activityType: t.arg({ type: ActivityType, required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.deleteActivityTemplate(args, ctx)
+          return TemplateService.deleteActivityTemplate(args, ctx)
         },
       }),
 
