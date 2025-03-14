@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { ElementFormTypes } from '../../questions/manipulation/types'
 import ActivityRecoveryPrompt from './ActivityRecoveryPrompt'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
+import loadProgressFromLiveQuizData from './liveQuiz/loadProgressFromLiveQuizData'
 import useInitialLiveQuizTemplateFormData from './liveQuiz/useInitialLiveQuizTemplateFormData'
 import SectionCollapsible, {
   TemplateCollapsibleState,
@@ -38,7 +39,7 @@ export type LiveQuizTemplateFormValues = {
 
   // blocks with optionally identical or modified elements
   blocks: {
-    timeLimit?: number // ! fixed (but shown)
+    timeLimit?: number
     elements: {
       unmodifiedInstance: boolean // boolean to signal that this instance should be directly copied from the template
       processed: boolean // boolean to signal that this instance has been processed / adapted if desired
@@ -98,34 +99,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     liveQuiz,
   })
 
-  // TODO: extract to separate component / custom hook
-  const loadProgressFromData = ({
-    quizData,
-  }: {
-    quizData: LiveQuizTemplateFormValues
-  }): TemplateCollapsibleUIStates => {
-    const progress: TemplateCollapsibleUIStates = {
-      settings: {
-        open: false,
-        status: quizData.settingsProcessed ? 'success' : 'due',
-      },
-    }
-
-    // Create the block and element states with numeric indices as keys
-    quizData.blocks.forEach((block, blockIx) => {
-      progress[blockIx] = {}
-
-      block.elements.forEach((element, elementIx) => {
-        progress[blockIx][elementIx] = {
-          open: false,
-          status: element.processed ? 'success' : 'due',
-        }
-      })
-    })
-
-    return progress
-  }
-
   useEffect(() => {
     // if live quiz template has not been loaded yet, return early
     if (liveQuiz === null || typeof liveQuiz === 'undefined') {
@@ -165,7 +138,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         }}
         onRecovery={() => {
           // set collapsible states based on the loaded data
-          const progress = loadProgressFromData({ quizData })
+          const progress = loadProgressFromLiveQuizData({ quizData })
           setCollapsibles(progress)
 
           // the saved data has already been loaded -> close modal
@@ -218,6 +191,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
 
         {liveQuiz?.blocks?.map((block, blockIx) => (
           <div key={`block-${blockIx}`} className="mt-4">
+            {/* // TODO: add block settings - time limit should be shown and modifyable */}
             <H3>{`${t('shared.generic.block')} ${blockIx + 1}`}</H3>
             {block.elements?.map((element, elementIx) => (
               <SectionCollapsible
