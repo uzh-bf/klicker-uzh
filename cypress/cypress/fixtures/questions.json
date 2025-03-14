@@ -1,15 +1,15 @@
 {
-  "SC1": {
+  "SC": {
     "title": "SC Title Test 1",
     "content": "SC Question Content 1",
     "choices": [{ "content": "50%" }, { "content": "100%" }]
   },
-  "SC2": {
+  "SCML": {
     "title": "SC Title Test 2",
     "content": "SC Question Content 2",
     "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
   },
-  "MC1": {
+  "MC": {
     "title": "MC Title Test 1",
     "content": "MC Question Content 1",
     "choices": [
@@ -19,7 +19,7 @@
       { "content": "100%" }
     ]
   },
-  "MC2": {
+  "MCML": {
     "title": "MC Title Test 2",
     "content": "MC Question Content 2",
     "choices": [
@@ -29,7 +29,7 @@
       { "content": "100%" }
     ]
   },
-  "KP1": {
+  "KP": {
     "title": "KPRIM Title Test 1",
     "content": "KPRIM Question Content 1",
     "choices": [
@@ -39,7 +39,7 @@
       { "content": "100%" }
     ]
   },
-  "KP2": {
+  "KPML": {
     "title": "KPRIM Title Test 2",
     "content": "KPRIM Question Content 2",
     "choices": [
@@ -49,13 +49,13 @@
       { "content": "100%" }
     ]
   },
-  "NR1": {
+  "NR": {
     "title": "NR Title Test 1",
     "content": "NR Question Content 1",
     "options": {},
     "answer": "50"
   },
-  "NR2": {
+  "NRML": {
     "title": "NR Title Test 2",
     "content": "NR Question Content 2",
     "options": {
@@ -70,13 +70,13 @@
     },
     "answer": "100"
   },
-  "FT1": {
+  "FT": {
     "title": "FT Title Test 1",
     "content": "FT Question Content 1",
     "options": {},
     "answer": "Solution 1"
   },
-  "FT2": {
+  "FTML": {
     "title": "FT Title Test 2",
     "content": "FT Question Content 2",
     "options": {
@@ -96,18 +96,18 @@
       "SE Option 5"
     ]
   },
-  "SE1": {
+  "SE": {
     "title": "SE Title Test 1",
     "content": "SE Question Content 1",
     "inputs": 2
   },
-  "SE2": {
+  "SEML": {
     "title": "SE Title Test 2",
     "content": "SE Question Content 2",
     "inputs": 3,
     "solutions": [0, 1, 2, 4]
   },
-  "CS1": {
+  "CS": {
     "title": "CS d5834215-4d2f-46aa-a97f-e21c54492778",
     "content": "CS Question Test 1",
     "explanation": "CS Explanation Test 1",
@@ -271,7 +271,7 @@
       }
     }
   },
-  "CS2": {
+  "CSML": {
     "title": "CS db76bed1-f7ef-49fb-aa08-005ed115d025",
     "content": "CS Question Test 2",
     "explanation": "CS Explanation Test 2",

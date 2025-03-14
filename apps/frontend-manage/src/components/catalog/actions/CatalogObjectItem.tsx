@@ -150,6 +150,9 @@ function CatalogObjectItem({
             <div className="ml-2">
               <ObjectAccessSelection
                 compact
+                restrictedDisabled={
+                  object.objectType === CatalogObjectType.LiveQuizTemplate
+                }
                 value={object.access}
                 onChange={(access) => {
                   setNewAccess(access as ObjectAccess)

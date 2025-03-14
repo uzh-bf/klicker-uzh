@@ -965,6 +965,56 @@ Cypress.Commands.add(
   }
 )
 
+interface ConvertLiveQuizToTemplateArgs {
+  liveQuiz: string
+  name: string
+  description: string
+  instructions: string
+  copyBeforeConversion: boolean // flag to signal if the existing live quiz should be converted into a template or a copy should be created first
+  resourceAccessRequired: boolean // flag to signal if elements with answer collection dependencies are used in the activity
+}
+
+Cypress.Commands.add(
+  'convertLiveQuizToTemplate',
+  ({
+    liveQuiz,
+    name,
+    description,
+    instructions,
+    copyBeforeConversion,
+    resourceAccessRequired,
+  }: ConvertLiveQuizToTemplateArgs) => {
+    // depending on the setting, choose between conversion and copy & conversion of activity
+    cy.get(`[data-cy="template-from-live-quiz-${liveQuiz}"]`).click()
+    cy.get('[data-cy="convert-option-template"]').click()
+    if (copyBeforeConversion) {
+      cy.get('[data-cy="copy-option-template"]').click()
+    }
+
+    cy.get('[data-cy="template-next-step"]').should('be.disabled')
+    cy.get('[data-cy="confirm-content-visibility"]').click()
+    cy.get('[data-cy="confirm-content-visibility"]').should('not.exist')
+    cy.get('[data-cy="template-next-step"]').should('be.disabled')
+    cy.get('[data-cy="confirm-question-access"]').click()
+    cy.get('[data-cy="confirm-question-access"]').should('not.exist')
+    if (resourceAccessRequired) {
+      cy.get('[data-cy="template-next-step"]').should('be.disabled')
+      cy.get('[data-cy="confirm-resource-access"]').click()
+    }
+    cy.get('[data-cy="confirm-resource-access"]').should('not.exist')
+    cy.get('[data-cy="template-next-step"]').click()
+
+    // insert name, description and instructions for the new template
+    cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
+    cy.get('[data-cy="template-name"]').click().type(name)
+    cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
+    cy.get('[data-cy="template-description"]').realClick().type(description)
+    cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
+    cy.get('[data-cy="template-instructions"]').realClick().type(instructions)
+    cy.get('[data-cy="submit-template-creation"]').click()
+  }
+)
+
 interface StackType {
   elements: string[]
 }
@@ -1468,6 +1518,14 @@ declare global {
         courseName,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
+      convertLiveQuizToTemplate({
+        liveQuiz,
+        name,
+        description,
+        instructions,
+        copyBeforeConversion,
+        resourceAccessRequired,
+      }: ConvertLiveQuizToTemplateArgs): Chainable<void>
       createStacks({
         stacks,
         type,
