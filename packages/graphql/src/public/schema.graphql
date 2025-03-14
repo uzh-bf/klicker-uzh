@@ -75,6 +75,18 @@ type ActivitySummary {
   numOfResponses: Int!
 }
 
+type ActivityTemplate {
+  activityType: ActivityType!
+  answerCollections: [AnswerCollection!]
+  description: String!
+  groupActivity: GroupActivity
+  id: String!
+  instructions: String!
+  liveQuiz: LiveQuiz
+  microLearning: MicroLearning
+  practiceQuiz: PracticeQuiz
+}
+
 type ActivityTemplateInfo {
   noInstances: Boolean!
   noResourcesRequired: Boolean!
@@ -381,6 +393,7 @@ type CatalogObject {
   name: String!
   objectType: CatalogObjectType!
   ownerShortname: String
+  templateId: String
   uuid: String
 }
 
@@ -1804,6 +1817,7 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getActivityTemplate(templateId: String!): ActivityTemplate
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
   getAnswerCollectionsElements: [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]

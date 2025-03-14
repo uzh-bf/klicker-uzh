@@ -2344,6 +2344,11 @@ export async function getCatalogObjects(
                   userId: ctx.user.sub,
                 },
               },
+              templateInfo: {
+                select: {
+                  id: true,
+                },
+              },
             },
           },
         },
@@ -2385,6 +2390,7 @@ export async function getCatalogObjects(
           uuid: liveQuiz.id,
           name: liveQuiz.name,
           assignmentId: assignment.id,
+          templateId: liveQuiz.templateInfo?.id,
           objectType:
             // TODO: replace or type with normal live quiz catalog object type
             liveQuiz.status === DB.PublicationStatus.TEMPLATE
@@ -2552,6 +2558,7 @@ export async function addObjectToCatalog(
     objectName: string
     ownerShortname?: string
     ownerId?: string | null
+    templateId?: string
     isShared: boolean
   } | null = null
 
@@ -2634,6 +2641,11 @@ export async function addObjectToCatalog(
             shortname: true,
           },
         },
+        templateInfo: {
+          select: {
+            id: true,
+          },
+        },
         _count: {
           select: {
             permissions: {
@@ -2663,6 +2675,7 @@ export async function addObjectToCatalog(
       objectName: liveQuiz.name,
       ownerShortname: liveQuiz.owner?.shortname,
       ownerId: liveQuiz.ownerId,
+      templateId: liveQuiz.templateInfo?.id,
       isShared: liveQuiz._count.permissions > 0,
     }
   }
@@ -2811,6 +2824,7 @@ export async function addObjectToCatalog(
     name: objectInfo.objectName,
     objectType: objectInfo.objectType,
     assignmentId: assignment.id,
+    templateId: objectInfo.templateId,
     access: assignment.access,
     ownerShortname: objectInfo.ownerShortname,
     isOwner: objectInfo.ownerId === ctx.user.sub,

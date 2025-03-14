@@ -67,8 +67,6 @@ import {
 } from './question.js'
 import { AnswerCollection } from './resource.js'
 import {
-  ActivityTemplateInfo,
-  ActivityTemplateMetadata,
   CatalogCollection,
   CatalogObject,
   CatalogObjectType,
@@ -76,6 +74,11 @@ import {
   ObjectSharingRequest,
   PermissionInfo,
 } from './sharing.js'
+import {
+  ActivityTemplate,
+  ActivityTemplateInfo,
+  ActivityTemplateMetadata,
+} from './template.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -940,6 +943,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return TemplateService.getTemplateInformation(args, ctx)
+        },
+      }),
+
+      getActivityTemplate: asUser.field({
+        nullable: true,
+        type: ActivityTemplate,
+        args: {
+          templateId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.getActivityTemplate(args, ctx)
         },
       }),
 

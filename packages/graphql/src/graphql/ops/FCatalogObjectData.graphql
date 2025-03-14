@@ -4,6 +4,7 @@ fragment CatalogObjectData on CatalogObject {
   name
   objectType
   assignmentId
+  templateId
   access
   ownerShortname
   isOwner

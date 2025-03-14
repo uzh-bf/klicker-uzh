@@ -1,0 +1,129 @@
+query GetActivityTemplate($templateId: String!) {
+  getActivityTemplate(templateId: $templateId) {
+    id
+    activityType
+    description
+    instructions
+
+    liveQuiz {
+      id
+      status
+      isLiveQAEnabled
+      isConfusionFeedbackEnabled
+      isModerationEnabled
+      isGamificationEnabled
+      accessMode
+
+      name
+      displayName
+      description
+
+      pointsMultiplier
+      defaultPoints
+      defaultCorrectPoints
+      maxBonusPoints
+      timeToZeroBonus
+      createdAt
+
+      blocks {
+        id
+        order
+        status
+        timeLimit
+        elements {
+          id
+          type
+          elementType
+          ...ElementData
+        }
+      }
+    }
+
+    practiceQuiz {
+      id
+      name
+      status
+      displayName
+      description
+
+      pointsMultiplier
+      resetTimeDays
+      orderType
+
+      stacks {
+        id
+        order
+        type
+        displayName
+        description
+        elements {
+          id
+          type
+          elementType
+          ...ElementData
+        }
+      }
+    }
+
+    microLearning {
+      id
+      name
+      status
+      displayName
+      description
+      pointsMultiplier
+
+      scheduledStartAt
+      scheduledEndAt
+
+      stacks {
+        id
+        order
+        type
+        displayName
+        description
+        elements {
+          id
+          type
+          elementType
+          ...ElementData
+        }
+      }
+    }
+
+    groupActivity {
+      id
+      name
+      displayName
+      description
+      pointsMultiplier
+
+      status
+      scheduledStartAt
+      scheduledEndAt
+
+      clues {
+        id
+        type
+        name
+        displayName
+        value
+        unit
+      }
+
+      stacks {
+        id
+        order
+        type
+        displayName
+        description
+        elements {
+          id
+          type
+          elementType
+          ...ElementData
+        }
+      }
+    }
+  }
+}

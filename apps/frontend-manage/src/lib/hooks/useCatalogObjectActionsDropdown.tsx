@@ -99,7 +99,7 @@ function useCatalogObjectActionsDropdown({
         ),
         onClick: (e: React.MouseEvent<HTMLDivElement>) => {
           e?.stopPropagation()
-          router.push(`/template/${object.uuid}`)
+          router.push(`/templates/${object.templateId}`)
         },
         data: { cy: `use-template-${object.name}` },
       })
