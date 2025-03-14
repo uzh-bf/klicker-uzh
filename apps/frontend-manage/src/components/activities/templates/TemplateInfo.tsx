@@ -21,7 +21,7 @@ function TemplateInfo({
           templateName: name,
         })}
       </div>
-      <div className="mt-3 rounded-lg bg-gray-100 px-2 pb-2 pt-1">
+      <div className="mt-3 rounded-lg bg-gray-100 px-3 pb-2 pt-1">
         <H3>{t('shared.generic.instructions')}</H3>
         <Markdown content={instructions} />
       </div>

@@ -11,6 +11,18 @@ import {
 } from '@uzh-bf/design-system/dist/future'
 import { twMerge } from 'tailwind-merge'
 
+export type TemplateCollapsibleState = {
+  open: boolean
+  status: 'due' | 'success' | 'error'
+}
+
+export type TemplateCollapsibleUIStates = {
+  settings: TemplateCollapsibleState
+  [blockIx: number]: {
+    [elementIx: number]: TemplateCollapsibleState
+  }
+}
+
 interface SectionCollapsibleProps {
   title: string
   status: 'due' | 'success' | 'error'

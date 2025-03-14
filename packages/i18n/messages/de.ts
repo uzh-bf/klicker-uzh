@@ -195,6 +195,7 @@ export default {
       solution: 'Lösung',
       sampleSolution: 'Musterlösung',
       gamification: 'Gamifizierung',
+      scoring: 'Punktevergabe',
       liveQA: 'Live-Q&A',
       moderation: 'Moderation',
       feedbackChannel: 'Feedback-Channel',
@@ -213,6 +214,7 @@ export default {
       information: 'Information',
       description: 'Beschreibung',
       settings: 'Einstellungen',
+      activitySettings: 'Aktivitätseinstellungen',
       course: 'Kurs',
       availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
@@ -1587,6 +1589,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Ansicht ermöglicht es Ihnen aus der Gruppenaktivität Vorlage "{templateName}" ihre eigene Gruppenaktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
       templateInfoMICRO_LEARNING:
         'Diese Ansicht ermöglicht es Ihnen aus der Microlearning Vorlage "{templateName}" ihr eigenes Microlearning zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      recoverActivity: 'Aktivität wiederherstellen',
+      incompleteActivity:
+        'Eine unvollständige Version dieser Aktivitätsvorlage wurde automatisch gespeichert. Bitte wählen Sie, ob Sie die Bearbeitung der Aktivität fortsetzen und den automatisch gespeicherten Zustand wiederherstellen oder mit der ursprünglichen Version der Vorlage neu beginnen möchten.',
+      startOver: 'Neu starten',
+      continueEditing: 'Weiter bearbeiten',
+      settingsInstructions:
+        'Hier können Sie die Grundeinstellungen der Akvitität verändern. Bitte beachten Sie für weitere Informationen die entsprechenden Tooltips oder konsultieren Sie die Dokumentation. Einige Einstellungen wie beispielsweise Punkte-Multiplikatoren können bei Vorlagen nicht direkt verändert werden.',
+      forGamifiedCourses: 'für gamifizierte Kurse',
+      confirmSettings: 'Einstellungen bestätigen',
     },
     formErrors: {
       resolveErrors:
