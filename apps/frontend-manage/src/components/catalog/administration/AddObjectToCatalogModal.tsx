@@ -144,6 +144,7 @@ function AddObjectToCatalogModal({
               <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                 <H4>1. {t('manage.catalog.selectObjectType')}</H4>
                 <ObjectTypeSelection
+                  objectTypeValue={values.objectType}
                   accessValue={values.access}
                   setFieldValue={setFieldValue}
                 />

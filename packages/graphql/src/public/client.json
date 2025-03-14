@@ -153,6 +153,7 @@
    "GetCatalogAnswerCollections": "ff946eec7421fc301c7585a6fc3ee47a24fc5c623fc44ba81cd8f76395a553ae",
    "GetCatalogCollectionInfo": "9ac26c6d23324f335c7c705276d8262ab691abdfffa3373389a70c0a10deb476",
    "GetCatalogCollectionsList": "76c80bd614dd262373f1bb75ce8c5620273843bf73708a018cc7bc969f40c146",
+   "GetCatalogLiveQuizTemplates": "2f7be6511b2db3700c8d714caf30ffab02d83b32576780add85e3ee6fcb0fe1f",
    "GetCatalogObjects": "b0bcaeab9ea9aeaf2b1d3c1f2938f7a1b571ba1c6309ef3e5bbc36ef0e0a72fd",
    "GetCatalogSharingRequests": "0cb83f774e522f7f575e5c9d8953bc03e1fc749eacd19c0ff7b52719ed1fa32f",
    "GetCockpitQuiz": "a89e63fa8177d77e22913e71785edc268cf2d4c7c079c3bea0afe2606ebf2dbe",

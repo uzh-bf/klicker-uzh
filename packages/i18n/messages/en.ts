@@ -308,9 +308,13 @@ export default {
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
+      LIVE_QUIZ_TEMPLATE: 'Live Quiz Template',
       PRACTICE_QUIZ: 'Practice Quiz',
+      PRACTICE_QUIZ_TEMPLATE: 'Practice Quiz Template',
       MICRO_LEARNING: 'Microlearning',
+      MICRO_LEARNING_TEMPLATE: 'Microlearning Template',
       GROUP_ACTIVITY: 'Group Activity',
+      GROUP_ACTIVITY_TEMPLATE: 'Group Activity Template',
       ANSWER_COLLECTION: 'Answer Collection',
       CATALOG_COLLECTION: 'Catalog Collection',
     },
@@ -2202,11 +2206,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       all: 'All',
       sharingRequests: 'Sharing Requests',
       unresolved: 'Unresolved',
-      objectTypeANSWER_COLLECTION: 'Answer Collection',
-      objectTypeCATALOG_COLLECTION: 'Catalog Collection',
       noObjectsFoundInCatalog:
         'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
+      useTemplate: 'Use Template',
       importObject: 'Import Object',
       importObjectType: 'Import {object}',
       accessRequested: 'Access requested',
@@ -2255,6 +2258,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeCATALOG_COLLECTIONtitle: 'Remove Catalog Collection',
       removeANSWER_COLLECTION: 'Remove Answer Collection',
       removeANSWER_COLLECTIONtitle: 'Remove Answer Collection from Catalog',
+      removeLIVE_QUIZ_TEMPLATE: 'Remove Live-Quiz Template',
+      removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
       removeObjectTitle: 'Remove Object from Catalog Collection',
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
@@ -2298,6 +2303,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
       requestSuccessInfoANSWER_COLLECTION:
         'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
+      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
+        'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
       requestCatalogObjectSuccess:
         'The access request was successfully submitted.',
       requestCatalogObjectFailed:
@@ -2352,12 +2359,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:
         'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
+        'You are about to transfer all ownership rights of the live quiz template <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this template, while you will retain admin access. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
+      shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       infoSharingCATALOG_COLLECTION:
         'This view allows you to share the catalog collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
+      infoSharingLIVE_QUIZ_TEMPLATE:
+        'This view allows you to share the live quiz template "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the template or make other changes.',
       sharingSuccessful: 'The object was shared successfully.',
       sharingFailed:
         'An error occurred while sharing the object or the specified user could not be found.',
@@ -2366,10 +2378,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Failed to remove access. Please try again or contact support.',
       removeCATALOG_COLLECTION: 'Remove Catalog Collection',
       removeANSWER_COLLECTION: 'Remove Answer Collection',
+      removeLIVE_QUIZ_TEMPLATE: 'Remove Live Quiz Template',
       confirmRemovalCATALOG_COLLECTION:
         'Are you sure you want to remove the catalog collection "{objectName}" from your profile?',
       confirmRemovalANSWER_COLLECTION:
         'Are you sure you want to remove the answer collection "{objectName}" from your profile?',
+      confirmRemovalLIVE_QUIZ_TEMPLATE:
+        'Are you sure you want to remove the live quiz template "{objectName}" from your profile?',
       confirmRemoval: 'Confirm removal',
       removalSuccessful:
         'The object has been removed successfully from your account.',

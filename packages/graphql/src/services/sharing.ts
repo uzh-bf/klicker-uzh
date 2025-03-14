@@ -116,6 +116,11 @@ async function verifyCatalogObjectEditPermissions(
           id: true,
         },
       },
+      liveQuiz: {
+        select: {
+          id: true,
+        },
+      },
       // ... add more object types once they are supported for sharing
     },
   })
@@ -149,6 +154,17 @@ async function verifyCatalogObjectEditPermissions(
       const { valid } = await validateAnswerCollectionPermissions(
         {
           collectionId: assignment.answerCollection.id,
+          acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
+        },
+        ctx
+      )
+      sufficientPermissions = valid
+    } else if (typeof assignment.liveQuiz?.id !== 'undefined') {
+      // verify that the user has access to the live quiz / live quiz template
+      const { valid } = await validateActivityPermissions(
+        {
+          activityId: assignment.liveQuiz.id,
+          activityType: ActivityType.LIVE_QUIZ,
           acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
         },
         ctx
@@ -2440,12 +2456,30 @@ export async function getCatalogObjects(
               },
             },
           },
+          liveQuiz: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+              ownerId: true,
+              owner: {
+                select: {
+                  shortname: true,
+                },
+              },
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                },
+              },
+            },
+          },
         },
       },
     },
   })
 
-  const mappedAnswerCollections: CatalogObject[] =
+  const mappedCatalogObjects: CatalogObject[] =
     catalogCollection?.objectAssignments.flatMap((assignment) => {
       if (assignment.answerCollection) {
         const answerCollection = assignment.answerCollection
@@ -2471,12 +2505,40 @@ export async function getCatalogObjects(
             typeof permission !== 'undefined' &&
             permission.permissionStatus === DB.PermissionStatus.GRANTED,
         }
+      } else if (assignment.liveQuiz) {
+        const liveQuiz = assignment.liveQuiz
+        const permission = liveQuiz.permissions[0]
+
+        return {
+          uuid: liveQuiz.id,
+          name: liveQuiz.name,
+          assignmentId: assignment.id,
+          objectType:
+            // TODO: replace or type with normal live quiz catalog object type
+            liveQuiz.status === DB.PublicationStatus.TEMPLATE
+              ? CatalogObjectType.LIVE_QUIZ_TEMPLATE
+              : CatalogObjectType.LIVE_QUIZ_TEMPLATE,
+          access: assignment.access,
+          ownerShortname: liveQuiz.owner?.shortname,
+          isOwner: liveQuiz.ownerId === ctx.user.sub,
+          isManager:
+            liveQuiz.ownerId === ctx.user.sub ||
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN,
+          isRequested:
+            liveQuiz.permissions.length > 0 &&
+            typeof permission !== 'undefined' &&
+            permission.permissionStatus === DB.PermissionStatus.REQUESTED,
+          isShared:
+            liveQuiz.permissions.length > 0 &&
+            typeof permission !== 'undefined' &&
+            permission.permissionStatus === DB.PermissionStatus.GRANTED,
+        }
       }
 
       return []
     }) ?? []
 
-  return mappedAnswerCollections
+  return mappedCatalogObjects
 }
 
 export async function removeCatalogObjectAssignment(
@@ -2487,6 +2549,7 @@ export async function removeCatalogObjectAssignment(
     { assignmentId },
     ctx
   )
+
   if (!sufficientPermissions) {
     return false
   }
@@ -2531,6 +2594,37 @@ export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
   return collections.map((collection) => ({
     id: String(collection.id),
     name: collection.name,
+  }))
+}
+
+export async function getCatalogLiveQuizTemplates(ctx: ContextWithUser) {
+  // fetch all live quiz templates, where the user is the owner or has been granted admin access
+  const liveQuizzes = await ctx.prisma.liveQuiz.findMany({
+    where: {
+      status: DB.PublicationStatus.TEMPLATE,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              permissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          },
+        },
+      ],
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  })
+
+  return liveQuizzes.map((liveQuiz) => ({
+    id: liveQuiz.id,
+    name: liveQuiz.name,
   }))
 }
 
@@ -2636,12 +2730,68 @@ export async function addObjectToCatalog(
     // set object info
     objectInfo = {
       objectId: answerCollection.id,
-      objectUuid: String(answerCollection.id),
+      objectUuid: undefined,
       objectType: CatalogObjectType.ANSWER_COLLECTION,
       objectName: answerCollection.name,
       ownerShortname: answerCollection.owner?.shortname,
       ownerId: answerCollection.ownerId,
       isShared: answerCollection._count.permissions > 0,
+    }
+  } else if (typeof liveQuizId !== 'undefined') {
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: {
+        id: liveQuizId,
+        OR: [
+          {
+            ownerId: ctx.user.sub,
+          },
+          {
+            permissions: {
+              some: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        owner: {
+          select: {
+            shortname: true,
+          },
+        },
+        _count: {
+          select: {
+            permissions: {
+              where: {
+                userId: ctx.user.sub,
+                permissionStatus: DB.PermissionStatus.GRANTED,
+                permissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!liveQuiz) {
+      return null
+    }
+
+    // set object info
+    objectInfo = {
+      objectId: undefined,
+      objectUuid: liveQuiz.id,
+      objectType:
+        liveQuiz.status === DB.PublicationStatus.TEMPLATE
+          ? CatalogObjectType.LIVE_QUIZ_TEMPLATE
+          : CatalogObjectType.LIVE_QUIZ_TEMPLATE, // TODO: replace with LIVE_QUIZ
+      objectName: liveQuiz.name,
+      ownerShortname: liveQuiz.owner?.shortname,
+      ownerId: liveQuiz.ownerId,
+      isShared: liveQuiz._count.permissions > 0,
     }
   }
   // TODO: ... implement more supported object types
@@ -3282,7 +3432,7 @@ export async function createActivityTemplate(
         },
       })
 
-      return false
+      return true
     } else if (activityType === ActivityType.MICRO_LEARNING) {
       if (!activity) {
         return false

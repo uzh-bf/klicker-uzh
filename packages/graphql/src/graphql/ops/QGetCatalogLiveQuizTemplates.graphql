@@ -1,0 +1,6 @@
+query GetCatalogLiveQuizTemplates {
+  getCatalogLiveQuizTemplates {
+    id
+    name
+  }
+}

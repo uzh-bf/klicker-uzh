@@ -54,9 +54,9 @@ function TemplateDeletionModal({
           destructive
           onClick={async () => {
             try {
-              const deletedId = await deleteActivityTemplate()
+              const { data } = await deleteActivityTemplate()
 
-              if (deletedId) {
+              if (data?.deleteActivityTemplate) {
                 onSuccess()
                 setOpen(false)
               } else {

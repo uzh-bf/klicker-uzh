@@ -309,9 +309,13 @@ export default {
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
+      LIVE_QUIZ_TEMPLATE: 'Live Quiz Vorlage',
       PRACTICE_QUIZ: 'Übungs-Quiz',
+      PRACTICE_QUIZ_TEMPLATE: 'Übungs-Quiz Vorlage',
       MICRO_LEARNING: 'Microlearning',
+      MICRO_LEARNING_TEMPLATE: 'Microlearning Vorlage',
       GROUP_ACTIVITY: 'Gruppenaktivität',
+      GROUP_ACTIVITY_TEMPLATE: 'Gruppenaktivität Vorlage',
       ANSWER_COLLECTION: 'Antwort-Sammlung',
       CATALOG_COLLECTION: 'Katalog-Sammlung',
     },
@@ -2227,11 +2231,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       all: 'Alle',
       sharingRequests: 'Zugriffs-Anfragen',
       unresolved: 'Unbearbeitet',
-      objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
-      objectTypeCATALOG_COLLECTION: 'Katalog-Sammlung',
       noObjectsFoundInCatalog:
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
+      useTemplate: 'Vorlage verwenden',
       importObject: 'Objekt importieren',
       importObjectType: '{object} importieren',
       accessRequested: 'Zugriff beantragt',
@@ -2283,6 +2286,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeCATALOG_COLLECTIONtitle: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
       removeANSWER_COLLECTIONtitle: 'Antwort-Sammlung aus Katalog entfernen',
+      removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
+      removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
       createCatalogCollection: 'Sammlung erstellen',
@@ -2325,6 +2330,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
       requestSuccessInfoANSWER_COLLECTION:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Antwort-Sammlung und können diese in Ihren Auswahl-Fragen und Fallstudien verwenden.',
+      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
       requestCatalogObjectSuccess:
         'Die Zugriffsanfrage wurde erfolgreich übermittelt.',
       requestCatalogObjectFailed:
@@ -2382,12 +2389,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipANSWER_COLLECTION:
         'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
+        'Sie sind dabei, die Eigentumsrechte für die Live-Quiz Vorlage <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Vorlage, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
       shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
+      shareLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage teilen',
       infoSharingANSWER_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingCATALOG_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingLIVE_QUIZ_TEMPLATE:
+        'Diese Ansicht erlaubt es Ihnen, die Live-Quiz Vorlage "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Metadaten der Vorlage bearbeiten oder andere Veränderungen vornehmen.',
       sharingSuccessful: 'Das Objekt wurde erfolgreich geteilt.',
       sharingFailed:
         'Beim Teilen des Objekts ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
@@ -2396,10 +2408,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       removeCATALOG_COLLECTION: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
+      removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
       confirmRemovalCATALOG_COLLECTION:
         'Sind Sie sicher, dass Sie die Katalog-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalANSWER_COLLECTION:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalLIVE_QUIZ_TEMPLATE:
+        'Sind Sie sicher, dass Sie die Live-Quiz Vorlage "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemoval: 'Entfernung bestätigen',
       removalSuccessful:
         'Das Objekt wurde erfolgreich aus Ihrem Konto entfernt.',
