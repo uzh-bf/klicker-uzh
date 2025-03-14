@@ -310,6 +310,7 @@ export default {
       userGroup: 'Benutzergruppe',
       permissionLevel: 'Zugriffsrechte',
       template: 'Vorlage',
+      unset: 'nicht gesetzt',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -1234,6 +1235,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newQuestion: 'Neue Frage',
       blockSettingsTitle: 'Einstellungen Block {blockIx}',
       timeLimit: 'Zeit-Limit',
+      noTimeLimit: 'Kein Zeit-Limit',
       optionalTimeLimit: 'Optionales Zeit-Limit',
       timeLimitTooltip: 'Zeit-Limit für Block {blockIx} in Sekunden',
       newBlock: 'Neuer Block',
@@ -1600,6 +1602,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmSettings: 'Einstellungen bestätigen',
       settingsNotSaved:
         'Bitte speichern Sie Ihre Änderungen an den Einstellungen, bevor Sie mit der Bearbeitung der Vorlage fortfahren.',
+      confirmTimeLimit: 'Zeitlimit bestätigen',
     },
     formErrors: {
       resolveErrors:

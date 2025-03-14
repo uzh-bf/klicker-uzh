@@ -1,14 +1,16 @@
+import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   ActivityTemplate,
   ElementInstance,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { H3, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { ElementFormTypes } from '../../questions/manipulation/types'
 import ActivityRecoveryPrompt from './ActivityRecoveryPrompt'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
+import LiveQuizTimeLimitModal from './liveQuiz/LiveQuizTimeLimitModal'
 import loadProgressFromLiveQuizData from './liveQuiz/loadProgressFromLiveQuizData'
 import useInitialLiveQuizTemplateFormData from './liveQuiz/useInitialLiveQuizTemplateFormData'
 import SectionCollapsible, {
@@ -39,7 +41,7 @@ export type LiveQuizTemplateFormValues = {
 
   // blocks with optionally identical or modified elements
   blocks: {
-    timeLimit?: number
+    timeLimit?: string
     elements: {
       unmodifiedInstance: boolean // boolean to signal that this instance should be directly copied from the template
       processed: boolean // boolean to signal that this instance has been processed / adapted if desired
@@ -59,6 +61,12 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   // closing the settings step should be blocked unless the modified settings have been saved
   const [closingSettingsDisabled, setClosingSettingsDisabled] = useState(false)
   const [settingsTouchedToast, setSettingsTouchedToast] = useState(false)
+
+  // time limit modal to set block time limit
+  const [timeLimitModal, setTimeLimitModal] = useState({
+    open: false,
+    blockIx: 0,
+  })
 
   // track states and validity of collapsibles
   const [collapsibles, setCollapsibles] = useState<TemplateCollapsibleUIStates>(
@@ -189,14 +197,29 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
           )}
         </>
 
-        {liveQuiz?.blocks?.map((block, blockIx) => (
-          <div key={`block-${blockIx}`} className="mt-4">
-            {/* // TODO: add block settings - time limit should be shown and modifyable */}
-            <H3>{`${t('shared.generic.block')} ${blockIx + 1}`}</H3>
+        {quizData?.blocks?.map((block, blockIx) => (
+          <div key={`live-quiz-template-block-${blockIx}`} className="mt-4">
+            <div className="flex flex-row items-center justify-between">
+              <H3>{`${t('shared.generic.block')} ${blockIx + 1}`}</H3>
+              <Button
+                basic
+                onClick={() => setTimeLimitModal({ open: true, blockIx })}
+                className={{
+                  root: 'text-primary-100 hover:text-primary-100 h-7',
+                }}
+              >
+                <Button.Icon icon={faClock} />
+                <Button.Label>
+                  {block.timeLimit
+                    ? `${t('manage.activityWizard.timeLimit')}: ${block.timeLimit} s`
+                    : t('manage.activityWizard.noTimeLimit')}
+                </Button.Label>
+              </Button>
+            </div>
             {block.elements?.map((element, elementIx) => (
               <SectionCollapsible
-                key={`element-${blockIx}-${elementIx}`}
-                title={`${t('shared.generic.element')} ${elementIx + 1}: ${t(`shared.types.${element.elementType}`)}`}
+                key={`live-quiz-template-element-${blockIx}-${elementIx}`}
+                title={`${t('shared.generic.element')} ${elementIx + 1}: ${t(`shared.types.${element.instance.elementType}`)}`}
                 status={collapsibles[blockIx]?.[elementIx]?.status || 'due'}
                 isOpen={collapsibles[blockIx]?.[elementIx]?.open || false}
                 onOpenChange={() =>
@@ -218,6 +241,31 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                 </div>
               </SectionCollapsible>
             ))}
+
+            <LiveQuizTimeLimitModal
+              open={timeLimitModal.open && timeLimitModal.blockIx === blockIx}
+              onClose={() => setTimeLimitModal({ open: false, blockIx: 0 })}
+              blockIx={blockIx}
+              timeLimit={quizData.blocks[0]?.timeLimit}
+              setTimeLimit={(newValue) => {
+                setQuizData((prev) => {
+                  if (!prev) {
+                    return prev
+                  }
+
+                  const blocks = [...prev.blocks]
+                  blocks[blockIx] = {
+                    ...blocks[blockIx],
+                    timeLimit: newValue,
+                  }
+
+                  return {
+                    ...prev,
+                    blocks,
+                  }
+                })
+              }}
+            />
           </div>
         ))}
       </div>

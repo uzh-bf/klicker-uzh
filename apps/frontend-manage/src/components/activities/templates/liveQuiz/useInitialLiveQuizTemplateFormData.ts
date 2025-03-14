@@ -38,7 +38,7 @@ function useInitialLiveQuizTemplateFormData({
 
       blocks:
         liveQuiz.blocks?.map((block) => ({
-          timeLimit: block.timeLimit ?? undefined,
+          timeLimit: block.timeLimit ? String(block.timeLimit) : undefined,
           elements:
             block.elements?.map((element) => ({
               unmodifiedInstance: false,
