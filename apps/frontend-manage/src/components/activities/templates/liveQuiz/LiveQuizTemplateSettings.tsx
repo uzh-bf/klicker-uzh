@@ -20,15 +20,18 @@ import LiveQuizGradingIllustration from '../../creation/liveQuiz/LiveQuizGrading
 import { ElementSelectCourse } from '../../ElementCreation'
 import { LiveQuizTemplateFormValues } from '../LiveQuizTemplate'
 import { TemplateCollapsibleUIStates } from '../SectionCollapsible'
+import TouchMonitor from '../TouchMonitor'
 
 function LiveQuizTemplateSettings({
   quizData,
   setQuizData,
   setCollapsibles,
+  setClosingSettingsDisabled,
 }: {
   quizData: LiveQuizTemplateFormValues
   setQuizData: Dispatch<SetStateAction<LiveQuizTemplateFormValues>>
   setCollapsibles: Dispatch<SetStateAction<TemplateCollapsibleUIStates>>
+  setClosingSettingsDisabled: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
@@ -142,10 +145,17 @@ function LiveQuizTemplateSettings({
                   },
                 }
           })
+
+          // enable closing the settings step again
+          setClosingSettingsDisabled(false)
         }}
       >
-        {({ isValid, isSubmitting }) => (
+        {({ touched, isValid, isSubmitting }) => (
           <Form className="flex flex-col gap-4 md:flex-row">
+            <TouchMonitor
+              touched={Object.values(touched).some((t) => t)}
+              onTouch={() => setClosingSettingsDisabled(true)}
+            />
             <div className="flex w-full flex-col md:w-1/2 lg:w-2/3">
               <div className="flex flex-row gap-3">
                 <FormikTextField

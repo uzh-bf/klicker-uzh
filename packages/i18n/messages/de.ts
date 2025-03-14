@@ -1598,6 +1598,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Hier können Sie die Grundeinstellungen der Akvitität verändern. Bitte beachten Sie für weitere Informationen die entsprechenden Tooltips oder konsultieren Sie die Dokumentation. Einige Einstellungen wie beispielsweise Punkte-Multiplikatoren können bei Vorlagen nicht direkt verändert werden.',
       forGamifiedCourses: 'für gamifizierte Kurse',
       confirmSettings: 'Einstellungen bestätigen',
+      settingsNotSaved:
+        'Bitte speichern Sie Ihre Änderungen an den Einstellungen, bevor Sie mit der Bearbeitung der Vorlage fortfahren.',
     },
     formErrors: {
       resolveErrors:

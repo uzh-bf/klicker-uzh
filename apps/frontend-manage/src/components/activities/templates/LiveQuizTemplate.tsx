@@ -2,12 +2,6 @@ import {
   ActivityTemplate,
   ElementInstance,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  LQ_DEFAULT_CORRECT_POINTS,
-  LQ_DEFAULT_POINTS,
-  LQ_MAX_BONUS_POINTS,
-  LQ_TIME_TO_ZERO_BONUS,
-} from '@klicker-uzh/shared-components/src/constants'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -15,10 +9,12 @@ import { useEffect, useState } from 'react'
 import { ElementFormTypes } from '../../questions/manipulation/types'
 import ActivityRecoveryPrompt from './ActivityRecoveryPrompt'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
+import useInitialLiveQuizTemplateFormData from './liveQuiz/useInitialLiveQuizTemplateFormData'
 import SectionCollapsible, {
   TemplateCollapsibleState,
   TemplateCollapsibleUIStates,
 } from './SectionCollapsible'
+import SettingsNotSavedToast from './SettingsNotSavedToast'
 import TemplateInfo from './TemplateInfo'
 
 export type LiveQuizTemplateFormValues = {
@@ -56,7 +52,12 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   const t = useTranslations()
   const liveQuiz = template.liveQuiz
 
+  // recovery prompt state in case a previous template state is still available for this activity
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
+
+  // closing the settings step should be blocked unless the modified settings have been saved
+  const [closingSettingsDisabled, setClosingSettingsDisabled] = useState(false)
+  const [settingsTouchedToast, setSettingsTouchedToast] = useState(false)
 
   // track states and validity of collapsibles
   const [collapsibles, setCollapsibles] = useState<TemplateCollapsibleUIStates>(
@@ -92,46 +93,10 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     undefined
   )
 
-  // TODO: extract to separate component / custom hook
   // helper function to initialize quiz data from template
-  const initialLiveQuizTemplateFormData = () => {
-    if (!liveQuiz) {
-      return
-    }
-
-    const initialData: LiveQuizTemplateFormValues = {
-      name: liveQuiz.name,
-      displayName: liveQuiz.displayName,
-      description: liveQuiz.description ?? undefined,
-      courseId: undefined,
-      multiplier: String(liveQuiz.pointsMultiplier),
-      settingsProcessed: false,
-
-      isGamificationEnabled: liveQuiz.isGamificationEnabled,
-      isConfusionFeedbackEnabled: liveQuiz.isConfusionFeedbackEnabled,
-      isLiveQAEnabled: liveQuiz.isLiveQAEnabled,
-      isModerationEnabled: liveQuiz.isModerationEnabled,
-      defaultPoints: liveQuiz.defaultPoints ?? LQ_DEFAULT_POINTS,
-      defaultCorrectPoints:
-        liveQuiz.defaultCorrectPoints ?? LQ_DEFAULT_CORRECT_POINTS,
-      maxBonusPoints: liveQuiz.maxBonusPoints ?? LQ_MAX_BONUS_POINTS,
-      timeToZeroBonus: liveQuiz.timeToZeroBonus ?? LQ_TIME_TO_ZERO_BONUS,
-
-      blocks:
-        liveQuiz.blocks?.map((block) => ({
-          timeLimit: block.timeLimit ?? undefined,
-          elements:
-            block.elements?.map((element) => ({
-              unmodifiedInstance: false,
-              processed: false,
-              instance: element,
-              formValues: null,
-            })) ?? [],
-        })) ?? [],
-    }
-
-    return initialData
-  }
+  const initialTemplateFormData = useInitialLiveQuizTemplateFormData({
+    liveQuiz,
+  })
 
   // TODO: extract to separate component / custom hook
   const loadProgressFromData = ({
@@ -173,9 +138,8 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     }
     // initialize live quiz template form data based on the loaded live quiz data
     else {
-      const initialData = initialLiveQuizTemplateFormData()
-      if (initialData) {
-        setQuizData(initialData)
+      if (initialTemplateFormData) {
+        setQuizData(initialTemplateFormData)
       }
     }
   }, [liveQuiz])
@@ -194,9 +158,8 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
       <ActivityRecoveryPrompt
         open={showRecoveryPrompt}
         onDiscard={() => {
-          const initialData = initialLiveQuizTemplateFormData()
-          if (initialData) {
-            setQuizData(initialData)
+          if (initialTemplateFormData) {
+            setQuizData(initialTemplateFormData)
           }
           setShowRecoveryPrompt(false)
         }}
@@ -216,28 +179,42 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         instructions={template.instructions}
       />
       <div className="mt-6 flex flex-col">
-        <SectionCollapsible
-          title={t('shared.generic.activitySettings')}
-          status={collapsibles.settings.status}
-          isOpen={collapsibles.settings.open}
-          onOpenChange={() =>
-            setCollapsibles((prev) => ({
-              ...prev,
-              settings: {
-                ...prev.settings,
-                open: !prev.settings.open,
-              },
-            }))
-          }
-        >
-          {quizData && collapsibles.settings.open && (
-            <LiveQuizTemplateSettings
-              quizData={quizData}
-              setQuizData={setQuizData}
-              setCollapsibles={setCollapsibles}
+        <>
+          <SectionCollapsible
+            title={t('shared.generic.activitySettings')}
+            status={collapsibles.settings.status}
+            isOpen={collapsibles.settings.open}
+            onOpenChange={() => {
+              if (closingSettingsDisabled) {
+                setSettingsTouchedToast(true)
+                return
+              }
+
+              setCollapsibles((prev) => ({
+                ...prev,
+                settings: {
+                  ...prev.settings,
+                  open: !prev.settings.open,
+                },
+              }))
+            }}
+          >
+            {quizData && collapsibles.settings.open && (
+              <LiveQuizTemplateSettings
+                quizData={quizData}
+                setQuizData={setQuizData}
+                setCollapsibles={setCollapsibles}
+                setClosingSettingsDisabled={setClosingSettingsDisabled}
+              />
+            )}
+          </SectionCollapsible>
+          {closingSettingsDisabled && (
+            <SettingsNotSavedToast
+              open={settingsTouchedToast}
+              onClose={() => setSettingsTouchedToast(false)}
             />
           )}
-        </SectionCollapsible>
+        </>
 
         {liveQuiz?.blocks?.map((block, blockIx) => (
           <div key={`block-${blockIx}`} className="mt-4">

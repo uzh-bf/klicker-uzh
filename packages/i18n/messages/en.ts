@@ -1582,6 +1582,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Here you can change the basic settings of the activity. Please refer to the corresponding tooltips or consult the documentation for further information. Some settings such as point multipliers cannot be changed directly in templates.',
       forGamifiedCourses: 'for gamified courses',
       confirmSettings: 'Confirm Settings',
+      settingsNotSaved:
+        'Please save your changes to the settings before continuing to edit the template.',
     },
     formErrors: {
       resolveErrors:
