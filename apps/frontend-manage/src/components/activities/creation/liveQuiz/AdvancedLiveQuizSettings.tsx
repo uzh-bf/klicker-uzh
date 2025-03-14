@@ -10,18 +10,8 @@ import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButto
 import { Button, FormikNumberField, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import {
-  CartesianGrid,
-  Label,
-  Legend,
-  Line,
-  LineChart,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { twMerge } from 'tailwind-merge'
+import LiveQuizGradingIllustration from './LiveQuizGradingIllustration'
 
 function AdvancedLiveQuizSettings({
   multiplier,
@@ -40,10 +30,6 @@ function AdvancedLiveQuizSettings({
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
-  const multiplierValue = parseInt(multiplier, 10)
-  const defaultPoints = parseInt(defaultPointsValue, 10) ?? LQ_DEFAULT_POINTS
-  const defaultCorrectPoints =
-    parseInt(correctPointsValue, 10) ?? LQ_DEFAULT_CORRECT_POINTS
 
   return (
     <Modal
@@ -148,130 +134,13 @@ function AdvancedLiveQuizSettings({
           />
         </div>
         <div className="mt-4 w-full md:w-1/2">
-          <ResponsiveContainer className="mb-4" height={245}>
-            <LineChart
-              data={[
-                {
-                  time: 0,
-                  correctPoints:
-                    defaultPoints +
-                    multiplierValue *
-                      (defaultCorrectPoints +
-                        (parseInt(maxBonusValue, 10) ?? 0)),
-                  wrongPoints: defaultPoints,
-                },
-                {
-                  time: parseInt(timeToZeroValue, 10) ?? 0,
-                  correctPoints:
-                    defaultPoints + multiplierValue * defaultCorrectPoints,
-                  wrongPoints: defaultPoints,
-                },
-                {
-                  time: 2 * (parseInt(timeToZeroValue, 10) ?? 0),
-                  correctPoints:
-                    defaultPoints + multiplierValue * defaultCorrectPoints,
-                  wrongPoints: defaultPoints,
-                },
-              ]}
-              margin={{ top: 0, right: 20, left: -20, bottom: 13 }}
-              height={150}
-            >
-              <CartesianGrid strokeDasharray="6 6" />
-              <XAxis
-                dataKey="time"
-                domain={[0, 2 * parseInt(timeToZeroValue)]}
-                type="number"
-              >
-                <Label
-                  value={t('manage.activityWizard.liveQuizTSinceFirstCorrect')}
-                  offset={-10}
-                  position="insideBottom"
-                />
-              </XAxis>
-              <YAxis
-                dataKey="points"
-                domain={[
-                  0,
-                  defaultPoints +
-                    multiplierValue *
-                      (defaultCorrectPoints + parseInt(maxBonusValue)) +
-                    10,
-                ]}
-                type="number"
-              />
-              <Line
-                type="linear"
-                dataKey="correctPoints"
-                stroke="#006400"
-                strokeWidth={2}
-              />
-              <Line
-                type="linear"
-                dataKey="wrongPoints"
-                stroke="#ed2939"
-                strokeWidth={2}
-              />
-              <Legend
-                layout="horizontal"
-                verticalAlign="top"
-                align="right"
-                wrapperStyle={{ paddingBottom: '8px' }}
-                payload={[
-                  {
-                    value: t(
-                      'manage.activityWizard.liveQuizCorrectAnswersPoints'
-                    ),
-                    type: 'line',
-                    color: '#006400',
-                  },
-                  {
-                    value: t(
-                      'manage.activityWizard.liveQuizIncorrectAnswersPoints'
-                    ),
-                    type: 'line',
-                    color: '#ed2939',
-                  },
-                ]}
-              />
-              <RechartsTooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const time = payload[0].payload.time
-                    const correctPoints = payload[0].payload.correctPoints
-                    const wrongPoints = payload[0].payload.wrongPoints
-
-                    return (
-                      <div className="border-primary-100 rounded border border-solid bg-white p-2 text-sm text-gray-600">
-                        <div>
-                          {t('manage.activityWizard.liveQuizAnswerTime', {
-                            answerTime: time,
-                          })}
-                        </div>
-                        <div>
-                          {t(
-                            'manage.activityWizard.liveQuizTotalAwardedPointsCorrect',
-                            {
-                              totalPoints: correctPoints,
-                            }
-                          )}
-                        </div>
-                        <div>
-                          {t(
-                            'manage.activityWizard.liveQuizTotalAwardedPointsIncorrect',
-                            {
-                              totalPoints: wrongPoints,
-                            }
-                          )}
-                        </div>
-                      </div>
-                    )
-                  }
-
-                  return null
-                }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <LiveQuizGradingIllustration
+            defaultPointsValue={defaultPointsValue}
+            correctPointsValue={correctPointsValue}
+            maxBonusValue={maxBonusValue}
+            timeToZeroValue={timeToZeroValue}
+            multiplier={multiplier}
+          />
         </div>
       </div>
     </Modal>

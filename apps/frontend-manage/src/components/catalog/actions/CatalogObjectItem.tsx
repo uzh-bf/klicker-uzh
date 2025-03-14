@@ -96,7 +96,7 @@ function CatalogObjectItem({
           if (object.access === ObjectAccess.Public) {
             if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
               // primary action for public templates: create activity with template
-              router.push(`/template/${object.uuid}`)
+              router.push(`/templates/${object.templateId}`)
             } else {
               // primary action for public objects: import a copy
               setImportModal(true)

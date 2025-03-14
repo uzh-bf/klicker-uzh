@@ -135,6 +135,7 @@ export type CatalogObject = {
   name: string
   objectType: CatalogObjectType
   assignmentId: number
+  templateId?: string
   access: ObjectAccess
   ownerShortname?: string
   isOwner: boolean

@@ -152,6 +152,8 @@ export default {
       questions: 'Fragen',
       question: 'Frage',
       element: 'Element',
+      block: 'Block',
+      stack: 'Stack',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Erklärung',
@@ -193,6 +195,7 @@ export default {
       solution: 'Lösung',
       sampleSolution: 'Musterlösung',
       gamification: 'Gamifizierung',
+      scoring: 'Punktevergabe',
       liveQA: 'Live-Q&A',
       moderation: 'Moderation',
       feedbackChannel: 'Feedback-Channel',
@@ -211,6 +214,7 @@ export default {
       information: 'Information',
       description: 'Beschreibung',
       settings: 'Einstellungen',
+      activitySettings: 'Aktivitätseinstellungen',
       course: 'Kurs',
       availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
@@ -318,6 +322,15 @@ export default {
       GROUP_ACTIVITY_TEMPLATE: 'Gruppenaktivität Vorlage',
       ANSWER_COLLECTION: 'Antwort-Sammlung',
       CATALOG_COLLECTION: 'Katalog-Sammlung',
+      SC: 'Single Choice Frage',
+      MC: 'Multiple Choice Frage',
+      KPRIM: 'Kprim Frage',
+      NUMERICAL: 'Numerische Frage',
+      FREE_TEXT: 'Freitext Frage',
+      SELECTION: 'Auswahl Frage',
+      CASE_STUDY: 'Fallstudie',
+      FLASHCARD: 'Lernkarte',
+      CONTENT: 'Inhaltselement',
     },
     contentInput: {
       boldStyle:
@@ -1565,6 +1578,28 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       editTemplateDescription:
         'Editieren Sie alle Metainformationen der Aktivitätsvorlage, die Sie ändern möchten. Änderungen werden nach dem Speichern sofort wirksam und allen Benutzern der Vorlage angezeigt.',
       saveChanges: 'Änderungen speichern',
+      activityFromTemplate: 'Aktivität aus Vorlage erstellen',
+      errorLoadingTemplate:
+        'Beim Laden der Vorlage ist ein Fehler aufgetreten...',
+      templateInfoLIVE_QUIZ:
+        'Diese Ansicht ermöglicht es Ihnen aus der Live-Quiz Vorlage "{templateName}" ihre eigene Live-Quiz Aktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      templateInfoPRACTICE_QUIZ:
+        'Diese Ansicht ermöglicht es Ihnen aus der Übungs-Quiz Vorlage "{templateName}" ihre eigene Übungs-Quiz Aktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      templateInfoGROUP_ACTIVITY:
+        'Diese Ansicht ermöglicht es Ihnen aus der Gruppenaktivität Vorlage "{templateName}" ihre eigene Gruppenaktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      templateInfoMICRO_LEARNING:
+        'Diese Ansicht ermöglicht es Ihnen aus der Microlearning Vorlage "{templateName}" ihr eigenes Microlearning zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      recoverActivity: 'Aktivität wiederherstellen',
+      incompleteActivity:
+        'Eine unvollständige Version dieser Aktivitätsvorlage wurde automatisch gespeichert. Bitte wählen Sie, ob Sie die Bearbeitung der Aktivität fortsetzen und den automatisch gespeicherten Zustand wiederherstellen oder mit der ursprünglichen Version der Vorlage neu beginnen möchten.',
+      startOver: 'Neu starten',
+      continueEditing: 'Weiter bearbeiten',
+      settingsInstructions:
+        'Hier können Sie die Grundeinstellungen der Akvitität verändern. Bitte beachten Sie für weitere Informationen die entsprechenden Tooltips oder konsultieren Sie die Dokumentation. Einige Einstellungen wie beispielsweise Punkte-Multiplikatoren können bei Vorlagen nicht direkt verändert werden.',
+      forGamifiedCourses: 'für gamifizierte Kurse',
+      confirmSettings: 'Einstellungen bestätigen',
+      settingsNotSaved:
+        'Bitte speichern Sie Ihre Änderungen an den Einstellungen, bevor Sie mit der Bearbeitung der Vorlage fortfahren.',
     },
     formErrors: {
       resolveErrors:

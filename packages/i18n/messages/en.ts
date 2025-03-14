@@ -151,6 +151,8 @@ export default {
       questions: 'Questions',
       question: 'Question',
       element: 'Element',
+      block: 'Block',
+      stack: 'Stack',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Explanation',
@@ -192,6 +194,7 @@ export default {
       solution: 'Solution',
       sampleSolution: 'Sample solution',
       gamification: 'Gamification',
+      scoring: 'Scoring',
       liveQA: 'Live Q&A',
       moderation: 'Moderation',
       feedbackChannel: 'Feedback Channel',
@@ -210,6 +213,7 @@ export default {
       information: 'Information',
       description: 'Description',
       settings: 'Settings',
+      activitySettings: 'Activity Settings',
       course: 'Course',
       availableFrom: 'Available from',
       startDate: 'Start date',
@@ -317,6 +321,15 @@ export default {
       GROUP_ACTIVITY_TEMPLATE: 'Group Activity Template',
       ANSWER_COLLECTION: 'Answer Collection',
       CATALOG_COLLECTION: 'Catalog Collection',
+      SC: 'Single Choice Question',
+      MC: 'Multiple Choice Question',
+      KPRIM: 'Kprim Question',
+      NUMERICAL: 'Numerical Question',
+      FREE_TEXT: 'Free Text Question',
+      SELECTION: 'Selection Question',
+      CASE_STUDY: 'Case Study',
+      FLASHCARD: 'Flashcard',
+      CONTENT: 'Content Element',
     },
     contentInput: {
       boldStyle:
@@ -1550,6 +1563,27 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editTemplateDescription:
         'Modify any meta information of the activity template you want to change. Changes will go into effect immediately upon saving and are shown to all users of the template.',
       saveChanges: 'Save Changes',
+      activityFromTemplate: 'Create Activity from Template',
+      errorLoadingTemplate: 'An error occurred while loading the template...',
+      templateInfoLIVE_QUIZ:
+        'This view allows you to create your own live quiz activity from the live quiz template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      templateInfoPRACTICE_QUIZ:
+        'This view allows you to create your own practice quiz from the practice quiz template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      templateInfoGROUP_ACTIVITY:
+        'This view allows you to create your own group activity from the group activity template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      templateInfoMICRO_LEARNING:
+        'This view allows you to create your own microlearning from the microlearning template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      recoverActivity: 'Recover Activity',
+      incompleteActivity:
+        'An incomplete state of this activity template has been auto-saved. Please choose whether you would like to continue editing the activity and recover the auto-saved state or start over with the original version of the template.',
+      startOver: 'Start Over',
+      continueEditing: 'Continue Editing',
+      settingsInstructions:
+        'Here you can change the basic settings of the activity. Please refer to the corresponding tooltips or consult the documentation for further information. Some settings such as point multipliers cannot be changed directly in templates.',
+      forGamifiedCourses: 'for gamified courses',
+      confirmSettings: 'Confirm Settings',
+      settingsNotSaved:
+        'Please save your changes to the settings before continuing to edit the template.',
     },
     formErrors: {
       resolveErrors:

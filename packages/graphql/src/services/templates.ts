@@ -1188,4 +1188,112 @@ export async function editActivityTemplate(
   }
 }
 
+export async function getActivityTemplate(
+  { templateId }: { templateId: string },
+  ctx: ContextWithUser
+) {
+  const template = await ctx.prisma.activityTemplate.findUnique({
+    where: {
+      id: templateId,
+    },
+    include: {
+      liveQuiz: {
+        where: {
+          isDeleted: false,
+        },
+        include: {
+          blocks: {
+            include: {
+              elements: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      practiceQuiz: {
+        where: {
+          isDeleted: false,
+        },
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      microLearning: {
+        where: {
+          isDeleted: false,
+        },
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      groupActivity: {
+        where: {
+          isDeleted: false,
+        },
+        include: {
+          stacks: {
+            include: {
+              elements: {
+                orderBy: {
+                  order: 'asc',
+                },
+              },
+            },
+            orderBy: {
+              order: 'asc',
+            },
+          },
+        },
+      },
+      answerCollections: true,
+    },
+  })
+
+  let activityType: ActivityType | null = null
+  if (template?.liveQuiz) {
+    activityType = ActivityType.LIVE_QUIZ
+  } else if (template?.practiceQuiz) {
+    activityType = ActivityType.PRACTICE_QUIZ
+  } else if (template?.microLearning) {
+    activityType = ActivityType.MICRO_LEARNING
+  } else if (template?.groupActivity) {
+    activityType = ActivityType.GROUP_ACTIVITY
+  }
+
+  // if the template is not defined or no activity is linked to the template, return null
+  if (!template || activityType === null) {
+    return null
+  }
+
+  return { ...template, activityType }
+}
+
 // #endregion
