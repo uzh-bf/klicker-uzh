@@ -6,7 +6,7 @@ on:
     #   - apps/**
     #   - packages/**
   pull_request:
-    branches: ['v3', 'v3*']
+    # branches: ['v3', 'v3*'] # TODO: re-introduce this once the PR is ready to be merged
     types: [opened, synchronize, reopened]
     paths:
       - apps/**
