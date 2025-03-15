@@ -6,7 +6,7 @@ import {
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
 import { useMemo } from 'react'
-import { LiveQuizTemplateFormValues } from '../LiveQuizTemplate'
+import { LiveQuizTemplateFormValues } from '../types'
 
 function useInitialLiveQuizTemplateFormData({
   liveQuiz,
@@ -38,13 +38,16 @@ function useInitialLiveQuizTemplateFormData({
 
       blocks:
         liveQuiz.blocks?.map((block) => ({
-          timeLimit: block.timeLimit ?? undefined,
+          timeLimit: block.timeLimit ? String(block.timeLimit) : undefined,
           elements:
             block.elements?.map((element) => ({
-              unmodifiedInstance: false,
               processed: false,
+              useTemplateInstance: false,
+              useExistingElement: false,
+              useNewElement: false,
               instance: element,
               formValues: null,
+              elementId: null,
             })) ?? [],
         })) ?? [],
     }

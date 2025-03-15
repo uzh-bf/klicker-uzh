@@ -18,9 +18,9 @@ import useLiveQuizCourseGrouping from '../../../../lib/hooks/useLiveQuizCourseGr
 import EditorField from '../../creation/EditorField'
 import LiveQuizGradingIllustration from '../../creation/liveQuiz/LiveQuizGradingIllustration'
 import { ElementSelectCourse } from '../../ElementCreation'
-import { LiveQuizTemplateFormValues } from '../LiveQuizTemplate'
 import { TemplateCollapsibleUIStates } from '../SectionCollapsible'
 import TouchMonitor from '../TouchMonitor'
+import { LiveQuizTemplateFormValues } from '../types'
 
 function LiveQuizTemplateSettings({
   quizData,
@@ -118,9 +118,6 @@ function LiveQuizTemplateSettings({
           // mark settings step as completed and open next step (if defined)
           setCollapsibles((prev) => {
             const nextStep = prev[0][0]
-            console.log(prev)
-            console.log(nextStep)
-
             return typeof nextStep !== 'undefined'
               ? {
                   ...prev,

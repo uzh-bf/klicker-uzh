@@ -1,53 +1,23 @@
-import {
-  ActivityTemplate,
-  ElementInstance,
-} from '@klicker-uzh/graphql/dist/ops'
+import { faClock } from '@fortawesome/free-regular-svg-icons'
+import { ActivityTemplate } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { H3, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import { ElementFormTypes } from '../../questions/manipulation/types'
 import ActivityRecoveryPrompt from './ActivityRecoveryPrompt'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
+import LiveQuizTemplateTimeLimitModal from './liveQuiz/LiveQuizTemplateTimeLimitModal'
 import loadProgressFromLiveQuizData from './liveQuiz/loadProgressFromLiveQuizData'
 import useInitialLiveQuizTemplateFormData from './liveQuiz/useInitialLiveQuizTemplateFormData'
+import markElementAsProcessed from './markElementAsProcessed'
 import SectionCollapsible, {
   TemplateCollapsibleState,
   TemplateCollapsibleUIStates,
 } from './SectionCollapsible'
 import SettingsNotSavedToast from './SettingsNotSavedToast'
+import TemplateElementContent from './TemplateElementContent'
 import TemplateInfo from './TemplateInfo'
-
-export type LiveQuizTemplateFormValues = {
-  // common form values relevant for live quiz
-  name: string
-  displayName: string
-  description?: string
-  courseId?: string
-  multiplier: string // ! fixed (but shown)
-  settingsProcessed: boolean // boolean to signal that the settings have been processed / adapted if desired
-
-  // live quiz settings (same as in wizard)
-  isGamificationEnabled: boolean // ! irrelevant = hidden
-  isConfusionFeedbackEnabled: boolean // ! irrelevant = hidden
-  isLiveQAEnabled: boolean // ! irrelevant = hidden
-  isModerationEnabled: boolean // ! irrelevant = hidden
-  defaultPoints: number // ! fixed (but illustrated)
-  defaultCorrectPoints: number // ! fixed (but illustrated)
-  maxBonusPoints: number // ! fixed (but illustrated)
-  timeToZeroBonus: number // ! fixed (but illustrated)
-
-  // blocks with optionally identical or modified elements
-  blocks: {
-    timeLimit?: number
-    elements: {
-      unmodifiedInstance: boolean // boolean to signal that this instance should be directly copied from the template
-      processed: boolean // boolean to signal that this instance has been processed / adapted if desired
-      instance: ElementInstance // original instance information from the template
-      formValues: ElementFormTypes | null // form values for the element, if the user has chosen to insert their own content
-    }[]
-  }[]
-}
+import { LiveQuizTemplateFormValues } from './types'
 
 function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   const t = useTranslations()
@@ -59,6 +29,12 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   // closing the settings step should be blocked unless the modified settings have been saved
   const [closingSettingsDisabled, setClosingSettingsDisabled] = useState(false)
   const [settingsTouchedToast, setSettingsTouchedToast] = useState(false)
+
+  // time limit modal to set block time limit
+  const [timeLimitModal, setTimeLimitModal] = useState({
+    open: false,
+    blockIx: 0,
+  })
 
   // track states and validity of collapsibles
   const [collapsibles, setCollapsibles] = useState<TemplateCollapsibleUIStates>(
@@ -115,6 +91,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         setQuizData(initialTemplateFormData)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveQuiz])
 
   if (!liveQuiz) {
@@ -189,14 +166,29 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
           )}
         </>
 
-        {liveQuiz?.blocks?.map((block, blockIx) => (
-          <div key={`block-${blockIx}`} className="mt-4">
-            {/* // TODO: add block settings - time limit should be shown and modifyable */}
-            <H3>{`${t('shared.generic.block')} ${blockIx + 1}`}</H3>
+        {quizData?.blocks?.map((block, blockIx) => (
+          <div key={`live-quiz-template-block-${blockIx}`} className="mt-4">
+            <div className="flex flex-row items-center justify-between">
+              <H3>{`${t('shared.generic.block')} ${blockIx + 1}`}</H3>
+              <Button
+                basic
+                onClick={() => setTimeLimitModal({ open: true, blockIx })}
+                className={{
+                  root: 'text-primary-100 hover:text-primary-100 h-7',
+                }}
+              >
+                <Button.Icon icon={faClock} />
+                <Button.Label>
+                  {block.timeLimit
+                    ? `${t('manage.activityWizard.timeLimit')}: ${block.timeLimit} s`
+                    : t('manage.activityWizard.noTimeLimit')}
+                </Button.Label>
+              </Button>
+            </div>
             {block.elements?.map((element, elementIx) => (
               <SectionCollapsible
-                key={`element-${blockIx}-${elementIx}`}
-                title={`${t('shared.generic.element')} ${elementIx + 1}: ${t(`shared.types.${element.elementType}`)}`}
+                key={`live-quiz-template-element-${blockIx}-${elementIx}`}
+                title={`${t('shared.generic.element')} ${elementIx + 1}: ${t(`shared.types.${element.instance.elementType}`)}`}
                 status={collapsibles[blockIx]?.[elementIx]?.status || 'due'}
                 isOpen={collapsibles[blockIx]?.[elementIx]?.open || false}
                 onOpenChange={() =>
@@ -212,12 +204,151 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                   }))
                 }
               >
-                {/* Element content */}
-                <div>
-                  Content for element {elementIx + 1} in block {blockIx + 1}
-                </div>
+                <TemplateElementContent
+                  templateId={template.id}
+                  templateElement={element}
+                  acceptTemplateElement={() => {
+                    // TODO: if custom content was defined before, prompt user to confirm the content's deletion (maybe handle inside component)
+
+                    // store decision in form data
+                    setQuizData((prev) => {
+                      if (!prev) {
+                        return prev
+                      }
+
+                      const blocks = [...prev.blocks]
+                      const elements = [...blocks[blockIx].elements]
+                      elements[elementIx] = {
+                        processed: true,
+                        useTemplateInstance: true,
+                        useExistingElement: false,
+                        useNewElement: false,
+                        instance: elements[elementIx].instance,
+                        formValues: null,
+                        elementId: null,
+                      }
+                      blocks[blockIx] = {
+                        ...blocks[blockIx],
+                        elements,
+                      }
+
+                      return {
+                        ...prev,
+                        blocks,
+                      }
+                    })
+
+                    // update the collapsible state and open the next collapsible (if available)
+                    markElementAsProcessed({
+                      collapsibles,
+                      setCollapsibles,
+                      blockIx,
+                      elementIx,
+                    })
+                  }}
+                  replaceWithExistingElement={(elementId) => {
+                    // TODO: if custom content was defined before, prompt user to confirm the content's deletion (maybe handle inside component)
+
+                    // store decision and element id in form data
+                    setQuizData((prev) => {
+                      if (!prev) {
+                        return prev
+                      }
+
+                      const blocks = [...prev.blocks]
+                      const elements = [...blocks[blockIx].elements]
+                      elements[elementIx] = {
+                        processed: true,
+                        useTemplateInstance: false,
+                        useExistingElement: true,
+                        useNewElement: false,
+                        instance: elements[elementIx].instance,
+                        formValues: null,
+                        elementId,
+                      }
+                      blocks[blockIx] = {
+                        ...blocks[blockIx],
+                        elements,
+                      }
+
+                      return {
+                        ...prev,
+                        blocks,
+                      }
+                    })
+
+                    // update the collapsible state and open the next collapsible (if available)
+                    markElementAsProcessed({
+                      collapsibles,
+                      setCollapsibles,
+                      blockIx,
+                      elementIx,
+                    })
+                  }}
+                  saveNewElement={(formValues) => {
+                    setQuizData((prev) => {
+                      if (!prev) {
+                        return prev
+                      }
+
+                      const blocks = [...prev.blocks]
+                      const elements = [...blocks[blockIx].elements]
+                      elements[elementIx] = {
+                        processed: true,
+                        useTemplateInstance: false,
+                        useExistingElement: false,
+                        useNewElement: true,
+                        instance: elements[elementIx].instance,
+                        formValues,
+                        elementId: null,
+                      }
+                      blocks[blockIx] = {
+                        ...blocks[blockIx],
+                        elements,
+                      }
+
+                      return {
+                        ...prev,
+                        blocks,
+                      }
+                    })
+
+                    // update the collapsible state and open the next collapsible (if available)
+                    markElementAsProcessed({
+                      collapsibles,
+                      setCollapsibles,
+                      blockIx,
+                      elementIx,
+                    })
+                  }}
+                />
               </SectionCollapsible>
             ))}
+
+            <LiveQuizTemplateTimeLimitModal
+              open={timeLimitModal.open && timeLimitModal.blockIx === blockIx}
+              onClose={() => setTimeLimitModal({ open: false, blockIx: 0 })}
+              blockIx={blockIx}
+              timeLimit={quizData.blocks[blockIx]?.timeLimit}
+              setTimeLimit={(newValue) => {
+                setQuizData((prev) => {
+                  if (!prev) {
+                    return prev
+                  }
+
+                  const blocks = [...prev.blocks]
+                  blocks[blockIx] = {
+                    ...blocks[blockIx],
+                    timeLimit: newValue,
+                  }
+
+                  return {
+                    ...prev,
+                    blocks,
+                  }
+                })
+              }}
+            />
           </div>
         ))}
       </div>

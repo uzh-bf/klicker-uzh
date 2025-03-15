@@ -12,13 +12,13 @@ function useArtificialElementInstance({
   elementDataTypename,
   answerCollectionEntries,
 }: {
-  values: ElementFormTypes
+  values?: ElementFormTypes
   elementDataTypename?: ElementData['__typename']
   answerCollectionEntries?: { id: number; value: string }[]
 }): ElementInstance | undefined {
   const instance = useMemo(() => {
     // verify that the element data typename is set
-    if (!elementDataTypename) {
+    if (!elementDataTypename || !values) {
       return undefined
     }
 

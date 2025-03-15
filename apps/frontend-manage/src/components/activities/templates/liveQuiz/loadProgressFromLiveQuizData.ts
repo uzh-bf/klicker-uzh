@@ -1,5 +1,5 @@
-import { LiveQuizTemplateFormValues } from '../LiveQuizTemplate'
 import { TemplateCollapsibleUIStates } from '../SectionCollapsible'
+import { LiveQuizTemplateFormValues } from '../types'
 
 function loadProgressFromLiveQuizData({
   quizData,

@@ -71,7 +71,7 @@ const SectionCollapsible: React.FC<SectionCollapsibleProps> = ({
           )}
         />
       </CollapsibleTrigger>
-      <CollapsibleContent className="pt-1">
+      <CollapsibleContent className="border-b pt-1">
         <div className="px-1 py-2">{children}</div>
       </CollapsibleContent>
     </Collapsible>
