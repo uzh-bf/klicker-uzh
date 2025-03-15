@@ -42,6 +42,7 @@ function TemplateElementPreview({
       skip:
         !templateElement.useExistingElement ||
         templateElement.elementId === null,
+      fetchPolicy: 'cache-and-network',
     })
 
   // when an existing element is selected, fetch the element and convert it into an artificial instance

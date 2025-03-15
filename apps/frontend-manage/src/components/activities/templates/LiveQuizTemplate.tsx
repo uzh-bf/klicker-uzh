@@ -5,11 +5,12 @@ import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ActivityRecoveryPrompt from './ActivityRecoveryPrompt'
+import goToNextTemplateElement from './goToNextTemplateElement'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
 import LiveQuizTemplateTimeLimitModal from './liveQuiz/LiveQuizTemplateTimeLimitModal'
 import loadProgressFromLiveQuizData from './liveQuiz/loadProgressFromLiveQuizData'
 import useInitialLiveQuizTemplateFormData from './liveQuiz/useInitialLiveQuizTemplateFormData'
-import markElementAsProcessed from './markElementAsProcessed'
+import markTemplateElementAsProcessed from './markTemplateElementAsProcessed'
 import SectionCollapsible, {
   TemplateCollapsibleState,
   TemplateCollapsibleUIStates,
@@ -239,7 +240,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     })
 
                     // update the collapsible state and open the next collapsible (if available)
-                    markElementAsProcessed({
+                    markTemplateElementAsProcessed({
                       collapsibles,
                       setCollapsibles,
                       blockIx,
@@ -278,7 +279,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     })
 
                     // update the collapsible state and open the next collapsible (if available)
-                    markElementAsProcessed({
+                    markTemplateElementAsProcessed({
                       collapsibles,
                       setCollapsibles,
                       blockIx,
@@ -314,7 +315,15 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     })
 
                     // update the collapsible state and open the next collapsible (if available)
-                    markElementAsProcessed({
+                    markTemplateElementAsProcessed({
+                      collapsibles,
+                      setCollapsibles,
+                      blockIx,
+                      elementIx,
+                    })
+                  }}
+                  onNextElement={() => {
+                    goToNextTemplateElement({
                       collapsibles,
                       setCollapsibles,
                       blockIx,

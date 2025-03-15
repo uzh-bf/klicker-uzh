@@ -1603,6 +1603,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       withoutSampleSolution: 'without sample solution',
       withAnswerFeedbacks: 'with answer feedbacks',
       withoutAnswerFeedbacks: 'without answer feedbacks',
+      nextElement: 'Next element',
     },
     formErrors: {
       resolveErrors:
