@@ -1,4 +1,9 @@
-import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
+import { useQuery } from '@apollo/client'
+import {
+  ElementInstance,
+  ElementType,
+  GetArtificialInstanceDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import StudentElement, {
@@ -10,11 +15,9 @@ import React, { useEffect, useState } from 'react'
 import { ActivityTemplateElementFormValues } from './types'
 
 function TemplateElementPreview({
-  templateId,
   templateElement,
   showTemplateInstancePreview = false,
 }: {
-  templateId: string
   templateElement: ActivityTemplateElementFormValues
   showTemplateInstancePreview?: boolean
 }): React.ReactElement {
@@ -31,27 +34,42 @@ function TemplateElementPreview({
       valid: false,
     })
 
+  const { data: artificialInstance, loading: artificialInstanceLoading } =
+    useQuery(GetArtificialInstanceDocument, {
+      variables: {
+        elementId: templateElement.elementId!,
+      },
+      skip:
+        !templateElement.useExistingElement ||
+        templateElement.elementId === null,
+    })
+
   // when an existing element is selected, fetch the element and convert it into an artificial instance
   useEffect(() => {
     if (
       templateElement.useExistingElement &&
       templateElement.elementId !== null
     ) {
-      // TODO: Implement API call to fetch element instance
-      // fetchElementInstance(elementId, templateId).then(data => {
-      //   setLoadedInstance(data)
-      // })
+      if (
+        artificialInstanceLoading ||
+        !artificialInstance?.artificialInstance
+      ) {
+        return
+      }
+
+      setLoadedInstance(artificialInstance?.artificialInstance)
     }
   }, [
     templateElement.useExistingElement,
     templateElement.elementId,
-    templateId,
+    artificialInstance,
+    artificialInstanceLoading,
   ])
 
   // when a new element is defined in the form, an artificial instance is created
   useEffect(() => {
     if (templateElement.useNewElement && templateElement.formValues) {
-      // TODO: Convert formValues to instance format
+      // TODO: Convert formValues to instance format (reuse useArtificialElementInstance hook)
       // const convertedInstance = convertFormValuesToInstance(formValues)
       // setLoadedInstance(convertedInstance)
     }

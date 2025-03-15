@@ -29,7 +29,7 @@ function TemplateElementContent({
 
   return (
     <>
-      <div className="flex flex-col gap-4 md:flex-row md:gap-8">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:gap-8">
         <div className="w-full md:w-1/2">
           <div className="mb-2 text-gray-700">
             {t('manage.template.elementActionsTemplate')}
@@ -95,7 +95,6 @@ function TemplateElementContent({
             </div>
           ) : (
             <TemplateElementPreview
-              templateId={templateId}
               templateElement={templateElement}
               showTemplateInstancePreview={previewExistingInstance}
             />
