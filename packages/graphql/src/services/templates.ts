@@ -1326,6 +1326,7 @@ export async function getMatchingUserElementsTemplate(
   const availableElements = await ctx.prisma.element.findMany({
     where: {
       type: elementType,
+      isDeleted: false,
       OR: [
         {
           ownerId: ctx.user.sub,
