@@ -1604,6 +1604,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       withAnswerFeedbacks: 'with answer feedbacks',
       withoutAnswerFeedbacks: 'without answer feedbacks',
       nextElement: 'Next element',
+      sameNamedElementExists:
+        'Your library already contains an element with the name "{elementName}". Please consider selecting an existing element or creating a new one. If you choose to accept the template element without modifications, a copy of it will be added to your account.',
     },
     formErrors: {
       resolveErrors:

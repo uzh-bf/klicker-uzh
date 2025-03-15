@@ -1381,4 +1381,31 @@ export async function getMatchingUserElementsTemplate(
   return matchingElements
 }
 
+export async function checkTemplateElementExists(
+  { name }: { name: string },
+  ctx: ContextWithUser
+) {
+  // check if an element with the name already exists in the user's library
+  const element = await ctx.prisma.element.findFirst({
+    where: {
+      name,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+            },
+          },
+        },
+      ],
+    },
+  })
+
+  return element !== null
+}
+
 // #endregion

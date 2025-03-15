@@ -2830,6 +2830,7 @@ export type Query = {
   checkPrivatePreviewAvailable: Scalars['Boolean']['output'];
   checkPublicPreviewAvailable: Scalars['Boolean']['output'];
   checkShortnameAvailable: Scalars['Boolean']['output'];
+  checkTemplateElementExists: Scalars['Boolean']['output'];
   checkTemplateInfoAvailable?: Maybe<ActivityTemplateInfo>;
   checkValidCoursePin?: Maybe<Scalars['String']['output']>;
   cockpitQuiz?: Maybe<LiveQuiz>;
@@ -2935,6 +2936,11 @@ export type QueryCheckParticipantNameAvailableArgs = {
 
 export type QueryCheckShortnameAvailableArgs = {
   shortname: Scalars['String']['input'];
+};
+
+
+export type QueryCheckTemplateElementExistsArgs = {
+  name: Scalars['String']['input'];
 };
 
 
@@ -4870,6 +4876,13 @@ export type CheckPublicPreviewAvailableQueryVariables = Exact<{ [key: string]: n
 
 export type CheckPublicPreviewAvailableQuery = { __typename?: 'Query', checkPublicPreviewAvailable: boolean };
 
+export type CheckTemplateElementExistsQueryVariables = Exact<{
+  name: Scalars['String']['input'];
+}>;
+
+
+export type CheckTemplateElementExistsQuery = { __typename?: 'Query', checkTemplateElementExists: boolean };
+
 export type CheckTemplateInfoAvailableQueryVariables = Exact<{
   activityId: Scalars['String']['input'];
   activityType: ActivityType;
@@ -5686,6 +5699,7 @@ export const ChangePermissionLevelDocument = {"kind":"Document","definitions":[{
 export const CheckParticipantNameAvailableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckParticipantNameAvailable"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"username"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkParticipantNameAvailable"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"username"},"value":{"kind":"Variable","name":{"kind":"Name","value":"username"}}}]}]}}]} as unknown as DocumentNode<CheckParticipantNameAvailableQuery, CheckParticipantNameAvailableQueryVariables>;
 export const CheckPrivatePreviewAvailableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckPrivatePreviewAvailable"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkPrivatePreviewAvailable"}}]}}]} as unknown as DocumentNode<CheckPrivatePreviewAvailableQuery, CheckPrivatePreviewAvailableQueryVariables>;
 export const CheckPublicPreviewAvailableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckPublicPreviewAvailable"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkPublicPreviewAvailable"}}]}}]} as unknown as DocumentNode<CheckPublicPreviewAvailableQuery, CheckPublicPreviewAvailableQueryVariables>;
+export const CheckTemplateElementExistsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckTemplateElementExists"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkTemplateElementExists"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}}]}]}}]} as unknown as DocumentNode<CheckTemplateElementExistsQuery, CheckTemplateElementExistsQueryVariables>;
 export const CheckTemplateInfoAvailableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckTemplateInfoAvailable"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"activityId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"activityType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ActivityType"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkTemplateInfoAvailable"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"activityId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"activityId"}}},{"kind":"Argument","name":{"kind":"Name","value":"activityType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"activityType"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"noInstances"}},{"kind":"Field","name":{"kind":"Name","value":"noResourcesRequired"}},{"kind":"Field","name":{"kind":"Name","value":"resourcesRequiredExist"}},{"kind":"Field","name":{"kind":"Name","value":"resourcesRequiredMissing"}}]}}]}}]} as unknown as DocumentNode<CheckTemplateInfoAvailableQuery, CheckTemplateInfoAvailableQueryVariables>;
 export const CheckShortnameAvailableDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckShortnameAvailable"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"shortname"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkShortnameAvailable"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"shortname"},"value":{"kind":"Variable","name":{"kind":"Name","value":"shortname"}}}]}]}}]} as unknown as DocumentNode<CheckShortnameAvailableQuery, CheckShortnameAvailableQueryVariables>;
 export const CheckValidCoursePinDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"CheckValidCoursePin"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"checkValidCoursePin"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"pin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pin"}}}]}]}}]} as unknown as DocumentNode<CheckValidCoursePinQuery, CheckValidCoursePinQueryVariables>;

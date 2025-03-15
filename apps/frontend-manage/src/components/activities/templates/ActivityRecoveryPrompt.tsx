@@ -1,4 +1,4 @@
-import { faArrowsRotate, faBan } from '@fortawesome/free-solid-svg-icons'
+import { faArrowsRotate, faForward } from '@fortawesome/free-solid-svg-icons'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
@@ -33,7 +33,7 @@ function ActivityRecoveryPrompt({
           onClick={onDiscard}
           data={{ cy: 'discard-recovered-activity-data' }}
         >
-          <Button.Icon icon={faBan} />
+          <Button.Icon icon={faArrowsRotate} />
           <Button.Label>{t('manage.template.startOver')}</Button.Label>
         </Button>
         <Button
@@ -41,7 +41,7 @@ function ActivityRecoveryPrompt({
           onClick={onRecovery}
           data={{ cy: 'load-recovered-activity-data' }}
         >
-          <Button.Icon icon={faArrowsRotate} />
+          <Button.Icon icon={faForward} />
           <Button.Label>{t('manage.template.continueEditing')}</Button.Label>
         </Button>
       </div>

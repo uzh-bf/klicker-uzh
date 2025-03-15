@@ -1622,6 +1622,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       withAnswerFeedbacks: 'mit Antwortfeedbacks',
       withoutAnswerFeedbacks: 'ohne Antwortfeedbacks',
       nextElement: 'Nächstes Element',
+      sameNamedElementExists:
+        'Ihre Bibliothek enthält bereits ein Element mit dem Namen "{elementName}". Bitte beachten Sie die Möglichkeit, ein bestehendes Element auszuwählen oder fügen Sie neue Inhalte ein. Wenn Sie das Vorlagenelement ohne Änderungen übernehmen, wird eine Kopie davon in Ihrem Konto erstellt.',
     },
     formErrors: {
       resolveErrors:
