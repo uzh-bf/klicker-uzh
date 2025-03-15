@@ -14,6 +14,7 @@ import { twMerge } from 'tailwind-merge'
 import { ElementFormTypes } from '~/components/questions/manipulation/types'
 import ExistingElementSelectionModal from './ExistingElementSelectionModal'
 import TemplateElementPreview from './TemplateElementPreview'
+import TemplateNewElementModal from './TemplateNewElementModal'
 import { ActivityTemplateElementFormValues } from './types'
 
 function TemplateElementContent({
@@ -93,7 +94,7 @@ function TemplateElementContent({
                 primary={
                   templateElement.processed && templateElement.useNewElement
                 }
-                // TODO: on click open an element editing modal (initialized with the form values or the template data if no form values are defined)
+                onClick={() => setNewElementModal(true)}
               >
                 <Button.Icon icon={faPen} />
                 <Button.Label>
@@ -165,6 +166,13 @@ function TemplateElementContent({
             ? templateElement.instance.elementData.options.hasAnswerFeedbacks
             : null
         }
+      />
+
+      <TemplateNewElementModal
+        open={newElementModal}
+        onClose={() => setNewElementModal(false)}
+        templateElement={templateElement}
+        onSaveNewElement={saveNewElement}
       />
     </>
   )

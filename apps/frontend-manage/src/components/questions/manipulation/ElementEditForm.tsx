@@ -26,6 +26,7 @@ import { ElementFormTypes } from './types'
 import useValidationSchema from './useValidationSchema'
 
 function ElementEditForm({
+  isTemplate = false,
   open,
   onClose,
   onSuccess,
@@ -40,6 +41,8 @@ function ElementEditForm({
   updateInstances,
   setUpdateInstances,
 }: {
+  // flag to highlight template mode
+  isTemplate?: boolean
   // modal state props
   open: boolean
   onClose: () => void
@@ -128,13 +131,15 @@ function ElementEditForm({
               </Button>
             }
             onSecondaryAction={
-              <Button
-                className={{ root: 'mt-2' }}
-                onClick={() => onClose()}
-                data={{ cy: 'close-element-modal' }}
-              >
-                <Button.Label>{t('shared.generic.close')}</Button.Label>
-              </Button>
+              !isTemplate ? (
+                <Button
+                  className={{ root: 'mt-2' }}
+                  onClick={() => onClose()}
+                  data={{ cy: 'close-element-modal' }}
+                >
+                  <Button.Label>{t('shared.generic.close')}</Button.Label>
+                </Button>
+              ) : undefined
             }
           >
             <AutoSaveMonitor
@@ -151,6 +156,7 @@ function ElementEditForm({
               <div className="max-w-5xl flex-1">
                 <Form className="w-full" id="question-manipulation-form">
                   <ElementInformationFields
+                    isTemplate={isTemplate}
                     mode={mode}
                     values={values}
                     isSubmitting={isSubmitting}
@@ -166,8 +172,14 @@ function ElementEditForm({
 
                   <div className="mt-4 flex flex-row gap-4">
                     <OptionsLabel type={values.type} />
-                    <SampleSolutionSetting type={values.type} />
-                    <AnswerFeedbackSetting values={values} />
+                    <SampleSolutionSetting
+                      disabled={isTemplate}
+                      type={values.type}
+                    />
+                    <AnswerFeedbackSetting
+                      disabled={isTemplate}
+                      values={values}
+                    />
                     <DisplayModeSetting type={values.type} />
                   </div>
 

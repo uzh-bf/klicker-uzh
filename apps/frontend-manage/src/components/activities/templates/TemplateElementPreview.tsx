@@ -12,6 +12,7 @@ import StudentElement, {
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
+import useArtificialElementInstance from '../../questions/manipulation/useArtificialElementInstance'
 import { ActivityTemplateElementFormValues } from './types'
 
 function TemplateElementPreview({
@@ -25,6 +26,13 @@ function TemplateElementPreview({
   const [loadedInstance, setLoadedInstance] = useState<ElementInstance | null>(
     null
   )
+
+  // convert current form entries into an artificial instance (skipped internally if formValues is null)
+  const convertedInstance = useArtificialElementInstance({
+    values: templateElement.formValues,
+    elementDataTypename: templateElement.instance.elementData.__typename,
+    answerCollectionEntries: [], // TODO: get these based on a backend query
+  })
 
   // initialize student response with default state (SC question = default form state) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -70,11 +78,17 @@ function TemplateElementPreview({
   // when a new element is defined in the form, an artificial instance is created
   useEffect(() => {
     if (templateElement.useNewElement && templateElement.formValues) {
-      // TODO: Convert formValues to instance format (reuse useArtificialElementInstance hook)
-      // const convertedInstance = convertFormValuesToInstance(formValues)
-      // setLoadedInstance(convertedInstance)
+      if (!convertedInstance) {
+        return
+      }
+
+      setLoadedInstance(convertedInstance)
     }
-  }, [templateElement.useNewElement, templateElement.formValues])
+  }, [
+    convertedInstance,
+    templateElement.useNewElement,
+    templateElement.formValues,
+  ])
 
   // set the effective instance based on mode
   const effectiveInstance =
