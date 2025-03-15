@@ -972,6 +972,16 @@ export const Query = builder.queryType({
         },
       }),
 
+      checkTemplateElementExists: asUser.boolean({
+        nullable: false,
+        args: {
+          name: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.checkTemplateElementExists(args, ctx)
+        },
+      }),
+
       getObjectPermissions: asUser.field({
         nullable: true,
         type: [PermissionInfo],

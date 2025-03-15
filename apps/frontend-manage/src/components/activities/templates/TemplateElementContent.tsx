@@ -1,6 +1,8 @@
+import { useQuery } from '@apollo/client'
 import { faEye, faHandPointer } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
+import { CheckTemplateElementExistsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -29,6 +31,14 @@ function TemplateElementContent({
   const [existingElementModal, setExistingElementModal] = useState(false)
   const [newElementModal, setNewElementModal] = useState(false)
 
+  // check if the user already has access to an element with that specific name
+  const { data: nameCheck } = useQuery(CheckTemplateElementExistsDocument, {
+    variables: {
+      name: templateElement.instance.elementData.name,
+    },
+    skip: templateElement.useExistingElement || templateElement.useNewElement,
+  })
+
   return (
     <>
       <div className="mb-6 flex flex-col">
@@ -38,7 +48,6 @@ function TemplateElementContent({
               {t('manage.template.elementActionsTemplate')}
             </div>
             <div className="flex flex-col gap-3">
-              {/* // TODO: SHOW WARNING HERE IF AN ELEMENT WITH THE SAME NAME AS DEFINED IN THE FORM VALUES IS ALREADY DEFINED (and "keep existing instance" is selected) */}
               <Button
                 primary={
                   templateElement.processed &&
@@ -76,6 +85,16 @@ function TemplateElementContent({
                   {t('manage.template.insertContentNewElement')}
                 </Button.Label>
               </Button>
+              {nameCheck?.checkTemplateElementExists &&
+              (!templateElement.processed ||
+                templateElement.useTemplateInstance) ? (
+                <UserNotification
+                  type="warning"
+                  message={t('manage.template.sameNamedElementExists', {
+                    elementName: templateElement.instance.elementData.name,
+                  })}
+                />
+              ) : null}
             </div>
           </div>
           <div className="w-full md:w-1/2">
