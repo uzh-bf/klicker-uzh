@@ -81,3 +81,20 @@ export const ActivityTemplate = ActivityTemplateRef.implement({
     }),
   }),
 })
+
+interface ITemplateElementInformation {
+  id: number
+  name: string
+  content: string
+}
+
+export const TemplateElementInformationRef =
+  builder.objectRef<ITemplateElementInformation>('TemplateElementInformation')
+export const TemplateElementInformation =
+  TemplateElementInformationRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      name: t.exposeString('name'),
+      content: t.exposeString('content'),
+    }),
+  })

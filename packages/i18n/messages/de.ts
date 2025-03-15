@@ -1612,6 +1612,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       replaceWithExistingElement:
         'Mit bestehendem Element aus Bibliothek ersetzen',
       insertContentNewElement: 'Inhalt für neues Element erfassen',
+      selectExistingElement: 'Bestehendes Element auswählen',
+      selectElementInstructions:
+        'Wählen Sie eines Ihrer bestehenden Elemente aus, um es in die Vorlage zu übernehmnen. Bitte beachten Sie, dass es sich hierbei um den folgenden Typ Element handeln muss: {element}.',
+      noMatchingQuestionsFound:
+        'Es konnten keine Elemente in Ihrem Konto gefunden werden, welche mit den Anforderungen der Vorlage übereinstimmen. Bitte erfassen Sie ihr Element direkt in der Vorlage oder übernehmen Sie den bestehenden Inhalt.',
+      withSampleSolution: 'mit Musterlösung',
+      withoutSampleSolution: 'ohne Musterlösung',
+      withAnswerFeedbacks: 'mit Antwortfeedbacks',
+      withoutAnswerFeedbacks: 'ohne Antwortfeedbacks',
     },
     formErrors: {
       resolveErrors:

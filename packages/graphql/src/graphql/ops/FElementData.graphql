@@ -11,6 +11,7 @@ fragment ElementData on ElementInstance {
       pointsMultiplier
       options {
         hasSampleSolution
+        hasAnswerFeedbacks
         displayMode
         choices {
           ix

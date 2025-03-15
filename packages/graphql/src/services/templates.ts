@@ -1296,4 +1296,89 @@ export async function getActivityTemplate(
   return { ...template, activityType }
 }
 
+// TODO: cover this function with unit tests
+export async function getMatchingUserElementsTemplate(
+  {
+    elementType,
+    hasSampleSolution,
+    hasAnswerFeedbacks,
+  }: {
+    elementType: DB.ElementType
+    hasSampleSolution?: boolean | null
+    hasAnswerFeedbacks?: boolean | null
+  },
+  ctx: ContextWithUser
+) {
+  const elementTypesWithSampleSolution: DB.ElementType[] = [
+    DB.ElementType.SC,
+    DB.ElementType.MC,
+    DB.ElementType.KPRIM,
+    DB.ElementType.NUMERICAL,
+    DB.ElementType.FREE_TEXT,
+    DB.ElementType.SELECTION,
+    DB.ElementType.CASE_STUDY,
+  ]
+  const elementTypesWithAnswerFeedbacks: DB.ElementType[] = [
+    DB.ElementType.SC,
+    DB.ElementType.MC,
+    DB.ElementType.KPRIM,
+  ]
+
+  const availableElements = await ctx.prisma.element.findMany({
+    where: {
+      type: elementType,
+      OR: [
+        {
+          ownerId: ctx.user.sub,
+        },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionStatus: DB.PermissionStatus.GRANTED,
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      content: true,
+      options: true,
+    },
+  })
+
+  // filter out elements that do not match the sample solution or answer feedback requirements
+  const matchingElements = availableElements.filter((element) => {
+    let valid = true
+
+    if (
+      hasSampleSolution !== null &&
+      typeof hasSampleSolution !== 'undefined' &&
+      elementTypesWithSampleSolution.includes(elementType)
+    ) {
+      valid =
+        valid &&
+        'hasSampleSolution' in element.options &&
+        element.options.hasSampleSolution === hasSampleSolution
+    }
+
+    if (
+      hasAnswerFeedbacks !== null &&
+      typeof hasAnswerFeedbacks !== 'undefined' &&
+      elementTypesWithAnswerFeedbacks.includes(elementType)
+    ) {
+      valid =
+        valid &&
+        'hasAnswerFeedbacks' in element.options &&
+        element.options.hasAnswerFeedbacks === hasAnswerFeedbacks
+    }
+
+    return valid
+  })
+
+  return matchingElements
+}
+
 // #endregion

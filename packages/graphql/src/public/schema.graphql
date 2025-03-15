@@ -1845,6 +1845,7 @@ type Query {
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
   getLoginToken: User
+  getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectPermissions(objectId: String!, objectType: CatalogObjectType!): [PermissionInfo!]
@@ -2164,6 +2165,12 @@ type Tag {
   id: Int!
   name: String!
   order: Int!
+}
+
+type TemplateElementInformation {
+  content: String!
+  id: Int!
+  name: String!
 }
 
 type Title {

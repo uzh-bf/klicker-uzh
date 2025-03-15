@@ -1594,6 +1594,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       acceptTemplateElement: 'Accept template element without modifications',
       replaceWithExistingElement: 'Replace with existing element from library',
       insertContentNewElement: 'Insert content for new element',
+      selectExistingElement: 'Select existing element',
+      selectElementInstructions:
+        'Select one of your existing elements to replace the template content. Please note that the element type must match the following: {element}.',
+      noMatchingQuestionsFound:
+        'No elements were found in your account that match the requirements of the template. Please create your element directly in the template or accept the existing content.',
+      withSampleSolution: 'with sample solution',
+      withoutSampleSolution: 'without sample solution',
+      withAnswerFeedbacks: 'with answer feedbacks',
+      withoutAnswerFeedbacks: 'without answer feedbacks',
     },
     formErrors: {
       resolveErrors:

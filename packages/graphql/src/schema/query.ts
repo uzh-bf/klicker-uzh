@@ -31,6 +31,7 @@ import {
   LeaderboardEntry,
   StudentCourse,
 } from './course.js'
+import { ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -78,6 +79,7 @@ import {
   ActivityTemplate,
   ActivityTemplateInfo,
   ActivityTemplateMetadata,
+  TemplateElementInformation,
 } from './template.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
@@ -954,6 +956,19 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return TemplateService.getActivityTemplate(args, ctx)
+        },
+      }),
+
+      getMatchingUserElementsTemplate: asUser.field({
+        nullable: true,
+        type: [TemplateElementInformation],
+        args: {
+          elementType: t.arg({ type: ElementType, required: true }),
+          hasSampleSolution: t.arg.boolean({ required: false }),
+          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.getMatchingUserElementsTemplate(args, ctx)
         },
       }),
 
