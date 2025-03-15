@@ -1296,7 +1296,6 @@ export async function getActivityTemplate(
   return { ...template, activityType }
 }
 
-// TODO: cover this function with unit tests
 export async function getMatchingUserElementsTemplate(
   {
     elementType,

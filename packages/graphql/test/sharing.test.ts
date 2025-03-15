@@ -77,9 +77,6 @@ describe('Unit tests for sharing service', () => {
   beforeAll(async () => {
     // configure database
     const databaseUrl = getDatabaseUrl()
-    console.log(
-      `Attempting to connect to database: ${databaseUrl.split('@')[1]}`
-    )
 
     try {
       // initialize PrismaClient with the database URL
@@ -92,7 +89,6 @@ describe('Unit tests for sharing service', () => {
 
       // test database connection
       await prisma.$connect()
-      console.log('Database connection successful!')
 
       // create EventEmitter for test context
       emitter = new EventEmitter()
