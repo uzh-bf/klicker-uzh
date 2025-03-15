@@ -3,6 +3,7 @@ import {
   ElementInstance,
   ElementType,
   GetArtificialInstanceDocument,
+  GetTemplatePreviewAnswerCollectionEntriesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -16,9 +17,11 @@ import useArtificialElementInstance from '../../questions/manipulation/useArtifi
 import { ActivityTemplateElementFormValues } from './types'
 
 function TemplateElementPreview({
+  templateId,
   templateElement,
   showTemplateInstancePreview = false,
 }: {
+  templateId: string
   templateElement: ActivityTemplateElementFormValues
   showTemplateInstancePreview?: boolean
 }): React.ReactElement {
@@ -27,11 +30,36 @@ function TemplateElementPreview({
     null
   )
 
+  // fetch answer collection entries for the selected answer collection (for preview)
+  const { data } = useQuery(GetTemplatePreviewAnswerCollectionEntriesDocument, {
+    variables: {
+      templateId,
+      answerCollectionId:
+        templateElement.formValues &&
+        'options' in templateElement.formValues &&
+        'answerCollection' in templateElement.formValues.options &&
+        typeof templateElement.formValues.options.answerCollection === 'string'
+          ? parseInt(templateElement.formValues?.options.answerCollection)
+          : -1,
+    },
+    skip:
+      !templateElement.formValues ||
+      !(
+        templateElement.instance.elementData.__typename ===
+          'SelectionElementData' ||
+        templateElement.instance.elementData.__typename ===
+          'CaseStudyElementData'
+      ),
+    fetchPolicy: 'cache-and-network',
+  })
+
   // convert current form entries into an artificial instance (skipped internally if formValues is null)
   const convertedInstance = useArtificialElementInstance({
     values: templateElement.formValues,
     elementDataTypename: templateElement.instance.elementData.__typename,
-    answerCollectionEntries: [], // TODO: get these based on a backend query
+    answerCollectionEntries: data?.getTemplatePreviewAnswerCollectionEntries
+      ? data?.getTemplatePreviewAnswerCollectionEntries
+      : [],
   })
 
   // initialize student response with default state (SC question = default form state) - is overwritten on instance change

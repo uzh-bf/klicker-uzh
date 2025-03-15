@@ -189,7 +189,9 @@ export async function getAnswerCollectionsElements(
 
   // include answer collections used in any element of the template (required for preview / editing)
   // in case the instances were not modified, the user would get access to them either way
-  let templateAnswerCollections: DB.AnswerCollection[] = []
+  let templateAnswerCollections: (DB.AnswerCollection & {
+    entries: DB.AnswerCollectionEntry[]
+  })[] = []
   if (templateId) {
     // TODO: validate that user has access to the template
 
@@ -236,16 +238,15 @@ export async function getAnswerCollectionsElements(
   ]
 
   // return deduplicated list of answer collections (based on id)
-  return combinedAnswerCollections.reduce<DB.AnswerCollection[]>(
-    (acc, collection) => {
-      if (!acc.some((c) => c.id === collection.id)) {
-        acc.push(collection)
-      }
+  return combinedAnswerCollections.reduce<
+    (DB.AnswerCollection & { entries: DB.AnswerCollectionEntry[] })[]
+  >((acc, collection) => {
+    if (!acc.some((c) => c.id === collection.id)) {
+      acc.push(collection)
+    }
 
-      return acc
-    },
-    []
-  )
+    return acc
+  }, [])
 }
 
 export async function getSingleAnswerCollection(

@@ -212,6 +212,7 @@
    "GetStackElementFeedbacks": "8cbf597af706f68361dc9ff756ff6d59c888506c70b3514484a09aa2e609139c",
    "GetStudentCourseLeaderboard": "e6fd1293639a21266c0813088fe1db753e77651a2e7de9327f0aa649420cbd78",
    "GetTemplateInformation": "aeb7bf94e70eca123cbbf6699e75412126d9fb5232c05b092f19ba38edaf5ae4",
+   "GetTemplatePreviewAnswerCollectionEntries": "469ba4ec08f5efb4a41c9f8ee8604f413bd7337b21a6cfdad934946fea0834b8",
    "GetUnassignedLiveQuizzes": "8efbb0afbb0826d5e237cbaa660f62c201d339b74d1907336bb8a0a5db519f73",
    "GetUserCourses": "b388f07ace660915ce9ea4006847f9367251d494e7d0e387fa61ef50684fd9a4",
    "GetUserLiveQuizzes": "604fc996071b81ccba477c9d6dc6825ced3ccdf38351a6376863f26b2ac12913",

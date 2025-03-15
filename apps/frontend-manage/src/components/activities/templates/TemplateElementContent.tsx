@@ -135,6 +135,7 @@ function TemplateElementContent({
               </div>
             ) : (
               <TemplateElementPreview
+                templateId={templateId}
                 templateElement={templateElement}
                 showTemplateInstancePreview={previewExistingInstance}
               />

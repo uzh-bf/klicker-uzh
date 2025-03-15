@@ -1,0 +1,12 @@
+query GetTemplatePreviewAnswerCollectionEntries(
+  $templateId: String!
+  $answerCollectionId: Int!
+) {
+  getTemplatePreviewAnswerCollectionEntries(
+    templateId: $templateId
+    answerCollectionId: $answerCollectionId
+  ) {
+    id
+    value
+  }
+}
