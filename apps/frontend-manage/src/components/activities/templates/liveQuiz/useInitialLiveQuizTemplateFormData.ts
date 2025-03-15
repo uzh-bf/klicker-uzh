@@ -42,9 +42,9 @@ function useInitialLiveQuizTemplateFormData({
           elements:
             block.elements?.map((element) => ({
               processed: false,
-              unmodifiedInstance: false,
-              existingElement: false,
-              newElement: false,
+              useTemplateInstance: false,
+              useExistingElement: false,
+              useNewElement: false,
               instance: element,
               formValues: null,
               elementId: null,

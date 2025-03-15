@@ -329,7 +329,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
               open={timeLimitModal.open && timeLimitModal.blockIx === blockIx}
               onClose={() => setTimeLimitModal({ open: false, blockIx: 0 })}
               blockIx={blockIx}
-              timeLimit={quizData.blocks[0]?.timeLimit}
+              timeLimit={quizData.blocks[blockIx]?.timeLimit}
               setTimeLimit={(newValue) => {
                 setQuizData((prev) => {
                   if (!prev) {
