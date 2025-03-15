@@ -900,8 +900,11 @@ export const Query = builder.queryType({
       getAnswerCollectionsElements: asUser.field({
         nullable: true,
         type: [AnswerCollection],
-        resolve(_, __, ctx) {
-          return ResourcesService.getAnswerCollectionsElements(ctx)
+        args: {
+          templateId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getAnswerCollectionsElements(args, ctx)
         },
       }),
 

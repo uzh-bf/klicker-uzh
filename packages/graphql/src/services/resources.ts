@@ -134,7 +134,10 @@ export async function createAnswerCollection(
   }
 }
 
-export async function getAnswerCollectionsElements(ctx: ContextWithUser) {
+export async function getAnswerCollectionsElements(
+  { templateId }: { templateId?: string | null },
+  ctx: ContextWithUser
+) {
   // fetch all answer collections, which are available to be included in elements
   const user = await ctx.prisma.user.findUnique({
     where: {
@@ -184,7 +187,36 @@ export async function getAnswerCollectionsElements(ctx: ContextWithUser) {
     return []
   }
 
-  return [
+  // include answer collections used in any element of the template (required for preview / editing)
+  // in case the instances were not modified, the user would get access to them either way
+  let templateAnswerCollections: DB.AnswerCollection[] = []
+  if (templateId) {
+    // TODO: validate that user has access to the template
+
+    const template = await ctx.prisma.activityTemplate.findUnique({
+      where: {
+        id: templateId,
+      },
+      include: {
+        answerCollections: {
+          include: {
+            entries: {
+              orderBy: {
+                value: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            name: 'asc',
+          },
+        },
+      },
+    })
+
+    templateAnswerCollections = template?.answerCollections ?? []
+  }
+
+  const combinedAnswerCollections = [
     ...user.answerCollections.map((collection) => ({
       ...collection,
       isShared: false,
@@ -197,7 +229,23 @@ export async function getAnswerCollectionsElements(ctx: ContextWithUser) {
           }
         : []
     ),
+    ...templateAnswerCollections.map((collection) => ({
+      ...collection,
+      isShared: false,
+    })),
   ]
+
+  // return deduplicated list of answer collections (based on id)
+  return combinedAnswerCollections.reduce<DB.AnswerCollection[]>(
+    (acc, collection) => {
+      if (!acc.some((c) => c.id === collection.id)) {
+        acc.push(collection)
+      }
+
+      return acc
+    },
+    []
+  )
 }
 
 export async function getSingleAnswerCollection(

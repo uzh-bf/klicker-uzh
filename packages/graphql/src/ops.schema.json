@@ -26800,7 +26800,20 @@
           {
             "name": "getAnswerCollectionsElements",
             "description": null,
-            "args": [],
+            "args": [
+              {
+                "name": "templateId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
             "type": {
               "kind": "LIST",
               "name": null,

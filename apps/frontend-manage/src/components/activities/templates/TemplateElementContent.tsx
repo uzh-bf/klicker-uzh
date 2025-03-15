@@ -169,6 +169,7 @@ function TemplateElementContent({
       />
 
       <TemplateNewElementModal
+        templateId={templateId}
         open={newElementModal}
         onClose={() => setNewElementModal(false)}
         templateElement={templateElement}

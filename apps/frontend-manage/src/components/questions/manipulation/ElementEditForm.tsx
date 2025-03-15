@@ -27,6 +27,7 @@ import useValidationSchema from './useValidationSchema'
 
 function ElementEditForm({
   isTemplate = false,
+  templateId,
   open,
   onClose,
   onSuccess,
@@ -43,6 +44,7 @@ function ElementEditForm({
 }: {
   // flag to highlight template mode
   isTemplate?: boolean
+  templateId?: string
   // modal state props
   open: boolean
   onClose: () => void
@@ -202,6 +204,8 @@ function ElementEditForm({
 
                   {values.type === ElementType.Selection && (
                     <SelectionOptions
+                      templateId={templateId}
+                      isTemplate={isTemplate}
                       values={values}
                       setAnswerCollectionEntries={setAnswerCollectionEntries}
                     />
@@ -209,6 +213,8 @@ function ElementEditForm({
 
                   {values.type === ElementType.CaseStudy && (
                     <CaseStudyOptions
+                      templateId={templateId}
+                      isTemplate={isTemplate}
                       setFieldValue={setFieldValue}
                       setFieldTouched={setFieldTouched}
                       hasSampleSolution={values.options.hasSampleSolution}

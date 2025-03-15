@@ -125,7 +125,7 @@ function useFormValuesFromElementInstance({
           answerCollection: options.answerCollectionId
             ? String(options.answerCollectionId)
             : '',
-          selectedItems: options.collectionItemIds ?? [],
+          selectedItems: options.items?.map((item) => item.id) ?? [],
           criteria:
             options.criteria?.map((criterion) => ({
               ...criterion,

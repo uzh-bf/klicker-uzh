@@ -8,11 +8,13 @@ import useFormValuesFromElementInstance from './useFormValuesFromElementInstance
 function TemplateNewElementModal({
   open,
   onClose,
+  templateId,
   templateElement,
   onSaveNewElement,
 }: {
   open: boolean
   onClose: () => void
+  templateId: string
   templateElement: ActivityTemplateElementFormValues
   onSaveNewElement: (formValues: ElementFormTypes) => void
 }) {
@@ -26,11 +28,10 @@ function TemplateNewElementModal({
       ? templateElement.formValues
       : instanceFormValues
 
-  // TODO: block certain fields -> sample solution, answer feedback, status (blocked on ready), tags
-  // TODO: IN TEMPLATE MODE - extend live of available answer collections with the ones used in the template
   return (
     <ElementEditForm
       isTemplate
+      templateId={templateId}
       open={open}
       onClose={onClose}
       onSuccess={() => {}} // success toast is not required -> success immediately visible

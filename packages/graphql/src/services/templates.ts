@@ -1192,6 +1192,8 @@ export async function getActivityTemplate(
   { templateId }: { templateId: string },
   ctx: ContextWithUser
 ) {
+  // TODO: verify that user has access rights to the template (same for fetching of the contained answer collections)
+
   const template = await ctx.prisma.activityTemplate.findUnique({
     where: {
       id: templateId,

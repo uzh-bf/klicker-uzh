@@ -19,6 +19,8 @@ import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
 interface SelectionOptionsProps {
+  templateId?: string
+  isTemplate: boolean
   values: ElementFormTypesSelection
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
@@ -26,12 +28,17 @@ interface SelectionOptionsProps {
 }
 
 function SelectionOptions({
+  templateId,
+  isTemplate,
   values,
   setAnswerCollectionEntries,
 }: SelectionOptionsProps) {
   const t = useTranslations()
   const [field, _, helpers] = useField<number[]>('options.correctAnswers')
-  const { data, loading } = useQuery(GetAnswerCollectionsElementsDocument)
+  const { data, loading } = useQuery(GetAnswerCollectionsElementsDocument, {
+    variables: { templateId },
+    fetchPolicy: 'network-only',
+  })
   const collections = data?.getAnswerCollectionsElements ?? []
 
   // get all answer options from the selected collections
@@ -111,6 +118,7 @@ function SelectionOptions({
           }}
         />
         <FormikSwitchField
+          disabled={isTemplate}
           name="options.hasSampleSolution"
           label={t('shared.generic.sampleSolution')}
           data={{ cy: 'configure-sample-solution' }}

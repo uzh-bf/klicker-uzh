@@ -1820,7 +1820,7 @@ type Query {
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getActivityTemplate(templateId: String!): ActivityTemplate
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
-  getAnswerCollectionsElements: [AnswerCollection!]
+  getAnswerCollectionsElements(templateId: String): [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
