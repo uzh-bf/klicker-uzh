@@ -1586,6 +1586,14 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       settingsNotSaved:
         'Please save your changes to the settings before continuing to edit the template.',
       confirmTimeLimit: 'Confirm time limit',
+      elementActionsTemplate:
+        'Elements in this template can either be accepted as they are in the template, replaced by an existing element of the same type and partially matching settings (e.g. sample solution), or replaced by new content. Elements created or accepted without modifications will be available in your library afterwards. Please choose the desired action for this element.',
+      selectActionOptionElement:
+        'Please select an action option for this element',
+      previewTemplateElement: 'Preview template content',
+      acceptTemplateElement: 'Accept template element without modifications',
+      replaceWithExistingElement: 'Replace with existing element from library',
+      insertContentNewElement: 'Insert content for new element',
     },
     formErrors: {
       resolveErrors:

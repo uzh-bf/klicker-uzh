@@ -2,7 +2,7 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { Button, Modal, NumberField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function LiveQuizTimeLimitModal({
+function LiveQuizTemplateTimeLimitModal({
   open,
   onClose,
   blockIx,
@@ -53,4 +53,4 @@ function LiveQuizTimeLimitModal({
   )
 }
 
-export default LiveQuizTimeLimitModal
+export default LiveQuizTemplateTimeLimitModal

@@ -1603,6 +1603,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       settingsNotSaved:
         'Bitte speichern Sie Ihre Änderungen an den Einstellungen, bevor Sie mit der Bearbeitung der Vorlage fortfahren.',
       confirmTimeLimit: 'Zeitlimit bestätigen',
+      elementActionsTemplate:
+        'Elemente in dieser Vorlage können entweder wie im Template vorhanden übernommen, durch ein bestehendes Element des gleichen Typs und teilweise übereinstimmenden Einstellungen (z.B. Musterlösung) ausgetauscht, oder durch neue Inhalte ersetzt werden. Elemente, welche im Rahmen von Templates erstellt oder übernommen werden, stehen Ihnen im Anschluss in der Bibliothek zur Verfügung. Bitte wählen Sie die gewünschte Aktion für dieses Element aus.',
+      selectActionOptionElement:
+        'Bitte wählen Sie eine Aktion für dieses Element aus',
+      previewTemplateElement: 'Vorschau für Vorlagen-Inhalt',
+      acceptTemplateElement: 'Element aus Template ohne Änderungen übernehmen',
+      replaceWithExistingElement:
+        'Mit bestehendem Element aus Bibliothek ersetzen',
+      insertContentNewElement: 'Inhalt für neues Element erfassen',
     },
     formErrors: {
       resolveErrors:
