@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from 'react'
 import { TemplateCollapsibleUIStates } from './SectionCollapsible'
 
-function markElementAsProcessed({
+function goToNextTemplateElement({
   collapsibles,
   setCollapsibles,
   blockIx,
@@ -21,8 +21,8 @@ function markElementAsProcessed({
     [blockIx]: {
       ...prev[blockIx],
       [elementIx]: {
+        ...prev[blockIx][elementIx],
         open: false,
-        status: 'success',
       },
       ...(nextInSameBlock
         ? {
@@ -47,4 +47,4 @@ function markElementAsProcessed({
   }))
 }
 
-export default markElementAsProcessed
+export default goToNextTemplateElement

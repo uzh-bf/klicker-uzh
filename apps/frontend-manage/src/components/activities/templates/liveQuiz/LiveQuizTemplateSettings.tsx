@@ -202,7 +202,7 @@ function LiveQuizTemplateSettings({
             </div>
 
             <div className="flex flex-col md:w-1/2 lg:w-1/3">
-              <div className="bg-uzh-grey-20 mb-4 rounded-md px-4 pb-2 pt-4">
+              <div className="bg-uzh-grey-20 mb-3 rounded-md px-4 pb-2 pt-4">
                 <div className="flex flex-row gap-2">
                   <div className="font-bold">{t('shared.generic.scoring')}</div>
                   <div>

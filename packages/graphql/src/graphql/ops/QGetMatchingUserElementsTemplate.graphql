@@ -1,0 +1,15 @@
+query getMatchingUserElementsTemplate(
+  $elementType: ElementType!
+  $hasSampleSolution: Boolean
+  $hasAnswerFeedbacks: Boolean
+) {
+  getMatchingUserElementsTemplate(
+    elementType: $elementType
+    hasSampleSolution: $hasSampleSolution
+    hasAnswerFeedbacks: $hasAnswerFeedbacks
+  ) {
+    id
+    name
+    content
+  }
+}
