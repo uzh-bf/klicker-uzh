@@ -1588,8 +1588,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       confirmTimeLimit: 'Confirm time limit',
       elementActionsTemplate:
         'Elements in this template can either be accepted as they are in the template, replaced by an existing element of the same type and partially matching settings (e.g. sample solution), or replaced by new content. Elements created or accepted without modifications will be available in your library afterwards. Please choose the desired action for this element.',
-      selectActionOptionElement:
-        'Please select an action option for this element',
+      selectActionOptionElement: 'Please select an action for this element',
       previewTemplateElement: 'Preview template content',
       acceptTemplateElement: 'Accept template element without modifications',
       replaceWithExistingElement: 'Replace with existing element from library',
@@ -1604,8 +1603,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       withAnswerFeedbacks: 'with answer feedbacks',
       withoutAnswerFeedbacks: 'without answer feedbacks',
       nextElement: 'Next element',
+      availableActions: 'Available actions',
       sameNamedElementExists:
         'Your library already contains an element with the name "{elementName}". Please consider selecting an existing element or creating a new one. If you choose to accept the template element without modifications, a copy of it will be added to your account.',
+      discardEnteredElementContent: 'Discard Data for Element Creation',
+      confirmDiscardEnteredElementContent:
+        'By performing this action, all entered data for the creation of a new element at this point in the template will be discarded. This action cannot be undone.',
     },
     formErrors: {
       resolveErrors:

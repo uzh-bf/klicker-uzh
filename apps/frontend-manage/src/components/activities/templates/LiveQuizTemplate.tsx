@@ -206,11 +206,10 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                 }
               >
                 <TemplateElementContent
+                  firstElement={blockIx === 0 && elementIx === 0}
                   templateId={template.id}
                   templateElement={element}
                   acceptTemplateElement={() => {
-                    // TODO: if custom content was defined before, prompt user to confirm the content's deletion (maybe handle inside component)
-
                     // store decision in form data
                     setQuizData((prev) => {
                       if (!prev) {
@@ -248,8 +247,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     })
                   }}
                   replaceWithExistingElement={(elementId) => {
-                    // TODO: if custom content was defined before, prompt user to confirm the content's deletion (maybe handle inside component)
-
                     // store decision and element id in form data
                     setQuizData((prev) => {
                       if (!prev) {

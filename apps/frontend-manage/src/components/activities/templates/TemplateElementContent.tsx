@@ -4,15 +4,20 @@ import {
   faEye,
   faHandPointer,
 } from '@fortawesome/free-regular-svg-icons'
-import { faArrowsRotate, faPen } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowsRotate,
+  faPen,
+  faQuestion,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CheckTemplateElementExistsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ElementFormTypes } from '~/components/questions/manipulation/types'
 import ExistingElementSelectionModal from './ExistingElementSelectionModal'
+import NewElementDataDiscardingModal from './NewElementDataDiscardingModal'
 import TemplateElementPreview from './TemplateElementPreview'
 import TemplateNewElementModal from './TemplateNewElementModal'
 import { ActivityTemplateElementFormValues } from './types'
@@ -20,6 +25,7 @@ import { ActivityTemplateElementFormValues } from './types'
 function TemplateElementContent({
   templateId,
   templateElement,
+  firstElement,
   acceptTemplateElement,
   replaceWithExistingElement,
   saveNewElement,
@@ -27,6 +33,7 @@ function TemplateElementContent({
 }: {
   templateId: string
   templateElement: ActivityTemplateElementFormValues
+  firstElement: boolean
   acceptTemplateElement: () => void
   replaceWithExistingElement: (elementId: number) => void
   saveNewElement: (formValues: ElementFormTypes) => void
@@ -36,6 +43,15 @@ function TemplateElementContent({
   const [previewExistingInstance, setPreviewExistingInstance] = useState(false)
   const [existingElementModal, setExistingElementModal] = useState(false)
   const [newElementModal, setNewElementModal] = useState(false)
+
+  // confirmation modal to confirm the switch away from  custom content
+  const [comfirmDiscardCustom, setConfirmDiscardCustom] = useState<{
+    open: boolean
+    onConfirm: () => void
+  }>({
+    open: false,
+    onConfirm: () => {},
+  })
 
   // check if the user already has access to an element with that specific name
   const { data: nameCheck } = useQuery(CheckTemplateElementExistsDocument, {
@@ -57,16 +73,45 @@ function TemplateElementContent({
       <div className="mb-6 flex flex-col">
         <div className="flex flex-col gap-4 md:flex-row md:gap-8">
           <div className="w-full md:w-1/2">
-            <div className="mb-2 text-gray-700">
-              {t('manage.template.elementActionsTemplate')}
+            <div className="mb-1 flex flex-row items-center gap-2.5">
+              <H3 className={{ root: 'mb-0' }}>
+                {t('manage.template.availableActions')}
+              </H3>
+              {!firstElement ? (
+                <Tooltip
+                  tooltip={t('manage.template.elementActionsTemplate')}
+                  className={{ tooltip: 'max-w-[30rem] text-sm' }}
+                >
+                  <FontAwesomeIcon
+                    icon={faQuestion}
+                    className={
+                      'bg-primary-100 mt-1 h-2.5 w-2.5 rounded-full border border-solid border-white p-1 text-white'
+                    }
+                  />
+                </Tooltip>
+              ) : null}
             </div>
+            {firstElement ? (
+              <div className="mb-2 text-gray-700">
+                {t('manage.template.elementActionsTemplate')}
+              </div>
+            ) : null}
             <div className="flex flex-col gap-2">
               <Button
                 primary={
                   templateElement.processed &&
                   templateElement.useTemplateInstance
                 }
-                onClick={acceptTemplateElement}
+                onClick={() => {
+                  if (templateElement.formValues !== null) {
+                    setConfirmDiscardCustom({
+                      open: true,
+                      onConfirm: () => acceptTemplateElement(),
+                    })
+                  } else {
+                    acceptTemplateElement()
+                  }
+                }}
                 className={{
                   root: twMerge(
                     previewExistingInstance && 'border-primary-100 border'
@@ -83,7 +128,16 @@ function TemplateElementContent({
                   templateElement.processed &&
                   templateElement.useExistingElement
                 }
-                onClick={() => setExistingElementModal(true)}
+                onClick={() => {
+                  if (templateElement.formValues !== null) {
+                    setConfirmDiscardCustom({
+                      open: true,
+                      onConfirm: () => setExistingElementModal(true),
+                    })
+                  } else {
+                    setExistingElementModal(true)
+                  }
+                }}
               >
                 <Button.Icon icon={faArrowsRotate} />
                 <Button.Label>
@@ -175,6 +229,17 @@ function TemplateElementContent({
         onClose={() => setNewElementModal(false)}
         templateElement={templateElement}
         onSaveNewElement={saveNewElement}
+      />
+
+      <NewElementDataDiscardingModal
+        open={comfirmDiscardCustom.open}
+        onClose={() =>
+          setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
+        }
+        onConfirm={() => {
+          comfirmDiscardCustom.onConfirm()
+          setConfirmDiscardCustom({ open: false, onConfirm: () => {} })
+        }}
       />
     </>
   )
