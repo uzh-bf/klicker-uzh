@@ -137,6 +137,163 @@ export async function validateActivityPermissions(
   return { valid, activity }
 }
 
+export async function validateTemplateAccessible(
+  { templateId }: { templateId: string },
+  ctx: ContextWithUser
+) {
+  const template = await ctx.prisma.activityTemplate.findUnique({
+    where: {
+      id: templateId,
+    },
+    include: {
+      liveQuiz: {
+        include: {
+          permissions: {
+            where: {
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              userId: ctx.user.sub,
+            },
+          },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: {
+                  permissions: {
+                    where: {
+                      permissionStatus: DB.PermissionStatus.GRANTED,
+                      userId: ctx.user.sub,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      practiceQuiz: {
+        include: {
+          permissions: {
+            where: {
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              userId: ctx.user.sub,
+            },
+          },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: {
+                  permissions: {
+                    where: {
+                      permissionStatus: DB.PermissionStatus.GRANTED,
+                      userId: ctx.user.sub,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      microLearning: {
+        include: {
+          permissions: {
+            where: {
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              userId: ctx.user.sub,
+            },
+          },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: {
+                  permissions: {
+                    where: {
+                      permissionStatus: DB.PermissionStatus.GRANTED,
+                      userId: ctx.user.sub,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      groupActivity: {
+        include: {
+          permissions: {
+            where: {
+              permissionStatus: DB.PermissionStatus.GRANTED,
+              userId: ctx.user.sub,
+            },
+          },
+          catalogAssignments: {
+            include: {
+              catalogCollection: {
+                include: {
+                  permissions: {
+                    where: {
+                      permissionStatus: DB.PermissionStatus.GRANTED,
+                      userId: ctx.user.sub,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // verify that at least one of the activities linked to the template is defined
+  const activityMap = {
+    [ActivityType.LIVE_QUIZ]: template?.liveQuiz ?? null,
+    [ActivityType.PRACTICE_QUIZ]: template?.practiceQuiz ?? null,
+    [ActivityType.MICRO_LEARNING]: template?.microLearning ?? null,
+    [ActivityType.GROUP_ACTIVITY]: template?.groupActivity ?? null,
+  }
+  const [activityType, activity] = Object.entries(activityMap).find(
+    ([_, value]) => value !== null
+  ) || [null, null]
+
+  // if no activity is connected, return false
+  if (!activity) {
+    return false
+  }
+
+  // if the user is the template activity owner, return true
+  if (activity.ownerId === ctx.user.sub) {
+    return true
+  }
+
+  // if the user has been granted access directly to the template activity, return true
+  if (activity.permissions.length > 0) {
+    return true
+  }
+
+  // if the activity template is included as a public item in a public catalog collection, it is accessible to everyone
+  if (
+    activity.catalogAssignments.some(
+      (assignment) =>
+        assignment.access === DB.ObjectAccess.PUBLIC &&
+        assignment.catalogCollection.access === DB.ObjectAccess.PUBLIC
+    )
+  ) {
+    return true
+  }
+
+  // if the activity template is included as a public item in a restricted catalog collection, to which the user has access, it is accessible
+  if (
+    activity.catalogAssignments.some(
+      (assignment) =>
+        assignment.access === DB.ObjectAccess.PUBLIC &&
+        assignment.catalogCollection.permissions.length > 0
+    )
+  ) {
+    return true
+  }
+}
+
 // #endregion
 
 // ! Template management functions
@@ -1193,8 +1350,13 @@ export async function getActivityTemplate(
   { templateId }: { templateId: string },
   ctx: ContextWithUser
 ) {
-  // TODO: verify that user has access rights to the template (same for fetching of the contained answer collections)
+  // verify that the user has access to the template activity
+  const accessible = validateTemplateAccessible({ templateId }, ctx)
+  if (!accessible) {
+    return null
+  }
 
+  // fetch the template alongside the corresponding activities and elements
   const template = await ctx.prisma.activityTemplate.findUnique({
     where: {
       id: templateId,
