@@ -40,8 +40,8 @@ export enum ActivityType {
 }
 
 export type StackInput = {
-  displayName: string | null
-  description: string | null
+  displayName?: string | null
+  description?: string | null
   order: number
   elements: {
     elementId: number
@@ -50,7 +50,7 @@ export type StackInput = {
 }
 
 export type BlockInput = {
-  timeLimit: number | null
+  timeLimit?: number | null
   order: number
   elements: {
     elementId: number
@@ -60,14 +60,14 @@ export type BlockInput = {
 
 export type ElementBlockInput = {
   order: number
-  timeLimit: number | null
+  timeLimit?: number
   elements: ElementInstanceInput[]
 }
 
 export type ElementStackInput = {
   order: number
-  displayName: string | null
-  description: string | null
+  displayName?: string
+  description?: string
   elements: ElementInstanceInput[]
 }
 
@@ -94,51 +94,51 @@ export type CaseStudyCaseResponse = {
 export type ChoiceInput = {
   ix: number
   value: string
-  correct: boolean | null
-  feedback: string | null
+  correct?: boolean | null
+  feedback?: string | null
 }
 
 export type OptionsChoicesInput = {
-  displayMode: DisplayMode | null
-  hasSampleSolution: boolean | null
-  hasAnswerFeedbacks: boolean | null
-  choices: ChoiceInput[] | null
+  displayMode?: DisplayMode | null
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  choices?: ChoiceInput[] | null
 }
 
 export type NumericalRestrictionsInput = {
-  min: number | null
-  max: number | null
+  min?: number | null
+  max?: number | null
 }
 
 export type SolutionRangeInput = {
-  min: number | null
-  max: number | null
+  min?: number | null
+  max?: number | null
 }
 
 export type OptionsNumericalInput = {
-  hasSampleSolution: boolean | null
-  hasAnswerFeedbacks: boolean | null
-  accuracy: number | null
-  unit: string | null
-  restrictions: NumericalRestrictionsInput | null
-  solutionRanges: SolutionRangeInput[] | null
-  exactSolutions: number[] | null
-  feedback: string | null
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  accuracy?: number | null
+  unit?: string | null
+  restrictions?: NumericalRestrictionsInput | null
+  solutionRanges?: SolutionRangeInput[] | null
+  exactSolutions?: number[] | null
+  feedback?: string | null
 }
 
 export type FreeTextRestrictionsInput = {
-  maxLength: number | null
-  minLength: number | null
-  pattern: string | null
+  maxLength?: number | null
+  minLength?: number | null
+  pattern?: string | null
 }
 
 export type OptionsFreeTextInput = {
-  hasSampleSolution: boolean | null
-  hasAnswerFeedbacks: boolean | null
-  placeholder: string | null
-  restrictions: FreeTextRestrictionsInput | null
-  solutions: string[] | null
-  feedback: string | null
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  placeholder?: string | null
+  restrictions?: FreeTextRestrictionsInput | null
+  solutions?: string[] | null
+  feedback?: string | null
 }
 
 export type CaseStudyCriteriaSolutionInput = {
@@ -159,7 +159,7 @@ export type CaseStudyCriterionInput = {
   min: number
   max: number
   step: number
-  unit: string | null
+  unit?: string | null
 }
 
 export type CaseStudyCaseInput = {
@@ -167,29 +167,29 @@ export type CaseStudyCaseInput = {
   title: string
   description: string
   order: number
-  solutions: CaseStudySolutionInput[] | null
+  solutions?: CaseStudySolutionInput[] | null
 }
 
 export type OptionsCaseStudyInput = {
-  hasSampleSolution: boolean | null
-  answerCollection: number | null
-  collectionItemIds: number[] | null
-  criteria: CaseStudyCriterionInput[] | null
-  cases: CaseStudyCaseInput[] | null
+  hasSampleSolution?: boolean | null
+  answerCollection?: number | null
+  collectionItemIds?: number[] | null
+  criteria?: CaseStudyCriterionInput[] | null
+  cases?: CaseStudyCaseInput[] | null
 }
 
 export type OptionsSelectionInput = {
-  hasSampleSolution: boolean | null
-  answerCollection: number | null
-  numberOfInputs: number | null
-  correctAnswers: number[] | null
+  hasSampleSolution?: boolean | null
+  answerCollection?: number | null
+  numberOfInputs?: number | null
+  correctAnswers?: number[] | null
 }
 
 export type ResponseInput = {
-  choices: number[] | null
-  value: string | null
-  selection: number[] | null
-  assessment: CaseStudyCaseResponse[] | null
+  choices?: number[] | null
+  value?: string | null
+  selection?: number[] | null
+  assessment?: CaseStudyCaseResponse[] | null
 }
 
 export type ElementOptionsInput = OptionsChoicesInput &
@@ -199,32 +199,31 @@ export type ElementOptionsInput = OptionsChoicesInput &
   OptionsCaseStudyInput
 
 export type ElementManipulationInput = {
-  id: number | null
-  status: ElementStatus | null
+  id?: number | null
+  status?: ElementStatus | null
   type: ElementType
-  name: string | null
-  content: string | null
-  explanation: string | null
-  options: ElementOptionsInput | null
-  pointsMultiplier: number | null
-  tags: string[] | null
+  name?: string | null
+  content?: string | null
+  explanation?: string | null
+  options?: ElementOptionsInput | null
+  pointsMultiplier?: number | null
+  tags?: string[] | null
 }
 
 export type TemplateBlockElementInput = {
   order: number
   useTemplateInstance: boolean // boolean to signal that this instance should be directly copied from the template
   useExistingElement: boolean // boolean to signal that an existing element should be loaded into the template
-  existingInstanceId: number | null // id of the existing instance that should be loaded into the template
+  existingInstanceId?: number | null // id of the existing instance that should be loaded into the template
   useNewElement: boolean // boolean to signal that a new element was entered by the user
-  newElement: ElementManipulationInput | null // content for the element, if the user has chosen to insert their own content
+  newElement?: ElementManipulationInput | null // content for the element, if the user has chosen to insert their own content
 }
 
 export type TemplateBlockInput = {
-  timeLimit: number | null
+  timeLimit?: number | null
   order: number
   elements: TemplateBlockElementInput[]
 }
-
 // ----- AVATAR SETTINGS -----
 // #region
 export type AvatarKeyTypes =
