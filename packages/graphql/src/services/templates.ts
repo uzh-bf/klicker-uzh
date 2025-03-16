@@ -11,7 +11,7 @@ import {
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { manipulateQuestion } from './questions.js'
 import {
@@ -1929,7 +1929,9 @@ export async function createLiveQuizFromTemplate(
           connect: { id: ctx.user.sub },
         },
         course:
-          typeof courseId === 'string' && courseId !== null
+          typeof courseId === 'string' &&
+          courseId !== null &&
+          uuidValidate(courseId)
             ? {
                 connect: { id: courseId },
               }
