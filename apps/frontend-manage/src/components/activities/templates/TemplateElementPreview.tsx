@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import {
-  ElementInstance,
   ElementType,
   GetArtificialInstanceDocument,
   GetTemplatePreviewAnswerCollectionEntriesDocument,
@@ -12,7 +11,7 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useEffect, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import useArtificialElementInstance from '../../questions/manipulation/useArtificialElementInstance'
 import { ActivityTemplateElementFormValues } from './types'
 
@@ -26,9 +25,6 @@ function TemplateElementPreview({
   showTemplateInstancePreview?: boolean
 }): React.ReactElement {
   const t = useTranslations()
-  const [loadedInstance, setLoadedInstance] = useState<ElementInstance | null>(
-    null
-  )
 
   // fetch answer collection entries for the selected answer collection (for preview)
   const { data: answerCollectionData } = useQuery(
@@ -57,14 +53,20 @@ function TemplateElementPreview({
     }
   )
 
+  // to avoid re-rendering issues, memoize the collection entries before passing them to the artificial instance computation
+  const stableCollectionEntries = useMemo(() => {
+    if (answerCollectionData?.getTemplatePreviewAnswerCollectionEntries) {
+      return answerCollectionData.getTemplatePreviewAnswerCollectionEntries
+    }
+
+    return undefined
+  }, [answerCollectionData?.getTemplatePreviewAnswerCollectionEntries])
+
   // convert current form entries into an artificial instance (skipped internally if formValues is null)
   const convertedInstance = useArtificialElementInstance({
     values: templateElement.formValues,
     elementDataTypename: templateElement.instance.elementData.__typename,
-    answerCollectionEntries:
-      answerCollectionData?.getTemplatePreviewAnswerCollectionEntries
-        ? answerCollectionData?.getTemplatePreviewAnswerCollectionEntries
-        : [],
+    answerCollectionEntries: stableCollectionEntries,
   })
 
   // initialize student response with default state (SC question = default form state) - is overwritten on instance change
@@ -86,41 +88,35 @@ function TemplateElementPreview({
       fetchPolicy: 'cache-and-network',
     })
 
-  // when an existing element is selected, fetch the element and convert it into an artificial instance
-  useEffect(() => {
+  // determine the loaded instance based on whether an existing element is selected or a new element is defined
+  const loadedInstance = useMemo(() => {
     if (
       templateElement.useExistingElement &&
       templateElement.elementId !== null
     ) {
       if (
-        artificialInstanceLoading ||
-        !artificialInstance?.artificialInstance
+        !artificialInstanceLoading &&
+        artificialInstance?.artificialInstance
       ) {
-        return
+        return artificialInstance.artificialInstance
       }
-
-      setLoadedInstance(artificialInstance?.artificialInstance)
+    } else if (
+      templateElement.useNewElement &&
+      templateElement.formValues &&
+      convertedInstance
+    ) {
+      return convertedInstance
     }
+
+    return null
   }, [
     templateElement.useExistingElement,
     templateElement.elementId,
-    artificialInstance,
+    artificialInstance?.artificialInstance,
     artificialInstanceLoading,
-  ])
-
-  // when a new element is defined in the form, an artificial instance is created
-  useEffect(() => {
-    if (templateElement.useNewElement && templateElement.formValues) {
-      if (!convertedInstance) {
-        return
-      }
-
-      setLoadedInstance(convertedInstance)
-    }
-  }, [
-    convertedInstance,
     templateElement.useNewElement,
     templateElement.formValues,
+    convertedInstance,
   ])
 
   // set the effective instance based on mode
