@@ -382,7 +382,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
             loading={creatingLiveQuiz}
             onSubmit={async () => {
               const inputsInvalid =
-                !quizData.settingsProcessed ||
+                !quizData?.settingsProcessed ||
                 !quizData?.blocks?.every((block) =>
                   block.elements.every((element) => element.processed)
                 )

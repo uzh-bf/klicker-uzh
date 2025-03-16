@@ -33,7 +33,7 @@ function LiveQuizTemplateSubmissionButton({
 }) {
   const t = useTranslations()
   const submissionDisabled =
-    !quizData.settingsProcessed ||
+    !quizData?.settingsProcessed ||
     !quizData?.blocks?.every((block) =>
       block.elements.every((element) => element.processed)
     )
