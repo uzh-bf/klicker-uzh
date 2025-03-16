@@ -8,6 +8,7 @@ import { getInitialInstanceStatistics } from '@klicker-uzh/util'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { getAnswerCollectionsElements } from './resources.js'
+import { MISSING_CATALOG_COLLECTION_ID } from './sharing.js'
 
 // ! Helper functions
 // #region
@@ -276,7 +277,8 @@ export async function validateTemplateAccessible(
     activity.catalogAssignments.some(
       (assignment) =>
         assignment.access === DB.ObjectAccess.PUBLIC &&
-        assignment.catalogCollection.access === DB.ObjectAccess.PUBLIC
+        (assignment.catalogCollectionId === MISSING_CATALOG_COLLECTION_ID ||
+          assignment.catalogCollection.access === DB.ObjectAccess.PUBLIC)
     )
   ) {
     return true
