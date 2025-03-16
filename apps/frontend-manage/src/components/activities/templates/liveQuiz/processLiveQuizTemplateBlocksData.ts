@@ -2,6 +2,7 @@ import {
   ElementType,
   TemplateElementManipulationInput,
 } from '@klicker-uzh/graphql/dist/ops'
+import { omitBy } from 'remeda'
 import {
   prepareCaseStudyArgs,
   prepareChoicesArgs,
@@ -76,7 +77,9 @@ function processLiveQuizTemplateBlocksData({
               values,
             })
             elementManipulationData = {
-              ...args,
+              // options key needs to be removed to avoid GraphQL error on submission
+              ...omitBy(args, (_, key) => key === 'options'),
+              type: values.type,
               choicesOptions: args.options,
             }
             break
@@ -88,7 +91,7 @@ function processLiveQuizTemplateBlocksData({
               values,
             })
             elementManipulationData = {
-              ...args,
+              ...omitBy(args, (_, key) => key === 'options'),
               type: ElementType.Numerical,
               numericalOptions: args.options,
             }
@@ -101,7 +104,7 @@ function processLiveQuizTemplateBlocksData({
               values,
             })
             elementManipulationData = {
-              ...args,
+              ...omitBy(args, (_, key) => key === 'options'),
               type: ElementType.FreeText,
               freeTextOptions: args.options,
             }
@@ -114,7 +117,7 @@ function processLiveQuizTemplateBlocksData({
               values,
             })
             elementManipulationData = {
-              ...args,
+              ...omitBy(args, (_, key) => key === 'options'),
               type: ElementType.Selection,
               selectionOptions: args.options,
             }
@@ -127,7 +130,7 @@ function processLiveQuizTemplateBlocksData({
               values,
             })
             elementManipulationData = {
-              ...args,
+              ...omitBy(args, (_, key) => key === 'options'),
               type: ElementType.CaseStudy,
               caseStudyOptions: args.options,
             }
