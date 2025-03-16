@@ -31,35 +31,40 @@ function TemplateElementPreview({
   )
 
   // fetch answer collection entries for the selected answer collection (for preview)
-  const { data } = useQuery(GetTemplatePreviewAnswerCollectionEntriesDocument, {
-    variables: {
-      templateId,
-      answerCollectionId:
-        templateElement.formValues &&
-        'options' in templateElement.formValues &&
-        'answerCollection' in templateElement.formValues.options &&
-        typeof templateElement.formValues.options.answerCollection === 'string'
-          ? parseInt(templateElement.formValues?.options.answerCollection)
-          : -1,
-    },
-    skip:
-      !templateElement.formValues ||
-      !(
-        templateElement.instance.elementData.__typename ===
-          'SelectionElementData' ||
-        templateElement.instance.elementData.__typename ===
-          'CaseStudyElementData'
-      ),
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data: answerCollectionData } = useQuery(
+    GetTemplatePreviewAnswerCollectionEntriesDocument,
+    {
+      variables: {
+        templateId,
+        answerCollectionId:
+          templateElement.formValues &&
+          'options' in templateElement.formValues &&
+          'answerCollection' in templateElement.formValues.options &&
+          typeof templateElement.formValues.options.answerCollection ===
+            'string'
+            ? parseInt(templateElement.formValues?.options.answerCollection)
+            : -1,
+      },
+      skip:
+        !templateElement.formValues ||
+        !(
+          templateElement.instance.elementData.__typename ===
+            'SelectionElementData' ||
+          templateElement.instance.elementData.__typename ===
+            'CaseStudyElementData'
+        ),
+      fetchPolicy: 'cache-and-network',
+    }
+  )
 
   // convert current form entries into an artificial instance (skipped internally if formValues is null)
   const convertedInstance = useArtificialElementInstance({
     values: templateElement.formValues,
     elementDataTypename: templateElement.instance.elementData.__typename,
-    answerCollectionEntries: data?.getTemplatePreviewAnswerCollectionEntries
-      ? data?.getTemplatePreviewAnswerCollectionEntries
-      : [],
+    answerCollectionEntries:
+      answerCollectionData?.getTemplatePreviewAnswerCollectionEntries
+        ? answerCollectionData?.getTemplatePreviewAnswerCollectionEntries
+        : [],
   })
 
   // initialize student response with default state (SC question = default form state) - is overwritten on instance change

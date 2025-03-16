@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import type { ContextWithUser } from '../lib/context.js'
+import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections
 // #region
@@ -193,7 +194,11 @@ export async function getAnswerCollectionsElements(
     entries: DB.AnswerCollectionEntry[]
   })[] = []
   if (templateId) {
-    // TODO: validate that user has access to the template
+    // verify that the user has access to the template activity
+    const accessible = validateTemplateAccessible({ templateId }, ctx)
+    if (!accessible) {
+      return []
+    }
 
     const template = await ctx.prisma.activityTemplate.findUnique({
       where: {
