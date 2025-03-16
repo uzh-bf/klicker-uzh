@@ -1,12 +1,18 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityType as ActivityTypeEnum,
+  type CaseStudyCaseInput as CaseStudyCaseInputType,
+  type CaseStudyCriteriaSolutionInput as CaseStudyCriteriaSolutionInputType,
+  type CaseStudyCriterionInput as CaseStudyCriterionInputType,
+  type CaseStudySolutionInput as CaseStudySolutionInputType,
   type CaseStudySolution as CaseStudySolutionType,
+  type ChoiceInput as ChoiceInputType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   type ElementOptionsChoices as ElementOptionsChoicesType,
   type ElementOptionsFreeText as ElementOptionsFreeTextType,
   type ElementOptionsNumerical as ElementOptionsNumericalType,
   type ElementOptionsSelection as ElementOptionsSelectionType,
+  type FreeTextRestrictionsInput as FreeTextRestrictionsInputType,
   type IInstanceEvaluationCaseStudy,
   type IInstanceEvaluationChoices,
   type IInstanceEvaluationContent,
@@ -15,6 +21,13 @@ import {
   type IInstanceEvaluationNumerical,
   type IInstanceEvaluationSelection,
   type IQuestionFeedback,
+  type NumericalRestrictionsInput as NumericalRestrictionsInputType,
+  type OptionsCaseStudyInput as OptionsCaseStudyInputType,
+  type OptionsChoicesInput as OptionsChoicesInputType,
+  type OptionsFreeTextInput as OptionsFreeTextInputType,
+  type OptionsNumericalInput as OptionsNumericalInputType,
+  type OptionsSelectionInput as OptionsSelectionInputType,
+  type ResponseInput as ResponseInputType,
   type SingleCaseStudyResponse as SingleCaseStudyResponseType,
   type SingleChoiceResponse as SingleChoiceResponseType,
   type SingleFreeTextResponse as SingleFreeTextResponseType,
@@ -26,6 +39,7 @@ import {
   type SingleQuestionResponseSelection as SingleQuestionResponseSelectionType,
   type SingleQuestionResponseValue as SingleQuestionResponseValueType,
   type SingleSelectionResponse as SingleSelectionResponseType,
+  type SolutionRangeInput as SolutionRangeInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
@@ -49,7 +63,8 @@ import { CaseStudyCaseResponse, PublicationStatus } from './practiceQuiz.js'
 
 // ----- QUESTION INPUTS -----
 // #region
-export const ChoiceInput = builder.inputType('ChoiceInput', {
+export const ChoiceInputRef = builder.inputRef<ChoiceInputType>('ChoiceInput')
+export const ChoiceInput = ChoiceInputRef.implement({
   fields: (t) => ({
     ix: t.int({ required: true }),
     value: t.string({ required: true }),
@@ -58,60 +73,64 @@ export const ChoiceInput = builder.inputType('ChoiceInput', {
   }),
 })
 
-export const OptionsChoicesInput = builder.inputType('OptionsChoicesInput', {
+export const OptionsChoicesInputRef = builder.inputRef<OptionsChoicesInputType>(
+  'OptionsChoicesInput'
+)
+export const OptionsChoicesInput = OptionsChoicesInputRef.implement({
   fields: (t) => ({
     displayMode: t.field({ required: false, type: ElementDisplayMode }),
     hasSampleSolution: t.boolean({ required: false }),
     hasAnswerFeedbacks: t.boolean({ required: false }),
     choices: t.field({
+      required: false,
       type: [ChoiceInput],
     }),
   }),
 })
 
-export const NumericalRestrictionsInput = builder.inputType(
-  'NumericalRestrictionsInput',
-  {
+export const NumericalRestrictionsInputRef =
+  builder.inputRef<NumericalRestrictionsInputType>('NumericalRestrictionsInput')
+export const NumericalRestrictionsInput =
+  NumericalRestrictionsInputRef.implement({
     fields: (t) => ({
-      hasSampleSolution: t.boolean({ required: false }),
-      hasAnswerFeedbacks: t.boolean({ required: false }),
       min: t.float({ required: false }),
       max: t.float({ required: false }),
     }),
-  }
-)
+  })
 
-export const SolutionRangeInput = builder.inputType('SolutionRangeInput', {
+export const SolutionRangeInputRef =
+  builder.inputRef<SolutionRangeInputType>('SolutionRangeInput')
+export const SolutionRangeInput = SolutionRangeInputRef.implement({
   fields: (t) => ({
     min: t.float({ required: false }),
     max: t.float({ required: false }),
   }),
 })
 
-export const OptionsNumericalInput = builder.inputType(
-  'OptionsNumericalInput',
-  {
-    fields: (t) => ({
-      hasSampleSolution: t.boolean({ required: false }),
-      hasAnswerFeedbacks: t.boolean({ required: false }),
-      accuracy: t.int({ required: false }),
-      unit: t.string({ required: false }),
-      restrictions: t.field({
-        type: NumericalRestrictionsInput,
-        required: false,
-      }),
-      solutionRanges: t.field({
-        type: [SolutionRangeInput],
-        required: false,
-      }),
-      exactSolutions: t.floatList({ required: false }),
-      feedback: t.string({ required: false }),
+export const OptionsNumericalInputRef =
+  builder.inputRef<OptionsNumericalInputType>('OptionsNumericalInput')
+export const OptionsNumericalInput = OptionsNumericalInputRef.implement({
+  fields: (t) => ({
+    hasSampleSolution: t.boolean({ required: false }),
+    hasAnswerFeedbacks: t.boolean({ required: false }),
+    accuracy: t.int({ required: false }),
+    unit: t.string({ required: false }),
+    restrictions: t.field({
+      type: NumericalRestrictionsInput,
+      required: false,
     }),
-  }
-)
+    solutionRanges: t.field({
+      type: [SolutionRangeInput],
+      required: false,
+    }),
+    exactSolutions: t.floatList({ required: false }),
+    feedback: t.string({ required: false }),
+  }),
+})
 
-export const FreeTextRestrictionsInput = builder.inputType(
-  'FreeTextRestrictionsInput',
+export const FreeTextRestrictionsInputRef =
+  builder.inputRef<FreeTextRestrictionsInputType>('FreeTextRestrictionsInput')
+export const FreeTextRestrictionsInput = FreeTextRestrictionsInputRef.implement(
   {
     fields: (t) => ({
       maxLength: t.int({ required: false }),
@@ -121,7 +140,9 @@ export const FreeTextRestrictionsInput = builder.inputType(
   }
 )
 
-export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
+export const OptionsFreeTextInputRef =
+  builder.inputRef<OptionsFreeTextInputType>('OptionsFreeTextInput')
+export const OptionsFreeTextInput = OptionsFreeTextInputRef.implement({
   fields: (t) => ({
     hasSampleSolution: t.boolean({ required: false }),
     hasAnswerFeedbacks: t.boolean({ required: false }),
@@ -135,7 +156,9 @@ export const OptionsFreeTextInput = builder.inputType('OptionsFreeTextInput', {
   }),
 })
 
-export const ResponseInput = builder.inputType('ResponseInput', {
+export const ResponseInputRef =
+  builder.inputRef<ResponseInputType>('ResponseInput')
+export const ResponseInput = ResponseInputRef.implement({
   fields: (t) => ({
     choices: t.intList({ required: false }),
     value: t.string({ required: false }),
@@ -147,58 +170,59 @@ export const ResponseInput = builder.inputType('ResponseInput', {
   }),
 })
 
-export const OptionsSelectionInput = builder.inputType(
-  'OptionsSelectionInput',
-  {
-    fields: (t) => ({
-      hasSampleSolution: t.boolean({ required: false }),
-      answerCollection: t.int({ required: false }),
-      numberOfInputs: t.int({ required: false }),
-      correctAnswers: t.intList({ required: false }),
-    }),
-  }
-)
+export const OptionsSelectionInputRef =
+  builder.inputRef<OptionsSelectionInputType>('OptionsSelectionInput')
+export const OptionsSelectionInput = OptionsSelectionInputRef.implement({
+  fields: (t) => ({
+    hasSampleSolution: t.boolean({ required: false }),
+    answerCollection: t.int({ required: false }),
+    numberOfInputs: t.int({ required: false }),
+    correctAnswers: t.intList({ required: false }),
+  }),
+})
 
-export const CaseStudyCriterionInput = builder.inputType(
-  'CaseStudyCriterionInput',
-  {
-    fields: (t) => ({
-      id: t.string({ required: true }),
-      name: t.string({ required: true }),
-      order: t.int({ required: true }),
-      min: t.float({ required: true }),
-      max: t.float({ required: true }),
-      step: t.float({ required: true }),
-      unit: t.string({ required: false }),
-    }),
-  }
-)
+export const CaseStudyCriterionInputRef =
+  builder.inputRef<CaseStudyCriterionInputType>('CaseStudyCriterionInput')
+export const CaseStudyCriterionInput = CaseStudyCriterionInputRef.implement({
+  fields: (t) => ({
+    id: t.string({ required: true }),
+    name: t.string({ required: true }),
+    order: t.int({ required: true }),
+    min: t.float({ required: true }),
+    max: t.float({ required: true }),
+    step: t.float({ required: true }),
+    unit: t.string({ required: false }),
+  }),
+})
 
-export const CaseStudyCriteriaSolutionInput = builder.inputType(
-  'CaseStudyCriteriaSolutionInput',
-  {
+export const CaseStudyCriteriaSolutionInputRef =
+  builder.inputRef<CaseStudyCriteriaSolutionInputType>(
+    'CaseStudyCriteriaSolutionInput'
+  )
+export const CaseStudyCriteriaSolutionInput =
+  CaseStudyCriteriaSolutionInputRef.implement({
     fields: (t) => ({
       criterionId: t.string({ required: true }),
       min: t.float({ required: true }),
       max: t.float({ required: true }),
     }),
-  }
-)
+  })
 
-export const CaseStudySolutionInput = builder.inputType(
-  'CaseStudySolutionInput',
-  {
-    fields: (t) => ({
-      itemId: t.int({ required: true }),
-      criteriaSolutions: t.field({
-        type: [CaseStudyCriteriaSolutionInput],
-        required: true,
-      }),
+export const CaseStudySolutionInputRef =
+  builder.inputRef<CaseStudySolutionInputType>('CaseStudySolutionInput')
+export const CaseStudySolutionInput = CaseStudySolutionInputRef.implement({
+  fields: (t) => ({
+    itemId: t.int({ required: true }),
+    criteriaSolutions: t.field({
+      type: [CaseStudyCriteriaSolutionInput],
+      required: true,
     }),
-  }
-)
+  }),
+})
 
-export const CaseStudyCaseInput = builder.inputType('CaseStudyCaseInput', {
+export const CaseStudyCaseInputRef =
+  builder.inputRef<CaseStudyCaseInputType>('CaseStudyCaseInput')
+export const CaseStudyCaseInput = CaseStudyCaseInputRef.implement({
   fields: (t) => ({
     id: t.string({ required: true }),
     title: t.string({ required: true }),
@@ -208,18 +232,17 @@ export const CaseStudyCaseInput = builder.inputType('CaseStudyCaseInput', {
   }),
 })
 
-export const OptionsCaseStudyInput = builder.inputType(
-  'OptionsCaseStudyInput',
-  {
-    fields: (t) => ({
-      hasSampleSolution: t.boolean({ required: false }),
-      answerCollection: t.int({ required: false }),
-      collectionItemIds: t.intList({ required: false }),
-      criteria: t.field({ type: [CaseStudyCriterionInput], required: false }),
-      cases: t.field({ type: [CaseStudyCaseInput], required: false }),
-    }),
-  }
-)
+export const OptionsCaseStudyInputRef =
+  builder.inputRef<OptionsCaseStudyInputType>('OptionsCaseStudyInput')
+export const OptionsCaseStudyInput = OptionsCaseStudyInputRef.implement({
+  fields: (t) => ({
+    hasSampleSolution: t.boolean({ required: false }),
+    answerCollection: t.int({ required: false }),
+    collectionItemIds: t.intList({ required: false }),
+    criteria: t.field({ type: [CaseStudyCriterionInput], required: false }),
+    cases: t.field({ type: [CaseStudyCaseInput], required: false }),
+  }),
+})
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
 // #region

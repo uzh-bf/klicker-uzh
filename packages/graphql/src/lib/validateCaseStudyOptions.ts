@@ -1,6 +1,6 @@
-import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
+import { ElementOptionsInput } from '@klicker-uzh/types'
 
-function validateCaseStudyOptions(options?: ElementOptionsArgs | null) {
+function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
   // options and hasSampleSolution need to be defined
   if (
     !options ||

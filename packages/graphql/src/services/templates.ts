@@ -3,6 +3,7 @@ import {
   ActivityType,
   CaseStudyElementData,
   SelectionElementData,
+  TemplateBlockInput,
 } from '@klicker-uzh/types'
 import { getInitialInstanceStatistics } from '@klicker-uzh/util'
 import { v4 as uuidv4 } from 'uuid'
@@ -1594,6 +1595,46 @@ export async function getTemplatePreviewAnswerCollectionEntries(
     id: entry.id,
     value: entry.value,
   }))
+}
+
+interface CreateLiveQuizFromTemplateArgs {
+  templateId: string
+  // modified settings - shown in the UI
+  name: string
+  displayName: string
+  description?: string | null
+  courseId?: string | null
+  // block input - potentially including element data
+  blocks: TemplateBlockInput[]
+}
+
+// TODO: return the id of the newly created activity -> for redirecting to the activity overview
+export async function createLiveQuizFromTemplate(
+  {
+    templateId,
+    name,
+    displayName,
+    description,
+    blocks,
+    courseId,
+  }: CreateLiveQuizFromTemplateArgs,
+  ctx: ContextWithUser
+) {
+  const accessible = await validateTemplateAccessible({ templateId }, ctx)
+  if (!accessible) {
+    return null
+  }
+
+  // TODO: get these fixed settings from the template live quiz
+  // multiplier: number
+  // defaultPoints?: number | null
+  // defaultCorrectPoints?: number | null
+  // maxBonusPoints?: number | null
+  // timeToZeroBonus?: number | null
+  // isGamificationEnabled: boolean
+  // isConfusionFeedbackEnabled: boolean
+  // isLiveQAEnabled: boolean
+  // isModerationEnabled: boolean
 }
 
 // #endregion

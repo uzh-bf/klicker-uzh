@@ -1,7 +1,7 @@
-import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
+import { ElementOptionsInput } from '@klicker-uzh/types'
 import validateSharedChoicesFields from './validateSharedChoicesFields.js'
 
-function validateKPRIMOptions(options?: ElementOptionsArgs | null) {
+function validateKPRIMOptions(options?: ElementOptionsInput | null) {
   let valid = validateSharedChoicesFields(options)
   if (!valid) return false
 

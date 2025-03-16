@@ -1,12 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { DisplayMode } from '@klicker-uzh/types'
-import {
-  OptionsCaseStudyInput,
-  OptionsChoicesInput,
-  OptionsFreeTextInput,
-  OptionsNumericalInput,
-  OptionsSelectionInput,
-} from 'src/ops.js'
+import { ElementOptionsInput } from '@klicker-uzh/types'
 import validateCaseStudyOptions from './validateCaseStudyOptions.js'
 import validateFreeTextOptions from './validateFreeTextOptions.js'
 import validateKPRIMOptions from './validateKPRIMOptions.js'
@@ -16,17 +9,9 @@ import validateSCOptions from './validateSCOptions.js'
 import validateSelectionOptions from './validateSelectionOptions.js'
 
 // display mode type workaround required for typescript to accept corresponding inputs
-export type ElementOptionsArgs = (Omit<OptionsChoicesInput, 'displayMode'> & {
-  displayMode?: DisplayMode | null
-}) &
-  OptionsNumericalInput &
-  OptionsFreeTextInput &
-  OptionsSelectionInput &
-  OptionsCaseStudyInput
-
 function validateAndProcessElementOptions(
   elementType: DB.ElementType,
-  options?: ElementOptionsArgs | null
+  options?: ElementOptionsInput | null
 ) {
   switch (elementType) {
     case DB.ElementType.SC:

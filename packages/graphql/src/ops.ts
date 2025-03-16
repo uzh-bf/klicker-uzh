@@ -2559,8 +2559,6 @@ export type NumericalRestrictions = {
 };
 
 export type NumericalRestrictionsInput = {
-  hasAnswerFeedbacks?: InputMaybe<Scalars['Boolean']['input']>;
-  hasSampleSolution?: InputMaybe<Scalars['Boolean']['input']>;
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
 };

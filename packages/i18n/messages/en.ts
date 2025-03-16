@@ -1611,6 +1611,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       discardEnteredElementContent: 'Discard Data for Element Creation',
       confirmDiscardEnteredElementContent:
         'By performing this action, all entered data for the creation of a new element at this point in the template will be discarded. This action cannot be undone.',
+      createLIVE_QUIZ: 'Create Live Quiz',
+      templateInputsIncomplete:
+        'The template contains incomplete inputs. Please check the settings and elements, not yet edited components are marked with an orange status.',
     },
     formErrors: {
       resolveErrors:

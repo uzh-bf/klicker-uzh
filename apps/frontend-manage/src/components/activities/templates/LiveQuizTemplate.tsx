@@ -10,6 +10,7 @@ import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
 import LiveQuizTemplateTimeLimitModal from './liveQuiz/LiveQuizTemplateTimeLimitModal'
 import loadProgressFromLiveQuizData from './liveQuiz/loadProgressFromLiveQuizData'
 import useInitialLiveQuizTemplateFormData from './liveQuiz/useInitialLiveQuizTemplateFormData'
+import LiveQuizTemplateSubmissionButton from './LiveQuizTemplateSubmissionButton'
 import markTemplateElementAsProcessed from './markTemplateElementAsProcessed'
 import SectionCollapsible, {
   TemplateCollapsibleState,
@@ -357,6 +358,15 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
             />
           </div>
         ))}
+
+        <div className="mt-5 self-end">
+          <LiveQuizTemplateSubmissionButton
+            quizData={quizData}
+            onSubmit={async () => {
+              // TODO: submission logic and error toast / success modal (?) setting
+            }}
+          />
+        </div>
       </div>
     </div>
   )

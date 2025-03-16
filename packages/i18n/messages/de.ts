@@ -1631,6 +1631,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       discardEnteredElementContent: 'Eingaben für Elementerstellung verwerfen',
       confirmDiscardEnteredElementContent:
         'Mit dieser Aktion werden alle erfassten Eingaben zur Erstellung eines neuen Elementes an dieser Stelle in der Vorlage verworfen. Diese Aktion kann nicht rückgängig gemacht werden.',
+      createLIVE_QUIZ: 'Live Quiz erstellen',
+      templateInputsIncomplete:
+        'Die Vorlage enthält unvollständige Eingaben. Bitte überprüfen Sie die Einstellungen und Elemente, noch nicht bearbeitete Komponenten sind über einen orangen Status gekennzeichnet.',
     },
     formErrors: {
       resolveErrors:

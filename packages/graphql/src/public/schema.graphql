@@ -1552,8 +1552,6 @@ type NumericalRestrictions {
 }
 
 input NumericalRestrictionsInput {
-  hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean
   max: Float
   min: Float
 }
