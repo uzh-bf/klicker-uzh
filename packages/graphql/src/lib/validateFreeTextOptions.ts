@@ -1,6 +1,6 @@
-import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
+import { ElementOptionsInput } from '@klicker-uzh/types'
 
-function validateFreeTextOptions(options?: ElementOptionsArgs | null) {
+function validateFreeTextOptions(options?: ElementOptionsInput | null) {
   // options and hasSampleSolution need to be defined
   if (
     !options ||

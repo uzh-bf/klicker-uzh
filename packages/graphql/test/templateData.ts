@@ -2,16 +2,16 @@ import { ElementType } from '@klicker-uzh/prisma'
 
 // mock user 1
 export const userOne = {
-  id: 'b086deed-291d-4dc3-9271-c84d4c2840f2',
-  sub: 'b086deed-291d-4dc3-9271-c84d4c2840f2',
+  id: '60068013-da49-4e47-988e-37fb44dabf9e',
+  sub: '60068013-da49-4e47-988e-37fb44dabf9e',
   email: 'first@example.com',
   shortname: 'firstuser',
 }
 
 // mock user 2
 export const userTwo = {
-  id: '5deec433-7ead-4c9c-9f6d-96cd5ef1758a',
-  sub: '5deec433-7ead-4c9c-9f6d-96cd5ef1758a',
+  id: 'd850db64-eb83-4b84-b7e0-a870ca99d415',
+  sub: 'd850db64-eb83-4b84-b7e0-a870ca99d415',
   email: 'second@example.com',
   shortname: 'seconduser',
 }

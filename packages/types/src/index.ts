@@ -1,5 +1,6 @@
 import type {
   Element,
+  ElementStatus,
   ElementType,
   ObjectAccess,
   PerformanceLevel,
@@ -57,6 +58,176 @@ export type BlockInput = {
   }[]
 }
 
+export type ElementBlockInput = {
+  order: number
+  timeLimit?: number
+  elements: ElementInstanceInput[]
+}
+
+export type ElementStackInput = {
+  order: number
+  displayName?: string
+  description?: string
+  elements: ElementInstanceInput[]
+}
+
+export type ElementInstanceInput = {
+  elementId: number
+  order: number
+}
+
+export type CaseStudyCriterionResponse = {
+  criterionId: string
+  response: number
+}
+
+export type CaseStudyItemResponse = {
+  itemId: number
+  criterionResponses: CaseStudyCriterionResponse[]
+}
+
+export type CaseStudyCaseResponse = {
+  caseId: string
+  itemResponses: CaseStudyItemResponse[]
+}
+
+export type ChoiceInput = {
+  ix: number
+  value: string
+  correct?: boolean | null
+  feedback?: string | null
+}
+
+export type OptionsChoicesInput = {
+  displayMode?: DisplayMode | null
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  choices?: ChoiceInput[] | null
+}
+
+export type NumericalRestrictionsInput = {
+  min?: number | null
+  max?: number | null
+}
+
+export type SolutionRangeInput = {
+  min?: number | null
+  max?: number | null
+}
+
+export type OptionsNumericalInput = {
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  accuracy?: number | null
+  unit?: string | null
+  restrictions?: NumericalRestrictionsInput | null
+  solutionRanges?: SolutionRangeInput[] | null
+  exactSolutions?: number[] | null
+  feedback?: string | null
+}
+
+export type FreeTextRestrictionsInput = {
+  maxLength?: number | null
+  minLength?: number | null
+  pattern?: string | null
+}
+
+export type OptionsFreeTextInput = {
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  placeholder?: string | null
+  restrictions?: FreeTextRestrictionsInput | null
+  solutions?: string[] | null
+  feedback?: string | null
+}
+
+export type CaseStudyCriteriaSolutionInput = {
+  criterionId: string
+  min: number
+  max: number
+}
+
+export type CaseStudySolutionInput = {
+  itemId: number
+  criteriaSolutions: CaseStudyCriteriaSolutionInput[]
+}
+
+export type CaseStudyCriterionInput = {
+  id: string
+  name: string
+  order: number
+  min: number
+  max: number
+  step: number
+  unit?: string | null
+}
+
+export type CaseStudyCaseInput = {
+  id: string
+  title: string
+  description: string
+  order: number
+  solutions?: CaseStudySolutionInput[] | null
+}
+
+export type OptionsCaseStudyInput = {
+  hasSampleSolution?: boolean | null
+  answerCollection?: number | null
+  collectionItemIds?: number[] | null
+  criteria?: CaseStudyCriterionInput[] | null
+  cases?: CaseStudyCaseInput[] | null
+}
+
+export type OptionsSelectionInput = {
+  hasSampleSolution?: boolean | null
+  answerCollection?: number | null
+  numberOfInputs?: number | null
+  correctAnswers?: number[] | null
+}
+
+export type ResponseInput = {
+  choices?: number[] | null
+  value?: string | null
+  selection?: number[] | null
+  assessment?: CaseStudyCaseResponse[] | null
+}
+
+export type ElementOptionsInput = OptionsChoicesInput &
+  OptionsNumericalInput &
+  OptionsFreeTextInput &
+  OptionsSelectionInput &
+  OptionsCaseStudyInput
+
+export type ElementManipulationInput = {
+  id?: number | null
+  status?: ElementStatus | null
+  type: ElementType
+  name?: string | null
+  content?: string | null
+  explanation?: string | null
+  options?: ElementOptionsInput | null
+  choicesOptions?: OptionsChoicesInput | null
+  numericalOptions?: OptionsNumericalInput | null
+  freeTextOptions?: OptionsFreeTextInput | null
+  selectionOptions?: OptionsSelectionInput | null
+  caseStudyOptions?: OptionsCaseStudyInput | null
+  pointsMultiplier?: number | null
+  tags?: string[] | null
+}
+
+export type TemplateBlockElementInput = {
+  order: number
+  useExistingElement: boolean // boolean to signal that an existing element should be loaded into the template
+  existingElementId?: number | null // id of the existing instance that should be loaded into the template
+  useNewElement: boolean // boolean to signal that either the existing template instance should be copied into the user account or a new element should be created
+  newElement?: ElementManipulationInput | null // content for the element, if the user has chosen to insert their own content
+}
+
+export type TemplateBlockInput = {
+  timeLimit?: number | null
+  order: number
+  elements: TemplateBlockElementInput[]
+}
 // ----- AVATAR SETTINGS -----
 // #region
 export type AvatarKeyTypes =

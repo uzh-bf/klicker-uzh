@@ -119,7 +119,7 @@ function CreateCatalogCollectionModal({
                 )}
               />
 
-              <div className="mt-2 flex justify-end gap-2">
+              <div className="mt-2 flex justify-between gap-2">
                 <Button
                   onClick={onClose}
                   data={{ cy: 'cancel-catalog-collection-creation' }}

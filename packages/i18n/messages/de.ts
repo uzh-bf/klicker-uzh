@@ -1591,7 +1591,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Diese Ansicht ermöglicht es Ihnen aus der Gruppenaktivität Vorlage "{templateName}" ihre eigene Gruppenaktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
       templateInfoMICRO_LEARNING:
         'Diese Ansicht ermöglicht es Ihnen aus der Microlearning Vorlage "{templateName}" ihr eigenes Microlearning zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
-      recoverActivity: 'Aktivität wiederherstellen',
+      recoverTemplateActivityInputs:
+        'Eingaben für Vorlagen-Aktivität wiederherstellen',
+      notFoundNotAccessible:
+        'Die angeforderte Aktivitäts-Vorlage wurde nicht gefunden oder ist nicht zugänglich. Bitte Stellen Sie sicher, dass sie über ausreichend Berechtigungen verfügen, um auf diese Vorlage zuzugreifen.',
       incompleteActivity:
         'Eine unvollständige Version dieser Aktivitätsvorlage wurde automatisch gespeichert. Bitte wählen Sie, ob Sie die Bearbeitung der Aktivität fortsetzen und den automatisch gespeicherten Zustand wiederherstellen oder mit der ursprünglichen Version der Vorlage neu beginnen möchten.',
       startOver: 'Neu starten',
@@ -1628,6 +1631,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       discardEnteredElementContent: 'Eingaben für Elementerstellung verwerfen',
       confirmDiscardEnteredElementContent:
         'Mit dieser Aktion werden alle erfassten Eingaben zur Erstellung eines neuen Elementes an dieser Stelle in der Vorlage verworfen. Diese Aktion kann nicht rückgängig gemacht werden.',
+      createLIVE_QUIZ: 'Live Quiz erstellen',
+      templateInputsIncomplete:
+        'Die Vorlage enthält unvollständige Eingaben. Bitte überprüfen Sie die Einstellungen und Elemente, noch nicht bearbeitete Komponenten sind über einen orangen Status gekennzeichnet.',
     },
     formErrors: {
       resolveErrors:

@@ -5,16 +5,14 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType } from '@klicker-uzh/types'
+import { ActivityType, ElementManipulationInput } from '@klicker-uzh/types'
 import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
 import type { ContextWithUser } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
-import validateElementInputs, {
-  ManipulateQuestionArgs,
-} from '../lib/validateElementInputs.js'
+import validateElementInputs from '../lib/validateElementInputs.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -149,8 +147,14 @@ export async function manipulateQuestion(
     options,
     pointsMultiplier,
     tags,
-  }: ManipulateQuestionArgs,
-  ctx: ContextWithUser
+  }: ElementManipulationInput,
+  // type modification required for method to be usable inside transaction without type errors
+  ctx: Omit<ContextWithUser, 'prisma'> & {
+    prisma: Omit<
+      DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    >
+  }
 ) {
   let tagsToDisconnect: string[] = []
   let collectionAnswersToDisconnect: number[] = []

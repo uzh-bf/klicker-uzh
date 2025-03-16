@@ -1574,7 +1574,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This view allows you to create your own group activity from the group activity template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
       templateInfoMICRO_LEARNING:
         'This view allows you to create your own microlearning from the microlearning template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
-      recoverActivity: 'Recover Activity',
+      recoverTemplateActivityInputs: 'Recover Template Activity Inputs',
+      notFoundNotAccessible:
+        'The requested activity template was not found or is not accessible. Please ensure that you have sufficient permissions to access this template.',
       incompleteActivity:
         'An incomplete state of this activity template has been auto-saved. Please choose whether you would like to continue editing the activity and recover the auto-saved state or start over with the original version of the template.',
       startOver: 'Start Over',
@@ -1609,6 +1611,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       discardEnteredElementContent: 'Discard Data for Element Creation',
       confirmDiscardEnteredElementContent:
         'By performing this action, all entered data for the creation of a new element at this point in the template will be discarded. This action cannot be undone.',
+      createLIVE_QUIZ: 'Create Live Quiz',
+      templateInputsIncomplete:
+        'The template contains incomplete inputs. Please check the settings and elements, not yet edited components are marked with an orange status.',
     },
     formErrors: {
       resolveErrors:

@@ -37,6 +37,7 @@ function ExistingElementSelectionModal({
       hasAnswerFeedbacks,
     },
     skip: !open,
+    fetchPolicy: 'cache-and-network',
   })
   const availableElements = data?.getMatchingUserElementsTemplate ?? []
 

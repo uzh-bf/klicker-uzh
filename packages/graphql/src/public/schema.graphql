@@ -1343,6 +1343,7 @@ type Mutation {
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
+  createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
@@ -1552,8 +1553,6 @@ type NumericalRestrictions {
 }
 
 input NumericalRestrictionsInput {
-  hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean
   max: Float
   min: Float
 }
@@ -2174,10 +2173,40 @@ type Tag {
   order: Int!
 }
 
+input TemplateBlockElementInput {
+  existingElementId: Int
+  newElement: TemplateElementManipulationInput
+  order: Int!
+  useExistingElement: Boolean!
+  useNewElement: Boolean!
+}
+
+input TemplateBlockInput {
+  elements: [TemplateBlockElementInput!]!
+  order: Int!
+  timeLimit: Int
+}
+
 type TemplateElementInformation {
   content: String!
   id: Int!
   name: String!
+}
+
+input TemplateElementManipulationInput {
+  caseStudyOptions: OptionsCaseStudyInput
+  choicesOptions: OptionsChoicesInput
+  content: String
+  explanation: String
+  freeTextOptions: OptionsFreeTextInput
+  id: Int
+  name: String
+  numericalOptions: OptionsNumericalInput
+  pointsMultiplier: Int
+  selectionOptions: OptionsSelectionInput
+  status: ElementStatus
+  tags: [String!]
+  type: ElementType!
 }
 
 type Title {

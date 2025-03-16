@@ -19,7 +19,7 @@ function ActivityRecoveryPrompt({
       escapeDisabled
       open={open}
       onClose={() => null}
-      title={t('manage.template.recoverActivity')}
+      title={t('manage.template.recoverTemplateActivityInputs')}
       className={{ content: 'gap-1' }}
     >
       <UserNotification

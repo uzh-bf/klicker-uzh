@@ -36,7 +36,13 @@ export async function validateAnswerCollectionPermissions(
     collectionId: number
     acceptedPermissionLevels: DB.PermissionLevel[]
   },
-  ctx: ContextWithUser
+  // type modification required for method to be usable inside transaction without type errors
+  ctx: Omit<ContextWithUser, 'prisma'> & {
+    prisma: Omit<
+      DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    >
+  }
 ) {
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
@@ -195,7 +201,7 @@ export async function getAnswerCollectionsElements(
   })[] = []
   if (templateId) {
     // verify that the user has access to the template activity
-    const accessible = validateTemplateAccessible({ templateId }, ctx)
+    const { accessible } = await validateTemplateAccessible({ templateId }, ctx)
     if (!accessible) {
       return []
     }
