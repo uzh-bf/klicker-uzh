@@ -28,7 +28,7 @@ const getDatabaseUrl = () => {
   return 'postgresql://klicker:klicker@localhost:5432/klicker'
 }
 
-describe('Unit tests for sharing service', () => {
+describe('Unit tests for template service', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter

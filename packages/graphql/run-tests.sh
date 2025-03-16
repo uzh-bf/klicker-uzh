@@ -9,8 +9,8 @@ echo "Building test containers..."
 docker compose -f test/docker/docker-compose.test.yml build 
 
 # run the test container and capture its exit code directly
-echo "Running test containers..."
-docker compose -f test/docker/docker-compose.test.yml up --abort-on-container-exit
+echo "Running test containers with sequential test execution..."
+TEST_ARGS="--runInBand" docker compose -f test/docker/docker-compose.test.yml up --abort-on-container-exit
 
 # after container runs, find the exit code from docker-compose ps output
 TEST_EXIT_CODE=$(docker compose -f test/docker/docker-compose.test.yml ps -a --format json | grep -o '"ExitCode":[0-9]*' | grep -o '[0-9]*' | head -1)
