@@ -2821,27 +2821,27 @@ describe('Unit tests for sharing service', () => {
     })
 
     // check accessible for everyone
-    const res1 = await validateTemplateAccessible(
+    const { accessible: res1 } = await validateTemplateAccessible(
       { templateId: templateId1 },
       userOneCtx
     )
     expect(res1).toBeTruthy()
-    const res2 = await validateTemplateAccessible(
+    const { accessible: res2 } = await validateTemplateAccessible(
       { templateId: templateId1 },
       userTwoCtx
     )
     expect(res2).toBeTruthy()
-    const res3 = await validateTemplateAccessible(
+    const { accessible: res3 } = await validateTemplateAccessible(
       { templateId: templateId1 },
       userThreeCtx
     )
     expect(res3).toBeTruthy()
-    const res4 = await validateTemplateAccessible(
+    const { accessible: res4 } = await validateTemplateAccessible(
       { templateId: templateId1 },
       userFourCtx
     )
     expect(res4).toBeTruthy()
-    const res5 = await validateTemplateAccessible(
+    const { accessible: res5 } = await validateTemplateAccessible(
       { templateId: templateId1 },
       userFiveCtx
     )
@@ -2874,27 +2874,27 @@ describe('Unit tests for sharing service', () => {
     })
 
     // check accessible for everyone
-    const res6 = await validateTemplateAccessible(
+    const { accessible: res6 } = await validateTemplateAccessible(
       { templateId: templateId2 },
       userOneCtx
     )
     expect(res6).toBeTruthy()
-    const res7 = await validateTemplateAccessible(
+    const { accessible: res7 } = await validateTemplateAccessible(
       { templateId: templateId2 },
       userTwoCtx
     )
     expect(res7).toBeTruthy()
-    const res8 = await validateTemplateAccessible(
+    const { accessible: res8 } = await validateTemplateAccessible(
       { templateId: templateId2 },
       userThreeCtx
     )
     expect(res8).toBeTruthy()
-    const res9 = await validateTemplateAccessible(
+    const { accessible: res9 } = await validateTemplateAccessible(
       { templateId: templateId2 },
       userFourCtx
     )
     expect(res9).toBeTruthy()
-    const res10 = await validateTemplateAccessible(
+    const { accessible: res10 } = await validateTemplateAccessible(
       { templateId: templateId2 },
       userFiveCtx
     )
@@ -2927,31 +2927,31 @@ describe('Unit tests for sharing service', () => {
     })
 
     // check accessilbe only to users with access to restricted catalog collection
-    const res11 = await validateTemplateAccessible(
+    const { accessible: res11 } = await validateTemplateAccessible(
       { templateId: templateId3 },
       userOneCtx
     )
     expect(res11).toBeTruthy() // owner of restricted catalog collection
-    const res12 = await validateTemplateAccessible(
+    const { accessible: res12 } = await validateTemplateAccessible(
       { templateId: templateId3 },
       userTwoCtx
     )
     expect(res12).toBeTruthy() // read permissions on restricted catalog collection
-    const res13 = await validateTemplateAccessible(
+    const { accessible: res13 } = await validateTemplateAccessible(
       { templateId: templateId3 },
       userThreeCtx
     )
     expect(res13).toBeTruthy() // write permissions on restricted catalog collection
-    const res14 = await validateTemplateAccessible(
+    const { accessible: res14 } = await validateTemplateAccessible(
       { templateId: templateId3 },
       userFourCtx
     )
     expect(res14).toBeTruthy() // admin permissions on restricted catalog collection
-    const res115 = await validateTemplateAccessible(
+    const { accessible: res15 } = await validateTemplateAccessible(
       { templateId: templateId3 },
       userFiveCtx
     )
-    expect(res115).toBeFalsy() // no permissions on restricted catalog collection
+    expect(res15).toBeFalsy() // no permissions on restricted catalog collection
   })
 
   // TODO: extend this test to verify that also users with admin permissions on an activity / activity template can delete these
@@ -3114,13 +3114,9 @@ describe('Unit tests for sharing service', () => {
     // delete all users that have been created for the test and validate that they have been removed
     await prisma.user.deleteMany({
       where: {
-        OR: [
-          { email: userOne.email },
-          { email: userTwo.email },
-          { email: userThree.email },
-          { email: userFour.email },
-          { email: userFive.email },
-        ],
+        id: {
+          in: [userOne.id, userTwo.id, userThree.id, userFour.id, userFive.id],
+        },
       },
     })
     const dbUsers = await prisma.user.count()

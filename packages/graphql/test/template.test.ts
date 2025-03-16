@@ -1,5 +1,6 @@
 import {
   ElementType,
+  ObjectAccess,
   PermissionLevel,
   PermissionStatus,
   PrismaClient,
@@ -12,6 +13,7 @@ import {
   getAnswerCollectionsElements,
   getAnswerCollectionsInfo,
 } from '../src/services/resources.js'
+import { MISSING_CATALOG_COLLECTION_ID } from '../src/services/sharing.js'
 import { getMatchingUserElementsTemplate } from '../src/services/templates.js'
 import { questionsSLAF, userOne, userTwo } from './templateData.js'
 
@@ -637,6 +639,24 @@ describe('Unit tests for sharing service', () => {
       },
     })
 
+    // add template to the top-level catalog collection (accessible to everyone)
+    await prisma.catalogCollectionAssignment.upsert({
+      where: {
+        liveQuizId_catalogCollectionId: {
+          liveQuizId: activityId,
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        },
+      },
+      create: {
+        access: ObjectAccess.PUBLIC,
+        liveQuiz: { connect: { id: activityId } },
+        catalogCollection: { connect: { id: MISSING_CATALOG_COLLECTION_ID } },
+      },
+      update: {
+        access: ObjectAccess.PUBLIC,
+      },
+    })
+
     // queries not related to the template should still only return owned or directly shared answer collections
     const collectionsUser1Alt = await getAnswerCollectionsElements(
       { templateId: undefined },
@@ -708,7 +728,7 @@ describe('Unit tests for sharing service', () => {
     // delete all users that have been created for the test and validate that they have been removed
     await prisma.user.deleteMany({
       where: {
-        OR: [{ id: userOne.id }, { id: userTwo.id }],
+        id: { in: [userOne.id, userTwo.id] },
       },
     })
     const dbUsers = await prisma.user.count()

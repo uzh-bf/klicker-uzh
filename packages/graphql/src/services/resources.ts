@@ -202,31 +202,31 @@ export async function getAnswerCollectionsElements(
   if (templateId) {
     // verify that the user has access to the template activity
     const { accessible } = await validateTemplateAccessible({ templateId }, ctx)
-    if (!accessible) {
-      return []
-    }
-
-    const template = await ctx.prisma.activityTemplate.findUnique({
-      where: {
-        id: templateId,
-      },
-      include: {
-        answerCollections: {
-          include: {
-            entries: {
-              orderBy: {
-                value: 'asc',
+    if (accessible) {
+      const template = await ctx.prisma.activityTemplate.findUnique({
+        where: {
+          id: templateId,
+        },
+        include: {
+          answerCollections: {
+            include: {
+              entries: {
+                orderBy: {
+                  value: 'asc',
+                },
               },
             },
-          },
-          orderBy: {
-            name: 'asc',
+            orderBy: {
+              name: 'asc',
+            },
           },
         },
-      },
-    })
+      })
 
-    templateAnswerCollections = template?.answerCollections ?? []
+      templateAnswerCollections = template?.answerCollections ?? []
+    } else {
+      templateAnswerCollections = []
+    }
   }
 
   const combinedAnswerCollections = [
