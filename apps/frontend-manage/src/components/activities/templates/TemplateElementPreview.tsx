@@ -3,6 +3,7 @@ import {
   ElementInstance,
   ElementType,
   GetArtificialInstanceDocument,
+  GetTemplatePreviewAnswerCollectionEntriesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -12,12 +13,15 @@ import StudentElement, {
 import { H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
+import useArtificialElementInstance from '../../questions/manipulation/useArtificialElementInstance'
 import { ActivityTemplateElementFormValues } from './types'
 
 function TemplateElementPreview({
+  templateId,
   templateElement,
   showTemplateInstancePreview = false,
 }: {
+  templateId: string
   templateElement: ActivityTemplateElementFormValues
   showTemplateInstancePreview?: boolean
 }): React.ReactElement {
@@ -25,6 +29,38 @@ function TemplateElementPreview({
   const [loadedInstance, setLoadedInstance] = useState<ElementInstance | null>(
     null
   )
+
+  // fetch answer collection entries for the selected answer collection (for preview)
+  const { data } = useQuery(GetTemplatePreviewAnswerCollectionEntriesDocument, {
+    variables: {
+      templateId,
+      answerCollectionId:
+        templateElement.formValues &&
+        'options' in templateElement.formValues &&
+        'answerCollection' in templateElement.formValues.options &&
+        typeof templateElement.formValues.options.answerCollection === 'string'
+          ? parseInt(templateElement.formValues?.options.answerCollection)
+          : -1,
+    },
+    skip:
+      !templateElement.formValues ||
+      !(
+        templateElement.instance.elementData.__typename ===
+          'SelectionElementData' ||
+        templateElement.instance.elementData.__typename ===
+          'CaseStudyElementData'
+      ),
+    fetchPolicy: 'cache-and-network',
+  })
+
+  // convert current form entries into an artificial instance (skipped internally if formValues is null)
+  const convertedInstance = useArtificialElementInstance({
+    values: templateElement.formValues,
+    elementDataTypename: templateElement.instance.elementData.__typename,
+    answerCollectionEntries: data?.getTemplatePreviewAnswerCollectionEntries
+      ? data?.getTemplatePreviewAnswerCollectionEntries
+      : [],
+  })
 
   // initialize student response with default state (SC question = default form state) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -70,11 +106,17 @@ function TemplateElementPreview({
   // when a new element is defined in the form, an artificial instance is created
   useEffect(() => {
     if (templateElement.useNewElement && templateElement.formValues) {
-      // TODO: Convert formValues to instance format (reuse useArtificialElementInstance hook)
-      // const convertedInstance = convertFormValuesToInstance(formValues)
-      // setLoadedInstance(convertedInstance)
+      if (!convertedInstance) {
+        return
+      }
+
+      setLoadedInstance(convertedInstance)
     }
-  }, [templateElement.useNewElement, templateElement.formValues])
+  }, [
+    convertedInstance,
+    templateElement.useNewElement,
+    templateElement.formValues,
+  ])
 
   // set the effective instance based on mode
   const effectiveInstance =

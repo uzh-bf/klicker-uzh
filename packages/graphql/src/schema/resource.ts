@@ -18,6 +18,23 @@ export const AnswerCollectionEntry = AnswerCollectionEntryRef.implement({
   }),
 })
 
+interface IAnswerCollectionPreviewEntry {
+  id: number
+  value: string
+}
+
+export const AnswerCollectionPreviewEntryRef =
+  builder.objectRef<IAnswerCollectionPreviewEntry>(
+    'AnswerCollectionPreviewEntry'
+  )
+export const AnswerCollectionPreviewEntry =
+  AnswerCollectionPreviewEntryRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      value: t.exposeString('value'),
+    }),
+  })
+
 interface IAnswerCollection extends DB.AnswerCollection {
   entries?: DB.AnswerCollectionEntry[]
   numOfEntries?: number

@@ -12,7 +12,7 @@ function useArtificialElementInstance({
   elementDataTypename,
   answerCollectionEntries,
 }: {
-  values?: ElementFormTypes
+  values?: ElementFormTypes | null
   elementDataTypename?: ElementData['__typename']
   answerCollectionEntries?: { id: number; value: string }[]
 }): ElementInstance | undefined {

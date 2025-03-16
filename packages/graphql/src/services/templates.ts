@@ -7,6 +7,7 @@ import {
 import { getInitialInstanceStatistics } from '@klicker-uzh/util'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
+import { getAnswerCollectionsElements } from './resources.js'
 
 // ! Helper functions
 // #region
@@ -1192,6 +1193,8 @@ export async function getActivityTemplate(
   { templateId }: { templateId: string },
   ctx: ContextWithUser
 ) {
+  // TODO: verify that user has access rights to the template (same for fetching of the contained answer collections)
+
   const template = await ctx.prisma.activityTemplate.findUnique({
     where: {
       id: templateId,
@@ -1326,6 +1329,7 @@ export async function getMatchingUserElementsTemplate(
   const availableElements = await ctx.prisma.element.findMany({
     where: {
       type: elementType,
+      isDeleted: false,
       OR: [
         {
           ownerId: ctx.user.sub,
@@ -1405,6 +1409,25 @@ export async function checkTemplateElementExists(
   })
 
   return element !== null
+}
+
+export async function getTemplatePreviewAnswerCollectionEntries(
+  { templateId, answerCollectionId },
+  ctx: ContextWithUser
+) {
+  const collections = await getAnswerCollectionsElements({ templateId }, ctx)
+  const answerCollection = collections.find(
+    (collection) => collection.id === answerCollectionId
+  )
+
+  if (!answerCollection) {
+    return []
+  }
+
+  return answerCollection.entries.map((entry) => ({
+    id: entry.id,
+    value: entry.value,
+  }))
 }
 
 // #endregion

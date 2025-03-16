@@ -131,6 +131,11 @@ type AnswerCollectionEntry {
   value: String!
 }
 
+type AnswerCollectionPreviewEntry {
+  id: Int!
+  value: String!
+}
+
 type ArchivedElement {
   id: Int!
   isArchived: Boolean!
@@ -1820,7 +1825,7 @@ type Query {
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getActivityTemplate(templateId: String!): ActivityTemplate
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
-  getAnswerCollectionsElements: [AnswerCollection!]
+  getAnswerCollectionsElements(templateId: String): [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
@@ -1862,6 +1867,7 @@ type Query {
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
   getStudentCourseLeaderboard(courseId: String!, mode: String!): StudentCourseLeaderboard
   getTemplateInformation(activityId: String!, activityType: ActivityType!): ActivityTemplateMetadata
+  getTemplatePreviewAnswerCollectionEntries(answerCollectionId: Int!, templateId: String!): [AnswerCollectionPreviewEntry!]
   groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails

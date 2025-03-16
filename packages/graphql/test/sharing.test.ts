@@ -487,32 +487,46 @@ describe('Unit tests for sharing service', () => {
 
   it('Verify that all users with access to the answer collection can at view its content and use it in corresonding elements', async () => {
     // check availability of answer collection during element creation
-    const collectionsUserOne = await getAnswerCollectionsElements(userOneCtx)
+    const collectionsUserOne = await getAnswerCollectionsElements(
+      { templateId: undefined },
+      userOneCtx
+    )
     expect(collectionsUserOne).toHaveLength(2)
     expect(collectionsUserOne.map((collection) => collection.name)).toEqual(
       expect.arrayContaining([answerCollection1.name, answerCollection2.name])
     )
 
-    const collectionsUserTwo = await getAnswerCollectionsElements(userTwoCtx)
+    const collectionsUserTwo = await getAnswerCollectionsElements(
+      { templateId: undefined },
+      userTwoCtx
+    )
     expect(collectionsUserTwo).toHaveLength(2)
     expect(collectionsUserTwo.map((collection) => collection.name)).toEqual(
       expect.arrayContaining([answerCollection1.name, answerCollection2.name])
     )
 
-    const collectionsUserThree =
-      await getAnswerCollectionsElements(userThreeCtx)
+    const collectionsUserThree = await getAnswerCollectionsElements(
+      { templateId: undefined },
+      userThreeCtx
+    )
     expect(collectionsUserThree).toHaveLength(2)
     expect(collectionsUserThree.map((collection) => collection.name)).toEqual(
       expect.arrayContaining([answerCollection1.name, answerCollection2.name])
     )
 
-    const collectionsUserFour = await getAnswerCollectionsElements(userFourCtx)
+    const collectionsUserFour = await getAnswerCollectionsElements(
+      { templateId: undefined },
+      userFourCtx
+    )
     expect(collectionsUserFour).toHaveLength(2)
     expect(collectionsUserFour.map((collection) => collection.name)).toEqual(
       expect.arrayContaining([answerCollection1.name, answerCollection2.name])
     )
 
-    const collectionsUserFive = await getAnswerCollectionsElements(userFiveCtx)
+    const collectionsUserFive = await getAnswerCollectionsElements(
+      { templateId: undefined },
+      userFiveCtx
+    )
     expect(collectionsUserFive).toHaveLength(0)
 
     // check availability for viewing and/or editing modal

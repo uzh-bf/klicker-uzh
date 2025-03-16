@@ -66,7 +66,7 @@ import {
   InstanceUpdateActivityInfo,
   Tag,
 } from './question.js'
-import { AnswerCollection } from './resource.js'
+import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
 import {
   CatalogCollection,
   CatalogObject,
@@ -900,8 +900,11 @@ export const Query = builder.queryType({
       getAnswerCollectionsElements: asUser.field({
         nullable: true,
         type: [AnswerCollection],
-        resolve(_, __, ctx) {
-          return ResourcesService.getAnswerCollectionsElements(ctx)
+        args: {
+          templateId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getAnswerCollectionsElements(args, ctx)
         },
       }),
 
@@ -979,6 +982,21 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return TemplateService.checkTemplateElementExists(args, ctx)
+        },
+      }),
+
+      getTemplatePreviewAnswerCollectionEntries: asUser.field({
+        nullable: true,
+        type: [AnswerCollectionPreviewEntry],
+        args: {
+          templateId: t.arg.string({ required: true }),
+          answerCollectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.getTemplatePreviewAnswerCollectionEntries(
+            args,
+            ctx
+          )
         },
       }),
 

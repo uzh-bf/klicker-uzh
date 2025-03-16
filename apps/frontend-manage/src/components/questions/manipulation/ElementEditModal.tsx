@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  ElementData,
   ElementType,
   GetSingleQuestionDocument,
   GetUserQuestionsDocument,
@@ -15,19 +14,9 @@ import {
   UpdateElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, Modal } from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import React, { useMemo, useState } from 'react'
-import AutoSaveMonitor from './AutoSaveMonitor'
-import ElementContentInput from './ElementContentInput'
-import ElementExplanationField from './ElementExplanationField'
-import ElementFailureToast from './ElementFailureToast'
-import ElementFormErrors from './ElementFormErrors'
-import ElementInformationFields from './ElementInformationFields'
-import ElementTypeMonitor from './ElementTypeMonitor'
-import InstanceUpdateSwitch from './InstanceUpdateSwitch'
-import StudentElementPreview from './StudentElementPreview'
+import ElementEditForm from './ElementEditForm'
 import {
   prepareCaseStudyArgs,
   prepareChoicesArgs,
@@ -37,18 +26,8 @@ import {
   prepareNumericalArgs,
   prepareSelectionArgs,
 } from './helpers'
-import AnswerFeedbackSetting from './options/AnswerFeedbackSetting'
-import CaseStudyOptions from './options/CaseStudyOptions'
-import ChoicesOptions from './options/ChoicesOptions'
-import DisplayModeSetting from './options/DisplayModeSetting'
-import FreeTextOptions from './options/FreeTextOptions'
-import NumericalOptions from './options/NumericalOptions'
-import OptionsLabel from './options/OptionsLabel'
-import SampleSolutionSetting from './options/SampleSolutionSetting'
-import SelectionOptions from './options/SelectionOptions'
 import { ElementFormTypes } from './types'
 import useElementFormInitialValues from './useElementFormInitialValues'
-import useValidationSchema from './useValidationSchema'
 
 export enum ElementEditMode {
   DUPLICATE = 'DUPLICATE',
@@ -76,16 +55,6 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
   const [failureToast, setFailureToast] = useState(false)
-  const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
-    { id: number; value: string }[]
-  >([])
-  const [elementDataTypename, setElementDataTypename] = useState<
-    ElementData['__typename'] | undefined
-  >()
-
-  const questionManipulationSchema = useValidationSchema({
-    numberOfAnswerOptions: answerCollectionEntries.length,
-  })
 
   const [autoSavedElement, setAutoSavedElement] =
     useLocalStorage<ElementFormTypes>(
@@ -147,14 +116,18 @@ function ElementEditModal({
   }
 
   return (
-    <Formik
-      validateOnMount
-      enableReinitialize
+    <ElementEditForm
+      mode={mode}
+      elementId={elementId}
+      loading={loadingQuestion}
       initialValues={formikInitialValues}
-      validationSchema={questionManipulationSchema}
-      onSubmit={async (values, { setSubmitting }) => {
-        setSubmitting(true)
-
+      open={isOpen}
+      onClose={() => handleSetIsOpen(false)}
+      failureToast={failureToast}
+      setFailureToast={setFailureToast}
+      updateInstances={updateInstances}
+      setUpdateInstances={setUpdateInstances}
+      onSubmitElement={async (values) => {
         switch (values.type) {
           case ElementType.Content: {
             const args = prepareContentArgs({
@@ -346,160 +319,10 @@ function ElementEditModal({
               : `autosave-element-${elementId}`
           )
         }
-
-        // close modal, set success toast
-        setSubmitting(false)
-        triggerSuccessToast()
-        handleSetIsOpen(false)
       }}
-    >
-      {({
-        values,
-        errors,
-        isSubmitting,
-        isValid,
-        setFieldValue,
-        setFieldTouched,
-        validateForm,
-      }) => {
-        if (loadingQuestion) {
-          return null
-        }
-
-        return (
-          <Modal
-            asPortal
-            fullScreen
-            title={t(`manage.questionForms.${mode}Title`)}
-            className={{
-              content: 'h-max max-h-full max-w-[1400px] text-sm md:text-base',
-              title: 'text-xl',
-            }}
-            open={isOpen}
-            onClose={() => handleSetIsOpen(false)}
-            escapeDisabled={true}
-            onPrimaryAction={
-              <Button
-                primary
-                type="submit"
-                loading={isSubmitting}
-                disabled={!isValid}
-                className={{ root: 'mt-2' }}
-                form="question-manipulation-form"
-                data={{ cy: 'save-new-question' }}
-              >
-                <Button.Label>{t('shared.generic.save')}</Button.Label>
-              </Button>
-            }
-            onSecondaryAction={
-              <Button
-                className={{ root: 'mt-2' }}
-                onClick={() => handleSetIsOpen(false)}
-                data={{ cy: 'close-element-modal' }}
-              >
-                <Button.Label>{t('shared.generic.close')}</Button.Label>
-              </Button>
-            }
-          >
-            <AutoSaveMonitor
-              values={values}
-              initialValuesString={JSON.stringify(formikInitialValues)}
-              setAutoSavedElement={setAutoSavedElement}
-            />
-            <ElementTypeMonitor
-              elementType={values.type ?? ElementType.Sc}
-              setElementDataTypename={setElementDataTypename}
-              validateForm={validateForm}
-            />
-            <div className="flex flex-row gap-12">
-              <div className="max-w-5xl flex-1">
-                <Form className="w-full" id="question-manipulation-form">
-                  <ElementInformationFields
-                    mode={mode}
-                    values={values}
-                    isSubmitting={isSubmitting}
-                  />
-                  <ElementContentInput
-                    values={values}
-                    setFieldValue={setFieldValue}
-                  />
-                  <ElementExplanationField
-                    values={values}
-                    setFieldValue={setFieldValue}
-                  />
-
-                  <div className="mt-4 flex flex-row gap-4">
-                    <OptionsLabel type={values.type} />
-                    <SampleSolutionSetting type={values.type} />
-                    <AnswerFeedbackSetting values={values} />
-                    <DisplayModeSetting type={values.type} />
-                  </div>
-
-                  {values.type === ElementType.Sc ||
-                  values.type === ElementType.Mc ||
-                  values.type === ElementType.Kprim ? (
-                    <ChoicesOptions
-                      values={values}
-                      setFieldValue={setFieldValue}
-                    />
-                  ) : null}
-
-                  {values.type === ElementType.Numerical && (
-                    <NumericalOptions values={values} />
-                  )}
-
-                  {values.type === ElementType.FreeText && (
-                    <FreeTextOptions values={values} />
-                  )}
-
-                  {values.type === ElementType.Selection && (
-                    <SelectionOptions
-                      values={values}
-                      setAnswerCollectionEntries={setAnswerCollectionEntries}
-                    />
-                  )}
-
-                  {values.type === ElementType.CaseStudy && (
-                    <CaseStudyOptions
-                      setFieldValue={setFieldValue}
-                      setFieldTouched={setFieldTouched}
-                      hasSampleSolution={values.options.hasSampleSolution}
-                      setAnswerCollectionEntries={setAnswerCollectionEntries}
-                    />
-                  )}
-                </Form>
-
-                {Object.keys(errors).length !== 0 && (
-                  <ElementFormErrors errors={errors} />
-                )}
-              </div>
-              <StudentElementPreview
-                values={values}
-                elementDataTypename={elementDataTypename}
-                answerCollectionEntries={answerCollectionEntries}
-              />
-            </div>
-
-            {mode === ElementEditMode.EDIT && elementId && (
-              <InstanceUpdateSwitch
-                elementId={elementId}
-                hasSampleSolution={
-                  'options' in values && 'hasSampleSolution' in values.options
-                    ? values.options.hasSampleSolution
-                    : undefined
-                }
-                updateInstances={updateInstances}
-                setUpdateInstances={setUpdateInstances}
-              />
-            )}
-            <ElementFailureToast
-              open={failureToast}
-              onClose={() => setFailureToast(false)}
-            />
-          </Modal>
-        )
-      }}
-    </Formik>
+      onSuccess={triggerSuccessToast}
+      setAutoSavedElement={setAutoSavedElement}
+    />
   )
 }
 

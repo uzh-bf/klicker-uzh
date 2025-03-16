@@ -52,6 +52,7 @@ export async function getSingleQuestion(
   const question = await ctx.prisma.element.findUnique({
     where: {
       id,
+      isDeleted: false,
       ownerId: ctx.user.sub,
     },
     include: {
@@ -97,6 +98,7 @@ export async function getArtificialElementInstance(
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
+      isDeleted: false,
       ownerId: ctx.user.sub,
     },
     include: {
@@ -175,6 +177,7 @@ export async function manipulateQuestion(
       ? await ctx.prisma.element.findUnique({
           where: {
             id: id,
+            isDeleted: false,
             ownerId: ctx.user.sub,
           },
           include: {

@@ -1,14 +1,20 @@
 import { useQuery } from '@apollo/client'
-import { faEye, faHandPointer } from '@fortawesome/free-regular-svg-icons'
+import {
+  faCopy,
+  faEye,
+  faHandPointer,
+} from '@fortawesome/free-regular-svg-icons'
+import { faArrowsRotate, faPen } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CheckTemplateElementExistsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ElementFormTypes } from '~/components/questions/manipulation/types'
 import ExistingElementSelectionModal from './ExistingElementSelectionModal'
 import TemplateElementPreview from './TemplateElementPreview'
+import TemplateNewElementModal from './TemplateNewElementModal'
 import { ActivityTemplateElementFormValues } from './types'
 
 function TemplateElementContent({
@@ -39,6 +45,13 @@ function TemplateElementContent({
     skip: templateElement.useExistingElement || templateElement.useNewElement,
   })
 
+  // once either an existing element is selected or a new element is created, unset the preview parameter
+  useEffect(() => {
+    if (templateElement.processed) {
+      setPreviewExistingInstance(false)
+    }
+  }, [templateElement.processed])
+
   return (
     <>
       <div className="mb-6 flex flex-col">
@@ -47,7 +60,7 @@ function TemplateElementContent({
             <div className="mb-2 text-gray-700">
               {t('manage.template.elementActionsTemplate')}
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <Button
                 primary={
                   templateElement.processed &&
@@ -60,6 +73,7 @@ function TemplateElementContent({
                   ),
                 }}
               >
+                <Button.Icon icon={faCopy} />
                 <Button.Label>
                   {t('manage.template.acceptTemplateElement')}
                 </Button.Label>
@@ -71,6 +85,7 @@ function TemplateElementContent({
                 }
                 onClick={() => setExistingElementModal(true)}
               >
+                <Button.Icon icon={faArrowsRotate} />
                 <Button.Label>
                   {t('manage.template.replaceWithExistingElement')}
                 </Button.Label>
@@ -79,8 +94,9 @@ function TemplateElementContent({
                 primary={
                   templateElement.processed && templateElement.useNewElement
                 }
-                // TODO: on click open an element editing modal (initialized with the form values or the template data if no form values are defined)
+                onClick={() => setNewElementModal(true)}
               >
+                <Button.Icon icon={faPen} />
                 <Button.Label>
                   {t('manage.template.insertContentNewElement')}
                 </Button.Label>
@@ -119,6 +135,7 @@ function TemplateElementContent({
               </div>
             ) : (
               <TemplateElementPreview
+                templateId={templateId}
                 templateElement={templateElement}
                 showTemplateInstancePreview={previewExistingInstance}
               />
@@ -150,6 +167,14 @@ function TemplateElementContent({
             ? templateElement.instance.elementData.options.hasAnswerFeedbacks
             : null
         }
+      />
+
+      <TemplateNewElementModal
+        templateId={templateId}
+        open={newElementModal}
+        onClose={() => setNewElementModal(false)}
+        templateElement={templateElement}
+        onSaveNewElement={saveNewElement}
       />
     </>
   )

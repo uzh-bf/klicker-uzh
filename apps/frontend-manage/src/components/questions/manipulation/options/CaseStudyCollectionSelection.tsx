@@ -14,11 +14,13 @@ import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
 function CaseStudyCollectionSelection({
+  isTemplate,
   collections,
   setSelectedItems,
   hasSampleSolution,
   setAnswerCollectionEntries,
 }: {
+  isTemplate: boolean
   collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
@@ -91,6 +93,7 @@ function CaseStudyCollectionSelection({
           }}
         />
         <FormikSwitchField
+          disabled={isTemplate}
           name="options.hasSampleSolution"
           label={t('shared.generic.sampleSolution')}
           data={{ cy: 'configure-sample-solution' }}
