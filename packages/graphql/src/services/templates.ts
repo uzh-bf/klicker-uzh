@@ -294,6 +294,8 @@ export async function validateTemplateAccessible(
   ) {
     return true
   }
+
+  return false
 }
 
 // #endregion
@@ -1353,7 +1355,7 @@ export async function getActivityTemplate(
   ctx: ContextWithUser
 ) {
   // verify that the user has access to the template activity
-  const accessible = validateTemplateAccessible({ templateId }, ctx)
+  const accessible = await validateTemplateAccessible({ templateId }, ctx)
   if (!accessible) {
     return null
   }

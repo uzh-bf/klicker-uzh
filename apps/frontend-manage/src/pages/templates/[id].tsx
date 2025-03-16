@@ -4,7 +4,7 @@ import {
   GetActivityTemplateDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../../components/Layout'
@@ -25,6 +25,18 @@ function Template({ templateId }: { templateId: string }) {
       <Layout displayName={t('manage.template.activityFromTemplate')}>
         <H2>{t('manage.template.activityFromTemplate')}</H2>
         <Loader />
+      </Layout>
+    )
+  }
+
+  if (!data?.getActivityTemplate) {
+    return (
+      <Layout displayName={t('manage.template.activityFromTemplate')}>
+        <UserNotification
+          type="error"
+          message={t('manage.template.notFoundNotAccessible')}
+          className={{ root: 'text-base' }}
+        />
       </Layout>
     )
   }

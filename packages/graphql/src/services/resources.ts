@@ -195,7 +195,7 @@ export async function getAnswerCollectionsElements(
   })[] = []
   if (templateId) {
     // verify that the user has access to the template activity
-    const accessible = validateTemplateAccessible({ templateId }, ctx)
+    const accessible = await validateTemplateAccessible({ templateId }, ctx)
     if (!accessible) {
       return []
     }
