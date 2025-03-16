@@ -206,16 +206,20 @@ export type ElementManipulationInput = {
   content?: string | null
   explanation?: string | null
   options?: ElementOptionsInput | null
+  choicesOptions?: OptionsChoicesInput | null
+  numericalOptions?: OptionsNumericalInput | null
+  freeTextOptions?: OptionsFreeTextInput | null
+  selectionOptions?: OptionsSelectionInput | null
+  caseStudyOptions?: OptionsCaseStudyInput | null
   pointsMultiplier?: number | null
   tags?: string[] | null
 }
 
 export type TemplateBlockElementInput = {
   order: number
-  useTemplateInstance: boolean // boolean to signal that this instance should be directly copied from the template
   useExistingElement: boolean // boolean to signal that an existing element should be loaded into the template
-  existingInstanceId?: number | null // id of the existing instance that should be loaded into the template
-  useNewElement: boolean // boolean to signal that a new element was entered by the user
+  existingElementId?: number | null // id of the existing instance that should be loaded into the template
+  useNewElement: boolean // boolean to signal that either the existing template instance should be copied into the user account or a new element should be created
   newElement?: ElementManipulationInput | null // content for the element, if the user has chosen to insert their own content
 }
 

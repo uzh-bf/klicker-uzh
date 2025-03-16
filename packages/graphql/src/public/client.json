@@ -25,6 +25,7 @@
    "CreateFeedback": "5a4a9e710048cb5b679e7d8217907d623c7c53638fec41183a0257931fc8b136",
    "CreateGroupActivity": "9c85b7f85dedb882046baca8e77b53825968986109803caeba4662540b07f5a2",
    "CreateLiveQuiz": "e1959e3ea31ff12a694588b27bfbff5a7e725bb3a9185dc64f8e7bbc82927d91",
+   "CreateLiveQuizFromTemplate": "0fc76ab44ebdcd415ec682fa8fcb091ba55a53f175dd1eb5fa91de1a42d04a3f",
    "CreateMicroLearning": "c3ddebe24ea441a1927e55aad5f5390978e75e447d15ed13a226546453fd1321",
    "CreateParticipantAccount": "278b145dc084311fdb228613ded6458695bf03f8df62be76fcc6b7a8a1e01b44",
    "CreateParticipantGroup": "cad4e08adef764c01259e1c20738c67d7ba20d6fe9bea3e9cff18ff6024d05a1",

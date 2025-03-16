@@ -1,0 +1,19 @@
+mutation CreateLiveQuizFromTemplate(
+  $templateId: String!
+  $name: String!
+  $displayName: String!
+  $description: String
+  $courseId: String
+  $isGamificationEnabled: Boolean!
+  $blocks: [TemplateBlockInput!]!
+) {
+  createLiveQuizFromTemplate(
+    templateId: $templateId
+    name: $name
+    displayName: $displayName
+    description: $description
+    courseId: $courseId
+    isGamificationEnabled: $isGamificationEnabled
+    blocks: $blocks
+  )
+}

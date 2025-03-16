@@ -1,29 +1,34 @@
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { LiveQuizTemplateFormValues } from './types'
+import { LiveQuizTemplateFormValues } from '../types'
 
 function SubmissionButton({
   disabled = false,
+  loading,
   onSubmit,
 }: {
   disabled?: boolean
+  loading: boolean
   onSubmit: () => Promise<void>
 }) {
   const t = useTranslations()
 
   return (
-    <Button primary disabled={disabled} onClick={onSubmit}>
+    <Button primary disabled={disabled} loading={loading} onClick={onSubmit}>
       <Button.Icon icon={faSave} />
       <Button.Label>{t('manage.template.createLIVE_QUIZ')}</Button.Label>
     </Button>
   )
 }
+
 function LiveQuizTemplateSubmissionButton({
   quizData,
+  loading,
   onSubmit,
 }: {
   quizData: LiveQuizTemplateFormValues
+  loading: boolean
   onSubmit: () => Promise<void>
 }) {
   const t = useTranslations()
@@ -39,12 +44,12 @@ function LiveQuizTemplateSubmissionButton({
         tooltip={t('manage.template.templateInputsIncomplete')}
         className={{ tooltip: 'z-20' }}
       >
-        <SubmissionButton disabled onSubmit={onSubmit} />
+        <SubmissionButton disabled loading={loading} onSubmit={onSubmit} />
       </Tooltip>
     )
   }
 
-  return <SubmissionButton onSubmit={onSubmit} />
+  return <SubmissionButton loading={loading} onSubmit={onSubmit} />
 }
 
 export default LiveQuizTemplateSubmissionButton

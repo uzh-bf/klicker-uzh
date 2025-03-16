@@ -63,6 +63,7 @@ import {
   OptionsNumericalInput,
   OptionsSelectionInput,
   Tag,
+  TemplateBlockInput,
 } from './question.js'
 import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
@@ -1532,6 +1533,25 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return TemplateService.deleteActivityTemplate(args, ctx)
+        },
+      }),
+
+      createLiveQuizFromTemplate: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          templateId: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          courseId: t.arg.string({ required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: true }),
+          blocks: t.arg({
+            type: [TemplateBlockInput],
+            required: true,
+          }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.createLiveQuizFromTemplate(args, ctx)
         },
       }),
 

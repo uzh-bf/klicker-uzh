@@ -1,5 +1,9 @@
+import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
-import { ActivityTemplate } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityTemplate,
+  CreateLiveQuizFromTemplateDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -7,10 +11,11 @@ import { useEffect, useState } from 'react'
 import ActivityRecoveryPrompt from './ActivityRecoveryPrompt'
 import goToNextTemplateElement from './goToNextTemplateElement'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
+import LiveQuizTemplateSubmissionButton from './liveQuiz/LiveQuizTemplateSubmissionButton'
 import LiveQuizTemplateTimeLimitModal from './liveQuiz/LiveQuizTemplateTimeLimitModal'
 import loadProgressFromLiveQuizData from './liveQuiz/loadProgressFromLiveQuizData'
+import processLiveQuizTemplateBlocksData from './liveQuiz/processLiveQuizTemplateBlocksData'
 import useInitialLiveQuizTemplateFormData from './liveQuiz/useInitialLiveQuizTemplateFormData'
-import LiveQuizTemplateSubmissionButton from './LiveQuizTemplateSubmissionButton'
 import markTemplateElementAsProcessed from './markTemplateElementAsProcessed'
 import SectionCollapsible, {
   TemplateCollapsibleState,
@@ -25,6 +30,10 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   const t = useTranslations()
   const liveQuiz = template.liveQuiz
 
+  // mutation for submission
+  const [createLiveQuizFromTemplate, { loading: creatingLiveQuiz }] =
+    useMutation(CreateLiveQuizFromTemplateDocument)
+
   // recovery prompt state in case a previous template state is still available for this activity
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
 
@@ -37,6 +46,14 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     open: false,
     blockIx: 0,
   })
+
+  // TODO: handle submission success and error states with corresponding toast / success modal with navigation to the created activity
+  // submission success and error states
+  const [submissionSuccess, setSubmissionSuccess] = useState<{
+    open: boolean
+    quizId: string | undefined
+  }>({ open: false, quizId: undefined })
+  const [submissionError, setSubmissionError] = useState(false)
 
   // track states and validity of collapsibles
   const [collapsibles, setCollapsibles] = useState<TemplateCollapsibleUIStates>(
@@ -362,8 +379,42 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         <div className="mt-5 self-end">
           <LiveQuizTemplateSubmissionButton
             quizData={quizData}
+            loading={creatingLiveQuiz}
             onSubmit={async () => {
-              // TODO: submission logic and error toast / success modal (?) setting
+              const inputsInvalid =
+                !quizData.settingsProcessed ||
+                !quizData?.blocks?.every((block) =>
+                  block.elements.every((element) => element.processed)
+                )
+
+              if (inputsInvalid) {
+                console.log(
+                  'Template inputs were invalid, but submission was triggered'
+                )
+                setSubmissionError(true)
+                return
+              }
+
+              try {
+                const processedBlocks = processLiveQuizTemplateBlocksData({
+                  data: quizData,
+                })
+
+                await createLiveQuizFromTemplate({
+                  variables: {
+                    templateId: template.id,
+                    name: quizData.name,
+                    displayName: quizData.displayName,
+                    description: quizData.description,
+                    courseId: quizData.courseId,
+                    isGamificationEnabled: quizData.isGamificationEnabled,
+                    blocks: processedBlocks,
+                  },
+                })
+              } catch (error) {
+                console.log(error)
+                setSubmissionError(true)
+              }
             }}
           />
         </div>

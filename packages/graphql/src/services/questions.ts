@@ -148,7 +148,13 @@ export async function manipulateQuestion(
     pointsMultiplier,
     tags,
   }: ElementManipulationInput,
-  ctx: ContextWithUser
+  // type modification required for method to be usable inside transaction without type errors
+  ctx: Omit<ContextWithUser, 'prisma'> & {
+    prisma: Omit<
+      DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    >
+  }
 ) {
   let tagsToDisconnect: string[] = []
   let collectionAnswersToDisconnect: number[] = []

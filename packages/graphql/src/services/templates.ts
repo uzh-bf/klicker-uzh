@@ -2,13 +2,22 @@ import * as DB from '@klicker-uzh/prisma'
 import {
   ActivityType,
   CaseStudyElementData,
+  ElementOptionsInput,
   SelectionElementData,
   TemplateBlockInput,
 } from '@klicker-uzh/types'
-import { getInitialInstanceStatistics } from '@klicker-uzh/util'
+import {
+  getInitialElementResults,
+  getInitialInstanceStatistics,
+  processElementData,
+} from '@klicker-uzh/util'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
-import { getAnswerCollectionsElements } from './resources.js'
+import { manipulateQuestion } from './questions.js'
+import {
+  getAnswerCollectionsElements,
+  validateAnswerCollectionPermissions,
+} from './resources.js'
 import { MISSING_CATALOG_COLLECTION_ID } from './sharing.js'
 
 // ! Helper functions
@@ -260,17 +269,17 @@ export async function validateTemplateAccessible(
 
   // if no activity is connected, return false
   if (!activity) {
-    return false
+    return { accessible: false, template: null }
   }
 
   // if the user is the template activity owner, return true
   if (activity.ownerId === ctx.user.sub) {
-    return true
+    return { accessible: true, template }
   }
 
   // if the user has been granted access directly to the template activity, return true
   if (activity.permissions.length > 0) {
-    return true
+    return { accessible: true, template }
   }
 
   // if the activity template is included as a public item in a public catalog collection, it is accessible to everyone
@@ -282,7 +291,7 @@ export async function validateTemplateAccessible(
           assignment.catalogCollection.access === DB.ObjectAccess.PUBLIC)
     )
   ) {
-    return true
+    return { accessible: true, template }
   }
 
   // if the activity template is included as a public item in a restricted catalog collection, to which the user has access, it is accessible
@@ -293,10 +302,10 @@ export async function validateTemplateAccessible(
         assignment.catalogCollection.permissions.length > 0
     )
   ) {
-    return true
+    return { accessible: true, template }
   }
 
-  return false
+  return { accessible: false, template: null }
 }
 
 // #endregion
@@ -1356,7 +1365,7 @@ export async function getActivityTemplate(
   ctx: ContextWithUser
 ) {
   // verify that the user has access to the template activity
-  const accessible = await validateTemplateAccessible({ templateId }, ctx)
+  const { accessible } = await validateTemplateAccessible({ templateId }, ctx)
   if (!accessible) {
     return null
   }
@@ -1604,11 +1613,11 @@ interface CreateLiveQuizFromTemplateArgs {
   displayName: string
   description?: string | null
   courseId?: string | null
+  isGamificationEnabled: boolean
   // block input - potentially including element data
   blocks: TemplateBlockInput[]
 }
 
-// TODO: return the id of the newly created activity -> for redirecting to the activity overview
 export async function createLiveQuizFromTemplate(
   {
     templateId,
@@ -1617,24 +1626,321 @@ export async function createLiveQuizFromTemplate(
     description,
     blocks,
     courseId,
+    isGamificationEnabled,
   }: CreateLiveQuizFromTemplateArgs,
   ctx: ContextWithUser
-) {
-  const accessible = await validateTemplateAccessible({ templateId }, ctx)
-  if (!accessible) {
+): Promise<string | null> {
+  const { accessible, template } = await validateTemplateAccessible(
+    { templateId },
+    ctx
+  )
+
+  if (!accessible || !template || !template.liveQuizId) {
     return null
   }
 
-  // TODO: get these fixed settings from the template live quiz
-  // multiplier: number
-  // defaultPoints?: number | null
-  // defaultCorrectPoints?: number | null
-  // maxBonusPoints?: number | null
-  // timeToZeroBonus?: number | null
-  // isGamificationEnabled: boolean
-  // isConfusionFeedbackEnabled: boolean
-  // isLiveQAEnabled: boolean
-  // isModerationEnabled: boolean
+  // get the available answer collection ids for the activity linked to the template
+  const availableAnswerCollections = await getActivityAnswerCollectionIds(
+    {
+      activityId: template.liveQuizId,
+      activityType: ActivityType.LIVE_QUIZ,
+    },
+    ctx
+  )
+
+  // fetch live quiz for blocked settings to be transferrable
+  const templateLiveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: template.liveQuizId,
+      status: DB.PublicationStatus.TEMPLATE,
+    },
+  })
+
+  if (!templateLiveQuiz) {
+    return null
+  }
+
+  // inside a prisma transaction, create all required elements, permissions and the activity
+  const newLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
+    const liveQuizContent: {
+      blocks: {
+        order: number
+        timeLimit?: number | null
+        elements: {
+          order: number
+          element: DB.Element
+        }[]
+      }[]
+    } = { blocks: [] }
+
+    // iterate over all blocks and either fetch the existing element from the database or create a new one
+    for (const block of blocks) {
+      const elements = await Promise.all(
+        block.elements.map(async (element) => {
+          if (element.useExistingElement) {
+            if (
+              element.existingElementId === null ||
+              typeof element.existingElementId === 'undefined'
+            ) {
+              throw new Error('Existing element id not provided')
+            }
+
+            // find existing element in user account
+            const existingElement = await tx.element.findUnique({
+              where: {
+                id: element.existingElementId,
+                OR: [
+                  {
+                    ownerId: ctx.user.sub,
+                  },
+                  {
+                    permissions: {
+                      some: {
+                        userId: ctx.user.sub,
+                        permissionStatus: DB.PermissionStatus.GRANTED,
+                      },
+                    },
+                  },
+                ],
+              },
+              include: {
+                answerCollection: {
+                  include: {
+                    entries: true,
+                  },
+                },
+                answerCollectionItems: true,
+              },
+            })
+
+            if (!existingElement) {
+              console.log(
+                'Failed to find element with id',
+                element.existingElementId
+              )
+              throw new Error(
+                'Existing element does not exist or user does not have access to it'
+              )
+            }
+
+            // add existing element to content map
+            return {
+              order: element.order,
+              element: existingElement,
+            }
+          } else if (element.useNewElement) {
+            if (
+              element.newElement === null ||
+              typeof element.newElement === 'undefined'
+            ) {
+              throw new Error('New element data not provided')
+            }
+
+            // check if the user has access to potential answer collections linked to the new element or if they are contained in the template
+            const values = element.newElement
+            if (
+              values.type === DB.ElementType.SELECTION ||
+              values.type === DB.ElementType.CASE_STUDY
+            ) {
+              if (
+                !('options' in values) ||
+                !values.options ||
+                !('answerCollection' in values.options) ||
+                typeof values.options?.answerCollection === 'undefined' ||
+                values.options.answerCollection === null
+              ) {
+                throw new Error(
+                  'Answer collection not provided for selection or case study element'
+                )
+              }
+
+              // get answer collection id that should be linked to the new element
+              const answerCollectionId = values.options.answerCollection
+
+              // check if the user already has access to the answer collection
+              const { valid } = await validateAnswerCollectionPermissions(
+                {
+                  collectionId: answerCollectionId,
+                  acceptedPermissionLevels: [
+                    DB.PermissionLevel.READ,
+                    DB.PermissionLevel.WRITE,
+                    DB.PermissionLevel.ADMIN,
+                  ],
+                },
+                { ...ctx, prisma: tx }
+              )
+
+              if (!valid) {
+                // if access does not already exist, check if the answer collection is linked to the template
+                if (
+                  !availableAnswerCollections?.answerCollectionIds.includes(
+                    answerCollectionId
+                  )
+                ) {
+                  throw new Error(
+                    'User does not have access to the answer collection linked to the template'
+                  )
+                }
+
+                // otherwise, create new READ permission for the user on the answer collection
+                await tx.permission.create({
+                  data: {
+                    permissionLevel: DB.PermissionLevel.READ,
+                    permissionStatus: DB.PermissionStatus.GRANTED,
+                    user: {
+                      connect: { id: ctx.user.sub },
+                    },
+                    answerCollection: {
+                      connect: { id: answerCollectionId },
+                    },
+                  },
+                })
+              }
+            }
+
+            // combine the element options depending on the element type
+            let options: ElementOptionsInput | undefined | null = undefined
+            if (
+              values.type === DB.ElementType.SC ||
+              values.type === DB.ElementType.MC ||
+              values.type === DB.ElementType.KPRIM
+            ) {
+              options = values.choicesOptions
+            } else if (values.type === DB.ElementType.NUMERICAL) {
+              options = values.numericalOptions
+            } else if (values.type === DB.ElementType.FREE_TEXT) {
+              options = values.freeTextOptions
+            } else if (values.type === DB.ElementType.SELECTION) {
+              options = values.selectionOptions
+            } else if (values.type === DB.ElementType.CASE_STUDY) {
+              options = values.caseStudyOptions
+            }
+
+            // create a new element based on the provided data
+            const createdElement = await manipulateQuestion(
+              { ...values, options },
+              { ...ctx, prisma: tx }
+            )
+
+            // throw an error if the element could not be created
+            if (!createdElement) {
+              console.log(
+                'Failed to create new element from form inputs',
+                values
+              )
+              throw new Error('Failed to create new element')
+            }
+
+            // TODO: make this a bit more efficient by not fetching the just created element again
+            // re-fetch the created element including the answer collection and corresponding entries
+            const newElement = await tx.element.findUnique({
+              where: {
+                id: createdElement.id,
+                ownerId: ctx.user.sub,
+              },
+              include: {
+                answerCollection: {
+                  include: {
+                    entries: true,
+                  },
+                },
+                answerCollectionItems: true,
+              },
+            })
+
+            if (!newElement) {
+              console.log('Failed to fetch newly created element')
+              throw new Error('Failed to fetch newly created element')
+            }
+
+            return {
+              order: element.order,
+              element: newElement,
+            }
+          }
+
+          // no option was selected for one of the elements -> invalid input
+          throw new Error('Invalid template element modification choice')
+        })
+      )
+
+      liveQuizContent.blocks.push({
+        order: block.order,
+        timeLimit: block.timeLimit,
+        elements,
+      })
+    }
+
+    const quiz = await tx.liveQuiz.create({
+      data: {
+        name: name.trim(),
+        displayName: displayName.trim(),
+        description,
+        pointsMultiplier: templateLiveQuiz.pointsMultiplier,
+        defaultPoints: templateLiveQuiz.defaultPoints,
+        defaultCorrectPoints: templateLiveQuiz.defaultCorrectPoints,
+        maxBonusPoints: templateLiveQuiz.maxBonusPoints,
+        timeToZeroBonus: templateLiveQuiz.timeToZeroBonus,
+        isGamificationEnabled: isGamificationEnabled,
+        isConfusionFeedbackEnabled: templateLiveQuiz.isConfusionFeedbackEnabled,
+        isLiveQAEnabled: templateLiveQuiz.isLiveQAEnabled,
+        isModerationEnabled: templateLiveQuiz.isModerationEnabled,
+        blocks: {
+          create: liveQuizContent.blocks.map((block) => {
+            return {
+              order: block.order,
+              timeLimit: block.timeLimit,
+              elements: {
+                create: block.elements.map((entry) => {
+                  const processedElementData = processElementData(entry.element)
+                  const initialResults = getInitialElementResults(entry.element)
+
+                  return {
+                    elementType: entry.element.type,
+                    migrationId: uuidv4(),
+                    order: entry.order,
+                    type: DB.ElementInstanceType.LIVE_QUIZ,
+                    elementData: processedElementData,
+                    options: {
+                      pointsMultiplier:
+                        templateLiveQuiz.pointsMultiplier *
+                        entry.element.pointsMultiplier,
+                    },
+                    results: initialResults,
+                    anonymousResults: initialResults,
+                    instanceStatistics: {
+                      create: getInitialInstanceStatistics(
+                        DB.ElementInstanceType.LIVE_QUIZ
+                      ),
+                    },
+                    element: {
+                      connect: { id: entry.element.id },
+                    },
+                    owner: {
+                      connect: { id: ctx.user.sub },
+                    },
+                  }
+                }),
+              },
+            }
+          }),
+        },
+        owner: {
+          connect: { id: ctx.user.sub },
+        },
+        course:
+          typeof courseId === 'string' && courseId !== null
+            ? {
+                connect: { id: courseId },
+              }
+            : undefined,
+      },
+    })
+
+    return quiz
+  })
+
+  return newLiveQuiz.id
 }
 
 // #endregion

@@ -111,6 +111,10 @@ function LiveQuizTemplateSettings({
               displayName: values.displayName,
               description: values.description,
               courseId: values.courseId,
+              isGamificationEnabled:
+                courseSelection.find(
+                  (course) => course.value === values.courseId
+                )?.isGamified ?? false,
               settingsProcessed: true,
             }
           })

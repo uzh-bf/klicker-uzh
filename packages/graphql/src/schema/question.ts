@@ -7,6 +7,7 @@ import {
   type CaseStudySolutionInput as CaseStudySolutionInputType,
   type CaseStudySolution as CaseStudySolutionType,
   type ChoiceInput as ChoiceInputType,
+  type ElementManipulationInput as ElementManipulationInputType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   type ElementOptionsChoices as ElementOptionsChoicesType,
   type ElementOptionsFreeText as ElementOptionsFreeTextType,
@@ -40,6 +41,8 @@ import {
   type SingleQuestionResponseValue as SingleQuestionResponseValueType,
   type SingleSelectionResponse as SingleSelectionResponseType,
   type SolutionRangeInput as SolutionRangeInputType,
+  type TemplateBlockElementInput as TemplateBlockElementInputType,
+  type TemplateBlockInput as TemplateBlockInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
@@ -244,6 +247,67 @@ export const OptionsCaseStudyInput = OptionsCaseStudyInputRef.implement({
   }),
 })
 
+export const TemplateElementManipulationInputRef =
+  builder.inputRef<ElementManipulationInputType>(
+    'TemplateElementManipulationInput'
+  )
+export const TemplateElementManipulationInput =
+  TemplateElementManipulationInputRef.implement({
+    fields: (t) => ({
+      id: t.int({ required: false }),
+      status: t.field({ type: ElementStatus, required: false }),
+      type: t.field({ type: ElementType, required: true }),
+      name: t.string({ required: false }),
+      content: t.string({ required: false }),
+      explanation: t.string({ required: false }),
+      choicesOptions: t.field({ type: OptionsChoicesInput, required: false }),
+      numericalOptions: t.field({
+        type: OptionsNumericalInput,
+        required: false,
+      }),
+      freeTextOptions: t.field({ type: OptionsFreeTextInput, required: false }),
+      selectionOptions: t.field({
+        type: OptionsSelectionInput,
+        required: false,
+      }),
+      caseStudyOptions: t.field({
+        type: OptionsCaseStudyInput,
+        required: false,
+      }),
+      pointsMultiplier: t.int({ required: false }),
+      tags: t.stringList({ required: false }),
+    }),
+  })
+
+export const TemplateBlockElementInputRef =
+  builder.inputRef<TemplateBlockElementInputType>('TemplateBlockElementInput')
+export const TemplateBlockElementInput = TemplateBlockElementInputRef.implement(
+  {
+    fields: (t) => ({
+      order: t.int({ required: true }),
+      useExistingElement: t.boolean({ required: true }),
+      existingElementId: t.int({ required: false }),
+      useNewElement: t.boolean({ required: true }),
+      newElement: t.field({
+        type: TemplateElementManipulationInput,
+        required: false,
+      }),
+    }),
+  }
+)
+
+export const TemplateBlockInputRef =
+  builder.inputRef<TemplateBlockInputType>('TemplateBlockInput')
+export const TemplateBlockInput = TemplateBlockInputRef.implement({
+  fields: (t) => ({
+    timeLimit: t.int({ required: false }),
+    order: t.int({ required: true }),
+    elements: t.field({ type: [TemplateBlockElementInput], required: true }),
+  }),
+})
+
+// #endregion
+
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
 // #region
 export const SingleQuestionResponseChoices = builder
@@ -289,6 +353,7 @@ export const SingleQuestionResponseContent = builder
       viewed: t.exposeBoolean('viewed'),
     }),
   })
+
 // #endregion
 
 // ----- INSTANCE EVALUATION INTERFACE -----
