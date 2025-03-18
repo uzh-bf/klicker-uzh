@@ -2273,7 +2273,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Delete all created questions', function () {
     cy.loginLecturer()
-    const questions = [
+    cy.wrap([
       this.data.SC.title,
       this.data.MC.title,
       this.data.KP.title,
@@ -2281,6 +2281,13 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.FT.title,
       this.data.SE.title,
       this.data.CS.title,
+      this.data.SC2.title,
+      this.data.MC2.title,
+      this.data.KP2.title,
+      this.data.NR2.title,
+      this.data.FT2.title,
+      this.data.SE2.title,
+      this.data.CS2.title,
       this.data.SCML.title,
       this.data.MCML.title,
       this.data.KPML.title,
@@ -2288,8 +2295,69 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.FTML.title,
       this.data.SEML.title,
       this.data.CSML.title,
-    ]
-    cy.wrap(questions).each((question: string) => {
+      this.data.SCML2.title,
+      this.data.MCML2.title,
+      this.data.KPML2.title,
+      this.data.NRML2.title,
+      this.data.FTML2.title,
+      this.data.SEML2.title,
+      this.data.CSML2.title,
+      this.data.SCMLAF.title,
+      this.data.MCMLAF.title,
+      this.data.KPMLAF.title,
+      this.data.SCMLAF2.title,
+      this.data.MCMLAF2.title,
+      this.data.KPMLAF2.title,
+
+      this.data.SC.title,
+      this.data.MC.title,
+      this.data.KP.title,
+      this.data.NR.title,
+      this.data.FT.title,
+      this.data.SE.title,
+      this.data.CS.title,
+      this.data.activity1.newElements.SC.title,
+      this.data.activity1.newElements.MC.title,
+      this.data.activity1.newElements.KP.title,
+    ]).each((question: string) => {
+      cy.deleteElement({ elementName: question })
+    })
+
+    cy.loginIndividualCatalyst()
+    cy.wrap([
+      this.data.SC3.title,
+      this.data.MC3.title,
+      this.data.KP3.title,
+      this.data.NR3.title,
+      this.data.FT3.title,
+      this.data.SE3.title,
+      this.data.CS3.title,
+      this.data.SCML3.title,
+      this.data.MCML3.title,
+      this.data.KPML3.title,
+      this.data.NRML3.title,
+      this.data.FTML3.title,
+      this.data.SEML3.title,
+      this.data.CSML3.title,
+      this.data.SCMLAF3.title,
+      this.data.MCMLAF3.title,
+      this.data.KPMLAF3.title,
+
+      this.data.SC.title,
+      this.data.MC.title,
+      this.data.KP.title,
+      this.data.NR.title,
+      this.data.FT.title,
+      this.data.SE.title,
+      this.data.CS.title,
+      this.data.activity2.newElements.SC.title,
+      this.data.activity2.newElements.MC.title,
+      this.data.activity2.newElements.KP.title,
+      this.data.activity2.newElements.NR.title,
+      this.data.activity2.newElements.FT.title,
+      this.data.activity2.newElements.SE.title,
+      this.data.activity2.newElements.CS.title,
+    ]).each((question: string) => {
       cy.deleteElement({ elementName: question })
     })
   })
@@ -2299,6 +2367,23 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
+    cy.deleteAnswerCollection({ collectionName: this.data.collection2.name })
+
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.deleteAnswerCollection({ collectionName: this.data.collection3.name })
+  })
+
+  it('Delete all created catalog collections', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(
+      `[data-cy="catalog-collection-${this.data.catalog.name}-actions"]`
+    ).realClick()
+    cy.get('[data-cy="delete-catalog-collection"]').click()
+    cy.get('[data-cy="confirm-delete-collection"]').click()
   })
 
   it('Cleanup: Verify that the answer collections and catalog collections have been deleted correctly', function () {

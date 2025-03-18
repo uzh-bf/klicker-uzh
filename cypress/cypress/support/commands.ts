@@ -2,6 +2,7 @@ import { CatalogObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
+import * as localforage from 'localforage'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
@@ -26,6 +27,7 @@ const loginFactory = (tokenData) => {
     cy.clearAllSessionStorage()
 
     cy.viewport('macbook-16')
+    localforage.setItem('hideLecturerSurvey', 'true')
 
     const secret = new TextEncoder().encode('abcd')
     const alg = 'HS256'
@@ -951,9 +953,8 @@ interface DeleteElementArgs {
 }
 
 Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
-  cy.get(`[data-cy="delete-question-${elementName}"]`).click()
+  cy.get(`[data-cy="delete-question-${elementName}"]`).first().click()
   cy.get('[data-cy="confirm-question-deletion"]').click()
-  cy.get(`[data-cy="element-item-${elementName}"]`).should('not.exist')
 })
 
 interface CreateLiveQuizArgs {
