@@ -639,6 +639,7 @@ export async function getUserLiveQuizzes(ctx: ContextWithUser) {
         },
         include: {
           course: true,
+          templateInfo: true,
           blocks: {
             orderBy: {
               order: 'asc',
@@ -664,6 +665,7 @@ export async function getUserLiveQuizzes(ctx: ContextWithUser) {
 
   return user?.liveQuizzes.map((quiz) => ({
     ...quiz,
+    templateId: quiz.templateInfo?.id,
     blocks: quiz.blocks.map((block) => ({
       ...block,
       numOfParticipants: block.elements[0]

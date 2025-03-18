@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faWpforms } from '@fortawesome/free-brands-svg-icons'
 import {
   faClock,
   faCopy,
@@ -64,6 +65,7 @@ function LiveQuiz({
     | 'name'
     | 'displayName'
     | 'status'
+    | 'templateId'
     | 'numOfBlocks'
     | 'numOfInstances'
     | 'createdAt'
@@ -422,35 +424,48 @@ function LiveQuiz({
                   </Button.Label>
                 </Button>
               )}
-              {quiz.status === PublicationStatus.Template && (
-                <>
-                  <Button
-                    className={{ root: 'px-3 py-1 text-sm' }}
-                    onClick={() => setEditTemplateModal(true)}
-                    data={{ cy: `edit-template-${quiz.name}` }}
-                  >
-                    <Button.Icon icon={faPencil} />
-                    <Button.Label>
-                      {t('manage.template.editTemplate')}
-                    </Button.Label>
-                  </Button>
-                  <Button
-                    className={{
-                      root: 'border-red-600 px-3 py-1 text-sm',
-                    }}
-                    onClick={() => setDeletionTemplateModal(true)}
-                    data={{ cy: `delete-template-${quiz.name}` }}
-                  >
-                    <Button.Icon
-                      icon={faTrash}
-                      className={{ root: 'text-red-600' }}
-                    />
-                    <Button.Label>
-                      {t('manage.template.deleteTemplate')}
-                    </Button.Label>
-                  </Button>
-                </>
-              )}
+              {quiz.status === PublicationStatus.Template &&
+                quiz.templateId && (
+                  <>
+                    <Button
+                      className={{ root: 'px-3 py-1 text-sm' }}
+                      onClick={() => setEditTemplateModal(true)}
+                      data={{ cy: `edit-template-${quiz.name}` }}
+                    >
+                      <Button.Icon icon={faPencil} />
+                      <Button.Label>
+                        {t('manage.template.editTemplate')}
+                      </Button.Label>
+                    </Button>
+                    <Button
+                      className={{ root: 'px-3 py-1 text-sm' }}
+                      onClick={() =>
+                        router.push(`/templates/${quiz.templateId}`)
+                      }
+                      data={{ cy: `use-template-${quiz.name}` }}
+                    >
+                      <Button.Icon icon={faWpforms} />
+                      <Button.Label>
+                        {t('manage.catalog.useTemplate')}
+                      </Button.Label>
+                    </Button>
+                    <Button
+                      className={{
+                        root: 'border-red-600 px-3 py-1 text-sm',
+                      }}
+                      onClick={() => setDeletionTemplateModal(true)}
+                      data={{ cy: `delete-template-${quiz.name}` }}
+                    >
+                      <Button.Icon
+                        icon={faTrash}
+                        className={{ root: 'text-red-600' }}
+                      />
+                      <Button.Label>
+                        {t('manage.template.deleteTemplate')}
+                      </Button.Label>
+                    </Button>
+                  </>
+                )}
             </div>
           }
         >

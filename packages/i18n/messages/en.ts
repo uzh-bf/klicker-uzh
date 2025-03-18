@@ -2275,7 +2275,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noObjectsFoundInCatalog:
         'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
-      useTemplate: 'Use Template',
+      useTemplate: 'Use template',
       importObject: 'Import Object',
       importObjectType: 'Import {object}',
       accessRequested: 'Access requested',

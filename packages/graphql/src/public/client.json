@@ -216,7 +216,7 @@
    "GetTemplatePreviewAnswerCollectionEntries": "469ba4ec08f5efb4a41c9f8ee8604f413bd7337b21a6cfdad934946fea0834b8",
    "GetUnassignedLiveQuizzes": "8efbb0afbb0826d5e237cbaa660f62c201d339b74d1907336bb8a0a5db519f73",
    "GetUserCourses": "b388f07ace660915ce9ea4006847f9367251d494e7d0e387fa61ef50684fd9a4",
-   "GetUserLiveQuizzes": "604fc996071b81ccba477c9d6dc6825ced3ccdf38351a6376863f26b2ac12913",
+   "GetUserLiveQuizzes": "c6094a4020c15217d1881573603558cc554cee20b4fb45957b14735b806fadfd",
    "GetUserLogins": "7b289235e4ea8e3fb2073ae175b1b900a77cb6c1aae9b12580cc08be825ad1aa",
    "GetUserMediaFiles": "af5513e8c56c1805060f0e2854a4ada90c4484d09481f2ba2a59136cb731cd63",
    "GetUserQuestions": "c39641564ad740d3eaa10e480a59c3ace194c9ef9c8cbfbf54fda90dd48c19ed",

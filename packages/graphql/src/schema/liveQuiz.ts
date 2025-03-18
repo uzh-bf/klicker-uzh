@@ -79,6 +79,7 @@ export const ConfusionSummary = builder
 // ----- LIVE QUIZ INTERFACE -----
 // #region
 export interface ILiveQuiz extends DB.LiveQuiz {
+  templateId?: string | null
   blocks?: DB.ElementBlock[] | null
   activeBlock?: DB.ElementBlock | null
   course?: DB.Course | null
@@ -100,6 +101,7 @@ export const LiveQuiz = LiveQuizRef.implement({
     description: t.exposeString('description', { nullable: true }),
     displayName: t.exposeString('displayName'),
     pinCode: t.exposeInt('pinCode', { nullable: true }),
+    templateId: t.exposeString('templateId', { nullable: true }),
 
     isLiveQAEnabled: t.exposeBoolean('isLiveQAEnabled'),
     isConfusionFeedbackEnabled: t.exposeBoolean('isConfusionFeedbackEnabled'),
