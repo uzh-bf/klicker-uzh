@@ -14,7 +14,8 @@ function goToNextTemplateElement({
 }) {
   const nextInSameBlock =
     typeof collapsibles[blockIx]?.[elementIx + 1] !== 'undefined'
-  const nextInNextBlock = typeof collapsibles[blockIx + 1]?.[0] !== 'undefined'
+  const nextInNextBlock =
+    !nextInSameBlock && typeof collapsibles[blockIx + 1]?.[0] !== 'undefined'
 
   setCollapsibles((prev) => ({
     ...prev,

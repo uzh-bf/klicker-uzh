@@ -117,6 +117,7 @@ function TemplateElementContent({
                     previewExistingInstance && 'border-primary-100 border'
                   ),
                 }}
+                data={{ cy: 'accept-template-element' }}
               >
                 <Button.Icon icon={faCopy} />
                 <Button.Label>
@@ -138,6 +139,7 @@ function TemplateElementContent({
                     setExistingElementModal(true)
                   }
                 }}
+                data={{ cy: 'replace-with-existing-element' }}
               >
                 <Button.Icon icon={faArrowsRotate} />
                 <Button.Label>
@@ -149,6 +151,7 @@ function TemplateElementContent({
                   templateElement.processed && templateElement.useNewElement
                 }
                 onClick={() => setNewElementModal(true)}
+                data={{ cy: 'create-new-element-template' }}
               >
                 <Button.Icon icon={faPen} />
                 <Button.Label>
@@ -163,6 +166,7 @@ function TemplateElementContent({
                   message={t('manage.template.sameNamedElementExists', {
                     elementName: templateElement.instance.elementData.name,
                   })}
+                  data={{ cy: 'same-name-element-warning' }}
                 />
               ) : null}
             </div>
@@ -200,6 +204,7 @@ function TemplateElementContent({
           disabled={!templateElement.processed}
           onClick={onNextElement}
           className={{ root: 'mt-2 self-end' }}
+          data={{ cy: 'next-template-element' }}
         >
           {t('manage.template.nextElement')}
         </Button>

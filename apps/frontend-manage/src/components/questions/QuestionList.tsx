@@ -102,6 +102,7 @@ function QuestionList({
               icon={faX}
               onClick={() => setHideSurvey('true')}
               className="text-gray-400 hover:cursor-pointer hover:text-black"
+              data-cy="close-survey-notification"
             />
           </div>
         </div>

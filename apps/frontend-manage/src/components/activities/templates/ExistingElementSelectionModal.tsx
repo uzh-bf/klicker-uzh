@@ -93,6 +93,7 @@ function ExistingElementSelectionModal({
                 key={`element-selection-${element.id}`}
                 className={{ root: 'flex-col items-start p-2' }}
                 onClick={() => setSelectedElementId(element.id)}
+                data={{ cy: `select-existing-element-${element.name}` }}
               >
                 <div>{element.name}</div>
                 <Ellipsis
@@ -112,6 +113,7 @@ function ExistingElementSelectionModal({
             setSelectedElementId(null)
             onClose()
           }}
+          data={{ cy: 'cancel-select-existing-element' }}
         >
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
@@ -125,6 +127,7 @@ function ExistingElementSelectionModal({
             setSelectedElementId(null)
             onClose()
           }}
+          data={{ cy: 'confirm-select-existing-element' }}
         >
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>
