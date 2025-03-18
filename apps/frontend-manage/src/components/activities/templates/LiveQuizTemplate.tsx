@@ -48,6 +48,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   })
 
   // TODO: handle submission success and error states with corresponding toast / success modal with navigation to the created activity
+  // TODO: make sure that local storage is reset correctly on submission
   // submission success and error states
   const [submissionSuccess, setSubmissionSuccess] = useState<{
     open: boolean

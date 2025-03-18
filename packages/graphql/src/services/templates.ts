@@ -253,6 +253,11 @@ export async function validateTemplateAccessible(
           },
         },
       },
+      answerCollections: {
+        select: {
+          id: true,
+        },
+      },
     },
   })
 
@@ -1640,12 +1645,8 @@ export async function createLiveQuizFromTemplate(
   }
 
   // get the available answer collection ids for the activity linked to the template
-  const availableAnswerCollections = await getActivityAnswerCollectionIds(
-    {
-      activityId: template.liveQuizId,
-      activityType: ActivityType.LIVE_QUIZ,
-    },
-    ctx
+  const availableAnswerCollections = template.answerCollections.map(
+    (collection) => collection.id
   )
 
   // fetch live quiz for blocked settings to be transferrable
@@ -1736,8 +1737,55 @@ export async function createLiveQuizFromTemplate(
               throw new Error('New element data not provided')
             }
 
-            // check if the user has access to potential answer collections linked to the new element or if they are contained in the template
+            // set the options element options value depending on the element type
             const values = element.newElement
+            if (
+              values.type === DB.ElementType.SC ||
+              values.type === DB.ElementType.MC ||
+              values.type === DB.ElementType.KPRIM
+            ) {
+              if (!('choicesOptions' in values)) {
+                throw new Error(
+                  'Choices options not provided for Choices element'
+                )
+              }
+
+              values.options = values.choicesOptions
+            } else if (values.type === DB.ElementType.NUMERICAL) {
+              if (!('numericalOptions' in values)) {
+                throw new Error(
+                  'Numerical options not provided for Numerical element'
+                )
+              }
+
+              values.options = values.numericalOptions
+            } else if (values.type === DB.ElementType.FREE_TEXT) {
+              if (!('freeTextOptions' in values)) {
+                throw new Error(
+                  'Free text options not provided for Free Text element'
+                )
+              }
+
+              values.options = values.freeTextOptions
+            } else if (values.type === DB.ElementType.SELECTION) {
+              if (!('selectionOptions' in values)) {
+                throw new Error(
+                  'Selection options not provided for Selection element'
+                )
+              }
+
+              values.options = values.selectionOptions
+            } else if (values.type === DB.ElementType.CASE_STUDY) {
+              if (!('caseStudyOptions' in values)) {
+                throw new Error(
+                  'Case study options not provided for Case Study element'
+                )
+              }
+
+              values.options = values.caseStudyOptions
+            }
+
+            // check if the user has access to potential answer collections linked to the new element or if they are contained in the template
             if (
               values.type === DB.ElementType.SELECTION ||
               values.type === DB.ElementType.CASE_STUDY
@@ -1772,11 +1820,7 @@ export async function createLiveQuizFromTemplate(
 
               if (!valid) {
                 // if access does not already exist, check if the answer collection is linked to the template
-                if (
-                  !availableAnswerCollections?.answerCollectionIds.includes(
-                    answerCollectionId
-                  )
-                ) {
+                if (!availableAnswerCollections.includes(answerCollectionId)) {
                   throw new Error(
                     'User does not have access to the answer collection linked to the template'
                   )

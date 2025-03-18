@@ -96,7 +96,6 @@ export async function getArtificialElementInstance(
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
-      isDeleted: false,
       ownerId: ctx.user.sub,
     },
     include: {
