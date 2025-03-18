@@ -19,16 +19,21 @@ function NewElementDataDiscardingModal({
       open={open}
       onClose={onClose}
       title={t('manage.template.discardEnteredElementContent')}
+      data={{ cy: 'discard-new-edits-modal' }}
     >
       <div className="mb-4">
         {t('manage.template.confirmDiscardEnteredElementContent')}
       </div>
       <div className="mt-4 flex justify-between">
-        <Button onClick={onClose}>
+        <Button onClick={onClose} data={{ cy: 'cancel-discard-new-edits' }}>
           <Button.Icon icon={faX} />
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
-        <Button primary onClick={onConfirm}>
+        <Button
+          primary
+          onClick={onConfirm}
+          data={{ cy: 'confirm-discard-new-edits' }}
+        >
           <Button.Icon icon={faTrashCan} />
           <Button.Label>{t('shared.generic.confirm')}</Button.Label>
         </Button>

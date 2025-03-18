@@ -134,9 +134,10 @@ describe('Test all functionalities related to the creation, management, sharing 
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
     })
+  })
 
-    // create second set of questions that can be used to replace existing questions (with identical settings)
-    cy.get('[data-cy="library"]').click()
+  it('Create a second set of questions in the lecturer user account for the use in the template test suite', function () {
+    cy.loginLecturer()
     cy.createQuestionSC({
       title: this.data.SC2.title,
       content: this.data.SC2.content,
@@ -210,9 +211,9 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
-      name: this.data.collection.name,
-      description: this.data.collection.description,
-      entries: this.data.collection.options,
+      name: this.data.collection2.name,
+      description: this.data.collection2.description,
+      entries: this.data.collection2.options,
     })
 
     cy.get('[data-cy="library"]').click()
@@ -220,14 +221,14 @@ describe('Test all functionalities related to the creation, management, sharing 
       title: this.data.SE2.title,
       content: this.data.SE2.content,
       numberOfInputs: this.data.SE2.inputs,
-      collectionName: this.data.collection.name,
+      collectionName: this.data.collection2.name,
     })
     cy.createQuestionSE({
       title: this.data.SEML2.title,
       content: this.data.SEML2.content,
       numberOfInputs: this.data.SEML2.inputs,
-      collectionName: this.data.collection.name,
-      correctAnswers: this.data.collection.options.filter((_, i) =>
+      collectionName: this.data.collection2.name,
+      correctAnswers: this.data.collection2.options.filter((_, i) =>
         this.data.SEML2.solutions.includes(i)
       ),
     })
@@ -236,8 +237,8 @@ describe('Test all functionalities related to the creation, management, sharing 
       title: this.data.CS2.title,
       content: this.data.CS2.content,
       explanation: this.data.CS2.explanation,
-      collectionName: this.data.collection.name,
-      selectedItems: this.data.collection.options.filter((_, i) =>
+      collectionName: this.data.collection2.name,
+      selectedItems: this.data.collection2.options.filter((_, i) =>
         this.data.CS2.selectedItems.includes(i)
       ),
       criteria: this.data.CS2.criteria,
@@ -248,8 +249,8 @@ describe('Test all functionalities related to the creation, management, sharing 
       title: this.data.CSML2.title,
       content: this.data.CSML2.content,
       explanation: this.data.CSML2.explanation,
-      collectionName: this.data.collection.name,
-      selectedItems: this.data.collection.options.filter((_, i) =>
+      collectionName: this.data.collection2.name,
+      selectedItems: this.data.collection2.options.filter((_, i) =>
         this.data.CSML2.selectedItems.includes(i)
       ),
       criteria: this.data.CSML2.criteria,
@@ -333,9 +334,9 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
-      name: this.data.collection.name,
-      description: this.data.collection.description,
-      entries: this.data.collection.options,
+      name: this.data.collection3.name,
+      description: this.data.collection3.description,
+      entries: this.data.collection3.options,
     })
 
     cy.get('[data-cy="library"]').click()
@@ -343,14 +344,14 @@ describe('Test all functionalities related to the creation, management, sharing 
       title: this.data.SE3.title,
       content: this.data.SE3.content,
       numberOfInputs: this.data.SE3.inputs,
-      collectionName: this.data.collection.name,
+      collectionName: this.data.collection3.name,
     })
     cy.createQuestionSE({
       title: this.data.SEML3.title,
       content: this.data.SEML3.content,
       numberOfInputs: this.data.SEML3.inputs,
-      collectionName: this.data.collection.name,
-      correctAnswers: this.data.collection.options.filter((_, i) =>
+      collectionName: this.data.collection3.name,
+      correctAnswers: this.data.collection3.options.filter((_, i) =>
         this.data.SEML3.solutions.includes(i)
       ),
     })
@@ -359,8 +360,8 @@ describe('Test all functionalities related to the creation, management, sharing 
       title: this.data.CS3.title,
       content: this.data.CS3.content,
       explanation: this.data.CS3.explanation,
-      collectionName: this.data.collection.name,
-      selectedItems: this.data.collection.options.filter((_, i) =>
+      collectionName: this.data.collection3.name,
+      selectedItems: this.data.collection3.options.filter((_, i) =>
         this.data.CS3.selectedItems.includes(i)
       ),
       criteria: this.data.CS3.criteria,
@@ -371,8 +372,8 @@ describe('Test all functionalities related to the creation, management, sharing 
       title: this.data.CSML3.title,
       content: this.data.CSML3.content,
       explanation: this.data.CSML3.explanation,
-      collectionName: this.data.collection.name,
-      selectedItems: this.data.collection.options.filter((_, i) =>
+      collectionName: this.data.collection3.name,
+      selectedItems: this.data.collection3.options.filter((_, i) =>
         this.data.CSML3.selectedItems.includes(i)
       ),
       criteria: this.data.CSML3.criteria,
@@ -672,15 +673,1558 @@ describe('Test all functionalities related to the creation, management, sharing 
     ).contains(messages.manage.catalog.accessPUBLIC)
   })
 
-  // TODO: add the second template to a restricted catalog collection and share access to it with user pro1
-  // TODO: open template in lecturer account, test all functionalities and create new activity from it (& test it)
-  // TODO: open the template in the restricted catalog collection through user pro1, test all functionalities, use it, create new activity from it (& test it) and verify that access to answer collection has been given (and verify that only elements that were used in live quiz have been added to own library)
+  it("Add the second template to a restricted catalog collection and share access to it with user 'pro1'", function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
 
+    // create a restricted catalog collection
+    cy.get('[data-cy="create-catalog-collection-button"]').click()
+    cy.get('[data-cy="catalog-collection-name-input"]')
+      .click()
+      .type(this.data.catalog.name)
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessRESTRICTED
+    )
+    cy.get('[data-cy="create-catalog-collection-submit"]').click()
+
+    // add the second template to the restricted catalog collection
+    cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.catalog.name)
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(
+      `[data-cy="object-type-${CatalogObjectType.LIVE_QUIZ_TEMPLATE}"]`
+    ).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessPUBLIC
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-1"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.liveQuiz.template2.name
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(
+      `[data-cy="catalog-object-${this.data.liveQuiz.template2.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="catalog-object-${this.data.liveQuiz.template2.name}"]`
+    ).contains(messages.manage.catalog.accessPUBLIC)
+
+    // share access to the restricted catalog collection with user 'pro1'
+    cy.get('[data-cy="leave-catalog-collection"]').click()
+    cy.get(
+      `[data-cy="catalog-collection-${this.data.catalog.name}-actions"]`
+    ).realClick()
+    cy.get('[data-cy="share-catalog-collection"]').click()
+    cy.get('[data-cy="new-permission-username-or-email"]')
+      .click()
+      .type(Cypress.env('LECTURER_IND_SHORTNAME'))
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsREAD
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsREAD)
+  })
+  // #endregion
+
+  // ! Part 2: Use of live quiz templates
+  // #region
+  it('Open the template in the lecturer account and test all element content actions / verify default content', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template1.name}"]`
+    ).click()
+    cy.get('[data-cy="template-instructions"]').contains(
+      this.data.liveQuiz.template1.instructions
+    )
+
+    // verify the content of the settings
+    cy.get('[data-cy="live-quiz-template-settings"]').click()
+    cy.get('[data-cy="template-live-quiz-name"]').should(
+      'have.value',
+      this.data.liveQuiz.template1.name
+    )
+    cy.get('[data-cy="template-live-quiz-display-name"]').should(
+      'have.value',
+      this.data.liveQuiz.displayName
+    )
+    cy.get('[data-cy="submit-template-settings"]').click()
+    cy.get(`[data-cy="live-quiz-template-element-0-0"]`).click() // close the automatically opened first element
+
+    // test the content and functionalities for all elements
+    const combinations = [
+      {
+        identifier: '0-0',
+        content: this.data.SC.content,
+        alternativeContent: this.data.SC2.content,
+        availableElements: [this.data.SC.title, this.data.SC2.title],
+        unavailableElements: [
+          this.data.SCML.title,
+          this.data.SCML2.title,
+          this.data.SCMLAF.title,
+          this.data.SCMLAF2.title,
+        ],
+      },
+      {
+        identifier: '0-1',
+        content: this.data.MC.content,
+        alternativeContent: this.data.MC2.content,
+        availableElements: [this.data.MC.title, this.data.MC2.title],
+        unavailableElements: [
+          this.data.MCML.title,
+          this.data.MCML2.title,
+          this.data.MCMLAF.title,
+          this.data.MCMLAF2.title,
+        ],
+      },
+      {
+        identifier: '0-2',
+        content: this.data.KP.content,
+        alternativeContent: this.data.KP2.content,
+        availableElements: [this.data.KP.title, this.data.KP2.title],
+        unavailableElements: [
+          this.data.KPML.title,
+          this.data.KPML2.title,
+          this.data.KPMLAF.title,
+          this.data.KPMLAF2.title,
+        ],
+      },
+      {
+        identifier: '0-3',
+        content: this.data.NR.content,
+        alternativeContent: this.data.NR2.content,
+        availableElements: [this.data.NR.title, this.data.NR2.title],
+        unavailableElements: [this.data.NRML.title, this.data.NRML2.title],
+      },
+      {
+        identifier: '0-4',
+        content: this.data.FT.content,
+        alternativeContent: this.data.FT2.content,
+        availableElements: [this.data.FT.title, this.data.FT2.title],
+        unavailableElements: [this.data.FTML.title, this.data.FTML2.title],
+      },
+      {
+        identifier: '0-5',
+        content: this.data.SE.content,
+        alternativeContent: this.data.SE2.content,
+        availableElements: [this.data.SE.title, this.data.SE2.title],
+        unavailableElements: [this.data.SEML.title, this.data.SEML2.title],
+      },
+      {
+        identifier: '0-6',
+        content: this.data.CS.content,
+        alternativeContent: this.data.CS2.content,
+        availableElements: [this.data.CS.title, this.data.CS2.title],
+        unavailableElements: [this.data.CSML.title, this.data.CSML2.title],
+      },
+      {
+        identifier: '1-0',
+        content: this.data.SCML.content,
+        alternativeContent: this.data.SCML2.content,
+        availableElements: [this.data.SCML.title, this.data.SCML2.title],
+        unavailableElements: [
+          this.data.SC.title,
+          this.data.SC2.title,
+          this.data.SCMLAF.title,
+          this.data.SCMLAF2.title,
+        ],
+      },
+      {
+        identifier: '1-1',
+        content: this.data.MCML.content,
+        alternativeContent: this.data.MCML2.content,
+        availableElements: [this.data.MCML.title, this.data.MCML2.title],
+        unavailableElements: [
+          this.data.MC.title,
+          this.data.MC2.title,
+          this.data.MCMLAF.title,
+          this.data.MCMLAF2.title,
+        ],
+      },
+      {
+        identifier: '1-2',
+        content: this.data.KPML.content,
+        alternativeContent: this.data.KPML2.content,
+        availableElements: [this.data.KPML.title, this.data.KPML2.title],
+        unavailableElements: [
+          this.data.KP.title,
+          this.data.KP2.title,
+          this.data.KPMLAF.title,
+          this.data.KPMLAF2.title,
+        ],
+      },
+      {
+        identifier: '1-3',
+        content: this.data.NRML.content,
+        alternativeContent: this.data.NRML2.content,
+        availableElements: [this.data.NRML.title, this.data.NRML2.title],
+        unavailableElements: [this.data.NR.title, this.data.NR2.title],
+      },
+      {
+        identifier: '1-4',
+        content: this.data.FTML.content,
+        alternativeContent: this.data.FTML2.content,
+        availableElements: [this.data.FTML.title, this.data.FTML2.title],
+        unavailableElements: [this.data.FT.title, this.data.FT2.title],
+      },
+      {
+        identifier: '1-5',
+        content: this.data.SEML.content,
+        alternativeContent: this.data.SEML2.content,
+        availableElements: [this.data.SEML.title, this.data.SEML2.title],
+        unavailableElements: [this.data.SE.title, this.data.SE2.title],
+      },
+      {
+        identifier: '1-6',
+        content: this.data.CSML.content,
+        alternativeContent: this.data.CSML2.content,
+        availableElements: [this.data.CSML.title, this.data.CSML2.title],
+        unavailableElements: [this.data.CS.title, this.data.CS2.title],
+      },
+      {
+        identifier: '2-0',
+        content: this.data.SCMLAF.content,
+        alternativeContent: this.data.SCMLAF2.content,
+        availableElements: [this.data.SCMLAF.title, this.data.SCMLAF2.title],
+        unavailableElements: [
+          this.data.SC.title,
+          this.data.SC2.title,
+          this.data.SCML.title,
+          this.data.SCML2.title,
+        ],
+      },
+      {
+        identifier: '2-1',
+        content: this.data.MCMLAF.content,
+        alternativeContent: this.data.MCMLAF2.content,
+        availableElements: [this.data.MCMLAF.title, this.data.MCMLAF2.title],
+        unavailableElements: [
+          this.data.MC.title,
+          this.data.MC2.title,
+          this.data.MCML.title,
+          this.data.MCML2.title,
+        ],
+      },
+      {
+        identifier: '2-2',
+        content: this.data.KPMLAF.content,
+        alternativeContent: this.data.KPMLAF2.content,
+        availableElements: [this.data.KPMLAF.title, this.data.KPMLAF2.title],
+        unavailableElements: [
+          this.data.KP.title,
+          this.data.KP2.title,
+          this.data.KPML.title,
+          this.data.KPML2.title,
+        ],
+      },
+    ]
+
+    cy.wrap(combinations).each(
+      (element: {
+        identifier: string
+        content: string
+        alternativeContent: string
+        availableElements: string[]
+        unavailableElements: string[]
+      }) => {
+        cy.get(`[data-cy="live-quiz-template-submit"]`).should('be.disabled')
+        cy.get(
+          `[data-cy="live-quiz-template-element-${element.identifier}"]`
+        ).click()
+        cy.get('[data-cy="same-name-element-warning"]').should('exist')
+
+        // check template instance preview
+        cy.get('[data-cy="preview-template-element-button"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(element.content)
+
+        // check available elements for replacement
+        cy.get('[data-cy="replace-with-existing-element"]').click()
+        cy.wrap(element.availableElements).each((elementName: string) => {
+          cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
+            'exist'
+          )
+        })
+        cy.wrap(element.unavailableElements).each((elementName: string) => {
+          cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
+            'not.exist'
+          )
+        })
+        cy.get(
+          `[data-cy="select-existing-element-${element.availableElements[1]}"]`
+        ).click()
+        cy.get('[data-cy="confirm-select-existing-element"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(
+          element.alternativeContent
+        )
+        cy.get('[data-cy="same-name-element-warning"]').should('not.exist')
+
+        // check possibility to create a new element
+        cy.get('[data-cy="create-new-element-template"]').click()
+        cy.get('[data-cy="insert-question-text"]').contains(element.content)
+        cy.get('[data-cy="insert-question-text"]')
+          .click()
+          .clear()
+          .type(`${element.content} (NEW)`)
+        cy.get('[data-cy="save-new-question"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(
+          `${element.content} (NEW)`
+        )
+        cy.get('[data-cy="same-name-element-warning"]').should('not.exist')
+
+        // check accepting template instance without changes
+        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get('[data-cy="cancel-discard-new-edits"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(
+          `${element.content} (NEW)`
+        )
+        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get('[data-cy="confirm-discard-new-edits"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(element.content)
+        cy.get('[data-cy="same-name-element-warning"]').should('exist')
+
+        // close the collapsible again
+        cy.get(
+          `[data-cy="live-quiz-template-element-${element.identifier}"]`
+        ).click()
+      }
+    )
+    cy.get(`[data-cy="live-quiz-template-submit"]`).should('not.be.disabled')
+  })
+
+  it('Use the template in the lecturer account to create an activity with partially new content', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template1.name}"]`
+    ).click()
+    cy.get('[data-cy="template-instructions"]').contains(
+      this.data.liveQuiz.template1.instructions
+    )
+
+    // verify the content of the settings
+    cy.get('[data-cy="live-quiz-template-settings"]').click()
+    cy.get('[data-cy="template-live-quiz-name"]').should(
+      'have.value',
+      this.data.liveQuiz.template1.name
+    )
+    cy.get('[data-cy="template-live-quiz-name"]')
+      .click()
+      .clear()
+      .type(this.data.activity1.name)
+    cy.get('[data-cy="template-live-quiz-display-name"]')
+      .click()
+      .clear()
+      .type(this.data.activity1.displayName)
+    cy.get('[data-cy="template-live-quiz-course"]').contains(
+      messages.manage.activityWizard.liveQuizNoCourse
+    )
+    cy.get('[data-cy="template-live-quiz-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.activity1.course}"]`).click()
+    cy.get('[data-cy="template-live-quiz-course"]').contains(
+      this.data.activity1.course
+    )
+    cy.get('[data-cy="submit-template-settings"]').click()
+
+    // accept the template instance for the first block
+    cy.wrap([
+      this.data.SC.content,
+      this.data.MC.content,
+      this.data.KP.content,
+      this.data.NR.content,
+      this.data.FT.content,
+      this.data.SE.content,
+      this.data.CS.content,
+    ]).each((content: string) => {
+      cy.get('[data-cy="accept-template-element"]').click()
+      cy.get('[data-cy="student-element-preview"]').contains(content)
+      cy.get('[data-cy="next-template-element"]').click()
+    })
+
+    // reload and reset progress
+    cy.reload()
+    cy.get('[data-cy="discard-recovered-activity-data"]').click()
+
+    // re-do settings section and the first block
+    cy.get('[data-cy="live-quiz-template-settings"]').click()
+    cy.get('[data-cy="template-live-quiz-name"]').should(
+      'have.value',
+      this.data.liveQuiz.template1.name
+    )
+    cy.get('[data-cy="template-live-quiz-name"]')
+      .click()
+      .clear()
+      .type(this.data.activity1.name)
+    cy.get('[data-cy="template-live-quiz-display-name"]')
+      .click()
+      .clear()
+      .type(this.data.activity1.displayName)
+    cy.get('[data-cy="template-live-quiz-course"]').contains(
+      messages.manage.activityWizard.liveQuizNoCourse
+    )
+    cy.get('[data-cy="template-live-quiz-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.activity1.course}"]`).click()
+    cy.get('[data-cy="template-live-quiz-course"]').contains(
+      this.data.activity1.course
+    )
+    cy.get('[data-cy="submit-template-settings"]').click()
+    cy.wrap([
+      this.data.SC.content,
+      this.data.MC.content,
+      this.data.KP.content,
+      this.data.NR.content,
+      this.data.FT.content,
+      this.data.SE.content,
+      this.data.CS.content,
+    ]).each((content: string) => {
+      cy.get('[data-cy="accept-template-element"]').click()
+      cy.get('[data-cy="student-element-preview"]').contains(content)
+      cy.get('[data-cy="next-template-element"]').click()
+    })
+
+    // replace the instances in the second block with version 2
+    cy.wrap([
+      { title: this.data.SCML2.title, content: this.data.SCML2.content },
+      { title: this.data.MCML2.title, content: this.data.MCML2.content },
+      { title: this.data.KPML2.title, content: this.data.KPML2.content },
+      { title: this.data.NRML2.title, content: this.data.NRML2.content },
+      { title: this.data.FTML2.title, content: this.data.FTML2.content },
+      { title: this.data.SEML2.title, content: this.data.SEML2.content },
+      { title: this.data.CSML2.title, content: this.data.CSML2.content },
+    ]).each((element: { title: string; content: string }) => {
+      cy.get('[data-cy="replace-with-existing-element"]').click()
+      cy.get(`[data-cy="select-existing-element-${element.title}"]`).click()
+      cy.get('[data-cy="confirm-select-existing-element"]').click()
+      cy.get('[data-cy="student-element-preview"]').contains(element.content)
+      cy.get('[data-cy="next-template-element"]').click()
+    })
+
+    // create modified versions of the instances in block 3
+    cy.wrap([
+      {
+        newTitle: this.data.activity1.newElements.SC.title,
+        newContent: this.data.activity1.newElements.SC.content,
+      },
+      {
+        newTitle: this.data.activity1.newElements.MC.title,
+        newContent: this.data.activity1.newElements.MC.content,
+      },
+      {
+        newTitle: this.data.activity1.newElements.KP.title,
+        newContent: this.data.activity1.newElements.KP.content,
+      },
+    ]).each((element: { newTitle: string; newContent: string }) => {
+      cy.get('[data-cy="create-new-element-template"]').click()
+      cy.get('[data-cy="insert-question-title"]')
+        .click()
+        .clear()
+        .type(element.newTitle)
+      cy.get('[data-cy="insert-question-text"]')
+        .realClick()
+        .clear()
+        .type(element.newContent)
+      cy.get('[data-cy="save-new-question"]').click()
+      cy.get('[data-cy="student-element-preview"]').contains(element.newContent)
+      cy.get('[data-cy="next-template-element"]').click()
+    })
+
+    // reload and restore progress, make sure that all inputs persisted
+    cy.reload()
+    cy.get('[data-cy="load-recovered-activity-data"]').click()
+    cy.wrap([
+      { identifier: '0-0', content: this.data.SC.content },
+      { identifier: '0-1', content: this.data.MC.content },
+      { identifier: '0-2', content: this.data.KP.content },
+      { identifier: '0-3', content: this.data.NR.content },
+      { identifier: '0-4', content: this.data.FT.content },
+      { identifier: '0-5', content: this.data.SE.content },
+      { identifier: '0-6', content: this.data.CS.content },
+      { identifier: '1-0', content: this.data.SCML2.content },
+      { identifier: '1-1', content: this.data.MCML2.content },
+      { identifier: '1-2', content: this.data.KPML2.content },
+      { identifier: '1-3', content: this.data.NRML2.content },
+      { identifier: '1-4', content: this.data.FTML2.content },
+      { identifier: '1-5', content: this.data.SEML2.content },
+      { identifier: '1-6', content: this.data.CSML2.content },
+      {
+        identifier: '2-0',
+        content: this.data.activity1.newElements.SC.content,
+      },
+      {
+        identifier: '2-1',
+        content: this.data.activity1.newElements.MC.content,
+      },
+      {
+        identifier: '2-2',
+        content: this.data.activity1.newElements.KP.content,
+      },
+    ]).each((element: { identifier: string; content: string }) => {
+      cy.get(
+        `[data-cy="live-quiz-template-element-${element.identifier}"]`
+      ).click() // open
+      cy.get('[data-cy="student-element-preview"]').contains(element.content)
+      cy.get(
+        `[data-cy="live-quiz-template-element-${element.identifier}"]`
+      ).click() // close
+    })
+
+    // submit the creation of an activity from the template and verify that the live quiz overview is correctly opened
+    cy.get(`[data-cy="live-quiz-template-submit"]`).click()
+    cy.get(`[data-cy="live-quiz-${this.data.activity1.name}"]`).should('exist')
+  })
+
+  it('Verify that the new elements from the third block have been added to the library', function () {
+    cy.loginLecturer()
+    cy.wrap([
+      this.data.activity1.newElements.SC.title,
+      this.data.activity1.newElements.MC.title,
+      this.data.activity1.newElements.KP.title,
+    ]).each((element: string) => {
+      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+    })
+  })
+
+  it('Execute the live quiz and open the first block', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-${this.data.activity1.name}"]`).should('exist')
+    cy.get(`[data-cy="start-live-quiz-${this.data.activity1.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+  })
+
+  it('Verify the content of the elements through the student view and answer the questions', function () {
+    cy.loginStudent()
+    cy.findByText(this.data.activity1.displayName).click()
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.SC.content).should('exist')
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.MC.content).should('exist')
+    cy.get('[data-cy="mc-1-answer-option-0"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.KP.content).should('exist')
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.NR.content).should('exist')
+    cy.get('[data-cy="input-numerical-3"]').clear().type(this.data.NR.answer)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.FT.content).should('exist')
+    cy.get('[data-cy="free-text-input-4"]').type(this.data.FT.answer)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.SE.content).should('exist')
+    cy.get('[id="selection-5-field-0"]').click()
+    cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.CS.content).should('exist')
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: this.data.CS.answers,
+      cases: this.data.CS.cases,
+      criteria: this.data.CS.criteria,
+      initialValidation: cy
+        .get('[data-cy="student-submit-answer"]')
+        .should('be.disabled'),
+      sequentialUI: true,
+    })
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+  })
+
+  it('Close the first block and open the second block of the live quiz', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity1.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click() // close block
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click() // open block
+  })
+
+  it('Verify the content of the elements through the student view and answer the questions', function () {
+    cy.loginStudent()
+    cy.findByText(this.data.activity1.displayName).click()
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.SCML2.content).should('exist')
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.MCML2.content).should('exist')
+    cy.get('[data-cy="mc-1-answer-option-0"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.KPML2.content).should('exist')
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.NRML2.content).should('exist')
+    cy.get('[data-cy="input-numerical-3"]').clear().type(this.data.NR.answer)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.FTML2.content).should('exist')
+    cy.get('[data-cy="free-text-input-4"]').type(this.data.FT.answer)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.SEML2.content).should('exist')
+    cy.get('[id="selection-5-field-0"]').click()
+    cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.CSML2.content).should('exist')
+    cy.answerCaseStudy({
+      elementIx: 6,
+      answers: this.data.CSML2.answers,
+      cases: this.data.CSML2.cases,
+      criteria: this.data.CSML2.criteria,
+      initialValidation: cy
+        .get('[data-cy="student-submit-answer"]')
+        .should('be.disabled'),
+      sequentialUI: true,
+    })
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+  })
+
+  it('Close the second block and open the third block of the live quiz', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity1.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click() // close block
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click() // open block
+  })
+
+  it('Verify the content of the elements through the student view and answer the questions', function () {
+    cy.loginStudent()
+    cy.findByText(this.data.activity1.displayName).click()
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.activity1.newElements.SC.content).should('exist')
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.activity1.newElements.MC.content).should('exist')
+    cy.get('[data-cy="mc-1-answer-option-0"]').click()
+    cy.get('[data-cy="mc-1-answer-option-1"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.findByText(this.data.activity1.newElements.KP.content).should('exist')
+    cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+    cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+  })
+
+  it('Verify the content of the evaluation and close the live quiz', function () {
+    cy.loginLecturer()
+
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity1.name}"]`).click()
+    cy.wait(1000)
+
+    // extract the quiz id from the URL and visit the evaluation view
+    cy.location('href').then((href) => {
+      const quizId = href.split('/')[4]
+      cy.visit(`${Cypress.env('URL_MANAGE')}/quizzes/${quizId}/evaluation`)
+    })
+
+    // check content of evaluation view
+    cy.findByText(this.data.SC.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.MC.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.KP.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.NR.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.FT.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SE.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.CS.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SCML2.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.MCML2.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.KPML2.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.NRML2.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.FTML2.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SEML2.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.CSML2.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity1.newElements.SC.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity1.newElements.MC.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity1.newElements.KP.content).should('exist')
+
+    // end the live quiz
+    cy.visit(`${Cypress.env('URL_MANAGE')}`)
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity1.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click() // close block
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click() // open block
+    cy.wait(500)
+  })
+
+  it("Open the template in the restricted catalog collection through user 'pro1', test all functionalities and create an activity from it", function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
+    cy.get(
+      `[data-cy="actions-dropdown-${this.data.liveQuiz.template2.name}"]`
+    ).realClick()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template2.name}"]`
+    ).click()
+
+    // settings section
+    cy.get('[data-cy="live-quiz-template-settings"]').click()
+    cy.get('[data-cy="template-live-quiz-name"]').should(
+      'have.value',
+      this.data.liveQuiz.template2.name
+    )
+    cy.get('[data-cy="template-live-quiz-name"]')
+      .click()
+      .clear()
+      .type(this.data.activity2.name)
+    cy.get('[data-cy="template-live-quiz-display-name"]')
+      .click()
+      .clear()
+      .type(this.data.activity2.displayName)
+    cy.get('[data-cy="template-live-quiz-course"]').contains(
+      messages.manage.activityWizard.liveQuizNoCourse
+    )
+    cy.get('[data-cy="submit-template-settings"]').click()
+
+    // in first block, check preview & correct replacement options, but keep the template instances
+    cy.wrap([
+      {
+        content: this.data.SC.content,
+        availableElements: [this.data.SC3.title],
+        unavailableElements: [
+          this.data.SC.title,
+          this.data.SC2.title,
+          this.data.SCML.title,
+          this.data.SCML2.title,
+          this.data.SCML3.title,
+          this.data.SCMLAF.title,
+          this.data.SCMLAF2.title,
+          this.data.SCMLAF3.title,
+        ],
+      },
+      {
+        content: this.data.MC.content,
+        availableElements: [this.data.MC3.title],
+        unavailableElements: [
+          this.data.MC.title,
+          this.data.MC2.title,
+          this.data.MCML.title,
+          this.data.MCML2.title,
+          this.data.MCML3.title,
+          this.data.MCMLAF.title,
+          this.data.MCMLAF2.title,
+          this.data.MCMLAF3.title,
+        ],
+      },
+      {
+        content: this.data.KP.content,
+        availableElements: [this.data.KP3.title],
+        unavailableElements: [
+          this.data.KP.title,
+          this.data.KP2.title,
+          this.data.KPML.title,
+          this.data.KPML2.title,
+          this.data.KPML3.title,
+          this.data.KPMLAF.title,
+          this.data.KPMLAF2.title,
+          this.data.KPMLAF3.title,
+        ],
+      },
+      {
+        content: this.data.NR.content,
+        availableElements: [this.data.NR3.title],
+        unavailableElements: [
+          this.data.NR.title,
+          this.data.NR2.title,
+          this.data.NRML.title,
+          this.data.NRML2.title,
+          this.data.NRML3.title,
+        ],
+      },
+      {
+        content: this.data.FT.content,
+        availableElements: [this.data.FT3.title],
+        unavailableElements: [
+          this.data.FT.title,
+          this.data.FT2.title,
+          this.data.FTML.title,
+          this.data.FTML2.title,
+          this.data.FTML3.title,
+        ],
+      },
+      {
+        content: this.data.SE.content,
+        availableElements: [this.data.SE3.title],
+        unavailableElements: [
+          this.data.SE.title,
+          this.data.SE2.title,
+          this.data.SEML.title,
+          this.data.SEML2.title,
+          this.data.SEML3.title,
+        ],
+      },
+      {
+        content: this.data.CS.content,
+        availableElements: [this.data.CS3.title],
+        unavailableElements: [
+          this.data.CS.title,
+          this.data.CS2.title,
+          this.data.CSML.title,
+          this.data.CSML2.title,
+          this.data.CSML3.title,
+        ],
+      },
+    ]).each(
+      ({
+        content,
+        availableElements,
+        unavailableElements,
+      }: {
+        content: string
+        availableElements: string[]
+        unavailableElements: string[]
+      }) => {
+        cy.get('[data-cy="replace-with-existing-element"]').click()
+        cy.wrap(availableElements).each((elementName: string) => {
+          cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
+            'exist'
+          )
+        })
+        cy.wrap(unavailableElements).each((elementName: string) => {
+          cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
+            'not.exist'
+          )
+        })
+        cy.get(
+          `[data-cy="select-existing-element-${availableElements[0]}"]`
+        ).click()
+        cy.get('[data-cy="confirm-select-existing-element"]').click()
+
+        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(content)
+        cy.get('[data-cy="next-template-element"]').click()
+      }
+    )
+
+    // in second block, check preview & correct replacement options, but create custom version of the elements (custom title & content)
+    cy.wrap([
+      {
+        content: this.data.SCML.content,
+        newTitle: this.data.activity2.newElements.SC.title,
+        newContent: this.data.activity2.newElements.SC.content,
+        availableElements: [this.data.SCML3.title],
+        unavailableElements: [
+          this.data.SC.title,
+          this.data.SC2.title,
+          this.data.SC3.title,
+          this.data.SCML.title,
+          this.data.SCML2.title,
+          this.data.SCMLAF.title,
+          this.data.SCMLAF2.title,
+          this.data.SCMLAF3.title,
+        ],
+        hasSampleSolutionDisabled: true,
+        hasAnswerFeedbacksDisabled: true,
+      },
+      {
+        content: this.data.MCML.content,
+        newTitle: this.data.activity2.newElements.MC.title,
+        newContent: this.data.activity2.newElements.MC.content,
+        availableElements: [this.data.MCML3.title],
+        unavailableElements: [
+          this.data.MC.title,
+          this.data.MC2.title,
+          this.data.MC3.title,
+          this.data.MCML.title,
+          this.data.MCML2.title,
+          this.data.MCMLAF.title,
+          this.data.MCMLAF2.title,
+          this.data.MCMLAF3.title,
+        ],
+        hasSampleSolutionDisabled: true,
+        hasAnswerFeedbacksDisabled: true,
+      },
+      {
+        content: this.data.KPML.content,
+        newTitle: this.data.activity2.newElements.KP.title,
+        newContent: this.data.activity2.newElements.KP.content,
+        availableElements: [this.data.KPML3.title],
+        unavailableElements: [
+          this.data.KP.title,
+          this.data.KP2.title,
+          this.data.KP3.title,
+          this.data.KPML.title,
+          this.data.KPML2.title,
+          this.data.KPMLAF.title,
+          this.data.KPMLAF2.title,
+          this.data.KPMLAF3.title,
+        ],
+        hasSampleSolutionDisabled: true,
+        hasAnswerFeedbacksDisabled: true,
+      },
+      {
+        content: this.data.NRML.content,
+        newTitle: this.data.activity2.newElements.NR.title,
+        newContent: this.data.activity2.newElements.NR.content,
+        availableElements: [this.data.NRML3.title],
+        unavailableElements: [
+          this.data.NR.title,
+          this.data.NR2.title,
+          this.data.NR3.title,
+          this.data.NRML.title,
+          this.data.NRML2.title,
+        ],
+        hasSampleSolutionDisabled: true,
+      },
+      {
+        content: this.data.FTML.content,
+        newTitle: this.data.activity2.newElements.FT.title,
+        newContent: this.data.activity2.newElements.FT.content,
+        availableElements: [this.data.FTML3.title],
+        unavailableElements: [
+          this.data.FT.title,
+          this.data.FT2.title,
+          this.data.FT3.title,
+          this.data.FTML.title,
+          this.data.FTML2.title,
+        ],
+        hasSampleSolutionDisabled: true,
+      },
+      {
+        content: this.data.SEML.content,
+        newTitle: this.data.activity2.newElements.SE.title,
+        newContent: this.data.activity2.newElements.SE.content,
+        availableElements: [this.data.SEML3.title],
+        unavailableElements: [
+          this.data.SE.title,
+          this.data.SE2.title,
+          this.data.SE3.title,
+          this.data.SEML.title,
+          this.data.SEML2.title,
+        ],
+        hasSampleSolutionDisabled: true,
+      },
+      {
+        content: this.data.CSML.content,
+        newTitle: this.data.activity2.newElements.CS.title,
+        newContent: this.data.activity2.newElements.CS.content,
+        availableElements: [this.data.CSML3.title],
+        unavailableElements: [
+          this.data.CS.title,
+          this.data.CS2.title,
+          this.data.CS3.title,
+          this.data.CSML.title,
+          this.data.CSML2.title,
+        ],
+        hasSampleSolutionDisabled: true,
+      },
+    ]).each(
+      ({
+        content,
+        newTitle,
+        newContent,
+        availableElements,
+        unavailableElements,
+        hasSampleSolutionDisabled = false,
+        hasAnswerFeedbacksDisabled = false,
+      }: {
+        content: string
+        newTitle: string
+        newContent: string
+        availableElements: string[]
+        unavailableElements: string[]
+        hasSampleSolutionDisabled?: boolean
+        hasAnswerFeedbacksDisabled?: boolean
+      }) => {
+        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(content)
+
+        cy.get('[data-cy="replace-with-existing-element"]').click()
+        cy.wrap(availableElements).each((elementName: string) => {
+          cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
+            'exist'
+          )
+        })
+        cy.wrap(unavailableElements).each((elementName: string) => {
+          cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
+            'not.exist'
+          )
+        })
+        cy.get(
+          `[data-cy="select-existing-element-${availableElements[0]}"]`
+        ).click()
+        cy.get('[data-cy="confirm-select-existing-element"]').click()
+
+        // verify that certain settings are disabled / hidden and enter new title & content
+        cy.get('[data-cy="create-new-element-template"]').click()
+        if (hasSampleSolutionDisabled) {
+          cy.get('[data-cy="configure-sample-solution"]').should('be.disabled')
+        }
+        if (hasAnswerFeedbacksDisabled) {
+          cy.get('[data-cy="configure-answer-feedbacks"]').should('be.disabled')
+        }
+        cy.get('[data-cy="element-tag-input"]').should('not.exist')
+        cy.get('[data-cy="select-multiplier"]').should('not.exist')
+        cy.get('[data-cy="insert-question-title"]')
+          .click()
+          .clear()
+          .type(newTitle)
+        cy.get('[data-cy="insert-question-text"]')
+          .click()
+          .clear()
+          .type(newContent)
+        cy.get('[data-cy="save-new-question"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(newContent)
+        cy.get('[data-cy="next-template-element"]').click()
+      }
+    )
+
+    // in third block, check preview & correct replacement options, replace with existing elements in own library
+    cy.wrap([
+      {
+        content: this.data.SCMLAF.content,
+        availableElements: [this.data.SCMLAF3.title],
+        contentNew: this.data.SCMLAF3.content,
+        unavailableElements: [
+          this.data.SC3.title,
+          this.data.SCML3.title,
+          this.data.SCMLAF.title,
+          this.data.SCMLAF2.title,
+        ],
+      },
+      {
+        content: this.data.MCMLAF.content,
+        availableElements: [this.data.MCMLAF3.title],
+        contentNew: this.data.MCMLAF3.content,
+        unavailableElements: [
+          this.data.MC3.title,
+          this.data.MCML3.title,
+          this.data.MCMLAF.title,
+          this.data.MCMLAF2.title,
+        ],
+      },
+      {
+        content: this.data.KPMLAF.content,
+        availableElements: [this.data.KPMLAF3.title],
+        contentNew: this.data.KPMLAF3.content,
+        unavailableElements: [
+          this.data.KP3.title,
+          this.data.KPML3.title,
+          this.data.KPMLAF.title,
+          this.data.KPMLAF2.title,
+        ],
+      },
+    ]).each(
+      ({
+        content,
+        availableElements,
+        contentNew,
+        unavailableElements,
+      }: {
+        content: string
+        availableElements: string[]
+        contentNew: string
+        unavailableElements: string[]
+      }) => {
+        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(content)
+
+        cy.get('[data-cy="replace-with-existing-element"]').click()
+        cy.wrap(availableElements).each((elementName: string) => {
+          cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
+            'exist'
+          )
+        })
+        cy.wrap(unavailableElements).each((elementName: string) => {
+          cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
+            'not.exist'
+          )
+        })
+        cy.get(
+          `[data-cy="select-existing-element-${availableElements[0]}"]`
+        ).click()
+        cy.get('[data-cy="confirm-select-existing-element"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(contentNew)
+        cy.get('[data-cy="next-template-element"]').click()
+      }
+    )
+
+    // submit the creation of an activity from the template and verify that the live quiz overview is correctly opened
+    cy.get(`[data-cy="live-quiz-template-submit"]`).click()
+    cy.get(`[data-cy="live-quiz-${this.data.activity2.name}"]`).should('exist')
+  })
+
+  it('Verify that correct permissions and elements have been created on the answer collections contained in the template', function () {
+    cy.loginIndividualCatalyst()
+
+    // template instances should have been created as new elements in the pool
+    cy.wrap([
+      this.data.SC.title,
+      this.data.MC.title,
+      this.data.KP.title,
+      this.data.NR.title,
+      this.data.FT.title,
+      this.data.SE.title,
+      this.data.CS.title,
+    ]).each((element: string) => {
+      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+    })
+
+    // modified versions of elements (new elements) should have been created as new elements in the pool
+    cy.wrap([
+      this.data.activity2.newElements.SC.title,
+      this.data.activity2.newElements.MC.title,
+      this.data.activity2.newElements.KP.title,
+      this.data.activity2.newElements.NR.title,
+      this.data.activity2.newElements.FT.title,
+      this.data.activity2.newElements.SE.title,
+      this.data.activity2.newElements.CS.title,
+    ]).each((element: string) => {
+      cy.get(`[data-cy="element-item-${element}"]`).should('exist')
+    })
+
+    // read permissions on the shared and used answer collections should have been granted automatically
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-${this.data.collection.name}"]`
+    ).contains(messages.manage.sharing.permissionsREAD) // shared through elements in template
+    cy.get(
+      `[data-cy="answer-collection-${this.data.collection3.name}"]`
+    ).should('exist') // owned
+  })
+
+  it('Execute the live quiz and open the first block', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-${this.data.activity2.name}"]`).should('exist')
+    cy.get(`[data-cy="start-live-quiz-${this.data.activity2.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+  })
+
+  it('Verify the content of the elements through the student view and answer the questions', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
+    cy.wait(1000)
+
+    // extract the quiz id from the URL and visit the evaluation view
+    cy.location('href').then((href) => {
+      const quizId = href.split('/')[4]
+      cy.wrap(quizId).as('quizId')
+    })
+
+    // student 11 joins course and creates a group by himself
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('@quizId').then((quizId) => {
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            quizId: String(quizId),
+            data: this.data,
+          },
+        },
+        ({ username, password, quizId, data }) => {
+          cy.get('[data-cy="username-field"]').click().type(username)
+          cy.get('[data-cy="password-field"]').click().type(password)
+          cy.get('[data-cy="submit-login"]').click()
+
+          // directly access the live quiz through the URL
+          cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.SC.content
+          )
+          cy.get('[data-cy="sc-0-answer-option-0"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.MC.content
+          )
+          cy.get('[data-cy="mc-1-answer-option-0"]').click()
+          cy.get('[data-cy="mc-1-answer-option-1"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.KP.content
+          )
+          cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="numerical-question-content"]').contains(
+            data.NR.content
+          )
+          cy.get('[data-cy="input-numerical-3"]').clear().type(data.NR.answer)
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="free-text-question-content"]').contains(
+            data.FT.content
+          )
+          cy.get('[data-cy="free-text-input-4"]').type(data.FT.answer)
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="selection-question-content"]').contains(
+            data.SE.content
+          )
+          cy.get('[id="selection-5-field-0"]').click()
+          cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          // answering case study question with corresponding function inside an origin wrapper does not work
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="case-study-question-content"]').contains(
+            data.CS.content
+          )
+        }
+      )
+    })
+
+    // dummy action
+    cy.visit(Cypress.env('URL_MANAGE'))
+  })
+
+  it('Close the first block and open the second block of the live quiz', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click() // close block
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click() // open block
+  })
+
+  it('Verify the content of the elements through the student view and answer the questions', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
+    cy.wait(1000)
+
+    // extract the quiz id from the URL and visit the evaluation view
+    cy.location('href').then((href) => {
+      const quizId = href.split('/')[4]
+      cy.wrap(quizId).as('quizId')
+    })
+
+    // student 11 joins course and creates a group by himself
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('@quizId').then((quizId) => {
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            quizId: String(quizId),
+            data: this.data,
+          },
+        },
+        ({ username, password, quizId, data }) => {
+          cy.get('[data-cy="username-field"]').click().type(username)
+          cy.get('[data-cy="password-field"]').click().type(password)
+          cy.get('[data-cy="submit-login"]').click()
+
+          // directly access the live quiz through the URL
+          cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.activity2.newElements.SC.content
+          )
+          cy.get('[data-cy="sc-0-answer-option-0"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.activity2.newElements.MC.content
+          )
+          cy.get('[data-cy="mc-1-answer-option-0"]').click()
+          cy.get('[data-cy="mc-1-answer-option-1"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.activity2.newElements.KP.content
+          )
+          cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="numerical-question-content"]').contains(
+            data.activity2.newElements.NR.content
+          )
+          cy.get('[data-cy="input-numerical-3"]')
+            .clear()
+            .type(data.activity2.newElements.NR.answer)
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="free-text-question-content"]').contains(
+            data.activity2.newElements.FT.content
+          )
+          cy.get('[data-cy="free-text-input-4"]').type(
+            data.activity2.newElements.FT.answer
+          )
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="selection-question-content"]').contains(
+            data.activity2.newElements.SE.content
+          )
+          cy.get('[id="selection-5-field-0"]').click()
+          cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          // answering case study question with corresponding function inside an origin wrapper does not work
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="case-study-question-content"]').contains(
+            data.activity2.newElements.CS.content
+          )
+        }
+      )
+    })
+
+    // dummy action
+    cy.visit(Cypress.env('URL_MANAGE'))
+  })
+
+  it('Close the second block and open the third block of the live quiz', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click() // close block
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click() // open block
+  })
+
+  it('Verify the content of the elements through the student view and answer the questions', function () {
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
+    cy.wait(1000)
+
+    // extract the quiz id from the URL and visit the evaluation view
+    cy.location('href').then((href) => {
+      const quizId = href.split('/')[4]
+      cy.wrap(quizId).as('quizId')
+    })
+
+    // student 11 joins course and creates a group by himself
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.get('@quizId').then((quizId) => {
+      cy.origin(
+        Cypress.env('URL_STUDENT'),
+        {
+          args: {
+            username: Cypress.env('STUDENT_USERNAME'),
+            password: Cypress.env('STUDENT_PASSWORD'),
+            quizId: String(quizId),
+            data: this.data,
+          },
+        },
+        ({ username, password, quizId, data }) => {
+          cy.get('[data-cy="username-field"]').click().type(username)
+          cy.get('[data-cy="password-field"]').click().type(password)
+          cy.get('[data-cy="submit-login"]').click()
+
+          // directly access the live quiz through the URL
+          cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.SCMLAF3.content
+          )
+          cy.get('[data-cy="sc-0-answer-option-0"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.MCMLAF3.content
+          )
+          cy.get('[data-cy="mc-1-answer-option-0"]').click()
+          cy.get('[data-cy="mc-1-answer-option-1"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="choices-question-content"]').contains(
+            data.KPMLAF3.content
+          )
+          cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-1-incorrect"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-2-incorrect"]').click()
+          cy.get('[data-cy="toggle-kp-2-answer-3-correct"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+        }
+      )
+    })
+
+    // dummy action
+    cy.visit(Cypress.env('URL_MANAGE'))
+  })
+
+  it('Verify the content of the evaluation and close the live quiz', function () {
+    cy.loginIndividualCatalyst()
+
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
+    cy.wait(1000)
+
+    // extract the quiz id from the URL and visit the evaluation view
+    cy.location('href').then((href) => {
+      const quizId = href.split('/')[4]
+      cy.visit(`${Cypress.env('URL_MANAGE')}/quizzes/${quizId}/evaluation`)
+    })
+
+    // check content of evaluation view
+    cy.findByText(this.data.SC.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.MC.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.KP.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.NR.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.FT.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SE.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.CS.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity2.newElements.SC.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity2.newElements.MC.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity2.newElements.KP.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity2.newElements.NR.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity2.newElements.FT.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity2.newElements.SE.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity2.newElements.CS.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SCMLAF3.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.MCMLAF3.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.KPMLAF3.content).should('exist')
+
+    // end the live quiz
+    cy.visit(`${Cypress.env('URL_MANAGE')}`)
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.activity2.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click() // close block
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click() // open block
+    cy.wait(500)
+  })
   // #endregion
 
   // ! Cleanup: Deletion of all created templates, activities and questions
   // #region
-
   it('Delete all created templates', function () {
     cy.loginLecturer()
 
@@ -700,8 +2244,31 @@ describe('Test all functionalities related to the creation, management, sharing 
   })
 
   it('Delete all created activities', function () {
-    // TODO: implement this test case once there are any activities created (that have not been converted)
     cy.loginLecturer()
+    cy.get(`[data-cy="live-quizzes"]`).click()
+
+    cy.findByText(this.data.activity1.name).should('exist')
+    cy.get(`[data-cy="delete-live-quiz-${this.data.activity1.name}"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.findByText(this.data.activity1.name).should('not.exist')
+
+    cy.loginIndividualCatalyst()
+    cy.get(`[data-cy="live-quizzes"]`).click()
+
+    cy.findByText(this.data.activity2.name).should('exist')
+    cy.get(`[data-cy="delete-live-quiz-${this.data.activity2.name}"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
+    cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).should('not.exist')
+    cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.findByText(this.data.activity2.name).should('not.exist')
   })
 
   it('Delete all created questions', function () {
@@ -761,6 +2328,5 @@ describe('Test all functionalities related to the creation, management, sharing 
       cy.visit(Cypress.env('URL_MANAGE'))
     })
   })
-
   // #endregion
 })

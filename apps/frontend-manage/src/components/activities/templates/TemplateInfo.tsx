@@ -23,7 +23,10 @@ function TemplateInfo({
       </div>
       <div className="mt-3 rounded-lg bg-gray-100 px-3 pb-2 pt-1">
         <H3>{t('shared.generic.instructions')}</H3>
-        <Markdown content={instructions} />
+        <Markdown
+          content={instructions}
+          data={{ cy: 'template-instructions' }}
+        />
       </div>
     </div>
   )

@@ -270,6 +270,7 @@ Cypress.Commands.add(
         .type(choice.content)
     })
 
+    // set correctness values for SC question
     if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
@@ -280,6 +281,7 @@ Cypress.Commands.add(
       })
     }
 
+    // set answer feedbacks for SC question
     if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
       cy.get('[data-cy="configure-answer-feedbacks"]').click()
 
@@ -352,6 +354,7 @@ Cypress.Commands.add(
         .type(choice.content)
     })
 
+    // set correctness values for MC question
     if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
@@ -359,6 +362,20 @@ Cypress.Commands.add(
         if (choice.correct) {
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
+      })
+    }
+
+    // set answer feedbacks for MC question
+    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
+      cy.get('[data-cy="configure-answer-feedbacks"]').click()
+
+      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+          .realClick()
+          .type(choice.feedback)
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
+          choice.feedback
+        )
       })
     }
 
@@ -447,6 +464,20 @@ Cypress.Commands.add(
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       cy.get('[data-cy="set-correctness-0"]').click().type(choice4.content)
       cy.get('[data-cy="set-correctness-2"]').click().type(choice4.content)
+    }
+
+    // set answer feedbacks for KPRIM question
+    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
+      cy.get('[data-cy="configure-answer-feedbacks"]').click()
+
+      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+          .realClick()
+          .type(choice.feedback)
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
+          choice.feedback
+        )
+      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })

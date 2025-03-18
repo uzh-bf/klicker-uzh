@@ -1827,8 +1827,14 @@ export async function createLiveQuizFromTemplate(
                 }
 
                 // otherwise, create new READ permission for the user on the answer collection
-                await tx.permission.create({
-                  data: {
+                await tx.permission.upsert({
+                  where: {
+                    answerCollectionId_userId: {
+                      answerCollectionId,
+                      userId: ctx.user.sub,
+                    },
+                  },
+                  create: {
                     permissionLevel: DB.PermissionLevel.READ,
                     permissionStatus: DB.PermissionStatus.GRANTED,
                     user: {
@@ -1837,6 +1843,9 @@ export async function createLiveQuizFromTemplate(
                     answerCollection: {
                       connect: { id: answerCollectionId },
                     },
+                  },
+                  update: {
+                    permissionStatus: DB.PermissionStatus.GRANTED,
                   },
                 })
               }

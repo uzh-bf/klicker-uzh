@@ -15,7 +15,13 @@ function SubmissionButton({
   const t = useTranslations()
 
   return (
-    <Button primary disabled={disabled} loading={loading} onClick={onSubmit}>
+    <Button
+      primary
+      disabled={disabled}
+      loading={loading}
+      onClick={onSubmit}
+      data={{ cy: 'live-quiz-template-submit' }}
+    >
       <Button.Icon icon={faSave} />
       <Button.Label>{t('manage.template.createLIVE_QUIZ')}</Button.Label>
     </Button>

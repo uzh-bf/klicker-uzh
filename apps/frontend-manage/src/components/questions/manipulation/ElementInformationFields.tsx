@@ -38,7 +38,7 @@ function ElementInformationFields({
           name="type"
           required={mode === ElementEditMode.CREATE}
           contentPosition="popper"
-          disabled={mode === ElementEditMode.EDIT}
+          disabled={mode === ElementEditMode.EDIT || isTemplate}
           label={t('manage.questionForms.elementType')}
           placeholder={t('manage.questionForms.selectQuestionType')}
           items={questionTypeOptions}
@@ -73,7 +73,8 @@ function ElementInformationFields({
       </div>
 
       <div className="mt-2 flex flex-row gap-2">
-        {values.type !== ElementType.Content &&
+        {!isTemplate &&
+          values.type !== ElementType.Content &&
           values.type !== ElementType.Flashcard && (
             <div>
               <MultiplierSelector
@@ -83,7 +84,7 @@ function ElementInformationFields({
             </div>
           )}
         {!isTemplate ? (
-          <div className="flex w-full flex-col">
+          <div className="flex w-full flex-col" data-cy="element-tag-input">
             <FormLabel
               required={false}
               label={t('manage.questionPool.tags')}

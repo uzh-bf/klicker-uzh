@@ -164,6 +164,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                 },
               }))
             }}
+            data={{ cy: 'live-quiz-template-settings' }}
           >
             {quizData && collapsibles.settings.open && (
               <LiveQuizTemplateSettings
@@ -219,6 +220,9 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     },
                   }))
                 }
+                data={{
+                  cy: `live-quiz-template-element-${blockIx}-${elementIx}`,
+                }}
               >
                 <TemplateElementContent
                   firstElement={blockIx === 0 && elementIx === 0}

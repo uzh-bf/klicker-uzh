@@ -75,7 +75,10 @@ function ObjectImport({
   // TODO: enable scrolling on this component on overflow!
   return (
     <div>
-      <H2 className={{ root: 'md:-mb-5' }}>
+      <H2
+        className={{ root: 'md:-mb-5' }}
+        data={{ cy: 'catalog-browser-title' }}
+      >
         {collectionName
           ? `${t('manage.general.catalog')}: ${collectionName}`
           : t('manage.general.catalog')}
