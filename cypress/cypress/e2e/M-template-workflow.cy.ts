@@ -13,7 +13,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   // ! Part 0: Preparation
   // #region
-  it('Create the questions required in the live quiz test workflows', function () {
+  it('Create a set of questions in the lecturer account for the template test suite', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
       title: this.data.SC.title,
@@ -24,6 +24,11 @@ describe('Test all functionalities related to the creation, management, sharing 
       title: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
+    })
+    cy.createQuestionSC({
+      title: this.data.SCMLAF.title,
+      content: this.data.SCMLAF.content,
+      choices: this.data.SCMLAF.choices,
     })
 
     cy.createQuestionMC({
@@ -36,6 +41,11 @@ describe('Test all functionalities related to the creation, management, sharing 
       content: this.data.MCML.content,
       choices: this.data.MCML.choices,
     })
+    cy.createQuestionMC({
+      title: this.data.MCMLAF.title,
+      content: this.data.MCMLAF.content,
+      choices: this.data.MCMLAF.choices,
+    })
 
     cy.createQuestionKPRIM({
       title: this.data.KP.title,
@@ -46,6 +56,11 @@ describe('Test all functionalities related to the creation, management, sharing 
       title: this.data.KPML.title,
       content: this.data.KPML.content,
       choices: this.data.KPML.choices,
+    })
+    cy.createQuestionKPRIM({
+      title: this.data.KPMLAF.title,
+      content: this.data.KPMLAF.content,
+      choices: this.data.KPMLAF.choices,
     })
 
     cy.createQuestionNR({
@@ -119,6 +134,251 @@ describe('Test all functionalities related to the creation, management, sharing 
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
     })
+
+    // create second set of questions that can be used to replace existing questions (with identical settings)
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSC({
+      title: this.data.SC2.title,
+      content: this.data.SC2.content,
+      choices: this.data.SC2.choices,
+    })
+    cy.createQuestionSC({
+      title: this.data.SCML2.title,
+      content: this.data.SCML2.content,
+      choices: this.data.SCML2.choices,
+    })
+    cy.createQuestionSC({
+      title: this.data.SCMLAF2.title,
+      content: this.data.SCMLAF2.content,
+      choices: this.data.SCMLAF2.choices,
+    })
+
+    cy.createQuestionMC({
+      title: this.data.MC2.title,
+      content: this.data.MC2.content,
+      choices: this.data.MC2.choices,
+    })
+    cy.createQuestionMC({
+      title: this.data.MCML2.title,
+      content: this.data.MCML2.content,
+      choices: this.data.MCML2.choices,
+    })
+    cy.createQuestionMC({
+      title: this.data.MCMLAF2.title,
+      content: this.data.MCMLAF2.content,
+      choices: this.data.MCMLAF2.choices,
+    })
+
+    cy.createQuestionKPRIM({
+      title: this.data.KP2.title,
+      content: this.data.KP2.content,
+      choices: this.data.KP2.choices,
+    })
+    cy.createQuestionKPRIM({
+      title: this.data.KPML2.title,
+      content: this.data.KPML2.content,
+      choices: this.data.KPML2.choices,
+    })
+    cy.createQuestionKPRIM({
+      title: this.data.KPMLAF2.title,
+      content: this.data.KPMLAF2.content,
+      choices: this.data.KPMLAF2.choices,
+    })
+
+    cy.createQuestionNR({
+      title: this.data.NR2.title,
+      content: this.data.NR2.content,
+      ...this.data.NR2.options,
+    })
+    cy.createQuestionNR({
+      title: this.data.NRML2.title,
+      content: this.data.NRML2.content,
+      ...this.data.NRML2.options,
+    })
+
+    cy.createQuestionFT({
+      title: this.data.FT2.title,
+      content: this.data.FT2.content,
+      ...this.data.FT2.options,
+    })
+    cy.createQuestionFT({
+      title: this.data.FTML2.title,
+      content: this.data.FTML2.content,
+      ...this.data.FTML2.options,
+    })
+
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.createAnswerCollection({
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
+    })
+
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: this.data.SE2.title,
+      content: this.data.SE2.content,
+      numberOfInputs: this.data.SE2.inputs,
+      collectionName: this.data.collection.name,
+    })
+    cy.createQuestionSE({
+      title: this.data.SEML2.title,
+      content: this.data.SEML2.content,
+      numberOfInputs: this.data.SEML2.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML2.solutions.includes(i)
+      ),
+    })
+
+    cy.createQuestionCS({
+      title: this.data.CS2.title,
+      content: this.data.CS2.content,
+      explanation: this.data.CS2.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CS2.selectedItems.includes(i)
+      ),
+      criteria: this.data.CS2.criteria,
+      cases: this.data.CS2.cases,
+      solutions: this.data.CS2.solutions,
+    })
+    cy.createQuestionCS({
+      title: this.data.CSML2.title,
+      content: this.data.CSML2.content,
+      explanation: this.data.CSML2.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CSML2.selectedItems.includes(i)
+      ),
+      criteria: this.data.CSML2.criteria,
+      cases: this.data.CSML2.cases,
+      solutions: this.data.CSML2.solutions,
+    })
+  })
+
+  it("Create another set of questions in the account of user 'pro1' for the use in template", function () {
+    cy.loginIndividualCatalyst()
+    cy.createQuestionSC({
+      title: this.data.SC3.title,
+      content: this.data.SC3.content,
+      choices: this.data.SC3.choices,
+    })
+    cy.createQuestionSC({
+      title: this.data.SCML3.title,
+      content: this.data.SCML3.content,
+      choices: this.data.SCML3.choices,
+    })
+    cy.createQuestionSC({
+      title: this.data.SCMLAF3.title,
+      content: this.data.SCMLAF3.content,
+      choices: this.data.SCMLAF3.choices,
+    })
+
+    cy.createQuestionMC({
+      title: this.data.MC3.title,
+      content: this.data.MC3.content,
+      choices: this.data.MC3.choices,
+    })
+    cy.createQuestionMC({
+      title: this.data.MCML3.title,
+      content: this.data.MCML3.content,
+      choices: this.data.MCML3.choices,
+    })
+    cy.createQuestionMC({
+      title: this.data.MCMLAF3.title,
+      content: this.data.MCMLAF3.content,
+      choices: this.data.MCMLAF3.choices,
+    })
+
+    cy.createQuestionKPRIM({
+      title: this.data.KP3.title,
+      content: this.data.KP3.content,
+      choices: this.data.KP3.choices,
+    })
+    cy.createQuestionKPRIM({
+      title: this.data.KPML3.title,
+      content: this.data.KPML3.content,
+      choices: this.data.KPML3.choices,
+    })
+    cy.createQuestionKPRIM({
+      title: this.data.KPMLAF3.title,
+      content: this.data.KPMLAF3.content,
+      choices: this.data.KPMLAF3.choices,
+    })
+
+    cy.createQuestionNR({
+      title: this.data.NR3.title,
+      content: this.data.NR3.content,
+      ...this.data.NR3.options,
+    })
+    cy.createQuestionNR({
+      title: this.data.NRML3.title,
+      content: this.data.NRML3.content,
+      ...this.data.NRML3.options,
+    })
+
+    cy.createQuestionFT({
+      title: this.data.FT3.title,
+      content: this.data.FT3.content,
+      ...this.data.FT3.options,
+    })
+    cy.createQuestionFT({
+      title: this.data.FTML3.title,
+      content: this.data.FTML3.content,
+      ...this.data.FTML3.options,
+    })
+
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.createAnswerCollection({
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
+    })
+
+    cy.get('[data-cy="library"]').click()
+    cy.createQuestionSE({
+      title: this.data.SE3.title,
+      content: this.data.SE3.content,
+      numberOfInputs: this.data.SE3.inputs,
+      collectionName: this.data.collection.name,
+    })
+    cy.createQuestionSE({
+      title: this.data.SEML3.title,
+      content: this.data.SEML3.content,
+      numberOfInputs: this.data.SEML3.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML3.solutions.includes(i)
+      ),
+    })
+
+    cy.createQuestionCS({
+      title: this.data.CS3.title,
+      content: this.data.CS3.content,
+      explanation: this.data.CS3.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CS3.selectedItems.includes(i)
+      ),
+      criteria: this.data.CS3.criteria,
+      cases: this.data.CS3.cases,
+      solutions: this.data.CS3.solutions,
+    })
+    cy.createQuestionCS({
+      title: this.data.CSML3.title,
+      content: this.data.CSML3.content,
+      explanation: this.data.CSML3.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CSML3.selectedItems.includes(i)
+      ),
+      criteria: this.data.CSML3.criteria,
+      cases: this.data.CSML3.cases,
+      solutions: this.data.CSML3.solutions,
+    })
   })
   // #endregion
 
@@ -151,6 +411,13 @@ describe('Test all functionalities related to the creation, management, sharing 
             this.data.FTML.title,
             this.data.SEML.title,
             this.data.CSML.title,
+          ],
+        },
+        {
+          elements: [
+            this.data.SCMLAF.title,
+            this.data.MCMLAF.title,
+            this.data.KPMLAF.title,
           ],
         },
       ],
@@ -405,7 +672,9 @@ describe('Test all functionalities related to the creation, management, sharing 
     ).contains(messages.manage.catalog.accessPUBLIC)
   })
 
-  // TODO: use live quiz template to create new activities
+  // TODO: add the second template to a restricted catalog collection and share access to it with user pro1
+  // TODO: open template in lecturer account, test all functionalities and create new activity from it (& test it)
+  // TODO: open the template in the restricted catalog collection through user pro1, test all functionalities, use it, create new activity from it (& test it) and verify that access to answer collection has been given (and verify that only elements that were used in live quiz have been added to own library)
 
   // #endregion
 
