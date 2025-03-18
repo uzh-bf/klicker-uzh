@@ -755,7 +755,19 @@ export async function deleteAnswerCollection(
         select: {
           linkedElements: {
             where: {
-              ownerId: ctx.user.sub,
+              OR: [
+                {
+                  ownerId: ctx.user.sub,
+                },
+                {
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionStatus: DB.PermissionStatus.GRANTED,
+                    },
+                  },
+                },
+              ],
             },
           },
           linkedTemplates: {
@@ -908,12 +920,12 @@ export async function deleteAnswerCollection(
                             liveQuiz: {
                               OR: [
                                 {
-                                  ownerId: ctx.user.sub,
+                                  ownerId: permission.userId,
                                 },
                                 {
                                   permissions: {
                                     some: {
-                                      userId: ctx.user.sub,
+                                      userId: permission.userId,
                                       permissionStatus:
                                         DB.PermissionStatus.GRANTED,
                                     },
@@ -926,12 +938,12 @@ export async function deleteAnswerCollection(
                             practiceQuiz: {
                               OR: [
                                 {
-                                  ownerId: ctx.user.sub,
+                                  ownerId: permission.userId,
                                 },
                                 {
                                   permissions: {
                                     some: {
-                                      userId: ctx.user.sub,
+                                      userId: permission.userId,
                                       permissionStatus:
                                         DB.PermissionStatus.GRANTED,
                                     },
@@ -944,12 +956,12 @@ export async function deleteAnswerCollection(
                             microLearning: {
                               OR: [
                                 {
-                                  ownerId: ctx.user.sub,
+                                  ownerId: permission.userId,
                                 },
                                 {
                                   permissions: {
                                     some: {
-                                      userId: ctx.user.sub,
+                                      userId: permission.userId,
                                       permissionStatus:
                                         DB.PermissionStatus.GRANTED,
                                     },
@@ -962,12 +974,12 @@ export async function deleteAnswerCollection(
                             groupActivity: {
                               OR: [
                                 {
-                                  ownerId: ctx.user.sub,
+                                  ownerId: permission.userId,
                                 },
                                 {
                                   permissions: {
                                     some: {
-                                      userId: ctx.user.sub,
+                                      userId: permission.userId,
                                       permissionStatus:
                                         DB.PermissionStatus.GRANTED,
                                     },
@@ -986,8 +998,8 @@ export async function deleteAnswerCollection(
 
             if (
               !permissionUsage ||
-              permissionUsage.answerCollection?.linkedElements.length === 0 ||
-              permissionUsage.answerCollection?.linkedTemplates.length === 0
+              (permissionUsage.answerCollection?.linkedElements.length === 0 &&
+                permissionUsage.answerCollection?.linkedTemplates.length === 0)
             ) {
               // delete the permission
               await tx.permission.delete({
