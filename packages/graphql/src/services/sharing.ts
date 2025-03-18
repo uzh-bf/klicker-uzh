@@ -1927,7 +1927,9 @@ export async function getAnswerCollectionPermissions(
       userGroupId: undefined,
       userGroupName: undefined,
       permissionLevel: permission.permissionLevel,
-      isRevokable: !usersWithElementUsage[permission.user?.id ?? ''],
+      isRevokable:
+        !usersWithElementUsage[permission.user?.id ?? ''] &&
+        !usersWithTemplateUsage[permission.user?.id ?? ''],
       isOwn: permission.user?.id === ctx.user.sub,
     }))
     .sort((a, b) => {
