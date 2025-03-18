@@ -5,6 +5,7 @@ import {
   faHandPointer,
 } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArrowRight,
   faArrowsRotate,
   faPen,
   faQuestion,
@@ -40,7 +41,7 @@ function TemplateElementContent({
   onNextElement: () => void
 }) {
   const t = useTranslations()
-  const [previewExistingInstance, setPreviewExistingInstance] = useState(false)
+  const [previewExistingInstance, setPreviewExistingInstance] = useState(true)
   const [existingElementModal, setExistingElementModal] = useState(false)
   const [newElementModal, setNewElementModal] = useState(false)
 
@@ -98,7 +99,7 @@ function TemplateElementContent({
             ) : null}
             <div className="flex flex-col gap-2">
               <Button
-                primary={
+                active={
                   templateElement.processed &&
                   templateElement.useTemplateInstance
                 }
@@ -125,7 +126,7 @@ function TemplateElementContent({
                 </Button.Label>
               </Button>
               <Button
-                primary={
+                active={
                   templateElement.processed &&
                   templateElement.useExistingElement
                 }
@@ -147,7 +148,7 @@ function TemplateElementContent({
                 </Button.Label>
               </Button>
               <Button
-                primary={
+                active={
                   templateElement.processed && templateElement.useNewElement
                 }
                 onClick={() => setNewElementModal(true)}
@@ -201,12 +202,14 @@ function TemplateElementContent({
           </div>
         </div>
         <Button
+          primary={templateElement.processed}
           disabled={!templateElement.processed}
           onClick={onNextElement}
           className={{ root: 'mt-2 self-end' }}
           data={{ cy: 'next-template-element' }}
         >
-          {t('manage.template.nextElement')}
+          <Button.Icon icon={faArrowRight} />
+          <Button.Label>{t('manage.template.nextElement')}</Button.Label>
         </Button>
       </div>
 
