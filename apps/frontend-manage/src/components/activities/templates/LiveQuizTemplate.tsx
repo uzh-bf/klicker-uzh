@@ -5,8 +5,9 @@ import {
   CreateLiveQuizFromTemplateDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { Button, H3, UserNotification } from '@uzh-bf/design-system'
+import { Button, H3, Toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ActivityRecoveryPrompt from './ActivityRecoveryPrompt'
 import goToNextTemplateElement from './goToNextTemplateElement'
@@ -28,6 +29,7 @@ import { LiveQuizTemplateFormValues } from './types'
 
 function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   const t = useTranslations()
+  const router = useRouter()
   const liveQuiz = template.liveQuiz
 
   // mutation for submission
@@ -47,13 +49,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     blockIx: 0,
   })
 
-  // TODO: handle submission success and error states with corresponding toast / success modal with navigation to the created activity
-  // TODO: make sure that local storage is reset correctly on submission
-  // submission success and error states
-  const [submissionSuccess, setSubmissionSuccess] = useState<{
-    open: boolean
-    quizId: string | undefined
-  }>({ open: false, quizId: undefined })
+  // submission error state
   const [submissionError, setSubmissionError] = useState(false)
 
   // track states and validity of collapsibles
@@ -401,7 +397,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                   data: quizData,
                 })
 
-                await createLiveQuizFromTemplate({
+                const { data: res } = await createLiveQuizFromTemplate({
                   variables: {
                     templateId: template.id,
                     name: quizData.name,
@@ -412,6 +408,25 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     blocks: processedBlocks,
                   },
                 })
+
+                const quizId = res?.createLiveQuizFromTemplate
+                if (quizId) {
+                  // remove local storage entry
+                  localStorage.removeItem(
+                    `live-quiz-template-inputs-${template.id}`
+                  )
+
+                  // redirect to live quiz overview and highlight newly created element
+                  router.push({
+                    pathname: '/quizzes',
+                    query: { highlight: quizId },
+                  })
+                } else {
+                  console.log(
+                    'An error occurred while creating the live quiz from the template'
+                  )
+                  setSubmissionError(true)
+                }
               } catch (error) {
                 console.log(error)
                 setSubmissionError(true)
@@ -420,6 +435,16 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
           />
         </div>
       </div>
+      <Toast
+        dismissible
+        type="error"
+        duration={6000}
+        openExternal={submissionError}
+        onCloseExternal={() => setSubmissionError(false)}
+        className={{ root: 'max-w-[30rem]' }}
+      >
+        {t('manage.template.errorCreatingLiveQuizFromTemplate')}
+      </Toast>
     </div>
   )
 }

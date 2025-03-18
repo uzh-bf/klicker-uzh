@@ -1614,6 +1614,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createLIVE_QUIZ: 'Create Live Quiz',
       templateInputsIncomplete:
         'The template contains incomplete inputs. Please check the settings and elements, not yet edited components are marked with an orange status.',
+      errorCreatingLiveQuizFromTemplate:
+        'An error occurred while creating the live quiz. Please check that all your inputs are valid and try again.',
     },
     formErrors: {
       resolveErrors:

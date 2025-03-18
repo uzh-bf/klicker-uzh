@@ -34,7 +34,8 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { WizardMode } from '../activities/ElementCreation'
 import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../courses/modals/TemplateConversionModal'
@@ -52,9 +53,11 @@ import LiveQuizQRModal from './cockpit/LiveQuizQRModal'
 
 function LiveQuiz({
   isTemplate = false,
+  highlighted = false,
   quiz,
 }: {
   isTemplate?: boolean
+  highlighted?: boolean
   quiz: Pick<
     LiveQuizType,
     | 'id'
@@ -134,7 +137,6 @@ function LiveQuiz({
   )
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
-  const [selectedLiveQuiz, setSelectedLiveQuiz] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [qrModalOpen, setQrModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
@@ -172,26 +174,32 @@ function LiveQuiz({
     [PublicationStatus.Template]: null,
   }
 
+  useEffect(() => {
+    if (highlighted) {
+      setShowDetails(true)
+    }
+  }, [highlighted])
+
   return (
     <>
       <div
         key={quiz.id}
-        className="rounded border p-1"
+        className={twMerge(
+          'rounded-md border p-1',
+          highlighted && 'border-primary-100 border-2 bg-orange-50'
+        )}
         data-cy={`live-quiz-${quiz.name}`}
       >
         {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
         {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
-          className={{ root: 'border-0 !py-0.5' }}
+          className={{
+            root: 'border-0 !py-0.5',
+          }}
           key={quiz.id}
-          open={showDetails && quiz.id === selectedLiveQuiz}
+          open={showDetails}
           onChange={() => {
-            if (quiz.id === selectedLiveQuiz) {
-              setShowDetails(!showDetails)
-            } else {
-              setShowDetails(true)
-              setSelectedLiveQuiz(quiz.id)
-            }
+            setShowDetails((prev) => !prev)
           }}
           staticContent={
             <div className="flex flex-row justify-between">

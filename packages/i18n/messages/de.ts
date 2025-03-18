@@ -1634,6 +1634,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createLIVE_QUIZ: 'Live Quiz erstellen',
       templateInputsIncomplete:
         'Die Vorlage enthält unvollständige Eingaben. Bitte überprüfen Sie die Einstellungen und Elemente, noch nicht bearbeitete Komponenten sind über einen orangen Status gekennzeichnet.',
+      errorCreatingLiveQuizFromTemplate:
+        'Beim Erstellen des Live-Quizzes ist ein Fehler aufgetreten. Bitte überprüfen Sie, dass alle Ihre eingaben gültig sind und versuchen Sie es erneut.',
     },
     formErrors: {
       resolveErrors:
@@ -1737,7 +1739,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizEvaluation: 'Live Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
       editLiveQuiz: 'Quiz bearbeiten',
-      duplicateLiveQuiz: 'Live Quiz duplizieren',
+      duplicateLiveQuiz: 'Quiz duplizieren',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
       deleteLiveQuiz: 'Live Quiz löschen',
