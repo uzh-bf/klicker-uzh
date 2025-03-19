@@ -2227,7 +2227,6 @@ describe('Test all functionalities related to the creation, management, sharing 
   // #region
   it('Delete all created templates', function () {
     cy.loginLecturer()
-
     cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
@@ -2237,6 +2236,9 @@ describe('Test all functionalities related to the creation, management, sharing 
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()
+
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).click()
