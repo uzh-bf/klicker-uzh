@@ -749,9 +749,9 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).contains(
       messages.manage.catalog.accessRESTRICTED
     )
-    cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).click()
+    cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).realClick()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).contains(
       messages.manage.catalog.accessPUBLIC
@@ -1330,9 +1330,9 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.catalog.accessRESTRICTED
     )
-    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).click()
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).realClick()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.catalog.accessPUBLIC
@@ -1401,8 +1401,8 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.catalog.accessPUBLIC
     )
-    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.catalog.accessRESTRICTED

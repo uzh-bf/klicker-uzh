@@ -572,6 +572,17 @@ export const Query = builder.queryType({
         },
       }),
 
+      getSingleElementInstance: asUser.field({
+        nullable: true,
+        type: ElementInstance,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.getSingleElementInstance(args, ctx)
+        },
+      }),
+
       liveQuizLeaderboard: t.field({
         nullable: true,
         type: [LeaderboardEntry],

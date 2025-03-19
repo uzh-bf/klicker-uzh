@@ -135,6 +135,20 @@ export async function getArtificialElementInstance(
   }
 }
 
+export async function getSingleElementInstance(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const instance = await ctx.prisma.elementInstance.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  return instance
+}
+
 export async function manipulateQuestion(
   {
     id,

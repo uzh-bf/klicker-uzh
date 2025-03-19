@@ -1,0 +1,8 @@
+query GetSingleElementInstance($id: Int!) {
+  getSingleElementInstance(id: $id) {
+    id
+    type
+    elementType
+    ...ElementData
+  }
+}

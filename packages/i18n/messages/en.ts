@@ -910,7 +910,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sortBy: 'Sort by...',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
-      questionPreview: 'Question Preview: {question}',
+      elementPreview: 'Element Preview: {element}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

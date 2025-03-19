@@ -494,7 +494,7 @@ function LiveQuiz({
                 <div>
                   {block.elements?.map((instance) => (
                     <Link
-                      href={`/questions/${instance.elementData!.elementId}`}
+                      href={`/instances/${instance.id}`}
                       className="text-sm hover:text-slate-700"
                       key={instance.id}
                       legacyBehavior

@@ -911,7 +911,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sortBy: 'Sortieren nach..',
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
-      questionPreview: 'Fragevorschau: {question}',
+      elementPreview: 'Elementvorschau: {element}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

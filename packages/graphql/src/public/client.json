@@ -206,6 +206,7 @@
    "GetShortnameQuizzes": "c86b1d88eafc68d4e2e9fb3275b4f55f6faace98226406c0f60158cf3a25c1d6",
    "GetSingleAnswerCollection": "b586e9af280f888252c3549bf06d599addb7c0de0a9cd8c4aaca9ce746f069a0",
    "GetSingleCourse": "251ce73860dc130eb691773065379370ffb16f869412b51b50f80ae09e2a2c95",
+   "GetSingleElementInstance": "7cad658d2f8d3d3c27cb3f0a976ed6529a9d1c921cfcd3a3d93dbf64c9dcdf90",
    "GetSingleLiveQuiz": "97fb5bcaec07a3125c0a7fcfed201c3527df2e73e5de9e56f4fcc628d5ee9c11",
    "GetSingleMicroLearning": "06fe0eeae17ac2dd11fae73c539f51d90d39de0ee5647c5dfd7c914cb656b954",
    "GetSinglePracticeQuiz": "bf8f3a0c17e141d53272f28c4fe467728d43905ea5e5c66b2e481a68e51d4870",

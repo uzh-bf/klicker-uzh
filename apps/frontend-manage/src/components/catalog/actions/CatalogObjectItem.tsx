@@ -88,7 +88,7 @@ function CatalogObjectItem({
         className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={() => {
           if (actionsDisabled) {
-            // go to corresponding list view and highlight object
+            // primary action for users with access: go to corresponding list view and highlight object
             if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
               router.push({
                 pathname: '/quizzes',
@@ -106,6 +106,7 @@ function CatalogObjectItem({
             object.isRequested &&
             object.access === ObjectAccess.Restricted
           ) {
+            // primary action for restricted objects with pending request: open request withdrawal modal
             setRequestCancellationModal(true)
           } else if (object.access === ObjectAccess.Public) {
             if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
