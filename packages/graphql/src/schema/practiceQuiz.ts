@@ -8,6 +8,7 @@ import {
   ElementStackInput as ElementStackInputType,
   FlashcardCorrectness,
   StackFeedbackStatus as StackFeedbackStatusType,
+  StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
@@ -100,7 +101,9 @@ export const CaseStudyCaseResponse = CaseStudyCaseResponseRef.implement({
 })
 
 // this type needs to be consistent with the ElementResponseInput type in the stacks service
-export const StackResponseInput = builder.inputType('StackResponseInput', {
+export const StackResponseInputRef =
+  builder.inputRef<StackResponseInputType>('StackResponseInput')
+export const StackResponseInput = StackResponseInputRef.implement({
   fields: (t) => ({
     instanceId: t.int({ required: true }),
     type: t.field({ type: ElementType, required: true }),

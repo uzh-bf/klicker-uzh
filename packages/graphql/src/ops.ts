@@ -1157,12 +1157,6 @@ export type GroupActivityDecision = {
   type: ElementType;
 };
 
-export type GroupActivityDecisionInput = {
-  id: Scalars['Int']['input'];
-  response?: InputMaybe<Scalars['String']['input']>;
-  selectedOptions?: InputMaybe<Array<Scalars['Int']['input']>>;
-};
-
 export type GroupActivityDetails = {
   __typename?: 'GroupActivityDetails';
   activityInstance?: Maybe<GroupActivityInstance>;

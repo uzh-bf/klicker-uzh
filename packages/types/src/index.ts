@@ -3,6 +3,7 @@ import type {
   ElementStatus,
   ElementType,
   ObjectAccess,
+  ParameterType,
   PerformanceLevel,
 } from '@klicker-uzh/prisma'
 
@@ -228,6 +229,62 @@ export type TemplateBlockInput = {
   order: number
   elements: TemplateBlockElementInput[]
 }
+
+export type StackResponseInput = {
+  instanceId: number
+  type: ElementType
+  flashcardResponse?: FlashcardCorrectness | null
+  contentReponse?: boolean | null
+  choicesResponse?: number[] | null
+  numericalResponse?: number | null
+  freeTextResponse?: string | null
+  selectionResponse?: number[] | null
+  caseStudyResponse?: CaseStudyCaseResponse[] | null
+}
+
+export type GroupActivityClueInput = {
+  name: string
+  displayName: string
+  type: ParameterType
+  value: string
+  unit?: string | null
+}
+
+export type GroupActivityGradingDecisionInput = {
+  instanceId: number
+  score: number
+  feedback?: string | null
+}
+
+export type GroupActivityGradingInput = {
+  passed: boolean
+  comment?: string | null
+  grading: GroupActivityGradingDecisionInput[]
+}
+
+export type AvatarSettingsInput = {
+  skinTone: string
+  eyes: string
+  mouth: string
+  hair: string
+  accessory: string
+  hairColor: string
+  clothing: string
+  clothingColor: string
+  facialHair: string
+}
+
+export type SubscriptionKeysInput = {
+  p256dh: string
+  auth: string
+}
+
+export type SubscriptionObjectInput = {
+  endpoint: string
+  expirationTime?: number | null
+  keys: SubscriptionKeysInput
+}
+
 // ----- AVATAR SETTINGS -----
 // #region
 export type AvatarKeyTypes =

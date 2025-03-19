@@ -1,6 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  type GroupActivityClueInput as GroupActivityClueInputType,
   type GroupActivityDecision as GroupActivityDecisionType,
+  type GroupActivityGradingDecisionInput as GroupActivityGradingDecisionInputType,
+  type GroupActivityGradingInput as GroupActivityGradingInputType,
   type GroupActivityGrading as GroupActivityGradingType,
   type GroupActivityResults as GroupActivityResultsType,
   ResponseCorrectness,
@@ -29,18 +32,6 @@ export const ResponseCorrectnessType = builder.enumType(
   'ResponseCorrectnessType',
   {
     values: Object.values(ResponseCorrectness),
-  }
-)
-
-export const GroupActivityDecisionInput = builder.inputType(
-  'GroupActivityDecisionInput',
-  {
-    fields: (t) => ({
-      id: t.int({ required: true }),
-
-      selectedOptions: t.intList({ required: false }),
-      response: t.string({ required: false }),
-    }),
   }
 )
 
@@ -294,38 +285,40 @@ export const GroupActivitySummary = GroupActivitySummaryRef.implement({
   }),
 })
 
-export const GroupActivityClueInput = builder.inputType(
-  'GroupActivityClueInput',
-  {
-    fields: (t) => ({
-      name: t.string({ required: true }),
-      displayName: t.string({ required: true }),
-      type: t.field({ type: ParameterType, required: true }),
-      value: t.string({ required: true }),
-      unit: t.string({ required: false }),
-    }),
-  }
-)
+export const GroupActivityClueInputRef =
+  builder.inputRef<GroupActivityClueInputType>('GroupActivityClueInput')
+export const GroupActivityClueInput = GroupActivityClueInputRef.implement({
+  fields: (t) => ({
+    name: t.string({ required: true }),
+    displayName: t.string({ required: true }),
+    type: t.field({ type: ParameterType, required: true }),
+    value: t.string({ required: true }),
+    unit: t.string({ required: false }),
+  }),
+})
 
-export const GroupActivityGradingDecisionInput = builder.inputType(
-  'GroupActivityGradingDecisionInput',
-  {
+export const GroupActivityGradingDecisionInputRef =
+  builder.inputRef<GroupActivityGradingDecisionInputType>(
+    'GroupActivityGradingDecisionInput'
+  )
+export const GroupActivityGradingDecisionInput =
+  GroupActivityGradingDecisionInputRef.implement({
     fields: (t) => ({
       instanceId: t.int({ required: true }),
       score: t.float({ required: true }),
       feedback: t.string({ required: false }),
     }),
-  }
-)
+  })
 
-export const GroupActivityGradingInput = builder.inputType(
-  'GroupActivityGradingInput',
+export const GroupActivityGradingInputRef =
+  builder.inputRef<GroupActivityGradingInputType>('GroupActivityGradingInput')
+export const GroupActivityGradingInput = GroupActivityGradingInputRef.implement(
   {
     fields: (t) => ({
       passed: t.boolean({ required: true }),
       comment: t.string({ required: false }),
       grading: t.field({
-        type: [GroupActivityGradingDecisionInput],
+        type: [GroupActivityGradingDecisionInputRef],
         required: true,
       }),
     }),
