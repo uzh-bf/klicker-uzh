@@ -824,9 +824,17 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
     ).click()
     cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
     cy.get('[data-cy="new-permission-username-or-email"]').type(
       Cypress.env('LECTURER_INST_EMAIL')
     )
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').clear()
+    cy.get('[data-cy="new-permission-submit"]').should('be.disabled')
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST_EMAIL')
+    )
+    cy.get('[data-cy="new-permission-submit"]').should('not.be.disabled')
     cy.get('[data-cy="new-permission-access-level"]').click()
     cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get('[data-cy="new-permission-access-level"]').contains(

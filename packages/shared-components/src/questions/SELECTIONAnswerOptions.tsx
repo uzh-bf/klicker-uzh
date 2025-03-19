@@ -64,7 +64,7 @@ function SELECTIONAnswerOptions({
           !preview && 'md:grid-cols-2 md:gap-x-6 lg:grid-cols-3'
         )}
       >
-        {Object.entries(responses).map(([inputIndex, selectedValue]) => {
+        {Object.entries(responses).map(([inputIndex, selectedValue], ix) => {
           const selectedLabel = options.answerCollection?.entries?.find(
             (entry) => entry.id === selectedValue
           )?.value
@@ -75,13 +75,15 @@ function SELECTIONAnswerOptions({
               className="flex flex-col"
             >
               <FormLabel
-                required
+                required={ix === 0}
                 label={t('shared.questions.seCorrectAnswerN', {
                   number: Number(inputIndex) + 1,
                 })}
                 labelType="small"
+                className={{ label: 'h-7' }}
               />
               <Select
+                isClearable
                 id={`selection-${elementIx}-field-${Number(inputIndex)}`}
                 instanceId={`selection-${elementIx}-field-${Number(inputIndex)}`}
                 menuPlacement="auto"

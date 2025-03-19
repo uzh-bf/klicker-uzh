@@ -2235,8 +2235,6 @@ describe('Test all functionalities related to the creation, management, sharing 
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()
-
-    cy.loginIndividualCatalyst()
     cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`

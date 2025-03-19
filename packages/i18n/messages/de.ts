@@ -2256,8 +2256,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       cancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
       saveChanges: 'Änderungen speichern',
+      saveMetadata: 'Metadaten speichern',
       successfulCollectionEdit:
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
+      changesImmediateEffect:
+        'Änderungen (und Löschungen) an Antwort-Optionen werden sofort gespeichert und in entsprechende Fragen übernommen. Fragen in bestehenden Aktivitäten müssen über den Element-Editor aktualisiert werden, um allfällige Änderungen zu übernehmen.',
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
       showAnswers: 'Antworten anzeigen',
@@ -2454,8 +2457,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       revokeAccessDisabledTooltip:
         'Der Zugriff kann nicht entzogen werden, da dieser Nutzer die Sammlung aktiv verwendet.',
       noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
-      usernameEmailOrGroupRequired:
-        'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
+      shortnameEmailOrGroupRequired:
+        'Bitte geben Sie einen Kurznamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
       infoTransferOwnershipCATALOG_COLLECTION:
         'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipANSWER_COLLECTION:

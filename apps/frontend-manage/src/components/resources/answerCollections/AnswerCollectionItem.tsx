@@ -12,6 +12,7 @@ import {
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import useAnswerCollectionActionsDropdown from '../../../lib/hooks/useAnswerCollectionActionsDropdown'
 import ObjectPermissionLevel from '../../sharing/ObjectPermissionLevel'
 import ObjectRemovalModal from '../../sharing/ObjectRemovalModal'
@@ -22,12 +23,14 @@ import CollectionDeletionModal from './CollectionDeletionModal'
 
 function AnswerCollectionItem({
   collection,
+  highlighted = false,
   setDeletionSuccess,
   setDeletionFailure,
   setRemovalSuccess,
   setRemovalFailure,
 }: {
   collection: AnswerCollection
+  highlighted?: boolean
   setDeletionSuccess: Dispatch<SetStateAction<boolean>>
   setDeletionFailure: Dispatch<SetStateAction<boolean>>
   setRemovalSuccess: Dispatch<SetStateAction<boolean>>
@@ -57,7 +60,10 @@ function AnswerCollectionItem({
   return (
     <>
       <div
-        className="flex items-center justify-between px-1 py-2 hover:bg-gray-50"
+        className={twMerge(
+          'flex items-center justify-between px-1 py-2 hover:bg-gray-50',
+          highlighted && 'bg-orange-100 hover:bg-orange-200'
+        )}
         data-cy={`answer-collection-${collection.name}`}
       >
         <div className="flex flex-col items-start">

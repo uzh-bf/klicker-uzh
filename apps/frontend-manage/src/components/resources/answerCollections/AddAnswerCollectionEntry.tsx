@@ -36,6 +36,7 @@ function AddAnswerCollectionEntry({
   if (!fieldOpen) {
     return (
       <Button
+        fluid
         onClick={() => {
           setFieldOpen(true)
           setOptionsEditingDisabled(true)
