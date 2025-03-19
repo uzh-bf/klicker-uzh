@@ -41,8 +41,8 @@ function LiveQuizTemplateSubmissionButton({
   const submissionDisabled =
     !quizData ||
     !quizData.settingsProcessed ||
-    !quizData.blocks?.every((block) =>
-      block.elements.every((element) => element.processed)
+    !quizData.blocks?.every(
+      (block) => block.elements?.every((element) => element.processed) ?? false
     )
 
   if (submissionDisabled) {

@@ -3098,6 +3098,7 @@ export async function addObjectToCatalog(
   // return the updated catalog object
   return {
     id: objectInfo.objectId,
+    uuid: objectInfo.objectUuid,
     name: objectInfo.objectName,
     objectType: objectInfo.objectType,
     assignmentId: assignment.id,

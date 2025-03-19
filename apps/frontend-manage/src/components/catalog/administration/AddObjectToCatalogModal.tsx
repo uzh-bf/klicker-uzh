@@ -99,10 +99,15 @@ function AddObjectToCatalogModal({
                   return
                 }
 
-                const modifiedObjectId = data.addObjectToCatalog.id
                 const newObject = data.addObjectToCatalog
+                const modifiedObjectId = newObject.id
+                const modifiedObjectUuid = newObject.uuid
                 const newObjects = prevObjects.getCatalogObjects
-                  .filter((obj) => obj.id !== modifiedObjectId)
+                  .filter((obj) =>
+                    typeof obj.id !== 'undefined' && obj.id !== null
+                      ? obj.id !== modifiedObjectId
+                      : obj.uuid !== modifiedObjectUuid
+                  )
                   .concat(newObject)
 
                 cache.writeQuery({
