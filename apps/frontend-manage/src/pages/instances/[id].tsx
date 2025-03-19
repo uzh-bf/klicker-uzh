@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import {
   ElementType,
-  GetArtificialInstanceDocument,
+  GetSingleElementInstanceDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -14,17 +14,17 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 
-function QuestionDetails() {
+function InstancePreview() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { data, loading } = useQuery(GetArtificialInstanceDocument, {
+  const { data, loading } = useQuery(GetSingleElementInstanceDocument, {
     variables: {
-      elementId: Number(router.query.id),
+      id: Number(router.query.id),
     },
     skip: !router.query.id,
   })
-  const instance = data?.artificialInstance
+  const instance = data?.getSingleElementInstance
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -90,4 +90,4 @@ export function getStaticPaths() {
   }
 }
 
-export default QuestionDetails
+export default InstancePreview

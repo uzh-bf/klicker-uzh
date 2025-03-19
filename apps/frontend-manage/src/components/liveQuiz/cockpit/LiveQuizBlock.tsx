@@ -152,7 +152,7 @@ function LiveQuizBlock({
       {block.elements?.map((instance) => (
         <div key={instance.id}>
           <Link
-            href={`/questions/${instance.elementData!.elementId}`}
+            href={`/instances/${instance.id}`}
             className="text-sm hover:text-slate-700"
             legacyBehavior
             passHref
