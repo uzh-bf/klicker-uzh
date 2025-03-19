@@ -947,7 +947,6 @@ describe('Test all functionalities related to the creation, management, sharing 
         cy.get('[data-cy="same-name-element-warning"]').should('exist')
 
         // check template instance preview
-        cy.get('[data-cy="preview-template-element-button"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(element.content)
 
         // check available elements for replacement
@@ -2227,7 +2226,6 @@ describe('Test all functionalities related to the creation, management, sharing 
   // #region
   it('Delete all created templates', function () {
     cy.loginLecturer()
-
     cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
@@ -2237,6 +2235,9 @@ describe('Test all functionalities related to the creation, management, sharing 
       `[data-cy="delete-template-${this.data.liveQuiz.template1.name}"]`
     ).click()
     cy.get('[data-cy="confirm-template-deletion"]').click()
+
+    cy.loginIndividualCatalyst()
+    cy.get('[data-cy="live-quizzes"]').click()
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).click()
