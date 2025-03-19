@@ -2,6 +2,7 @@ import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import AnswerCollectionItem from './AnswerCollectionItem'
 
@@ -21,6 +22,7 @@ function AnswerCollectionList({
   setRemovalFailure: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
+  const router = useRouter()
 
   if (loading) {
     return <Loader />
@@ -39,6 +41,12 @@ function AnswerCollectionList({
             <div key={`answer-collection-${collection.id}`}>
               <AnswerCollectionItem
                 collection={collection}
+                highlighted={
+                  router.query?.highlight
+                    ? parseInt(router.query.highlight as string) ===
+                      collection.id
+                    : undefined
+                }
                 setDeletionSuccess={setDeletionSuccess}
                 setDeletionFailure={setDeletionFailure}
                 setRemovalSuccess={setRemovalSuccess}

@@ -87,13 +87,27 @@ function CatalogObjectItem({
       <div
         className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={() => {
-          if (
-            actionsDisabled ||
-            (object.isRequested && object.access === ObjectAccess.Restricted)
-          )
-            return
-
-          if (object.access === ObjectAccess.Public) {
+          if (actionsDisabled) {
+            // go to corresponding list view and highlight object
+            if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
+              router.push({
+                pathname: '/quizzes',
+                query: { highlight: object.uuid },
+              })
+            } else if (
+              object.objectType === CatalogObjectType.AnswerCollection
+            ) {
+              router.push({
+                pathname: '/resources/answerCollections',
+                query: { highlight: object.id },
+              })
+            }
+          } else if (
+            object.isRequested &&
+            object.access === ObjectAccess.Restricted
+          ) {
+            setRequestCancellationModal(true)
+          } else if (object.access === ObjectAccess.Public) {
             if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
               // primary action for public templates: create activity with template
               router.push(`/templates/${object.templateId}`)
