@@ -31,6 +31,7 @@ function AnswerCollectionEditModal({
 
   return (
     <Modal
+      escapeDisabled
       open={open}
       onClose={() => {
         setOptionsEditingDisabled(false)
@@ -39,25 +40,28 @@ function AnswerCollectionEditModal({
       }}
       title={t('manage.resources.answerCollection', { name: collection.name })}
       dataCloseButton={{ cy: 'close-answer-collection-edit-modal' }}
-      escapeDisabled
+      className={{ content: 'max-h-[calc(100vh-1.5rem)] overflow-hidden' }}
     >
       <AnswerCollectionMetaForm
         collection={collection}
         setSuccessToast={setSuccessToast}
       />
-      <div className="mt-3 flex flex-col gap-1">
-        <H3 className={{ root: 'mb-0' }}>
-          {t('manage.resources.answerOptions')}
-        </H3>
-        {collection.entries?.some(
-          (entry) => (entry.numSolutionUsages ?? 0) > 0
-        ) ? (
-          <UserNotification
-            message={t('manage.resources.answerOptionUsed')}
-            type="warning"
-            className={{ root: 'mb-2' }}
-          />
-        ) : null}
+      <H3 className={{ root: 'mb-0 mt-2' }}>
+        {t('manage.resources.answerOptions')}
+      </H3>
+      <div className="mb-2 text-sm">
+        {t('manage.resources.changesImmediateEffect')}
+      </div>
+      {collection.entries?.some(
+        (entry) => (entry.numSolutionUsages ?? 0) > 0
+      ) ? (
+        <UserNotification
+          message={t('manage.resources.answerOptionUsed')}
+          type="warning"
+          className={{ root: 'mb-2' }}
+        />
+      ) : null}
+      <div className="my-2 flex max-h-[calc(100vh-37rem)] flex-col gap-1 overflow-y-auto">
         {collection.entries!.map((entry, ix) => (
           <AnswerCollectionOption
             key={`collection-entry-${entry.id}`}
@@ -72,12 +76,12 @@ function AnswerCollectionEditModal({
             setEditDisabled={setOptionsEditingDisabled}
           />
         ))}
-        <AddAnswerCollectionEntry
-          collectionId={collection.id}
-          entries={collection.entries ?? []}
-          setOptionsEditingDisabled={setOptionsEditingDisabled}
-        />
       </div>
+      <AddAnswerCollectionEntry
+        collectionId={collection.id}
+        entries={collection.entries ?? []}
+        setOptionsEditingDisabled={setOptionsEditingDisabled}
+      />
       <Toast
         dismissible
         type="success"

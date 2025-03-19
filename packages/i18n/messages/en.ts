@@ -2226,8 +2226,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       cancelRequest: 'Cancel Request',
       answerCollection: 'Answer Collection: {name}',
       saveChanges: 'Save changes',
+      saveMetadata: 'Save Metadata',
       successfulCollectionEdit:
         'The changes to the answer collection have been saved successfully.',
+      changesImmediateEffect:
+        'Changes to answer options (and deletions) are immediately saved and applied to corresponding questions. Question in existing activities must be updated via the element editor to apply any changes.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
       showAnswers: 'Show Answers',

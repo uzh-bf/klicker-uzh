@@ -2256,8 +2256,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       cancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
       saveChanges: 'Änderungen speichern',
+      saveMetadata: 'Metadaten speichern',
       successfulCollectionEdit:
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
+      changesImmediateEffect:
+        'Änderungen (und Löschungen) an Antwort-Optionen werden sofort gespeichert und in entsprechende Fragen übernommen. Fragen in bestehenden Aktivitäten müssen über den Element-Editor aktualisiert werden, um allfällige Änderungen zu übernehmen.',
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
       showAnswers: 'Antworten anzeigen',
