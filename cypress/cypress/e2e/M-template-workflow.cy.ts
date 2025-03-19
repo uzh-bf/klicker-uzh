@@ -947,7 +947,6 @@ describe('Test all functionalities related to the creation, management, sharing 
         cy.get('[data-cy="same-name-element-warning"]').should('exist')
 
         // check template instance preview
-        cy.get('[data-cy="preview-template-element-button"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(element.content)
 
         // check available elements for replacement
