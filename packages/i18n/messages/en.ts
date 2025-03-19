@@ -2422,8 +2422,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       revokeAccessDisabledTooltip:
         'The access to the answer collection cannot be revoked because this user is actively using the collection.',
       noUserGroupSelected: 'No user group selected',
-      usernameEmailOrGroupRequired:
-        'Please enter a username / email address or select a user group.',
+      shortnameEmailOrGroupRequired:
+        'Please enter a shortname / email address or select a user group.',
       infoTransferOwnershipCATALOG_COLLECTION:
         'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:
