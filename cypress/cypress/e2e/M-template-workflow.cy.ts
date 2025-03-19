@@ -933,7 +933,13 @@ describe('Test all functionalities related to the creation, management, sharing 
     ]
 
     cy.wrap(combinations).each(
-      (element: {
+      ({
+        identifier,
+        content,
+        alternativeContent,
+        availableElements,
+        unavailableElements,
+      }: {
         identifier: string
         content: string
         alternativeContent: string
@@ -941,63 +947,69 @@ describe('Test all functionalities related to the creation, management, sharing 
         unavailableElements: string[]
       }) => {
         cy.get(`[data-cy="live-quiz-template-submit"]`).should('be.disabled')
-        cy.get(
-          `[data-cy="live-quiz-template-element-${element.identifier}"]`
-        ).click()
-        cy.get('[data-cy="same-name-element-warning"]').should('exist')
+        cy.get(`[data-cy="live-quiz-template-element-${identifier}"]`).click()
+        cy.get(`[data-cy="same-name-element-warning-${identifier}"]`).should(
+          'exist'
+        )
 
         // check template instance preview
-        cy.get('[data-cy="student-element-preview"]').contains(element.content)
+        cy.get('[data-cy="student-element-preview"]').contains(content)
 
         // check available elements for replacement
-        cy.get('[data-cy="replace-with-existing-element"]').click()
-        cy.wrap(element.availableElements).each((elementName: string) => {
+        cy.get(
+          `[data-cy="replace-with-existing-element-${identifier}"]`
+        ).click()
+        cy.wrap(availableElements).each((elementName: string) => {
           cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
             'exist'
           )
         })
-        cy.wrap(element.unavailableElements).each((elementName: string) => {
+        cy.wrap(unavailableElements).each((elementName: string) => {
           cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
             'not.exist'
           )
         })
         cy.get(
-          `[data-cy="select-existing-element-${element.availableElements[1]}"]`
+          `[data-cy="select-existing-element-${availableElements[1]}"]`
         ).click()
         cy.get('[data-cy="confirm-select-existing-element"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(
-          element.alternativeContent
+          alternativeContent
         )
-        cy.get('[data-cy="same-name-element-warning"]').should('not.exist')
+        cy.get(`[data-cy="same-name-element-warning-${identifier}"]`).should(
+          'not.exist'
+        )
 
         // check possibility to create a new element
-        cy.get('[data-cy="create-new-element-template"]').click()
-        cy.get('[data-cy="insert-question-text"]').contains(element.content)
+        cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
+        cy.get('[data-cy="insert-question-text"]').contains(content)
         cy.get('[data-cy="insert-question-text"]')
           .click()
           .clear()
-          .type(`${element.content} (NEW)`)
+          .type(`${content} (NEW)`)
         cy.get('[data-cy="save-new-question"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(
-          `${element.content} (NEW)`
+          `${content} (NEW)`
         )
-        cy.get('[data-cy="same-name-element-warning"]').should('not.exist')
+        cy.get(`[data-cy="same-name-element-warning-${identifier}"]`).should(
+          'not.exist'
+        )
 
         // check accepting template instance without changes
-        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
         cy.get('[data-cy="cancel-discard-new-edits"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(
-          `${element.content} (NEW)`
+          `${content} (NEW)`
         )
-        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
         cy.get('[data-cy="confirm-discard-new-edits"]').click()
-        cy.get('[data-cy="student-element-preview"]').contains(element.content)
-        cy.get('[data-cy="same-name-element-warning"]').should('exist')
+        cy.get('[data-cy="student-element-preview"]').contains(content)
+        cy.get(`[data-cy="same-name-element-warning-${identifier}"]`).should(
+          'exist'
+        )
 
         // close the collapsible again
-        cy.get(
-          `[data-cy="live-quiz-template-element-${element.identifier}"]`
-        ).click()
+        cy.get(`[data-cy="live-quiz-template-element-${identifier}"]`).click()
       }
     )
     cy.get(`[data-cy="live-quiz-template-submit"]`).should('not.be.disabled')
@@ -1039,18 +1051,20 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // accept the template instance for the first block
     cy.wrap([
-      this.data.SC.content,
-      this.data.MC.content,
-      this.data.KP.content,
-      this.data.NR.content,
-      this.data.FT.content,
-      this.data.SE.content,
-      this.data.CS.content,
-    ]).each((content: string) => {
-      cy.get('[data-cy="accept-template-element"]').click()
-      cy.get('[data-cy="student-element-preview"]').contains(content)
-      cy.get('[data-cy="next-template-element"]').click()
-    })
+      { content: this.data.SC.content, identifier: '0-0' },
+      { content: this.data.MC.content, identifier: '0-1' },
+      { content: this.data.KP.content, identifier: '0-2' },
+      { content: this.data.NR.content, identifier: '0-3' },
+      { content: this.data.FT.content, identifier: '0-4' },
+      { content: this.data.SE.content, identifier: '0-5' },
+      { content: this.data.CS.content, identifier: '0-6' },
+    ]).each(
+      ({ content, identifier }: { content: string; identifier: string }) => {
+        cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
+        cy.get('[data-cy="student-element-preview"]').contains(content)
+        cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
+      }
+    )
 
     // reload and reset progress
     cy.reload()
@@ -1080,64 +1094,119 @@ describe('Test all functionalities related to the creation, management, sharing 
     )
     cy.get('[data-cy="submit-template-settings"]').click()
     cy.wrap([
-      this.data.SC.content,
-      this.data.MC.content,
-      this.data.KP.content,
-      this.data.NR.content,
-      this.data.FT.content,
-      this.data.SE.content,
-      this.data.CS.content,
-    ]).each((content: string) => {
-      cy.get('[data-cy="accept-template-element"]').click()
-      cy.get('[data-cy="student-element-preview"]').contains(content)
-      cy.get('[data-cy="next-template-element"]').click()
-    })
+      { content: this.data.SC.content, identifier: '0-0' },
+      { content: this.data.MC.content, identifier: '0-1' },
+      { content: this.data.KP.content, identifier: '0-2' },
+      { content: this.data.NR.content, identifier: '0-3' },
+      { content: this.data.FT.content, identifier: '0-4' },
+      { content: this.data.SE.content, identifier: '0-5' },
+      { content: this.data.CS.content, identifier: '0-6' },
+    ]).each(
+      ({ content, identifier }: { content: string; identifier: string }) => {
+        cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
+        cy.get('[data-cy="student-element-preview"]').contains(content)
+        cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
+      }
+    )
 
     // replace the instances in the second block with version 2
     cy.wrap([
-      { title: this.data.SCML2.title, content: this.data.SCML2.content },
-      { title: this.data.MCML2.title, content: this.data.MCML2.content },
-      { title: this.data.KPML2.title, content: this.data.KPML2.content },
-      { title: this.data.NRML2.title, content: this.data.NRML2.content },
-      { title: this.data.FTML2.title, content: this.data.FTML2.content },
-      { title: this.data.SEML2.title, content: this.data.SEML2.content },
-      { title: this.data.CSML2.title, content: this.data.CSML2.content },
-    ]).each((element: { title: string; content: string }) => {
-      cy.get('[data-cy="replace-with-existing-element"]').click()
-      cy.get(`[data-cy="select-existing-element-${element.title}"]`).click()
-      cy.get('[data-cy="confirm-select-existing-element"]').click()
-      cy.get('[data-cy="student-element-preview"]').contains(element.content)
-      cy.get('[data-cy="next-template-element"]').click()
-    })
+      {
+        identifier: '1-0',
+        title: this.data.SCML2.title,
+        content: this.data.SCML2.content,
+      },
+      {
+        identifier: '1-1',
+        title: this.data.MCML2.title,
+        content: this.data.MCML2.content,
+      },
+      {
+        identifier: '1-2',
+        title: this.data.KPML2.title,
+        content: this.data.KPML2.content,
+      },
+      {
+        identifier: '1-3',
+        title: this.data.NRML2.title,
+        content: this.data.NRML2.content,
+      },
+      {
+        identifier: '1-4',
+        title: this.data.FTML2.title,
+        content: this.data.FTML2.content,
+      },
+      {
+        identifier: '1-5',
+        title: this.data.SEML2.title,
+        content: this.data.SEML2.content,
+      },
+      {
+        identifier: '1-6',
+        title: this.data.CSML2.title,
+        content: this.data.CSML2.content,
+      },
+    ]).each(
+      ({
+        identifier,
+        title,
+        content,
+      }: {
+        identifier: string
+        title: string
+        content: string
+      }) => {
+        cy.get(
+          `[data-cy="replace-with-existing-element-${identifier}"]`
+        ).click()
+        cy.get(`[data-cy="select-existing-element-${title}"]`).click()
+        cy.get('[data-cy="confirm-select-existing-element"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(content)
+        cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
+      }
+    )
 
     // create modified versions of the instances in block 3
     cy.wrap([
       {
+        identifier: '2-0',
         newTitle: this.data.activity1.newElements.SC.title,
         newContent: this.data.activity1.newElements.SC.content,
       },
       {
+        identifier: '2-1',
         newTitle: this.data.activity1.newElements.MC.title,
         newContent: this.data.activity1.newElements.MC.content,
       },
       {
+        identifier: '2-2',
         newTitle: this.data.activity1.newElements.KP.title,
         newContent: this.data.activity1.newElements.KP.content,
       },
-    ]).each((element: { newTitle: string; newContent: string }) => {
-      cy.get('[data-cy="create-new-element-template"]').click()
-      cy.get('[data-cy="insert-question-title"]')
-        .click()
-        .clear()
-        .type(element.newTitle)
-      cy.get('[data-cy="insert-question-text"]')
-        .realClick()
-        .clear()
-        .type(element.newContent)
-      cy.get('[data-cy="save-new-question"]').click()
-      cy.get('[data-cy="student-element-preview"]').contains(element.newContent)
-      cy.get('[data-cy="next-template-element"]').click()
-    })
+    ]).each(
+      ({
+        identifier,
+        newTitle,
+        newContent,
+      }: {
+        identifier: string
+        newTitle: string
+        newContent: string
+      }) => {
+        cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
+        cy.get('[data-cy="insert-question-title"]')
+          .click()
+          .clear()
+          .type(newTitle)
+        cy.get('[data-cy="insert-question-text"]')
+          .realClick()
+          .clear()
+          .type(newContent)
+        cy.get('[data-cy="save-new-question"]').click()
+        cy.get('[data-cy="student-element-preview"]').contains(newContent)
+        cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
+      }
+    )
 
     // reload and restore progress, make sure that all inputs persisted
     cy.reload()
@@ -1169,15 +1238,13 @@ describe('Test all functionalities related to the creation, management, sharing 
         identifier: '2-2',
         content: this.data.activity1.newElements.KP.content,
       },
-    ]).each((element: { identifier: string; content: string }) => {
-      cy.get(
-        `[data-cy="live-quiz-template-element-${element.identifier}"]`
-      ).click() // open
-      cy.get('[data-cy="student-element-preview"]').contains(element.content)
-      cy.get(
-        `[data-cy="live-quiz-template-element-${element.identifier}"]`
-      ).click() // close
-    })
+    ]).each(
+      ({ identifier, content }: { identifier: string; content: string }) => {
+        cy.get(`[data-cy="live-quiz-template-element-${identifier}"]`).click() // open
+        cy.get('[data-cy="student-element-preview"]').contains(content)
+        cy.get(`[data-cy="live-quiz-template-element-${identifier}"]`).click() // close
+      }
+    )
 
     // submit the creation of an activity from the template and verify that the live quiz overview is correctly opened
     cy.get(`[data-cy="live-quiz-template-submit"]`).click()
@@ -1459,6 +1526,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     // in first block, check preview & correct replacement options, but keep the template instances
     cy.wrap([
       {
+        identifier: '0-0',
         content: this.data.SC.content,
         availableElements: [this.data.SC3.title],
         unavailableElements: [
@@ -1473,6 +1541,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ],
       },
       {
+        identifier: '0-1',
         content: this.data.MC.content,
         availableElements: [this.data.MC3.title],
         unavailableElements: [
@@ -1487,6 +1556,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ],
       },
       {
+        identifier: '0-2',
         content: this.data.KP.content,
         availableElements: [this.data.KP3.title],
         unavailableElements: [
@@ -1501,6 +1571,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ],
       },
       {
+        identifier: '0-3',
         content: this.data.NR.content,
         availableElements: [this.data.NR3.title],
         unavailableElements: [
@@ -1512,6 +1583,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ],
       },
       {
+        identifier: '0-4',
         content: this.data.FT.content,
         availableElements: [this.data.FT3.title],
         unavailableElements: [
@@ -1523,6 +1595,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ],
       },
       {
+        identifier: '0-5',
         content: this.data.SE.content,
         availableElements: [this.data.SE3.title],
         unavailableElements: [
@@ -1534,6 +1607,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ],
       },
       {
+        identifier: '0-6',
         content: this.data.CS.content,
         availableElements: [this.data.CS3.title],
         unavailableElements: [
@@ -1546,15 +1620,19 @@ describe('Test all functionalities related to the creation, management, sharing 
       },
     ]).each(
       ({
+        identifier,
         content,
         availableElements,
         unavailableElements,
       }: {
+        identifier: string
         content: string
         availableElements: string[]
         unavailableElements: string[]
       }) => {
-        cy.get('[data-cy="replace-with-existing-element"]').click()
+        cy.get(
+          `[data-cy="replace-with-existing-element-${identifier}"]`
+        ).click()
         cy.wrap(availableElements).each((elementName: string) => {
           cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
             'exist'
@@ -1570,15 +1648,16 @@ describe('Test all functionalities related to the creation, management, sharing 
         ).click()
         cy.get('[data-cy="confirm-select-existing-element"]').click()
 
-        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
         cy.get('[data-cy="student-element-preview"]').contains(content)
-        cy.get('[data-cy="next-template-element"]').click()
+        cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
       }
     )
 
     // in second block, check preview & correct replacement options, but create custom version of the elements (custom title & content)
     cy.wrap([
       {
+        identifier: '1-0',
         content: this.data.SCML.content,
         newTitle: this.data.activity2.newElements.SC.title,
         newContent: this.data.activity2.newElements.SC.content,
@@ -1597,6 +1676,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         hasAnswerFeedbacksDisabled: true,
       },
       {
+        identifier: '1-1',
         content: this.data.MCML.content,
         newTitle: this.data.activity2.newElements.MC.title,
         newContent: this.data.activity2.newElements.MC.content,
@@ -1615,6 +1695,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         hasAnswerFeedbacksDisabled: true,
       },
       {
+        identifier: '1-2',
         content: this.data.KPML.content,
         newTitle: this.data.activity2.newElements.KP.title,
         newContent: this.data.activity2.newElements.KP.content,
@@ -1633,6 +1714,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         hasAnswerFeedbacksDisabled: true,
       },
       {
+        identifier: '1-3',
         content: this.data.NRML.content,
         newTitle: this.data.activity2.newElements.NR.title,
         newContent: this.data.activity2.newElements.NR.content,
@@ -1647,6 +1729,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         hasSampleSolutionDisabled: true,
       },
       {
+        identifier: '1-4',
         content: this.data.FTML.content,
         newTitle: this.data.activity2.newElements.FT.title,
         newContent: this.data.activity2.newElements.FT.content,
@@ -1661,6 +1744,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         hasSampleSolutionDisabled: true,
       },
       {
+        identifier: '1-5',
         content: this.data.SEML.content,
         newTitle: this.data.activity2.newElements.SE.title,
         newContent: this.data.activity2.newElements.SE.content,
@@ -1675,6 +1759,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         hasSampleSolutionDisabled: true,
       },
       {
+        identifier: '1-6',
         content: this.data.CSML.content,
         newTitle: this.data.activity2.newElements.CS.title,
         newContent: this.data.activity2.newElements.CS.content,
@@ -1690,6 +1775,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       },
     ]).each(
       ({
+        identifier,
         content,
         newTitle,
         newContent,
@@ -1698,6 +1784,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         hasSampleSolutionDisabled = false,
         hasAnswerFeedbacksDisabled = false,
       }: {
+        identifier: string
         content: string
         newTitle: string
         newContent: string
@@ -1706,10 +1793,12 @@ describe('Test all functionalities related to the creation, management, sharing 
         hasSampleSolutionDisabled?: boolean
         hasAnswerFeedbacksDisabled?: boolean
       }) => {
-        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
         cy.get('[data-cy="student-element-preview"]').contains(content)
 
-        cy.get('[data-cy="replace-with-existing-element"]').click()
+        cy.get(
+          `[data-cy="replace-with-existing-element-${identifier}"]`
+        ).click()
         cy.wrap(availableElements).each((elementName: string) => {
           cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
             'exist'
@@ -1726,7 +1815,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         cy.get('[data-cy="confirm-select-existing-element"]').click()
 
         // verify that certain settings are disabled / hidden and enter new title & content
-        cy.get('[data-cy="create-new-element-template"]').click()
+        cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
         if (hasSampleSolutionDisabled) {
           cy.get('[data-cy="configure-sample-solution"]').should('be.disabled')
         }
@@ -1745,13 +1834,14 @@ describe('Test all functionalities related to the creation, management, sharing 
           .type(newContent)
         cy.get('[data-cy="save-new-question"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(newContent)
-        cy.get('[data-cy="next-template-element"]').click()
+        cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
       }
     )
 
     // in third block, check preview & correct replacement options, replace with existing elements in own library
     cy.wrap([
       {
+        identifier: '2-0',
         content: this.data.SCMLAF.content,
         availableElements: [this.data.SCMLAF3.title],
         contentNew: this.data.SCMLAF3.content,
@@ -1763,6 +1853,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ],
       },
       {
+        identifier: '2-1',
         content: this.data.MCMLAF.content,
         availableElements: [this.data.MCMLAF3.title],
         contentNew: this.data.MCMLAF3.content,
@@ -1774,6 +1865,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ],
       },
       {
+        identifier: '2-2',
         content: this.data.KPMLAF.content,
         availableElements: [this.data.KPMLAF3.title],
         contentNew: this.data.KPMLAF3.content,
@@ -1786,20 +1878,24 @@ describe('Test all functionalities related to the creation, management, sharing 
       },
     ]).each(
       ({
+        identifier,
         content,
         availableElements,
         contentNew,
         unavailableElements,
       }: {
+        identifier
         content: string
         availableElements: string[]
         contentNew: string
         unavailableElements: string[]
       }) => {
-        cy.get('[data-cy="accept-template-element"]').click()
+        cy.get(`[data-cy="accept-template-element-${identifier}"]`).click()
         cy.get('[data-cy="student-element-preview"]').contains(content)
 
-        cy.get('[data-cy="replace-with-existing-element"]').click()
+        cy.get(
+          `[data-cy="replace-with-existing-element-${identifier}"]`
+        ).click()
         cy.wrap(availableElements).each((elementName: string) => {
           cy.get(`[data-cy="select-existing-element-${elementName}"]`).should(
             'exist'
@@ -1815,7 +1911,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         ).click()
         cy.get('[data-cy="confirm-select-existing-element"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(contentNew)
-        cy.get('[data-cy="next-template-element"]').click()
+        cy.get(`[data-cy="next-template-element-${identifier}"]`).click()
       }
     )
 

@@ -24,17 +24,19 @@ import TemplateNewElementModal from './TemplateNewElementModal'
 import { ActivityTemplateElementFormValues } from './types'
 
 function TemplateElementContent({
+  blockIx,
+  elementIx,
   templateId,
   templateElement,
-  firstElement,
   acceptTemplateElement,
   replaceWithExistingElement,
   saveNewElement,
   onNextElement,
 }: {
+  blockIx: number
+  elementIx: number
   templateId: string
   templateElement: ActivityTemplateElementFormValues
-  firstElement: boolean
   acceptTemplateElement: () => void
   replaceWithExistingElement: (elementId: number) => void
   saveNewElement: (formValues: ElementFormTypes) => void
@@ -78,7 +80,7 @@ function TemplateElementContent({
               <H3 className={{ root: 'mb-0' }}>
                 {t('manage.template.availableActions')}
               </H3>
-              {!firstElement ? (
+              {!(blockIx === 0 && elementIx === 0) ? (
                 <Tooltip
                   tooltip={t('manage.template.elementActionsTemplate')}
                   className={{ tooltip: 'max-w-[30rem] text-sm' }}
@@ -92,7 +94,7 @@ function TemplateElementContent({
                 </Tooltip>
               ) : null}
             </div>
-            {firstElement ? (
+            {blockIx === 0 && elementIx === 0 ? (
               <div className="mb-2 text-gray-700">
                 {t('manage.template.elementActionsTemplate')}
               </div>
@@ -118,7 +120,7 @@ function TemplateElementContent({
                     previewExistingInstance && 'border-primary-100 border'
                   ),
                 }}
-                data={{ cy: 'accept-template-element' }}
+                data={{ cy: `accept-template-element-${blockIx}-${elementIx}` }}
               >
                 <Button.Icon icon={faCopy} />
                 <Button.Label>
@@ -140,7 +142,9 @@ function TemplateElementContent({
                     setExistingElementModal(true)
                   }
                 }}
-                data={{ cy: 'replace-with-existing-element' }}
+                data={{
+                  cy: `replace-with-existing-element-${blockIx}-${elementIx}`,
+                }}
               >
                 <Button.Icon icon={faArrowsRotate} />
                 <Button.Label>
@@ -152,7 +156,9 @@ function TemplateElementContent({
                   templateElement.processed && templateElement.useNewElement
                 }
                 onClick={() => setNewElementModal(true)}
-                data={{ cy: 'create-new-element-template' }}
+                data={{
+                  cy: `create-new-element-template-${blockIx}-${elementIx}`,
+                }}
               >
                 <Button.Icon icon={faPen} />
                 <Button.Label>
@@ -167,7 +173,9 @@ function TemplateElementContent({
                   message={t('manage.template.sameNamedElementExists', {
                     elementName: templateElement.instance.elementData.name,
                   })}
-                  data={{ cy: 'same-name-element-warning' }}
+                  data={{
+                    cy: `same-name-element-warning-${blockIx}-${elementIx}`,
+                  }}
                 />
               ) : null}
             </div>
@@ -184,7 +192,7 @@ function TemplateElementContent({
                   className={{
                     root: 'border-primary-100 border bg-gray-100 hover:bg-white',
                   }}
-                  data-cy="preview-template-element-button"
+                  data-cy={`preview-template-element-button-${blockIx}-${elementIx}`}
                 >
                   <Button.Icon icon={faEye} />
                   <Button.Label>
@@ -206,7 +214,7 @@ function TemplateElementContent({
           disabled={!templateElement.processed}
           onClick={onNextElement}
           className={{ root: 'mt-2 self-end' }}
-          data={{ cy: 'next-template-element' }}
+          data={{ cy: `next-template-element-${blockIx}-${elementIx}` }}
         >
           <Button.Icon icon={faArrowRight} />
           <Button.Label>{t('manage.template.nextElement')}</Button.Label>

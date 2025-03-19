@@ -225,7 +225,8 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                 }}
               >
                 <TemplateElementContent
-                  firstElement={blockIx === 0 && elementIx === 0}
+                  blockIx={blockIx}
+                  elementIx={elementIx}
                   templateId={template.id}
                   templateElement={element}
                   acceptTemplateElement={() => {
