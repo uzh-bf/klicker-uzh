@@ -218,6 +218,7 @@ function ElementCreation({
             selection={selection}
             resetSelection={resetSelection}
             editMode={editMode === WizardMode.LiveQuiz}
+            duplicationMode={duplicationMode === WizardMode.LiveQuiz}
           />
         )}
         {creationMode === WizardMode.Microlearning && (
@@ -238,6 +239,7 @@ function ElementCreation({
             selection={selection}
             resetSelection={resetSelection}
             editMode={editMode === WizardMode.Microlearning}
+            duplicationMode={duplicationMode === WizardMode.Microlearning}
           />
         )}
         {(creationMode === WizardMode.PracticeQuiz ||
@@ -258,8 +260,9 @@ function ElementCreation({
             }
             selection={selection}
             resetSelection={resetSelection}
-            editMode={editMode === WizardMode.PracticeQuiz}
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
+            editMode={editMode === WizardMode.PracticeQuiz}
+            duplicationMode={duplicationMode === WizardMode.PracticeQuiz}
           />
         )}
         {creationMode === WizardMode.GroupActivity && (
@@ -272,6 +275,8 @@ function ElementCreation({
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
             }
+            editMode={editMode === WizardMode.GroupActivity}
+            duplicationMode={duplicationMode === WizardMode.GroupActivity}
           />
         )}
       </div>

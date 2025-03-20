@@ -87,6 +87,7 @@ interface LiveQuizWizardProps {
   resetSelection: () => void
   closeWizard: () => void
   editMode: boolean
+  duplicationMode: boolean
 }
 
 function LiveQuizWizard({
@@ -97,6 +98,7 @@ function LiveQuizWizard({
   resetSelection,
   closeWizard,
   editMode,
+  duplicationMode,
 }: LiveQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -233,6 +235,8 @@ function LiveQuizWizard({
                   'options' in element.elementData
                     ? (element.elementData.options.hasSampleSolution ?? false)
                     : true,
+                existingInstanceId: element.id,
+                duplicateInstance: duplicationMode,
               }
             }),
           }

@@ -806,7 +806,9 @@ export type ElementInstance = {
 export type ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActivityEvaluationData | ContentActivityEvaluationData | FlashcardActivityEvaluationData | FreeTextActivityEvaluationData | NumericalActivityEvaluationData | SelectionActivityEvaluationData;
 
 export type ElementInstanceInput = {
+  duplicateInstance: Scalars['Boolean']['input'];
   elementId: Scalars['Int']['input'];
+  existingInstanceId?: InputMaybe<Scalars['Int']['input']>;
   order: Scalars['Int']['input'];
 };
 

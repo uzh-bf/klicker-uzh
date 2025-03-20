@@ -66,6 +66,8 @@ export const ElementInstanceInput = ElementInstanceInputRef.implement({
   fields: (t) => ({
     elementId: t.int({ required: true }),
     order: t.int({ required: true }),
+    existingInstanceId: t.int({ required: false }),
+    duplicateInstance: t.boolean({ required: true }),
   }),
 })
 

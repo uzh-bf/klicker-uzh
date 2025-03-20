@@ -728,7 +728,9 @@ type ElementInstance {
 union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActivityEvaluationData | ContentActivityEvaluationData | FlashcardActivityEvaluationData | FreeTextActivityEvaluationData | NumericalActivityEvaluationData | SelectionActivityEvaluationData
 
 input ElementInstanceInput {
+  duplicateInstance: Boolean!
   elementId: Int!
+  existingInstanceId: Int
   order: Int!
 }
 

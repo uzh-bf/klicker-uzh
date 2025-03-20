@@ -64,6 +64,8 @@ function LiveQuizCreationBlock({
               title: item.title,
               type: item.questionType,
               hasSampleSolution: item.hasSampleSolution,
+              existingInstanceId: null,
+              duplicateInstance: false,
             },
           ],
         })

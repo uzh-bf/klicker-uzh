@@ -61,6 +61,7 @@ interface MicroLearningWizardProps {
   resetSelection: () => void
   closeWizard: () => void
   editMode: boolean
+  duplicationMode: boolean
 }
 
 function MicroLearningWizard({
@@ -71,6 +72,7 @@ function MicroLearningWizard({
   resetSelection,
   closeWizard,
   editMode,
+  duplicationMode,
 }: MicroLearningWizardProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -239,6 +241,8 @@ function MicroLearningWizard({
                   'options' in element.elementData
                     ? (element.elementData.options.hasSampleSolution ?? false)
                     : true,
+                existingInstanceId: element.id,
+                duplicateInstance: duplicationMode,
               }
             }),
           }

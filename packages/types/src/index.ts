@@ -75,6 +75,8 @@ export type ElementStackInput = {
 export type ElementInstanceInput = {
   elementId: number
   order: number
+  existingInstanceId: number | null
+  duplicateInstance: boolean
 }
 
 export type CaseStudyCriterionResponse = {
