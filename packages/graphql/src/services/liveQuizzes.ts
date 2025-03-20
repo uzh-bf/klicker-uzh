@@ -438,14 +438,25 @@ export async function manipulateLiveQuiz(
     }
   }
 
-  // in EDIT mode - instances that should be kept in the activity on editing
-  const persistentInstanceIds = blocks.flatMap((block) =>
-    block.elements
-      .filter(
-        (element) =>
-          element.existingInstanceId !== null && !element.duplicateInstance
-      )
-      .map((element) => element.existingInstanceId!)
+  // in EDIT mode - compute map between id of instance that is kept and the new order attribute
+  const persistentInstanceOrderMap = blocks.reduce<Record<number, number>>(
+    (acc, block) => {
+      block.elements
+        .filter(
+          (element) =>
+            element.existingInstanceId !== null && !element.duplicateInstance
+        )
+        .forEach((element) => {
+          acc[element.existingInstanceId!] = element.order
+        })
+      return acc
+    },
+    {}
+  )
+
+  // extract the ids of all instances that should be kept in the activity
+  const persistentInstanceIds = Object.keys(persistentInstanceOrderMap).map(
+    (id) => parseInt(id)
   )
 
   // fetch instances that should be kept in the activity
@@ -530,9 +541,165 @@ export async function manipulateLiveQuiz(
     {}
   )
 
-  // TODO: extract logic here
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
-  const createOrUpdateJSON = {}
+  const createOrUpdateJSON = {
+    name: name.trim(),
+    displayName: displayName.trim(),
+    description,
+    pointsMultiplier: multiplier,
+    defaultPoints: defaultPoints ?? undefined,
+    defaultCorrectPoints: defaultCorrectPoints ?? undefined,
+    maxBonusPoints: maxBonusPoints ?? undefined,
+    timeToZeroBonus: timeToZeroBonus ?? undefined,
+    isGamificationEnabled,
+    isConfusionFeedbackEnabled,
+    isLiveQAEnabled,
+    isModerationEnabled,
+    blocks: {
+      create: blocks.map((block) => {
+        return {
+          order: block.order,
+          timeLimit: block.timeLimit,
+          elements: {
+            connectOrCreate: block.elements.map((instance) => {
+              // ! Case 1: (edit mode) keep existing instance without modification
+              if (
+                instance.existingInstanceId !== null &&
+                !instance.duplicateInstance
+              ) {
+                // verify that the instance is well-defined and will be connected
+                if (
+                  !persistentInstances.find(
+                    (i) => i.id === instance.existingInstanceId
+                  )
+                ) {
+                  throw new GraphQLError(
+                    'Instance that was required for connection not found'
+                  )
+                }
+
+                return {
+                  where: { id: instance.existingInstanceId },
+                  // dummy content - case should never occur
+                  create: {
+                    elementType: ElementType.SC,
+                    migrationId: uuidv4(),
+                    order: instance.order,
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    elementData: {} as ElementData,
+                    options: {},
+                    results: {} as ElementInstanceResults,
+                    anonymousResults: {} as ElementInstanceResults,
+                    instanceStatistics: undefined,
+                    element: {
+                      connect: { id: -1 },
+                    },
+                    owner: {
+                      connect: { id: ctx.user.sub },
+                    },
+                  },
+                }
+              }
+
+              // ! Case 2: (duplication mode) duplicate existing instance and reset results & instance statistics
+              else if (
+                instance.existingInstanceId !== null &&
+                instance.duplicateInstance
+              ) {
+                // verify that the instance is well-defined and contained in the ones selected for duplication
+                const existingInstance = duplicationInstances.find(
+                  (i) => i.id === instance.existingInstanceId
+                )
+                if (!existingInstance) {
+                  throw new GraphQLError(
+                    'Instance that was required for duplication not found'
+                  )
+                }
+
+                // create new instance based on existing instance (with empty results and empty statistics)
+                const initialResults = getInitialInstanceResults(
+                  existingInstance.elementData
+                )
+                return {
+                  where: { id: -1 },
+                  create: {
+                    elementType: existingInstance.elementType,
+                    migrationId: uuidv4(),
+                    order: instance.order,
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    elementData: existingInstance.elementData,
+                    options: {
+                      pointsMultiplier:
+                        multiplier *
+                        existingInstance.elementData.pointsMultiplier,
+                    },
+                    results: initialResults,
+                    anonymousResults: initialResults,
+                    instanceStatistics: {
+                      create: getInitialInstanceStatistics(
+                        ElementInstanceType.LIVE_QUIZ
+                      ),
+                    },
+                    element: {
+                      connect: { id: existingInstance.elementId },
+                    },
+                    owner: {
+                      connect: { id: ctx.user.sub },
+                    },
+                  },
+                }
+              }
+
+              // ! Case 3: (creation / edit) create new instance based on database element
+              else {
+                const element = elementMap[instance.elementId]!
+
+                // if the element is not found, throw an error
+                if (!element) {
+                  throw new GraphQLError(
+                    'Element that was required for instance creation not found'
+                  )
+                }
+
+                const elementData = processElementData(element)
+                const initialResults = getInitialInstanceResults(elementData)
+
+                return {
+                  where: { id: -1 },
+                  create: {
+                    elementType: element.type,
+                    migrationId: uuidv4(),
+                    order: instance.order,
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    elementData: elementData,
+                    options: {
+                      pointsMultiplier: multiplier * element.pointsMultiplier,
+                    },
+                    results: initialResults,
+                    anonymousResults: initialResults,
+                    instanceStatistics: {
+                      create: getInitialInstanceStatistics(
+                        ElementInstanceType.LIVE_QUIZ
+                      ),
+                    },
+                    element: {
+                      connect: { id: element.id },
+                    },
+                    owner: {
+                      connect: { id: ctx.user.sub },
+                    },
+                  },
+                }
+              }
+            }),
+          },
+        }
+      }),
+    },
+    owner: {
+      connect: { id: ctx.user.sub },
+    },
+  }
 
   const activity = await ctx.prisma.$transaction(async (prisma) => {
     // delete all instances that are not used anymore
@@ -542,187 +709,30 @@ export async function manipulateLiveQuiz(
       },
     })
 
-    // disconnect all instances that should be kept in edit mode
-    await prisma.elementInstance.updateMany({
-      where: {
-        id: { in: persistentInstanceIds },
-      },
-      data: {
-        elementBlockId: null,
-      },
-    })
+    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+    for (const instanceId of persistentInstanceIds) {
+      await prisma.elementInstance.update({
+        where: {
+          id: instanceId,
+        },
+        data: {
+          elementBlockId: null,
+          order: persistentInstanceOrderMap[instanceId],
+        },
+      })
+    }
 
     // delete all blocks
-    prisma.elementBlock.deleteMany({
+    await prisma.elementBlock.deleteMany({
       where: {
         id: { in: blocksToDelete },
       },
     })
 
-    // TODO: re-create blocks and link existing instance / create new instances
-
-    return prisma.liveQuiz.upsert({
+    return await prisma.liveQuiz.upsert({
       where: { id: id ?? uuidv4() },
       create: {
-        // TODO: extract this logic to createOrUpdateJSON again
-        name: name.trim(),
-        displayName: displayName.trim(),
-        description,
-        pointsMultiplier: multiplier,
-        defaultPoints: defaultPoints ?? undefined,
-        defaultCorrectPoints: defaultCorrectPoints ?? undefined,
-        maxBonusPoints: maxBonusPoints ?? undefined,
-        timeToZeroBonus: timeToZeroBonus ?? undefined,
-        isGamificationEnabled,
-        isConfusionFeedbackEnabled,
-        isLiveQAEnabled,
-        isModerationEnabled,
-        blocks: {
-          create: blocks.map((block) => {
-            return {
-              order: block.order,
-              timeLimit: block.timeLimit,
-              elements: {
-                connectOrCreate: block.elements.map((instance) => {
-                  // ! Case 1: (edit mode) keep existing instance without modification
-                  if (
-                    instance.existingInstanceId !== null &&
-                    !instance.duplicateInstance
-                  ) {
-                    // verify that the instance is well-defined and will be connected
-                    if (
-                      !persistentInstances.find(
-                        (i) => i.id === instance.existingInstanceId
-                      )
-                    ) {
-                      throw new GraphQLError(
-                        'Instance that was required for connection not found'
-                      )
-                    }
-
-                    return {
-                      where: { id: instance.existingInstanceId },
-                      // dummy content - case should never occur
-                      create: {
-                        elementType: ElementType.SC,
-                        migrationId: uuidv4(),
-                        order: instance.order,
-                        type: ElementInstanceType.LIVE_QUIZ,
-                        elementData: {} as ElementData,
-                        options: {},
-                        results: {} as ElementInstanceResults,
-                        anonymousResults: {} as ElementInstanceResults,
-                        instanceStatistics: undefined,
-                        element: {
-                          connect: { id: -1 },
-                        },
-                        owner: {
-                          connect: { id: ctx.user.sub },
-                        },
-                      },
-                    }
-                  }
-
-                  // ! Case 2: (duplication mode) duplicate existing instance and reset results & instance statistics
-                  else if (
-                    instance.existingInstanceId !== null &&
-                    instance.duplicateInstance
-                  ) {
-                    // verify that the instance is well-defined and contained in the ones selected for duplication
-                    const existingInstance = duplicationInstances.find(
-                      (i) => i.id === instance.existingInstanceId
-                    )
-                    if (!existingInstance) {
-                      throw new GraphQLError(
-                        'Instance that was required for duplication not found'
-                      )
-                    }
-
-                    // create new instance based on existing instance (with empty results and empty statistics)
-                    const initialResults = getInitialInstanceResults(
-                      existingInstance.elementData
-                    )
-                    return {
-                      where: { id: -1 },
-                      create: {
-                        elementType: existingInstance.elementType,
-                        migrationId: existingInstance.migrationId,
-                        order: instance.order,
-                        type: ElementInstanceType.LIVE_QUIZ,
-                        elementData: existingInstance.elementData,
-                        options: {
-                          pointsMultiplier:
-                            multiplier *
-                            existingInstance.elementData.pointsMultiplier,
-                        },
-                        results: initialResults,
-                        anonymousResults: initialResults,
-                        instanceStatistics: {
-                          create: getInitialInstanceStatistics(
-                            ElementInstanceType.LIVE_QUIZ
-                          ),
-                        },
-                        element: {
-                          connect: { id: existingInstance.elementId },
-                        },
-                        owner: {
-                          connect: { id: ctx.user.sub },
-                        },
-                      },
-                    }
-                  }
-
-                  // ! Case 3: (creation / edit) create new instance based on database element
-                  else {
-                    const element = elementMap[instance.elementId]!
-
-                    // if the element is not found, throw an error
-                    if (!element) {
-                      throw new GraphQLError(
-                        'Element that was required for instance creation not found'
-                      )
-                    }
-
-                    const elementData = processElementData(element)
-                    const initialResults =
-                      getInitialInstanceResults(elementData)
-
-                    return {
-                      where: { id: -1 },
-                      create: {
-                        elementType: element.type,
-                        migrationId: uuidv4(),
-                        order: instance.order,
-                        type: ElementInstanceType.LIVE_QUIZ,
-                        elementData: elementData,
-                        options: {
-                          pointsMultiplier:
-                            multiplier * element.pointsMultiplier,
-                        },
-                        results: initialResults,
-                        anonymousResults: initialResults,
-                        instanceStatistics: {
-                          create: getInitialInstanceStatistics(
-                            ElementInstanceType.LIVE_QUIZ
-                          ),
-                        },
-                        element: {
-                          connect: { id: element.id },
-                        },
-                        owner: {
-                          connect: { id: ctx.user.sub },
-                        },
-                      },
-                    }
-                  }
-                }),
-              },
-            }
-          }),
-        },
-        owner: {
-          connect: { id: ctx.user.sub },
-        },
+        ...createOrUpdateJSON,
         course:
           courseId !== null
             ? {
