@@ -536,10 +536,10 @@ export async function manipulateLiveQuiz(
   if (dbElements.length !== uniqueElements.size) {
     throw new GraphQLError('Not all elements could be found')
   }
-  const elementMap = dbElements.reduce<Record<number, Element>>(
-    (acc, elem) => ({ ...acc, [elem.id]: elem }),
-    {}
-  )
+  const elementMap = dbElements.reduce<Record<number, Element>>((acc, elem) => {
+    acc[elem.id] = elem
+    return acc
+  }, {})
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
