@@ -12,8 +12,8 @@ import {
 } from '@klicker-uzh/prisma'
 import {
   ElementInstanceResults,
+  type ElementStackInput,
   ResponseCorrectness,
-  type StackInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -936,7 +936,7 @@ interface CreateGroupActivityArgs {
   startDate: Date
   endDate: Date
   clues: ClueInput[]
-  stack: StackInput
+  stack: ElementStackInput
 }
 
 export async function manipulateGroupActivity(

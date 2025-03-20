@@ -9,6 +9,7 @@ import {
   ElementBlock,
   ElementBlockStatus,
   ElementInstance,
+  ElementInstanceType,
   ElementType,
   LeaderboardType,
   PublicationStatus,
@@ -560,6 +561,7 @@ export async function manipulateLiveQuiz(
             connectOrCreate: block.elements.map((instance) =>
               getActivityInstanceConnectOrCreate({
                 instance,
+                instanceType: ElementInstanceType.LIVE_QUIZ,
                 activityMultiplier: multiplier,
                 persistentInstances,
                 duplicationInstances,

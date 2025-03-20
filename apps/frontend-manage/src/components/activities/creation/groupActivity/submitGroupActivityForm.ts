@@ -71,6 +71,8 @@ async function submitGroupActivityForm({
             elements: values.stack.elements.map((element, ix) => ({
               elementId: element.id,
               order: ix,
+              existingInstanceId: element.existingInstanceId,
+              duplicateInstance: element.duplicateInstance,
             })),
             order: 0,
           },

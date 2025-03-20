@@ -2,7 +2,6 @@ import {
   type AnswerCollectionEntry,
   type Element,
   type ElementInstance,
-  ElementInstanceType,
   ElementType,
   ElementInstanceType as PrismaElementInstanceType,
   ElementType as PrismaElementType,
@@ -370,6 +369,7 @@ export function getInitialInstanceStatistics(type: PrismaElementInstanceType) {
 
 export function getActivityInstanceConnectOrCreate({
   instance,
+  instanceType,
   activityMultiplier,
   persistentInstances,
   duplicationInstances,
@@ -377,6 +377,7 @@ export function getActivityInstanceConnectOrCreate({
   userId,
 }: {
   instance: ElementInstanceInput
+  instanceType: PrismaElementInstanceType
   activityMultiplier: number
   persistentInstances: ElementInstance[]
   duplicationInstances: ElementInstance[]
@@ -399,7 +400,7 @@ export function getActivityInstanceConnectOrCreate({
         elementType: ElementType.SC,
         migrationId: uuidv4(),
         order: instance.order,
-        type: ElementInstanceType.LIVE_QUIZ,
+        type: instanceType,
         elementData: {} as ElementData,
         options: {},
         results: {} as ElementInstanceResults,
@@ -435,7 +436,7 @@ export function getActivityInstanceConnectOrCreate({
         elementType: existingInstance.elementType,
         migrationId: uuidv4(),
         order: instance.order,
-        type: ElementInstanceType.LIVE_QUIZ,
+        type: instanceType,
         elementData: existingInstance.elementData,
         options: {
           pointsMultiplier:
@@ -444,7 +445,7 @@ export function getActivityInstanceConnectOrCreate({
         results: initialResults,
         anonymousResults: initialResults,
         instanceStatistics: {
-          create: getInitialInstanceStatistics(ElementInstanceType.LIVE_QUIZ),
+          create: getInitialInstanceStatistics(instanceType),
         },
         element: {
           connect: { id: existingInstance.elementId },
@@ -476,7 +477,7 @@ export function getActivityInstanceConnectOrCreate({
         elementType: element.type,
         migrationId: uuidv4(),
         order: instance.order,
-        type: ElementInstanceType.LIVE_QUIZ,
+        type: instanceType,
         elementData: elementData,
         options: {
           pointsMultiplier: activityMultiplier * element.pointsMultiplier,
@@ -484,7 +485,7 @@ export function getActivityInstanceConnectOrCreate({
         results: initialResults,
         anonymousResults: initialResults,
         instanceStatistics: {
-          create: getInitialInstanceStatistics(ElementInstanceType.LIVE_QUIZ),
+          create: getInitialInstanceStatistics(instanceType),
         },
         element: {
           connect: { id: element.id },

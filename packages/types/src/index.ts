@@ -40,25 +40,6 @@ export enum ActivityType {
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
-export type StackInput = {
-  displayName?: string | null
-  description?: string | null
-  order: number
-  elements: {
-    elementId: number
-    order: number
-  }[]
-}
-
-export type BlockInput = {
-  timeLimit?: number | null
-  order: number
-  elements: {
-    elementId: number
-    order: number
-  }[]
-}
-
 export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
@@ -67,8 +48,8 @@ export type ElementBlockInput = {
 
 export type ElementStackInput = {
   order: number
-  displayName?: string
-  description?: string
+  displayName?: string | null
+  description?: string | null
   elements: ElementInstanceInput[]
 }
 

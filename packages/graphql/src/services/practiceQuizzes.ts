@@ -6,7 +6,7 @@ import {
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
-import type { StackInput } from '@klicker-uzh/types'
+import type { ElementStackInput } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
@@ -175,7 +175,7 @@ interface ManipulatePracticeQuizArgs {
   name: string
   displayName: string
   description?: string | null
-  stacks: StackInput[]
+  stacks: ElementStackInput[]
   courseId: string
   multiplier: number
   order: ElementOrderType

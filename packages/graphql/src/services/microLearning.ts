@@ -4,7 +4,7 @@ import {
   ElementStackType,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
-import type { StackInput } from '@klicker-uzh/types'
+import type { ElementStackInput } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
@@ -169,7 +169,7 @@ interface ManipulateMicroLearningArgs {
   name: string
   displayName: string
   description?: string | null
-  stacks: StackInput[]
+  stacks: ElementStackInput[]
   courseId: string
   multiplier: number
   startDate: Date
