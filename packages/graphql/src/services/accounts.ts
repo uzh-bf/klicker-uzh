@@ -2,7 +2,7 @@ import * as DB from '@klicker-uzh/prisma'
 import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
-  getInitialElementResults,
+  getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
@@ -1304,17 +1304,20 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
             randomSelection,
             elements: {
               create: questions.map((element, elementIx) => {
+                const elementData = processElementData(element)
+                const initialResults = getInitialInstanceResults(elementData)
+
                 return {
                   migrationId: uuidv4(),
                   order: elementIx,
                   type: DB.ElementInstanceType.LIVE_QUIZ,
                   elementType: element.type,
-                  elementData: processElementData(element),
+                  elementData,
                   options: {
                     pointsMultiplier: quizMultiplier * element.pointsMultiplier,
                   },
-                  results: getInitialElementResults(element),
-                  anonymousResults: getInitialElementResults(element),
+                  results: initialResults,
+                  anonymousResults: initialResults,
                   instanceStatistics: {
                     create: getInitialInstanceStatistics(
                       DB.ElementInstanceType.LIVE_QUIZ

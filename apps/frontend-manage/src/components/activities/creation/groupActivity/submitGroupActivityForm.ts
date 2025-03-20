@@ -7,7 +7,6 @@ interface GroupActivityFormSubmissionProps {
   values: GroupActivityFormValues
   createGroupActivity: any
   editGroupActivity: any
-  setEditMode: (editMode: boolean) => void
   setIsWizardCompleted: (isCompleted: boolean) => void
   setErrorToastOpen: (isOpen: boolean) => void
   setSelectedCourseId: (courseId: string | undefined) => void
@@ -18,7 +17,6 @@ async function submitGroupActivityForm({
   values,
   createGroupActivity,
   editGroupActivity,
-  setEditMode,
   setIsWizardCompleted,
   setErrorToastOpen,
   setSelectedCourseId,
@@ -41,6 +39,8 @@ async function submitGroupActivityForm({
             elements: values.stack.elements.map((element, ix) => ({
               elementId: element.id,
               order: ix,
+              existingInstanceId: element.existingInstanceId,
+              duplicateInstance: element.duplicateInstance,
             })),
             order: 0,
           },
@@ -71,6 +71,8 @@ async function submitGroupActivityForm({
             elements: values.stack.elements.map((element, ix) => ({
               elementId: element.id,
               order: ix,
+              existingInstanceId: element.existingInstanceId,
+              duplicateInstance: element.duplicateInstance,
             })),
             order: 0,
           },
@@ -89,12 +91,10 @@ async function submitGroupActivityForm({
 
     if (success) {
       setSelectedCourseId(values.courseId)
-      setEditMode(!!id)
       setIsWizardCompleted(true)
     }
   } catch (error) {
     console.log(error)
-    setEditMode(!!id)
     setErrorToastOpen(true)
   }
 }

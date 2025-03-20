@@ -7,7 +7,7 @@ import {
   TemplateBlockInput,
 } from '@klicker-uzh/types'
 import {
-  getInitialElementResults,
+  getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
@@ -1945,15 +1945,15 @@ export async function createLiveQuizFromTemplate(
               timeLimit: block.timeLimit,
               elements: {
                 create: block.elements.map((entry) => {
-                  const processedElementData = processElementData(entry.element)
-                  const initialResults = getInitialElementResults(entry.element)
+                  const elementData = processElementData(entry.element)
+                  const initialResults = getInitialInstanceResults(elementData)
 
                   return {
                     elementType: entry.element.type,
                     migrationId: uuidv4(),
                     order: entry.order,
                     type: DB.ElementInstanceType.LIVE_QUIZ,
-                    elementData: processedElementData,
+                    elementData,
                     options: {
                       pointsMultiplier:
                         templateLiveQuiz.pointsMultiplier *

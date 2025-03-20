@@ -683,7 +683,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  it('Verify from a student perspective that all live quizzes have been correctly updates', function () {
+  it('Verify from a student perspective that all live quizzes have been correctly updated', function () {
     cy.loginStudent()
 
     // check out first live quiz with original content
@@ -713,7 +713,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  it('Verify from a student perspective that all practice quizzes have been correctly updates', function () {
+  it('Verify from a student perspective that all practice quizzes have been correctly updated', function () {
     cy.loginStudent()
 
     // check out the first practice quiz with original content
@@ -755,7 +755,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  it('Verify from a student perspective that all microlearnings have been correctly updates', function () {
+  it('Verify from a student perspective that all microlearnings have been correctly updated', function () {
     cy.loginStudent()
 
     // check out the first microlearning with original content
@@ -794,7 +794,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  it('Verify from a student perspective that all group activities have been correctly updates', function () {
+  it('Verify from a student perspective that all group activities have been correctly updated', function () {
     cy.loginStudent()
 
     // check out the first group activity with original content

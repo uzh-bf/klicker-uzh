@@ -40,41 +40,24 @@ export enum ActivityType {
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
-export type StackInput = {
-  displayName?: string | null
-  description?: string | null
-  order: number
-  elements: {
-    elementId: number
-    order: number
-  }[]
-}
-
-export type BlockInput = {
-  timeLimit?: number | null
-  order: number
-  elements: {
-    elementId: number
-    order: number
-  }[]
-}
-
 export type ElementBlockInput = {
   order: number
-  timeLimit?: number
+  timeLimit?: number | null
   elements: ElementInstanceInput[]
 }
 
 export type ElementStackInput = {
   order: number
-  displayName?: string
-  description?: string
+  displayName?: string | null
+  description?: string | null
   elements: ElementInstanceInput[]
 }
 
 export type ElementInstanceInput = {
   elementId: number
   order: number
+  existingInstanceId?: number | null
+  duplicateInstance: boolean
 }
 
 export type CaseStudyCriterionResponse = {
@@ -593,7 +576,7 @@ export type CaseStudyElementData = IElementData<
   ElementOptionsCaseStudy
 >
 
-export type AllElementTypeData =
+export type ElementData =
   | ChoicesElementData
   | FreeTextElementData
   | NumericalElementData

@@ -1,19 +1,15 @@
 import {
-  type Element,
   ElementInstanceType,
   ElementStackType,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
-import type { StackInput } from '@klicker-uzh/types'
-import {
-  getInitialElementResults,
-  getInitialInstanceStatistics,
-  processElementData,
-} from '@klicker-uzh/util'
+import type { ElementStackInput } from '@klicker-uzh/types'
+import { getActivityInstanceConnectOrCreate } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { splitActivityInstances } from './liveQuizzes.js'
 import { computeStackEvaluation } from './stacks.js'
 
 interface GetMicroLearningArgs {
@@ -169,7 +165,7 @@ interface ManipulateMicroLearningArgs {
   name: string
   displayName: string
   description?: string | null
-  stacks: StackInput[]
+  stacks: ElementStackInput[]
   courseId: string
   multiplier: number
   startDate: Date
@@ -190,76 +186,58 @@ export async function manipulateMicroLearning(
   }: ManipulateMicroLearningArgs,
   ctx: ContextWithUser
 ) {
+  // in EDIT mode - validate that the microlearning exists and is not published
   if (id) {
-    // find all instances belonging to the old microlearning and delete them as the content of the questions might have changed
-    const oldElement = await ctx.prisma.microLearning.findUnique({
+    const existingActivity = await ctx.prisma.microLearning.findUnique({
       where: {
         id,
         ownerId: ctx.user.sub,
         isDeleted: false,
       },
-      include: {
-        stacks: {
-          include: {
-            elements: true,
-          },
-        },
-      },
     })
 
-    if (!oldElement) {
-      throw new GraphQLError('MicroLearning not found')
+    if (!existingActivity) {
+      throw new GraphQLError('Microlearning not found')
     }
     if (
-      oldElement.status === PublicationStatus.PUBLISHED ||
-      oldElement.status === PublicationStatus.ENDED
+      existingActivity.status === PublicationStatus.PUBLISHED ||
+      existingActivity.status === PublicationStatus.ENDED
     ) {
-      throw new GraphQLError(
-        'Cannot edit a published or completed microLearning'
-      )
+      throw new GraphQLError('Cannot edit a published or ended microlearning')
     }
+  }
 
-    await ctx.prisma.microLearning.update({
-      where: { id },
-      data: {
-        stacks: {
-          deleteMany: {},
+  // get required splits of instances based on provided stacks values
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
+
+  // in EDIT mode - check which instances and stacks should be removed
+  let instancesToDelete: number[] = []
+  let stacksToDelete: number[] = []
+  if (id) {
+    const instances = await ctx.prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementStack: {
+          microLearningId: id,
         },
       },
     })
-  }
 
-  const elements = stacks
-    .flatMap((stack) => stack.elements)
-    .map((stackElem) => stackElem.elementId)
-    .filter(
-      (stackElem) => stackElem !== null && typeof stackElem !== 'undefined'
-    )
-
-  const dbElements = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: elements },
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          entries: true,
-        },
+    const stacks = await ctx.prisma.elementStack.findMany({
+      where: {
+        microLearningId: id,
       },
-      answerCollectionItems: true,
-    },
-  })
+    })
 
-  const uniqueElements = new Set(dbElements.map((q) => q.id))
-  if (dbElements.length !== uniqueElements.size) {
-    throw new GraphQLError('Not all elements could be found')
+    instancesToDelete = instances.map((instance) => instance.id)
+    stacksToDelete = stacks.map((stack) => stack.id)
   }
-
-  const elementMap = dbElements.reduce<Record<number, Element>>(
-    (acc, elem) => ({ ...acc, [elem.id]: elem }),
-    {}
-  )
 
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -276,35 +254,17 @@ export async function manipulateMicroLearning(
           displayName: stack.displayName?.trim() ?? '',
           description: stack.description ?? '',
           elements: {
-            create: stack.elements.map((elem) => {
-              const element = elementMap[elem.elementId]!
-              const processedElementData = processElementData(element)
-              const initialResults = getInitialElementResults(element)
-
-              return {
-                elementType: element.type,
-                migrationId: uuidv4(),
-                order: elem.order,
-                type: ElementInstanceType.MICROLEARNING,
-                elementData: processedElementData,
-                options: {
-                  pointsMultiplier: multiplier * element.pointsMultiplier,
-                },
-                results: initialResults,
-                anonymousResults: initialResults,
-                instanceStatistics: {
-                  create: getInitialInstanceStatistics(
-                    ElementInstanceType.MICROLEARNING
-                  ),
-                },
-                element: {
-                  connect: { id: element.id },
-                },
-                owner: {
-                  connect: { id: ctx.user.sub },
-                },
-              }
-            }),
+            connectOrCreate: stack.elements.map((instance) =>
+              getActivityInstanceConnectOrCreate({
+                instance,
+                instanceType: ElementInstanceType.MICROLEARNING,
+                activityMultiplier: multiplier,
+                persistentInstances,
+                duplicationInstances,
+                elementMap,
+                userId: ctx.user.sub,
+              })
+            ),
           },
         }
       }),
@@ -317,25 +277,63 @@ export async function manipulateMicroLearning(
     },
   }
 
-  const element = await ctx.prisma.microLearning.upsert({
-    where: { id: id ?? uuidv4() },
-    create: createOrUpdateJSON,
-    update: createOrUpdateJSON,
-    include: {
-      course: true,
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
+  const activity = await ctx.prisma.$transaction(async (prisma) => {
+    // delete all instances that are not used anymore
+    await prisma.elementInstance.deleteMany({
+      where: {
+        id: { in: instancesToDelete },
+      },
+    })
+
+    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+    for (const instance of persistentInstances) {
+      const elementMultiplier =
+        'pointsMultiplier' in instance.elementData
+          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+          : 1
+
+      await prisma.elementInstance.update({
+        where: {
+          id: instance.id,
+        },
+        data: {
+          elementStackId: null,
+          order: persistentInstanceOrderMap[instance.id],
+          options: {
+            ...instance.options,
+            pointsMultiplier: multiplier * elementMultiplier,
           },
         },
-        orderBy: {
-          order: 'asc',
+      })
+    }
+
+    // delete all stacks
+    await prisma.elementStack.deleteMany({
+      where: {
+        id: { in: stacksToDelete },
+      },
+    })
+
+    return prisma.microLearning.upsert({
+      where: { id: id ?? uuidv4() },
+      create: createOrUpdateJSON,
+      update: createOrUpdateJSON,
+      include: {
+        course: true,
+        stacks: {
+          include: {
+            elements: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            order: 'asc',
+          },
         },
       },
-    },
+    })
   })
 
   ctx.emitter.emit('invalidate', {
@@ -343,7 +341,7 @@ export async function manipulateMicroLearning(
     id,
   })
 
-  return element
+  return activity
 }
 
 interface PublishMicroLearningArgs {

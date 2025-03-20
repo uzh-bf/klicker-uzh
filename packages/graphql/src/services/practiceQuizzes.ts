@@ -1,22 +1,18 @@
 import {
-  type Element,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
   PublicationStatus,
   UserRole,
 } from '@klicker-uzh/prisma'
-import type { StackInput } from '@klicker-uzh/types'
-import {
-  getInitialElementResults,
-  getInitialInstanceStatistics,
-  processElementData,
-} from '@klicker-uzh/util'
+import type { ElementStackInput } from '@klicker-uzh/types'
+import { getActivityInstanceConnectOrCreate } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
+import { splitActivityInstances } from './liveQuizzes.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getPracticeQuizData(
@@ -175,7 +171,7 @@ interface ManipulatePracticeQuizArgs {
   name: string
   displayName: string
   description?: string | null
-  stacks: StackInput[]
+  stacks: ElementStackInput[]
   courseId: string
   multiplier: number
   order: ElementOrderType
@@ -196,71 +192,55 @@ export async function manipulatePracticeQuiz(
   }: ManipulatePracticeQuizArgs,
   ctx: ContextWithUser
 ) {
+  // in EDIT mode - validate that the practice quiz exists and is not published
   if (id) {
-    // find all instances belonging to the old practice quiz and delete them as the content of the questions might have changed
-    const oldElement = await ctx.prisma.practiceQuiz.findUnique({
+    const existingActivity = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id,
         ownerId: ctx.user.sub,
         isDeleted: false,
       },
-      include: {
-        stacks: {
-          include: {
-            elements: true,
-          },
-        },
-      },
     })
 
-    if (!oldElement) {
+    if (!existingActivity) {
       throw new GraphQLError('Practice quiz not found')
     }
-    if (oldElement.status === PublicationStatus.PUBLISHED) {
+    if (existingActivity.status === PublicationStatus.PUBLISHED) {
       throw new GraphQLError('Cannot edit a published practice quiz')
     }
+  }
 
-    await ctx.prisma.practiceQuiz.update({
-      where: { id },
-      data: {
-        stacks: {
-          deleteMany: {},
+  // get required splits of instances based on provided stacks values
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
+
+  // in EDIT mode - check which instances and stacks should be removed
+  let instancesToDelete: number[] = []
+  let stacksToDelete: number[] = []
+  if (id) {
+    const instances = await ctx.prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementStack: {
+          practiceQuizId: id,
         },
       },
     })
-  }
 
-  const elements = stacks
-    .flatMap((stack) => stack.elements)
-    .map((stackElem) => stackElem.elementId)
-    .filter(
-      (stackElem) => stackElem !== null && typeof stackElem !== 'undefined'
-    )
-
-  const dbElements = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: elements },
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          entries: true,
-        },
+    const stacks = await ctx.prisma.elementStack.findMany({
+      where: {
+        practiceQuizId: id,
       },
-      answerCollectionItems: true,
-    },
-  })
+    })
 
-  const uniqueElements = new Set(dbElements.map((q) => q.id))
-  if (dbElements.length !== uniqueElements.size) {
-    throw new GraphQLError('Not all elements could be found')
+    instancesToDelete = instances.map((instance) => instance.id)
+    stacksToDelete = stacks.map((stack) => stack.id)
   }
-
-  const elementMap = dbElements.reduce<Record<number, Element>>(
-    (acc, elem) => ({ ...acc, [elem.id]: elem }),
-    {}
-  )
 
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -270,46 +250,26 @@ export async function manipulatePracticeQuiz(
     orderType: order,
     resetTimeDays: resetTimeDays,
     stacks: {
-      create: stacks.map((stack) => {
-        return {
-          type: ElementStackType.PRACTICE_QUIZ,
-          order: stack.order,
-          displayName: stack.displayName?.trim() ?? '',
-          description: stack.description ?? '',
-          elements: {
-            create: stack.elements.map((elem) => {
-              const element = elementMap[elem.elementId]!
-              const processedElementData = processElementData(element)
-              const initialResults = getInitialElementResults(element)
-
-              return {
-                elementType: element.type,
-                migrationId: uuidv4(),
-                order: elem.order,
-                type: ElementInstanceType.PRACTICE_QUIZ,
-                elementData: processedElementData,
-                options: {
-                  pointsMultiplier: multiplier * element.pointsMultiplier,
-                  resetTimeDays,
-                },
-                results: initialResults,
-                anonymousResults: initialResults,
-                instanceStatistics: {
-                  create: getInitialInstanceStatistics(
-                    ElementInstanceType.PRACTICE_QUIZ
-                  ),
-                },
-                element: {
-                  connect: { id: element.id },
-                },
-                owner: {
-                  connect: { id: ctx.user.sub },
-                },
-              }
-            }),
-          },
-        }
-      }),
+      create: stacks.map((stack) => ({
+        type: ElementStackType.PRACTICE_QUIZ,
+        order: stack.order,
+        displayName: stack.displayName?.trim() ?? '',
+        description: stack.description ?? '',
+        elements: {
+          connectOrCreate: stack.elements.map((instance) =>
+            getActivityInstanceConnectOrCreate({
+              instance,
+              instanceType: ElementInstanceType.PRACTICE_QUIZ,
+              activityMultiplier: multiplier,
+              persistentInstances,
+              duplicationInstances,
+              elementMap,
+              userId: ctx.user.sub,
+              additionalInstanceOptions: { resetTimeDays },
+            })
+          ),
+        },
+      })),
     },
     owner: {
       connect: { id: ctx.user.sub },
@@ -319,25 +279,64 @@ export async function manipulatePracticeQuiz(
     },
   }
 
-  const element = await ctx.prisma.practiceQuiz.upsert({
-    where: { id: id ?? uuidv4() },
-    create: createOrUpdateJSON,
-    update: createOrUpdateJSON,
-    include: {
-      course: true,
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
+  const activity = await ctx.prisma.$transaction(async (prisma) => {
+    // delete all instances that are not used anymore
+    await prisma.elementInstance.deleteMany({
+      where: {
+        id: { in: instancesToDelete },
+      },
+    })
+
+    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+    for (const instance of persistentInstances) {
+      const elementMultiplier =
+        'pointsMultiplier' in instance.elementData
+          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+          : 1
+
+      await prisma.elementInstance.update({
+        where: {
+          id: instance.id,
+        },
+        data: {
+          elementStackId: null,
+          order: persistentInstanceOrderMap[instance.id],
+          options: {
+            ...instance.options,
+            resetTimeDays,
+            pointsMultiplier: multiplier * elementMultiplier,
           },
         },
-        orderBy: {
-          order: 'asc',
+      })
+    }
+
+    // delete all stacks
+    await prisma.elementStack.deleteMany({
+      where: {
+        id: { in: stacksToDelete },
+      },
+    })
+
+    return prisma.practiceQuiz.upsert({
+      where: { id: id ?? uuidv4() },
+      create: createOrUpdateJSON,
+      update: createOrUpdateJSON,
+      include: {
+        course: true,
+        stacks: {
+          include: {
+            elements: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            order: 'asc',
+          },
         },
       },
-    },
+    })
   })
 
   ctx.emitter.emit('invalidate', {
@@ -345,7 +344,7 @@ export async function manipulatePracticeQuiz(
     id,
   })
 
-  return element
+  return activity
 }
 
 interface GetBookmarksPracticeQuizArgs {

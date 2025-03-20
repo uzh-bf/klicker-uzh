@@ -29,7 +29,12 @@ async function submitLiveQuizForm({
         order: ix,
         timeLimit: block.timeLimit,
         elements: block.elements.map((element, ix) => {
-          return { elementId: element.id, order: ix }
+          return {
+            elementId: element.id,
+            order: ix,
+            existingInstanceId: element.existingInstanceId,
+            duplicateInstance: element.duplicateInstance,
+          }
         }),
       }
     }

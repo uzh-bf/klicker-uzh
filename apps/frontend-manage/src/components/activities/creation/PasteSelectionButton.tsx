@@ -44,6 +44,8 @@ function PasteSelectionButton({
             'options' in question
               ? (question.options.hasSampleSolution ?? false)
               : true,
+          existingInstanceId: null,
+          duplicateInstance: false,
         }))
         const stackElements = stack.elements.concat(newElements)
 

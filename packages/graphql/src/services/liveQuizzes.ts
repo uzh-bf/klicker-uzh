@@ -15,19 +15,19 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma'
 import type {
-  BlockInput,
   CaseStudyCaseSolution,
+  ElementBlockInput,
   ElementResultsCaseStudy,
   ElementResultsChoices,
   ElementResultsContent,
   ElementResultsFlashcard,
   ElementResultsOpen,
   ElementResultsSelection,
+  ElementStackInput,
 } from '@klicker-uzh/types'
 import {
-  getInitialElementResults,
-  getInitialInstanceStatistics,
-  processElementData,
+  getActivityInstanceConnectOrCreate,
+  getInitialInstanceResults,
 } from '@klicker-uzh/util'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
@@ -379,12 +379,108 @@ async function unlinkCachedBlockResults({
 
 // ------ LIVE QUIZ CREATION / EDITING ------
 // #region
+
+export async function splitActivityInstances(
+  {
+    stacksOrBlocks,
+  }: { stacksOrBlocks: ElementStackInput[] | ElementBlockInput[] },
+  ctx: ContextWithUser
+) {
+  // in EDIT mode - compute map between id of instance that is kept and the new order attribute
+  const persistentInstanceOrderMap = stacksOrBlocks.reduce<
+    Record<number, number>
+  >((acc, block) => {
+    block.elements
+      .filter(
+        (element) =>
+          element.existingInstanceId !== null && !element.duplicateInstance
+      )
+      .forEach((element) => {
+        acc[element.existingInstanceId!] = element.order
+      })
+    return acc
+  }, {})
+
+  // extract the ids of all instances that should be kept in the activity
+  const persistentInstanceIds = Object.keys(persistentInstanceOrderMap).map(
+    (id) => parseInt(id)
+  )
+
+  // fetch instances that should be kept in the activity
+  const persistentInstances = await ctx.prisma.elementInstance.findMany({
+    where: {
+      id: { in: persistentInstanceIds },
+      owner: { id: ctx.user.sub },
+    },
+  })
+
+  // in DUPLICATION mode - instances that should be duplicated in the activity
+  const duplicateInstanceIds = stacksOrBlocks.flatMap(
+    (stackOrBlock: ElementStackInput | ElementBlockInput) =>
+      stackOrBlock.elements
+        .filter(
+          (element) =>
+            element.existingInstanceId !== null && element.duplicateInstance
+        )
+        .map((element) => element.existingInstanceId!)
+  )
+
+  // fetch instances that should be duplicated into new quiz
+  const duplicationInstances = await ctx.prisma.elementInstance.findMany({
+    where: {
+      id: { in: duplicateInstanceIds },
+      owner: { id: ctx.user.sub },
+    },
+  })
+
+  // get the ids of all elements that should be used for instance creation
+  const requiredElementsIds = stacksOrBlocks
+    .flatMap((block: ElementStackInput | ElementBlockInput) => block.elements)
+    .filter((element) => element.existingInstanceId === null)
+    .map((blockElem) => blockElem.elementId)
+
+  // fetch all elements from the database that should be used for instance creation
+  const dbElements = await ctx.prisma.element.findMany({
+    where: {
+      id: { in: requiredElementsIds },
+      isDeleted: false,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionItems: true,
+    },
+  })
+
+  // make sure that every element could be found and create a map for efficient access
+  const uniqueElements = new Set(dbElements.map((q) => q.id))
+  if (dbElements.length !== uniqueElements.size) {
+    throw new GraphQLError('Not all elements could be found')
+  }
+  const elementMap = dbElements.reduce<Record<number, Element>>((acc, elem) => {
+    acc[elem.id] = elem
+    return acc
+  }, {})
+
+  return {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+  }
+}
+
 interface ManipulateLiveQuizArgs {
   id?: string
   name: string
   displayName: string
   description?: string | null
-  blocks: BlockInput[]
+  blocks: ElementBlockInput[]
   courseId?: string | null
   multiplier: number
   defaultPoints?: number | null
@@ -417,72 +513,57 @@ export async function manipulateLiveQuiz(
   }: ManipulateLiveQuizArgs,
   ctx: ContextWithUser
 ) {
+  // in EDIT mode - validate that the live quiz exists and is not published
   if (id) {
-    // find all instances belonging to the old quiz and delete them as the content of the questions might have changed
-    const oldElement = await ctx.prisma.liveQuiz.findUnique({
+    const existingActivity = await ctx.prisma.liveQuiz.findUnique({
       where: {
         id,
         ownerId: ctx.user.sub,
         isDeleted: false,
       },
-      include: {
-        blocks: {
-          include: {
-            elements: true,
-          },
-        },
-      },
     })
 
-    if (!oldElement) {
+    if (!existingActivity) {
       throw new GraphQLError('Live quiz not found')
     }
-    if (oldElement.status === PublicationStatus.PUBLISHED) {
+    if (existingActivity.status === PublicationStatus.PUBLISHED) {
       throw new GraphQLError('Cannot edit a published live quiz')
     }
+  }
 
-    await ctx.prisma.liveQuiz.update({
-      where: { id },
-      data: {
-        blocks: {
-          deleteMany: {},
+  // get required splits of instances based on provided blocks values
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+  } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
+
+  // in EDIT mode - check which instances and blocks should be removed
+  let instancesToDelete: number[] = []
+  let blocksToDelete: number[] = []
+  if (id) {
+    const instances = await ctx.prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementBlock: {
+          liveQuizId: id,
         },
       },
     })
-  }
 
-  const elements = blocks
-    .flatMap((block) => block.elements)
-    .map((blockElem) => blockElem.elementId)
-    .filter(
-      (blockElem) => blockElem !== null && typeof blockElem !== 'undefined'
-    )
-
-  const dbElements = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: elements },
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          entries: true,
-        },
+    const blocks = await ctx.prisma.elementBlock.findMany({
+      where: {
+        liveQuizId: id,
       },
-      answerCollectionItems: true,
-    },
-  })
+    })
 
-  const uniqueElements = new Set(dbElements.map((q) => q.id))
-  if (dbElements.length !== uniqueElements.size) {
-    throw new GraphQLError('Not all elements could be found')
+    instancesToDelete = instances.map((instance) => instance.id)
+    blocksToDelete = blocks.map((block) => block.id)
   }
 
-  const elementMap = dbElements.reduce<Record<number, Element>>(
-    (acc, elem) => ({ ...acc, [elem.id]: elem }),
-    {}
-  )
-
+  // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
     name: name.trim(),
     displayName: displayName.trim(),
@@ -497,86 +578,104 @@ export async function manipulateLiveQuiz(
     isLiveQAEnabled,
     isModerationEnabled,
     blocks: {
-      create: blocks.map((block) => {
-        return {
-          order: block.order,
-          timeLimit: block.timeLimit,
-          elements: {
-            create: block.elements.map((elem) => {
-              const element = elementMap[elem.elementId]!
-              const processedElementData = processElementData(element)
-              const initialResults = getInitialElementResults(element)
-
-              return {
-                elementType: element.type,
-                migrationId: uuidv4(),
-                order: elem.order,
-                type: ElementInstanceType.LIVE_QUIZ,
-                elementData: processedElementData,
-                options: {
-                  pointsMultiplier: multiplier * element.pointsMultiplier,
-                },
-                results: initialResults,
-                anonymousResults: initialResults,
-                instanceStatistics: {
-                  create: getInitialInstanceStatistics(
-                    ElementInstanceType.LIVE_QUIZ
-                  ),
-                },
-                element: {
-                  connect: { id: element.id },
-                },
-                owner: {
-                  connect: { id: ctx.user.sub },
-                },
-              }
-            }),
-          },
-        }
-      }),
+      create: blocks.map((block) => ({
+        order: block.order,
+        timeLimit: block.timeLimit,
+        elements: {
+          connectOrCreate: block.elements.map((instance) =>
+            getActivityInstanceConnectOrCreate({
+              instance,
+              instanceType: ElementInstanceType.LIVE_QUIZ,
+              activityMultiplier: multiplier,
+              persistentInstances,
+              duplicationInstances,
+              elementMap,
+              userId: ctx.user.sub,
+            })
+          ),
+        },
+      })),
     },
     owner: {
       connect: { id: ctx.user.sub },
     },
   }
 
-  const element = await ctx.prisma.liveQuiz.upsert({
-    where: { id: id ?? uuidv4() },
-    create: {
-      ...createOrUpdateJSON,
-      course:
-        courseId !== null
-          ? {
-              connect: { id: courseId },
-            }
-          : undefined,
-    },
-    update: {
-      ...createOrUpdateJSON,
-      course:
-        courseId !== null
-          ? {
-              connect: { id: courseId },
-            }
-          : {
-              disconnect: true,
-            },
-    },
-    include: {
-      course: true,
-      blocks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
+  const activity = await ctx.prisma.$transaction(async (prisma) => {
+    // delete all instances that are not used anymore
+    await prisma.elementInstance.deleteMany({
+      where: {
+        id: { in: instancesToDelete },
+      },
+    })
+
+    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+    for (const instance of persistentInstances) {
+      const elementMultiplier =
+        'pointsMultiplier' in instance.elementData
+          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+          : 1
+
+      await prisma.elementInstance.update({
+        where: {
+          id: instance.id,
+        },
+        data: {
+          elementBlockId: null,
+          order: persistentInstanceOrderMap[instance.id],
+          options: {
+            ...instance.options,
+            pointsMultiplier: multiplier * elementMultiplier,
           },
         },
-        orderBy: {
-          order: 'asc',
+      })
+    }
+
+    // delete all blocks
+    await prisma.elementBlock.deleteMany({
+      where: {
+        id: { in: blocksToDelete },
+      },
+    })
+
+    return await prisma.liveQuiz.upsert({
+      where: { id: id ?? uuidv4() },
+      create: {
+        ...createOrUpdateJSON,
+        course:
+          courseId !== null
+            ? {
+                connect: { id: courseId },
+              }
+            : undefined,
+      },
+      update: {
+        ...createOrUpdateJSON,
+        course:
+          courseId !== null
+            ? {
+                connect: { id: courseId },
+              }
+            : {
+                disconnect: true,
+              },
+      },
+      include: {
+        course: true,
+        blocks: {
+          include: {
+            elements: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            order: 'asc',
+          },
         },
       },
-    },
+    })
   })
 
   ctx.emitter.emit('invalidate', {
@@ -584,7 +683,7 @@ export async function manipulateLiveQuiz(
     id,
   })
 
-  return element
+  return activity
 }
 // #endregion
 
@@ -1837,16 +1936,7 @@ export async function cancelLiveQuiz(
       activeBlock: true,
       blocks: {
         include: {
-          elements: {
-            include: {
-              element: {
-                include: {
-                  answerCollection: { include: { entries: true } },
-                  answerCollectionItems: true,
-                },
-              },
-            },
-          },
+          elements: true,
           activeInLiveQuiz: true,
         },
       },
@@ -1911,7 +2001,7 @@ export async function cancelLiveQuiz(
       }),
 
       ...instances.map((instance) => {
-        const initialResults = getInitialElementResults(instance.element)
+        const initialResults = getInitialInstanceResults(instance.elementData)
 
         return ctx.prisma.elementInstance.update({
           where: {

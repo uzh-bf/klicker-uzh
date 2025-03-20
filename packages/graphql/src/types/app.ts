@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from '@klicker-uzh/prisma'
 import type {
-  AllElementTypeData,
   AvatarSettings,
+  ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
   ElementOptions,
@@ -32,7 +32,7 @@ declare global {
     type PrismaSingleQuestionResponse = SingleQuestionResponse
     type PrismaElementOptions = ElementOptions
     type PrismaElementResults = ElementInstanceResults
-    type PrismaElementData = AllElementTypeData
+    type PrismaElementData = ElementData
     type PrismaElementInstanceOptions = ElementInstanceOptions
     type PrismaGroupActivityDecisions = GroupActivityDecisions
     type PrismaGroupActivityResults = GroupActivityResults
