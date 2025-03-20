@@ -375,6 +375,7 @@ export function getActivityInstanceConnectOrCreate({
   duplicationInstances,
   elementMap,
   userId,
+  additionalInstanceOptions,
 }: {
   instance: ElementInstanceInput
   instanceType: PrismaElementInstanceType
@@ -383,6 +384,7 @@ export function getActivityInstanceConnectOrCreate({
   duplicationInstances: ElementInstance[]
   elementMap: Record<number, Element>
   userId: string
+  additionalInstanceOptions?: Record<string, any>
 }) {
   // ! Case 1: (edit mode) keep existing instance without modification
   if (instance.existingInstanceId !== null && !instance.duplicateInstance) {
@@ -439,6 +441,7 @@ export function getActivityInstanceConnectOrCreate({
         type: instanceType,
         elementData: existingInstance.elementData,
         options: {
+          ...additionalInstanceOptions,
           pointsMultiplier:
             activityMultiplier * existingInstance.elementData.pointsMultiplier,
         },
@@ -480,6 +483,7 @@ export function getActivityInstanceConnectOrCreate({
         type: instanceType,
         elementData: elementData,
         options: {
+          ...additionalInstanceOptions,
           pointsMultiplier: activityMultiplier * element.pointsMultiplier,
         },
         results: initialResults,

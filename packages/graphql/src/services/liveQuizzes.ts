@@ -23,6 +23,7 @@ import type {
   ElementResultsFlashcard,
   ElementResultsOpen,
   ElementResultsSelection,
+  ElementStackInput,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
@@ -378,6 +379,102 @@ async function unlinkCachedBlockResults({
 
 // ------ LIVE QUIZ CREATION / EDITING ------
 // #region
+
+export async function splitActivityInstances(
+  {
+    stacksOrBlocks,
+  }: { stacksOrBlocks: ElementStackInput[] | ElementBlockInput[] },
+  ctx: ContextWithUser
+) {
+  // in EDIT mode - compute map between id of instance that is kept and the new order attribute
+  const persistentInstanceOrderMap = stacksOrBlocks.reduce<
+    Record<number, number>
+  >((acc, block) => {
+    block.elements
+      .filter(
+        (element) =>
+          element.existingInstanceId !== null && !element.duplicateInstance
+      )
+      .forEach((element) => {
+        acc[element.existingInstanceId!] = element.order
+      })
+    return acc
+  }, {})
+
+  // extract the ids of all instances that should be kept in the activity
+  const persistentInstanceIds = Object.keys(persistentInstanceOrderMap).map(
+    (id) => parseInt(id)
+  )
+
+  // fetch instances that should be kept in the activity
+  const persistentInstances = await ctx.prisma.elementInstance.findMany({
+    where: {
+      id: { in: persistentInstanceIds },
+      owner: { id: ctx.user.sub },
+    },
+  })
+
+  // in DUPLICATION mode - instances that should be duplicated in the activity
+  const duplicateInstanceIds = stacksOrBlocks.flatMap(
+    (stackOrBlock: ElementStackInput | ElementBlockInput) =>
+      stackOrBlock.elements
+        .filter(
+          (element) =>
+            element.existingInstanceId !== null && element.duplicateInstance
+        )
+        .map((element) => element.existingInstanceId!)
+  )
+
+  // fetch instances that should be duplicated into new quiz
+  const duplicationInstances = await ctx.prisma.elementInstance.findMany({
+    where: {
+      id: { in: duplicateInstanceIds },
+      owner: { id: ctx.user.sub },
+    },
+  })
+
+  // get the ids of all elements that should be used for instance creation
+  const requiredElementsIds = stacksOrBlocks
+    .flatMap((block: ElementStackInput | ElementBlockInput) => block.elements)
+    .filter((element) => element.existingInstanceId === null)
+    .map((blockElem) => blockElem.elementId)
+
+  // fetch all elements from the database that should be used for instance creation
+  const dbElements = await ctx.prisma.element.findMany({
+    where: {
+      id: { in: requiredElementsIds },
+      isDeleted: false,
+      ownerId: ctx.user.sub,
+    },
+    include: {
+      answerCollection: {
+        include: {
+          entries: true,
+        },
+      },
+      answerCollectionItems: true,
+    },
+  })
+
+  // make sure that every element could be found and create a map for efficient access
+  const uniqueElements = new Set(dbElements.map((q) => q.id))
+  if (dbElements.length !== uniqueElements.size) {
+    throw new GraphQLError('Not all elements could be found')
+  }
+  const elementMap = dbElements.reduce<Record<number, Element>>((acc, elem) => {
+    acc[elem.id] = elem
+    return acc
+  }, {})
+
+  return {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+  }
+}
+
 interface ManipulateLiveQuizArgs {
   id?: string
   name: string
@@ -416,10 +513,9 @@ export async function manipulateLiveQuiz(
   }: ManipulateLiveQuizArgs,
   ctx: ContextWithUser
 ) {
-  // in edit mode, validate that the live quiz exists and is not published
+  // in EDIT mode - validate that the live quiz exists and is not published
   if (id) {
-    // find all instances belonging to the old quiz and delete them as the content of the questions might have changed
-    const oldElement = await ctx.prisma.liveQuiz.findUnique({
+    const existingActivity = await ctx.prisma.liveQuiz.findUnique({
       where: {
         id,
         ownerId: ctx.user.sub,
@@ -427,42 +523,22 @@ export async function manipulateLiveQuiz(
       },
     })
 
-    if (!oldElement) {
+    if (!existingActivity) {
       throw new GraphQLError('Live quiz not found')
     }
-    if (oldElement.status === PublicationStatus.PUBLISHED) {
+    if (existingActivity.status === PublicationStatus.PUBLISHED) {
       throw new GraphQLError('Cannot edit a published live quiz')
     }
   }
 
-  // in EDIT mode - compute map between id of instance that is kept and the new order attribute
-  const persistentInstanceOrderMap = blocks.reduce<Record<number, number>>(
-    (acc, block) => {
-      block.elements
-        .filter(
-          (element) =>
-            element.existingInstanceId !== null && !element.duplicateInstance
-        )
-        .forEach((element) => {
-          acc[element.existingInstanceId!] = element.order
-        })
-      return acc
-    },
-    {}
-  )
-
-  // extract the ids of all instances that should be kept in the activity
-  const persistentInstanceIds = Object.keys(persistentInstanceOrderMap).map(
-    (id) => parseInt(id)
-  )
-
-  // fetch instances that should be kept in the activity
-  const persistentInstances = await ctx.prisma.elementInstance.findMany({
-    where: {
-      id: { in: persistentInstanceIds },
-      owner: { id: ctx.user.sub },
-    },
-  })
+  // get required splits of instances based on provided blocks values
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+  } = await splitActivityInstances({ stacksOrBlocks: blocks }, ctx)
 
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []
@@ -487,57 +563,6 @@ export async function manipulateLiveQuiz(
     blocksToDelete = blocks.map((block) => block.id)
   }
 
-  // in DUPLICATION mode - instances that should be duplicated in the activity
-  const duplicateInstanceIds = blocks.flatMap((block) =>
-    block.elements
-      .filter(
-        (element) =>
-          element.existingInstanceId !== null && element.duplicateInstance
-      )
-      .map((element) => element.existingInstanceId!)
-  )
-
-  // fetch instances that should be duplicated into new quiz
-  const duplicationInstances = await ctx.prisma.elementInstance.findMany({
-    where: {
-      id: { in: duplicateInstanceIds },
-      owner: { id: ctx.user.sub },
-    },
-  })
-
-  // get the ids of all elements that should be used for instance creation
-  const requiredElementsIds = blocks
-    .flatMap((block) => block.elements)
-    .filter((element) => element.existingInstanceId === null)
-    .map((blockElem) => blockElem.elementId)
-
-  // fetch all elements from the database that should be used for instance creation
-  const dbElements = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: requiredElementsIds },
-      isDeleted: false,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          entries: true,
-        },
-      },
-      answerCollectionItems: true,
-    },
-  })
-
-  // make sure that every element could be found and create a map for efficient access
-  const uniqueElements = new Set(dbElements.map((q) => q.id))
-  if (dbElements.length !== uniqueElements.size) {
-    throw new GraphQLError('Not all elements could be found')
-  }
-  const elementMap = dbElements.reduce<Record<number, Element>>((acc, elem) => {
-    acc[elem.id] = elem
-    return acc
-  }, {})
-
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -553,25 +578,23 @@ export async function manipulateLiveQuiz(
     isLiveQAEnabled,
     isModerationEnabled,
     blocks: {
-      create: blocks.map((block) => {
-        return {
-          order: block.order,
-          timeLimit: block.timeLimit,
-          elements: {
-            connectOrCreate: block.elements.map((instance) =>
-              getActivityInstanceConnectOrCreate({
-                instance,
-                instanceType: ElementInstanceType.LIVE_QUIZ,
-                activityMultiplier: multiplier,
-                persistentInstances,
-                duplicationInstances,
-                elementMap,
-                userId: ctx.user.sub,
-              })
-            ),
-          },
-        }
-      }),
+      create: blocks.map((block) => ({
+        order: block.order,
+        timeLimit: block.timeLimit,
+        elements: {
+          connectOrCreate: block.elements.map((instance) =>
+            getActivityInstanceConnectOrCreate({
+              instance,
+              instanceType: ElementInstanceType.LIVE_QUIZ,
+              activityMultiplier: multiplier,
+              persistentInstances,
+              duplicationInstances,
+              elementMap,
+              userId: ctx.user.sub,
+            })
+          ),
+        },
+      })),
     },
     owner: {
       connect: { id: ctx.user.sub },
@@ -587,14 +610,23 @@ export async function manipulateLiveQuiz(
     })
 
     // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-    for (const instanceId of persistentInstanceIds) {
+    for (const instance of persistentInstances) {
+      const elementMultiplier =
+        'pointsMultiplier' in instance.elementData
+          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+          : 1
+
       await prisma.elementInstance.update({
         where: {
-          id: instanceId,
+          id: instance.id,
         },
         data: {
           elementBlockId: null,
-          order: persistentInstanceOrderMap[instanceId],
+          order: persistentInstanceOrderMap[instance.id],
+          options: {
+            ...instance.options,
+            pointsMultiplier: multiplier * elementMultiplier,
+          },
         },
       })
     }
