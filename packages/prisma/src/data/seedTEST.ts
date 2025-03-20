@@ -1,6 +1,6 @@
 import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
-  getInitialElementResults,
+  getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
@@ -393,18 +393,22 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                       )
                     }
 
+                    const elementData = processElementData(el)
+                    const initialResults =
+                      getInitialInstanceResults(elementData)
+
                     return {
                       migrationId: uuid(),
                       order: elementIx,
                       type: Prisma.ElementInstanceType.LIVE_QUIZ,
                       elementType: el.type,
-                      elementData: processElementData(el),
+                      elementData,
                       options: {
                         pointsMultiplier:
                           (data.pointsMultiplier ?? 1) * el.pointsMultiplier,
                       },
-                      results: getInitialElementResults(el),
-                      anonymousResults: getInitialElementResults(el),
+                      results: initialResults,
+                      anonymousResults: initialResults,
                       instanceStatistics: {
                         create: getInitialInstanceStatistics(
                           Prisma.ElementInstanceType.LIVE_QUIZ

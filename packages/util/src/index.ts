@@ -5,8 +5,8 @@ import {
   ElementType as PrismaElementType,
 } from '@klicker-uzh/prisma'
 import {
-  type AllElementTypeData,
   type Choice,
+  type ElementData,
   type ElementInstanceResults,
   type ElementKeys,
   type ElementOptionsCaseStudy,
@@ -46,7 +46,7 @@ export type ElementWithAnswerCollection = Element & {
 
 export function processElementData(
   element: ElementWithAnswerCollection
-): AllElementTypeData {
+): ElementData {
   if (element.type === PrismaElementType.FLASHCARD) {
     return {
       ...pick(element, NO_OPTIONS_KEYS),
@@ -176,10 +176,10 @@ export function processElementData(
   }
 }
 
-export function getInitialElementResults(
-  element: ElementWithAnswerCollection
+export function getInitialInstanceResults(
+  elementData: ElementData
 ): ElementInstanceResults {
-  if (element.type === PrismaElementType.FLASHCARD) {
+  if (elementData.type === PrismaElementType.FLASHCARD) {
     return {
       INCORRECT: 0,
       PARTIAL: 0,
@@ -187,12 +187,12 @@ export function getInitialElementResults(
       total: 0,
     }
   } else if (
-    (element.type === PrismaElementType.SC ||
-      element.type === PrismaElementType.MC ||
-      element.type === PrismaElementType.KPRIM) &&
-    'choices' in element.options
+    (elementData.type === PrismaElementType.SC ||
+      elementData.type === PrismaElementType.MC ||
+      elementData.type === PrismaElementType.KPRIM) &&
+    'choices' in elementData.options
   ) {
-    const choices = element.options.choices.reduce(
+    const choices = elementData.options.choices.reduce(
       (acc: Record<string, number>, choice: Choice) => ({
         ...acc,
         [choice.ix]: 0,
@@ -201,30 +201,30 @@ export function getInitialElementResults(
     )
     return { choices, total: 0 }
   } else if (
-    element.type === PrismaElementType.NUMERICAL ||
-    element.type === PrismaElementType.FREE_TEXT
+    elementData.type === PrismaElementType.NUMERICAL ||
+    elementData.type === PrismaElementType.FREE_TEXT
   ) {
     return {
       responses: {},
       total: 0,
     }
-  } else if (element.type === PrismaElementType.CONTENT) {
+  } else if (elementData.type === PrismaElementType.CONTENT) {
     return {
       total: 0,
     }
-  } else if (element.type === PrismaElementType.SELECTION) {
+  } else if (elementData.type === PrismaElementType.SELECTION) {
     if (
-      !('answerCollection' in element) ||
-      !element.answerCollection ||
-      !('entries' in element.answerCollection)
+      !('answerCollection' in elementData.options) ||
+      !elementData.options.answerCollection ||
+      !('entries' in elementData.options.answerCollection)
     ) {
       throw new Error(
-        'Answer collection missing for selection element during result initialization'
+        'Answer collection missing for selection element data during result initialization'
       )
     }
 
     const selections: Record<number, number> = {}
-    for (const entry of element.answerCollection.entries) {
+    for (const entry of elementData.options.answerCollection.entries) {
       selections[entry.id] = 0
     }
 
@@ -232,14 +232,14 @@ export function getInitialElementResults(
       selections,
       total: 0,
     }
-  } else if (element.type === PrismaElementType.CASE_STUDY) {
+  } else if (elementData.type === PrismaElementType.CASE_STUDY) {
     // verify that both the selected items from the answer collection are available
     if (
-      !('answerCollectionItems' in element) ||
-      !element.answerCollectionItems ||
-      element.answerCollectionItems.length === 0 ||
-      !('criteria' in element.options) ||
-      !('cases' in element.options)
+      !('items' in elementData.options) ||
+      !elementData.options.items ||
+      elementData.options.items.length === 0 ||
+      !('criteria' in elementData.options) ||
+      !('cases' in elementData.options)
     ) {
       throw new Error(
         'Selected items missing for case study element during result initialization'
@@ -247,8 +247,8 @@ export function getInitialElementResults(
     }
 
     const assessments: ElementResultsCaseStudy['assessments'] = {}
-    const options = element.options as ElementOptionsCaseStudy
-    const itemIds = element.answerCollectionItems.map((item) => item.id)
+    const options = elementData.options as ElementOptionsCaseStudy
+    const itemIds = elementData.options.items.map((item) => item.id)
 
     // initialize all cases, their items and criteria as empty maps
     options.cases.forEach((caseItem) => {

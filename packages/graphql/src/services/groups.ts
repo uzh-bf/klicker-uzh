@@ -16,7 +16,7 @@ import {
   type StackInput,
 } from '@klicker-uzh/types'
 import {
-  getInitialElementResults,
+  getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
@@ -1061,15 +1061,15 @@ export async function manipulateGroupActivity(
         elements: {
           create: stack.elements.map((elem) => {
             const element = elementMap[elem.elementId]!
-            const processedElementData = processElementData(element)
-            const initialResults = getInitialElementResults(element)
+            const elementData = processElementData(element)
+            const initialResults = getInitialInstanceResults(elementData)
 
             return {
               elementType: element.type,
               migrationId: uuidv4(),
               order: elem.order,
               type: ElementInstanceType.GROUP_ACTIVITY,
-              elementData: processedElementData,
+              elementData,
               options: {
                 pointsMultiplier: multiplier * element.pointsMultiplier,
               },

@@ -15,8 +15,10 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma'
 import type {
-  BlockInput,
   CaseStudyCaseSolution,
+  ElementBlockInput,
+  ElementData,
+  ElementInstanceResults,
   ElementResultsCaseStudy,
   ElementResultsChoices,
   ElementResultsContent,
@@ -25,7 +27,7 @@ import type {
   ElementResultsSelection,
 } from '@klicker-uzh/types'
 import {
-  getInitialElementResults,
+  getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
@@ -384,7 +386,7 @@ interface ManipulateLiveQuizArgs {
   name: string
   displayName: string
   description?: string | null
-  blocks: BlockInput[]
+  blocks: ElementBlockInput[]
   courseId?: string | null
   multiplier: number
   defaultPoints?: number | null
@@ -417,6 +419,7 @@ export async function manipulateLiveQuiz(
   }: ManipulateLiveQuizArgs,
   ctx: ContextWithUser
 ) {
+  // in edit mode, validate that the live quiz exists and is not published
   if (id) {
     // find all instances belonging to the old quiz and delete them as the content of the questions might have changed
     const oldElement = await ctx.prisma.liveQuiz.findUnique({
@@ -424,13 +427,6 @@ export async function manipulateLiveQuiz(
         id,
         ownerId: ctx.user.sub,
         isDeleted: false,
-      },
-      include: {
-        blocks: {
-          include: {
-            elements: true,
-          },
-        },
       },
     })
 
@@ -440,27 +436,78 @@ export async function manipulateLiveQuiz(
     if (oldElement.status === PublicationStatus.PUBLISHED) {
       throw new GraphQLError('Cannot edit a published live quiz')
     }
+  }
 
-    await ctx.prisma.liveQuiz.update({
-      where: { id },
-      data: {
-        blocks: {
-          deleteMany: {},
+  // in EDIT mode - instances that should be kept in the activity on editing
+  const persistentInstanceIds = blocks.flatMap((block) =>
+    block.elements
+      .filter(
+        (element) =>
+          element.existingInstanceId !== null && !element.duplicateInstance
+      )
+      .map((element) => element.existingInstanceId!)
+  )
+
+  // fetch instances that should be kept in the activity
+  const persistentInstances = await ctx.prisma.elementInstance.findMany({
+    where: {
+      id: { in: persistentInstanceIds },
+      owner: { id: ctx.user.sub },
+    },
+  })
+
+  // in EDIT mode - check which instances and blocks should be removed
+  let instancesToDelete: number[] = []
+  let blocksToDelete: number[] = []
+  if (id) {
+    const instances = await ctx.prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementBlock: {
+          liveQuizId: id,
         },
       },
     })
+
+    const blocks = await ctx.prisma.elementBlock.findMany({
+      where: {
+        liveQuizId: id,
+      },
+    })
+
+    instancesToDelete = instances.map((instance) => instance.id)
+    blocksToDelete = blocks.map((block) => block.id)
   }
 
-  const elements = blocks
-    .flatMap((block) => block.elements)
-    .map((blockElem) => blockElem.elementId)
-    .filter(
-      (blockElem) => blockElem !== null && typeof blockElem !== 'undefined'
-    )
+  // in DUPLICATION mode - instances that should be duplicated in the activity
+  const duplicateInstanceIds = blocks.flatMap((block) =>
+    block.elements
+      .filter(
+        (element) =>
+          element.existingInstanceId !== null && element.duplicateInstance
+      )
+      .map((element) => element.existingInstanceId!)
+  )
 
+  // fetch instances that should be duplicated into new quiz
+  const duplicationInstances = await ctx.prisma.elementInstance.findMany({
+    where: {
+      id: { in: duplicateInstanceIds },
+      owner: { id: ctx.user.sub },
+    },
+  })
+
+  // get the ids of all elements that should be used for instance creation
+  const requiredElementsIds = blocks
+    .flatMap((block) => block.elements)
+    .filter((element) => element.existingInstanceId === null)
+    .map((blockElem) => blockElem.elementId)
+
+  // fetch all elements from the database that should be used for instance creation
   const dbElements = await ctx.prisma.element.findMany({
     where: {
-      id: { in: elements },
+      id: { in: requiredElementsIds },
+      isDeleted: false,
       ownerId: ctx.user.sub,
     },
     include: {
@@ -473,110 +520,243 @@ export async function manipulateLiveQuiz(
     },
   })
 
+  // make sure that every element could be found and create a map for efficient access
   const uniqueElements = new Set(dbElements.map((q) => q.id))
   if (dbElements.length !== uniqueElements.size) {
     throw new GraphQLError('Not all elements could be found')
   }
-
   const elementMap = dbElements.reduce<Record<number, Element>>(
     (acc, elem) => ({ ...acc, [elem.id]: elem }),
     {}
   )
 
-  const createOrUpdateJSON = {
-    name: name.trim(),
-    displayName: displayName.trim(),
-    description,
-    pointsMultiplier: multiplier,
-    defaultPoints: defaultPoints ?? undefined,
-    defaultCorrectPoints: defaultCorrectPoints ?? undefined,
-    maxBonusPoints: maxBonusPoints ?? undefined,
-    timeToZeroBonus: timeToZeroBonus ?? undefined,
-    isGamificationEnabled,
-    isConfusionFeedbackEnabled,
-    isLiveQAEnabled,
-    isModerationEnabled,
-    blocks: {
-      create: blocks.map((block) => {
-        return {
-          order: block.order,
-          timeLimit: block.timeLimit,
-          elements: {
-            create: block.elements.map((elem) => {
-              const element = elementMap[elem.elementId]!
-              const processedElementData = processElementData(element)
-              const initialResults = getInitialElementResults(element)
+  // TODO: extract logic here
+  // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
+  const createOrUpdateJSON = {}
 
-              return {
-                elementType: element.type,
-                migrationId: uuidv4(),
-                order: elem.order,
-                type: ElementInstanceType.LIVE_QUIZ,
-                elementData: processedElementData,
-                options: {
-                  pointsMultiplier: multiplier * element.pointsMultiplier,
-                },
-                results: initialResults,
-                anonymousResults: initialResults,
-                instanceStatistics: {
-                  create: getInitialInstanceStatistics(
-                    ElementInstanceType.LIVE_QUIZ
-                  ),
-                },
-                element: {
-                  connect: { id: element.id },
-                },
-                owner: {
-                  connect: { id: ctx.user.sub },
-                },
-              }
-            }),
-          },
-        }
-      }),
-    },
-    owner: {
-      connect: { id: ctx.user.sub },
-    },
-  }
+  const activity = await ctx.prisma.$transaction(async (prisma) => {
+    // delete all instances that are not used anymore
+    prisma.elementInstance.deleteMany({
+      where: {
+        id: { in: instancesToDelete },
+      },
+    })
 
-  const element = await ctx.prisma.liveQuiz.upsert({
-    where: { id: id ?? uuidv4() },
-    create: {
-      ...createOrUpdateJSON,
-      course:
-        courseId !== null
-          ? {
-              connect: { id: courseId },
+    // disconnect all instances that should be kept in edit mode
+    await prisma.elementInstance.updateMany({
+      where: {
+        id: { in: persistentInstanceIds },
+      },
+      data: {
+        elementBlockId: null,
+      },
+    })
+
+    // delete all blocks
+    prisma.elementBlock.deleteMany({
+      where: {
+        id: { in: blocksToDelete },
+      },
+    })
+
+    // TODO: re-create blocks and link existing instance / create new instances
+
+    return prisma.liveQuiz.upsert({
+      where: { id: id ?? uuidv4() },
+      create: {
+        // TODO: extract this logic to createOrUpdateJSON again
+        name: name.trim(),
+        displayName: displayName.trim(),
+        description,
+        pointsMultiplier: multiplier,
+        defaultPoints: defaultPoints ?? undefined,
+        defaultCorrectPoints: defaultCorrectPoints ?? undefined,
+        maxBonusPoints: maxBonusPoints ?? undefined,
+        timeToZeroBonus: timeToZeroBonus ?? undefined,
+        isGamificationEnabled,
+        isConfusionFeedbackEnabled,
+        isLiveQAEnabled,
+        isModerationEnabled,
+        blocks: {
+          create: blocks.map((block) => {
+            return {
+              order: block.order,
+              timeLimit: block.timeLimit,
+              elements: {
+                connectOrCreate: block.elements.map((instance) => {
+                  // ! Case 1: (edit mode) keep existing instance without modification
+                  if (
+                    instance.existingInstanceId !== null &&
+                    !instance.duplicateInstance
+                  ) {
+                    // verify that the instance is well-defined and will be connected
+                    if (
+                      !persistentInstances.find(
+                        (i) => i.id === instance.existingInstanceId
+                      )
+                    ) {
+                      throw new GraphQLError(
+                        'Instance that was required for connection not found'
+                      )
+                    }
+
+                    return {
+                      where: { id: instance.existingInstanceId },
+                      // dummy content - case should never occur
+                      create: {
+                        elementType: ElementType.SC,
+                        migrationId: uuidv4(),
+                        order: instance.order,
+                        type: ElementInstanceType.LIVE_QUIZ,
+                        elementData: {} as ElementData,
+                        options: {},
+                        results: {} as ElementInstanceResults,
+                        anonymousResults: {} as ElementInstanceResults,
+                        instanceStatistics: undefined,
+                        element: {
+                          connect: { id: -1 },
+                        },
+                        owner: {
+                          connect: { id: ctx.user.sub },
+                        },
+                      },
+                    }
+                  }
+
+                  // ! Case 2: (duplication mode) duplicate existing instance and reset results & instance statistics
+                  else if (
+                    instance.existingInstanceId !== null &&
+                    instance.duplicateInstance
+                  ) {
+                    // verify that the instance is well-defined and contained in the ones selected for duplication
+                    const existingInstance = duplicationInstances.find(
+                      (i) => i.id === instance.existingInstanceId
+                    )
+                    if (!existingInstance) {
+                      throw new GraphQLError(
+                        'Instance that was required for duplication not found'
+                      )
+                    }
+
+                    // create new instance based on existing instance (with empty results and empty statistics)
+                    const initialResults = getInitialInstanceResults(
+                      existingInstance.elementData
+                    )
+                    return {
+                      where: { id: -1 },
+                      create: {
+                        elementType: existingInstance.elementType,
+                        migrationId: existingInstance.migrationId,
+                        order: instance.order,
+                        type: ElementInstanceType.LIVE_QUIZ,
+                        elementData: existingInstance.elementData,
+                        options: {
+                          pointsMultiplier:
+                            multiplier *
+                            existingInstance.elementData.pointsMultiplier,
+                        },
+                        results: initialResults,
+                        anonymousResults: initialResults,
+                        instanceStatistics: {
+                          create: getInitialInstanceStatistics(
+                            ElementInstanceType.LIVE_QUIZ
+                          ),
+                        },
+                        element: {
+                          connect: { id: existingInstance.elementId },
+                        },
+                        owner: {
+                          connect: { id: ctx.user.sub },
+                        },
+                      },
+                    }
+                  }
+
+                  // ! Case 3: (creation / edit) create new instance based on database element
+                  else {
+                    const element = elementMap[instance.elementId]!
+
+                    // if the element is not found, throw an error
+                    if (!element) {
+                      throw new GraphQLError(
+                        'Element that was required for instance creation not found'
+                      )
+                    }
+
+                    const elementData = processElementData(element)
+                    const initialResults =
+                      getInitialInstanceResults(elementData)
+
+                    return {
+                      where: { id: -1 },
+                      create: {
+                        elementType: element.type,
+                        migrationId: uuidv4(),
+                        order: instance.order,
+                        type: ElementInstanceType.LIVE_QUIZ,
+                        elementData: elementData,
+                        options: {
+                          pointsMultiplier:
+                            multiplier * element.pointsMultiplier,
+                        },
+                        results: initialResults,
+                        anonymousResults: initialResults,
+                        instanceStatistics: {
+                          create: getInitialInstanceStatistics(
+                            ElementInstanceType.LIVE_QUIZ
+                          ),
+                        },
+                        element: {
+                          connect: { id: element.id },
+                        },
+                        owner: {
+                          connect: { id: ctx.user.sub },
+                        },
+                      },
+                    }
+                  }
+                }),
+              },
             }
-          : undefined,
-    },
-    update: {
-      ...createOrUpdateJSON,
-      course:
-        courseId !== null
-          ? {
-              connect: { id: courseId },
-            }
-          : {
-              disconnect: true,
-            },
-    },
-    include: {
-      course: true,
-      blocks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
+          }),
         },
-        orderBy: {
-          order: 'asc',
+        owner: {
+          connect: { id: ctx.user.sub },
+        },
+        course:
+          courseId !== null
+            ? {
+                connect: { id: courseId },
+              }
+            : undefined,
+      },
+      update: {
+        ...createOrUpdateJSON,
+        course:
+          courseId !== null
+            ? {
+                connect: { id: courseId },
+              }
+            : {
+                disconnect: true,
+              },
+      },
+      include: {
+        course: true,
+        blocks: {
+          include: {
+            elements: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            order: 'asc',
+          },
         },
       },
-    },
+    })
   })
 
   ctx.emitter.emit('invalidate', {
@@ -584,7 +764,7 @@ export async function manipulateLiveQuiz(
     id,
   })
 
-  return element
+  return activity
 }
 // #endregion
 
@@ -1911,7 +2091,7 @@ export async function cancelLiveQuiz(
       }),
 
       ...instances.map((instance) => {
-        const initialResults = getInitialElementResults(instance.element)
+        const initialResults = getInitialInstanceResults(instance.elementData)
 
         return ctx.prisma.elementInstance.update({
           where: {

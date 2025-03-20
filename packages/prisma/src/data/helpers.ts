@@ -1,6 +1,6 @@
 import { ActivityType, type ElementOptionsCaseStudy } from '@klicker-uzh/types'
 import {
-  getInitialElementResults,
+  getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
 } from '@klicker-uzh/util'
@@ -284,17 +284,43 @@ export function prepareGroupActivityStack({
             (q1, q2) =>
               parseInt(q1.originalId ?? '-1') - parseInt(q2.originalId ?? '-1')
           )
-          .map((el, ix) => ({
-            migrationId: String(migrationIdOffset + 2 + ix),
-            order: 2 + ix,
+          .map((el, ix) => {
+            const elementData = processElementData(el)
+            const initialResults = getInitialInstanceResults(elementData)
+
+            return {
+              migrationId: String(migrationIdOffset + 2 + ix),
+              order: 2 + ix,
+              type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
+              elementType: el.type,
+              elementData,
+              options: {
+                pointsMultiplier: ix / 3 > 0.9 ? 1 : 2, // first three questions get multiplier 2, the rest 1
+              },
+              results: initialResults,
+              anonymousResults: initialResults,
+              instanceStatistics: {
+                create: getInitialInstanceStatistics(
+                  Prisma.ElementInstanceType.GROUP_ACTIVITY
+                ),
+              },
+              ownerId: el.ownerId,
+              elementId: el.id,
+            }
+          }),
+        ...contentElements.slice(0, 2).map((el, ix) => {
+          const elementData = processElementData(el)
+          const initialResults = getInitialInstanceResults(elementData)
+
+          return {
+            migrationId: String(migrationIdOffset + questions.length + 2 + ix),
+            order: questions.length + 2 + ix,
             type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
             elementType: el.type,
-            elementData: processElementData(el),
-            options: {
-              pointsMultiplier: ix / 3 > 0.9 ? 1 : 2, // first three questions get multiplier 2, the rest 1
-            },
-            results: getInitialElementResults(el),
-            anonymousResults: getInitialElementResults(el),
+            elementData,
+            options: {},
+            results: initialResults,
+            anonymousResults: initialResults,
             instanceStatistics: {
               create: getInitialInstanceStatistics(
                 Prisma.ElementInstanceType.GROUP_ACTIVITY
@@ -302,24 +328,8 @@ export function prepareGroupActivityStack({
             },
             ownerId: el.ownerId,
             elementId: el.id,
-          })),
-        ...contentElements.slice(0, 2).map((el, ix) => ({
-          migrationId: String(migrationIdOffset + questions.length + 2 + ix),
-          order: questions.length + 2 + ix,
-          type: Prisma.ElementInstanceType.GROUP_ACTIVITY,
-          elementType: el.type,
-          elementData: processElementData(el),
-          options: {},
-          results: getInitialElementResults(el),
-          anonymousResults: getInitialElementResults(el),
-          instanceStatistics: {
-            create: getInitialInstanceStatistics(
-              Prisma.ElementInstanceType.GROUP_ACTIVITY
-            ),
-          },
-          ownerId: el.ownerId,
-          elementId: el.id,
-        })),
+          }
+        }),
       ],
     },
     course: connectStackToCourse
@@ -384,41 +394,46 @@ export function prepareStackVariety({
 }) {
   return [
     // create stacks with one flashcard each
-    ...flashcards.map((el, ix) => ({
-      displayName: `Flashcard Stack ${ix + 1}`,
-      description: 'This stack contains a single *flashcard*.',
-      order: ix,
-      type: stackType,
-      elements: {
-        create: [
-          {
-            migrationId: String(migrationIdOffset + ix),
-            order: ix,
-            type: elementInstanceType,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options:
-              activityType === ActivityType.PRACTICE_QUIZ
-                ? { resetTimeDays: 7 }
-                : {},
-            results: getInitialElementResults(el),
-            anonymousResults: getInitialElementResults(el),
-            instanceStatistics: {
-              create: getInitialInstanceStatistics(elementInstanceType),
+    ...flashcards.map((el, ix) => {
+      const elementData = processElementData(el)
+      const initialResults = getInitialInstanceResults(elementData)
+
+      return {
+        displayName: `Flashcard Stack ${ix + 1}`,
+        description: 'This stack contains a single *flashcard*.',
+        order: ix,
+        type: stackType,
+        elements: {
+          create: [
+            {
+              migrationId: String(migrationIdOffset + ix),
+              order: ix,
+              type: elementInstanceType,
+              elementType: el.type,
+              elementData,
+              options:
+                activityType === ActivityType.PRACTICE_QUIZ
+                  ? { resetTimeDays: 7 }
+                  : {},
+              results: initialResults,
+              anonymousResults: initialResults,
+              instanceStatistics: {
+                create: getInitialInstanceStatistics(elementInstanceType),
+              },
+              ownerId: el.ownerId,
+              elementId: el.id,
             },
-            ownerId: el.ownerId,
-            elementId: el.id,
-          },
-        ],
-      },
-      course: connectToCourse
-        ? {
-            connect: {
-              id: courseId,
-            },
-          }
-        : undefined,
-    })),
+          ],
+        },
+        course: connectToCourse
+          ? {
+              connect: {
+                id: courseId,
+              },
+            }
+          : undefined,
+      }
+    }),
     // create one stack with all flashcards
     {
       displayName: `Flashcard Stack All`,
@@ -426,24 +441,29 @@ export function prepareStackVariety({
       order: flashcards.length,
       type: stackType,
       elements: {
-        create: flashcards.map((el, ix) => ({
-          migrationId: String(migrationIdOffset + flashcards.length + ix),
-          order: ix,
-          type: elementInstanceType,
-          elementType: el.type,
-          elementData: processElementData(el),
-          options:
-            activityType === ActivityType.PRACTICE_QUIZ
-              ? { resetTimeDays: 6 }
-              : {},
-          results: getInitialElementResults(el),
-          anonymousResults: getInitialElementResults(el),
-          instanceStatistics: {
-            create: getInitialInstanceStatistics(elementInstanceType),
-          },
-          ownerId: el.ownerId,
-          elementId: el.id,
-        })),
+        create: flashcards.map((el, ix) => {
+          const elementData = processElementData(el)
+          const initialResults = getInitialInstanceResults(elementData)
+
+          return {
+            migrationId: String(migrationIdOffset + flashcards.length + ix),
+            order: ix,
+            type: elementInstanceType,
+            elementType: el.type,
+            elementData,
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { resetTimeDays: 6 }
+                : {},
+            results: initialResults,
+            anonymousResults: initialResults,
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(elementInstanceType),
+            },
+            ownerId: el.ownerId,
+            elementId: el.id,
+          }
+        }),
       },
       course: connectToCourse
         ? {
@@ -454,41 +474,48 @@ export function prepareStackVariety({
         : undefined,
     },
     // create stacks with questions
-    ...questions.map((el, ix) => ({
-      displayName: `Question Stack ${ix + 1}`,
-      description: 'This stack contains a single *question*.',
-      order: flashcards.length + ix + 1,
-      type: stackType,
-      elements: {
-        create: [
-          {
-            migrationId: String(migrationIdOffset + 2 * flashcards.length + ix),
-            order: ix,
-            type: elementInstanceType,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options:
-              activityType === ActivityType.PRACTICE_QUIZ
-                ? { pointsMultiplier: 1, resetTimeDays: 5 }
-                : { pointsMultiplier: 1 },
-            results: getInitialElementResults(el),
-            anonymousResults: getInitialElementResults(el),
-            instanceStatistics: {
-              create: getInitialInstanceStatistics(elementInstanceType),
+    ...questions.map((el, ix) => {
+      const elementData = processElementData(el)
+      const initialResults = getInitialInstanceResults(elementData)
+
+      return {
+        displayName: `Question Stack ${ix + 1}`,
+        description: 'This stack contains a single *question*.',
+        order: flashcards.length + ix + 1,
+        type: stackType,
+        elements: {
+          create: [
+            {
+              migrationId: String(
+                migrationIdOffset + 2 * flashcards.length + ix
+              ),
+              order: ix,
+              type: elementInstanceType,
+              elementType: el.type,
+              elementData,
+              options:
+                activityType === ActivityType.PRACTICE_QUIZ
+                  ? { pointsMultiplier: 1, resetTimeDays: 5 }
+                  : { pointsMultiplier: 1 },
+              results: initialResults,
+              anonymousResults: initialResults,
+              instanceStatistics: {
+                create: getInitialInstanceStatistics(elementInstanceType),
+              },
+              ownerId: el.ownerId,
+              elementId: el.id,
             },
-            ownerId: el.ownerId,
-            elementId: el.id,
-          },
-        ],
-      },
-      course: connectToCourse
-        ? {
-            connect: {
-              id: courseId,
-            },
-          }
-        : undefined,
-    })),
+          ],
+        },
+        course: connectToCourse
+          ? {
+              connect: {
+                id: courseId,
+              },
+            }
+          : undefined,
+      }
+    }),
     // create one stack with all questions
     {
       displayName: `Question Stack All`,
@@ -508,8 +535,8 @@ export function prepareStackVariety({
             activityType === ActivityType.PRACTICE_QUIZ
               ? { pointsMultiplier: 4, resetTimeDays: 8 }
               : { pointsMultiplier: 4 },
-          results: getInitialElementResults(el),
-          anonymousResults: getInitialElementResults(el),
+          results: getInitialInstanceResults(processElementData(el)),
+          anonymousResults: getInitialInstanceResults(processElementData(el)),
           instanceStatistics: {
             create: getInitialInstanceStatistics(elementInstanceType),
           },
@@ -526,46 +553,51 @@ export function prepareStackVariety({
         : undefined,
     },
     // create stacks with content elements
-    ...contentElements.map((el, ix) => ({
-      displayName: `Content Stack ${ix + 1}`,
-      description: 'This stack contains a single *content element*.',
-      order: flashcards.length + questions.length + ix + 2,
-      type: stackType,
-      elements: {
-        create: [
-          {
-            migrationId: String(
-              migrationIdOffset +
-                2 * flashcards.length +
-                2 * questions.length +
-                ix
-            ),
-            order: ix,
-            type: elementInstanceType,
-            elementType: el.type,
-            elementData: processElementData(el),
-            options:
-              activityType === ActivityType.PRACTICE_QUIZ
-                ? { resetTimeDays: 7 }
-                : {},
-            results: getInitialElementResults(el),
-            anonymousResults: getInitialElementResults(el),
-            instanceStatistics: {
-              create: getInitialInstanceStatistics(elementInstanceType),
+    ...contentElements.map((el, ix) => {
+      const elementData = processElementData(el)
+      const initialResults = getInitialInstanceResults(elementData)
+
+      return {
+        displayName: `Content Stack ${ix + 1}`,
+        description: 'This stack contains a single *content element*.',
+        order: flashcards.length + questions.length + ix + 2,
+        type: stackType,
+        elements: {
+          create: [
+            {
+              migrationId: String(
+                migrationIdOffset +
+                  2 * flashcards.length +
+                  2 * questions.length +
+                  ix
+              ),
+              order: ix,
+              type: elementInstanceType,
+              elementType: el.type,
+              elementData,
+              options:
+                activityType === ActivityType.PRACTICE_QUIZ
+                  ? { resetTimeDays: 7 }
+                  : {},
+              results: initialResults,
+              anonymousResults: initialResults,
+              instanceStatistics: {
+                create: getInitialInstanceStatistics(elementInstanceType),
+              },
+              ownerId: el.ownerId,
+              elementId: el.id,
             },
-            ownerId: el.ownerId,
-            elementId: el.id,
-          },
-        ],
-      },
-      course: connectToCourse
-        ? {
-            connect: {
-              id: courseId,
-            },
-          }
-        : undefined,
-    })),
+          ],
+        },
+        course: connectToCourse
+          ? {
+              connect: {
+                id: courseId,
+              },
+            }
+          : undefined,
+      }
+    }),
     // create two stacks with all content elements
     ...[0, 1].map((outer_ix) => ({
       displayName: `Content Stack All ${outer_ix + 1}`,
@@ -578,31 +610,36 @@ export function prepareStackVariety({
         outer_ix,
       type: stackType,
       elements: {
-        create: contentElements.map((el, ix) => ({
-          migrationId: String(
-            migrationIdOffset +
-              2 * flashcards.length +
-              2 * questions.length +
-              contentElements.length +
-              outer_ix * contentElements.length +
-              ix
-          ),
-          order: ix,
-          type: elementInstanceType,
-          elementType: el.type,
-          elementData: processElementData(el),
-          options:
-            activityType === ActivityType.PRACTICE_QUIZ
-              ? { resetTimeDays: 6 }
-              : {},
-          results: getInitialElementResults(el),
-          anonymousResults: getInitialElementResults(el),
-          instanceStatistics: {
-            create: getInitialInstanceStatistics(elementInstanceType),
-          },
-          ownerId: el.ownerId,
-          elementId: el.id,
-        })),
+        create: contentElements.map((el, ix) => {
+          const elementData = processElementData(el)
+          const initialResults = getInitialInstanceResults(elementData)
+
+          return {
+            migrationId: String(
+              migrationIdOffset +
+                2 * flashcards.length +
+                2 * questions.length +
+                contentElements.length +
+                outer_ix * contentElements.length +
+                ix
+            ),
+            order: ix,
+            type: elementInstanceType,
+            elementType: el.type,
+            elementData,
+            options:
+              activityType === ActivityType.PRACTICE_QUIZ
+                ? { resetTimeDays: 6 }
+                : {},
+            results: initialResults,
+            anonymousResults: initialResults,
+            instanceStatistics: {
+              create: getInitialInstanceStatistics(elementInstanceType),
+            },
+            ownerId: el.ownerId,
+            elementId: el.id,
+          }
+        }),
       },
       course: connectToCourse
         ? {
@@ -638,8 +675,12 @@ export function prepareStackVariety({
               activityType === ActivityType.PRACTICE_QUIZ
                 ? { resetTimeDays: 5 }
                 : {},
-            results: getInitialElementResults(flashcards[0]!),
-            anonymousResults: getInitialElementResults(flashcards[0]!),
+            results: getInitialInstanceResults(
+              processElementData(flashcards[0]!)
+            ),
+            anonymousResults: getInitialInstanceResults(
+              processElementData(flashcards[0]!)
+            ),
             instanceStatistics: {
               create: getInitialInstanceStatistics(elementInstanceType),
             },
@@ -663,8 +704,12 @@ export function prepareStackVariety({
               activityType === ActivityType.PRACTICE_QUIZ
                 ? { pointsMultiplier: 3, resetTimeDays: 6 }
                 : { pointsMultiplier: 3 },
-            results: getInitialElementResults(questions[0]!),
-            anonymousResults: getInitialElementResults(questions[0]!),
+            results: getInitialInstanceResults(
+              processElementData(questions[0]!)
+            ),
+            anonymousResults: getInitialInstanceResults(
+              processElementData(questions[0]!)
+            ),
             instanceStatistics: {
               create: getInitialInstanceStatistics(elementInstanceType),
             },
@@ -685,8 +730,12 @@ export function prepareStackVariety({
             elementType: contentElements[0]!.type,
             elementData: processElementData(contentElements[0]!),
             options: {},
-            results: getInitialElementResults(contentElements[0]!),
-            anonymousResults: getInitialElementResults(contentElements[0]!),
+            results: getInitialInstanceResults(
+              processElementData(contentElements[0]!)
+            ),
+            anonymousResults: getInitialInstanceResults(
+              processElementData(contentElements[0]!)
+            ),
             instanceStatistics: {
               create: getInitialInstanceStatistics(elementInstanceType),
             },

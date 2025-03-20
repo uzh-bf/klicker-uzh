@@ -595,7 +595,7 @@ export type CaseStudyElementData = IElementData<
   ElementOptionsCaseStudy
 >
 
-export type AllElementTypeData =
+export type ElementData =
   | ChoicesElementData
   | FreeTextElementData
   | NumericalElementData

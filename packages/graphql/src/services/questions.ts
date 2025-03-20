@@ -6,7 +6,10 @@ import {
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
 import { ActivityType, ElementManipulationInput } from '@klicker-uzh/types'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import {
+  getInitialInstanceResults,
+  processElementData,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
@@ -111,7 +114,7 @@ export async function getArtificialElementInstance(
   if (!element) return null
 
   const elementData = processElementData(element)
-  const initialResults = getInitialElementResults(element)
+  const initialResults = getInitialInstanceResults(elementData)
 
   return {
     id: 0,
@@ -931,7 +934,7 @@ export async function updateElementInstances(
           const newElementData = processElementData(element)
 
           // prepare new results objects
-          const newResults = getInitialElementResults(element)
+          const newResults = getInitialInstanceResults(newElementData)
 
           const instance = await ctx.prisma.elementInstance.update({
             where: { id: instanceId },
