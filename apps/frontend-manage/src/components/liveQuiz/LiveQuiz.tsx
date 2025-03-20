@@ -468,6 +468,7 @@ function LiveQuiz({
                 )}
             </div>
           }
+          data={{ cy: `live-quiz-collapsible-${quiz.name}` }}
         >
           <div className="mb-6 mt-4 flex flex-row gap-4 overflow-x-auto overflow-y-hidden">
             {quiz.blocks?.map((block, index) => (

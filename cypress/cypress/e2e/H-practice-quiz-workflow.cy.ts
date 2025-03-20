@@ -6,8 +6,11 @@ const currentYear = new Date().getFullYear()
 // ? For consistency, all creation / editing / duplication workflows are run before checking the student views
 describe('Different practice quiz workflows', function () {
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('H-practice-quiz.json').then((data) => {
-      this.data = data
+    cy.fixture('questions.json').then((questionData) => {
+      this.data = questionData
+    })
+    cy.fixture('H-practice-quiz.json').then((liveQuizData) => {
+      this.data = { ...this.data, ...liveQuizData }
     })
   })
 
@@ -16,94 +19,94 @@ describe('Different practice quiz workflows', function () {
   it('Create questions required for practice quiz creation', function () {
     cy.loginLecturer()
 
-    // SC question with solution
-    cy.createQuestionSC({
-      title: this.data.questions.SC1.title,
-      content: this.data.questions.SC1.content,
-      choices: this.data.questions.SC1.choices,
-    })
-
     // SC question without solution
     cy.createQuestionSC({
-      title: this.data.questions.SC2.title,
-      content: this.data.questions.SC2.content,
-      choices: this.data.questions.SC2.choices,
+      title: this.data.SC.title,
+      content: this.data.SC.content,
+      choices: this.data.SC.choices,
+    })
+
+    // SC question with solution
+    cy.createQuestionSC({
+      title: this.data.SCML.title,
+      content: this.data.SCML.content,
+      choices: this.data.SCML.choices,
     })
 
     // MC question
     cy.createQuestionMC({
-      title: this.data.questions.MC.title,
-      content: this.data.questions.MC.content,
-      choices: this.data.questions.MC.choices,
+      title: this.data.MCML.title,
+      content: this.data.MCML.content,
+      choices: this.data.MCML.choices,
     })
 
     // KPRIM question
     cy.createQuestionKPRIM({
-      title: this.data.questions.KP.title,
-      content: this.data.questions.KP.content,
-      choices: this.data.questions.KP.choices,
+      title: this.data.KPML.title,
+      content: this.data.KPML.content,
+      choices: this.data.KPML.choices,
     })
 
     // NR question
     cy.createQuestionNR({
-      title: this.data.questions.NR.title,
-      content: this.data.questions.NR.content,
-      ...this.data.questions.NR.options,
+      title: this.data.NRML.title,
+      content: this.data.NRML.content,
+      ...this.data.NRML.options,
     })
 
     // FT question
     cy.createQuestionFT({
-      title: this.data.questions.FT.title,
-      content: this.data.questions.FT.content,
-      ...this.data.questions.FT.options,
+      title: this.data.FTML.title,
+      content: this.data.FTML.content,
+      ...this.data.FTML.options,
     })
 
     // FC question
     cy.createFlashcard({
-      title: this.data.questions.FC.title,
-      content: this.data.questions.FC.content,
-      explanation: this.data.questions.FC.explanation,
+      title: this.data.FC.title,
+      content: this.data.FC.content,
+      explanation: this.data.FC.explanation,
     })
 
     // CT question
     cy.createContent({
-      title: this.data.questions.CT.title,
-      content: this.data.questions.CT.content,
+      title: this.data.CT.title,
+      content: this.data.CT.content,
     })
 
     // create answer collection
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
-      name: this.data.questions.collection.name,
-      description: this.data.questions.collection.description,
-      entries: this.data.questions.collection.options,
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
     })
 
     // create selection question
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.questions.SE.title,
-      content: this.data.questions.SE.content,
-      numberOfInputs: this.data.questions.SE.inputs,
-      collectionName: this.data.questions.collection.name,
-      correctAnswers: this.data.questions.collection.options.filter((_, i) =>
-        this.data.questions.SE.solutions.includes(i)
+      title: this.data.SEML.title,
+      content: this.data.SEML.content,
+      numberOfInputs: this.data.SEML.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML.solutions.includes(i)
       ),
     })
 
     // create a case study question
     cy.createQuestionCS({
-      title: this.data.questions.CS.title,
-      content: this.data.questions.CS.content,
-      explanation: this.data.questions.CS.explanation,
-      collectionName: this.data.questions.collection.name,
-      selectedItems: this.data.questions.collection.options.filter((_, i) =>
-        this.data.questions.CS.selectedItems.includes(i)
+      title: this.data.CSML.title,
+      content: this.data.CSML.content,
+      explanation: this.data.CSML.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CSML.selectedItems.includes(i)
       ),
-      criteria: this.data.questions.CS.criteria,
-      cases: this.data.questions.CS.cases,
-      solutions: this.data.questions.CS.solutions,
+      criteria: this.data.CSML.criteria,
+      cases: this.data.CSML.cases,
+      solutions: this.data.CSML.solutions,
     })
   })
   // #endregion
@@ -181,31 +184,29 @@ describe('Different practice quiz workflows', function () {
     // Step 4: Create stacks
     cy.createStacks({
       stacks: [
-        { elements: [this.data.questions.SC1.title] },
-        { elements: [this.data.questions.MC.title] },
-        { elements: [this.data.questions.KP.title] },
-        { elements: [this.data.questions.NR.title] },
-        { elements: [this.data.questions.FT.title] },
-        { elements: [this.data.questions.SE.title] },
-        { elements: [this.data.questions.CS.title] },
-        { elements: [this.data.questions.FC.title] },
-        { elements: [this.data.questions.CT.title] },
+        { elements: [this.data.SCML.title] },
+        { elements: [this.data.MCML.title] },
+        { elements: [this.data.KPML.title] },
+        { elements: [this.data.NRML.title] },
+        { elements: [this.data.FTML.title] },
+        { elements: [this.data.SEML.title] },
+        { elements: [this.data.CSML.title] },
+        { elements: [this.data.FC.title] },
+        { elements: [this.data.CT.title] },
       ],
     })
 
     // SC question without sample solution should be rejected
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.questions.SC2.title}"]`)
-      .contains(this.data.questions.SC2.title)
+    cy.get(`[data-cy="element-item-${this.data.SC.title}"]`)
+      .contains(this.data.SC.title)
       .trigger('dragstart', {
         dataTransfer,
       })
     cy.get('[data-cy="drop-elements-stack-1"]').trigger('drop', {
       dataTransfer,
     })
-    cy.get('[data-cy="element-1-stack-1"]').contains(
-      this.data.questions.SC2.title
-    )
+    cy.get('[data-cy="element-1-stack-1"]').contains(this.data.SC.title)
     cy.get('[data-cy="next-or-submit"]').should('be.disabled')
     cy.get('[data-cy="remove-element-1-stack-1"]').click()
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
@@ -285,37 +286,37 @@ describe('Different practice quiz workflows', function () {
 
     // Step 4: Check content of stacks and add another question
     cy.get('[data-cy="element-0-stack-0"]').contains(
-      this.data.questions.SC1.title.substring(0, 20)
+      this.data.SCML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-1"]').contains(
-      this.data.questions.MC.title.substring(0, 20)
+      this.data.MCML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-2"]').contains(
-      this.data.questions.KP.title.substring(0, 20)
+      this.data.KPML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-3"]').contains(
-      this.data.questions.NR.title.substring(0, 20)
+      this.data.NRML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-4"]').contains(
-      this.data.questions.FT.title.substring(0, 20)
+      this.data.FTML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      this.data.questions.SE.title.substring(0, 20)
+      this.data.SEML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      this.data.questions.CS.title.substring(0, 20)
+      this.data.CSML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-8"]').contains(
-      this.data.questions.CT.title.substring(0, 20)
+      this.data.CT.title.substring(0, 20)
     )
 
     cy.get('[data-cy="drop-elements-add-stack"]').click()
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.questions.SC1.title}"]`)
-      .contains(this.data.questions.SC1.title)
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`)
+      .contains(this.data.SCML.title)
       .trigger('dragstart', {
         dataTransfer,
       })
@@ -323,7 +324,7 @@ describe('Different practice quiz workflows', function () {
       dataTransfer,
     })
     cy.get('[data-cy="element-0-stack-9"]').contains(
-      this.data.questions.SC1.title.substring(0, 20)
+      this.data.SCML.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -381,34 +382,34 @@ describe('Different practice quiz workflows', function () {
 
     // Step 4: Check content of stacks and add another question
     cy.get('[data-cy="element-0-stack-0"]').contains(
-      this.data.questions.SC1.title.substring(0, 20)
+      this.data.SCML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-1"]').contains(
-      this.data.questions.MC.title.substring(0, 20)
+      this.data.MCML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-2"]').contains(
-      this.data.questions.KP.title.substring(0, 20)
+      this.data.KPML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-3"]').contains(
-      this.data.questions.NR.title.substring(0, 20)
+      this.data.NRML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-4"]').contains(
-      this.data.questions.FT.title.substring(0, 20)
+      this.data.FTML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      this.data.questions.SE.title.substring(0, 20)
+      this.data.SEML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      this.data.questions.CS.title.substring(0, 20)
+      this.data.CSML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-8"]').contains(
-      this.data.questions.CT.title.substring(0, 20)
+      this.data.CT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-9"]').contains(
-      this.data.questions.SC1.title.substring(0, 20)
+      this.data.SCML.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
   })
@@ -420,8 +421,8 @@ describe('Different practice quiz workflows', function () {
       displayName: this.data.scheduled.displayName,
       courseName: this.data.course,
       stacks: [
-        { elements: [this.data.questions.SC1.title] },
-        { elements: [this.data.questions.MC.title] },
+        { elements: [this.data.SCML.title] },
+        { elements: [this.data.MCML.title] },
       ],
     })
   })
@@ -472,34 +473,34 @@ describe('Different practice quiz workflows', function () {
 
     // Step 4: Check content of stacks and add another question
     cy.get('[data-cy="element-0-stack-0"]').contains(
-      this.data.questions.SC1.title.substring(0, 20)
+      this.data.SCML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-1"]').contains(
-      this.data.questions.MC.title.substring(0, 20)
+      this.data.MCML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-2"]').contains(
-      this.data.questions.KP.title.substring(0, 20)
+      this.data.KPML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-3"]').contains(
-      this.data.questions.NR.title.substring(0, 20)
+      this.data.NRML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-4"]').contains(
-      this.data.questions.FT.title.substring(0, 20)
+      this.data.FTML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-5"]').contains(
-      this.data.questions.SE.title.substring(0, 20)
+      this.data.SEML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-6"]').contains(
-      this.data.questions.CS.title.substring(0, 20)
+      this.data.CSML.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-7"]').contains(
-      this.data.questions.FC.title.substring(0, 20)
+      this.data.FC.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-8"]').contains(
-      this.data.questions.CT.title.substring(0, 20)
+      this.data.CT.title.substring(0, 20)
     )
     cy.get('[data-cy="element-0-stack-9"]').contains(
-      this.data.questions.SC1.title.substring(0, 20)
+      this.data.SCML.title.substring(0, 20)
     )
     cy.get('[data-cy="next-or-submit"]').click()
   })
@@ -528,21 +529,18 @@ describe('Different practice quiz workflows', function () {
   // provide answers for all questions in the practice quiz and check that the corresponding fields are disabled after submission
   function answerRunningPracticeQuiz(data) {
     // SC question
-    cy.findByText(data.questions.SC1.content).should('exist')
+    cy.findByText(data.SCML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-1"]').click()
-    cy.get('[data-cy="sc-0-answer-option-2"]').click()
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-3"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // MC question
-    cy.findByText(data.questions.MC.content).should('exist')
+    cy.findByText(data.MCML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="mc-0-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
@@ -555,11 +553,10 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="mc-0-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="mc-0-answer-option-2"]').should('be.disabled')
     cy.get('[data-cy="mc-0-answer-option-3"]').should('be.disabled')
-    cy.get('[data-cy="mc-0-answer-option-4"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // KPRIM question
-    cy.findByText(data.questions.KP.content).should('exist')
+    cy.findByText(data.KPML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-0-answer-0-correct"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -580,7 +577,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // NR question
-    cy.findByText(data.questions.NR.content).should('exist')
+    cy.findByText(data.NRML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-0"]').clear().type('-20')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -588,30 +585,30 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="input-numerical-0"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-0"]').type(data.questions.NR.answer)
+    cy.get('[data-cy="input-numerical-0"]').type(data.NRML.answer)
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="input-numerical-0"]')
-      .should('have.value', data.questions.NR.answer)
+      .should('have.value', data.NRML.answer)
       .should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // FT question
-    cy.findByText(data.questions.FT.content).should('exist')
+    cy.findByText(data.FTML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="free-text-input-0"]').type('Testinput')
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="free-text-input-0"]').clear()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-0"]').type(data.questions.FT.answer)
+    cy.get('[data-cy="free-text-input-0"]').type(data.FTML.answer)
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="free-text-input-0"]')
-      .should('have.value', data.questions.FT.answer)
+      .should('have.value', data.FTML.answer)
       .should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // SE QUESTION
-    cy.findByText(data.questions.SE.content).should('exist')
+    cy.findByText(data.SEML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[id="selection-0-field-1"]').click()
     cy.get('[id="react-select-selection-0-field-1-option-0"]').click()
@@ -623,23 +620,23 @@ describe('Different practice quiz workflows', function () {
     cy.get('[id="react-select-selection-0-field-2-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[id="selection-0-field-0"]')
-      .contains(data.questions.collection.options[1])
+      .contains(data.collection.options[1])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-0-field-1"]')
-      .contains(data.questions.collection.options[0])
+      .contains(data.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-0-field-2"]')
-      .contains(data.questions.collection.options[3])
+      .contains(data.collection.options[3])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // CS Question
-    cy.findByText(data.questions.CS.content).should('exist')
+    cy.findByText(data.CSML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.answerCaseStudy({
       elementIx: 0,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
       initialValidation: cy
         .get('[data-cy="student-stack-submit"]')
         .should('be.disabled'),
@@ -647,8 +644,8 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.verifyCaseStudyInputs({
       elementIx: 0,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
       verifyDisabled: true,
     })
     cy.get('[data-cy="student-stack-continue"]').click()
@@ -673,14 +670,14 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // Flashcard
-    cy.findByText(data.questions.FC.content).should('exist')
+    cy.findByText(data.FC.content).should('exist')
     cy.get('[data-cy="flashcard-front-0"]').click()
     cy.get('[data-cy="flashcard-response-0-No"]').click()
     cy.get('[data-cy="flashcard-response-0-Yes"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
 
     // Content
-    cy.findByText(data.questions.CT.content).should('exist')
+    cy.findByText(data.CT.content).should('exist')
     cy.get('[data-cy="read-content-element-0"]').should('exist')
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
       .contains(messages.pwa.practiceQuiz.markAllAsRead)
@@ -690,17 +687,14 @@ describe('Different practice quiz workflows', function () {
       .click()
 
     // SC question
-    cy.findByText(data.questions.SC1.content).should('exist')
+    cy.findByText(data.SCML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').click()
-    cy.get('[data-cy="sc-0-answer-option-2"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-3"]').should('be.disabled')
 
     // finish the practice quiz
     cy.get('[data-cy="student-stack-continue"]')
@@ -715,22 +709,16 @@ describe('Different practice quiz workflows', function () {
       cy.get('[data-cy="start-practice-quiz"]').click()
 
       // SC question
-      cy.get('[data-cy="choices-question-content"]').contains(
-        data.questions.SC1.content
-      )
+      cy.get('[data-cy="choices-question-content"]').contains(data.SCML.content)
       cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
       cy.get('[data-cy="sc-0-answer-option-1"]').click()
       cy.get('[data-cy="student-stack-submit"]').click()
       cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
       cy.get('[data-cy="sc-0-answer-option-1"]').should('be.disabled')
-      cy.get('[data-cy="sc-0-answer-option-2"]').should('be.disabled')
-      cy.get('[data-cy="sc-0-answer-option-3"]').should('be.disabled')
       cy.get('[data-cy="student-stack-continue"]').click()
 
       // MC question
-      cy.get('[data-cy="choices-question-content"]').contains(
-        data.questions.MC.content
-      )
+      cy.get('[data-cy="choices-question-content"]').contains(data.MCML.content)
       cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
       cy.get('[data-cy="mc-0-answer-option-1"]').click()
       cy.get('[data-cy="mc-0-answer-option-2"]').click()
@@ -739,13 +727,10 @@ describe('Different practice quiz workflows', function () {
       cy.get('[data-cy="mc-0-answer-option-1"]').should('be.disabled')
       cy.get('[data-cy="mc-0-answer-option-2"]').should('be.disabled')
       cy.get('[data-cy="mc-0-answer-option-3"]').should('be.disabled')
-      cy.get('[data-cy="mc-0-answer-option-4"]').should('be.disabled')
       cy.get('[data-cy="student-stack-continue"]').click()
 
       // KPRIM question
-      cy.get('[data-cy="choices-question-content"]').contains(
-        data.questions.KP.content
-      )
+      cy.get('[data-cy="choices-question-content"]').contains(data.KPML.content)
       cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
       cy.get('[data-cy="toggle-kp-0-answer-0-correct"]').click()
       cy.get('[data-cy="toggle-kp-0-answer-1-incorrect"]').click()
@@ -770,18 +755,16 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="start-practice-quiz"]').click()
 
     // SC question - no partial submissions possible
-    cy.findByText(data.questions.SC1.content).should('exist')
+    cy.findByText(data.SCML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-3"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // MC question - no partial submissions possible
-    cy.findByText(data.questions.MC.content).should('exist')
+    cy.findByText(data.MCML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="mc-0-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
@@ -789,11 +772,10 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="mc-0-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="mc-0-answer-option-2"]').should('be.disabled')
     cy.get('[data-cy="mc-0-answer-option-3"]').should('be.disabled')
-    cy.get('[data-cy="mc-0-answer-option-4"]').should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // KPRIM question - no partial submissions possible
-    cy.findByText(data.questions.KP.content).should('exist')
+    cy.findByText(data.KPML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-0-answer-0-correct"]').click()
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -814,36 +796,34 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // NR question - no partial submissions possible
-    cy.findByText(data.questions.NR.content).should('exist')
+    cy.findByText(data.NRML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="input-numerical-0"]')
-      .clear()
-      .type(data.questions.NR.answer)
+    cy.get('[data-cy="input-numerical-0"]').clear().type(data.NRML.answer)
     cy.get('[data-cy="student-stack-submit"]').should('not.be.disabled')
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="input-numerical-0"]')
-      .should('have.value', data.questions.NR.answer)
+      .should('have.value', data.NRML.answer)
       .should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // FT question - no partial submissions possible
-    cy.findByText(data.questions.FT.content).should('exist')
+    cy.findByText(data.FTML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
-    cy.get('[data-cy="free-text-input-0"]').type(data.questions.FT.answer)
+    cy.get('[data-cy="free-text-input-0"]').type(data.FTML.answer)
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="free-text-input-0"]')
-      .should('have.value', data.questions.FT.answer)
+      .should('have.value', data.FTML.answer)
       .should('be.disabled')
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // SE QUESTION - partial submissions possible
-    cy.findByText(data.questions.SE.content).should('exist')
+    cy.findByText(data.SEML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[id="selection-0-field-0"]').click()
     cy.get('[id="react-select-selection-0-field-0-option-0"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[id="selection-0-field-0"]')
-      .contains(data.questions.collection.options[0])
+      .contains(data.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-0-field-1"]')
       .contains(messages.shared.questions.seSelectOption)
@@ -854,12 +834,12 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // CS Question - no partial submissions possible
-    cy.findByText(data.questions.CS.content).should('exist')
+    cy.findByText(data.CSML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.answerCaseStudy({
       elementIx: 0,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
       initialValidation: cy
         .get('[data-cy="student-stack-submit"]')
         .should('be.disabled'), // full answer required
@@ -867,20 +847,20 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.verifyCaseStudyInputs({
       elementIx: 0,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
       verifyDisabled: true,
     })
     cy.get('[data-cy="student-stack-continue"]').click()
 
     // Flashcard - no partial submissions possible
-    cy.findByText(data.questions.FC.content).should('exist')
+    cy.findByText(data.FC.content).should('exist')
     cy.get('[data-cy="flashcard-front-0"]').click()
     cy.get('[data-cy="flashcard-response-0-No"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
 
     // Content - no partial submissions possible
-    cy.findByText(data.questions.CT.content).should('exist')
+    cy.findByText(data.CT.content).should('exist')
     cy.get('[data-cy="read-content-element-0"]').should('exist')
     cy.get('[data-cy="practice-quiz-mark-all-as-read"]')
       .contains(messages.pwa.practiceQuiz.markAllAsRead)
@@ -890,14 +870,12 @@ describe('Different practice quiz workflows', function () {
       .click()
 
     // SC question (required to complete activity)
-    cy.findByText(data.questions.SC1.content).should('exist')
+    cy.findByText(data.SCML.content).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').click()
     cy.get('[data-cy="student-stack-submit"]').click()
     cy.get('[data-cy="sc-0-answer-option-0"]').should('be.disabled')
     cy.get('[data-cy="sc-0-answer-option-1"]').should('be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-2"]').should('be.disabled')
-    cy.get('[data-cy="sc-0-answer-option-3"]').should('be.disabled')
 
     // finish the practice quiz
     cy.get('[data-cy="student-stack-continue"]')
@@ -1159,21 +1137,332 @@ describe('Different practice quiz workflows', function () {
       `[data-cy="practice-quiz-${this.data.scheduled.displayName}"]`
     ).should('not.exist')
   })
+  // #endregion
 
+  // ! Part 4: Verify Editing / Duplication with Updated / Deleted Questions
+  // #region
+  it('Create a numerical question and included it in a practice quiz', function () {
+    cy.loginLecturer()
+    cy.createQuestionNR({
+      title: this.data.NRML2.title,
+      content: this.data.NRML2.content,
+      ...this.data.NRML2.options,
+    })
+    cy.createPracticeQuiz({
+      name: this.data.manipulation.name,
+      displayName: this.data.manipulation.displayName,
+      courseName: this.data.manipulation.course,
+      stacks: [{ elements: [this.data.NRML2.title] }],
+    })
+
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${this.data.manipulation.name}"]`).contains(
+      messages.shared.generic.draft
+    )
+  })
+
+  it('Edit the numerical question, edit and save the unmodified practice quiz -> verify that nothing changed', function () {
+    cy.loginLecturer()
+
+    // modify numerical question
+    cy.get(`[data-cy="edit-question-${this.data.NRML2.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]')
+      .clear()
+      .type(this.data.manipulation.newNRTitle)
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.manipulation.newNRContent)
+    cy.get('[data-cy="save-new-question"]').click()
+
+    // edit and save the unmodified practice quiz
+    cy.get('[data-cy="courses"]').click()
+    cy.get(
+      `[data-cy="course-list-button-${this.data.manipulation.course}"]`
+    ).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
+    ).click()
+    cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
+      'exist'
+    )
+
+    // save the practice quiz without modifications
+    cy.get('[data-cy="insert-practice-quiz-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="element-0-stack-0"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // check on the course overview if the updated practice quiz is visible
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(`[data-cy="practice-quiz-${this.data.manipulation.name}"]`).contains(
+      messages.shared.generic.draft
+    )
+  })
+
+  it('Edit the practice quiz again and add the modified NR question and a new FT question', function () {
+    cy.loginLecturer()
+
+    // create a new FT question
+    cy.createQuestionFT({
+      title: this.data.FTML2.title,
+      content: this.data.FTML2.content,
+      ...this.data.FTML2.options,
+    })
+
+    // edit the practice quiz again and add the modified NR question and the new FT question
+    cy.get('[data-cy="courses"]').click()
+    cy.get(
+      `[data-cy="course-list-button-${this.data.manipulation.course}"]`
+    ).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
+    ).click()
+    cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
+      'exist'
+    )
+
+    // add the modified numerical question and free text question
+    cy.get('[data-cy="insert-practice-quiz-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="element-item-${this.data.manipulation.newNRTitle}"]`)
+      .contains(this.data.manipulation.newNRTitle)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get(`[data-cy="drop-elements-stack-0"]`).trigger('drop', {
+      dataTransfer,
+    })
+    cy.get(`[data-cy="element-1-stack-0"]`).contains(
+      this.data.manipulation.newNRTitle.substring(0, 20)
+    )
+
+    const dataTransfer2 = new DataTransfer()
+    cy.get(`[data-cy="drop-elements-add-stack"]`).click()
+    cy.get(`[data-cy="element-item-${this.data.FTML2.title}"]`)
+      .contains(this.data.FTML2.title)
+      .trigger('dragstart', {
+        dataTransfer2,
+      })
+    cy.get(`[data-cy="drop-elements-stack-1"]`).trigger('drop', {
+      dataTransfer2,
+    })
+    cy.get(`[data-cy="element-0-stack-1"]`).contains(
+      this.data.FTML2.title.substring(0, 20)
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+  })
+
+  it('Delete the created questions and edit and re-order the blocks in the practice quiz', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="library"]').click()
+    cy.deleteElement({ elementName: this.data.manipulation.newNRTitle })
+    cy.deleteElement({ elementName: this.data.FTML2.title })
+
+    cy.get('[data-cy="courses"]').click()
+    cy.get(
+      `[data-cy="course-list-button-${this.data.manipulation.course}"]`
+    ).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="edit-practice-quiz-${this.data.manipulation.name}"]`
+    ).click()
+    cy.findByText('Edit ' + messages.shared.generic.practiceQuiz).should(
+      'exist'
+    )
+
+    // re-order the stacks in the practice quiz
+    cy.get('[data-cy="insert-practice-quiz-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="move-stack-0-right"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+  })
+
+  it('Duplicate the practice quiz, verify that the same instances are shown in the editor, and publish both practice quizzes', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(
+      `[data-cy="course-list-button-${this.data.manipulation.course}"]`
+    ).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="duplicate-practice-quiz-${this.data.manipulation.name}"]`
+    ).click()
+
+    // verify that the duplicated practice quiz contains the same element content as the original quiz
+    cy.get('[data-cy="insert-practice-quiz-name"]')
+      .clear()
+      .type(this.data.manipulation.duplicateName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-practice-quiz-display-name"]')
+      .clear()
+      .type(this.data.manipulation.duplicateDisplayName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="element-0-stack-0"]').contains(
+      this.data.FTML2.title.substring(0, 20)
+    )
+    cy.get('[data-cy="element-0-stack-1"]').contains(
+      this.data.NRML2.title.substring(0, 20)
+    )
+    cy.get('[data-cy="element-1-stack-1"]').contains(
+      this.data.manipulation.newNRTitle.substring(0, 20)
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // publish both practice quizzes
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+    cy.get(
+      `[data-cy="publish-practice-quiz-${this.data.manipulation.name}"]`
+    ).click()
+    cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
+    cy.get(`[data-cy="practice-quiz-${this.data.manipulation.name}"]`).contains(
+      messages.shared.generic.published
+    )
+
+    cy.get(
+      `[data-cy="publish-practice-quiz-${this.data.manipulation.duplicateName}"]`
+    ).click()
+    cy.get('[data-cy="publish-practice-quiz-immediately"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.manipulation.duplicateName}"]`
+    ).contains(messages.shared.generic.published)
+  })
+
+  it('Answer the first practice quiz through the student view and verify its content', function () {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.manipulation.displayName}"]`
+    ).click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
+
+    // stack 1
+    cy.findByText(this.data.FTML2.content).should('exist')
+    cy.get('[data-cy="free-text-input-0"]').type('Testinput')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // stack 2
+    cy.findByText(this.data.NRML2.content).should('exist')
+    cy.findByText(this.data.manipulation.newNRTitle).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-0"]').clear().type('10')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-1"]').clear().type('10')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+  })
+
+  it('Answer the duplicated practice quiz through the student view and verify its content', function () {
+    cy.loginStudent()
+    cy.get('[data-cy="quizzes"]').click()
+    cy.get(
+      `[data-cy="practice-quiz-${this.data.manipulation.duplicateDisplayName}"]`
+    ).click()
+    cy.get('[data-cy="start-practice-quiz"]').click()
+
+    // stack 1
+    cy.findByText(this.data.FTML2.content).should('exist')
+    cy.get('[data-cy="free-text-input-0"]').type('Testinput')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+
+    // stack 2
+    cy.findByText(this.data.NRML2.content).should('exist')
+    cy.findByText(this.data.manipulation.newNRTitle).should('exist')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-0"]').clear().type('10')
+    cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
+    cy.get('[data-cy="input-numerical-1"]').clear().type('10')
+    cy.get('[data-cy="student-stack-submit"]').click()
+    cy.get('[data-cy="student-stack-continue"]').click()
+  })
+
+  it('Delete the created practice quizzes', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="courses"]').click()
+    cy.get(
+      `[data-cy="course-list-button-${this.data.manipulation.course}"]`
+    ).click()
+    cy.get('[data-cy="tab-practiceQuizzes"]').click()
+
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+    ).click()
+    cy.get(
+      `[data-cy="delete-practice-quiz-${this.data.manipulation.name}"]`
+    ).click()
+    cy.wait(500)
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.manipulation.name}"]`
+    ).should('not.exist')
+
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.manipulation.duplicateName}"]`
+    ).click()
+    cy.get(
+      `[data-cy="delete-practice-quiz-${this.data.manipulation.duplicateName}"]`
+    ).click()
+    cy.wait(500)
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click()
+    cy.get(
+      `[data-cy="practice-quiz-actions-${this.data.manipulation.duplicateName}"]`
+    ).should('not.exist')
+  })
+  // #endregion
+
+  // ! Cleanup
+  // #region
   it('Cleanup: Delete all created questions', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
     const questions = [
-      this.data.questions.SC1.title,
-      this.data.questions.SC2.title,
-      this.data.questions.MC.title,
-      this.data.questions.KP.title,
-      this.data.questions.NR.title,
-      this.data.questions.FT.title,
-      this.data.questions.SE.title,
-      this.data.questions.CS.title,
-      this.data.questions.FC.title,
-      this.data.questions.CT.title,
+      this.data.SCML.title,
+      this.data.SC.title,
+      this.data.MCML.title,
+      this.data.KPML.title,
+      this.data.NRML.title,
+      this.data.FTML.title,
+      this.data.SEML.title,
+      this.data.CSML.title,
+      this.data.FC.title,
+      this.data.CT.title,
     ]
 
     cy.wrap(questions).each((title: string) => {
@@ -1186,7 +1475,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({
-      collectionName: this.data.questions.collection.name,
+      collectionName: this.data.collection.name,
     })
   })
 

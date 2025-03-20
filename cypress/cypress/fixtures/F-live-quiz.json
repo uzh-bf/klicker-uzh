@@ -26,5 +26,14 @@
       "feedbackMobile": "Feedback Mobile",
       "feedbackResponse": "Response to Feedback"
     }
+  },
+  "liveQuiz": {
+    "course": "Testkurs",
+    "name": "Live Quiz 3",
+    "displayName": "Live Quiz 3 (Display)",
+    "duplicateName": "Duplication of Live Quiz",
+    "duplicateDisplayName": "Duplication of Live Quiz (Display)",
+    "newSCTitle": "New SC Title",
+    "newSCContent": "New SC Content"
   }
 }
