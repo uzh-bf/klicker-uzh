@@ -33,15 +33,16 @@ function ElementEvaluation({
 }: ElementEvaluationProps) {
   return (
     <div className={twMerge('flex h-full flex-col', className)}>
-      {currentInstance.__typename !== 'CaseStudyActivityEvaluationData' && (
-        <div className="flex-none">
-          <QuestionCollapsible
-            activeInstance={activeInstance}
-            content={currentInstance.content}
-            proseSize={textSize.prose}
-          />
-        </div>
-      )}
+      {currentInstance.__typename !== 'CaseStudyActivityEvaluationData' &&
+        currentInstance.__typename !== 'ContentActivityEvaluationData' && (
+          <div className="flex-none">
+            <QuestionCollapsible
+              activeInstance={activeInstance}
+              content={currentInstance.content}
+              proseSize={textSize.prose}
+            />
+          </div>
+        )}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {currentInstance.__typename === 'ChoicesActivityEvaluationData' && (
           <ChoicesEvaluation
@@ -92,7 +93,7 @@ function ElementEvaluation({
           <FCEvaluation evaluation={currentInstance} />
         )}
         {currentInstance.__typename === 'ContentActivityEvaluationData' && (
-          <CTEvaluation evaluation={currentInstance} />
+          <CTEvaluation evaluation={currentInstance} textSize={textSize} />
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@ import { faImage } from '@fortawesome/free-regular-svg-icons'
 import {
   faBold,
   faCode,
+  faHeading,
   faItalic,
   faListOl,
   faListUl,
@@ -52,7 +53,13 @@ type ListItemElement = {
   children: CustomText[]
 }
 
-type BlockType = 'block-quote' | 'bulleted-list' | 'numbered-list'
+type BlockType =
+  | 'block-quote'
+  | 'bulleted-list'
+  | 'numbered-list'
+  | 'heading_one'
+  | 'heading_two'
+  | 'heading_three'
 type BlockElement = {
   type: BlockType
   children: CustomElement[]
@@ -243,6 +250,49 @@ function ContentInput({
               withIndicator={false}
             >
               <BlockButton format="bulleted-list" icon={faListUl} />
+            </Tooltip>
+
+            <Tooltip
+              tooltip="Heading 1"
+              className={{
+                tooltip:
+                  'max-w-[40%] whitespace-nowrap text-sm md:max-w-[50%] md:text-base',
+              }}
+              withIndicator={false}
+            >
+              <BlockButton
+                format="heading_one"
+                icon={faHeading}
+                className="text-lg font-bold"
+              />
+            </Tooltip>
+
+            <Tooltip
+              tooltip="Heading 2"
+              className={{
+                tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
+              }}
+              withIndicator={false}
+            >
+              <BlockButton
+                format="heading_two"
+                icon={faHeading}
+                className="text-base font-bold"
+              />
+            </Tooltip>
+
+            <Tooltip
+              tooltip="Heading 3"
+              className={{
+                tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
+              }}
+              withIndicator={false}
+            >
+              <BlockButton
+                format="heading_three"
+                icon={faHeading}
+                className="text-xs font-normal"
+              />
             </Tooltip>
 
             <Tooltip
@@ -451,10 +501,24 @@ const Element = ({ attributes, children, element }: ElementProps) => {
       )
     case 'bulleted-list':
       return <ul {...attributes}>{children}</ul>
-    // case 'heading-one':
-    //   return <h1 {...attributes}>{children}</h1>
-    // case 'heading-two':
-    //   return <h2 {...attributes}>{children}</h2>
+    case 'heading_one':
+      return (
+        <h1 {...attributes} className="mb-2 mt-4 text-2xl font-bold">
+          {children}
+        </h1>
+      )
+    case 'heading_two':
+      return (
+        <h2 {...attributes} className="mb-2 mt-3 text-xl font-bold">
+          {children}
+        </h2>
+      )
+    case 'heading_three':
+      return (
+        <h3 {...attributes} className="mb-2 mt-2 text-lg font-semibold">
+          {children}
+        </h3>
+      )
     case 'list-item':
       return <li {...attributes}>{children}</li>
     case 'numbered-list':
