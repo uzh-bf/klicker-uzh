@@ -1303,6 +1303,437 @@ describe('Different live-quiz workflows', function () {
   })
   // #endregion
 
+  // ! Part 4: Verify Editing / Duplication with Updated / Deleted Questions
+  // #region
+  it('Create live quiz with a single SC question', function () {
+    cy.loginLecturer()
+
+    // create single choice question and live quiz
+    cy.createQuestionSC({
+      title: this.data.SC2.title,
+      content: this.data.SC2.content,
+      choices: this.data.SC2.choices,
+    })
+    cy.createLiveQuiz({
+      name: this.data.liveQuiz.name,
+      displayName: this.data.liveQuiz.displayName,
+      courseName: this.data.liveQuiz.course,
+      blocks: [
+        {
+          elements: [this.data.SC2.title],
+        },
+      ],
+    })
+
+    // open the overview and check its content
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.name}"]`
+    ).click()
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+      this.data.SC2.title
+    )
+  })
+
+  it('Edit the single choice question, edit and save the unmodified live quiz -> verify that nothing changed', function () {
+    cy.loginLecturer()
+
+    // modify single choice question
+    cy.get(`[data-cy="edit-question-${this.data.SC2.title}"]`).click()
+    cy.get('[data-cy="insert-question-title"]')
+      .clear()
+      .type(this.data.liveQuiz.newSCTitle)
+    cy.get('[data-cy="insert-question-text"]')
+      .realClick()
+      .clear()
+      .type(this.data.liveQuiz.newSCContent)
+    cy.get('[data-cy="save-new-question"]').click()
+
+    // edit and save the live quiz without changing the question content
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-live-display-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="element-0-block-0"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // open the overview and check its content
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.name}"]`
+    ).click()
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+      this.data.SC2.title
+    )
+  })
+
+  it('Add the modified single choice question and a multiple choice question to the live quiz', function () {
+    cy.loginLecturer()
+
+    // create single choice question and live quiz
+    cy.createQuestionMC({
+      title: this.data.MC2.title,
+      content: this.data.MC2.content,
+      choices: this.data.MC2.choices,
+    })
+
+    // edit the live quiz and add the modified SC and the new MC question
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-live-display-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="element-0-block-0"]').should('exist')
+
+    const dataTransfer = new DataTransfer()
+    cy.get(`[data-cy="element-item-${this.data.liveQuiz.newSCTitle}"]`)
+      .contains(this.data.liveQuiz.newSCTitle)
+      .trigger('dragstart', {
+        dataTransfer,
+      })
+    cy.get(`[data-cy="drop-elements-block-0"]`).trigger('drop', {
+      dataTransfer,
+    })
+    cy.get(`[data-cy="element-1-block-0"]`).contains(
+      this.data.liveQuiz.newSCTitle.substring(0, 20)
+    )
+
+    const dataTransfer2 = new DataTransfer()
+    cy.get(`[data-cy="drop-elements-add-block"]`).click()
+    cy.get(`[data-cy="element-item-${this.data.MC2.title}"]`)
+      .contains(this.data.MC2.title)
+      .trigger('dragstart', {
+        dataTransfer2,
+      })
+    cy.get(`[data-cy="drop-elements-block-1"]`).trigger('drop', {
+      dataTransfer2,
+    })
+    cy.get(`[data-cy="element-0-block-1"]`).contains(
+      this.data.MC2.title.substring(0, 20)
+    )
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // open the overview and check its content
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.name}"]`
+    ).click()
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+      this.data.SC2.title
+    )
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+      this.data.liveQuiz.newSCTitle
+    )
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+      this.data.MC2.title
+    )
+  })
+
+  it('Delete the two created elements and verify that the live quiz content is not modified on edit', function () {
+    cy.loginLecturer()
+
+    // modify single choice question
+    cy.deleteElement({ elementName: this.data.liveQuiz.newSCTitle })
+    cy.deleteElement({ elementName: this.data.MC2.title })
+
+    // edit and save the live quiz without changing the question content
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="edit-live-quiz-${this.data.liveQuiz.name}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-live-display-name"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="select-course"]').should('exist')
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="move-block-0-right"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    // open the overview and check its content
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.name}"]`
+    ).click()
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+      this.data.SC2.title
+    )
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+      this.data.liveQuiz.newSCTitle
+    )
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).contains(
+      this.data.MC2.title
+    )
+  })
+
+  it('Execute the live quiz, answer the questions and verify the question contents', function () {
+    // start the live quiz and open the first block
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="start-live-quiz-${this.data.liveQuiz.name}"]`).click()
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+
+    // switch to the student app and answer the elements in the first block
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.origin(
+      Cypress.env('URL_STUDENT'),
+      {
+        args: {
+          username: Cypress.env('STUDENT_USERNAME'),
+          password: Cypress.env('STUDENT_PASSWORD'),
+          data: this.data,
+        },
+      },
+      ({ username, password, data }) => {
+        cy.get('[data-cy="username-field"]').click().type(username)
+        cy.get('[data-cy="password-field"]').click().type(password)
+        cy.get('[data-cy="submit-login"]').click()
+        cy.get(`[data-cy="live-quiz-${data.liveQuiz.displayName}"]`).click()
+
+        // answer the elements in the first block
+        cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+        cy.get('[data-cy="choices-question-content"]').contains(
+          data.MC2.content
+        )
+        cy.get('[data-cy="mc-0-answer-option-1"]').click()
+        cy.get('[data-cy="mc-0-answer-option-2"]').click()
+        cy.get('[data-cy="student-submit-answer"]').click()
+        cy.wait(500)
+      }
+    )
+  })
+
+  it('Open the next block and answer the multiple choice question in the second block', function () {
+    // open the next block
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.liveQuiz.name}"]`).click()
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+
+    // switch to the student app and answer the elements in the second block
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.origin(
+      Cypress.env('URL_STUDENT'),
+      {
+        args: {
+          username: Cypress.env('STUDENT_USERNAME'),
+          password: Cypress.env('STUDENT_PASSWORD'),
+          data: this.data,
+        },
+      },
+      ({ username, password, data }) => {
+        cy.get('[data-cy="username-field"]').click().type(username)
+        cy.get('[data-cy="password-field"]').click().type(password)
+        cy.get('[data-cy="submit-login"]').click()
+        cy.get(`[data-cy="live-quiz-${data.liveQuiz.displayName}"]`).click()
+
+        // answer the elements in the second block
+        cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+        cy.get('[data-cy="choices-question-content"]').contains(
+          data.SC2.content
+        )
+        cy.get('[data-cy="sc-0-answer-option-0"]').click()
+        cy.get('[data-cy="student-submit-answer"]').click()
+        cy.wait(500)
+        cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+        cy.get('[data-cy="choices-question-content"]').contains(
+          data.liveQuiz.newSCContent
+        )
+        cy.get('[data-cy="sc-1-answer-option-0"]').click()
+        cy.get('[data-cy="student-submit-answer"]').click()
+        cy.wait(500)
+      }
+    )
+  })
+
+  it('Close the second block of the live quiz and end it', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.liveQuiz.name}"]`).click()
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+  })
+
+  it('Duplicate the live quiz and check that the same questions are contained therein', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.name}"]`).should('exist')
+
+    cy.get(`[data-cy="duplicate-live-quiz-${this.data.liveQuiz.name}"]`).click()
+    cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
+    cy.get('[data-cy="insert-live-quiz-name"]')
+      .clear()
+      .type(this.data.liveQuiz.duplicateName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="insert-live-display-name"]')
+      .clear()
+      .type(this.data.liveQuiz.duplicateDisplayName)
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="next-or-submit"]').click()
+    cy.get('[data-cy="element-0-block-0"]')
+      .should('exist')
+      .should('contain', this.data.MC2.title.substring(0, 20))
+    cy.get('[data-cy="element-0-block-1"]')
+      .should('exist')
+      .should('contain', this.data.SC2.title.substring(0, 20))
+    cy.get('[data-cy="element-1-block-1"]')
+      .should('exist')
+      .should('contain', this.data.liveQuiz.newSCTitle.substring(0, 20))
+    cy.get('[data-cy="next-or-submit"]').click()
+
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(
+      `[data-cy="live-quiz-collapsible-${this.data.liveQuiz.duplicateName}"]`
+    ).click()
+    cy.get(
+      `[data-cy="live-quiz-${this.data.liveQuiz.duplicateName}"]`
+    ).contains(this.data.SC2.title)
+    cy.get(
+      `[data-cy="live-quiz-${this.data.liveQuiz.duplicateName}"]`
+    ).contains(this.data.liveQuiz.newSCTitle)
+    cy.get(
+      `[data-cy="live-quiz-${this.data.liveQuiz.duplicateName}"]`
+    ).contains(this.data.MC2.title)
+  })
+
+  it('Execute the duplicated live quiz, answer the questions and verify the question contents', function () {
+    // start the live quiz and open the first block
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(
+      `[data-cy="start-live-quiz-${this.data.liveQuiz.duplicateName}"]`
+    ).click()
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+
+    // switch to the student app and answer the elements in the first block
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.origin(
+      Cypress.env('URL_STUDENT'),
+      {
+        args: {
+          username: Cypress.env('STUDENT_USERNAME'),
+          password: Cypress.env('STUDENT_PASSWORD'),
+          data: this.data,
+        },
+      },
+      ({ username, password, data }) => {
+        cy.get('[data-cy="username-field"]').click().type(username)
+        cy.get('[data-cy="password-field"]').click().type(password)
+        cy.get('[data-cy="submit-login"]').click()
+        cy.get(
+          `[data-cy="live-quiz-${data.liveQuiz.duplicateDisplayName}"]`
+        ).click()
+
+        // answer the elements in the first block
+        cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+        cy.get('[data-cy="choices-question-content"]').contains(
+          data.MC2.content
+        )
+        cy.get('[data-cy="mc-0-answer-option-1"]').click()
+        cy.get('[data-cy="mc-0-answer-option-2"]').click()
+        cy.get('[data-cy="student-submit-answer"]').click()
+        cy.wait(500)
+      }
+    )
+  })
+
+  it('Open the next block and answer the multiple choice question in the second block', function () {
+    // open the next block
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.liveQuiz.duplicateName}"]`
+    ).click()
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+
+    // switch to the student app and answer the elements in the second block
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.origin(
+      Cypress.env('URL_STUDENT'),
+      {
+        args: {
+          username: Cypress.env('STUDENT_USERNAME'),
+          password: Cypress.env('STUDENT_PASSWORD'),
+          data: this.data,
+        },
+      },
+      ({ username, password, data }) => {
+        cy.get('[data-cy="username-field"]').click().type(username)
+        cy.get('[data-cy="password-field"]').click().type(password)
+        cy.get('[data-cy="submit-login"]').click()
+        cy.get(
+          `[data-cy="live-quiz-${data.liveQuiz.duplicateDisplayName}"]`
+        ).click()
+
+        // answer the elements in the second block
+        cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+        cy.get('[data-cy="choices-question-content"]').contains(
+          data.SC2.content
+        )
+        cy.get('[data-cy="sc-0-answer-option-0"]').click()
+        cy.get('[data-cy="student-submit-answer"]').click()
+        cy.wait(500)
+        cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+        cy.get('[data-cy="choices-question-content"]').contains(
+          data.liveQuiz.newSCContent
+        )
+        cy.get('[data-cy="sc-1-answer-option-0"]').click()
+        cy.get('[data-cy="student-submit-answer"]').click()
+        cy.wait(500)
+      }
+    )
+  })
+
+  it('Close the second block of the live quiz and end it', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.liveQuiz.duplicateName}"]`
+    ).click()
+    cy.wait(1000)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+  })
+
+  it('Delete the created live quizzes', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(`[data-cy="delete-live-quiz-${this.data.liveQuiz.name}"]`).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
+    cy.get(
+      `[data-cy="delete-live-quiz-${this.data.liveQuiz.duplicateName}"]`
+    ).click()
+    cy.get(`[data-cy="activity-confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
+  })
+  // #endregion
+
   // ! Cleanup
   // #region
   it('Cleanup: Delete the live quiz used for the full cycle test', function () {

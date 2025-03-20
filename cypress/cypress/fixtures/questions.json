@@ -1192,5 +1192,32 @@
         }
       }
     }
+  },
+  "FC": {
+    "title": "FC Question Title (Version 1)",
+    "content": "FC Question Content (Version 1)",
+    "explanation": "FC Explanation (Version 1)"
+  },
+  "FC2": {
+    "title": "FC Question Title (Version 2)",
+    "content": "FC Question Content (Version 2)",
+    "explanation": "FC Explanation (Version 2)"
+  },
+  "FC3": {
+    "title": "FC Question Title (Version 3)",
+    "content": "FC Question Content (Version 3)",
+    "explanation": "FC Explanation (Version 3)"
+  },
+  "CT": {
+    "title": "CT Question Title (Version 1)",
+    "content": "CT Question Content (Version 1)"
+  },
+  "CT2": {
+    "title": "CT Question Title (Version 2)",
+    "content": "CT Question Content (Version 2)"
+  },
+  "CT3": {
+    "title": "CT Question Title (Version 3)",
+    "content": "CT Question Content (Version 3)"
   }
 }
