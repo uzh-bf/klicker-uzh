@@ -61,7 +61,7 @@ export type BlockInput = {
 
 export type ElementBlockInput = {
   order: number
-  timeLimit?: number
+  timeLimit?: number | null
   elements: ElementInstanceInput[]
 }
 
@@ -75,7 +75,7 @@ export type ElementStackInput = {
 export type ElementInstanceInput = {
   elementId: number
   order: number
-  existingInstanceId: number | null
+  existingInstanceId?: number | null
   duplicateInstance: boolean
 }
 
