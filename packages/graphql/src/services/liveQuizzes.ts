@@ -703,7 +703,7 @@ export async function manipulateLiveQuiz(
 
   const activity = await ctx.prisma.$transaction(async (prisma) => {
     // delete all instances that are not used anymore
-    prisma.elementInstance.deleteMany({
+    await prisma.elementInstance.deleteMany({
       where: {
         id: { in: instancesToDelete },
       },
