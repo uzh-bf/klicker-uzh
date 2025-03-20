@@ -1,12 +1,16 @@
 import {
   type AnswerCollectionEntry,
   type Element,
+  type ElementInstance,
+  ElementInstanceType,
+  ElementType,
   ElementInstanceType as PrismaElementInstanceType,
   ElementType as PrismaElementType,
 } from '@klicker-uzh/prisma'
 import {
   type Choice,
   type ElementData,
+  type ElementInstanceInput,
   type ElementInstanceResults,
   type ElementKeys,
   type ElementOptionsCaseStudy,
@@ -17,6 +21,7 @@ import {
   type ElementResultsCaseStudy,
 } from '@klicker-uzh/types'
 import { pick } from 'remeda'
+import { v4 as uuidv4 } from 'uuid'
 
 // save custom type
 const CONTENT_KEYS: ElementKeys[] = [
@@ -361,4 +366,133 @@ export function getInitialInstanceStatistics(type: PrismaElementInstanceType) {
   }
 
   return undefined
+}
+
+export function getActivityInstanceConnectOrCreate({
+  instance,
+  activityMultiplier,
+  persistentInstances,
+  duplicationInstances,
+  elementMap,
+  userId,
+}: {
+  instance: ElementInstanceInput
+  activityMultiplier: number
+  persistentInstances: ElementInstance[]
+  duplicationInstances: ElementInstance[]
+  elementMap: Record<number, Element>
+  userId: string
+}) {
+  // ! Case 1: (edit mode) keep existing instance without modification
+  if (instance.existingInstanceId !== null && !instance.duplicateInstance) {
+    // verify that the instance is well-defined and will be connected
+    if (
+      !persistentInstances.find((i) => i.id === instance.existingInstanceId)
+    ) {
+      throw new Error('Instance that was required for connection not found')
+    }
+
+    return {
+      where: { id: instance.existingInstanceId },
+      // dummy content - case should never occur
+      create: {
+        elementType: ElementType.SC,
+        migrationId: uuidv4(),
+        order: instance.order,
+        type: ElementInstanceType.LIVE_QUIZ,
+        elementData: {} as ElementData,
+        options: {},
+        results: {} as ElementInstanceResults,
+        anonymousResults: {} as ElementInstanceResults,
+        instanceStatistics: undefined,
+        element: {
+          connect: { id: -1 },
+        },
+        owner: {
+          connect: { id: userId },
+        },
+      },
+    }
+  }
+
+  // ! Case 2: (duplication mode) duplicate existing instance and reset results & instance statistics
+  else if (instance.existingInstanceId !== null && instance.duplicateInstance) {
+    // verify that the instance is well-defined and contained in the ones selected for duplication
+    const existingInstance = duplicationInstances.find(
+      (i) => i.id === instance.existingInstanceId
+    )
+    if (!existingInstance) {
+      throw new Error('Instance that was required for duplication not found')
+    }
+
+    // create new instance based on existing instance (with empty results and empty statistics)
+    const initialResults = getInitialInstanceResults(
+      existingInstance.elementData
+    )
+    return {
+      where: { id: -1 },
+      create: {
+        elementType: existingInstance.elementType,
+        migrationId: uuidv4(),
+        order: instance.order,
+        type: ElementInstanceType.LIVE_QUIZ,
+        elementData: existingInstance.elementData,
+        options: {
+          pointsMultiplier:
+            activityMultiplier * existingInstance.elementData.pointsMultiplier,
+        },
+        results: initialResults,
+        anonymousResults: initialResults,
+        instanceStatistics: {
+          create: getInitialInstanceStatistics(ElementInstanceType.LIVE_QUIZ),
+        },
+        element: {
+          connect: { id: existingInstance.elementId },
+        },
+        owner: {
+          connect: { id: userId },
+        },
+      },
+    }
+  }
+
+  // ! Case 3: (creation / edit) create new instance based on database element
+  else {
+    const element = elementMap[instance.elementId]!
+
+    // if the element is not found, throw an error
+    if (!element) {
+      throw new Error(
+        'Element that was required for instance creation not found'
+      )
+    }
+
+    const elementData = processElementData(element)
+    const initialResults = getInitialInstanceResults(elementData)
+
+    return {
+      where: { id: -1 },
+      create: {
+        elementType: element.type,
+        migrationId: uuidv4(),
+        order: instance.order,
+        type: ElementInstanceType.LIVE_QUIZ,
+        elementData: elementData,
+        options: {
+          pointsMultiplier: activityMultiplier * element.pointsMultiplier,
+        },
+        results: initialResults,
+        anonymousResults: initialResults,
+        instanceStatistics: {
+          create: getInitialInstanceStatistics(ElementInstanceType.LIVE_QUIZ),
+        },
+        element: {
+          connect: { id: element.id },
+        },
+        owner: {
+          connect: { id: userId },
+        },
+      },
+    }
+  }
 }

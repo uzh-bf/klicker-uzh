@@ -9,7 +9,6 @@ import {
   ElementBlock,
   ElementBlockStatus,
   ElementInstance,
-  ElementInstanceType,
   ElementType,
   LeaderboardType,
   PublicationStatus,
@@ -17,8 +16,6 @@ import {
 import type {
   CaseStudyCaseSolution,
   ElementBlockInput,
-  ElementData,
-  ElementInstanceResults,
   ElementResultsCaseStudy,
   ElementResultsChoices,
   ElementResultsContent,
@@ -27,9 +24,8 @@ import type {
   ElementResultsSelection,
 } from '@klicker-uzh/types'
 import {
+  getActivityInstanceConnectOrCreate,
   getInitialInstanceResults,
-  getInitialInstanceStatistics,
-  processElementData,
 } from '@klicker-uzh/util'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
@@ -561,137 +557,16 @@ export async function manipulateLiveQuiz(
           order: block.order,
           timeLimit: block.timeLimit,
           elements: {
-            connectOrCreate: block.elements.map((instance) => {
-              // ! Case 1: (edit mode) keep existing instance without modification
-              if (
-                instance.existingInstanceId !== null &&
-                !instance.duplicateInstance
-              ) {
-                // verify that the instance is well-defined and will be connected
-                if (
-                  !persistentInstances.find(
-                    (i) => i.id === instance.existingInstanceId
-                  )
-                ) {
-                  throw new GraphQLError(
-                    'Instance that was required for connection not found'
-                  )
-                }
-
-                return {
-                  where: { id: instance.existingInstanceId },
-                  // dummy content - case should never occur
-                  create: {
-                    elementType: ElementType.SC,
-                    migrationId: uuidv4(),
-                    order: instance.order,
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementData: {} as ElementData,
-                    options: {},
-                    results: {} as ElementInstanceResults,
-                    anonymousResults: {} as ElementInstanceResults,
-                    instanceStatistics: undefined,
-                    element: {
-                      connect: { id: -1 },
-                    },
-                    owner: {
-                      connect: { id: ctx.user.sub },
-                    },
-                  },
-                }
-              }
-
-              // ! Case 2: (duplication mode) duplicate existing instance and reset results & instance statistics
-              else if (
-                instance.existingInstanceId !== null &&
-                instance.duplicateInstance
-              ) {
-                // verify that the instance is well-defined and contained in the ones selected for duplication
-                const existingInstance = duplicationInstances.find(
-                  (i) => i.id === instance.existingInstanceId
-                )
-                if (!existingInstance) {
-                  throw new GraphQLError(
-                    'Instance that was required for duplication not found'
-                  )
-                }
-
-                // create new instance based on existing instance (with empty results and empty statistics)
-                const initialResults = getInitialInstanceResults(
-                  existingInstance.elementData
-                )
-                return {
-                  where: { id: -1 },
-                  create: {
-                    elementType: existingInstance.elementType,
-                    migrationId: uuidv4(),
-                    order: instance.order,
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementData: existingInstance.elementData,
-                    options: {
-                      pointsMultiplier:
-                        multiplier *
-                        existingInstance.elementData.pointsMultiplier,
-                    },
-                    results: initialResults,
-                    anonymousResults: initialResults,
-                    instanceStatistics: {
-                      create: getInitialInstanceStatistics(
-                        ElementInstanceType.LIVE_QUIZ
-                      ),
-                    },
-                    element: {
-                      connect: { id: existingInstance.elementId },
-                    },
-                    owner: {
-                      connect: { id: ctx.user.sub },
-                    },
-                  },
-                }
-              }
-
-              // ! Case 3: (creation / edit) create new instance based on database element
-              else {
-                const element = elementMap[instance.elementId]!
-
-                // if the element is not found, throw an error
-                if (!element) {
-                  throw new GraphQLError(
-                    'Element that was required for instance creation not found'
-                  )
-                }
-
-                const elementData = processElementData(element)
-                const initialResults = getInitialInstanceResults(elementData)
-
-                return {
-                  where: { id: -1 },
-                  create: {
-                    elementType: element.type,
-                    migrationId: uuidv4(),
-                    order: instance.order,
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementData: elementData,
-                    options: {
-                      pointsMultiplier: multiplier * element.pointsMultiplier,
-                    },
-                    results: initialResults,
-                    anonymousResults: initialResults,
-                    instanceStatistics: {
-                      create: getInitialInstanceStatistics(
-                        ElementInstanceType.LIVE_QUIZ
-                      ),
-                    },
-                    element: {
-                      connect: { id: element.id },
-                    },
-                    owner: {
-                      connect: { id: ctx.user.sub },
-                    },
-                  },
-                }
-              }
-            }),
+            connectOrCreate: block.elements.map((instance) =>
+              getActivityInstanceConnectOrCreate({
+                instance,
+                activityMultiplier: multiplier,
+                persistentInstances,
+                duplicationInstances,
+                elementMap,
+                userId: ctx.user.sub,
+              })
+            ),
           },
         }
       }),
@@ -2027,16 +1902,7 @@ export async function cancelLiveQuiz(
       activeBlock: true,
       blocks: {
         include: {
-          elements: {
-            include: {
-              element: {
-                include: {
-                  answerCollection: { include: { entries: true } },
-                  answerCollectionItems: true,
-                },
-              },
-            },
-          },
+          elements: true,
           activeInLiveQuiz: true,
         },
       },
