@@ -3,6 +3,13 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import Markdown from './Markdown.js'
 
+// Helper function to decode HTML entities
+function decodeHtmlEntities(text: string): string {
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = text
+  return textarea.value
+}
+
 export interface EllipsisBaseProps {
   children: string
   maxLength?: number
@@ -95,7 +102,18 @@ function Ellipsis({
               className?.content
             )}
           >
-            {children}
+            {typeof children === 'string'
+              ? decodeHtmlEntities(children)
+                  .split('\n')
+                  .filter((line) => line.trim() !== '')
+                  .slice(0, maxLines) // Only include the first maxLines lines
+                  .map((line, i, arr) => (
+                    <React.Fragment key={i}>
+                      {line}
+                      {i < arr.length - 1 && <br />}
+                    </React.Fragment>
+                  ))
+              : children}
           </div>
         )}
       </Tooltip>
@@ -147,7 +165,17 @@ function Ellipsis({
     </Prose>
   ) : (
     <div className={className?.content}>
-      {children.toString().substr(0, endIndex || maxLength)}
+      {decodeHtmlEntities(children.toString())
+        .substr(0, endIndex || maxLength)
+        .split('\n')
+        .filter((line) => line.trim() !== '')
+        .slice(0, 3) // Limit to 3 lines for shortened content
+        .map((line, i, arr) => (
+          <React.Fragment key={i}>
+            {line}
+            {i < arr.length - 1 && <br />}
+          </React.Fragment>
+        ))}
     </div>
   )
 
@@ -164,7 +192,20 @@ function Ellipsis({
         className={{ root: className?.markdown, img: 'max-h-36' }}
       />
     ) : (
-      <div className={className?.content}>{children}</div>
+      <div className={className?.content}>
+        {typeof children === 'string'
+          ? decodeHtmlEntities(children)
+              .split('\n')
+              .filter((line) => line.trim() !== '')
+              .slice(0, maxLines || 3) // Use maxLines if available, otherwise default to 3
+              .map((line, i, arr) => (
+                <React.Fragment key={i}>
+                  {line}
+                  {i < arr.length - 1 && <br />}
+                </React.Fragment>
+              ))
+          : children}
+      </div>
     )
   }
 
@@ -185,6 +226,24 @@ function Ellipsis({
                   .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
                 className={{ root: className?.markdown }}
               />
+            ) : typeof children === 'string' ? (
+              <div>
+                {decodeHtmlEntities(children)
+                  .split('\n')
+                  .filter((line) => line.trim() !== '')
+                  .slice(
+                    0,
+                    maxLines || maxLength
+                      ? Math.min(3, Math.ceil(maxLength / 50))
+                      : 3
+                  ) // Limit lines based on context
+                  .map((line, i, arr) => (
+                    <React.Fragment key={i}>
+                      {line}
+                      {i < arr.length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
+              </div>
             ) : (
               children
             )

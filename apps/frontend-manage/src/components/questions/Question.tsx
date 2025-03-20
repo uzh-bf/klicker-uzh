@@ -120,7 +120,7 @@ function Question({
             <div className="flex flex-1 flex-col gap-1">
               <div className="flex flex-none flex-row items-center gap-2 text-lg">
                 <a
-                  className="hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-xl font-bold"
+                  className="hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-lg font-bold"
                   role="button"
                   tabIndex={0}
                   type="button"
@@ -137,11 +137,8 @@ function Question({
                 )}
               </div>
 
-              <div className="flex-1">
-                <Ellipsis
-                  // maxLines={3}
-                  maxLength={120}
-                >
+              <div className="flex-1 text-sm">
+                <Ellipsis maxLines={2} withMarkdown={false}>
                   {content}
                 </Ellipsis>
               </div>
