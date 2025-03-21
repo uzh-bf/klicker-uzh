@@ -250,15 +250,6 @@ Cypress.Commands.add(
         .type(explanation)
     }
 
-    if (typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
     cy.get('[data-cy="insert-question-text"]').realClick().type(content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
@@ -273,7 +264,10 @@ Cypress.Commands.add(
     })
 
     // set correctness values for SC question
-    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
+    const hasSampleSolution = choices.some(
+      (choice) => typeof choice.correct !== 'undefined'
+    )
+    if (hasSampleSolution) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
       cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
@@ -281,6 +275,16 @@ Cypress.Commands.add(
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
       })
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
     // set answer feedbacks for SC question
@@ -339,15 +343,6 @@ Cypress.Commands.add(
       .realClick()
       .type(choices[0].content)
 
-    if (typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
     cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
       cy.get('[data-cy="add-new-answer"]').click()
       cy.wait(500)
@@ -357,7 +352,10 @@ Cypress.Commands.add(
     })
 
     // set correctness values for MC question
-    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
+    const hasSampleSolution = choices.some(
+      (choice) => typeof choice.correct !== 'undefined'
+    )
+    if (hasSampleSolution) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
       cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
@@ -365,6 +363,16 @@ Cypress.Commands.add(
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
       })
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
     // set answer feedbacks for MC question
@@ -427,15 +435,6 @@ Cypress.Commands.add(
         .type(explanation)
     }
 
-    if (typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
     cy.get('[data-cy="insert-question-text"]').realClick().type(content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
@@ -462,10 +461,23 @@ Cypress.Commands.add(
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
     // set correctness values for KPRIM question
-    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
+    const hasSampleSolution = choices.some(
+      (choice) => typeof choice.correct !== 'undefined'
+    )
+    if (hasSampleSolution) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       cy.get('[data-cy="set-correctness-0"]').click().type(choice4.content)
       cy.get('[data-cy="set-correctness-2"]').click().type(choice4.content)
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
     // set answer feedbacks for KPRIM question
@@ -533,15 +545,6 @@ Cypress.Commands.add(
         .type(explanation)
     }
 
-    if (typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
     if (typeof min !== 'undefined') {
       cy.get('[data-cy="set-numerical-minimum"]').click().type(min)
     }
@@ -555,11 +558,12 @@ Cypress.Commands.add(
       cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
     }
 
-    if (
+    // set solution ranges
+    const hasSampleSolution =
       typeof solutionRanges !== 'undefined' &&
       solutionRanges !== null &&
       solutionRanges.length > 0
-    ) {
+    if (hasSampleSolution) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       cy.get('[data-cy="set-solution-type-range"]').click()
       cy.wrap(solutionRanges).each(
@@ -573,6 +577,16 @@ Cypress.Commands.add(
             .type(range.max)
         }
       )
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
     if (
@@ -633,25 +647,29 @@ Cypress.Commands.add(
         .type(explanation)
     }
 
-    if (typeof multiplier !== 'undefined') {
+    if (typeof maxLength !== 'undefined') {
+      cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
+    }
+
+    // set solution values
+    const hasSampleSolution =
+      typeof solutions !== 'undefined' && solutions.length > 0
+    if (hasSampleSolution) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      cy.wrap(solutions).each((solution: string, ix) => {
+        cy.get(`[data-cy="add-solution-value"]`).click()
+        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
+      })
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
         .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    if (typeof maxLength !== 'undefined') {
-      cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
-    }
-
-    if (typeof solutions !== 'undefined' && solutions.length > 0) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.wrap(solutions).each((solution: string, ix) => {
-        cy.get(`[data-cy="add-solution-value"]`).click()
-        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
-      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
