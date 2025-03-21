@@ -295,6 +295,7 @@ export function prepareGroupActivityStack({
               elementType: el.type,
               elementData,
               options: {
+                basePoints: el.basePoints,
                 pointsMultiplier: ix / 3 > 0.9 ? 1 : 2, // first three questions get multiplier 2, the rest 1
               },
               results: initialResults,
@@ -495,8 +496,12 @@ export function prepareStackVariety({
               elementData,
               options:
                 activityType === ActivityType.PRACTICE_QUIZ
-                  ? { pointsMultiplier: 1, resetTimeDays: 5 }
-                  : { pointsMultiplier: 1 },
+                  ? {
+                      pointsMultiplier: 1,
+                      resetTimeDays: 5,
+                      basePoints: el.basePoints,
+                    }
+                  : { pointsMultiplier: 1, basePoints: el.basePoints },
               results: initialResults,
               anonymousResults: initialResults,
               instanceStatistics: {
@@ -533,8 +538,12 @@ export function prepareStackVariety({
           elementData: processElementData(el),
           options:
             activityType === ActivityType.PRACTICE_QUIZ
-              ? { pointsMultiplier: 4, resetTimeDays: 8 }
-              : { pointsMultiplier: 4 },
+              ? {
+                  pointsMultiplier: 4,
+                  resetTimeDays: 8,
+                  basePoints: el.basePoints,
+                }
+              : { pointsMultiplier: 4, basePoints: el.basePoints },
           results: getInitialInstanceResults(processElementData(el)),
           anonymousResults: getInitialInstanceResults(processElementData(el)),
           instanceStatistics: {
@@ -702,8 +711,8 @@ export function prepareStackVariety({
             elementData: processElementData(questions[0]!),
             options:
               activityType === ActivityType.PRACTICE_QUIZ
-                ? { pointsMultiplier: 3, resetTimeDays: 6 }
-                : { pointsMultiplier: 3 },
+                ? { pointsMultiplier: 3, resetTimeDays: 6, basePoints: true }
+                : { pointsMultiplier: 3, basePoints: true },
             results: getInitialInstanceResults(
               processElementData(questions[0]!)
             ),
