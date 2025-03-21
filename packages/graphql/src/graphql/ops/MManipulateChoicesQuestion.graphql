@@ -6,6 +6,7 @@ mutation ManipulateChoicesQuestion(
   $content: String
   $explanation: String
   $options: OptionsChoicesInput
+  $basePoints: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
@@ -17,6 +18,7 @@ mutation ManipulateChoicesQuestion(
     content: $content
     explanation: $explanation
     options: $options
+    basePoints: $basePoints
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
@@ -28,6 +30,7 @@ mutation ManipulateChoicesQuestion(
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         displayMode

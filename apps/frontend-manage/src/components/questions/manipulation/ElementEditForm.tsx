@@ -9,6 +9,7 @@ import { ElementEditMode } from './ElementEditModal'
 import ElementExplanationField from './ElementExplanationField'
 import ElementFailureToast from './ElementFailureToast'
 import ElementFormErrors from './ElementFormErrors'
+import ElementformScoringSection from './ElementFormScoringSection'
 import ElementInformationFields from './ElementInformationFields'
 import ElementTypeMonitor from './ElementTypeMonitor'
 import InstanceUpdateSwitch from './InstanceUpdateSwitch'
@@ -20,7 +21,6 @@ import DisplayModeSetting from './options/DisplayModeSetting'
 import FreeTextOptions from './options/FreeTextOptions'
 import NumericalOptions from './options/NumericalOptions'
 import OptionsLabel from './options/OptionsLabel'
-import SampleSolutionSetting from './options/SampleSolutionSetting'
 import SelectionOptions from './options/SelectionOptions'
 import { ElementFormTypes } from './types'
 import useValidationSchema from './useValidationSchema'
@@ -172,12 +172,21 @@ function ElementEditForm({
                     setFieldValue={setFieldValue}
                   />
 
+                  {/* scoring section */}
+                  {!isTemplate &&
+                    values.type !== ElementType.Content &&
+                    values.type !== ElementType.Flashcard && (
+                      <ElementformScoringSection
+                        isTemplate={isTemplate}
+                        values={values}
+                        setFieldValue={setFieldValue}
+                        isSubmitting={isSubmitting}
+                      />
+                    )}
+
                   <div className="mt-4 flex flex-row gap-4">
                     <OptionsLabel type={values.type} />
-                    <SampleSolutionSetting
-                      disabled={isTemplate}
-                      type={values.type}
-                    />
+
                     <AnswerFeedbackSetting
                       disabled={isTemplate}
                       values={values}

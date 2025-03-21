@@ -32,7 +32,8 @@ model Element {
   content     String // markdown content
   explanation String? // markdown content
 
-  pointsMultiplier Int @default(1) // currently only relevant for FLASHCARD and QUESTION types
+  basePoints       Boolean @default(true) // flag to determine if base points should be awarded for answers to this question
+  pointsMultiplier Int     @default(1) // currently only relevant for QUESTION types
 
   /// [PrismaElementOptions]
   options Json

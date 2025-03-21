@@ -31,7 +31,7 @@ function SuspendedTagInput() {
       value={tags}
       options={options}
       classNames={{
-        container: () => 'w-full',
+        container: () => 'w-full h-9',
       }}
       onChange={(newValue) =>
         helpers.setValue(newValue.map((tag) => tag.value))

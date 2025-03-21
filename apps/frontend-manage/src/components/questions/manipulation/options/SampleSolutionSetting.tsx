@@ -14,9 +14,10 @@ function SampleSolutionSetting({
 
   return QUESTION_GROUPS.ALL.includes(type) ? (
     <FormikSwitchField
+      size="sm"
       disabled={disabled}
       name="options.hasSampleSolution"
-      label={t('shared.generic.sampleSolution')}
+      label={t('manage.questionForms.enableSampleSolution')}
       data={{ cy: 'configure-sample-solution' }}
       className={{ label: 'text-gray-600' }}
     />

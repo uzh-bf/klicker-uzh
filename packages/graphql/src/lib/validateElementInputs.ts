@@ -8,6 +8,7 @@ function validateElementInputs({
   name,
   content,
   explanation,
+  basePoints,
   pointsMultiplier,
 }: Omit<ElementManipulationInput, 'tags' | 'options'>) {
   // validate if required fields are present when creating a new element
@@ -35,6 +36,14 @@ function validateElementInputs({
         explanation === '')
     ) {
       console.error('Explanation is required for flashcards')
+      return false
+    }
+    if (
+      typeof basePoints !== 'boolean' &&
+      type !== DB.ElementType.CONTENT &&
+      type !== DB.ElementType.FLASHCARD
+    ) {
+      console.error('Base points setting is required')
       return false
     }
     if (

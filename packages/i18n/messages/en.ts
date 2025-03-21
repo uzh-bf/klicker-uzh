@@ -194,6 +194,11 @@ export default {
       solution: 'Solution',
       sampleSolution: 'Sample solution',
       gamification: 'Gamification',
+      basePoints: 'Base points',
+      awardedPoints: 'Awarded points',
+      additionalPoints: 'Additional points',
+      correctnessPoints: 'correctness points',
+      bonusPoints: 'bonus points',
       scoring: 'Scoring',
       liveQA: 'Live Q&A',
       moderation: 'Moderation',
@@ -1088,14 +1093,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Add tags to your question to improve organization and reusability (similar to previous folders).',
       tagFormatting:
         'Temporarily required formatting: Enter tags separated by commas, e.g.: Tag1,Tag2,Tag3',
-      multiplierTooltip:
-        'Select a multiplier with which the points for this question should be multiplied. It can be chosen between 1 and 4.',
+      basePointInformation:
+        'Base points are awarded to all participants for answering the question in a live quiz. These points are not influenced by point multipliers.',
+      multiplierInformation:
+        'Select a multiplier with which the correctness and bonus points for this question should be multiplied. It can be chosen between 1 and 4.',
+      multiplierNoEffect:
+        'Multipliers only influence the scoring of a question if a sample solution is defined and correctness and bonus points (live quiz) are awarded.',
+      liveQuizBasePoints: 'Live quiz base points',
+      zeroPoints: '0 points',
       questionTooltip:
         'Enter the question you want to ask the participants. The rich text editor allows you to use the following (block) formatting: bold text, italic text, code, quotes, numbered lists, unordered lists and LaTeX formulas. Hover over the individual buttons for more information.',
       contentTooltip:
         'Enter the content you want to present to the participants. The rich text editor allows you to use the following (block) formatting: bold text, italic text, code, quotes, numbered lists, unordered lists and LaTeX formulas. Hover over the individual buttons for more information.',
       instructionsTooltip:
         'Enter the instructions for the students here, which serve as a guide for answering the case study.',
+      enableSampleSolution: 'Enable sample solution',
+      sampleSolutionAndScoring: 'Sample Solution and Scoring',
+      scoringDocumentation: 'Scoring documentation',
       questionPlaceholder: 'Enter your question here...',
       contentPlaceholder: 'Enter your content here...',
       instructionsPlaceholder: 'Enter your instructions here...',

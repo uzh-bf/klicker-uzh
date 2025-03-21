@@ -4,7 +4,6 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormikNumberField,
   FormikSelectField,
-  FormikSwitchField,
   FormLabel,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -115,16 +114,6 @@ function SelectionOptions({
           className={{
             field: 'w-40',
             root: 'order-3 lg:order-2',
-          }}
-        />
-        <FormikSwitchField
-          disabled={isTemplate}
-          name="options.hasSampleSolution"
-          label={t('shared.generic.sampleSolution')}
-          data={{ cy: 'configure-sample-solution' }}
-          className={{
-            label: 'text-gray-600',
-            root: 'order-1 mt-2 self-end lg:order-3 lg:self-start',
           }}
         />
       </div>

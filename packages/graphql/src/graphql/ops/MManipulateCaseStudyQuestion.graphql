@@ -5,6 +5,7 @@ mutation ManipulateCaseStudyQuestion(
   $content: String
   $explanation: String
   $options: OptionsCaseStudyInput
+  $basePoints: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
@@ -15,6 +16,7 @@ mutation ManipulateCaseStudyQuestion(
     content: $content
     explanation: $explanation
     options: $options
+    basePoints: $basePoints
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
@@ -26,6 +28,7 @@ mutation ManipulateCaseStudyQuestion(
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution

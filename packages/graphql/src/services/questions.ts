@@ -161,6 +161,7 @@ export async function manipulateQuestion(
     content,
     explanation,
     options,
+    basePoints,
     pointsMultiplier,
     tags,
   }: ElementManipulationInput,
@@ -183,6 +184,7 @@ export async function manipulateQuestion(
     name,
     content,
     explanation,
+    basePoints,
     pointsMultiplier,
   })
   const processedOptions = validateAndProcessElementOptions(type, options)
@@ -255,6 +257,7 @@ export async function manipulateQuestion(
       name: name!,
       content: content!,
       explanation: explanation ?? undefined,
+      basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier!,
       options: processedOptions,
       owner: {
@@ -302,6 +305,7 @@ export async function manipulateQuestion(
       name: name ?? undefined,
       content: content ?? undefined,
       explanation: typeof explanation === 'undefined' ? undefined : explanation,
+      basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier ?? 1,
       version: {
         increment: 1,

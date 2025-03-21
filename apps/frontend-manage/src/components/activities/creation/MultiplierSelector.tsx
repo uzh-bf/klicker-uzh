@@ -1,15 +1,18 @@
 import { FormikSelectField, SelectClassName } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 
 interface MultiplierSelectorProps {
   name?: string
   disabled?: boolean
+  withoutLabel?: boolean
   className?: SelectClassName
 }
 
 function MultiplierSelector({
   disabled = false,
   name = 'multiplier',
+  withoutLabel = false,
   className,
 }: MultiplierSelectorProps) {
   const t = useTranslations()
@@ -19,8 +22,12 @@ function MultiplierSelector({
       required
       disabled={disabled}
       name={name}
-      label={t('shared.generic.multiplier')}
-      tooltip={t('manage.activityWizard.liveQuizMultiplier')}
+      label={!withoutLabel ? t('shared.generic.multiplier') : undefined}
+      tooltip={
+        !withoutLabel
+          ? t('manage.activityWizard.liveQuizMultiplier')
+          : undefined
+      }
       placeholder={t('manage.activityWizard.multiplierDefault')}
       items={[
         {
@@ -54,9 +61,11 @@ function MultiplierSelector({
       ]}
       data={{ cy: 'select-multiplier' }}
       className={{
-        ...className,
         tooltip: 'z-20',
-        select: { trigger: 'h-10 w-max' },
+        select: {
+          ...className,
+          trigger: twMerge('h-9 w-max', className?.trigger),
+        },
       }}
     />
   )

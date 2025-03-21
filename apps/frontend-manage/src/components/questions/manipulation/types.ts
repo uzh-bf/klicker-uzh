@@ -8,6 +8,7 @@ interface SharedQuestionFormProps {
   name: string
   status: ElementStatus
   content: string
+  basePoints: boolean
   pointsMultiplier: string
   tags?: string[] | null
 }

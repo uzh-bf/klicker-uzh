@@ -195,6 +195,11 @@ export default {
       solution: 'Lösung',
       sampleSolution: 'Musterlösung',
       gamification: 'Gamifizierung',
+      basePoints: 'Basispunkte',
+      awardedPoints: 'Vergebene Punkte',
+      additionalPoints: 'Zusätzliche Punkte',
+      correctnessPoints: 'Korrektheitspunkte',
+      bonusPoints: 'Bonuspunkte',
       scoring: 'Punktevergabe',
       liveQA: 'Live-Q&A',
       moderation: 'Moderation',
@@ -1089,14 +1094,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern).',
       tagFormatting:
         'Zwischenzeitlich erforderliche Formattierung: Geben Sie Tags durch Kommas getrennt ein, z.B.: Tag1,Tag2,Tag3',
-      multiplierTooltip:
-        'Wählen Sie einen Multiplikator, mit welchem die Punkte für diese Frage multipliziert werden sollen. Der Multiplikator kann nur zwischen 1 und 4 liegen.',
+      basePointInformation:
+        'Basispunkte werden bei allen Teilnehmern für die Beantwortung der Frage in einem Live Quiz gutgeschrieben. Diese Punkte werden nicht durch Punktmultiplikatoren beeinflusst.',
+      multiplierInformation:
+        'Wählen Sie einen Multiplikator, mit welchem Korrektheits- und Bonuspunkte für diese Frage multipliziert werden sollen. Der Multiplikator kann nur zwischen 1 und 4 liegen.',
+      multiplierNoEffect:
+        'Multiplikatoren beeinflussen die Bepunktung einer Frage nur, wenn eine Musterlösung definiert ist und Korrektheits- und Bonuspunkte (Live Quiz) vergeben werden.',
+      liveQuizBasePoints: 'Live-Quiz Basispunkte',
+      zeroPoints: '0 Punkte',
       questionTooltip:
         'Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen.',
       contentTooltip:
         'Geben Sie den Inhalt ein, den Sie den Teilnehmenden präsentieren möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen.',
       instructionsTooltip:
         'Geben Sie hier die Instruktionen für die Studierenden ein, welche als Wegleitung für die Beantwortung der Fallstudie dienen.',
+      enableSampleSolution: 'Musterlösung aktivieren',
+      sampleSolutionAndScoring: 'Musterlösung & Bewertung',
+      scoringDocumentation: 'Dokumentation zur Bewertung',
       questionPlaceholder: 'Fragetext hier eingeben…',
       contentPlaceholder: 'Inhalt hier eingeben…',
       instructionsPlaceholder: 'Instruktionen hier eingeben…',

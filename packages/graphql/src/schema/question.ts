@@ -669,6 +669,7 @@ const sharedElementProps = (t: any) => ({
   type: t.expose('type', { type: ElementType }),
   content: t.exposeString('content'),
   explanation: t.exposeString('explanation', { nullable: true }),
+  basePoints: t.exposeBoolean('basePoints'),
   pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
   isArchived: t.exposeBoolean('isArchived', { nullable: true }),

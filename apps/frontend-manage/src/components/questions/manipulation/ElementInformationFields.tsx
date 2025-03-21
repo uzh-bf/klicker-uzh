@@ -1,4 +1,3 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormLabel,
@@ -7,7 +6,6 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
-import MultiplierSelector from '../../activities/creation/MultiplierSelector'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'
@@ -73,16 +71,6 @@ function ElementInformationFields({
       </div>
 
       <div className="mt-2 flex flex-row gap-2">
-        {!isTemplate &&
-          values.type !== ElementType.Content &&
-          values.type !== ElementType.Flashcard && (
-            <div>
-              <MultiplierSelector
-                name="pointsMultiplier"
-                disabled={isSubmitting}
-              />
-            </div>
-          )}
         {!isTemplate ? (
           <div className="flex w-full flex-col" data-cy="element-tag-input">
             <FormLabel
