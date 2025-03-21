@@ -136,6 +136,7 @@ const serviceBusTrigger = async function (
       firstResponseReceivedAt,
       sessionBlockId,
       choiceCount,
+      basePoints,
       pointsMultiplier,
     } = instanceInfo
     let parsedSolutions = undefined
@@ -198,6 +199,7 @@ const serviceBusTrigger = async function (
               ? DEFAULT_CORRECT_POINTS
               : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsPercentage,
+            basePoints: basePoints === 'false' ? false : true,
             pointsMultiplier,
           })
           xpAwarded = computeAwardedXp({
@@ -280,6 +282,7 @@ const serviceBusTrigger = async function (
             )
               ? DEFAULT_CORRECT_POINTS
               : parseInt(instanceInfo.defaultCorrectPoints, 10),
+            basePoints: basePoints === 'false' ? false : true,
             pointsMultiplier,
           })
           xpAwarded = computeAwardedXp({
@@ -352,6 +355,7 @@ const serviceBusTrigger = async function (
             )
               ? DEFAULT_CORRECT_POINTS
               : parseInt(instanceInfo.defaultCorrectPoints, 10),
+            basePoints: basePoints === 'false' ? false : true,
             pointsMultiplier,
           })
           xpAwarded = computeAwardedXp({
@@ -422,6 +426,7 @@ const serviceBusTrigger = async function (
               ? DEFAULT_CORRECT_POINTS
               : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsPercentage,
+            basePoints: basePoints === 'false' ? false : true,
             pointsMultiplier,
           })
 
@@ -519,6 +524,7 @@ const serviceBusTrigger = async function (
               ? DEFAULT_CORRECT_POINTS
               : parseInt(instanceInfo.defaultCorrectPoints, 10),
             pointsPercentage,
+            basePoints: basePoints === 'false' ? false : true,
             pointsMultiplier,
           })
           xpAwarded = computeAwardedXp({
