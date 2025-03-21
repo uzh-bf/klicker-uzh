@@ -29,6 +29,7 @@ function extractFormValuesFromElementInstance({
     content: element.content,
     explanation: element.explanation,
     tags: [],
+    basePoints: element.basePoints,
     pointsMultiplier: String(element.pointsMultiplier),
   }
 
@@ -182,6 +183,7 @@ function extractFormValuesFromElementInstance({
     content: '',
     explanation: '',
     tags: [],
+    basePoints: true,
     pointsMultiplier: '1',
     options: {
       hasSampleSolution: false,

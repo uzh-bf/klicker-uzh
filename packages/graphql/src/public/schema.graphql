@@ -272,6 +272,7 @@ type CaseStudyElement {
 }
 
 type CaseStudyElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -472,6 +473,7 @@ type ChoicesElement {
 }
 
 type ChoicesElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -552,6 +554,7 @@ type ContentElement {
 }
 
 type ContentElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -872,6 +875,7 @@ type FlashcardElement {
 }
 
 type FlashcardElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -951,6 +955,7 @@ type FreeTextElement {
 }
 
 type FreeTextElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -1487,6 +1492,7 @@ type NumericalElement {
 }
 
 type NumericalElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -1960,6 +1966,7 @@ type SelectionElement {
 }
 
 type SelectionElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String

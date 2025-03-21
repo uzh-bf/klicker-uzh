@@ -126,6 +126,7 @@ export async function getArtificialElementInstance(
     type: DB.ElementInstanceType.LIVE_QUIZ,
     elementData,
     options: {
+      basePoints: element.basePoints,
       pointsMultiplier: element.pointsMultiplier,
     },
     results: initialResults,
@@ -951,6 +952,7 @@ export async function updateElementInstances(
               // keep previous options where possible and update them only where required
               options: {
                 ...oldInstance.options,
+                basePoints: element.basePoints,
                 pointsMultiplier: multiplier * element.pointsMultiplier,
               },
             },

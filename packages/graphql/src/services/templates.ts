@@ -1955,6 +1955,7 @@ export async function createLiveQuizFromTemplate(
                     type: DB.ElementInstanceType.LIVE_QUIZ,
                     elementData,
                     options: {
+                      basePoints: entry.element.basePoints,
                       pointsMultiplier:
                         templateLiveQuiz.pointsMultiplier *
                         entry.element.pointsMultiplier,

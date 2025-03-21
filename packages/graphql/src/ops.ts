@@ -315,6 +315,7 @@ export type CaseStudyElement = {
 
 export type CaseStudyElementData = {
   __typename?: 'CaseStudyElementData';
+  basePoints: Scalars['Boolean']['output'];
   content: Scalars['String']['output'];
   elementId: Scalars['Int']['output'];
   explanation?: Maybe<Scalars['String']['output']>;
@@ -535,6 +536,7 @@ export type ChoicesElement = {
 
 export type ChoicesElementData = {
   __typename?: 'ChoicesElementData';
+  basePoints: Scalars['Boolean']['output'];
   content: Scalars['String']['output'];
   elementId: Scalars['Int']['output'];
   explanation?: Maybe<Scalars['String']['output']>;
@@ -623,6 +625,7 @@ export type ContentElement = {
 
 export type ContentElementData = {
   __typename?: 'ContentElementData';
+  basePoints: Scalars['Boolean']['output'];
   content: Scalars['String']['output'];
   elementId: Scalars['Int']['output'];
   explanation?: Maybe<Scalars['String']['output']>;
@@ -960,6 +963,7 @@ export type FlashcardElement = {
 
 export type FlashcardElementData = {
   __typename?: 'FlashcardElementData';
+  basePoints: Scalars['Boolean']['output'];
   content: Scalars['String']['output'];
   elementId: Scalars['Int']['output'];
   explanation?: Maybe<Scalars['String']['output']>;
@@ -1046,6 +1050,7 @@ export type FreeTextElement = {
 
 export type FreeTextElementData = {
   __typename?: 'FreeTextElementData';
+  basePoints: Scalars['Boolean']['output'];
   content: Scalars['String']['output'];
   elementId: Scalars['Int']['output'];
   explanation?: Maybe<Scalars['String']['output']>;
@@ -2506,6 +2511,7 @@ export type NumericalElement = {
 
 export type NumericalElementData = {
   __typename?: 'NumericalElementData';
+  basePoints: Scalars['Boolean']['output'];
   content: Scalars['String']['output'];
   elementId: Scalars['Int']['output'];
   explanation?: Maybe<Scalars['String']['output']>;
@@ -3364,6 +3370,7 @@ export type SelectionElement = {
 
 export type SelectionElementData = {
   __typename?: 'SelectionElementData';
+  basePoints: Scalars['Boolean']['output'];
   content: Scalars['String']['output'];
   elementId: Scalars['Int']['output'];
   explanation?: Maybe<Scalars['String']['output']>;

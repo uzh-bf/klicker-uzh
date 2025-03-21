@@ -27,18 +27,21 @@ const CONTENT_KEYS: ElementKeys[] = [
   'name',
   'content',
   'type',
+  'basePoints',
   'pointsMultiplier',
 ]
 const NO_OPTIONS_KEYS: ElementKeys[] = [
   'name',
   'content',
   'explanation',
+  'basePoints',
   'pointsMultiplier',
 ]
 const QUESTION_KEYS: ElementKeys[] = [
   'name',
   'content',
   'explanation',
+  'basePoints',
   'pointsMultiplier',
   'options',
 ]
@@ -442,6 +445,7 @@ export function getActivityInstanceConnectOrCreate({
         elementData: existingInstance.elementData,
         options: {
           ...additionalInstanceOptions,
+          basePoints: existingInstance.elementData.basePoints,
           pointsMultiplier:
             activityMultiplier * existingInstance.elementData.pointsMultiplier,
         },
@@ -484,6 +488,7 @@ export function getActivityInstanceConnectOrCreate({
         elementData: elementData,
         options: {
           ...additionalInstanceOptions,
+          basePoints: element.basePoints,
           pointsMultiplier: activityMultiplier * element.pointsMultiplier,
         },
         results: initialResults,
