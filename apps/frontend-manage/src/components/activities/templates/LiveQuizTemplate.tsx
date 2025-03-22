@@ -400,13 +400,9 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
               }
 
               try {
-                console.log(quizData)
-
                 const processedBlocks = processLiveQuizTemplateBlocksData({
                   data: quizData,
                 })
-
-                console.log(processedBlocks)
 
                 const { data: res } = await createLiveQuizFromTemplate({
                   variables: {
