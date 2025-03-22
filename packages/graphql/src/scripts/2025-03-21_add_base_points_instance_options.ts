@@ -22,6 +22,11 @@ async function run() {
     })
 
     for (const instance of instances) {
+      // skip the current instance, if the base points attribute is already set
+      if ('basePoints' in instance.options) {
+        continue
+      }
+
       await prisma.elementInstance.update({
         where: {
           id: instance.id,

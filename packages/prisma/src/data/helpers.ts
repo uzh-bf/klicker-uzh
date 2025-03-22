@@ -711,8 +711,12 @@ export function prepareStackVariety({
             elementData: processElementData(questions[0]!),
             options:
               activityType === ActivityType.PRACTICE_QUIZ
-                ? { pointsMultiplier: 3, resetTimeDays: 6, basePoints: true }
-                : { pointsMultiplier: 3, basePoints: true },
+                ? {
+                    pointsMultiplier: 3,
+                    resetTimeDays: 6,
+                    basePoints: questions[0]?.basePoints,
+                  }
+                : { pointsMultiplier: 3, basePoints: questions[0]?.basePoints },
             results: getInitialInstanceResults(
               processElementData(questions[0]!)
             ),
