@@ -7,6 +7,7 @@ import {
   type CaseStudyCase as CaseStudyCaseType,
   type CaseStudyCriterion as CaseStudyCriterionType,
   type Choice as ChoiceType,
+  type ElementInstanceOptions as ElementInstanceOptionsType,
   type ElementOptionsAnswerCollectionEntry as ElementOptionsAnswerCollectionEntryType,
   type ElementOptionsAnswerCollection as ElementOptionsAnswerCollectionType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
@@ -268,14 +269,11 @@ const sharedElementData = (t: any) => ({
   pointsMultiplier: t.exposeInt('pointsMultiplier'),
 })
 
-export interface IElementInstanceOptions {
-  pointsMultiplier?: number
-  resetTimeDays?: number
-}
 export const ElementInstanceOptions = builder
-  .objectRef<IElementInstanceOptions>('ElementInstanceOptions')
+  .objectRef<ElementInstanceOptionsType>('ElementInstanceOptions')
   .implement({
     fields: (t) => ({
+      basePoints: t.exposeBoolean('basePoints', { nullable: true }),
       pointsMultiplier: t.exposeInt('pointsMultiplier', { nullable: true }),
       resetTimeDays: t.exposeInt('resetTimeDays', { nullable: true }),
     }),

@@ -314,6 +314,7 @@ export default {
       userGroup: 'User group',
       permissionLevel: 'Access level',
       template: 'Template',
+      noPoints: 'no points',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',

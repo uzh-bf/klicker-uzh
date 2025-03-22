@@ -820,6 +820,7 @@ export type ElementInstanceInput = {
 
 export type ElementInstanceOptions = {
   __typename?: 'ElementInstanceOptions';
+  basePoints?: Maybe<Scalars['Boolean']['output']>;
   pointsMultiplier?: Maybe<Scalars['Int']['output']>;
   resetTimeDays?: Maybe<Scalars['Int']['output']>;
 };
@@ -3687,6 +3688,7 @@ export type TemplateElementInformation = {
 };
 
 export type TemplateElementManipulationInput = {
+  basePoints?: InputMaybe<Scalars['Boolean']['input']>;
   caseStudyOptions?: InputMaybe<OptionsCaseStudyInput>;
   choicesOptions?: InputMaybe<OptionsChoicesInput>;
   content?: InputMaybe<Scalars['String']['input']>;

@@ -8598,6 +8598,18 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "pointsMultiplier",
             "description": null,
             "args": [],
@@ -32811,6 +32823,18 @@
         "isOneOf": false,
         "fields": null,
         "inputFields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "caseStudyOptions",
             "description": null,

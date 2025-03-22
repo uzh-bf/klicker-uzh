@@ -3,13 +3,13 @@ import type {
   ChoicesInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { Markdown } from '@klicker-uzh/markdown'
+import { useTranslations } from 'next-intl'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 import MCKPRIMEvaluation from './evaluation/MCKPRIMEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
 import SCEvaluation from './evaluation/SCEvaluation'
+import QuestionContent from './QuestionContent'
 import KPAnswerOptions from './questions/KPAnswerOptions'
 import MCAnswerOptions from './questions/MCAnswerOptions'
 import SCAnswerOptions from './questions/SCAnswerOptions'
@@ -29,6 +29,7 @@ interface ChoicesQuestionProps {
   existingResponse?: ChoicesStudentResponseType
   elementIx: number
   evaluation?: ChoicesInstanceEvaluation
+  noPoints: boolean
   disabled?: boolean
 }
 
@@ -41,23 +42,15 @@ function ChoicesQuestion({
   existingResponse,
   elementIx,
   evaluation,
+  noPoints,
   disabled,
 }: ChoicesQuestionProps) {
+  const t = useTranslations()
+
   return (
     <div className="flex flex-col gap-4 md:flex-row">
       <div className="flex-1">
-        {content !== '<br>' && (
-          <div
-            className={twMerge(
-              'bg-primary-10 prose prose-p:!m-0 prose-img:!m-0 mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6'
-            )}
-          >
-            <Markdown
-              content={content}
-              data={{ cy: `choices-question-content` }}
-            />
-          </div>
-        )}
+        <QuestionContent content={content} noPoints={noPoints} />
 
         {evaluation && evaluation.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />

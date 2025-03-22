@@ -274,6 +274,7 @@ export const TemplateElementManipulationInput =
         type: OptionsCaseStudyInput,
         required: false,
       }),
+      basePoints: t.boolean({ required: false }),
       pointsMultiplier: t.int({ required: false }),
       tags: t.stringList({ required: false }),
     }),

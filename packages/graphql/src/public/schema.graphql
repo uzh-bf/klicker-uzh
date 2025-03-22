@@ -741,6 +741,7 @@ input ElementInstanceInput {
 }
 
 type ElementInstanceOptions {
+  basePoints: Boolean
   pointsMultiplier: Int
   resetTimeDays: Int
 }
@@ -2206,6 +2207,7 @@ type TemplateElementInformation {
 }
 
 input TemplateElementManipulationInput {
+  basePoints: Boolean
   caseStudyOptions: OptionsCaseStudyInput
   choicesOptions: OptionsChoicesInput
   content: String

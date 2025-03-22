@@ -39,6 +39,14 @@ function useArtificialElementInstance({
         options:
           'options' in values
             ? {
+                hasSampleSolution:
+                  'hasSampleSolution' in values.options
+                    ? values.options.hasSampleSolution
+                    : undefined,
+                hasAnswerFeedbacks:
+                  'hasAnswerFeedbacks' in values.options
+                    ? values.options.hasAnswerFeedbacks
+                    : undefined,
                 displayMode:
                   'displayMode' in values.options
                     ? values.options.displayMode

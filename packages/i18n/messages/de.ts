@@ -315,7 +315,7 @@ export default {
       userGroup: 'Benutzergruppe',
       permissionLevel: 'Zugriffsrechte',
       template: 'Vorlage',
-      unset: 'nicht gesetzt',
+      noPoints: 'keine Punkte',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
