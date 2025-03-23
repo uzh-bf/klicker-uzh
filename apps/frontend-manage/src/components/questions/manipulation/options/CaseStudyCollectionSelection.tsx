@@ -175,11 +175,7 @@ function CaseStudyCollectionSelection({
             // reset all solutions inside the cases
             casesHelpers.setValue(
               casesField.value?.map((caseItem) => {
-                console.log('CONSIDERING CASE ITEM', caseItem)
-
                 if ('solutions' in caseItem) {
-                  console.log('UPDATING CASE ITEM')
-
                   return {
                     ...caseItem,
                     solutions: undefined,
