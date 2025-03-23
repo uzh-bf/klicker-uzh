@@ -70,7 +70,10 @@ function CaseStudyCollectionSelection({
               setNewValue(value)
               setChangeModalOpen(true)
             } else {
+              // set the selected answer collection to the new value
               collectionHelpers.setValue(value)
+
+              // reset the selected items (resetting solutions is not required, since sample solution is disabled)
               itemsHelpers.setValue([])
             }
           }}
@@ -163,8 +166,29 @@ function CaseStudyCollectionSelection({
             setChangeModalOpen(false)
           }}
           onConfirm={() => {
+            // set the selected answer collection to the new value
             collectionHelpers.setValue(newValue)
+
+            // reset the selected items
             itemsHelpers.setValue([])
+
+            // reset all solutions inside the cases
+            casesHelpers.setValue(
+              casesField.value?.map((caseItem) => {
+                console.log('CONSIDERING CASE ITEM', caseItem)
+
+                if ('solutions' in caseItem) {
+                  console.log('UPDATING CASE ITEM')
+
+                  return {
+                    ...caseItem,
+                    solutions: undefined,
+                  }
+                }
+
+                return caseItem
+              })
+            )
           }}
         />
       </div>
