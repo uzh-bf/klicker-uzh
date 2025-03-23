@@ -1816,9 +1816,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
         // verify that certain settings are disabled / hidden and enter new title & content
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
-        if (hasSampleSolutionDisabled) {
-          cy.get('[data-cy="configure-sample-solution"]').should('be.disabled')
-        }
+        cy.get('[data-cy="configure-sample-solution"]').should('not.exist')
         if (hasAnswerFeedbacksDisabled) {
           cy.get('[data-cy="configure-answer-feedbacks"]').should('be.disabled')
         }
