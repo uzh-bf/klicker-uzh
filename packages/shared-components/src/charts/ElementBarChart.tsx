@@ -61,14 +61,12 @@ function ElementBarChart({
 
   return (
     <div className="flex h-full w-full flex-col">
-      {showExplanation && instance.explanation && (
-        <EvaluationExplanation
-          explanation={instance.explanation}
-          showExplanation={showExplanation}
-          textSize={textSize.text}
-          textSizeLg={textSize.textLg}
-        />
-      )}
+      <EvaluationExplanation
+        explanation={instance.explanation}
+        showExplanation={showExplanation}
+        textSize={textSize.text}
+        textSizeLg={textSize.textLg}
+      />
       <div className="min-h-0 flex-1">
         <ResponsiveContainer width="99%" height="100%">
           <BarChartRecharts

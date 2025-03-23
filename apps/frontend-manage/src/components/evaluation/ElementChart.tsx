@@ -75,14 +75,12 @@ function ElementChart({
 
     return (
       <div className="flex h-full w-full flex-col">
-        {showExplanation && instanceEvaluation.explanation && (
-          <EvaluationExplanation
-            explanation={instanceEvaluation.explanation}
-            showExplanation={showExplanation}
-            textSize={textSize.text}
-            textSizeLg={textSize.textLg}
-          />
-        )}
+        <EvaluationExplanation
+          explanation={instanceEvaluation.explanation}
+          showExplanation={showExplanation}
+          textSize={textSize.text}
+          textSizeLg={textSize.textLg}
+        />
         <div className="min-h-0 flex-1">
           <ElementHistogram
             type={instanceEvaluation.type}

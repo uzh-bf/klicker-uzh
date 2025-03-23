@@ -114,14 +114,12 @@ function CSEvaluationScatter({
         minSize={50}
         className="flex h-full w-full flex-col px-3"
       >
-        {showExplanation && explanation && (
-          <EvaluationExplanation
-            explanation={explanation}
-            showExplanation={showExplanation}
-            textSize={textSize.text}
-            textSizeLg={textSize.textLg}
-          />
-        )}
+        <EvaluationExplanation
+          explanation={explanation}
+          showExplanation={showExplanation}
+          textSize={textSize.text}
+          textSizeLg={textSize.textLg}
+        />
         <div className="min-h-0 flex-1 items-center justify-center px-1">
           {criteria.length === 1 && scatterData && xCriterion ? (
             <CSOneDimScatterPlot
