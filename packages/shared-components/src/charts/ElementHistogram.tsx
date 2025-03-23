@@ -272,7 +272,7 @@ function ElementHistogram({
       </ResponsiveContainer>
 
       {hideBins ? null : (
-        <div className="float-right mr-4 flex flex-row items-center gap-2">
+        <div className="float-right -mt-4 mr-4 flex flex-row items-center gap-2">
           <NumberField
             precision={0}
             id="histogramBins"

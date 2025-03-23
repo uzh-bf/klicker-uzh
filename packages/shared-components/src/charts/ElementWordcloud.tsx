@@ -6,11 +6,15 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { TagCloud } from 'react-tagcloud'
+import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 
 interface ElementWordcloudProps {
   instance: ElementInstanceEvaluation
   showSolution: boolean
+  showExplanation: boolean
   textSize: {
+    text: string
+    textLg: string
     min: number
     max: number
   }
@@ -19,6 +23,7 @@ interface ElementWordcloudProps {
 function ElementWordcloud({
   instance,
   showSolution,
+  showExplanation,
   textSize,
 }: ElementWordcloudProps) {
   const t = useTranslations()
@@ -43,14 +48,22 @@ function ElementWordcloud({
   }
 
   return (
-    <div className="flex h-full w-full p-4">
-      <TagCloud
-        colorOptions={{ luminosity: 'dark' }}
-        maxSize={textSize.max}
-        minSize={textSize.min}
-        shuffle={false}
-        tags={processedData}
+    <div className="flex h-full w-full flex-col">
+      <EvaluationExplanation
+        explanation={instance.explanation}
+        showExplanation={showExplanation}
+        textSize={textSize.text}
+        textSizeLg={textSize.textLg}
       />
+      <div className="p-4">
+        <TagCloud
+          colorOptions={{ luminosity: 'dark' }}
+          maxSize={textSize.max}
+          minSize={textSize.min}
+          shuffle={false}
+          tags={processedData}
+        />
+      </div>
     </div>
   )
 }

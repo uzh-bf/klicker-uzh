@@ -18,6 +18,7 @@ interface ElementEvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  showExplanation: boolean
   type: ActivityEvaluationType
   className?: string
 }
@@ -28,6 +29,7 @@ function ElementEvaluation({
   textSize,
   chartType,
   showSolution,
+  showExplanation,
   type,
   className,
 }: ElementEvaluationProps) {
@@ -49,6 +51,7 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+            showExplanation={showExplanation}
             type={type}
           />
         )}
@@ -58,6 +61,7 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+            showExplanation={showExplanation}
             type={type}
           />
         )}
@@ -67,6 +71,7 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+            showExplanation={showExplanation}
             type={type}
           />
         )}
@@ -76,6 +81,7 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+            showExplanation={showExplanation}
           />
         )}
         {currentInstance.__typename === 'CaseStudyActivityEvaluationData' && (
@@ -85,6 +91,7 @@ function ElementEvaluation({
             textSize={textSize}
             chartType={chartType}
             showSolution={showSolution}
+            showExplanation={showExplanation}
             type={type}
           />
         )}

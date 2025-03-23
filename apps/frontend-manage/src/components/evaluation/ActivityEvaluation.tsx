@@ -56,6 +56,7 @@ function ActivityEvaluation({
   const [activeStack, setActiveStack] = useState<ActiveStackType>(0)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const [showSolution, setShowSolution] = useState<boolean>(false)
+  const [showExplanation, setShowExplanation] = useState<boolean>(false)
   const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
   const [textSize, setTextSize] = useReducer(sizeReducer, TextSizes['md'])
 
@@ -133,6 +134,15 @@ function ActivityEvaluation({
             showSolution={
               instanceResults[activeInstance]?.hasSampleSolution
                 ? showSolution
+                : false
+            }
+            showExplanation={
+              instanceResults[activeInstance]?.explanation &&
+              instanceResults[activeInstance]?.explanation !== '' &&
+              !instanceResults[activeInstance]?.explanation.match(
+                /^(<br>(\n)*)$/g
+              )
+                ? showExplanation
                 : false
             }
             type={type}
@@ -226,6 +236,8 @@ function ActivityEvaluation({
           setTextSize={setTextSize}
           showSolution={showSolution}
           setShowSolution={setShowSolution}
+          showExplanation={showExplanation}
+          setShowExplanation={setShowExplanation}
           chartType={chartType}
           setChartType={setChartType}
           currentInstance={instanceResults[activeInstance]}

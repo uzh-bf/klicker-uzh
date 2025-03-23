@@ -55,6 +55,11 @@
   margin-right: auto
 }
 
+.my-2 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem
+}
+
 .my-auto {
   margin-top: auto;
   margin-bottom: auto
@@ -70,6 +75,10 @@
 
 .-mb-2 {
   margin-bottom: -0.5rem
+}
+
+.-mt-4 {
+  margin-top: -1rem
 }
 
 .mb-1 {
@@ -251,6 +260,10 @@
 
 .max-h-32 {
   max-height: 8rem
+}
+
+.min-h-0 {
+  min-height: 0px
 }
 
 .min-h-\[2\.5rem\] {
@@ -876,10 +889,6 @@
 
 .pb-10 {
   padding-bottom: 2.5rem
-}
-
-.pb-2 {
-  padding-bottom: 0.5rem
 }
 
 .pb-4 {

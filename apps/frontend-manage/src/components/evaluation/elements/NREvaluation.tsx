@@ -18,6 +18,7 @@ interface NREvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  showExplanation: boolean
   type: ActivityEvaluationType
 }
 
@@ -34,6 +35,7 @@ function NREvaluation({
   textSize,
   chartType,
   showSolution,
+  showExplanation,
   type,
 }: NREvaluationProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -56,6 +58,7 @@ function NREvaluation({
           chartType={chartType}
           instanceEvaluation={instanceEvaluation}
           showSolution={showSolution}
+          showExplanation={showExplanation}
           showStatistics={showStatistics}
           textSize={textSize}
         />
