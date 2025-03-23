@@ -709,7 +709,9 @@ describe('Different practice quiz workflows', function () {
       cy.get('[data-cy="start-practice-quiz"]').click()
 
       // SC question
-      cy.get('[data-cy="choices-question-content"]').contains(data.SCML.content)
+      cy.get('[data-cy="instance-question-content"]').contains(
+        data.SCML.content
+      )
       cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
       cy.get('[data-cy="sc-0-answer-option-1"]').click()
       cy.get('[data-cy="student-stack-submit"]').click()
@@ -718,7 +720,9 @@ describe('Different practice quiz workflows', function () {
       cy.get('[data-cy="student-stack-continue"]').click()
 
       // MC question
-      cy.get('[data-cy="choices-question-content"]').contains(data.MCML.content)
+      cy.get('[data-cy="instance-question-content"]').contains(
+        data.MCML.content
+      )
       cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
       cy.get('[data-cy="mc-0-answer-option-1"]').click()
       cy.get('[data-cy="mc-0-answer-option-2"]').click()
@@ -730,7 +734,9 @@ describe('Different practice quiz workflows', function () {
       cy.get('[data-cy="student-stack-continue"]').click()
 
       // KPRIM question
-      cy.get('[data-cy="choices-question-content"]').contains(data.KPML.content)
+      cy.get('[data-cy="instance-question-content"]').contains(
+        data.KPML.content
+      )
       cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
       cy.get('[data-cy="toggle-kp-0-answer-0-correct"]').click()
       cy.get('[data-cy="toggle-kp-0-answer-1-incorrect"]').click()

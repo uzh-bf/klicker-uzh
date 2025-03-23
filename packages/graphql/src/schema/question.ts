@@ -274,6 +274,7 @@ export const TemplateElementManipulationInput =
         type: OptionsCaseStudyInput,
         required: false,
       }),
+      basePoints: t.boolean({ required: false }),
       pointsMultiplier: t.int({ required: false }),
       tags: t.stringList({ required: false }),
     }),
@@ -669,6 +670,7 @@ const sharedElementProps = (t: any) => ({
   type: t.expose('type', { type: ElementType }),
   content: t.exposeString('content'),
   explanation: t.exposeString('explanation', { nullable: true }),
+  basePoints: t.exposeBoolean('basePoints'),
   pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
   isArchived: t.exposeBoolean('isArchived', { nullable: true }),

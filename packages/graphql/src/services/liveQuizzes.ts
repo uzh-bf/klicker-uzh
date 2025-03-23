@@ -1197,6 +1197,7 @@ export async function activateLiveQuizBlock(
       startedAt: Number(new Date()),
       sessionBlockId: blockId,
       type: elementData.type,
+      basePoints: instance.options.basePoints,
       pointsMultiplier: instance.options.pointsMultiplier,
       defaultPoints: updatedQuiz.defaultPoints,
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,

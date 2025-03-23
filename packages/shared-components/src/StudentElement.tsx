@@ -170,6 +170,10 @@ function StudentElement({
             : undefined
         }
         elementIx={elementIx}
+        noPoints={
+          element.elementData.basePoints === false &&
+          !element.elementData.options.hasSampleSolution
+        }
         disabled={disabledInput}
       />
     )
@@ -218,6 +222,10 @@ function StudentElement({
             : undefined
         }
         elementIx={elementIx}
+        noPoints={
+          element.elementData.basePoints === false &&
+          !element.elementData.options.hasSampleSolution
+        }
         disabled={disabledInput}
       />
     )
@@ -266,6 +274,10 @@ function StudentElement({
             : undefined
         }
         elementIx={elementIx}
+        noPoints={
+          element.elementData.basePoints === false &&
+          !element.elementData.options.hasSampleSolution
+        }
         disabled={disabledInput}
       />
     )
@@ -317,6 +329,10 @@ function StudentElement({
             : undefined
         }
         elementIx={elementIx}
+        noPoints={
+          element.elementData.basePoints === false &&
+          !element.elementData.options.hasSampleSolution
+        }
         disabled={disabledInput}
         preview={preview}
       />
@@ -365,8 +381,11 @@ function StudentElement({
             : undefined
         }
         elementIx={elementIx}
+        noPoints={
+          element.elementData.basePoints === false &&
+          !element.elementData.options.hasSampleSolution
+        }
         disabled={disabledInput}
-        // preview={preview}
       />
     )
   } else if (element.elementData.__typename === 'FlashcardElementData') {

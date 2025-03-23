@@ -16,10 +16,9 @@ function OptionsLabel({ type }: OptionsLabelProps) {
         <div className="flex-1">
           <FormLabel
             required
-            label={t('manage.questionForms.answerOptions')}
             labelType="small"
+            label={t('manage.questionForms.answerOptions')}
             tooltip={t('manage.questionForms.answerOptionsTooltip')}
-            className={{ label: 'text-black' }}
           />
         </div>
       )}

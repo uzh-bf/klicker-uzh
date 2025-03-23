@@ -855,6 +855,7 @@ describe('@klicker-uzh/grading', () => {
       getsMaxPoints: false,
       defaultPoints: 10,
       defaultCorrectPoints: 5,
+      basePoints: true,
       pointsPercentage: 1,
     })
     expect(points).toEqual(45)
@@ -868,6 +869,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
+      basePoints: true,
       pointsMultiplier: 2,
     })
     expect(pointsMultiplier).toEqual(80)
@@ -881,6 +883,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: null,
+      basePoints: true,
     })
     expect(points2).toEqual(45)
 
@@ -893,6 +896,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: null,
+      basePoints: true,
       pointsMultiplier: 3,
     })
     expect(points2Multiplier).toEqual(115)
@@ -906,6 +910,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 0.5,
+      basePoints: true,
     })
     expect(points3).toEqual(28)
 
@@ -918,6 +923,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 0.5,
+      basePoints: true,
       pointsMultiplier: 2,
     })
     expect(points3Multiplier).toEqual(45)
@@ -931,6 +937,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
+      basePoints: true,
     })
     expect(points4).toEqual(30)
 
@@ -943,6 +950,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
+      basePoints: true,
       pointsMultiplier: 2,
     })
     expect(points4Multiplier).toEqual(50)
@@ -956,6 +964,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 0.5,
+      basePoints: true,
     })
     expect(points5).toEqual(20)
 
@@ -968,6 +977,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: null,
+      basePoints: true,
     })
     expect(points6).toEqual(30)
 
@@ -980,6 +990,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: null,
+      basePoints: true,
       pointsMultiplier: 2,
     })
     expect(points6Multiplier).toEqual(50)
@@ -993,6 +1004,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 0,
+      basePoints: true,
     })
     expect(points7).toEqual(10)
 
@@ -1005,6 +1017,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 0,
+      basePoints: true,
       pointsMultiplier: 3,
     })
     expect(points7Multiplier).toEqual(10)
@@ -1018,6 +1031,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
+      basePoints: true,
     })
     expect(points8).toEqual(15)
 
@@ -1030,6 +1044,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
+      basePoints: true,
       pointsMultiplier: 2,
     })
     expect(points8Multiplier).toEqual(20)
@@ -1042,6 +1057,7 @@ describe('@klicker-uzh/grading', () => {
       getsMaxPoints: false,
       defaultPoints: 10,
       defaultCorrectPoints: 5,
+      basePoints: true,
       pointsPercentage: 0,
     })
     expect(points9).toEqual(10)
@@ -1055,6 +1071,7 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 0,
+      basePoints: true,
       pointsMultiplier: 2,
     })
     expect(points9Multiplier).toEqual(10)
@@ -1067,6 +1084,7 @@ describe('@klicker-uzh/grading', () => {
       getsMaxPoints: false,
       defaultPoints: 10,
       defaultCorrectPoints: 5,
+      basePoints: true,
       pointsPercentage: 0.5,
     })
     expect(points10).toEqual(13)
@@ -1080,9 +1098,65 @@ describe('@klicker-uzh/grading', () => {
       defaultPoints: 10,
       defaultCorrectPoints: 5,
       pointsPercentage: 0.5,
+      basePoints: true,
       pointsMultiplier: 2,
     })
     expect(points10Multiplier).toEqual(15)
+
+    // test that base points are not awarded if corresponding option is disabled
+    const points11 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      basePoints: false,
+      pointsPercentage: 1,
+    })
+    expect(points11).toEqual(35)
+
+    const points11Multiplier = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: false,
+      pointsMultiplier: 2,
+    })
+    expect(points11Multiplier).toEqual(70)
+
+    const points12 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: true,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: null,
+      basePoints: false,
+    })
+    expect(points12).toEqual(35)
+
+    const points12Multiplier = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: true,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: null,
+      basePoints: false,
+      pointsMultiplier: 3,
+    })
+    expect(points12Multiplier).toEqual(105)
   })
 
   it('should compute the awarded points correctly for practice quizzes and microlearnings', () => {

@@ -8,6 +8,7 @@ fragment ElementDataInfo on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
 
@@ -19,6 +20,7 @@ fragment ElementDataInfo on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
 
@@ -30,6 +32,7 @@ fragment ElementDataInfo on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
 
@@ -41,6 +44,7 @@ fragment ElementDataInfo on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
 
@@ -52,6 +56,7 @@ fragment ElementDataInfo on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
 
@@ -63,6 +68,7 @@ fragment ElementDataInfo on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
 
@@ -74,6 +80,7 @@ fragment ElementDataInfo on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
   }

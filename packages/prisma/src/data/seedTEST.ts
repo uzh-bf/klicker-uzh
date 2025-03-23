@@ -404,6 +404,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                       elementType: el.type,
                       elementData,
                       options: {
+                        basePoints: el.basePoints,
                         pointsMultiplier:
                           (data.pointsMultiplier ?? 1) * el.pointsMultiplier,
                       },

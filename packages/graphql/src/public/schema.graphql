@@ -254,6 +254,7 @@ input CaseStudyCriterionResponse {
 }
 
 type CaseStudyElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -271,6 +272,7 @@ type CaseStudyElement {
 }
 
 type CaseStudyElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -453,6 +455,7 @@ type ChoicesActivityEvaluationData {
 }
 
 type ChoicesElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -470,6 +473,7 @@ type ChoicesElement {
 }
 
 type ChoicesElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -533,6 +537,7 @@ type ContentActivityEvaluationData {
 }
 
 type ContentElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -549,6 +554,7 @@ type ContentElement {
 }
 
 type ContentElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -735,6 +741,7 @@ input ElementInstanceInput {
 }
 
 type ElementInstanceOptions {
+  basePoints: Boolean
   pointsMultiplier: Int
   resetTimeDays: Int
 }
@@ -852,6 +859,7 @@ enum FlashcardCorrectnessType {
 }
 
 type FlashcardElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -868,6 +876,7 @@ type FlashcardElement {
 }
 
 type FlashcardElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -929,6 +938,7 @@ type FreeTextActivityEvaluationData {
 }
 
 type FreeTextElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -946,6 +956,7 @@ type FreeTextElement {
 }
 
 type FreeTextElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -1397,13 +1408,13 @@ type Mutation {
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateCaseStudyQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
-  manipulateContentElement(content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateSelectionQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateChoicesQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
+  manipulateContentElement(basePoints: Boolean, content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateFlashcardElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateFreeTextQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateNumericalQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateSelectionQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
@@ -1464,6 +1475,7 @@ type NumericalActivityEvaluationData {
 }
 
 type NumericalElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -1481,6 +1493,7 @@ type NumericalElement {
 }
 
 type NumericalElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -1936,6 +1949,7 @@ type SelectionActivityEvaluationData {
 }
 
 type SelectionElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -1953,6 +1967,7 @@ type SelectionElement {
 }
 
 type SelectionElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -2192,6 +2207,7 @@ type TemplateElementInformation {
 }
 
 input TemplateElementManipulationInput {
+  basePoints: Boolean
   caseStudyOptions: OptionsCaseStudyInput
   choicesOptions: OptionsChoicesInput
   content: String

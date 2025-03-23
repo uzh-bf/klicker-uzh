@@ -33,11 +33,20 @@ function useArtificialElementInstance({
         content: values.content,
         explanation: 'explanation' in values ? values.explanation : undefined,
         name: values.name,
+        basePoints: values.basePoints,
         pointsMultiplier: parseInt(values.pointsMultiplier ?? '1'),
         type: values.type,
         options:
           'options' in values
             ? {
+                hasSampleSolution:
+                  'hasSampleSolution' in values.options
+                    ? values.options.hasSampleSolution
+                    : undefined,
+                hasAnswerFeedbacks:
+                  'hasAnswerFeedbacks' in values.options
+                    ? values.options.hasAnswerFeedbacks
+                    : undefined,
                 displayMode:
                   'displayMode' in values.options
                     ? values.options.displayMode

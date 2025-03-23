@@ -5,6 +5,7 @@ mutation ManipulateNumericalQuestion(
   $content: String
   $explanation: String
   $options: OptionsNumericalInput
+  $basePoints: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
@@ -15,6 +16,7 @@ mutation ManipulateNumericalQuestion(
     content: $content
     explanation: $explanation
     options: $options
+    basePoints: $basePoints
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
@@ -26,6 +28,7 @@ mutation ManipulateNumericalQuestion(
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution

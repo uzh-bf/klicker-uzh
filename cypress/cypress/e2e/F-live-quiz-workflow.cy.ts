@@ -1498,7 +1498,7 @@ describe('Different live-quiz workflows', function () {
 
         // answer the elements in the first block
         cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-        cy.get('[data-cy="choices-question-content"]').contains(
+        cy.get('[data-cy="instance-question-content"]').contains(
           data.MC2.content
         )
         cy.get('[data-cy="mc-0-answer-option-1"]').click()
@@ -1541,14 +1541,14 @@ describe('Different live-quiz workflows', function () {
 
         // answer the elements in the second block
         cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-        cy.get('[data-cy="choices-question-content"]').contains(
+        cy.get('[data-cy="instance-question-content"]').contains(
           data.SC2.content
         )
         cy.get('[data-cy="sc-0-answer-option-0"]').click()
         cy.get('[data-cy="student-submit-answer"]').click()
         cy.wait(500)
         cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-        cy.get('[data-cy="choices-question-content"]').contains(
+        cy.get('[data-cy="instance-question-content"]').contains(
           data.liveQuiz.newSCContent
         )
         cy.get('[data-cy="sc-1-answer-option-0"]').click()
@@ -1645,7 +1645,7 @@ describe('Different live-quiz workflows', function () {
 
         // answer the elements in the first block
         cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-        cy.get('[data-cy="choices-question-content"]').contains(
+        cy.get('[data-cy="instance-question-content"]').contains(
           data.MC2.content
         )
         cy.get('[data-cy="mc-0-answer-option-1"]').click()
@@ -1692,14 +1692,14 @@ describe('Different live-quiz workflows', function () {
 
         // answer the elements in the second block
         cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-        cy.get('[data-cy="choices-question-content"]').contains(
+        cy.get('[data-cy="instance-question-content"]').contains(
           data.SC2.content
         )
         cy.get('[data-cy="sc-0-answer-option-0"]').click()
         cy.get('[data-cy="student-submit-answer"]').click()
         cy.wait(500)
         cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-        cy.get('[data-cy="choices-question-content"]').contains(
+        cy.get('[data-cy="instance-question-content"]').contains(
           data.liveQuiz.newSCContent
         )
         cy.get('[data-cy="sc-1-answer-option-0"]').click()

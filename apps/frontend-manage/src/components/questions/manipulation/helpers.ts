@@ -23,6 +23,7 @@ export function prepareContentArgs({
     name: values.name,
     status: values.status,
     content: values.content,
+    basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
     tags: values.tags,
   }
@@ -44,6 +45,7 @@ export function prepareFlashcardArgs({
     status: values.status,
     content: values.content,
     explanation: values.explanation,
+    basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
     tags: values.tags,
   }
@@ -69,6 +71,7 @@ export function prepareChoicesArgs({
       !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
         ? values.explanation
         : null,
+    basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
 
     options: {
@@ -110,6 +113,7 @@ export function prepareNumericalArgs({
       !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
         ? values.explanation
         : null,
+    basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
 
     options: {
@@ -179,6 +183,7 @@ export function prepareFreeTextArgs({
       !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
         ? values.explanation
         : null,
+    basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
 
     options: {
@@ -218,6 +223,7 @@ export function prepareSelectionArgs({
       !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
         ? values.explanation
         : null,
+    basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
 
     options: {
@@ -250,6 +256,7 @@ export function prepareCaseStudyArgs({
       !values.explanation?.match(/^(<br>(\n)*)$/g) && values.explanation !== ''
         ? values.explanation
         : null,
+    basePoints: values.basePoints,
     pointsMultiplier: parseInt(values.pointsMultiplier),
 
     options: {

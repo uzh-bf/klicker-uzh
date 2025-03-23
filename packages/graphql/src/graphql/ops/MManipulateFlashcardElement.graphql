@@ -4,6 +4,7 @@ mutation ManipulateFlashcardElement(
   $name: String
   $content: String
   $explanation: String
+  $basePoints: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
@@ -13,6 +14,7 @@ mutation ManipulateFlashcardElement(
     name: $name
     content: $content
     explanation: $explanation
+    basePoints: $basePoints
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
@@ -24,6 +26,7 @@ mutation ManipulateFlashcardElement(
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       tags {
         id

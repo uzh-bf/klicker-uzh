@@ -1,4 +1,9 @@
-import { faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowLeft,
+  faArrowRight,
+  faInfoCircle,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type {
   CaseStudyElementOptions,
   CaseStudyInstanceEvaluation,
@@ -25,6 +30,7 @@ interface CaseStudyQuestionProps {
   existingResponse?: CaseStudyStudentResponseType
   elementIx: number
   evaluation?: CaseStudyInstanceEvaluation
+  noPoints: boolean
   disabled?: boolean
   // preview: boolean
 }
@@ -38,6 +44,7 @@ function CaseStudyQuestion({
   existingResponse,
   elementIx,
   evaluation,
+  noPoints,
   disabled = false,
   // preview,
 }: CaseStudyQuestionProps) {
@@ -71,12 +78,20 @@ function CaseStudyQuestion({
       <div className="flex-1">
         {content !== '<br>' && (
           <div className={twMerge(!!evaluation && 'mb-3')}>
-            <div className="mb-1 mt-3 text-lg font-bold">
-              {t('shared.generic.instructions')}
+            <div className="mb-1 mt-3 flex flex-row items-center justify-between">
+              <div className="text-lg font-bold">
+                {t('shared.generic.instructions')}
+              </div>
+              {noPoints ? (
+                <div className="bg-primary-100 flex h-max flex-row items-center gap-1.5 rounded px-1.5 text-sm text-white">
+                  <FontAwesomeIcon icon={faInfoCircle} />
+                  {t('shared.generic.noPoints')}
+                </div>
+              ) : null}
             </div>
             <Markdown
               content={content}
-              data={{ cy: `case-study-question-content` }}
+              data={{ cy: `instance-question-content` }}
               className={{ root: 'text-base' }}
             />
           </div>

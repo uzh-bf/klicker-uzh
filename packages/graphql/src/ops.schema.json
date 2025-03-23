@@ -2822,6 +2822,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "content",
             "description": null,
             "args": [],
@@ -3041,6 +3057,22 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "content",
             "description": null,
@@ -5060,6 +5092,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "content",
             "description": null,
             "args": [],
@@ -5279,6 +5327,22 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "content",
             "description": null,
@@ -6000,6 +6064,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "content",
             "description": null,
             "args": [],
@@ -6203,6 +6283,22 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "content",
             "description": null,
@@ -8502,6 +8598,18 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "pointsMultiplier",
             "description": null,
             "args": [],
@@ -9508,6 +9616,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "content",
             "description": null,
             "args": [],
@@ -9711,6 +9835,22 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "content",
             "description": null,
@@ -10443,6 +10583,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "content",
             "description": null,
             "args": [],
@@ -10662,6 +10818,22 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "content",
             "description": null,
@@ -19754,6 +19926,18 @@
             "description": null,
             "args": [
               {
+                "name": "basePoints",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "content",
                 "description": null,
                 "type": {
@@ -19870,6 +20054,18 @@
             "name": "manipulateChoicesQuestion",
             "description": null,
             "args": [
+              {
+                "name": "basePoints",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "content",
                 "description": null,
@@ -20004,6 +20200,18 @@
             "description": null,
             "args": [
               {
+                "name": "basePoints",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "content",
                 "description": null,
                 "type": {
@@ -20096,6 +20304,18 @@
             "name": "manipulateFlashcardElement",
             "description": null,
             "args": [
+              {
+                "name": "basePoints",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "content",
                 "description": null,
@@ -20201,6 +20421,18 @@
             "name": "manipulateFreeTextQuestion",
             "description": null,
             "args": [
+              {
+                "name": "basePoints",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "content",
                 "description": null,
@@ -20319,6 +20551,18 @@
             "description": null,
             "args": [
               {
+                "name": "basePoints",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "content",
                 "description": null,
                 "type": {
@@ -20435,6 +20679,18 @@
             "name": "manipulateSelectionQuestion",
             "description": null,
             "args": [
+              {
+                "name": "basePoints",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
               {
                 "name": "content",
                 "description": null,
@@ -22725,6 +22981,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "content",
             "description": null,
             "args": [],
@@ -22944,6 +23216,22 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "content",
             "description": null,
@@ -29600,6 +29888,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "content",
             "description": null,
             "args": [],
@@ -29819,6 +30123,22 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "content",
             "description": null,
@@ -32503,6 +32823,18 @@
         "isOneOf": false,
         "fields": null,
         "inputFields": [
+          {
+            "name": "basePoints",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "caseStudyOptions",
             "description": null,

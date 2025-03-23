@@ -34,6 +34,7 @@ function useElementFormInitialValues({
         content: '',
         explanation: '',
         tags: [],
+        basePoints: true,
         pointsMultiplier: '1',
         options: {
           hasSampleSolution: false,
@@ -61,6 +62,7 @@ function useElementFormInitialValues({
       content: question.content,
       explanation: question.explanation ?? '',
       tags: question.tags?.map((tag) => tag.name) ?? [],
+      basePoints: question.basePoints,
       pointsMultiplier: String(question.pointsMultiplier),
     }
 

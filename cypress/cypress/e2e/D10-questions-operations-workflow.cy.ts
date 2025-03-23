@@ -409,7 +409,7 @@ describe('Create different types of elements (with and without sample solution) 
 
   function verifySingleChoiceQuestionContent({ submission, content, choices }) {
     // validate question content
-    cy.get('[data-cy="choices-question-content"]').contains(content)
+    cy.get('[data-cy="instance-question-content"]').contains(content)
 
     // validate choices content
     cy.wrap(choices).each(

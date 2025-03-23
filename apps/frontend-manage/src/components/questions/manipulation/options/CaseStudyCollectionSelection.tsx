@@ -1,9 +1,5 @@
 import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
-import {
-  FormikSwitchField,
-  FormLabel,
-  SelectField,
-} from '@uzh-bf/design-system'
+import { FormLabel, SelectField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
@@ -90,16 +86,6 @@ function CaseStudyCollectionSelection({
           className={{
             select: { trigger: 'h-9 w-80' },
             root: 'order-2 lg:order-1',
-          }}
-        />
-        <FormikSwitchField
-          disabled={isTemplate}
-          name="options.hasSampleSolution"
-          label={t('shared.generic.sampleSolution')}
-          data={{ cy: 'configure-sample-solution' }}
-          className={{
-            label: 'text-gray-600',
-            root: 'order-1 mt-2 self-end lg:order-2 lg:self-start',
           }}
         />
       </div>

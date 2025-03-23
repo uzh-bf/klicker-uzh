@@ -195,6 +195,7 @@ export type ElementManipulationInput = {
   freeTextOptions?: OptionsFreeTextInput | null
   selectionOptions?: OptionsSelectionInput | null
   caseStudyOptions?: OptionsCaseStudyInput | null
+  basePoints?: boolean | null
   pointsMultiplier?: number | null
   tags?: string[] | null
 }
@@ -586,6 +587,7 @@ export type ElementData =
   | CaseStudyElementData
 
 export type ElementInstanceOptions = {
+  basePoints?: boolean
   pointsMultiplier?: number
   resetTimeDays?: number
 }

@@ -126,6 +126,7 @@ export async function getArtificialElementInstance(
     type: DB.ElementInstanceType.LIVE_QUIZ,
     elementData,
     options: {
+      basePoints: element.basePoints,
       pointsMultiplier: element.pointsMultiplier,
     },
     results: initialResults,
@@ -161,6 +162,7 @@ export async function manipulateQuestion(
     content,
     explanation,
     options,
+    basePoints,
     pointsMultiplier,
     tags,
   }: ElementManipulationInput,
@@ -183,6 +185,7 @@ export async function manipulateQuestion(
     name,
     content,
     explanation,
+    basePoints,
     pointsMultiplier,
   })
   const processedOptions = validateAndProcessElementOptions(type, options)
@@ -255,6 +258,7 @@ export async function manipulateQuestion(
       name: name!,
       content: content!,
       explanation: explanation ?? undefined,
+      basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier!,
       options: processedOptions,
       owner: {
@@ -302,6 +306,7 @@ export async function manipulateQuestion(
       name: name ?? undefined,
       content: content ?? undefined,
       explanation: typeof explanation === 'undefined' ? undefined : explanation,
+      basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier ?? 1,
       version: {
         increment: 1,
@@ -947,6 +952,7 @@ export async function updateElementInstances(
               // keep previous options where possible and update them only where required
               options: {
                 ...oldInstance.options,
+                basePoints: element.basePoints,
                 pointsMultiplier: multiplier * element.pointsMultiplier,
               },
             },

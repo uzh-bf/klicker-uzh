@@ -1816,9 +1816,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
         // verify that certain settings are disabled / hidden and enter new title & content
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
-        if (hasSampleSolutionDisabled) {
-          cy.get('[data-cy="configure-sample-solution"]').should('be.disabled')
-        }
+        cy.get('[data-cy="configure-sample-solution"]').should('not.exist')
         if (hasAnswerFeedbacksDisabled) {
           cy.get('[data-cy="configure-answer-feedbacks"]').should('be.disabled')
         }
@@ -2004,7 +2002,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.SC.content
           )
           cy.get('[data-cy="sc-0-answer-option-0"]').click()
@@ -2012,7 +2010,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.MC.content
           )
           cy.get('[data-cy="mc-1-answer-option-0"]').click()
@@ -2021,7 +2019,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.KP.content
           )
           cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
@@ -2031,7 +2029,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.get('[data-cy="student-submit-answer"]').click()
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="numerical-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.NR.content
           )
           cy.get('[data-cy="input-numerical-3"]').clear().type(data.NR.answer)
@@ -2039,7 +2037,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="free-text-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.FT.content
           )
           cy.get('[data-cy="free-text-input-4"]').type(data.FT.answer)
@@ -2047,7 +2045,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="selection-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.SE.content
           )
           cy.get('[id="selection-5-field-0"]').click()
@@ -2057,7 +2055,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
           // answering case study question with corresponding function inside an origin wrapper does not work
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="case-study-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.CS.content
           )
         }
@@ -2113,7 +2111,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.activity2.newElements.SC.content
           )
           cy.get('[data-cy="sc-0-answer-option-0"]').click()
@@ -2121,7 +2119,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.activity2.newElements.MC.content
           )
           cy.get('[data-cy="mc-1-answer-option-0"]').click()
@@ -2130,7 +2128,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.activity2.newElements.KP.content
           )
           cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()
@@ -2140,7 +2138,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.get('[data-cy="student-submit-answer"]').click()
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="numerical-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.activity2.newElements.NR.content
           )
           cy.get('[data-cy="input-numerical-3"]')
@@ -2150,7 +2148,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="free-text-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.activity2.newElements.FT.content
           )
           cy.get('[data-cy="free-text-input-4"]').type(
@@ -2160,7 +2158,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="selection-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.activity2.newElements.SE.content
           )
           cy.get('[id="selection-5-field-0"]').click()
@@ -2170,7 +2168,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
           // answering case study question with corresponding function inside an origin wrapper does not work
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="case-study-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.activity2.newElements.CS.content
           )
         }
@@ -2226,7 +2224,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.visit(`${Cypress.env('URL_STUDENT')}/session/${quizId}`)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.SCMLAF3.content
           )
           cy.get('[data-cy="sc-0-answer-option-0"]').click()
@@ -2234,7 +2232,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.MCMLAF3.content
           )
           cy.get('[data-cy="mc-1-answer-option-0"]').click()
@@ -2243,7 +2241,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           cy.wait(500)
 
           cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
-          cy.get('[data-cy="choices-question-content"]').contains(
+          cy.get('[data-cy="instance-question-content"]').contains(
             data.KPMLAF3.content
           )
           cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').click()

@@ -5,6 +5,7 @@ mutation ManipulateFreeTextQuestion(
   $content: String
   $explanation: String
   $options: OptionsFreeTextInput
+  $basePoints: Boolean
   $pointsMultiplier: Int
   $tags: [String!]
 ) {
@@ -15,6 +16,7 @@ mutation ManipulateFreeTextQuestion(
     content: $content
     explanation: $explanation
     options: $options
+    basePoints: $basePoints
     pointsMultiplier: $pointsMultiplier
     tags: $tags
   ) {
@@ -26,6 +28,7 @@ mutation ManipulateFreeTextQuestion(
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution
