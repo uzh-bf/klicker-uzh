@@ -11,10 +11,17 @@ import { FieldArray, useField } from 'formik'
 import { nanoid } from 'nanoid'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import {
+  ElementFormTypesCaseStudy,
+  ElementFormTypesCaseStudyCriterion,
+} from '../types'
 
 function CaseStudyCriteriaFields() {
   const t = useTranslations()
-  const [field, _, __] = useField<number[]>('options.criteria')
+  const [field, _, __] =
+    useField<ElementFormTypesCaseStudyCriterion[]>('options.criteria')
+  const [casesField, ___, casesHelpers] =
+    useField<ElementFormTypesCaseStudy['options']['cases']>('options.cases')
 
   return (
     <div>
@@ -113,7 +120,45 @@ function CaseStudyCriteriaFields() {
                     data={{ cy: `criterion-${index}-unit` }}
                   />
                   <Button
-                    onClick={() => remove(index)}
+                    onClick={() => {
+                      // get the nanoid for the criterion that should be removed
+                      const removedCriterionId = field.value?.[index]?.id
+
+                      // remove criterion
+                      remove(index)
+
+                      // remove all solutions for this criterion
+                      const newCases = casesField.value?.map((caseItem) => {
+                        // if no solutions are set, skip this case
+                        if (!('solutions' in caseItem) || !caseItem.solutions) {
+                          return caseItem
+                        }
+
+                        // filter out the solutions for the removed criterion
+                        const newSolutions = Object.fromEntries(
+                          Object.entries(caseItem.solutions).map(
+                            ([itemIdString, itemSolutions]) => {
+                              const newItemSolutions = Object.fromEntries(
+                                Object.entries(itemSolutions).filter(
+                                  ([criterionId, _]) =>
+                                    criterionId !== removedCriterionId
+                                )
+                              )
+
+                              return [itemIdString, newItemSolutions]
+                            }
+                          )
+                        )
+
+                        return {
+                          ...caseItem,
+                          solutions: newSolutions,
+                        }
+                      })
+
+                      // update the cases field
+                      casesHelpers.setValue(newCases)
+                    }}
                     className={{
                       root: 'h-8 w-8 border-red-600 hover:border-red-600 hover:text-red-600',
                     }}
