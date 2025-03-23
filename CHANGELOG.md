@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.37...v3.3.0-alpha.38) (2025-03-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** resolve issues with case study options updates on criterion or item deletion ([#4580](https://github.com/uzh-bf/klicker-uzh/issues/4580)) ([59b846d](https://github.com/uzh-bf/klicker-uzh/commit/59b846d1baf8c686cf33725450b070ee25fbf4c0))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add option to show explanation on evaluation view ([#4579](https://github.com/uzh-bf/klicker-uzh/issues/4579)) ([7c68282](https://github.com/uzh-bf/klicker-uzh/commit/7c68282f1c8c81e6929fc1215902fd8f403dd014))
+
 ## [3.3.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.36...v3.3.0-alpha.37) (2025-03-23)
 
 
