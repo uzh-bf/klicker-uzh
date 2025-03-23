@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.36...v3.3.0-alpha.37) (2025-03-23)
+
+
+### Features
+
+* make base points on elements optional and update corresponding grading logic ([#4576](https://github.com/uzh-bf/klicker-uzh/issues/4576)) ([ebcd959](https://github.com/uzh-bf/klicker-uzh/commit/ebcd959d5b17e1128197f37abc6355e9f3b295b1))
+
 ## [3.3.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.35...v3.3.0-alpha.36) (2025-03-21)
 
 
