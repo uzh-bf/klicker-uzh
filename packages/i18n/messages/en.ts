@@ -1834,6 +1834,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       totalParticipantsInclAnon:
         'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
+      showExplanation: 'Show explanation',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
       correctSolutionRanges: 'Correct solution ranges',

@@ -28,6 +28,7 @@ interface CSEvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  showExplanation: boolean
   type: ActivityEvaluationType
 }
 
@@ -37,6 +38,7 @@ function CSEvaluation({
   textSize,
   chartType,
   showSolution,
+  showExplanation,
   type,
 }: CSEvaluationProps) {
   const t = useTranslations()
@@ -118,24 +120,28 @@ function CSEvaluation({
       {chartType === ChartType.HISTOGRAM && (
         <CSEvaluationHistogram
           evaluationId={instanceEvaluation.id}
+          explanation={instanceEvaluation.explanation}
           results={resultsObject}
           cases={instanceEvaluation.cases}
           items={instanceEvaluation.items}
           criteria={instanceEvaluation.criteria}
           textSize={textSize}
           showSolution={showSolution}
+          showExplanation={showExplanation}
           type={type}
         />
       )}
       {chartType === ChartType.SCATTER && (
         <CSEvaluationScatter
           evaluationId={instanceEvaluation.id}
+          explanation={instanceEvaluation.explanation}
           results={resultsObject}
           cases={instanceEvaluation.cases}
           items={instanceEvaluation.items}
           criteria={instanceEvaluation.criteria}
           textSize={textSize}
           showSolution={showSolution}
+          showExplanation={showExplanation}
           type={type}
         />
       )}

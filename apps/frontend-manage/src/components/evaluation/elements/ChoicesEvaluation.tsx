@@ -17,6 +17,7 @@ interface ChoicesEvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  showExplanation: boolean
   type: ActivityEvaluationType
 }
 
@@ -25,6 +26,7 @@ function ChoicesEvaluation({
   textSize,
   chartType,
   showSolution,
+  showExplanation,
   type,
 }: ChoicesEvaluationProps) {
   return (
@@ -38,6 +40,7 @@ function ChoicesEvaluation({
           chartType={chartType}
           instanceEvaluation={instanceEvaluation}
           showSolution={showSolution}
+          showExplanation={showExplanation}
           textSize={textSize}
         />
       </ResizablePanel>

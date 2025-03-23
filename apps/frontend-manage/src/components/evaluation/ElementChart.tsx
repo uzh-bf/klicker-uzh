@@ -4,6 +4,7 @@ import ElementHistogram from '@klicker-uzh/shared-components/src/charts/ElementH
 import ElementTableChart from '@klicker-uzh/shared-components/src/charts/ElementTableChart'
 import ElementWordcloud from '@klicker-uzh/shared-components/src/charts/ElementWordcloud'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { ShowStatisticsType } from './elements/NREvaluation'
@@ -13,6 +14,7 @@ interface ElementChartProps {
   chartType: string
   instanceEvaluation: ElementInstanceEvaluation
   showSolution: boolean
+  showExplanation: boolean
   showStatistics?: ShowStatisticsType
   textSize: TextSizeType
 }
@@ -21,6 +23,7 @@ function ElementChart({
   chartType,
   instanceEvaluation,
   showSolution,
+  showExplanation,
   showStatistics,
   textSize,
 }: ElementChartProps): React.ReactElement {
@@ -31,7 +34,9 @@ function ElementChart({
       <ElementTableChart
         instance={instanceEvaluation}
         showSolution={showSolution}
+        showExplanation={showExplanation}
         textSize={textSize.text}
+        textSizeLg={textSize.textLg}
       />
     )
   } else if (chartType === ChartType.WORD_CLOUD) {
@@ -39,7 +44,13 @@ function ElementChart({
       <ElementWordcloud
         instance={instanceEvaluation}
         showSolution={showSolution}
-        textSize={{ min: textSize.min, max: textSize.max }}
+        showExplanation={showExplanation}
+        textSize={{
+          text: textSize.text,
+          textLg: textSize.textLg,
+          min: textSize.min,
+          max: textSize.max,
+        }}
       />
     )
   } else if (chartType === ChartType.BAR_CHART) {
@@ -47,6 +58,7 @@ function ElementChart({
       <ElementBarChart
         instance={instanceEvaluation}
         showSolution={showSolution}
+        showExplanation={showExplanation}
         textSize={textSize}
       />
     )
@@ -62,18 +74,30 @@ function ElementChart({
     )
 
     return (
-      <ElementHistogram
-        type={instanceEvaluation.type}
-        responses={responses}
-        solutionRanges={instanceEvaluation.results.solutionRanges ?? []}
-        exactSolutions={instanceEvaluation.results.exactSolutions ?? []}
-        statistics={instanceEvaluation.statistics}
-        minValue={instanceEvaluation.results.minValue}
-        maxValue={instanceEvaluation.results.maxValue}
-        showSolution={showSolution}
-        showStatistics={showStatistics}
-        textSize={textSize.text}
-      />
+      <div className="flex h-full w-full flex-col">
+        {showExplanation && instanceEvaluation.explanation && (
+          <EvaluationExplanation
+            explanation={instanceEvaluation.explanation}
+            showExplanation={showExplanation}
+            textSize={textSize.text}
+            textSizeLg={textSize.textLg}
+          />
+        )}
+        <div className="min-h-0 flex-1">
+          <ElementHistogram
+            type={instanceEvaluation.type}
+            responses={responses}
+            solutionRanges={instanceEvaluation.results.solutionRanges ?? []}
+            exactSolutions={instanceEvaluation.results.exactSolutions ?? []}
+            statistics={instanceEvaluation.statistics}
+            minValue={instanceEvaluation.results.minValue}
+            maxValue={instanceEvaluation.results.maxValue}
+            showSolution={showSolution}
+            showStatistics={showStatistics}
+            textSize={textSize.text}
+          />
+        </div>
+      </div>
     )
   } else {
     return <div>{t('manage.evaluation.noChartsAvailable')}</div>

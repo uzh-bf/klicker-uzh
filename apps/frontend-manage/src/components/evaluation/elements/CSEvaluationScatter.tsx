@@ -3,6 +3,7 @@ import {
   CaseStudyElementResultCriterionInfo,
   CaseStudyElementResultItemInfo,
 } from '@klicker-uzh/graphql/dist/ops'
+import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import {
@@ -39,23 +40,27 @@ export type CaseStudyScatterPlotData = {
 
 interface CSEvaluationScatterProps {
   evaluationId: number
+  explanation?: string | null
   results: CSResultsEvaluationObject
   cases: CaseStudyElementResultCaseInfo[]
   items: CaseStudyElementResultItemInfo[]
   criteria: CaseStudyElementResultCriterionInfo[]
   textSize: TextSizeType
   showSolution: boolean
+  showExplanation: boolean
   type: ActivityEvaluationType
 }
 
 function CSEvaluationScatter({
   evaluationId,
+  explanation,
   results,
   cases,
   items,
   criteria,
   textSize,
   showSolution,
+  showExplanation,
   type,
 }: CSEvaluationScatterProps) {
   const t = useTranslations()
@@ -107,44 +112,54 @@ function CSEvaluationScatter({
       <ResizablePanel
         defaultSize={70}
         minSize={50}
-        className="flex items-center justify-center px-4"
+        className="flex h-full w-full flex-col px-3"
       >
-        {criteria.length === 1 && scatterData && xCriterion ? (
-          <CSOneDimScatterPlot
-            scatterData={scatterData}
-            selectedCases={selectedCases}
-            cases={cases}
-            criteria={criteria}
-            textSize={textSize}
-            xCriterion={xCriterion}
-            xLower={xLower}
-            xUpper={xUpper}
+        {showExplanation && explanation && (
+          <EvaluationExplanation
+            explanation={explanation}
+            showExplanation={showExplanation}
+            textSize={textSize.text}
+            textSizeLg={textSize.textLg}
           />
-        ) : criteria.length > 1 && xCriterion && yCriterion && scatterData ? (
-          <CSTwoDimScatterPlot
-            cases={cases}
-            selectedCases={selectedCases}
-            criteria={criteria}
-            scatterData={scatterData}
-            xCriterion={xCriterion}
-            yCriterion={yCriterion}
-            xLower={xLower}
-            xUpper={xUpper}
-            yLower={yLower}
-            yUpper={yUpper}
-            textSize={textSize}
-          />
-        ) : !initialLoading && selectedCases.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <UserNotification
-              type="warning"
-              message={t('manage.evaluation.caseStudySelectCasesCriteria')}
-              className={{ root: 'py-auto text-lg' }}
-            />
-          </div>
-        ) : (
-          <Loader />
         )}
+        <div className="min-h-0 flex-1 items-center justify-center px-1">
+          {criteria.length === 1 && scatterData && xCriterion ? (
+            <CSOneDimScatterPlot
+              scatterData={scatterData}
+              selectedCases={selectedCases}
+              cases={cases}
+              criteria={criteria}
+              textSize={textSize}
+              xCriterion={xCriterion}
+              xLower={xLower}
+              xUpper={xUpper}
+            />
+          ) : criteria.length > 1 && xCriterion && yCriterion && scatterData ? (
+            <CSTwoDimScatterPlot
+              cases={cases}
+              selectedCases={selectedCases}
+              criteria={criteria}
+              scatterData={scatterData}
+              xCriterion={xCriterion}
+              yCriterion={yCriterion}
+              xLower={xLower}
+              xUpper={xUpper}
+              yLower={yLower}
+              yUpper={yUpper}
+              textSize={textSize}
+            />
+          ) : !initialLoading && selectedCases.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <UserNotification
+                type="warning"
+                message={t('manage.evaluation.caseStudySelectCasesCriteria')}
+                className={{ root: 'py-auto text-lg' }}
+              />
+            </div>
+          ) : (
+            <Loader />
+          )}
+        </div>
       </ResizablePanel>
       <ResizableHandle withHandle className="w-0.5" />
       <ResizablePanel

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import DataTable from '../DataTable'
+import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import useEvaluationTableColumns from '../hooks/useEvaluationTableColumns'
 import useEvaluationTableData from '../hooks/useEvaluationTableData'
 
@@ -20,13 +21,17 @@ export type EvaluationTableRowType = {
 interface ElementTableChartProps {
   instance: ElementInstanceEvaluation
   showSolution: boolean
+  showExplanation: boolean
   textSize: string
+  textSizeLg: string
 }
 
 function ElementTableChart({
   instance,
   showSolution,
+  showExplanation,
   textSize,
+  textSizeLg,
 }: ElementTableChartProps) {
   const t = useTranslations()
 
@@ -59,6 +64,12 @@ function ElementTableChart({
 
   return (
     <div className="h-full overflow-y-auto">
+      <EvaluationExplanation
+        explanation={instance.explanation}
+        showExplanation={showExplanation}
+        textSize={textSize}
+        textSizeLg={textSizeLg}
+      />
       <div>
         <DataTable
           isPaginated

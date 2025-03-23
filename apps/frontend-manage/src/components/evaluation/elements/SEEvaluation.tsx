@@ -8,6 +8,7 @@ interface SEEvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  showExplanation: boolean
 }
 
 function SEEvaluation({
@@ -15,6 +16,7 @@ function SEEvaluation({
   textSize,
   chartType,
   showSolution,
+  showExplanation,
 }: SEEvaluationProps) {
   return (
     <div className="flex-1 px-4">
@@ -22,6 +24,7 @@ function SEEvaluation({
         chartType={chartType}
         instanceEvaluation={instanceEvaluation}
         showSolution={showSolution}
+        showExplanation={showExplanation}
         textSize={textSize}
       />
     </div>

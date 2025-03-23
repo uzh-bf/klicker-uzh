@@ -8,7 +8,8 @@ import {
 } from '@klicker-uzh/shared-components/src/constants'
 import { Button, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch } from 'react'
+import { Dispatch, SetStateAction } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { ActiveStackType } from './ActivityEvaluation'
 import { TextSizeType } from './textSizes'
 
@@ -21,7 +22,9 @@ interface EvaluationFooterProps {
     type: string
   }>
   showSolution: boolean
-  setShowSolution: (newValue: boolean) => void
+  setShowSolution: Dispatch<SetStateAction<boolean>>
+  showExplanation: boolean
+  setShowExplanation: Dispatch<SetStateAction<boolean>>
   chartType: ChartType
   setChartType: (newValue: ChartType) => void
 }
@@ -34,10 +37,19 @@ function EvaluationFooter({
   setTextSize,
   showSolution,
   setShowSolution,
+  showExplanation,
+  setShowExplanation,
   chartType,
   setChartType,
 }: EvaluationFooterProps) {
   const t = useTranslations()
+
+  const hasSolution = currentInstance?.hasSampleSolution ?? false
+  const hasExplanation =
+    currentInstance?.explanation &&
+    currentInstance?.explanation !== '' &&
+    !currentInstance?.explanation.match(/^(<br>(\n)*)$/g)
+  const hasSolutionAndExplanation = hasSolution && hasExplanation
 
   return (
     <Footer>
@@ -83,13 +95,30 @@ function EvaluationFooter({
               <FontAwesomeIcon icon={faFont} size="lg" />
               {t('manage.evaluation.fontSize')}
             </div>
-            {currentInstance?.hasSampleSolution && (
-              <Switch
-                checked={showSolution}
-                label={t('manage.evaluation.showSolution')}
-                onCheckedChange={(newValue) => setShowSolution(newValue)}
-              />
-            )}
+            <div className="flex flex-col gap-1">
+              {hasSolution && (
+                <Switch
+                  size={hasSolutionAndExplanation ? 'sm' : undefined}
+                  checked={showSolution}
+                  label={t('manage.evaluation.showSolution')}
+                  onCheckedChange={(newValue) => setShowSolution(newValue)}
+                  className={{
+                    label: twMerge(hasSolutionAndExplanation && 'text-sm'),
+                  }}
+                />
+              )}
+              {hasExplanation && (
+                <Switch
+                  size={hasSolutionAndExplanation ? 'sm' : undefined}
+                  checked={showExplanation}
+                  label={t('manage.evaluation.showExplanation')}
+                  onCheckedChange={(newValue) => setShowExplanation(newValue)}
+                  className={{
+                    label: twMerge(hasSolutionAndExplanation && 'text-sm'),
+                  }}
+                />
+              )}
+            </div>
             {currentInstance?.type &&
             ACTIVE_CHART_TYPES[currentInstance.type].length > 1 ? (
               <Select
