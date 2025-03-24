@@ -1,4 +1,5 @@
 import {
+  CatalogCollection,
   CatalogObject,
   CatalogObjectType,
   ObjectAccess,
@@ -8,18 +9,23 @@ import { useMemo } from 'react'
 
 function useObjectFilters({
   objects,
+  collections,
   search,
   typeFilter,
   accessTypeFilter,
 }: {
   objects: CatalogObject[]
+  collections: CatalogCollection[]
   search?: string
   typeFilter: CatalogObjectType | ''
   accessTypeFilter: ObjectAccess | ''
-}): CatalogObject[] {
+}): {
+  filteredObjects: CatalogObject[]
+  filteredCatalogCollections: CatalogCollection[]
+} {
   return useMemo(() => {
     // filter objects based on access type and object type
-    const filtered = objects.filter((object) => {
+    const filteredObjects = objects.filter((object) => {
       if (typeFilter !== '' && object.objectType !== typeFilter) {
         return false
       }
@@ -31,18 +37,46 @@ function useObjectFilters({
       return true
     })
 
+    // filter catalog collections based on access type
+    const filteredCollections = collections.filter((collection) => {
+      if (
+        typeFilter !== '' &&
+        typeFilter !== CatalogObjectType.CatalogCollection
+      ) {
+        return false
+      }
+
+      if (accessTypeFilter !== '' && collection.access !== accessTypeFilter) {
+        return false
+      }
+
+      return true
+    })
+
     // initialize js-search
     const searchInstance = new JsSearch.Search('id')
     searchInstance.addIndex('name')
-    searchInstance.addDocuments(filtered)
+    searchInstance.addDocuments(filteredObjects)
+
+    // initialize second js-search for catalog collections
+    const searchInstanceCollections = new JsSearch.Search('id')
+    searchInstanceCollections.addIndex('name')
+    searchInstanceCollections.addDocuments(filteredCollections)
 
     // apply search filter if search term exists
-    const searchFilteredCollections = search
+    const searchFilteredObjects = search
       ? (searchInstance.search(search) as CatalogObject[])
-      : filtered
+      : filteredObjects
 
-    return searchFilteredCollections
-  }, [objects, typeFilter, accessTypeFilter, search])
+    const searchFilteredCollections = search
+      ? (searchInstanceCollections.search(search) as CatalogCollection[])
+      : filteredCollections
+
+    return {
+      filteredObjects: searchFilteredObjects,
+      filteredCatalogCollections: searchFilteredCollections,
+    }
+  }, [objects, collections, typeFilter, accessTypeFilter, search])
 }
 
 export default useObjectFilters

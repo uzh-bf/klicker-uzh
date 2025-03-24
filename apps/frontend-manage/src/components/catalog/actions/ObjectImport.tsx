@@ -54,8 +54,9 @@ function ObjectImport({
   )
   const objects = objectsData?.getCatalogObjects ?? []
 
-  const filteredObjects = useObjectFilters({
+  const { filteredObjects, filteredCatalogCollections } = useObjectFilters({
     objects,
+    collections,
     search,
     typeFilter,
     accessTypeFilter,
@@ -105,7 +106,7 @@ function ObjectImport({
       </div>
       <div className="mt-2 flex flex-col border-t">
         {typeof catalogCollectionId === 'undefined' ? (
-          collections.map((collection) => (
+          filteredCatalogCollections.map((collection) => (
             <CatalogCollectionListItem
               key={collection.id}
               collection={collection}
@@ -146,13 +147,15 @@ function ObjectImport({
               </div>
             )}
           </div>
-        ) : (
+        ) : null}
+        {filteredObjects.length === 0 &&
+        filteredCatalogCollections.length === 0 ? (
           <UserNotification
             type="info"
             message={t('manage.catalog.noObjectsFoundInCatalog')}
             className={{ root: 'mt-2' }}
           />
-        )}
+        ) : null}
       </div>
     </div>
   )

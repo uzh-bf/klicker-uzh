@@ -3,6 +3,7 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   ActivityTemplate,
   CreateLiveQuizFromTemplateDocument,
+  GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H3, Toast, UserNotification } from '@uzh-bf/design-system'
@@ -414,6 +415,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     isGamificationEnabled: quizData.isGamificationEnabled,
                     blocks: processedBlocks,
                   },
+                  refetchQueries: [GetUserLiveQuizzesDocument],
                 })
 
                 const quizId = res?.createLiveQuizFromTemplate
