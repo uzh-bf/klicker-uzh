@@ -64,6 +64,7 @@ function CSSlider({
               (correct ? 'border-green-700' : 'border-red-700')
           ),
           labels: '-mt-0.5',
+          label: 'text-sm md:text-base',
         }}
         dataThumb={{
           cy: `cs-slider-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`,

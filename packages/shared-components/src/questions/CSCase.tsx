@@ -69,14 +69,16 @@ function CSCase({
                       labelType="small"
                       className={{ label: 'mb-1' }}
                     />
-                    <div
-                      className="-mb-1"
-                      data-cy={`cs-slider-nr-value-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`}
-                    >
-                      {criterion.unit
-                        ? `${caseResponse[item.id]?.[criterion.id] ?? '-'} ${criterion.unit}`
-                        : (caseResponse[item.id]?.[criterion.id] ?? '-')}
-                    </div>
+                    {!criterion.labels ? (
+                      <div
+                        className="-mb-1"
+                        data-cy={`cs-slider-nr-value-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`}
+                      >
+                        {criterion.unit
+                          ? `${caseResponse[item.id]?.[criterion.id] ?? '-'} ${criterion.unit}`
+                          : (caseResponse[item.id]?.[criterion.id] ?? '-')}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex flex-col gap-5 md:flex-row md:items-center">
                     <CSSlider

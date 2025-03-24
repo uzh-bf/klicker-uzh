@@ -288,8 +288,10 @@ function FeedbackArea({
       {isConfusionFeedbackEnabled && (
         <div className="mb-8 space-y-6 text-sm">
           <div className="">
-            <H3 className={{ root: 'mb-0' }}>{t('pwa.feedbacks.speed')}</H3>
-            <div className="-mt-8 w-full">
+            <H3 className={{ root: 'mb-0 mt-2' }}>
+              {t('pwa.feedbacks.speed')}
+            </H3>
+            <div className="-mt-1 w-full">
               <Slider
                 disabled={!isConfusionEnabled}
                 handleChange={(newValue: any): Promise<void> =>
@@ -309,7 +311,7 @@ function FeedbackArea({
             <H3 className={{ root: 'mb-0' }}>
               {t('pwa.feedbacks.difficulty')}
             </H3>
-            <div className="-mt-5 w-full">
+            <div className="-mt-1 w-full">
               <Slider
                 disabled={!isConfusionEnabled}
                 handleChange={(newValue: any): Promise<void> =>

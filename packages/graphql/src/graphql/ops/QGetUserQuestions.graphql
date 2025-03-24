@@ -171,6 +171,11 @@ query GetUserQuestions {
           max
           step
           unit
+          labels {
+            min
+            mid
+            max
+          }
         }
         cases {
           id
