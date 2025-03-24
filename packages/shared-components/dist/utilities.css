@@ -77,6 +77,14 @@
   margin-bottom: -0.5rem
 }
 
+.-mt-0\.5 {
+  margin-top: -0.125rem
+}
+
+.-mt-1 {
+  margin-top: -0.25rem
+}
+
 .-mt-4 {
   margin-top: -1rem
 }
@@ -181,10 +189,6 @@
   display: list-item
 }
 
-.hidden {
-  display: none
-}
-
 .h-10 {
   height: 2.5rem
 }
@@ -207,10 +211,6 @@
 
 .h-40 {
   height: 10rem
-}
-
-.h-6 {
-  height: 1.5rem
 }
 
 .h-7 {
@@ -296,10 +296,6 @@
 
 .w-32 {
   width: 8rem
-}
-
-.w-40 {
-  width: 10rem
 }
 
 .w-8 {
@@ -943,10 +939,6 @@
   font-weight: 700
 }
 
-.font-normal {
-  font-weight: 400
-}
-
 .italic {
   font-style: italic
 }
@@ -1201,14 +1193,6 @@
 
   .md\:mr-0 {
     margin-right: 0px
-  }
-
-  .md\:block {
-    display: block
-  }
-
-  .md\:hidden {
-    display: none
   }
 
   .md\:w-64 {

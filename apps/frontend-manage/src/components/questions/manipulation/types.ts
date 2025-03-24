@@ -88,9 +88,10 @@ export type ElementFormTypesCaseStudySolutions = Record<
 
 export type ElementFormTypesCaseStudyCriterion = {
   id: string // short id
+  mode: 'range' | 'steps'
   name: string
-  min: string
-  max: string
+  min?: number
+  max?: number
   step: string
   unit?: string | null
   labels?: {

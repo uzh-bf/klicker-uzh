@@ -176,6 +176,11 @@ export default {
       minLong: 'Minimum',
       max: 'Max',
       maxLong: 'Maximum',
+      lowerEnd: 'Untergrenze',
+      midValue: 'Zentralwert',
+      upperEnd: 'Obergrenze',
+      steps: 'Schritte',
+      textInput: 'Texteingabe',
       free: 'Frei',
       congrats: 'Gratulation!',
       thanks: 'Vielen Dank!',
@@ -316,6 +321,7 @@ export default {
       permissionLevel: 'Zugriffsrechte',
       template: 'Vorlage',
       noPoints: 'keine Punkte',
+      criterionN: 'Kriterium {number}',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -1149,6 +1155,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseStudyItemsTooltip:
         'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
       selectCaseStudyItems: 'Elemente auswählen...',
+      caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
+      caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',
       caseStudyCriteriaDescription:
         'Bitte definieren Sie hier die Kriterien gemäss welchen die oben ausgewählten Elemente der Fallstudie bewertet werden sollen. Für mehr Informationen zu den einzelnen Feldern, beachten Sie bitte auch die entsprechenden Tooltips.',
       caseStudyCriteriaNameTooltip:
@@ -1161,7 +1169,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Schrittweite entscheidet über die Schritte bei der Einstellung des Schiebereglers.',
       caseStudyCriteriaUnitTooltip:
         'Die optionale Einheit wird den Studierenden neben den entsprechenden Werten angezeigt (z.B. "%").',
+      caseStudyCriteriaMinLabelTooltip:
+        'Dieser Text beschreibt das untere Ende ihres Schritt- oder Likert-Kriteriums an (z.B. "sehr unwahrscheinlich").',
+      caseStudyCriteriaMidLabelTooltip:
+        'Dieser Text beschreibt den mittleren Bereich ihres Schritt- oder Likert-Kriteriums (z.B. "möglich").',
+      caseStudyCriteriaMaxLabelTooltip:
+        'Dieser Text beschreibt das obere Ende ihres Schritt- oder Likert-Kriteriums an (z.B. "sehr wahrscheinlich").',
+      caseStudyCriteriaStepsTooltip:
+        'Geben Sie hier die Anzahl der Schritte an, die der Schieberegler haben soll (mind. 3).',
       addCriterion: 'Kriterium hinzufügen',
+      addRangeCriterion: 'Numerisches Intervallkriterium hinzufügen',
+      addStepsCriterion: 'Schritt-/Likert-Kriterium hinzufügen',
       addCase: 'Neuen Fall hinzufügen',
       removeCase: 'Fall entfernen',
       caseTitle: 'Fallname',
@@ -1730,6 +1748,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine Schrittweite für das Kriterium ein.',
       CSStepSizeTooLarge:
         'Die Schrittweite darf maximal der halben Intervallbreite entsprechen.',
+      CSLabelsRequired:
+        'Bei Schritt- / Likert-Kriterien müssen mindestens je ein Label für die Unter- und Obergrenze definiert werden.',
+      CSStepsDefinitionRequired:
+        'Bitte definieren Sie eine Anzahl Schritte für das Schritt- / Likert-Kriterium (mindestens 3).',
       CSCriteriaRequired:
         'Zur Erstellung einer Fallstudie wird mindestens ein Kriterium benötigt.',
       CSCasesRequired:
