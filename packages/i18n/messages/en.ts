@@ -1196,6 +1196,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       caseStudySolutions: 'Sample Solutions for Case {number}',
       caseStudySolutionsTooltip:
         'Please enter the range for each element and criterion that should be considered correct.',
+      caseStudySolutionIntervalStep:
+        'in the interval [{lower}, {upper}], step size {step}',
       lowerLimit: 'Lower limit',
       upperLimit: 'Upper limit',
       LISTDisplay: 'Display as list',

@@ -1198,6 +1198,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseStudySolutions: 'Musterlösungen für Fall {number}',
       caseStudySolutionsTooltip:
         'Bitte geben Sie hier für jedes zu Bewertende Element und Kriterium einen Bereich an, welcher als korrekt bewertet werden soll.',
+      caseStudySolutionIntervalStep:
+        'im Interval [{lower}, {upper}], Schrittweite {step}',
       lowerLimit: 'Untere Grenze',
       upperLimit: 'Obere Grenze',
       LISTDisplay: 'Anzeige als Liste',

@@ -155,7 +155,21 @@ function CaseStudyCasesFields({
                                     className="flex items-end gap-4"
                                   >
                                     <div className="mb-1 line-clamp-1 flex-1">
-                                      {criterion.name}
+                                      <span className="mr-2">
+                                        {criterion.name}
+                                      </span>
+                                      <span className="text-sm text-gray-600">
+                                        (
+                                        {t(
+                                          'manage.questionForms.caseStudySolutionIntervalStep',
+                                          {
+                                            lower: criterion.min,
+                                            upper: criterion.max,
+                                            step: criterion.step,
+                                          }
+                                        )}
+                                        )
+                                      </span>
                                     </div>
                                     <div className="flex gap-4">
                                       <FormikNumberField
