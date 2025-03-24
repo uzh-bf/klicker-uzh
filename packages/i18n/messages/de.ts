@@ -1657,6 +1657,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Erstellen des Templates als Kopie bleibt die ursprüngliche Aktivität weiterhin unverändert verfügbar.',
       confirmActivityConversion:
         'Ihre Akvitität wird in eine Vorlage umgewandelt und kann anschliessend nicht mehr ausgeführt werden.',
+      expandAll: 'Alle ausklappen',
+      collapseAll: 'Alle einklappen',
     },
     formErrors: {
       resolveErrors:

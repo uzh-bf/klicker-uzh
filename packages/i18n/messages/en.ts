@@ -1638,6 +1638,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'When creating the template as a copy, the original activity remains unchanged and available.',
       confirmActivityConversion:
         'Your activity will be converted into a template and can no longer be executed subsequently.',
+      expandAll: 'Expand all',
+      collapseAll: 'Collapse all',
     },
     formErrors: {
       resolveErrors:

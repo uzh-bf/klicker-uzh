@@ -1,6 +1,10 @@
 import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
+  faDownLeftAndUpRightToCenter,
+  faUpRightAndDownLeftFromCenter,
+} from '@fortawesome/free-solid-svg-icons'
+import {
   ActivityTemplate,
   CreateLiveQuizFromTemplateDocument,
   GetUserLiveQuizzesDocument,
@@ -388,7 +392,80 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
           </div>
         ))}
 
-        <div className="mt-5 self-end">
+        <div className="mt-5 flex w-full justify-between">
+          <div>
+            <Button
+              className={{ root: 'mr-2' }}
+              onClick={() => {
+                setCollapsibles((prev) => {
+                  const newState = Object.entries(
+                    prev
+                  ).reduce<TemplateCollapsibleUIStates>(
+                    (acc, [key, value]) => {
+                      if (key === 'settings') {
+                        acc[key] = {
+                          ...(value as TemplateCollapsibleState),
+                          open: true,
+                        }
+                      } else {
+                        const blockIx = Number(key)
+                        acc[blockIx] = Object.entries(value).reduce<{
+                          [elementIx: number]: TemplateCollapsibleState
+                        }>((blockAcc, [elementKey, elementValue]) => {
+                          const elementIx = Number(elementKey)
+                          blockAcc[elementIx] = { ...elementValue, open: true }
+                          return blockAcc
+                        }, {})
+                      }
+                      return acc
+                    },
+                    { settings: { ...prev.settings } }
+                  )
+
+                  return newState
+                })
+              }}
+              data={{ cy: 'expand-all-sections' }}
+            >
+              <Button.Icon icon={faUpRightAndDownLeftFromCenter} />
+              <Button.Label>{t('manage.template.expandAll')}</Button.Label>
+            </Button>
+            <Button
+              onClick={() => {
+                setCollapsibles((prev) => {
+                  const newState = Object.entries(
+                    prev
+                  ).reduce<TemplateCollapsibleUIStates>(
+                    (acc, [key, value]) => {
+                      if (key === 'settings') {
+                        acc[key] = {
+                          ...(value as TemplateCollapsibleState),
+                          open: false,
+                        }
+                      } else {
+                        const blockIx = Number(key)
+                        acc[blockIx] = Object.entries(value).reduce<{
+                          [elementIx: number]: TemplateCollapsibleState
+                        }>((blockAcc, [elementKey, elementValue]) => {
+                          const elementIx = Number(elementKey)
+                          blockAcc[elementIx] = { ...elementValue, open: false }
+                          return blockAcc
+                        }, {})
+                      }
+                      return acc
+                    },
+                    { settings: { ...prev.settings } }
+                  )
+
+                  return newState
+                })
+              }}
+              data={{ cy: 'collapse-all-sections' }}
+            >
+              <Button.Icon icon={faDownLeftAndUpRightToCenter} />
+              <Button.Label>{t('manage.template.collapseAll')}</Button.Label>
+            </Button>
+          </div>
           <LiveQuizTemplateSubmissionButton
             quizData={quizData}
             loading={creatingLiveQuiz}
