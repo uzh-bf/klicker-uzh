@@ -177,6 +177,8 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
+    templateName: t.exposeString('templateName', { nullable: true }),
+
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays'),
     orderType: t.expose('orderType', { type: ElementOrderType }),

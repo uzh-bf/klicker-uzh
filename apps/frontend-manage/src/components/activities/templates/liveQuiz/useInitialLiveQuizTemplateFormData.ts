@@ -48,6 +48,7 @@ function useInitialLiveQuizTemplateFormData({
               instance: element,
               formValues: null,
               elementId: null,
+              elementName: null,
             })) ?? [],
         })) ?? [],
     }

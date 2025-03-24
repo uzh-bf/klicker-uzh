@@ -1640,6 +1640,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Your activity will be converted into a template and can no longer be executed subsequently.',
       expandAll: 'Expand all',
       collapseAll: 'Collapse all',
+      basedOnObject: 'based on {object}',
     },
     formErrors: {
       resolveErrors:

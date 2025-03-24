@@ -66,6 +66,7 @@ function LiveQuiz({
     | 'displayName'
     | 'status'
     | 'templateId'
+    | 'templateName'
     | 'numOfBlocks'
     | 'numOfInstances'
     | 'createdAt'
@@ -216,6 +217,14 @@ function LiveQuiz({
                     data-cy={`change-liveQuiz-name-${quiz.name}`}
                   />
                 )}
+                {quiz.templateName !== null &&
+                  typeof quiz.templateName !== 'undefined' && (
+                    <div className="text-sm text-gray-600">
+                      {`(${t('manage.template.basedOnObject', {
+                        object: quiz.templateName,
+                      })})`}
+                    </div>
+                  )}
               </div>
               {isTemplate ? (
                 <div className="text-primary-100 flex items-center gap-1 rounded-md px-2 py-1 font-semibold">
@@ -338,7 +347,7 @@ function LiveQuiz({
             </div>
           }
           closedContent={
-            <div className="italic">
+            <div>
               {t('manage.liveQuizzes.nBlocksQuestions', {
                 blocks: quiz.numOfBlocks,
                 questions: quiz.numOfInstances,
