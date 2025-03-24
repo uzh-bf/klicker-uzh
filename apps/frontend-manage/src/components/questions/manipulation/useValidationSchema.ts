@@ -497,6 +497,7 @@ function useOptionsSchemaCaseStudy() {
               },
             }),
           unit: yup.string().nullable(),
+          // TODO: add validation for label fields - depending on boolean that is set further up
         })
       )
       .required(t('manage.formErrors.CSCriteriaRequired'))

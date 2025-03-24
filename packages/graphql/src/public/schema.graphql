@@ -230,6 +230,7 @@ input CaseStudyCriteriaSolutionInput {
 
 type CaseStudyCriterion {
   id: String!
+  labels: CaseStudyCriterionLabels
   max: Float!
   min: Float!
   name: String!
@@ -246,6 +247,12 @@ input CaseStudyCriterionInput {
   order: Int!
   step: Float!
   unit: String
+}
+
+type CaseStudyCriterionLabels {
+  max: String!
+  mid: String
+  min: String!
 }
 
 input CaseStudyCriterionResponse {

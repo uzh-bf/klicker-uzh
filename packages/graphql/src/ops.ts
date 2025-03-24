@@ -271,6 +271,7 @@ export type CaseStudyCriteriaSolutionInput = {
 export type CaseStudyCriterion = {
   __typename?: 'CaseStudyCriterion';
   id: Scalars['String']['output'];
+  labels?: Maybe<CaseStudyCriterionLabels>;
   max: Scalars['Float']['output'];
   min: Scalars['Float']['output'];
   name: Scalars['String']['output'];
@@ -287,6 +288,13 @@ export type CaseStudyCriterionInput = {
   order: Scalars['Int']['input'];
   step: Scalars['Float']['input'];
   unit?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CaseStudyCriterionLabels = {
+  __typename?: 'CaseStudyCriterionLabels';
+  max: Scalars['String']['output'];
+  mid?: Maybe<Scalars['String']['output']>;
+  min: Scalars['String']['output'];
 };
 
 export type CaseStudyCriterionResponse = {

@@ -273,6 +273,7 @@ export function prepareCaseStudyArgs({
         step: parseFloat(criterion.step),
         unit:
           criterion.unit && criterion.unit !== '' ? criterion.unit : undefined,
+        labels: criterion.labels,
       })),
 
       cases: values.options.cases.map((c, index) => ({

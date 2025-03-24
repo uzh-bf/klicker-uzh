@@ -93,6 +93,11 @@ export type ElementFormTypesCaseStudyCriterion = {
   max: string
   step: string
   unit?: string | null
+  labels?: {
+    min: string
+    mid?: string | null
+    max: string
+  } | null
 }
 
 export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {
