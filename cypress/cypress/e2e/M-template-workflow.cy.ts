@@ -455,6 +455,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="copy-option-template"]').click()
 
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
+    cy.get('[data-cy="confirm-activity-unavailability"]').should('not.exist')
     cy.get('[data-cy="confirm-content-visibility"]').click()
     cy.get('[data-cy="confirm-content-visibility"]').should('not.exist')
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
@@ -524,7 +525,10 @@ describe('Test all functionalities related to the creation, management, sharing 
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).click()
     cy.get('[data-cy="copy-option-template"]').click()
+    cy.get('[data-cy="confirm-activity-unavailability"]').should('not.exist')
     cy.get('[data-cy="convert-option-template"]').click()
+    cy.get('[data-cy="template-next-step"]').should('be.disabled')
+    cy.get('[data-cy="confirm-activity-unavailability"]').click()
     cy.get('[data-cy="template-next-step"]').should('be.disabled')
     cy.get('[data-cy="confirm-content-visibility"]').click()
     cy.get('[data-cy="template-next-step"]').should('be.disabled')

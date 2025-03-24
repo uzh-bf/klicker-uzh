@@ -1565,7 +1565,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ich verstehe, dass Elemente in dieser Aktivität von Ressourcen abhängen (z.B. Antwort-Sammlungen), und dass der Zugriff auf diese automatisch geteilt wird (Lese-Berechtigungen), wenn ein Benutzer diese Informationen nicht ersetzt und keinen Zugriff auf die entsprechende Ressource hat.',
       templateInformation: 'Vorlagen-Informationen',
       templateInformationDescription:
-        'Bitte geben Sie die folgenden Informationen für Ihre Vorlage an. Diese werden Benutzern angezeigt, wenn sie Ihre Vorlage importieren oder verwenden.',
+        'Bitte geben Sie die folgenden Informationen für Ihre Vorlage an. Diese werden Benutzern angezeigt, wenn diese Ihre Vorlage aus einer Katalog-Sammlung importieren beziehungsweise zur Erstellung einer Aktivität verwenden.',
       nameTooltip:
         'Der Name wird Benutzern angezeigt, wenn sie verfügbare Vorlage über den Katalog suchen.',
       nameRequired: 'Ein Name für das Aktivitäts-Template ist erforderlich',
@@ -1650,6 +1650,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Vorlage enthält unvollständige Eingaben. Bitte überprüfen Sie die Einstellungen und Elemente, noch nicht bearbeitete Komponenten sind über einen orangen Status gekennzeichnet.',
       errorCreatingLiveQuizFromTemplate:
         'Beim Erstellen des Live-Quizzes ist ein Fehler aufgetreten. Bitte überprüfen Sie, dass alle Ihre eingaben gültig sind und versuchen Sie es erneut.',
+      activityRemainsAvailable:
+        'Beim Erstellen des Templates als Kopie bleibt die ursprüngliche Aktivität weiterhin unverändert verfügbar.',
+      confirmActivityConversion:
+        'Ihre Akvitität wird in eine Vorlage umgewandelt und kann anschliessend nicht mehr ausgeführt werden.',
     },
     formErrors: {
       resolveErrors:

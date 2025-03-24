@@ -1550,7 +1550,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'I understand that elements in this activity depend on resources (e.g., answer collections), access to them will be automatically shared (read permissions) if a user does not replace this information and does not have access to the corresponding resource already.',
       templateInformation: 'Template Information',
       templateInformationDescription:
-        'Please provide the following information for your template. It will be shown to users when they import or use your template.',
+        'Please provide the following information for your template. It will be shown to users when they import it through a catalog collection or use your template for the creation of an activity, respectively.',
       nameTooltip:
         'The name will be shown to users when they browse available templates in the catalog.',
       nameRequired: 'A name for the activity template is required',
@@ -1631,6 +1631,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The template contains incomplete inputs. Please check the settings and elements, not yet edited components are marked with an orange status.',
       errorCreatingLiveQuizFromTemplate:
         'An error occurred while creating the live quiz. Please check that all your inputs are valid and try again.',
+      activityRemainsAvailable:
+        'When creating the template as a copy, the original activity remains unchanged and available.',
+      confirmActivityConversion:
+        'Your activity will be converted into a template and can no longer be executed subsequently.',
     },
     formErrors: {
       resolveErrors:

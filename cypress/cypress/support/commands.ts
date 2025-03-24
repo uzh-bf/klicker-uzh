@@ -1036,9 +1036,14 @@ Cypress.Commands.add(
   }: ConvertLiveQuizToTemplateArgs) => {
     // depending on the setting, choose between conversion and copy & conversion of activity
     cy.get(`[data-cy="template-from-live-quiz-${liveQuiz}"]`).click()
-    cy.get('[data-cy="convert-option-template"]').click()
+
     if (copyBeforeConversion) {
       cy.get('[data-cy="copy-option-template"]').click()
+      cy.get('[data-cy="confirm-activity-unavailability"]').should('not.exist')
+    } else {
+      cy.get('[data-cy="convert-option-template"]').click()
+      cy.get('[data-cy="template-next-step"]').should('be.disabled')
+      cy.get('[data-cy="confirm-activity-unavailability"]').click()
     }
 
     cy.get('[data-cy="template-next-step"]').should('be.disabled')

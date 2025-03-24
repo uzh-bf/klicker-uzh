@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import ConfirmationItem from '../../common/ConfirmationItem'
+import ConversionTypeMonitor from './ConversionTypeMonitor'
 import TemplateFormFields from './TemplateFormFields'
 
 interface TemplateConversionModalProps {
@@ -46,6 +47,7 @@ function TemplateConversionModal({
   const t = useTranslations()
   const [currentStep, setCurrentStep] = useState(0)
   const [confirmations, setConfirmations] = useState({
+    activityConversion: false,
     contentVisibility: false,
     questionAccess: false,
     resourceAccess: false,
@@ -64,6 +66,7 @@ function TemplateConversionModal({
   // mutation for template creation
   const [createActivityTemplate] = useMutation(CreateActivityTemplateDocument)
 
+  // set corresponding confirmation to true if no resources are required
   useEffect(() => {
     if (templateInfo?.noResourcesRequired) {
       setConfirmations({
@@ -78,6 +81,7 @@ function TemplateConversionModal({
     setOpen(false)
     setCurrentStep(0)
     setConfirmations({
+      activityConversion: false,
       contentVisibility: false,
       questionAccess: false,
       resourceAccess: false,
@@ -170,6 +174,15 @@ function TemplateConversionModal({
 
           return (
             <Form className="flex flex-col gap-2">
+              <ConversionTypeMonitor
+                conversionType={values.conversionType}
+                setConversionConfirmation={(value) =>
+                  setConfirmations((prev) => ({
+                    ...prev,
+                    activityConversion: value,
+                  }))
+                }
+              />
               {currentStep === 0 && (
                 <div>
                   <FormLabel
@@ -178,12 +191,12 @@ function TemplateConversionModal({
                     label={t('manage.template.conversionType')}
                     className={{ label: 'text-lg' }}
                   />
-                  <div className="mb-2 rounded border p-2 text-sm text-gray-600">
+                  <div className="mb-3 text-sm text-gray-600">
                     {t('manage.template.convertCopyTemplateInfo')}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <Button
-                      primary={values.conversionType === 'convert'}
+                      active={values.conversionType === 'convert'}
                       onClick={() => setFieldValue('conversionType', 'convert')}
                       data={{ cy: 'convert-option-template' }}
                     >
@@ -193,7 +206,7 @@ function TemplateConversionModal({
                       </div>
                     </Button>
                     <Button
-                      primary={values.conversionType === 'copy'}
+                      active={values.conversionType === 'copy'}
                       onClick={() => setFieldValue('conversionType', 'copy')}
                       data={{ cy: 'copy-option-template' }}
                     >
@@ -213,6 +226,23 @@ function TemplateConversionModal({
                         className={{ label: 'mb-2 mt-6 text-lg' }}
                       />
                       <div className="flex flex-col gap-2">
+                        <ConfirmationItem
+                          label={
+                            values.conversionType === 'copy'
+                              ? t('manage.template.activityRemainsAvailable')
+                              : t('manage.template.confirmActivityConversion')
+                          }
+                          onClick={() => {
+                            setConfirmations((prev) => ({
+                              ...prev,
+                              activityConversion: true,
+                            }))
+                          }}
+                          confirmed={confirmations.activityConversion}
+                          notApplicable={values.conversionType === 'copy'}
+                          confirmationType="confirm"
+                          data={{ cy: 'confirm-activity-unavailability' }}
+                        />
                         <ConfirmationItem
                           label={t('manage.template.confirmContentVisibility')}
                           onClick={() => {
@@ -284,7 +314,7 @@ function TemplateConversionModal({
 
               {currentStep === 1 && (
                 <div>
-                  <div className="text-gray-600">
+                  <div className="text-sm text-gray-600">
                     {t('manage.template.templateInformationDescription')}
                   </div>
 
