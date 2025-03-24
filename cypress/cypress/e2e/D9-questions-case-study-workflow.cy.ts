@@ -296,37 +296,51 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       this.data.CS.criteria[0].min +
       (this.data.CS.criteria[0].max - this.data.CS.criteria[0].min) / 2
     const slidedValue = midValue + steps * this.data.CS.criteria[0].step
-    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should('have.value', '')
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should(
+      'have.value',
+      this.data.CS.criteria[0].unit ? `- ${this.data.CS.criteria[0].unit}` : '-'
+    )
     cy.get('[data-cy="cs-slider-0-0-0-0"]')
       .click()
       .type('{rightarrow}{leftarrow}')
     cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should(
       'have.value',
-      String(midValue)
+      this.data.CS.criteria[0].unit
+        ? `${midValue} ${this.data.CS.criteria[0].unit}`
+        : String(midValue)
     )
     cy.get('[data-cy="cs-slider-0-0-0-0"]')
       .click()
       .type('{rightarrow}'.repeat(steps))
     cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should(
       'have.value',
-      String(slidedValue)
+      this.data.CS.criteria[0].unit
+        ? `${slidedValue} ${this.data.CS.criteria[0].unit}`
+        : String(slidedValue)
     )
 
     // check that moving a slider all the way to one end works to be expected
-    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should('have.value', '')
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should(
+      'have.value',
+      this.data.CS.criteria[1].unit ? `- ${this.data.CS.criteria[1].unit}` : '-'
+    )
     cy.get('[data-cy="cs-slider-0-0-0-1"]')
       .click()
       .type('{leftarrow}'.repeat(260))
     cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should(
       'have.value',
-      String(this.data.CS.criteria[1].min)
+      this.data.CS.criteria[1].unit
+        ? `${this.data.CS.criteria[1].min} ${this.data.CS.criteria[1].unit}`
+        : String(this.data.CS.criteria[1].min)
     )
     cy.get('[data-cy="cs-slider-0-0-0-1"]')
       .click()
       .type('{rightarrow}'.repeat(600))
     cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should(
       'have.value',
-      String(this.data.CS.criteria[1].max)
+      this.data.CS.criteria[1].unit
+        ? `${this.data.CS.criteria[1].max} ${this.data.CS.criteria[1].unit}`
+        : String(this.data.CS.criteria[1].max)
     )
 
     // check that sliders are shown for all response items

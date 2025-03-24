@@ -1380,7 +1380,7 @@ interface AnswerCaseStudyArgs {
       }
     }
   }
-  criteria: { min: number; max: number; step: number }[]
+  criteria: { min: number; max: number; step: number; unit?: string | null }[]
   initialValidation?: any
   cases?: { id: string }[]
   sequentialUI?: boolean
@@ -1412,13 +1412,17 @@ Cypress.Commands.add(
             .type(answer.click.repeat(answer.steps))
 
           // verify that correct value is set
+          const criterion = criteria[criterionIx]
           const slidedValue = computeCaseStudySlidedValue({
-            criterion: criteria[criterionIx],
+            criterion,
             answer,
           })
           cy.get(
             `[data-cy="cs-slider-nr-value-${elementIx}-${parseInt(caseIx)}-${parseInt(itemIx)}-${parseInt(criterionIx)}"]`
-          ).should('have.value', slidedValue)
+          ).should(
+            'have.value',
+            criterion.unit ? `${slidedValue} ${criterion.unit}` : slidedValue
+          )
         })
       })
 
@@ -1439,7 +1443,7 @@ interface VerifyCaseStudyInputsArgs {
       }
     }
   }
-  criteria: { min: number; max: number; step: number }[]
+  criteria: { min: number; max: number; step: number; unit?: string | null }[]
   verifyValues?: boolean
   verifyDisabled?: boolean
 }
@@ -1458,13 +1462,17 @@ Cypress.Commands.add(
       callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
         // verify that correct value is still set
         if (verifyValues) {
+          const criterion = criteria[criterionIx]
           const slidedValue = computeCaseStudySlidedValue({
-            criterion: criteria[criterionIx],
+            criterion,
             answer: innerValue,
           })
           cy.get(
             `[data-cy="cs-slider-nr-value-${elementIx}-${caseIx}-${itemIx}-${criterionIx}"]`
-          ).should('have.value', slidedValue)
+          ).should(
+            'have.value',
+            criterion.unit ? `${slidedValue} ${criterion.unit}` : slidedValue
+          )
         }
 
         // verify that the disabled attribute is set on the slider
