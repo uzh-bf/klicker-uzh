@@ -20,15 +20,16 @@ function ExistingElementSelectionModal({
 }: {
   open: boolean
   onClose: () => void
-  replaceWithExistingElement: (elementId: number) => void
+  replaceWithExistingElement: (elementId: number, elementName: string) => void
   requiredElementType: ElementType
   hasSampleSolution?: boolean | null
   hasAnswerFeedbacks?: boolean | null
 }) {
   const t = useTranslations()
-  const [selectedElementId, setSelectedElementId] = useState<number | null>(
-    null
-  )
+  const [selectedElement, setSelectedElement] = useState<{
+    id: number
+    name: string
+  } | null>(null)
 
   const { data, loading } = useQuery(GetMatchingUserElementsTemplateDocument, {
     variables: {
@@ -64,7 +65,7 @@ function ExistingElementSelectionModal({
       title={t('manage.template.selectExistingElement')}
       open={open}
       onClose={() => {
-        setSelectedElementId(null)
+        setSelectedElement(null)
         onClose()
       }}
       data-cy="select-existing-question-modal"
@@ -89,10 +90,12 @@ function ExistingElementSelectionModal({
           {availableElements.length > 0 &&
             availableElements.map((element) => (
               <Button
-                active={selectedElementId === element.id}
+                active={selectedElement?.id === element.id}
                 key={`element-selection-${element.id}`}
                 className={{ root: 'flex-col items-start p-2' }}
-                onClick={() => setSelectedElementId(element.id)}
+                onClick={() =>
+                  setSelectedElement({ id: element.id, name: element.name })
+                }
                 data={{ cy: `select-existing-element-${element.name}` }}
               >
                 <div>{element.name}</div>
@@ -110,7 +113,7 @@ function ExistingElementSelectionModal({
       <div className="mt-4 flex flex-row justify-between">
         <Button
           onClick={() => {
-            setSelectedElementId(null)
+            setSelectedElement(null)
             onClose()
           }}
           data={{ cy: 'cancel-select-existing-element' }}
@@ -119,12 +122,15 @@ function ExistingElementSelectionModal({
         </Button>
         <Button
           primary
-          disabled={selectedElementId === null}
+          disabled={selectedElement === null}
           onClick={() => {
-            if (selectedElementId === null) return
+            if (selectedElement === null) return
 
-            replaceWithExistingElement(selectedElementId!)
-            setSelectedElementId(null)
+            replaceWithExistingElement(
+              selectedElement!.id,
+              selectedElement!.name
+            )
+            setSelectedElement(null)
             onClose()
           }}
           data={{ cy: 'confirm-select-existing-element' }}

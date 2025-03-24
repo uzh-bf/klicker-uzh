@@ -206,7 +206,13 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
             {block.elements?.map((element, elementIx) => (
               <SectionCollapsible
                 key={`live-quiz-template-element-${blockIx}-${elementIx}`}
-                title={`${t('shared.generic.element')} ${elementIx + 1}: ${t(`shared.types.${element.instance.elementType}`)}`}
+                title={
+                  element.useTemplateInstance ||
+                  element.useExistingElement ||
+                  element.useNewElement
+                    ? `${t('shared.generic.element')} ${elementIx + 1}: ${element.formValues?.name ?? element.elementName ?? element.instance.elementData.name} (${element.useTemplateInstance ? t('manage.template.reusingElement') : ''}${element.useExistingElement ? t('manage.template.replacingElement') : ''}${element.useNewElement ? t('manage.template.creatingElement') : ''})`
+                    : `${t('shared.generic.element')} ${elementIx + 1}: ${t(`shared.types.${element.instance.elementType}`)}`
+                }
                 status={collapsibles[blockIx]?.[elementIx]?.status || 'due'}
                 isOpen={collapsibles[blockIx]?.[elementIx]?.open || false}
                 onOpenChange={() =>
@@ -247,6 +253,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                         instance: elements[elementIx].instance,
                         formValues: null,
                         elementId: null,
+                        elementName: null, // auxilary attribute for UI display when existing element is chosen
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],
@@ -267,7 +274,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       elementIx,
                     })
                   }}
-                  replaceWithExistingElement={(elementId) => {
+                  replaceWithExistingElement={(elementId, elementName) => {
                     // store decision and element id in form data
                     setQuizData((prev) => {
                       if (!prev) {
@@ -284,6 +291,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                         instance: elements[elementIx].instance,
                         formValues: null,
                         elementId,
+                        elementName,
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],
@@ -320,6 +328,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                         instance: elements[elementIx].instance,
                         formValues,
                         elementId: null,
+                        elementName: null,
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],

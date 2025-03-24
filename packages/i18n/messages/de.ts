@@ -1615,6 +1615,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       continueEditing: 'Weiter bearbeiten',
       settingsInstructions:
         'Hier können Sie die Grundeinstellungen der Akvitität verändern. Bitte beachten Sie für weitere Informationen die entsprechenden Tooltips oder konsultieren Sie die Dokumentation. Einige Einstellungen wie beispielsweise Punkte-Multiplikatoren können bei Vorlagen nicht direkt verändert werden.',
+      reusingElement: 'Element übernommen',
+      replacingElement: 'Element ersetzt',
+      creatingElement: 'Element erstellt',
       forGamifiedCourses: 'für gamifizierte Kurse',
       confirmSettings: 'Einstellungen bestätigen',
       settingsNotSaved:
@@ -1631,7 +1634,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       insertContentNewElement: 'Inhalt für neues Element erfassen',
       selectExistingElement: 'Bestehendes Element auswählen',
       selectElementInstructions:
-        'Wählen Sie eines Ihrer bestehenden Elemente aus, um es in die Vorlage zu übernehmnen. Bitte beachten Sie, dass es sich hierbei um den folgenden Typ Element handeln muss: {element}.',
+        'Wählen Sie eines Ihrer bestehenden Elemente aus, um es in die Vorlage zu übernehmnen. Bitte beachten Sie, dass es sich hierbei um den folgenden Typ Element handeln muss: {element}. Die untenstehende Auswahl wurde bereits nach diesen Kriterien gefiltert.',
       noMatchingQuestionsFound:
         'Es konnten keine Elemente in Ihrem Konto gefunden werden, welche mit den Anforderungen der Vorlage übereinstimmen. Bitte erfassen Sie ihr Element direkt in der Vorlage oder übernehmen Sie den bestehenden Inhalt.',
       withSampleSolution: 'mit Musterlösung',
