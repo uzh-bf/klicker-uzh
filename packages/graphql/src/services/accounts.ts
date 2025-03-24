@@ -1315,6 +1315,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
                   elementData,
                   options: {
                     pointsMultiplier: quizMultiplier * element.pointsMultiplier,
+                    basePoints: element.basePoints,
                   },
                   results: initialResults,
                   anonymousResults: initialResults,

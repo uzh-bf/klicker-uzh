@@ -22,7 +22,6 @@ import { MISSING_CATALOG_COLLECTION_ID } from './sharing.js'
 
 // ! Helper functions
 // #region
-
 export async function validateActivityPermissions(
   {
     activityId,
