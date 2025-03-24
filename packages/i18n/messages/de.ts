@@ -1158,7 +1158,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
       caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',
       caseStudyCriteriaDescription:
-        'Bitte definieren Sie hier die Kriterien gemäss welchen die oben ausgewählten Elemente der Fallstudie bewertet werden sollen. Für mehr Informationen zu den einzelnen Feldern, beachten Sie bitte auch die entsprechenden Tooltips.',
+        'Bitte definieren Sie hier die Kriterien, nach denen die oben ausgewählten Elemente der Fallstudie bewertet werden sollen. Sie können zwischen rein numerischen Kriterien (ideal z.B. für Wahrscheinlichkeits- / Kostenabschätzungen) und Schritt- / Likert-Kriterien (ideal für Fallstudien ohne exakte / bekannte Lösungen) wählen. Für weitere Informationen zu den einzelnen Feldern beachten Sie bitte auch die entsprechenden Tooltips.',
       caseStudyCriteriaNameTooltip:
         'Der Name des Kriteriums wird den Studierenden angezeigt (z.B. "Wahrscheinlichkeit").',
       caseStudyCriteriaMinTooltip:
@@ -1232,9 +1232,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uploadImageHeader: 'Medien hinzufügen',
       uploadImageDescription:
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
-      updateInstances: 'Frage-Instanzen in KlickerUZH-Elementen aktualisieren',
+      updateInstances:
+        'Element-Instanzen in KlickerUZH-Aktivitäten aktualisieren',
       updateInstancesExplanation:
-        'Nutzen sie diese Einstellung, um die Frage in allen angezeigten geplanten Live-Quizzes, Übungs-Quizzes, Microlearnings und Gruppenaktivitäten anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Aktivitäten wird nicht aktualisiert. Veränderte Multiplikatoren werden auf die erstellten Instanzen angewendet. Bitte beachten Sie, dass bei einer Deaktivierung der Musterlösung nur Inhaltselemente, Flashcards und Freitext-Fragen in Übungs-Quizzes und Microlearnings geupdated werden.',
+        'Nutzen sie diese Einstellung, um das Element in allen angezeigten geplanten Live-Quizzes, Übungs-Quizzes, Microlearnings und Gruppenaktivitäten anzupassen. Der Inhalt von Elementen in laufenden und abgeschlossenen Aktivitäten wird nicht aktualisiert. Veränderte Multiplikatoren werden auf die erstellten Instanzen angewendet. Bitte beachten Sie, dass bei einer Deaktivierung der Musterlösung nur Inhaltselemente, Flashcards und Freitext-Fragen in Übungs-Quizzes und Microlearnings geupdated werden.',
       questionSavedSuccessfully: 'Die Frage wurde erfolgreich gespeichert.',
       questionSavedFailed:
         'Beim Speichern der Frage ist ein Fehler aufgetreten. Bitte beachten Sie die Fehlermeldungen im Formular und überprüfen Sie die Eingaben.',

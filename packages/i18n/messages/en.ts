@@ -1158,7 +1158,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       caseStudyRangeCriterion: 'Numerical range criterion',
       caseStudyStepCriterion: 'Step / Likert criterion',
       caseStudyCriteriaDescription:
-        'Please define the criteria according to which the selected elements of the case study above should be evaluated. For more information on the individual fields, please also refer to the corresponding tooltips.',
+        'Please define the criteria according to which the selected elements of the case study above should be evaluated. You can choose between purely numerical criteria (ideal e.g. for probability / cost estimates) and step / Likert criteria (ideal for case studies without exact / known solutions). For more information on the individual fields, please also refer to the corresponding tooltips.',
       caseStudyCriteriaNameTooltip:
         'The name of the criterion is displayed to the students (e.g. "Probability").',
       caseStudyCriteriaMinTooltip:
@@ -1230,9 +1230,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uploadImageHeader: 'Upload Media',
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
-      updateInstances: 'Update question instances in KlickerUZH elements',
+      updateInstances: 'Update element instances in KlickerUZH activities',
       updateInstancesExplanation:
-        'Use this setting to update the instances of this question in all planned live quizzes, practice quizzes, microlearnings, and group activities shown below. The content of questions in ongoing and completed activities will not be updated. Changed multipliers will be applied to the created instances. Please note that when deactivating the sample solution, only content elements, flashcards, and free text questions in practice quizzes and microlearnings will be updated.',
+        'Use this setting to update the instances of this element in all planned live quizzes, practice quizzes, microlearnings, and group activities shown below. The content of elements in ongoing and completed activities will not be updated. Changed multipliers will be applied to the created instances. Please note that when deactivating the sample solution, only content elements, flashcards, and free text questions in practice quizzes and microlearnings will be updated.',
       questionSavedSuccessfully: 'The question has been saved successfully.',
       questionSavedFailed:
         'An error occurred while saving the question. Please check the error messages in the form and review the entries.',
