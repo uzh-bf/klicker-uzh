@@ -148,8 +148,6 @@ function useElementFormInitialValues({
     } else if (question.__typename === 'CaseStudyElement') {
       const options = question.options
 
-      console.log(options) // TODO: remove
-
       return {
         ...sharedAttributes,
         type: ElementType.CaseStudy,
