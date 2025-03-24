@@ -1598,6 +1598,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       continueEditing: 'Continue Editing',
       settingsInstructions:
         'Here you can change the basic settings of the activity. Please refer to the corresponding tooltips or consult the documentation for further information. Some settings such as point multipliers cannot be changed directly in templates.',
+      reusingElement: 'element reused',
+      replacingElement: 'element replaced',
+      creatingElement: 'element created',
       forGamifiedCourses: 'for gamified courses',
       confirmSettings: 'Confirm Settings',
       settingsNotSaved:
@@ -1612,7 +1615,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       insertContentNewElement: 'Insert content for new element',
       selectExistingElement: 'Select existing element',
       selectElementInstructions:
-        'Select one of your existing elements to replace the template content. Please note that the element type must match the following: {element}.',
+        'Select one of your existing elements to replace the template content. Please note that the element type must match the following requirements: {element}. The selection below has already been filtered according to these criteria.',
       noMatchingQuestionsFound:
         'No elements were found in your account that match the requirements of the template. Please create your element directly in the template or accept the existing content.',
       withSampleSolution: 'with sample solution',
@@ -1635,6 +1638,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'When creating the template as a copy, the original activity remains unchanged and available.',
       confirmActivityConversion:
         'Your activity will be converted into a template and can no longer be executed subsequently.',
+      expandAll: 'Expand all',
+      collapseAll: 'Collapse all',
+      basedOnObject: 'based on {object}',
     },
     formErrors: {
       resolveErrors:

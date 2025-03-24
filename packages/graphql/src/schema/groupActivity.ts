@@ -51,6 +51,8 @@ export const GroupActivity = GroupActivityRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
+    templateName: t.exposeString('templateName', { nullable: true }),
+
     status: t.expose('status', { type: PublicationStatus }),
     numOfQuestions: t.exposeInt('numOfQuestions', { nullable: true }),
 

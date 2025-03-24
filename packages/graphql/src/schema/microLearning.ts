@@ -24,6 +24,7 @@ export const MicroLearning = MicroLearningRef.implement({
     displayName: t.exposeString('displayName'),
     status: t.expose('status', { type: PublicationStatus }),
     description: t.exposeString('description', { nullable: true }),
+    templateName: t.exposeString('templateName', { nullable: true }),
     pointsMultiplier: t.exposeFloat('pointsMultiplier'),
 
     scheduledStartAt: t.expose('scheduledStartAt', { type: 'Date' }),

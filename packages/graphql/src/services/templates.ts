@@ -1929,6 +1929,7 @@ export async function createLiveQuizFromTemplate(
         name: name.trim(),
         displayName: displayName.trim(),
         description,
+        templateName: templateLiveQuiz.name,
         pointsMultiplier: templateLiveQuiz.pointsMultiplier,
         defaultPoints: templateLiveQuiz.defaultPoints,
         defaultCorrectPoints: templateLiveQuiz.defaultCorrectPoints,

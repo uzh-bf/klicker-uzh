@@ -9,6 +9,7 @@ export type ActivityTemplateElementFormValues = {
   instance: ElementInstance // original instance information from the template
   formValues: ElementFormTypes | null // form values for the element, if the user has chosen to insert their own content
   elementId: number | null // id of the existing element that should be loaded into the template
+  elementName: string | null // (only UI / form) name of the existing element that should be loaded into the template
 }
 
 export type LiveQuizTemplateFormValues = {

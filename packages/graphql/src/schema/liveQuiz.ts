@@ -102,6 +102,7 @@ export const LiveQuiz = LiveQuizRef.implement({
     displayName: t.exposeString('displayName'),
     pinCode: t.exposeInt('pinCode', { nullable: true }),
     templateId: t.exposeString('templateId', { nullable: true }),
+    templateName: t.exposeString('templateName', { nullable: true }),
 
     isLiveQAEnabled: t.exposeBoolean('isLiveQAEnabled'),
     isConfusionFeedbackEnabled: t.exposeBoolean('isConfusionFeedbackEnabled'),

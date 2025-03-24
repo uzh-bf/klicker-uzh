@@ -6,7 +6,7 @@ function TemplateFormFields() {
   const t = useTranslations()
 
   return (
-    <>
+    <div className="flex flex-col gap-2.5">
       <FormikTextField
         required
         name="name"
@@ -22,6 +22,7 @@ function TemplateFormFields() {
         placeholder={t('manage.template.descriptionPlaceholder')}
         tooltip={t('manage.template.descriptionTooltip')}
         data={{ cy: 'template-description' }}
+        className={{ input: { editor: 'h-32 !leading-4' } }}
       />
       <EditorField
         required
@@ -31,8 +32,9 @@ function TemplateFormFields() {
         placeholder={t('manage.template.instructionsPlaceholder')}
         tooltip={t('manage.template.instructionsTooltip')}
         data={{ cy: 'template-instructions' }}
+        className={{ input: { editor: 'h-32 !leading-4' } }}
       />
-    </>
+    </div>
   )
 }
 

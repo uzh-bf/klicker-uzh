@@ -38,7 +38,7 @@ function TemplateElementContent({
   templateId: string
   templateElement: ActivityTemplateElementFormValues
   acceptTemplateElement: () => void
-  replaceWithExistingElement: (elementId: number) => void
+  replaceWithExistingElement: (elementId: number, elementName: string) => void
   saveNewElement: (formValues: ElementFormTypes) => void
   onNextElement: () => void
 }) {

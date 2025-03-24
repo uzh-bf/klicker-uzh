@@ -96,7 +96,7 @@ function TemplateConversionModal({
       })}
       open={open}
       onClose={handleModalClose}
-      className={{ content: 'gap-2' }}
+      className={{ content: 'gap-2 lg:w-[55rem]' }}
       dataCloseButton={{ cy: 'close-template-conversion-modal' }}
     >
       <Formik
