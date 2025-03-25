@@ -15,7 +15,10 @@ export default function App({
   const { locale } = useRouter()
 
   return (
-    <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
+    <div
+      id="__app"
+      className={`flex h-full min-h-full flex-col ${sourceSansPro.variable} font-sans`}
+    >
       <NextIntlClientProvider
         timeZone="Europe/Zurich"
         messages={pageProps.messages}
@@ -31,13 +34,6 @@ export default function App({
         :root {
           --source-sans-pro: ${sourceSansPro.variable};
           --theme-font-primary: ${sourceSansPro.variable};
-        }
-
-        #__app {
-          min-height: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
         }
       `}</style>
     </div>
