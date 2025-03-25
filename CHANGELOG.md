@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.40...v3.3.0-alpha.41) (2025-03-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that missing mode attribute on case study criteria is handled gracefully when loaded from local storage ([6cfb45c](https://github.com/uzh-bf/klicker-uzh/commit/6cfb45c77e2429b3184b84ad81369097f506e0e9))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** update validation logic for step and likert criteria on case study elements to support exact solutions ([#4584](https://github.com/uzh-bf/klicker-uzh/issues/4584)) ([5d2cdfd](https://github.com/uzh-bf/klicker-uzh/commit/5d2cdfd91445835f6d638365cbd75f1089d550c0))
+
 ## [3.3.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.39...v3.3.0-alpha.40) (2025-03-25)
 
 
