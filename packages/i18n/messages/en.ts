@@ -1747,7 +1747,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CSSolutionsMinMaxBounds:
         'The lower and upper limits of the solution interval must lie within the value range of the criterion (item {itemNumber}, criterion "{criterionName}").',
       CSSolutionsMinMaxStep:
-        'The lower and upper limits of the solution interval must be at least one step size apart (item {itemNumber}, criterion "{criterionName}").',
+        'The lower and upper limits of the solution interval must be at least one step size apart for numerical criteria (item {itemNumber}, criterion "{criterionName}").',
+      CSSolutionsMinMaxIntegers:
+        'The lower and upper limits of the solution interval must be integers for step / Likert criteria (item {itemNumber}, criterion "{criterionName}").',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',

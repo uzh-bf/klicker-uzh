@@ -174,6 +174,11 @@ function CaseStudyCasesFields({
                                     <div className="flex gap-4">
                                       <FormikNumberField
                                         required
+                                        precision={
+                                          criterion.mode === 'steps'
+                                            ? 0
+                                            : undefined
+                                        }
                                         label={
                                           criterionIx === 0
                                             ? t(
@@ -192,6 +197,11 @@ function CaseStudyCasesFields({
                                       />
                                       <FormikNumberField
                                         required
+                                        precision={
+                                          criterion.mode === 'steps'
+                                            ? 0
+                                            : undefined
+                                        }
                                         label={
                                           criterionIx === 0
                                             ? t(

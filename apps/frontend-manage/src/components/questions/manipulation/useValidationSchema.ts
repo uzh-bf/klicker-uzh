@@ -551,7 +551,7 @@ function useOptionsSchemaCaseStudy() {
               if (typeof min === 'undefined' || min === null) return false
 
               // check if the number of steps is chosen sufficiently large
-              return max + 1 - min >= 3
+              return max + 1 - min >= 2
             },
           })
       )
@@ -673,13 +673,35 @@ function useOptionsSchemaCaseStudy() {
                       })
                     }
 
-                    if (minValue + stepValue > maxValue) {
+                    // for numerical range criteria, enforce that min and max are at least one step width apart
+                    if (
+                      criterion.mode === 'range' &&
+                      minValue + stepValue > maxValue
+                    ) {
                       return this.createError({
                         message: t('manage.formErrors.CSSolutionsMinMaxStep', {
                           itemNumber: itemIx + 1,
                           criterionName: criterion.name,
                         }),
                       })
+                    }
+
+                    // for step / likert criteria, enforce that min and max are integers
+                    if (criterion.mode === 'steps') {
+                      const minInt = Math.floor(minValue)
+                      const maxInt = Math.floor(maxValue)
+
+                      if (minInt !== minValue || maxInt !== maxValue) {
+                        return this.createError({
+                          message: t(
+                            'manage.formErrors.CSSolutionsMinMaxIntegers',
+                            {
+                              itemNumber: itemIx + 1,
+                              criterionName: criterion.name,
+                            }
+                          ),
+                        })
+                      }
                     }
                   }
                 }
