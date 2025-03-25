@@ -41,6 +41,8 @@ function ElementEditForm({
   setFailureToast,
   updateInstances,
   setUpdateInstances,
+  includeTemplateUpdates,
+  setIncludeTemplateUpdates,
 }: {
   // flag to highlight template mode
   isTemplate?: boolean
@@ -64,6 +66,8 @@ function ElementEditForm({
   // instance update controls
   updateInstances: boolean
   setUpdateInstances: Dispatch<SetStateAction<boolean>>
+  includeTemplateUpdates: boolean
+  setIncludeTemplateUpdates: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
 
@@ -253,6 +257,8 @@ function ElementEditForm({
                 }
                 updateInstances={updateInstances}
                 setUpdateInstances={setUpdateInstances}
+                includeTemplateUpdates={includeTemplateUpdates}
+                setIncludeTemplateUpdates={setIncludeTemplateUpdates}
               />
             )}
             <ElementFailureToast

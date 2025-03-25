@@ -611,11 +611,23 @@ export async function getInstanceUpdateActivities(
   {
     elementId,
     hasSampleSolution,
-  }: { elementId: number; hasSampleSolution?: boolean | null },
+    includeTemplateInstances,
+  }: {
+    elementId: number
+    hasSampleSolution?: boolean | null
+    includeTemplateInstances: boolean
+  },
   ctx: ContextWithUser
 ) {
   // fetch meta information on all activities that would be affected by the element update
   // fetch the question and return null, if the question does not exist
+  const acceptedStatusValues = includeTemplateInstances
+    ? [
+        DB.PublicationStatus.DRAFT,
+        DB.PublicationStatus.SCHEDULED,
+        DB.PublicationStatus.TEMPLATE,
+      ]
+    : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
@@ -628,30 +640,21 @@ export async function getInstanceUpdateActivities(
               microLearning: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
               practiceQuiz: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
               groupActivity: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
@@ -690,7 +693,11 @@ export async function getInstanceUpdateActivities(
   >((acc, instance) => {
     if (
       instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
-      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.SCHEDULED
+      instance.elementBlock?.liveQuiz?.status ===
+        DB.PublicationStatus.SCHEDULED ||
+      (includeTemplateInstances &&
+        instance.elementBlock?.liveQuiz?.status ===
+          DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
         activityName: instance.elementBlock.liveQuiz.name,
@@ -703,7 +710,10 @@ export async function getInstanceUpdateActivities(
       (instance.elementStack?.microLearning?.status ===
         DB.PublicationStatus.DRAFT ||
         instance.elementStack?.microLearning?.status ===
-          DB.PublicationStatus.SCHEDULED) &&
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplateInstances &&
+          instance.elementStack?.microLearning?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -717,7 +727,10 @@ export async function getInstanceUpdateActivities(
       (instance.elementStack?.practiceQuiz?.status ===
         DB.PublicationStatus.DRAFT ||
         instance.elementStack?.practiceQuiz?.status ===
-          DB.PublicationStatus.SCHEDULED) &&
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplateInstances &&
+          instance.elementStack?.practiceQuiz?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -731,7 +744,10 @@ export async function getInstanceUpdateActivities(
       instance.elementStack?.groupActivity?.status ===
         DB.PublicationStatus.DRAFT ||
       instance.elementStack?.groupActivity?.status ===
-        DB.PublicationStatus.SCHEDULED
+        DB.PublicationStatus.SCHEDULED ||
+      (includeTemplateInstances &&
+        instance.elementStack?.groupActivity?.status ===
+          DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
         activityName: instance.elementStack.groupActivity.name,
@@ -756,10 +772,20 @@ export async function getInstanceUpdateActivities(
 }
 
 export async function updateElementInstances(
-  { elementId }: { elementId: number },
+  {
+    elementId,
+    includeTemplates,
+  }: { elementId: number; includeTemplates: boolean },
   ctx: ContextWithUser
 ) {
   // fetch the question and return null, if the question does not exist
+  const acceptedStatusValues = includeTemplates
+    ? [
+        DB.PublicationStatus.DRAFT,
+        DB.PublicationStatus.SCHEDULED,
+        DB.PublicationStatus.TEMPLATE,
+      ]
+    : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
@@ -774,30 +800,21 @@ export async function updateElementInstances(
               microLearning: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
               practiceQuiz: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
               groupActivity: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
@@ -853,7 +870,11 @@ export async function updateElementInstances(
   >((acc, instance) => {
     if (
       instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
-      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.SCHEDULED
+      instance.elementBlock?.liveQuiz?.status ===
+        DB.PublicationStatus.SCHEDULED ||
+      (includeTemplates &&
+        instance.elementBlock?.liveQuiz?.status ===
+          DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
         instanceId: instance.id,
@@ -869,7 +890,10 @@ export async function updateElementInstances(
       (instance.elementStack?.microLearning?.status ===
         DB.PublicationStatus.DRAFT ||
         instance.elementStack?.microLearning?.status ===
-          DB.PublicationStatus.SCHEDULED) &&
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplates &&
+          instance.elementStack?.microLearning?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -886,7 +910,10 @@ export async function updateElementInstances(
       (instance.elementStack?.practiceQuiz?.status ===
         DB.PublicationStatus.DRAFT ||
         instance.elementStack?.practiceQuiz?.status ===
-          DB.PublicationStatus.SCHEDULED) &&
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplates &&
+          instance.elementStack?.practiceQuiz?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -903,7 +930,10 @@ export async function updateElementInstances(
       instance.elementStack?.groupActivity?.status ===
         DB.PublicationStatus.DRAFT ||
       instance.elementStack?.groupActivity?.status ===
-        DB.PublicationStatus.SCHEDULED
+        DB.PublicationStatus.SCHEDULED ||
+      (includeTemplates &&
+        instance.elementStack?.groupActivity?.status ===
+          DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
         instanceId: instance.id,

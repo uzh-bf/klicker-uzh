@@ -1231,6 +1231,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
       updateInstances: 'Update element instances in KlickerUZH activities',
+      includeTemplateInstanceUpdates:
+        'Include instances in template activities for update',
       updateInstancesExplanation:
         'Use this setting to update the instances of this element in all planned live quizzes, practice quizzes, microlearnings, and group activities shown below. The content of elements in ongoing and completed activities will not be updated. Changed multipliers will be applied to the created instances. Please note that when deactivating the sample solution, only content elements, flashcards, and free text questions in practice quizzes and microlearnings will be updated.',
       questionSavedSuccessfully: 'The question has been saved successfully.',

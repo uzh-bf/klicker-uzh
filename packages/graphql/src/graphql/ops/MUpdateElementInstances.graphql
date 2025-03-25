@@ -1,5 +1,8 @@
-mutation UpdateElementInstances($elementId: Int!) {
-  updateElementInstances(elementId: $elementId) {
+mutation UpdateElementInstances($elementId: Int!, $includeTemplates: Boolean!) {
+  updateElementInstances(
+    elementId: $elementId
+    includeTemplates: $includeTemplates
+  ) {
     id
     ...ElementDataWithoutSolutions
   }

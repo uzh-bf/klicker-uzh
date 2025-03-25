@@ -46,6 +46,8 @@ function TemplateNewElementModal({
       setFailureToast={setFailureToast}
       updateInstances={false}
       setUpdateInstances={() => {}} // instance updates are only available for existing elements
+      includeTemplateUpdates={false}
+      setIncludeTemplateUpdates={() => {}} // template updates are only available for existing elements
     />
   )
 }

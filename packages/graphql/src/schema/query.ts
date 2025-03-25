@@ -555,6 +555,7 @@ export const Query = builder.queryType({
         args: {
           elementId: t.arg.int({ required: true }),
           hasSampleSolution: t.arg.boolean({ required: false }),
+          includeTemplateInstances: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return QuestionService.getInstanceUpdateActivities(args, ctx)
