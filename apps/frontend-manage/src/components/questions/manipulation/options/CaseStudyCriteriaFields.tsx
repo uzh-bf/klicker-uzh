@@ -271,9 +271,9 @@ function CaseStudyCriteriaFields() {
                       id: nanoid(),
                       mode: 'range',
                       name: undefined,
-                      min: 0,
-                      max: 100,
-                      step: 1,
+                      min: undefined,
+                      max: undefined,
+                      step: undefined,
                       unit: undefined,
                     })
                   }

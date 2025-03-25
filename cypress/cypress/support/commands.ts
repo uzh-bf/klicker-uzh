@@ -818,16 +818,19 @@ Cypress.Commands.add(
     cy.wrap(criteria).each(
       (criterion: CreateCaseStudyArgs['criteria'][0], ix) => {
         // create new criterion and fill in information
-        cy.get('[data-cy="add-new-criterion"]').click()
+        cy.get('[data-cy="add-range-criterion"]').click()
         cy.get(`[data-cy="criterion-${ix}-name"]`).click().type(criterion.name)
         cy.get(`[data-cy="criterion-${ix}-min"]`)
           .click()
+          .clear()
           .type(String(criterion.min))
         cy.get(`[data-cy="criterion-${ix}-max"]`)
           .click()
+          .clear()
           .type(String(criterion.max))
         cy.get(`[data-cy="criterion-${ix}-step"]`)
           .click()
+          .clear()
           .type(String(criterion.step))
 
         if (criterion.unit) {
@@ -1419,8 +1422,7 @@ Cypress.Commands.add(
           })
           cy.get(
             `[data-cy="cs-slider-nr-value-${elementIx}-${parseInt(caseIx)}-${parseInt(itemIx)}-${parseInt(criterionIx)}"]`
-          ).should(
-            'have.value',
+          ).contains(
             criterion.unit ? `${slidedValue} ${criterion.unit}` : slidedValue
           )
         })
@@ -1469,8 +1471,7 @@ Cypress.Commands.add(
           })
           cy.get(
             `[data-cy="cs-slider-nr-value-${elementIx}-${caseIx}-${itemIx}-${criterionIx}"]`
-          ).should(
-            'have.value',
+          ).contains(
             criterion.unit ? `${slidedValue} ${criterion.unit}` : slidedValue
           )
         }
