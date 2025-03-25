@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.41...v3.3.0-alpha.42) (2025-03-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove maximum length for labels on case study likert scale criterion ([3f7278f](https://github.com/uzh-bf/klicker-uzh/commit/3f7278f87307e7a4636d3b6bb3095baa08324f86))
+
 ## [3.3.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.40...v3.3.0-alpha.41) (2025-03-25)
 
 

@@ -196,7 +196,6 @@ function CaseStudyCriteriaFields() {
                           root: 'w-full',
                           tooltip: 'max-w-[30rem]',
                         }}
-                        maxLength={20}
                         data={{ cy: `criterion-${index}-min-label` }}
                       />
                       <FormikTextField
@@ -211,7 +210,6 @@ function CaseStudyCriteriaFields() {
                           root: 'w-full',
                           tooltip: 'max-w-[30rem]',
                         }}
-                        maxLength={20}
                         data={{ cy: `criterion-${index}-mid-label` }}
                       />
                       <FormikTextField
@@ -227,7 +225,6 @@ function CaseStudyCriteriaFields() {
                           root: 'w-full',
                           tooltip: 'max-w-[30rem]',
                         }}
-                        maxLength={20}
                         data={{ cy: `criterion-${index}-max-label` }}
                       />
                       <NumberField
