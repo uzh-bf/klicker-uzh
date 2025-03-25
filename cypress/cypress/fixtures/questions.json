@@ -415,6 +415,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
         "max": 100,
@@ -422,6 +423,7 @@
         "unit": "%"
       },
       {
+        "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
         "max": 1000,
@@ -513,6 +515,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
         "max": 100,
@@ -520,6 +523,7 @@
         "unit": "%"
       },
       {
+        "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
         "max": 1000,
@@ -611,6 +615,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
         "max": 100,
@@ -618,6 +623,7 @@
         "unit": "%"
       },
       {
+        "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
         "max": 1000,
@@ -709,6 +715,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
         "max": 100,
@@ -716,6 +723,7 @@
         "unit": "%"
       },
       {
+        "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
         "max": 1000,
@@ -873,6 +881,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
         "max": 100,
@@ -880,6 +889,7 @@
         "unit": "%"
       },
       {
+        "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
         "max": 1000,
@@ -1037,6 +1047,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
         "max": 100,
@@ -1044,6 +1055,7 @@
         "unit": "%"
       },
       {
+        "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
         "max": 1000,

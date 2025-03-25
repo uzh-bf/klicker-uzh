@@ -109,12 +109,14 @@
     "unselectedItems": ["USA", "UK", "Japan", "China"],
     "criteria": [
       {
+        "mode": "range",
         "name": "Population",
         "min": 1000000,
         "max": 10000000,
         "step": 1000
       },
       {
+        "mode": "range",
         "name": "Area",
         "min": 100,
         "max": 5000,
@@ -123,10 +125,14 @@
       }
     ],
     "removedCriterion": {
-      "name": "GDP",
-      "min": 500,
-      "max": 50000,
-      "step": 100
+      "mode": "steps",
+      "name": "Closeness to Europe",
+      "steps": 5,
+      "labels": {
+        "min": "Close",
+        "mid": "Medium",
+        "max": "Far"
+      }
     },
     "cases": [
       {
@@ -243,6 +249,7 @@
     ],
     "criteriaEdited": [
       {
+        "mode": "range",
         "name": "GDP per capita",
         "min": 20000,
         "max": 100000,
@@ -250,6 +257,7 @@
         "unit": "USD"
       },
       {
+        "mode": "range",
         "name": "Life expectancy",
         "min": 40,
         "max": 90,
