@@ -54,6 +54,7 @@ function ElementEditModal({
 
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(false)
+  const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
   const [failureToast, setFailureToast] = useState(false)
 
   const [autoSavedElement, setAutoSavedElement] =
@@ -127,6 +128,8 @@ function ElementEditModal({
       setFailureToast={setFailureToast}
       updateInstances={updateInstances}
       setUpdateInstances={setUpdateInstances}
+      includeTemplateUpdates={includeTemplateUpdates}
+      setIncludeTemplateUpdates={setIncludeTemplateUpdates}
       onSubmitElement={async (values) => {
         switch (values.type) {
           case ElementType.Content: {
@@ -306,7 +309,10 @@ function ElementEditModal({
         if (mode === ElementEditMode.EDIT && updateInstances) {
           if (elementId !== null && typeof elementId !== 'undefined') {
             await updateElementInstances({
-              variables: { elementId: elementId },
+              variables: {
+                elementId: elementId,
+                includeTemplates: includeTemplateUpdates,
+              },
             })
           }
         }

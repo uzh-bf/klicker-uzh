@@ -1055,6 +1055,7 @@ export const Mutation = builder.mutationType({
         type: [ElementInstance],
         args: {
           elementId: t.arg.int({ required: true }),
+          includeTemplates: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return QuestionService.updateElementInstances(args, ctx)

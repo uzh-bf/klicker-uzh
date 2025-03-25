@@ -1234,6 +1234,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
       updateInstances:
         'Element-Instanzen in KlickerUZH-Aktivitäten aktualisieren',
+      includeTemplateInstanceUpdates:
+        'Instanzen in Vorlagen-Aktivitäten ebenfalls aktualisieren',
       updateInstancesExplanation:
         'Nutzen sie diese Einstellung, um das Element in allen angezeigten geplanten Live-Quizzes, Übungs-Quizzes, Microlearnings und Gruppenaktivitäten anzupassen. Der Inhalt von Elementen in laufenden und abgeschlossenen Aktivitäten wird nicht aktualisiert. Veränderte Multiplikatoren werden auf die erstellten Instanzen angewendet. Bitte beachten Sie, dass bei einer Deaktivierung der Musterlösung nur Inhaltselemente, Flashcards und Freitext-Fragen in Übungs-Quizzes und Microlearnings geupdated werden.',
       questionSavedSuccessfully: 'Die Frage wurde erfolgreich gespeichert.',

@@ -3,6 +3,7 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  CheckPrivatePreviewAvailableDocument,
   GetInstanceUpdateActivitiesDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -17,6 +18,8 @@ interface InstanceUpdateSwitchProps {
   hasSampleSolution?: boolean
   updateInstances: boolean
   setUpdateInstances: Dispatch<SetStateAction<boolean>>
+  includeTemplateUpdates: boolean
+  setIncludeTemplateUpdates: Dispatch<SetStateAction<boolean>>
 }
 
 function InstanceUpdateSwitch({
@@ -24,33 +27,73 @@ function InstanceUpdateSwitch({
   hasSampleSolution,
   updateInstances,
   setUpdateInstances,
+  includeTemplateUpdates,
+  setIncludeTemplateUpdates,
 }: InstanceUpdateSwitchProps) {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetInstanceUpdateActivitiesDocument, {
-    variables: { elementId, hasSampleSolution },
-    fetchPolicy: 'cache-and-network',
-    skip: !updateInstances,
-  })
+
+  const { data: privatePreview } = useQuery(
+    CheckPrivatePreviewAvailableDocument,
+    {
+      fetchPolicy: 'cache-first',
+    }
+  )
+
+  const { data, loading, refetch } = useQuery(
+    GetInstanceUpdateActivitiesDocument,
+    {
+      variables: {
+        elementId,
+        hasSampleSolution,
+        includeTemplateInstances: includeTemplateUpdates,
+      },
+      fetchPolicy: 'cache-and-network',
+      skip: !updateInstances,
+    }
+  )
 
   return (
     <div
       className={twMerge(
-        'mt-3 flex flex-row items-start gap-6 rounded-md border border-solid p-2',
+        'mt-3 rounded-md border border-solid p-2',
         updateInstances && 'border-orange-200 bg-orange-100'
       )}
     >
-      <Switch
-        checked={updateInstances}
-        onCheckedChange={() => setUpdateInstances((prev) => !prev)}
-        data={{ cy: 'instance-update-switch' }}
-      />
-      <div>
-        <H4 className={{ root: 'm-0' }}>
-          {t('manage.questionForms.updateInstances')}
-        </H4>
-        <Prose className={{ root: 'prose-xs max-w-none' }}>
-          {t('manage.questionForms.updateInstancesExplanation')}
-        </Prose>
+      <div className="flex flex-row items-start gap-5">
+        <Switch
+          checked={updateInstances}
+          onCheckedChange={() => setUpdateInstances((prev) => !prev)}
+          data={{ cy: 'instance-update-switch' }}
+        />
+        <div>
+          <H4 className={{ root: 'm-0' }}>
+            {t('manage.questionForms.updateInstances')}
+          </H4>
+          <Prose className={{ root: 'prose-xs max-w-none' }}>
+            {t('manage.questionForms.updateInstancesExplanation')}
+          </Prose>
+        </div>
+      </div>
+
+      {updateInstances && privatePreview?.checkPrivatePreviewAvailable && (
+        <div className="mt-2 flex flex-row items-center gap-5">
+          <Switch
+            checked={includeTemplateUpdates}
+            onCheckedChange={async () => {
+              setIncludeTemplateUpdates((prev) => !prev)
+              await refetch()
+            }}
+            data={{ cy: 'template-update-switch' }}
+          />
+          <div>
+            <H4 className={{ root: 'm-0' }}>
+              {t('manage.questionForms.includeTemplateInstanceUpdates')}
+            </H4>
+          </div>
+        </div>
+      )}
+
+      <div className="ml-[4.25rem]">
         {loading && <Loader />}
         {data?.getInstanceUpdateActivities && (
           <div className="mt-2 border-t border-gray-200">
@@ -66,7 +109,9 @@ function InstanceUpdateSwitch({
                       'flex w-24 flex-row items-center justify-center gap-1.5 rounded px-2 py-0.5 text-xs',
                       activity.status === PublicationStatus.Draft
                         ? 'bg-gray-200'
-                        : 'bg-orange-300'
+                        : activity.status === PublicationStatus.Template
+                          ? 'bg-primary-40'
+                          : 'bg-orange-300'
                     )}
                   >
                     <FontAwesomeIcon
@@ -80,7 +125,11 @@ function InstanceUpdateSwitch({
                   </span>
                   <span className="font-medium">{activity.activityName}</span>
                   <span className="text-xs text-gray-500">
-                    ({t(`shared.types.${activity.activityType}`)})
+                    ({t(`shared.types.${activity.activityType}`)}{' '}
+                    {activity.status === PublicationStatus.Template
+                      ? t('shared.generic.template')
+                      : null}
+                    )
                   </span>
                 </div>
               </div>
