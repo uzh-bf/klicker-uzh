@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.39...v3.3.0-alpha.40) (2025-03-25)
+
+
+### Features
+
+* add possibility to update element instances included in activity templates ([#4583](https://github.com/uzh-bf/klicker-uzh/issues/4583)) ([63e2cbf](https://github.com/uzh-bf/klicker-uzh/commit/63e2cbf87393dd9f62452660eec8fdb475e29eb6))
+* add support for step / likert scale criteria on case study elements ([#4582](https://github.com/uzh-bf/klicker-uzh/issues/4582)) ([133d039](https://github.com/uzh-bf/klicker-uzh/commit/133d03998893982b9a0afc3b6a75a27de1741553))
+
 ## [3.3.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.38...v3.3.0-alpha.39) (2025-03-25)
 
 
