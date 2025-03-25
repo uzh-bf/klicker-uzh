@@ -192,6 +192,7 @@ function CaseStudyCriteriaFields() {
                         tooltip={t(
                           'manage.questionForms.caseStudyCriteriaMinLabelTooltip'
                         )}
+                        maxLength={100}
                         className={{
                           root: 'w-full',
                           tooltip: 'max-w-[30rem]',
@@ -206,6 +207,7 @@ function CaseStudyCriteriaFields() {
                         tooltip={t(
                           'manage.questionForms.caseStudyCriteriaMidLabelTooltip'
                         )}
+                        maxLength={100}
                         className={{
                           root: 'w-full',
                           tooltip: 'max-w-[30rem]',
@@ -221,6 +223,7 @@ function CaseStudyCriteriaFields() {
                         tooltip={t(
                           'manage.questionForms.caseStudyCriteriaMaxLabelTooltip'
                         )}
+                        maxLength={100}
                         className={{
                           root: 'w-full',
                           tooltip: 'max-w-[30rem]',

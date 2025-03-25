@@ -745,11 +745,20 @@ interface CreateCaseStudyArgs {
   collectionName: string
   selectedItems: string[]
   criteria: {
+    mode: 'range' | 'steps'
     name: string
-    min: number
-    max: number
-    step: number
+    // range criterion attributes
+    min?: number
+    max?: number
+    step?: number
     unit?: string
+    // steps criterion attribute
+    steps?: number
+    labels?: {
+      min: string
+      mid?: string
+      max: string
+    }
   }[]
   cases: {
     title: string
@@ -817,50 +826,101 @@ Cypress.Commands.add(
     // add criteria
     cy.wrap(criteria).each(
       (criterion: CreateCaseStudyArgs['criteria'][0], ix) => {
-        // create new criterion and fill in information
-        cy.get('[data-cy="add-range-criterion"]').click()
-        cy.get(`[data-cy="criterion-${ix}-name"]`).click().type(criterion.name)
-        cy.get(`[data-cy="criterion-${ix}-min"]`)
+        cy.get(`[data-cy="add-${criterion.mode}-criterion"]`).click()
+        cy.get(`[data-cy="criterion-${ix}-name"]`)
           .click()
           .clear()
-          .type(String(criterion.min))
-        cy.get(`[data-cy="criterion-${ix}-max"]`)
-          .click()
-          .clear()
-          .type(String(criterion.max))
-        cy.get(`[data-cy="criterion-${ix}-step"]`)
-          .click()
-          .clear()
-          .type(String(criterion.step))
+          .type(criterion.name)
 
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`)
+        // for range criteria, enter min, max, and step - unit is optional
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`)
             .click()
-            .type(criterion.unit)
+            .clear()
+            .type(String(criterion.min))
+          cy.get(`[data-cy="criterion-${ix}-max"]`)
+            .click()
+            .clear()
+            .type(String(criterion.max))
+          cy.get(`[data-cy="criterion-${ix}-step"]`)
+            .click()
+            .clear()
+            .type(String(criterion.step))
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`)
+              .click()
+              .type(criterion.unit)
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.min))
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.max))
+          cy.get(`[data-cy="criterion-${ix}-steps"]`)
+            .click()
+            .clear()
+            .type(String(criterion.steps))
+
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`)
+              .click()
+              .clear()
+              .type(String(criterion.labels.mid))
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
 
-        // verify that all data has been entered correctly
+        // validate inputs for both range and steps / likert criteria
         cy.get(`[data-cy="criterion-${ix}-name"]`).should(
           'have.value',
           criterion.name
         )
-        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
-          'have.value',
-          String(criterion.min)
-        )
-        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
-          'have.value',
-          String(criterion.max)
-        )
-        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
-          'have.value',
-          String(criterion.step)
-        )
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`).should(
             'have.value',
-            criterion.unit
+            String(criterion.min)
           )
+          cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+            'have.value',
+            String(criterion.max)
+          )
+          cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+            'have.value',
+            String(criterion.step)
+          )
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+              'have.value',
+              criterion.unit
+            )
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`).should(
+            'have.value',
+            criterion.labels.min
+          )
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`).should(
+            'have.value',
+            criterion.labels.max
+          )
+          cy.get(`[data-cy="criterion-${ix}-steps"]`).should(
+            'have.value',
+            String(criterion.steps)
+          )
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`).should(
+              'have.value',
+              criterion.labels.mid
+            )
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
       }
     )
