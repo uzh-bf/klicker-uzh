@@ -1777,7 +1777,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       CSSolutionsMinMaxBounds:
         'Die Unter- und Obergrenze der Lösungsintervalls müssen innerhalb des Wertebereichs des Kriteriums liegen (Element {itemNumber}, Kriterium "{criterionName}").',
       CSSolutionsMinMaxStep:
-        'Unter- und Obergrenze des Lösungsintervalls müssen mindestens eine Schrittweite auseinanderliegen (Element {itemNumber}, Kriterium "{criterionName}").',
+        'Unter- und Obergrenze des Lösungsintervalls müssen bei numerischen Kriterien mindestens eine Schrittweite auseinanderliegen (Element {itemNumber}, Kriterium "{criterionName}").',
+      CSSolutionsMinMaxIntegers:
+        'Die Unter- und Obgrenze des Lösungsintervalls müssen bei Schritt- / Likert-Kriterien ganzzahlig sein (Element {itemNumber}, Kriterium "{criterionName}").',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Live Quizzes',

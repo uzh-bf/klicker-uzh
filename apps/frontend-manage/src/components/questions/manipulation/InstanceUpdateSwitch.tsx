@@ -125,9 +125,9 @@ function InstanceUpdateSwitch({
                   </span>
                   <span className="font-medium">{activity.activityName}</span>
                   <span className="text-xs text-gray-500">
-                    ({t(`shared.types.${activity.activityType}`)}{' '}
+                    ({t(`shared.types.${activity.activityType}`)}
                     {activity.status === PublicationStatus.Template
-                      ? t('shared.generic.template')
+                      ? ` ${t('shared.generic.template')}`
                       : null}
                     )
                   </span>
