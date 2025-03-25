@@ -56,6 +56,20 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
       console.error('Criteria need to have a id, title, min, max and step size')
       return false
     }
+
+    if (
+      criterion.labels !== null &&
+      typeof criterion.labels !== 'undefined' &&
+      (criterion.labels.min === '' ||
+        criterion.labels.min === null ||
+        typeof criterion.labels.min === 'undefined' ||
+        criterion.labels.max === '' ||
+        criterion.labels.max === null ||
+        typeof criterion.labels.max === 'undefined')
+    ) {
+      console.error('Criteria labels need to have a min and max value')
+      return false
+    }
   }
 
   // cases need to be defined with all required fields

@@ -268,11 +268,18 @@ export function prepareCaseStudyArgs({
         id: criterion.id,
         name: criterion.name,
         order: index,
-        min: parseFloat(criterion.min),
-        max: parseFloat(criterion.max),
+        min: parseFloat(String(criterion.min)),
+        max: parseFloat(String(criterion.max)),
         step: parseFloat(criterion.step),
         unit:
           criterion.unit && criterion.unit !== '' ? criterion.unit : undefined,
+        labels: criterion.labels
+          ? {
+              min: criterion.labels.min,
+              mid: criterion.labels.mid,
+              max: criterion.labels.max,
+            }
+          : undefined,
       })),
 
       cases: values.options.cases.map((c, index) => ({

@@ -110,6 +110,7 @@ function validateAndProcessElementOptions(
           max: criterion.max,
           step: criterion.step,
           unit: criterion.unit ?? undefined,
+          labels: criterion.labels ?? undefined,
         })),
         cases: options.cases!.map((caseItem) => ({
           id: caseItem.id,

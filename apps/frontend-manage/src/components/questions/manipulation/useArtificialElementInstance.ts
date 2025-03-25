@@ -123,8 +123,8 @@ function useArtificialElementInstance({
                   'criteria' in values.options && values.options.criteria
                     ? values.options.criteria.map((criterion, criterionIx) => ({
                         ...criterion,
-                        min: parseFloat(criterion.min),
-                        max: parseFloat(criterion.max),
+                        min: parseFloat(String(criterion.min)),
+                        max: parseFloat(String(criterion.max)),
                         step: parseFloat(criterion.step),
                         order: criterionIx,
                       }))

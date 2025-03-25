@@ -14,6 +14,7 @@ interface CSSliderProps {
   min: number
   max: number
   step: number
+  labels: { min?: string; mid?: string; max?: string }
   solution?: { min: number; max: number }
 }
 
@@ -29,6 +30,7 @@ function CSSlider({
   min,
   max,
   step,
+  labels,
   solution,
 }: CSSliderProps) {
   const correct =
@@ -47,9 +49,9 @@ function CSSlider({
         defaultValue={defaultValue}
         min={min}
         max={max}
+        labels={labels}
         step={step}
         className={{
-          root: 'h-6',
           range: twMerge(
             typeof value === 'undefined' && 'bg-gray-200',
             typeof correct !== 'undefined' &&
@@ -61,6 +63,8 @@ function CSSlider({
             typeof correct !== 'undefined' &&
               (correct ? 'border-green-700' : 'border-red-700')
           ),
+          labels: '-mt-0.5',
+          label: 'text-sm md:text-base',
         }}
         dataThumb={{
           cy: `cs-slider-${elementIx}-${caseIndex}-${itemIx}-${criterionIx}`,

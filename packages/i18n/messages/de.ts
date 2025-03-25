@@ -176,6 +176,11 @@ export default {
       minLong: 'Minimum',
       max: 'Max',
       maxLong: 'Maximum',
+      lowerEnd: 'Untergrenze',
+      midValue: 'Zentralwert',
+      upperEnd: 'Obergrenze',
+      steps: 'Schritte',
+      textInput: 'Texteingabe',
       free: 'Frei',
       congrats: 'Gratulation!',
       thanks: 'Vielen Dank!',
@@ -316,6 +321,7 @@ export default {
       permissionLevel: 'Zugriffsrechte',
       template: 'Vorlage',
       noPoints: 'keine Punkte',
+      criterionN: 'Kriterium {number}',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
@@ -1149,8 +1155,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseStudyItemsTooltip:
         'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
       selectCaseStudyItems: 'Elemente auswählen...',
+      caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
+      caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',
       caseStudyCriteriaDescription:
-        'Bitte definieren Sie hier die Kriterien gemäss welchen die oben ausgewählten Elemente der Fallstudie bewertet werden sollen. Für mehr Informationen zu den einzelnen Feldern, beachten Sie bitte auch die entsprechenden Tooltips.',
+        'Bitte definieren Sie hier die Kriterien, nach denen die oben ausgewählten Elemente der Fallstudie bewertet werden sollen. Sie können zwischen rein numerischen Kriterien (ideal z.B. für Wahrscheinlichkeits- / Kostenabschätzungen) und Schritt- / Likert-Kriterien (ideal für Fallstudien ohne exakte / bekannte Lösungen) wählen. Für weitere Informationen zu den einzelnen Feldern beachten Sie bitte auch die entsprechenden Tooltips.',
       caseStudyCriteriaNameTooltip:
         'Der Name des Kriteriums wird den Studierenden angezeigt (z.B. "Wahrscheinlichkeit").',
       caseStudyCriteriaMinTooltip:
@@ -1161,7 +1169,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Schrittweite entscheidet über die Schritte bei der Einstellung des Schiebereglers.',
       caseStudyCriteriaUnitTooltip:
         'Die optionale Einheit wird den Studierenden neben den entsprechenden Werten angezeigt (z.B. "%").',
+      caseStudyCriteriaMinLabelTooltip:
+        'Dieser Text beschreibt das untere Ende ihres Schritt- oder Likert-Kriteriums an (z.B. "sehr unwahrscheinlich").',
+      caseStudyCriteriaMidLabelTooltip:
+        'Dieser Text beschreibt den mittleren Bereich ihres Schritt- oder Likert-Kriteriums (z.B. "möglich").',
+      caseStudyCriteriaMaxLabelTooltip:
+        'Dieser Text beschreibt das obere Ende ihres Schritt- oder Likert-Kriteriums an (z.B. "sehr wahrscheinlich").',
+      caseStudyCriteriaStepsTooltip:
+        'Geben Sie hier die Anzahl der Schritte an, die der Schieberegler haben soll (mind. 3).',
       addCriterion: 'Kriterium hinzufügen',
+      addRangeCriterion: 'Numerisches Intervallkriterium hinzufügen',
+      addStepsCriterion: 'Schritt-/Likert-Kriterium hinzufügen',
       addCase: 'Neuen Fall hinzufügen',
       removeCase: 'Fall entfernen',
       caseTitle: 'Fallname',
@@ -1180,6 +1198,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseStudySolutions: 'Musterlösungen für Fall {number}',
       caseStudySolutionsTooltip:
         'Bitte geben Sie hier für jedes zu Bewertende Element und Kriterium einen Bereich an, welcher als korrekt bewertet werden soll.',
+      caseStudySolutionIntervalStep:
+        'im Interval [{lower}, {upper}], Schrittweite {step}',
       lowerLimit: 'Untere Grenze',
       upperLimit: 'Obere Grenze',
       LISTDisplay: 'Anzeige als Liste',
@@ -1212,9 +1232,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uploadImageHeader: 'Medien hinzufügen',
       uploadImageDescription:
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
-      updateInstances: 'Frage-Instanzen in KlickerUZH-Elementen aktualisieren',
+      updateInstances:
+        'Element-Instanzen in KlickerUZH-Aktivitäten aktualisieren',
       updateInstancesExplanation:
-        'Nutzen sie diese Einstellung, um die Frage in allen angezeigten geplanten Live-Quizzes, Übungs-Quizzes, Microlearnings und Gruppenaktivitäten anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Aktivitäten wird nicht aktualisiert. Veränderte Multiplikatoren werden auf die erstellten Instanzen angewendet. Bitte beachten Sie, dass bei einer Deaktivierung der Musterlösung nur Inhaltselemente, Flashcards und Freitext-Fragen in Übungs-Quizzes und Microlearnings geupdated werden.',
+        'Nutzen sie diese Einstellung, um das Element in allen angezeigten geplanten Live-Quizzes, Übungs-Quizzes, Microlearnings und Gruppenaktivitäten anzupassen. Der Inhalt von Elementen in laufenden und abgeschlossenen Aktivitäten wird nicht aktualisiert. Veränderte Multiplikatoren werden auf die erstellten Instanzen angewendet. Bitte beachten Sie, dass bei einer Deaktivierung der Musterlösung nur Inhaltselemente, Flashcards und Freitext-Fragen in Übungs-Quizzes und Microlearnings geupdated werden.',
       questionSavedSuccessfully: 'Die Frage wurde erfolgreich gespeichert.',
       questionSavedFailed:
         'Beim Speichern der Frage ist ein Fehler aufgetreten. Bitte beachten Sie die Fehlermeldungen im Formular und überprüfen Sie die Eingaben.',
@@ -1730,6 +1751,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine Schrittweite für das Kriterium ein.',
       CSStepSizeTooLarge:
         'Die Schrittweite darf maximal der halben Intervallbreite entsprechen.',
+      CSLabelsRequired:
+        'Bei Schritt- / Likert-Kriterien müssen mindestens je ein Label für die Unter- und Obergrenze definiert werden.',
+      CSStepsDefinitionRequired:
+        'Bitte definieren Sie eine Anzahl Schritte für das Schritt- / Likert-Kriterium (mindestens 3).',
       CSCriteriaRequired:
         'Zur Erstellung einer Fallstudie wird mindestens ein Kriterium benötigt.',
       CSCasesRequired:

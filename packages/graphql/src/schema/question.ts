@@ -4,6 +4,7 @@ import {
   type CaseStudyCaseInput as CaseStudyCaseInputType,
   type CaseStudyCriteriaSolutionInput as CaseStudyCriteriaSolutionInputType,
   type CaseStudyCriterionInput as CaseStudyCriterionInputType,
+  type CaseStudyCriterionLabelsInput as CaseStudyCriterionLabelsInputType,
   type CaseStudySolutionInput as CaseStudySolutionInputType,
   type CaseStudySolution as CaseStudySolutionType,
   type ChoiceInput as ChoiceInputType,
@@ -184,6 +185,19 @@ export const OptionsSelectionInput = OptionsSelectionInputRef.implement({
   }),
 })
 
+export const CaseStudyCriterionLabelsInputRef =
+  builder.inputRef<CaseStudyCriterionLabelsInputType>(
+    'CaseStudyCriterionLabelsInput'
+  )
+export const CaseStudyCriterionLabelsInput =
+  CaseStudyCriterionLabelsInputRef.implement({
+    fields: (t) => ({
+      min: t.string({ required: true }),
+      mid: t.string({ required: false }),
+      max: t.string({ required: true }),
+    }),
+  })
+
 export const CaseStudyCriterionInputRef =
   builder.inputRef<CaseStudyCriterionInputType>('CaseStudyCriterionInput')
 export const CaseStudyCriterionInput = CaseStudyCriterionInputRef.implement({
@@ -195,6 +209,10 @@ export const CaseStudyCriterionInput = CaseStudyCriterionInputRef.implement({
     max: t.float({ required: true }),
     step: t.float({ required: true }),
     unit: t.string({ required: false }),
+    labels: t.field({
+      type: CaseStudyCriterionLabelsInput,
+      required: false,
+    }),
   }),
 })
 

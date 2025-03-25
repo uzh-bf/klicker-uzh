@@ -77,6 +77,10 @@
   margin-bottom: -0.5rem
 }
 
+.-mt-0\.5 {
+  margin-top: -0.125rem
+}
+
 .-mt-4 {
   margin-top: -1rem
 }
@@ -209,10 +213,6 @@
   height: 10rem
 }
 
-.h-6 {
-  height: 1.5rem
-}
-
 .h-7 {
   height: 1.75rem
 }
@@ -296,10 +296,6 @@
 
 .w-32 {
   width: 8rem
-}
-
-.w-40 {
-  width: 10rem
 }
 
 .w-8 {
@@ -943,10 +939,6 @@
   font-weight: 700
 }
 
-.font-normal {
-  font-weight: 400
-}
-
 .italic {
   font-style: italic
 }
@@ -1203,14 +1195,6 @@
     margin-right: 0px
   }
 
-  .md\:block {
-    display: block
-  }
-
-  .md\:hidden {
-    display: none
-  }
-
   .md\:w-64 {
     width: 16rem
   }
@@ -1257,6 +1241,11 @@
   .md\:px-4 {
     padding-left: 1rem;
     padding-right: 1rem
+  }
+
+  .md\:text-base {
+    font-size: 1rem;
+    line-height: 1.5rem
   }
 }
 

@@ -136,6 +136,12 @@ export type CaseStudySolutionInput = {
   criteriaSolutions: CaseStudyCriteriaSolutionInput[]
 }
 
+export type CaseStudyCriterionLabelsInput = {
+  min: string
+  mid?: string | null
+  max: string
+}
+
 export type CaseStudyCriterionInput = {
   id: string
   name: string
@@ -144,6 +150,7 @@ export type CaseStudyCriterionInput = {
   max: number
   step: number
   unit?: string | null
+  labels?: CaseStudyCriterionLabelsInput | null
 }
 
 export type CaseStudyCaseInput = {
@@ -483,6 +490,12 @@ export interface ElementOptionsSelection extends BaseElementOptions {
   answerCollectionSolutionIds?: number[] | null // instance and element data fetching only (not stored here on db element = relation)
 }
 
+export type CaseStudyCriterionLabels = {
+  min: string
+  mid?: string | null
+  max: string
+}
+
 export type CaseStudyCriterion = {
   id: string // use nanoid (as for choices) to simplify distinction from items & ordering
   name: string
@@ -491,6 +504,7 @@ export type CaseStudyCriterion = {
   max: number
   step: number
   unit?: string | null
+  labels?: CaseStudyCriterionLabels | null
 }
 
 export type CaseStudyCaseCriterionSolution = {

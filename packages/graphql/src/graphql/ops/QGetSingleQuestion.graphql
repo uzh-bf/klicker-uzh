@@ -143,6 +143,11 @@ query GetSingleQuestion($id: Int!) {
           max
           step
           unit
+          labels {
+            min
+            mid
+            max
+          }
         }
         cases {
           id

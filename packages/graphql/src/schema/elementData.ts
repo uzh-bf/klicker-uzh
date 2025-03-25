@@ -5,6 +5,7 @@ import {
   type CaseStudyCaseCriterionSolution as CaseStudyCaseCriterionSolutionType,
   type CaseStudyCaseSolution as CaseStudyCaseSolutionType,
   type CaseStudyCase as CaseStudyCaseType,
+  type CaseStudyCriterionLabels as CaseStudyCriterionLabelsType,
   type CaseStudyCriterion as CaseStudyCriterionType,
   type Choice as ChoiceType,
   type ElementInstanceOptions as ElementInstanceOptionsType,
@@ -178,6 +179,16 @@ export const SelectionElementOptions = builder
     }),
   })
 
+export const CaseStudyCriterionLabels = builder
+  .objectRef<CaseStudyCriterionLabelsType>('CaseStudyCriterionLabels')
+  .implement({
+    fields: (t) => ({
+      min: t.exposeString('min'),
+      mid: t.exposeString('mid', { nullable: true }),
+      max: t.exposeString('max'),
+    }),
+  })
+
 export const CaseStudyCriterion = builder
   .objectRef<CaseStudyCriterionType>('CaseStudyCriterion')
   .implement({
@@ -189,6 +200,10 @@ export const CaseStudyCriterion = builder
       max: t.exposeFloat('max'),
       step: t.exposeFloat('step'),
       unit: t.exposeString('unit', { nullable: true }),
+      labels: t.expose('labels', {
+        type: CaseStudyCriterionLabels,
+        nullable: true,
+      }),
     }),
   })
 

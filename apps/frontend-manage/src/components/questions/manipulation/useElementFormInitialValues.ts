@@ -160,8 +160,9 @@ function useElementFormInitialValues({
           criteria:
             options.criteria?.map((criterion) => ({
               ...criterion,
-              min: String(criterion.min),
-              max: String(criterion.max),
+              mode: criterion.labels ? 'steps' : 'range',
+              min: criterion.min,
+              max: criterion.max,
               step: String(criterion.step),
             })) ?? [],
           cases:

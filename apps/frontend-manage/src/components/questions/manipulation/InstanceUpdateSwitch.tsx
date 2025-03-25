@@ -28,6 +28,7 @@ function InstanceUpdateSwitch({
   const t = useTranslations()
   const { data, loading } = useQuery(GetInstanceUpdateActivitiesDocument, {
     variables: { elementId, hasSampleSolution },
+    fetchPolicy: 'cache-and-network',
     skip: !updateInstances,
   })
 
