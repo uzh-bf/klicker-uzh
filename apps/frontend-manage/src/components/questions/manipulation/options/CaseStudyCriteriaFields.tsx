@@ -15,6 +15,7 @@ import {
   ElementFormTypesCaseStudy,
   ElementFormTypesCaseStudyCriterion,
 } from '../types'
+import CaseStudyCriterionModeMonitor from './CaseStudyCriterionModeMonitor'
 
 function CaseStudyCriteriaFields() {
   const t = useTranslations()
@@ -38,6 +39,13 @@ function CaseStudyCriteriaFields() {
                   key={index}
                   className="rounded-lg border bg-gray-50 p-3 shadow-sm"
                 >
+                  {/* // TODO: remove this component, which is only required to migrate old local storage content */}
+                  <CaseStudyCriterionModeMonitor
+                    index={index}
+                    criterion={criterion}
+                    criteriaField={criteriaField}
+                    criteriaHelpers={criteriaHelpers}
+                  />
                   <div className="mb-1 flex flex-row items-center justify-between">
                     <div className="font-medium">
                       <span className="mr-1 font-bold">
@@ -111,7 +119,8 @@ function CaseStudyCriteriaFields() {
                     data={{ cy: `criterion-${index}-name` }}
                   />
 
-                  {criterion.mode === 'range' && (
+                  {(criterion.mode === 'range' ||
+                    typeof criterion.mode === 'undefined') && (
                     <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
                       <FormikNumberField
                         required
