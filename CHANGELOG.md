@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.38...v3.3.0-alpha.39) (2025-03-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** fix inconsistencies with filtering and search on catalog ([30922cd](https://github.com/uzh-bf/klicker-uzh/commit/30922cd90b05e0cf75e3fdb0ecdf0e5e2f9e1bc5))
+* **packages/graphql:** make sure that base points are set correctly on demo live quiz ([fa07846](https://github.com/uzh-bf/klicker-uzh/commit/fa0784692ed966c27ee65f073c5c39730525c062))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** improve live quiz template view and template conversion modal ([#4581](https://github.com/uzh-bf/klicker-uzh/issues/4581)) ([0cb3ebe](https://github.com/uzh-bf/klicker-uzh/commit/0cb3ebeae1f33d090a8f391cdde421d6b4fc3570))
+
 ## [3.3.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.37...v3.3.0-alpha.38) (2025-03-23)
 
 
