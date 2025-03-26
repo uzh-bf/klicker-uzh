@@ -11,7 +11,7 @@ export default {
       numInvalidValue:
         'The entered value is not a number or is not in the specified range.',
       ftPlaceholder: 'Your answer...',
-      seSelectOption: 'Select an answer option...',
+      seSelectOption: 'Enter & choose option...',
       seSelectNCorrectOptions:
         'Please choose <b>{number} correct answer options</b> from the provided selection.',
       seCorrectAnswerN: 'Answer {number}',
