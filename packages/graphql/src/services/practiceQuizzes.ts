@@ -6,7 +6,10 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma'
 import type { ElementStackInput } from '@klicker-uzh/types'
-import { getActivityInstanceConnectOrCreate } from '@klicker-uzh/util'
+import {
+  getActivityInstanceConnectOrCreate,
+  getInitialInstanceResults,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
@@ -397,29 +400,6 @@ export async function unpublishPracticeQuiz(
         in: [PublicationStatus.PUBLISHED, PublicationStatus.SCHEDULED],
       },
     },
-  })
-
-  if (!practiceQuiz) {
-    return null
-  }
-
-  const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      availableFrom: null,
-      status: PublicationStatus.DRAFT,
-      responses:
-        practiceQuiz.status === PublicationStatus.PUBLISHED && deleteResponses
-          ? { deleteMany: {} }
-          : undefined,
-      responseDetails:
-        practiceQuiz.status === PublicationStatus.PUBLISHED && deleteResponses
-          ? { deleteMany: {} }
-          : undefined,
-    },
     include: {
       stacks: {
         include: {
@@ -427,6 +407,59 @@ export async function unpublishPracticeQuiz(
         },
       },
     },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  const updatedPracticeQuiz = await ctx.prisma.$transaction(async (prisma) => {
+    if (
+      practiceQuiz.status === PublicationStatus.PUBLISHED &&
+      deleteResponses
+    ) {
+      // iterate over instances, delete all responses and responseDetails and reset responses
+      for (const stack of practiceQuiz.stacks) {
+        for (const instance of stack.elements) {
+          const initialResults = getInitialInstanceResults(instance.elementData)
+          await prisma.elementInstance.update({
+            where: {
+              id: instance.id,
+            },
+            data: {
+              responses: {
+                deleteMany: {},
+              },
+              detailResponses: {
+                deleteMany: {},
+              },
+              results: initialResults,
+              anonymousResults: initialResults,
+            },
+          })
+        }
+      }
+    }
+
+    const draftPracticeQuiz = await prisma.practiceQuiz.update({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+      data: {
+        availableFrom: null,
+        status: PublicationStatus.DRAFT,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
+      },
+    })
+
+    return draftPracticeQuiz
   })
 
   ctx.emitter.emit('invalidate', {
