@@ -4,17 +4,17 @@ title: Grading Logic
 
 In order to distribute points, XP and achievements based on the performance of the participants in various activities, an automated grading logic has been implemented in KlickerUZH. This chapter provides a detailed explanation of the approaches employed for different element and activity types, including practice quizzes, microlearnings and live quizzes.
 
-The presented grading approach assumes that all considered questions have a defined correct solution (or possibly multiple solutions), as this is required in asynchronous activities, except for free-text questions. During live quizzes where questions without sample solutions were used, the participants are awarded a fixed amount of 10 points for taking part in each poll. Please also note that the [grading approach for live quizzes](#grading-in-live-quizzes) slightly extends the logic of asynchronous activities and that some element types are only available in select activities.
+The presented grading approach assumes that all considered elements have a defined correct solution (or possibly multiple solutions), as this is required in asynchronous activities, except for free-text questions. During live quizzes where elements without sample solutions are used, the participants are awarded a fixed amount of 10 base points for taking part in each poll, unless this is deactivated on the respective element. Please also note that the [grading approach for live quizzes](#grading-in-live-quizzes) slightly extends the logic of asynchronous activities and that some element types are only available in select activities.
 
-## Grading by Question Type
+## Grading by Element Type
 
-The grading logic will first be described on the example of practice quizzes and microlearnings. The additional bonus components for fast and correct answers during live quizzes will be explained in a [dedicated section](#grading-in-live-quizzes).
+The grading logic will first be described on the example of practice quizzes and microlearnings. The additional base points, as well as bonus components for fast and correct answers during live quizzes will be explained in a [dedicated section](#grading-in-live-quizzes). Flashcards and content elements are not graded, since they rely on self-assessment or do not have solutions, respectively.
 
 ### Multiplier
 
-The point multipliers, which can be specified both on a question and activity level, are combined during the creation of the activity and applied to the total awarded points (including basic points and potential bonuses). If no multipliers were specified, this factor defaults to 1.
+The point multipliers, which can be specified both on an element and activity level, are combined during the creation of the activity and applied to the total awarded points (including and potential bonuses in live quizzes). If no multipliers were specified, this factor defaults to 1.
 
-Multipliers can be used to weigh questions according to their difficulty and reward participation in certain quizzes with more points (e.g. quiz on exam level during the last lecture of the semester vs. an introductory quiz in the first lecture). The same multiplier concept also applies to live quizzes.
+Multipliers can be used to weigh elements according to their difficulty and reward participation in certain quizzes with more points (e.g. quiz on exam level during the last lecture of the semester vs. an introductory quiz in the first lecture). The same multiplier concept also applies to live quizzes.
 
 ### Grading Single Choice Questions
 
@@ -60,7 +60,7 @@ $$
 
 ### Grading Numerical Questions
 
-For numerical questions, you are able to specify a number of solution ranges. If the participant’s entered response is within one of these ranges, it is considered to be correct and will be awarded full points and no points otherwise (as for single choice questions).
+For numerical questions, you are able to specify a number of solution ranges or exact solutions, respectively. If the participant’s entered response is within one of these ranges or corresponds to one of the exact solutions, it is considered to be correct and will be awarded full points and no points otherwise (as for single choice questions).
 
 ### Grading Free Text Questions
 
@@ -68,11 +68,13 @@ For free text questions, you can currently specify a selection of correct respon
 
 ## Grading in Live Quizzes
 
-During synchronous live quizzes, every participant will receive base points for each submitted answer, independent of its correctness (default: 10 points). If the submitted answer is correct, additional points will be awarded (default: 5 points). For partially correct answers, these 5 points are multiplied with a correctness factor described in the sections above. If no sample solution is defined, students will only receive the fixed amount of base points, which is not affected by the choice of multipliers.
+During synchronous live quizzes, every participant will usually receive base points for each submitted answer, independent of its correctness (default: 10 points). However, for cases where the participation in a question might be considered to be voluntary, all graded element types additionally have an option to disable these base points (on the corresponding element edit view).
+
+If the submitted answer is correct, additional points will be awarded (default: 5 points). For partially correct answers, these 5 points are multiplied with a correctness factor described in the sections above and rounded to the next integer value. If no sample solution is defined, students will only receive the fixed amount of base points, which is not affected by the choice of multipliers.
 
 To incentivize fast and correct answers during live quizzes, additional bonus points are awarded beyond the mentioned points for answering correctly. Starting time with the first correct answer, players will receive up to 45 bonus points (default setting), depending on the time that passed between the first correct answer and theirs. By default, the slope to zero points is implemented with a duration of 20 seconds.
 
-The corresponding resulting point curves for correct and wrong answers during live quizzes, when starting time with the first correct response, are shown in the plot below (not considering multipliers).
+The corresponding resulting point curves for correct and wrong answers during live quizzes, when starting time with the first correct response and assuming enabled base points, are shown in the plot below (not considering multipliers).
 
 <div align="center">
   <img
@@ -95,10 +97,10 @@ $$
 p_{\text{bonus}}(t) = p_m \cdot \max\left(1 - \frac{t}{t_f}, 0\right)
 $$
 
-The number of base points is denoted with $p_b$ (default: 10 points), the number of points awarded for correct answers with $p_c$ (default: 5 points), the number of maximum bonus points with $p_m$ (default: 45 points) and the duration for the bonus points to fade with $t_f$ (default: 20 seconds). The multiplier of the question instance (consisting of the activity and question multipliers) is denoted with $m$, and the time that has passed between the first correct answer and the participant’s answer with $t$. To keep the formalism simple, the correctness of the answer $c$, is normalized to the interval $[0,1]$ with $1$ being assigned for completely correct responses. The grading of answers is performed as described for asynchronous activities in the previous sections.
+The number of base points is denoted with $p_b$ (default: 10 points), the number of points awarded for correct answers with $p_c$ (default: 5 points), the number of maximum bonus points with $p_m$ (default: 45 points) and the duration for the bonus points to fade with $t_f$ (default: 20 seconds). The multiplier of the question instance (consisting of the activity and question multipliers) is denoted with $m$, and the time that has passed between the first correct answer and the participant’s answer with $t$. To keep the formalism simple, the correctness of the answer $c$ is normalized to the interval $[0,1]$ with $1$ being assigned for completely correct responses. The grading of answers is performed as described for asynchronous activities in the previous sections.
 
 ### Advanced: Customized Grading
 
-For advanced use cases, it is possible to fully customize the grading logic applied during live quizzes. Through a dedicated modal for advanced settings, which can be opened by clicking onto the settings icon after selecting a gamified course, you can now choose a custom parametrization of the grading logic formalized in the previous section. A side-by-side illustration indicates the points awarded for correct or incorrect answers over time.
+For advanced use cases, it is possible to fully customize the grading logic applied during live quizzes. Through a dedicated modal for advanced settings, which can be opened by clicking onto the settings icon after selecting a gamified course, you can choose a custom parametrization of the grading logic formalized in the previous section. A side-by-side illustration indicates the points awarded for correct or incorrect answers over time. If the option to not award any base points was chosen for a specific question, this setting overrides the live quiz settings for the number of standard points awarded.
 
 ![Advanced settings modal for customized point distribution](/img/gamification/live_quiz_customized_grading.png)
