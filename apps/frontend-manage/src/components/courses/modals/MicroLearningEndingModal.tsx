@@ -28,6 +28,7 @@ function MicroLearningEndingModal({
     {
       variables: { id: activityId },
       skip: !open,
+      fetchPolicy: 'network-only',
     }
   )
 
