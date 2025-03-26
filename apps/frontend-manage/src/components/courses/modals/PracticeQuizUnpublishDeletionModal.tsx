@@ -99,7 +99,6 @@ function PracticeQuizUnpublishDeletionModal({
         } else {
           await deletePracticeQuiz()
         }
-        setOpen(false)
       }}
       submitting={deletingPracticeQuiz || unpublishingPracticeQuiz}
       confirmations={confirmations}

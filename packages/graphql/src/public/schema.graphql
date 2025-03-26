@@ -1464,7 +1464,7 @@ type Mutation {
   toggleIsArchived(isArchived: Boolean!, questionIds: [Int!]!): [ArchivedElement!]
   transferObjectOwnership(objectId: String!, objectType: CatalogObjectType!, shortnameOrEmail: String!): PermissionInfo
   unpublishGroupActivity(id: String!): GroupActivity
-  unpublishMicroLearning(id: String!): MicroLearning
+  unpublishMicroLearning(deleteResponses: Boolean!, id: String!): MicroLearning
   unpublishPracticeQuiz(deleteResponses: Boolean!, id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, name: String, notificationEmail: String, startDate: Date): Course

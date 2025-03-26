@@ -41,8 +41,8 @@ import MicroLearningPreviewLink from './actions/MicroLearningPreviewLink'
 import PublishMicroLearningButton from './actions/PublishMicroLearningButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
 import ExtensionModal from './modals/ExtensionModal'
-import MicroLearningDeletionModal from './modals/MicroLearningDeletionModal'
 import MicroLearningEndingModal from './modals/MicroLearningEndingModal'
+import MicroLearningUnpublishDeletionModal from './modals/MicroLearningUnpublishDeletionModal'
 
 interface MicroLearningElementProps {
   microLearning: Pick<
@@ -65,6 +65,7 @@ function MicroLearningElement({
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+  const [unpublishModal, setUnpublishModal] = useState(false)
   const [extensionModal, setExtensionModal] = useState(false)
   const [endingModal, setEndingModal] = useState(false)
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/microlearning/${microLearning.id}/`
@@ -76,7 +77,7 @@ function MicroLearningElement({
   const user = dataUser?.userProfile
 
   const [unpublishMicroLearning] = useMutation(UnpublishMicroLearningDocument, {
-    variables: { id: microLearning.id },
+    variables: { id: microLearning.id, deleteResponses: false },
   })
 
   const statusMap: Record<PublicationStatus, React.ReactElement | null> = {
@@ -282,7 +283,7 @@ function MicroLearningElement({
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
                         <FontAwesomeIcon icon={faLock} className="w-4" />
-                        <div>{t('manage.course.unpublishMicrolearning')}</div>
+                        <div>{t('manage.course.unpublishMicroLearning')}</div>
                       </div>
                     ),
                     onClick: async () => await unpublishMicroLearning(),
@@ -384,6 +385,18 @@ function MicroLearningElement({
                         onClick: () => null,
                       }
                     : [],
+                  {
+                    label: (
+                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+                        <FontAwesomeIcon icon={faLock} className="w-4" />
+                        <div>{t('manage.course.unpublishMicroLearning')}</div>
+                      </div>
+                    ),
+                    onClick: async () => setUnpublishModal(true),
+                    data: {
+                      cy: `unpublish-microlearning-${microLearning.name}`,
+                    },
+                  },
                   deletionElement,
                 ].flat()}
                 triggerIcon={faHandPointer}
@@ -478,11 +491,15 @@ function MicroLearningElement({
       </div>
 
       <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
-      <MicroLearningDeletionModal
-        open={deletionModal}
-        setOpen={setDeletionModal}
+      <MicroLearningUnpublishDeletionModal
+        open={deletionModal || unpublishModal}
+        setOpen={(open: boolean) => {
+          setUnpublishModal(open)
+          setDeletionModal(open)
+        }}
         activityId={microLearning.id}
         courseId={courseId}
+        unpublishingMode={unpublishModal}
       />
       <MicroLearningEndingModal
         open={endingModal}

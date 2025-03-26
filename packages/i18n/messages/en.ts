@@ -2122,11 +2122,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       futureEndDateRequired:
         'Please enter an end date that lies in the future.',
       publishMicrolearning: 'Publish microlearning',
-      unpublishMicrolearning: 'Unpublish microlearning',
+      unpublishMicroLearning: 'Unpublish microlearning',
       convertMicroLearningToPracticeQuiz: 'Convert to practice quiz',
       deleteMicroLearning: 'Delete microlearning',
       deleteMicroLearningMessage:
         'Please confirm the deletion of all results associated with this microlearning. Note that all students will lose access to the microlearning, its contents and all their results.',
+      unpublishMicroLearningMessage:
+        'Please confirm that you want to unpublish this microlearning. Note that all students will lose access to the microlearning and all their results will be deleted.',
       publishItemPRACTICE_QUIZ: 'Publish practice quiz',
       publishItemMICROLEARNING: 'Publish microlearning',
       publishItemGROUP_ACTIVITY: 'Publish group activity',
