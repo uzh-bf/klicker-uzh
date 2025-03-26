@@ -1,5 +1,5 @@
-mutation UnpublishPracticeQuiz($id: String!) {
-  unpublishPracticeQuiz(id: $id) {
+mutation UnpublishPracticeQuiz($id: String!, $deleteResponses: Boolean!) {
+  unpublishPracticeQuiz(id: $id, deleteResponses: $deleteResponses) {
     id
     name
     displayName

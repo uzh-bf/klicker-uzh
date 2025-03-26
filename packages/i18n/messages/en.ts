@@ -2143,6 +2143,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       deletePracticeQuiz: 'Delete practice quiz',
       deletePracticeQuizMessage:
         'Please confirm the deletion of all results associated with this practice quiz. Note that all students will lose access to the practice quiz, its contents and all their results.',
+      unpublishPracticeQuizMessage:
+        'Please confirm that you want to unpublish this practice quiz. Note that all students will lose access to the practice quiz and all their results will be deleted.',
       noResponsesToDelete:
         'No logged in participants have submitted responses for this activity',
       deleteResponses:

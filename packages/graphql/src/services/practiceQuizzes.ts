@@ -379,23 +379,46 @@ export async function getBookmarksPracticeQuiz(
   return participation?.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
-interface UnpublishPracticeQuizArgs {
-  id: string
-}
-
 export async function unpublishPracticeQuiz(
-  { id }: UnpublishPracticeQuizArgs,
+  {
+    id,
+    deleteResponses,
+  }: {
+    id: string
+    deleteResponses: boolean
+  },
   ctx: ContextWithUser
 ) {
-  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
       ownerId: ctx.user.sub,
-      status: PublicationStatus.SCHEDULED,
+      status: {
+        in: [PublicationStatus.PUBLISHED, PublicationStatus.SCHEDULED],
+      },
+    },
+  })
+
+  if (!practiceQuiz) {
+    return null
+  }
+
+  const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
     },
     data: {
       availableFrom: null,
       status: PublicationStatus.DRAFT,
+      responses:
+        practiceQuiz.status === PublicationStatus.PUBLISHED && deleteResponses
+          ? { deleteMany: {} }
+          : undefined,
+      responseDetails:
+        practiceQuiz.status === PublicationStatus.PUBLISHED && deleteResponses
+          ? { deleteMany: {} }
+          : undefined,
     },
     include: {
       stacks: {
@@ -406,7 +429,12 @@ export async function unpublishPracticeQuiz(
     },
   })
 
-  return practiceQuiz
+  ctx.emitter.emit('invalidate', {
+    typename: 'PracticeQuiz',
+    id,
+  })
+
+  return updatedPracticeQuiz
 }
 
 export async function getPracticeQuizSummary(

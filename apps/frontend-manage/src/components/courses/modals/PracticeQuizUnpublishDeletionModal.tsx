@@ -3,25 +3,28 @@ import {
   DeletePracticeQuizDocument,
   GetPracticeQuizSummaryDocument,
   GetSingleCourseDocument,
+  UnpublishPracticeQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface PracticeQuizDeletionModalProps {
+interface PracticeQuizUnpublishDeletionModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   activityId: string
   courseId: string
+  unpublishingMode: boolean
 }
 
-function PracticeQuizDeletionModal({
+function PracticeQuizUnpublishDeletionModal({
   open,
   setOpen,
   activityId,
   courseId,
-}: PracticeQuizDeletionModalProps) {
+  unpublishingMode,
+}: PracticeQuizUnpublishDeletionModalProps) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetPracticeQuizSummaryDocument,
@@ -48,6 +51,15 @@ function PracticeQuizDeletionModal({
     }
   )
 
+  const [unpublishPracticeQuiz, { loading: unpublishingPracticeQuiz }] =
+    useMutation(UnpublishPracticeQuizDocument, {
+      variables: { id: activityId, deleteResponses: true },
+      // TODO: add optimistic response and update cache
+      refetchQueries: [
+        { query: GetSingleCourseDocument, variables: { courseId: courseId } },
+      ],
+    })
+
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
     deleteAnonymousResponses: false,
@@ -65,17 +77,31 @@ function PracticeQuizDeletionModal({
   }, [summaryData?.getPracticeQuizSummary])
 
   if (!summaryData?.getPracticeQuizSummary) return null
-
   const summary = summaryData.getPracticeQuizSummary
 
   return (
     <ActivityConfirmationModal
       open={open}
       setOpen={setOpen}
-      title={t('manage.course.deletePracticeQuiz')}
-      message={t('manage.course.deletePracticeQuizMessage')}
-      onSubmit={async () => await deletePracticeQuiz()}
-      submitting={deletingPracticeQuiz}
+      title={
+        unpublishingMode
+          ? t('manage.course.unpublishPracticeQuiz')
+          : t('manage.course.deletePracticeQuiz')
+      }
+      message={
+        unpublishingMode
+          ? t('manage.course.unpublishPracticeQuizMessage')
+          : t('manage.course.deletePracticeQuizMessage')
+      }
+      onSubmit={async () => {
+        if (unpublishingMode) {
+          await unpublishPracticeQuiz()
+        } else {
+          await deletePracticeQuiz()
+        }
+        setOpen(false)
+      }}
+      submitting={deletingPracticeQuiz || unpublishingPracticeQuiz}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="delete"
@@ -124,4 +150,4 @@ function PracticeQuizDeletionModal({
   )
 }
 
-export default PracticeQuizDeletionModal
+export default PracticeQuizUnpublishDeletionModal

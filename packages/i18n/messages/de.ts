@@ -2181,6 +2181,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deletePracticeQuiz: 'Übungs-Quiz löschen',
       deletePracticeQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Übungs-Quiz verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
+      unpublishPracticeQuizMessage:
+        'Bitte bestätigen Sie, dass Sie die Veröffentlichung dieses Übungs-Quiz aufheben möchten. Beachten Sie, dass hierdurch alle Studierenden den Zugriff auf das Übungs-Quiz verlieren und alle Resultate gelöscht werden.',
       noResponsesToDelete:
         'Für diese Aktivität wurden noch keine Antworten von angemeldeten Teilnehmenden gespeichert.',
       deleteResponses:
