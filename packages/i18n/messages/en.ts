@@ -1790,6 +1790,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the live quiz could not be changed.',
     },
     cockpit: {
+      liveQuizQRCodes: 'Live Quiz QR-Code',
       qrCodeAccountLinkTitle: 'Account Link',
       qrCodeAccountLinkDescription:
         'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname.',

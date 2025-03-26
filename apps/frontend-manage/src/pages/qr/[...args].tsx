@@ -41,18 +41,23 @@ export function QR({
   }, [ref, path])
 
   return (
-    <div className={twMerge('space-y-2', className?.root)}>
+    <div className={twMerge('flex flex-col items-center', className?.root)}>
       {showLink && (
         <Link
+          passHref
+          legacyBehavior
           target="_blank"
           href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
         >
-          <div
-            className={twMerge('text-primary-100 text-6xl', className?.title)}
+          <a
+            className={twMerge(
+              'text-primary-100 mt-4 text-6xl',
+              className?.title
+            )}
           >
             {process.env.NEXT_PUBLIC_PWA_URL}
             {path}
-          </div>
+          </a>
         </Link>
       )}
       <div className={className?.canvas}>
