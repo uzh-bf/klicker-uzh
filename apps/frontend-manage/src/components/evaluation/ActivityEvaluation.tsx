@@ -8,6 +8,7 @@ import Leaderboard, {
   LeaderboardCombinedEntry,
 } from '@klicker-uzh/shared-components/src/Leaderboard'
 import useEvaluationInitialization from '@lib/hooks/useEvaluationInitialization'
+import { useSessionStorage } from '@uidotdev/usehooks'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
@@ -55,10 +56,18 @@ function ActivityEvaluation({
   const t = useTranslations()
   const [activeStack, setActiveStack] = useState<ActiveStackType>(0)
   const [activeInstance, setActiveInstance] = useState<number>(0)
-  const [showSolution, setShowSolution] = useState<boolean>(false)
-  const [showExplanation, setShowExplanation] = useState<boolean>(false)
   const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
   const [textSize, setTextSize] = useReducer(sizeReducer, TextSizes['md'])
+
+  // show solution and explanation settings based on session storage
+  const [showSolution, setShowSolution] = useSessionStorage(
+    `show-solution-${activityId}-${activeStack}-${activeInstance}`,
+    false
+  )
+  const [showExplanation, setShowExplanation] = useSessionStorage(
+    `show-explanation-${activityId}-${activeStack}-${activeInstance}`,
+    false
+  )
 
   const instanceResults = stacks.flatMap((stack) => stack.instances)
 
