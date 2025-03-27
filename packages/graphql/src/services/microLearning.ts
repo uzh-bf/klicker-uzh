@@ -136,6 +136,35 @@ export async function getSingleMicroLearning(
   return microLearning
 }
 
+export async function getCoursePublishedMicroLearnings(
+  { courseId }: { courseId: string },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      microLearnings: {
+        where: {
+          status: PublicationStatus.PUBLISHED,
+          isDeleted: false,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
+  })
+
+  return course?.microLearnings
+    ? (course.microLearnings.map((quiz) => ({
+        ...quiz,
+        course,
+      })) ?? [])
+    : []
+}
+
 interface MarkMicroLearningCompletedArgs {
   courseId: string
   id: string

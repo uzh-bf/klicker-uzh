@@ -1,23 +1,24 @@
 import { useQuery } from '@apollo/client'
-import { faChalkboardUser } from '@fortawesome/free-solid-svg-icons'
-import { GetShortnameQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
+import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
+import { GetCoursePublishedPracticeQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Layout from '../../components/Layout'
-import LinkButton from '../../components/common/LinkButton'
+import Layout from '../../../components/Layout'
+import LinkButton from '../../../components/common/LinkButton'
 
-function Join({
+function CoursePracticeQuizzes({
   isInactive,
-  shortname,
+  courseId,
   participantToken,
   cookiesAvailable,
 }: {
   isInactive: boolean
-  shortname: string
+  courseId: string
   participantToken?: string
   cookiesAvailable?: boolean
 }) {
@@ -28,29 +29,38 @@ function Join({
     cookiesAvailable,
   })
 
-  const { data } = useQuery(GetShortnameQuizzesDocument, {
-    variables: { shortname },
-    skip: isInactive,
-  })
+  const { data, loading } = useQuery(
+    GetCoursePublishedPracticeQuizzesDocument,
+    {
+      variables: { courseId: courseId },
+      skip: isInactive,
+    }
+  )
 
+  if (loading) {
+    return (
+      <Layout>
+        <Loader />
+      </Layout>
+    )
+  }
+
+  const quizzes = data?.getCoursePublishedPracticeQuizzes
+  const course = quizzes?.[0].course
   if (
     isInactive ||
-    !data ||
-    !data.shortnameQuizzes?.length ||
-    data.shortnameQuizzes.length === 0
+    !quizzes ||
+    !quizzes?.length ||
+    quizzes.length === 0 ||
+    !course
   ) {
     return (
       <Layout>
         <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
-          <H2>
-            {t.rich('pwa.general.activeLiveQuizzesBy', {
-              i: (text) => <span className="italic">{text}</span>,
-              name: shortname,
-            })}
-          </H2>
+          <H2>{t.rich('shared.generic.activePracticeQuizzes')}</H2>
           <UserNotification
             type="warning"
-            message={t('pwa.general.noLiveQuizzesActive')}
+            message={t('pwa.general.noPracticeQuizzesActive')}
             className={{ root: 'text-base' }}
           />
         </div>
@@ -59,24 +69,23 @@ function Join({
   }
 
   return (
-    <Layout>
+    <Layout course={course}>
       <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H2>
-          {t('pwa.general.activeLiveQuizzesBy', {
-            name: shortname,
+          {t('pwa.general.activePracticeQuizzesInCourse', {
+            name: course.displayName,
           })}
         </H2>
         <div className="flex flex-col gap-1.5">
-          {data.shortnameQuizzes.map((quiz) => (
+          {quizzes.map((quiz) => (
             <LinkButton
               key={quiz.id}
-              icon={faChalkboardUser}
-              href={`/session/${quiz.id}`}
-              data={{ cy: `join-live-quiz-${quiz.name}` }}
+              icon={faBookOpenReader}
+              href={`/course/${course.id}/quiz/${quiz.id}`}
+              data={{ cy: `open-practice-quiz-${quiz.name}` }}
               className={{ root: 'gap-1 text-lg', icon: 'h-5 w-5' }}
             >
-              {quiz.displayName}{' '}
-              {quiz.course && `in ${quiz.course?.displayName}`}
+              {quiz.displayName}
             </LinkButton>
           ))}
         </div>
@@ -86,7 +95,7 @@ function Join({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (typeof ctx.params?.shortname !== 'string') {
+  if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
         destination: '/404',
@@ -98,14 +107,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
   const result = await apolloClient.query({
-    query: GetShortnameQuizzesDocument,
+    query: GetCoursePublishedPracticeQuizzesDocument,
     variables: {
-      shortname: ctx.params.shortname,
+      courseId: ctx.params.courseId,
     },
   })
 
   // if there is no result (e.g., the shortname is not valid)
-  if (!result?.data?.shortnameQuizzes) {
+  const course = result.data.getCoursePublishedPracticeQuizzes?.[0].course
+  if (!result?.data?.getCoursePublishedPracticeQuizzes || !course) {
     return {
       props: {
         isInactive: true,
@@ -113,12 +123,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  // if only a single live quiz is running, redirect directly to the corresponding quiz page
+  // if only a single practice quiz is running, redirect directly to the corresponding quiz page
   // or if linkTo is set, redirect to the specified link
-  if (result.data.shortnameQuizzes.length === 1) {
+  if (result.data.getCoursePublishedPracticeQuizzes.length === 1) {
     return {
       redirect: {
-        destination: `/session/${result.data.shortnameQuizzes[0].id}`,
+        destination: `/course/${course.id}/quiz/${result.data.getCoursePublishedPracticeQuizzes[0].id}`,
         permanent: false,
       },
     }
@@ -126,6 +136,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const { participantToken, cookiesAvailable } = await getParticipantToken({
     apolloClient,
+    courseId: ctx.params.courseId,
     ctx,
   })
 
@@ -134,7 +145,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       props: {
         participantToken,
         cookiesAvailable,
-        shortname: ctx.params.shortname,
+        courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
@@ -143,11 +154,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   return addApolloState(apolloClient, {
     props: {
-      shortname: ctx.params.shortname,
+      courseId: ctx.params.courseId,
       messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
         .default,
     },
   })
 }
 
-export default Join
+export default CoursePracticeQuizzes

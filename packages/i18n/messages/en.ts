@@ -166,6 +166,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Active Live Quizzes',
+      activePracticeQuizzes: 'Active Practice Quizzes',
+      activeMicroLearnings: 'Active Microlearnings',
       groupActivity: 'Group Activity',
       groupActivities: 'Group Activities',
       characters: 'characters',
@@ -437,9 +439,12 @@ export default {
       userNotLoggedIn:
         'You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress.',
       noLiveQuizzesActive: 'No live quizzes active.',
-      activeLiveQuizzesBy: 'Active live quizzes by <i>{name}</i>',
-      activeLiveQuizzesInCourse: 'Active live quizzes in course <i>{name}</i>',
-      activeLiveQuizzes: 'Active live quizzes',
+      activeLiveQuizzesBy: 'Active live quizzes by {name}',
+      activeLiveQuizzesInCourse: 'Active live quizzes in {name}',
+      noPracticeQuizzesActive: 'No practice quizzes active.',
+      activePracticeQuizzesInCourse: 'Active practice quizzes in {name}',
+      noMicroLearningsActive: 'No microlearnings active.',
+      activeMicroLearningsInCourse: 'Active microlearnings in {name}',
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
@@ -2105,6 +2110,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Share this link or QR code with your course participants to allow them to join.',
       copyAccessLink: 'Copy access link',
       copyLTIAccessLink: 'Copy LTI link',
+      liveQuizList: 'Live Quiz List',
+      practiceQuizList: 'Practice Quiz List',
+      microLearningList: 'Microlearning List',
       linkAccessCopied:
         'The link for accessing the item has been copied to the clipboard.',
       linkLTICopied:

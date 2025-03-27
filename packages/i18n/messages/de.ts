@@ -167,6 +167,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Aktive Live Quizzes',
+      activePracticeQuizzes: 'Aktive Übungs-Quizzes',
+      activeMicroLearnings: 'Aktive Microlearnings',
       groupActivity: 'Gruppenaktivität',
       groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',
@@ -438,9 +440,12 @@ export default {
       userNotLoggedIn:
         'Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten.',
       noLiveQuizzesActive: 'Keine Live Quizzes aktiv.',
-      activeLiveQuizzesBy: 'Aktive Live Quizzes von <i>{name}</i>',
-      activeLiveQuizzesInCourse: 'Aktive Live Quizzes in Kurs <i>{name}</i>',
-      activeLiveQuizzes: 'Aktive Live Quizzes',
+      activeLiveQuizzesBy: 'Aktive Live Quizzes von {name}',
+      activeLiveQuizzesInCourse: 'Aktive Live Quizzes in {name}',
+      noPracticeQuizzesActive: 'Keine Übungs-Quizzes aktiv.',
+      activePracticeQuizzesInCourse: 'Aktive Übungs-Quizzes in {name}',
+      noMicroLearningsActive: 'Keine Microlearnings aktiv.',
+      activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
       joinLeaderboardNotice: `
 🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
 
@@ -2143,6 +2148,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Teilen Sie diesen Link oder den QR-Code mit Ihren Teilnehmenden, damit sie dem Kurs beitreten können.',
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
+      liveQuizList: 'Live Quiz Liste',
+      practiceQuizList: 'Übungs-Quiz Liste',
+      microLearningList: 'Microlearning Liste',
       linkAccessCopied:
         'Der Link für den Zugriff wurde in die Zwischenablage kopiert.',
       linkLTICopied:

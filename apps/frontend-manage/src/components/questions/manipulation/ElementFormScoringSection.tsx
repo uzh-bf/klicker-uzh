@@ -4,7 +4,7 @@ import { FormLabel, Switch } from '@uzh-bf/design-system'
 import { FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import MultiplierSelector from '~/components/activities/creation/MultiplierSelector'
+import MultiplierSelector from './../../activities/creation/MultiplierSelector'
 import SampleSolutionSetting from './options/SampleSolutionSetting'
 import { ElementFormTypes } from './types'
 

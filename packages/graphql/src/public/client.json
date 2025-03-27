@@ -171,6 +171,8 @@
    "GetCourseOverviewData": "93687f3942e45e6f79459981e0b8faa605d66abd9adef2241f7cafa65b4b0c89",
    "GetCoursePerformanceAnalytics": "9b46ac78a110619d0edff36150a73170ac14822e4074d8fb4e3ab6d398ae3414",
    "GetCoursePracticeQuiz": "1aaaf53c009701d58419fa53ac75fcf4b1b148a810e6dee1c34fb99ed68743ee",
+   "GetCoursePublishedMicroLearnings": "d14e20ab29795133909272f60527b5722e7e7969ab06d629409c7b2252e546f0",
+   "GetCoursePublishedPracticeQuizzes": "f2027e62b84d107df76d9cf6998312a4f89a02beae3613605bbf88b52a8f04f5",
    "GetCourseRunningLiveQuizzes": "ce037e4ed631347550ff54d45e5d0b4c94389f35d77873e535ce8e676fd2aec1",
    "GetCourseStudentTimelines": "9ac72310ed35d428bba4a9f1cfc3a64a3b83ad211a168d8d6a7a2dd2c0372dd5",
    "GetCourseSummary": "ab045b4abe94c4ba4e86150994ce42656310ff79241fd52a2e3b03396d6d0571",
