@@ -81,10 +81,10 @@ function CourseMicroLearnings({
               icon={faBookOpenReader}
               href={`/course/${course.id}/microlearning/${microlearning.id}`}
               data={{ cy: `open-microlearning-${microlearning.name}` }}
-              className={{ root: 'gap-1 text-lg', icon: 'h-5 w-5' }}
+              className={{ root: 'gap-1 text-base', icon: 'h-5 w-5' }}
             >
               <div>{microlearning.displayName}</div>
-              <div className="text-sm">
+              <div className="text-sm text-gray-600">
                 {`${dayjs(microlearning.scheduledStartAt).format(
                   'DD.MM.YYYY HH:mm'
                 )} - ${dayjs(microlearning.scheduledEndAt).format('DD.MM.YYYY HH:mm')}`}

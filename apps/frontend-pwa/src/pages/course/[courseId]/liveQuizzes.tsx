@@ -78,7 +78,7 @@ function CourseLiveQuizzes({
               icon={faChalkboardUser}
               href={`/session/${quiz.id}`}
               data={{ cy: `join-live-quiz-${quiz.name}` }}
-              className={{ root: 'gap-1 text-lg', icon: 'h-5 w-5' }}
+              className={{ root: 'gap-1 text-base', icon: 'h-5 w-5' }}
             >
               {quiz.displayName}
             </LinkButton>
