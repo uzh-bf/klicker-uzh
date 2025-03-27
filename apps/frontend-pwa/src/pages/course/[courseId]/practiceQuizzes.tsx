@@ -114,7 +114,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   })
 
   // if there is no result (e.g., the shortname is not valid)
-  const course = result.data.getCoursePublishedPracticeQuizzes?.[0].course
+  const quizzes = result.data.getCoursePublishedPracticeQuizzes
+  const course = quizzes?.[0].course
   if (!result?.data?.getCoursePublishedPracticeQuizzes || !course) {
     return {
       props: {
@@ -125,10 +126,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // if only a single practice quiz is running, redirect directly to the corresponding quiz page
   // or if linkTo is set, redirect to the specified link
-  if (result.data.getCoursePublishedPracticeQuizzes.length === 1) {
+  if (quizzes.length === 1) {
     return {
       redirect: {
-        destination: `/course/${course.id}/quiz/${result.data.getCoursePublishedPracticeQuizzes[0].id}`,
+        destination: `/course/${course.id}/quiz/${quizzes[0].id}`,
         permanent: false,
       },
     }
