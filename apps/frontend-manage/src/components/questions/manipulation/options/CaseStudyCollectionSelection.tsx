@@ -1,9 +1,11 @@
+import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
-import { FormLabel, SelectField } from '@uzh-bf/design-system'
+import { Button, FormLabel, SelectField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import Select from 'react-select'
+import { twMerge } from 'tailwind-merge'
 import { ElementFormTypesCaseStudy } from '../types'
 import CaseStudyCollectionChangeModal from './CaseStudyCollectionChangeModal'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
@@ -11,12 +13,15 @@ import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
 function CaseStudyCollectionSelection({
+  loading,
   isTemplate,
   collections,
   setSelectedItems,
   hasSampleSolution,
   setAnswerCollectionEntries,
+  refetchAnswerCollections,
 }: {
+  loading: boolean
   isTemplate: boolean
   collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
@@ -24,6 +29,7 @@ function CaseStudyCollectionSelection({
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
   >
+  refetchAnswerCollections: () => Promise<any>
 }) {
   const t = useTranslations()
   const [changeModalOpen, setChangeModalOpen] = useState(false)
@@ -52,7 +58,7 @@ function CaseStudyCollectionSelection({
     setSelectedItems,
   })
 
-  // udpate the selected correct answers if the answer collection changes
+  // update the selected correct answers if the answer collection changes
   useAnswerCollectionChangeEffect({
     field: itemsField,
     helpers: itemsHelpers,
@@ -61,7 +67,7 @@ function CaseStudyCollectionSelection({
 
   return (
     <>
-      <div className="flex flex-col justify-between gap-1 lg:flex-row lg:items-start lg:gap-3">
+      <div className="flex flex-row items-end gap-2">
         <SelectField
           required
           value={collectionField.value}
@@ -91,9 +97,20 @@ function CaseStudyCollectionSelection({
           data={{ cy: 'select-answer-collection' }}
           className={{
             select: { trigger: 'h-9 w-80' },
-            root: 'order-2 lg:order-1',
           }}
         />
+        <Button
+          disabled={loading}
+          onClick={async () => await refetchAnswerCollections()}
+          className={{ root: 'h-9 w-9' }}
+          data={{ cy: 'refresh-answer-collections' }}
+        >
+          <Button.Icon
+            withoutLabel
+            icon={faArrowsRotate}
+            className={{ root: twMerge(loading ? 'animate-spin' : '') }}
+          />
+        </Button>
       </div>
       <div>
         <FormLabel
