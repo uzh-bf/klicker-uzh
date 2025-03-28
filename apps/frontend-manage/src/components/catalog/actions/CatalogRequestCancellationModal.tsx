@@ -70,7 +70,7 @@ function CatalogRequestCancellationModal({
             }}
             data={{ cy: 'confirm-request-cancellation' }}
           >
-            <Button.Icon icon={faTrashCan} />
+            <Button.Icon icon={faTrashCan} loading={cancelling} />
             <Button.Label>{t('manage.catalog.cancelRequest')}</Button.Label>
           </Button>
         </div>

@@ -11,6 +11,7 @@ __azurite**
 secrets*.yaml
 .env
 **/**/.env
+.github/copilot-instructions.md
 
 **/.DS_Store
 *.pem
@@ -24,3 +25,4 @@ packages/prisma/src/seed
 out/
 !out/.gitkeep
 .rollup.cache/
+scratchpad.md

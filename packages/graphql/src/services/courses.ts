@@ -1477,6 +1477,7 @@ export async function getCoursePracticeQuiz(
     name: course.name,
     displayName: course.displayName,
     description: null,
+    templateName: null,
     pointsMultiplier: 1,
     resetTimeDays: 6,
     orderType: ElementOrderType.SPACED_REPETITION,

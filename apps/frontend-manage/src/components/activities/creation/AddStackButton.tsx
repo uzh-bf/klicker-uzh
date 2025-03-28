@@ -44,6 +44,8 @@ function AddStackButton({
             title: item.title,
             type: item.questionType,
             hasSampleSolution: item.hasSampleSolution,
+            existingInstanceId: null,
+            duplicateInstance: false,
           },
         ]
 
@@ -85,6 +87,8 @@ function AddStackButton({
                   'options' in question
                     ? (question.options.hasSampleSolution ?? false)
                     : true,
+                existingInstanceId: null,
+                duplicateInstance: false,
               }))
 
               if (type === 'block') {
@@ -131,6 +135,8 @@ function AddStackButton({
                       'options' in question
                         ? (question.options.hasSampleSolution ?? false)
                         : true,
+                    existingInstanceId: null,
+                    duplicateInstance: false,
                   },
                 ]
 

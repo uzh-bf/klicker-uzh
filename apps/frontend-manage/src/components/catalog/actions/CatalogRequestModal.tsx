@@ -99,7 +99,7 @@ function CatalogRequestModal({
             }}
             data={{ cy: 'confirm-request-access' }}
           >
-            <Button.Icon icon={faPaperPlane} />
+            <Button.Icon icon={faPaperPlane} loading={requesting} />
             <Button.Label>{t('manage.catalog.requestAccess')}</Button.Label>
           </Button>
         </div>

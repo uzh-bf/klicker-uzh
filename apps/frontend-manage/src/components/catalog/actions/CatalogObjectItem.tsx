@@ -1,4 +1,8 @@
-import { faClock, faFolder } from '@fortawesome/free-regular-svg-icons'
+import {
+  faClock,
+  faFileLines,
+  faFolder,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faCheck,
   faEllipsisVertical,
@@ -14,6 +18,7 @@ import {
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
@@ -39,9 +44,11 @@ function CatalogObjectItem({
   managedAccess: boolean
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const objectTypeIcons: Record<CatalogObjectType, IconDefinition> = {
     [CatalogObjectType.AnswerCollection]: faList,
     [CatalogObjectType.CatalogCollection]: faFolder,
+    [CatalogObjectType.LiveQuizTemplate]: faFileLines,
   }
   const actionsDisabled = object.isOwner || object.isShared
 
@@ -80,15 +87,39 @@ function CatalogObjectItem({
       <div
         className="flex h-9 flex-row items-center justify-between border-b border-solid px-1 text-sm hover:cursor-pointer hover:bg-slate-100"
         onClick={() => {
-          if (
-            actionsDisabled ||
-            (object.isRequested && object.access === ObjectAccess.Restricted)
-          )
-            return
-
-          object.access === ObjectAccess.Public
-            ? setImportModal(true)
-            : setRequestModal(true)
+          if (actionsDisabled) {
+            // primary action for users with access: go to corresponding list view and highlight object
+            if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
+              router.push({
+                pathname: '/quizzes',
+                query: { highlight: object.uuid },
+              })
+            } else if (
+              object.objectType === CatalogObjectType.AnswerCollection
+            ) {
+              router.push({
+                pathname: '/resources/answerCollections',
+                query: { highlight: object.id },
+              })
+            }
+          } else if (
+            object.isRequested &&
+            object.access === ObjectAccess.Restricted
+          ) {
+            // primary action for restricted objects with pending request: open request withdrawal modal
+            setRequestCancellationModal(true)
+          } else if (object.access === ObjectAccess.Public) {
+            if (object.objectType === CatalogObjectType.LiveQuizTemplate) {
+              // primary action for public templates: create activity with template
+              router.push(`/templates/${object.templateId}`)
+            } else {
+              // primary action for public objects: import a copy
+              setImportModal(true)
+            }
+          } else {
+            // primary action for restricted objects: request access
+            setRequestModal(true)
+          }
         }}
         data-cy={`catalog-object-${object.name}`}
       >
@@ -100,7 +131,7 @@ function CatalogObjectItem({
           />
           <FontAwesomeIcon
             icon={objectTypeIcons[object.objectType]}
-            className="w-4"
+            className="h-4 w-4"
           />
           <div>{object.name}</div>
           {object.ownerShortname ? (
@@ -134,6 +165,9 @@ function CatalogObjectItem({
             <div className="ml-2">
               <ObjectAccessSelection
                 compact
+                restrictedDisabled={
+                  object.objectType === CatalogObjectType.LiveQuizTemplate
+                }
                 value={object.access}
                 onChange={(access) => {
                   setNewAccess(access as ObjectAccess)

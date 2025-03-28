@@ -57,6 +57,7 @@ export const CatalogObject = CatalogObjectRef.implement({
     name: t.exposeString('name'),
     objectType: t.expose('objectType', { type: CatalogObjectType }),
     assignmentId: t.exposeInt('assignmentId'),
+    templateId: t.exposeString('templateId', { nullable: true }),
     access: t.expose('access', { type: ObjectAccess }),
     ownerShortname: t.exposeString('ownerShortname', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner'),
@@ -132,28 +133,4 @@ export const PermissionInfo = PermissionInfoRef.implement({
     isOwn: t.exposeBoolean('isOwn', { nullable: true }),
   }),
 })
-// #endregion
-
-// ! Templates
-// #region
-
-interface IActivityTemplateInfo {
-  noInstances: boolean
-  noResourcesRequired: boolean
-  resourcesRequiredExist: boolean
-  resourcesRequiredMissing: boolean
-}
-
-export const ActivityTemplateInfoRef = builder.objectRef<IActivityTemplateInfo>(
-  'ActivityTemplateInfo'
-)
-export const ActivityTemplateInfo = ActivityTemplateInfoRef.implement({
-  fields: (t) => ({
-    noInstances: t.exposeBoolean('noInstances'),
-    noResourcesRequired: t.exposeBoolean('noResourcesRequired'),
-    resourcesRequiredExist: t.exposeBoolean('resourcesRequiredExist'),
-    resourcesRequiredMissing: t.exposeBoolean('resourcesRequiredMissing'),
-  }),
-})
-
 // #endregion

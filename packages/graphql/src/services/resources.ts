@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import type { ContextWithUser } from '../lib/context.js'
+import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections
 // #region
@@ -35,7 +36,13 @@ export async function validateAnswerCollectionPermissions(
     collectionId: number
     acceptedPermissionLevels: DB.PermissionLevel[]
   },
-  ctx: ContextWithUser
+  // type modification required for method to be usable inside transaction without type errors
+  ctx: Omit<ContextWithUser, 'prisma'> & {
+    prisma: Omit<
+      DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    >
+  }
 ) {
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
@@ -134,7 +141,10 @@ export async function createAnswerCollection(
   }
 }
 
-export async function getAnswerCollectionsElements(ctx: ContextWithUser) {
+export async function getAnswerCollectionsElements(
+  { templateId }: { templateId?: string | null },
+  ctx: ContextWithUser
+) {
   // fetch all answer collections, which are available to be included in elements
   const user = await ctx.prisma.user.findUnique({
     where: {
@@ -184,7 +194,42 @@ export async function getAnswerCollectionsElements(ctx: ContextWithUser) {
     return []
   }
 
-  return [
+  // include answer collections used in any element of the template (required for preview / editing)
+  // in case the instances were not modified, the user would get access to them either way
+  let templateAnswerCollections: (DB.AnswerCollection & {
+    entries: DB.AnswerCollectionEntry[]
+  })[] = []
+  if (templateId) {
+    // verify that the user has access to the template activity
+    const { accessible } = await validateTemplateAccessible({ templateId }, ctx)
+    if (accessible) {
+      const template = await ctx.prisma.activityTemplate.findUnique({
+        where: {
+          id: templateId,
+        },
+        include: {
+          answerCollections: {
+            include: {
+              entries: {
+                orderBy: {
+                  value: 'asc',
+                },
+              },
+            },
+            orderBy: {
+              name: 'asc',
+            },
+          },
+        },
+      })
+
+      templateAnswerCollections = template?.answerCollections ?? []
+    } else {
+      templateAnswerCollections = []
+    }
+  }
+
+  const combinedAnswerCollections = [
     ...user.answerCollections.map((collection) => ({
       ...collection,
       isShared: false,
@@ -197,7 +242,22 @@ export async function getAnswerCollectionsElements(ctx: ContextWithUser) {
           }
         : []
     ),
+    ...templateAnswerCollections.map((collection) => ({
+      ...collection,
+      isShared: false,
+    })),
   ]
+
+  // return deduplicated list of answer collections (based on id)
+  return combinedAnswerCollections.reduce<
+    (DB.AnswerCollection & { entries: DB.AnswerCollectionEntry[] })[]
+  >((acc, collection) => {
+    if (!acc.some((c) => c.id === collection.id)) {
+      acc.push(collection)
+    }
+
+    return acc
+  }, [])
 }
 
 export async function getSingleAnswerCollection(
@@ -303,7 +363,93 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
               entries: true,
               linkedElements: {
                 where: {
-                  ownerId: ctx.user.sub,
+                  OR: [
+                    {
+                      ownerId: ctx.user.sub,
+                    },
+                    {
+                      permissions: {
+                        some: {
+                          userId: ctx.user.sub,
+                          permissionStatus: DB.PermissionStatus.GRANTED,
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              linkedTemplates: {
+                where: {
+                  OR: [
+                    {
+                      liveQuiz: {
+                        OR: [
+                          {
+                            ownerId: ctx.user.sub,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: ctx.user.sub,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      practiceQuiz: {
+                        OR: [
+                          {
+                            ownerId: ctx.user.sub,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: ctx.user.sub,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      microLearning: {
+                        OR: [
+                          {
+                            ownerId: ctx.user.sub,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: ctx.user.sub,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      groupActivity: {
+                        OR: [
+                          {
+                            ownerId: ctx.user.sub,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: ctx.user.sub,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
                 },
               },
               permissions: {
@@ -333,7 +479,97 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
                   entries: true,
                   linkedElements: {
                     where: {
-                      ownerId: ctx.user.sub,
+                      OR: [
+                        {
+                          ownerId: ctx.user.sub,
+                        },
+                        {
+                          permissions: {
+                            some: {
+                              userId: ctx.user.sub,
+                              permissionStatus: DB.PermissionStatus.GRANTED,
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  linkedTemplates: {
+                    where: {
+                      OR: [
+                        {
+                          liveQuiz: {
+                            OR: [
+                              {
+                                ownerId: ctx.user.sub,
+                              },
+                              {
+                                permissions: {
+                                  some: {
+                                    userId: ctx.user.sub,
+                                    permissionStatus:
+                                      DB.PermissionStatus.GRANTED,
+                                  },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                        {
+                          practiceQuiz: {
+                            OR: [
+                              {
+                                ownerId: ctx.user.sub,
+                              },
+                              {
+                                permissions: {
+                                  some: {
+                                    userId: ctx.user.sub,
+                                    permissionStatus:
+                                      DB.PermissionStatus.GRANTED,
+                                  },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                        {
+                          microLearning: {
+                            OR: [
+                              {
+                                ownerId: ctx.user.sub,
+                              },
+                              {
+                                permissions: {
+                                  some: {
+                                    userId: ctx.user.sub,
+                                    permissionStatus:
+                                      DB.PermissionStatus.GRANTED,
+                                  },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                        {
+                          groupActivity: {
+                            OR: [
+                              {
+                                ownerId: ctx.user.sub,
+                              },
+                              {
+                                permissions: {
+                                  some: {
+                                    userId: ctx.user.sub,
+                                    permissionStatus:
+                                      DB.PermissionStatus.GRANTED,
+                                  },
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      ],
                     },
                   },
                 },
@@ -363,7 +599,9 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     isEditor: true,
     isImported: collection.originalId !== null,
     isShared: false,
-    isRemovable: collection._count.linkedElements === 0,
+    isRemovable:
+      collection._count.linkedElements === 0 &&
+      collection._count.linkedTemplates === 0,
   }))
 
   const sharedCollections = user.sharedObjects.flatMap((object) => {
@@ -385,7 +623,9 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
         object.permissionLevel === DB.PermissionLevel.ADMIN,
       isImported: false, // shared objects cannot be imported
       isShared: true,
-      isRemovable: collection._count.linkedElements === 0,
+      isRemovable:
+        collection._count.linkedElements === 0 &&
+        collection._count.linkedTemplates === 0,
     }
   })
 
@@ -515,7 +755,93 @@ export async function deleteAnswerCollection(
         select: {
           linkedElements: {
             where: {
-              ownerId: ctx.user.sub,
+              OR: [
+                {
+                  ownerId: ctx.user.sub,
+                },
+                {
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionStatus: DB.PermissionStatus.GRANTED,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          linkedTemplates: {
+            where: {
+              OR: [
+                {
+                  liveQuiz: {
+                    OR: [
+                      {
+                        ownerId: ctx.user.sub,
+                      },
+                      {
+                        permissions: {
+                          some: {
+                            userId: ctx.user.sub,
+                            permissionStatus: DB.PermissionStatus.GRANTED,
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  practiceQuiz: {
+                    OR: [
+                      {
+                        ownerId: ctx.user.sub,
+                      },
+                      {
+                        permissions: {
+                          some: {
+                            userId: ctx.user.sub,
+                            permissionStatus: DB.PermissionStatus.GRANTED,
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  microLearning: {
+                    OR: [
+                      {
+                        ownerId: ctx.user.sub,
+                      },
+                      {
+                        permissions: {
+                          some: {
+                            userId: ctx.user.sub,
+                            permissionStatus: DB.PermissionStatus.GRANTED,
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  groupActivity: {
+                    OR: [
+                      {
+                        ownerId: ctx.user.sub,
+                      },
+                      {
+                        permissions: {
+                          some: {
+                            userId: ctx.user.sub,
+                            permissionStatus: DB.PermissionStatus.GRANTED,
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
             },
           },
           permissions: {
@@ -529,7 +855,11 @@ export async function deleteAnswerCollection(
   })
 
   // if collection does not exist or is still linked to own elements, do not allow deletion
-  if (!collection || collection._count.linkedElements > 0) {
+  if (
+    !collection ||
+    collection._count.linkedElements > 0 ||
+    collection._count.linkedTemplates > 0
+  ) {
     return null
   }
 
@@ -583,6 +913,84 @@ export async function deleteAnswerCollection(
                         ],
                       },
                     },
+                    linkedTemplates: {
+                      where: {
+                        OR: [
+                          {
+                            liveQuiz: {
+                              OR: [
+                                {
+                                  ownerId: permission.userId,
+                                },
+                                {
+                                  permissions: {
+                                    some: {
+                                      userId: permission.userId,
+                                      permissionStatus:
+                                        DB.PermissionStatus.GRANTED,
+                                    },
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                          {
+                            practiceQuiz: {
+                              OR: [
+                                {
+                                  ownerId: permission.userId,
+                                },
+                                {
+                                  permissions: {
+                                    some: {
+                                      userId: permission.userId,
+                                      permissionStatus:
+                                        DB.PermissionStatus.GRANTED,
+                                    },
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                          {
+                            microLearning: {
+                              OR: [
+                                {
+                                  ownerId: permission.userId,
+                                },
+                                {
+                                  permissions: {
+                                    some: {
+                                      userId: permission.userId,
+                                      permissionStatus:
+                                        DB.PermissionStatus.GRANTED,
+                                    },
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                          {
+                            groupActivity: {
+                              OR: [
+                                {
+                                  ownerId: permission.userId,
+                                },
+                                {
+                                  permissions: {
+                                    some: {
+                                      userId: permission.userId,
+                                      permissionStatus:
+                                        DB.PermissionStatus.GRANTED,
+                                    },
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                    },
                   },
                 },
               },
@@ -590,7 +998,8 @@ export async function deleteAnswerCollection(
 
             if (
               !permissionUsage ||
-              permissionUsage.answerCollection?.linkedElements.length === 0
+              (permissionUsage.answerCollection?.linkedElements.length === 0 &&
+                permissionUsage.answerCollection?.linkedTemplates.length === 0)
             ) {
               // delete the permission
               await tx.permission.delete({
@@ -692,7 +1101,93 @@ export async function removeAnswerCollection(
             select: {
               linkedElements: {
                 where: {
-                  ownerId: ctx.user.sub,
+                  OR: [
+                    {
+                      ownerId: ctx.user.sub,
+                    },
+                    {
+                      permissions: {
+                        some: {
+                          userId: ctx.user.sub,
+                          permissionStatus: DB.PermissionStatus.GRANTED,
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+              linkedTemplates: {
+                where: {
+                  OR: [
+                    {
+                      liveQuiz: {
+                        OR: [
+                          {
+                            ownerId: ctx.user.sub,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: ctx.user.sub,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      practiceQuiz: {
+                        OR: [
+                          {
+                            ownerId: ctx.user.sub,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: ctx.user.sub,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      microLearning: {
+                        OR: [
+                          {
+                            ownerId: ctx.user.sub,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: ctx.user.sub,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      groupActivity: {
+                        OR: [
+                          {
+                            ownerId: ctx.user.sub,
+                          },
+                          {
+                            permissions: {
+                              some: {
+                                userId: ctx.user.sub,
+                                permissionStatus: DB.PermissionStatus.GRANTED,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
                 },
               },
               permissions: {
@@ -713,6 +1208,7 @@ export async function removeAnswerCollection(
     !permission ||
     !collection ||
     collection._count.linkedElements > 0 ||
+    collection._count.linkedTemplates > 0 ||
     permission.objectOwnerId === ctx.user.sub
   ) {
     return null

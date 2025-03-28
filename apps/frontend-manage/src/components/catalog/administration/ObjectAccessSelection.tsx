@@ -10,12 +10,14 @@ function ObjectAccessSelection({
   compact,
   cyPrefix,
   hideTooltip,
+  restrictedDisabled = false,
 }: {
   value: ObjectAccess
   onChange: (value: ObjectAccess) => void
   compact?: boolean
   cyPrefix: string
   hideTooltip?: boolean
+  restrictedDisabled?: boolean
 }) {
   const t = useTranslations()
 
@@ -34,6 +36,7 @@ function ObjectAccessSelection({
         {
           value: ObjectAccess.Restricted,
           label: <ObjectAccessLabel accessType={ObjectAccess.Restricted} />,
+          disabled: restrictedDisabled,
           data: { cy: 'object-access-restricted' },
         },
         {

@@ -8,9 +8,11 @@ fragment ElementData on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution
+        hasAnswerFeedbacks
         displayMode
         choices {
           ix
@@ -29,6 +31,7 @@ fragment ElementData on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution
@@ -55,6 +58,7 @@ fragment ElementData on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution
@@ -73,6 +77,7 @@ fragment ElementData on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution
@@ -96,9 +101,11 @@ fragment ElementData on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution
+        answerCollectionId
         items {
           id
           value
@@ -110,6 +117,11 @@ fragment ElementData on ElementInstance {
           max
           step
           unit
+          labels {
+            min
+            mid
+            max
+          }
         }
         cases {
           id
@@ -135,6 +147,7 @@ fragment ElementData on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
 
@@ -146,6 +159,7 @@ fragment ElementData on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
   }

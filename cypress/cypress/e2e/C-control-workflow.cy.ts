@@ -31,8 +31,8 @@ describe('Test functionalities of frontend-control application', function () {
     })
 
     // check if the creation was successful
-    cy.get('[data-cy="load-live-quiz-list"]').click()
-    cy.contains('[data-cy="live-quiz-block"]', this.data.quizName)
+    cy.get('[data-cy="open-activity-overview"]').click()
+    cy.get(`[data-cy="live-quiz-${this.data.quizName}"]`).should('exist')
   })
 
   it('Generate a token to log into the control-frontend application, execute quiz', function () {

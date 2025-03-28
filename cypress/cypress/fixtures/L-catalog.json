@@ -31,6 +31,16 @@
       "Twenty"
     ]
   },
+  "liveQuiz": {
+    "name": "Live Quiz",
+    "displayName": "Live Quiz",
+    "course": "Testkurs",
+    "template": {
+      "name": "Live Quiz Template",
+      "description": "This is a live quiz template",
+      "instructions": "With this template you can create a live quiz"
+    }
+  },
   "CCPublic": "Public Catalog Collection",
   "CCRestricted": "Restricted Catalog Collection"
 }

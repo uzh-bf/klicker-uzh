@@ -18,6 +18,7 @@ interface FTEvaluationProps {
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
+  showExplanation: boolean
   type: ActivityEvaluationType
 }
 
@@ -26,6 +27,7 @@ function FTEvaluation({
   textSize,
   chartType,
   showSolution,
+  showExplanation,
   type,
 }: FTEvaluationProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -43,6 +45,7 @@ function FTEvaluation({
               chartType={chartType}
               instanceEvaluation={instanceEvaluation}
               showSolution={showSolution}
+              showExplanation={showExplanation}
               textSize={textSize}
             />
           </ResizablePanel>
@@ -74,6 +77,7 @@ function FTEvaluation({
             chartType={chartType}
             instanceEvaluation={instanceEvaluation}
             showSolution={showSolution}
+            showExplanation={showExplanation}
             textSize={textSize}
           />
         </div>

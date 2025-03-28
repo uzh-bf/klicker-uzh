@@ -172,7 +172,7 @@ function AvatarUpdateForm({
                     className={{ root: 'border-primary-100 h-8' }}
                     data={{ cy: 'save-avatar-update' }}
                   >
-                    <Button.Icon icon={faSave} />
+                    <Button.Icon icon={faSave} loading={isSubmitting} />
                     <Button.Label>{t('shared.generic.save')}</Button.Label>
                   </Button>
                 </div>

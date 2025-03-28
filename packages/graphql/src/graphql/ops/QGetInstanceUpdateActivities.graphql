@@ -1,10 +1,12 @@
 query GetInstanceUpdateActivities(
   $elementId: Int!
   $hasSampleSolution: Boolean
+  $includeTemplateInstances: Boolean!
 ) {
   getInstanceUpdateActivities(
     elementId: $elementId
     hasSampleSolution: $hasSampleSolution
+    includeTemplateInstances: $includeTemplateInstances
   ) {
     activityName
     activityType

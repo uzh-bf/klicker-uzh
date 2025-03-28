@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   faCalendar,
   faClock,
+  faFileLines,
   faHandPointer,
   faTrashCan,
 } from '@fortawesome/free-regular-svg-icons'
@@ -108,6 +109,14 @@ function MicroLearningElement({
       />
     ),
     [PublicationStatus.Graded]: null,
+    [PublicationStatus.Template]: (
+      <StatusTag
+        color="bg-primary-100"
+        className="text-white"
+        status={t('shared.generic.template')}
+        icon={faFileLines}
+      />
+    ),
   }
 
   const deletionElement = {

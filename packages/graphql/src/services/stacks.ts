@@ -25,12 +25,12 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma'
 import type {
-  AllElementTypeData,
   CaseStudyElementData,
   CaseStudySolutionsObject,
   Choice,
   ChoicesElementData,
   ContentElementData,
+  ElementData,
   ElementInstanceResults,
   ElementOptionsAnswerCollection,
   ElementOptionsCaseStudy,
@@ -64,10 +64,7 @@ import type {
   SingleQuestionResponseValue,
 } from '@klicker-uzh/types'
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
-import {
-  type ElementWithAnswerCollection,
-  getInitialElementResults,
-} from '@klicker-uzh/util'
+import { getInitialInstanceResults } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
@@ -1405,7 +1402,7 @@ function computeQuestionEvaluation({
   correctness,
   multiplier,
 }: {
-  elementData: AllElementTypeData
+  elementData: ElementData
   results: ElementInstanceResults
   anonymousResults: ElementInstanceResults
   correctness: number | null
@@ -1674,7 +1671,7 @@ export function updateNumericalResults({
   correct,
 }: {
   previousResults: ElementResultsOpen
-  elementData: AllElementTypeData
+  elementData: ElementData
   response: ResponseInput
   correct?: boolean
 }): { results: ElementResultsOpen; modified: boolean } {
@@ -1740,7 +1737,7 @@ export function updateFreeTextResults({
   correct,
 }: {
   previousResults: ElementResultsOpen
-  elementData: AllElementTypeData
+  elementData: ElementData
   response: ResponseInput
   correct?: boolean
 }): { results: ElementResultsOpen; modified: boolean } {
@@ -2172,10 +2169,7 @@ function computeAggregatedResponsesChoices({
   response: ResponseInput
 }): ElementResultsChoices {
   let newAggResponses = (existingResponse?.aggregatedResponses ??
-    getInitialElementResults({
-      type: instance.elementType,
-      options: instance.elementData.options,
-    } as ElementWithAnswerCollection)) as ElementResultsChoices
+    getInitialInstanceResults(instance.elementData)) as ElementResultsChoices
 
   // update aggregated responses for choices
   newAggResponses.choices = (
@@ -2204,9 +2198,7 @@ function computeAggregatedResponsesOpen({
   correctness: number
 }) {
   let newAggResponses = (existingResponse?.aggregatedResponses ??
-    getInitialElementResults({
-      type: instance.elementType,
-    } as ElementWithAnswerCollection)) as ElementResultsOpen
+    getInitialInstanceResults(instance.elementData)) as ElementResultsOpen
 
   // update aggregated responses for open questions
   const MD5 = createHash('md5')
@@ -2250,10 +2242,7 @@ function computeAggregatedResponsesSelection({
   }
 
   const newAggResponses = (existingResponse?.aggregatedResponses ??
-    getInitialElementResults({
-      type: instance.elementType,
-      answerCollection: instance.elementData.options.answerCollection,
-    } as ElementWithAnswerCollection)) as ElementResultsSelection
+    getInitialInstanceResults(instance.elementData)) as ElementResultsSelection
 
   // increment all entries that are in response selection
   const updatedSelections = { ...newAggResponses.selections }
@@ -2292,11 +2281,7 @@ function computeAggregatedResponsesCaseStudy({
 
   // initialize aggregated responses either empty or with previous values
   const newAggResponses = (existingResponse?.aggregatedResponses ??
-    getInitialElementResults({
-      type: instance.elementType,
-      answerCollectionItems: instance.elementData.options.items,
-      options: instance.elementData.options,
-    } as ElementWithAnswerCollection)) as ElementResultsCaseStudy
+    getInitialInstanceResults(instance.elementData)) as ElementResultsCaseStudy
 
   const updatedResults = updateCaseStudyResults({
     previousResults: newAggResponses,
@@ -3486,6 +3471,7 @@ function combineCaseStudyResults({
                 max: criterion.max,
                 step: criterion.step,
                 unit: criterion.unit,
+                labels: criterion.labels,
 
                 solutionMin: criterionSolution?.min,
                 solutionMax: criterionSolution?.max,
@@ -3666,6 +3652,7 @@ function computeCaseStudyEvaluation({
     criteria: options.criteria.map((criterion) => ({
       id: criterion.id,
       name: criterion.name,
+      labels: criterion.labels,
     })),
     results: {
       totalAnswers: results.total + anonymousResults.total,

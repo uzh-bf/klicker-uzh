@@ -12,13 +12,13 @@ function useArtificialElementInstance({
   elementDataTypename,
   answerCollectionEntries,
 }: {
-  values: ElementFormTypes
+  values?: ElementFormTypes | null
   elementDataTypename?: ElementData['__typename']
   answerCollectionEntries?: { id: number; value: string }[]
 }): ElementInstance | undefined {
   const instance = useMemo(() => {
     // verify that the element data typename is set
-    if (!elementDataTypename) {
+    if (!elementDataTypename || !values) {
       return undefined
     }
 
@@ -33,11 +33,20 @@ function useArtificialElementInstance({
         content: values.content,
         explanation: 'explanation' in values ? values.explanation : undefined,
         name: values.name,
+        basePoints: values.basePoints,
         pointsMultiplier: parseInt(values.pointsMultiplier ?? '1'),
         type: values.type,
         options:
           'options' in values
             ? {
+                hasSampleSolution:
+                  'hasSampleSolution' in values.options
+                    ? values.options.hasSampleSolution
+                    : undefined,
+                hasAnswerFeedbacks:
+                  'hasAnswerFeedbacks' in values.options
+                    ? values.options.hasAnswerFeedbacks
+                    : undefined,
                 displayMode:
                   'displayMode' in values.options
                     ? values.options.displayMode
@@ -114,8 +123,8 @@ function useArtificialElementInstance({
                   'criteria' in values.options && values.options.criteria
                     ? values.options.criteria.map((criterion, criterionIx) => ({
                         ...criterion,
-                        min: parseFloat(criterion.min),
-                        max: parseFloat(criterion.max),
+                        min: parseFloat(String(criterion.min)),
+                        max: parseFloat(String(criterion.max)),
                         step: parseFloat(criterion.step),
                         order: criterionIx,
                       }))

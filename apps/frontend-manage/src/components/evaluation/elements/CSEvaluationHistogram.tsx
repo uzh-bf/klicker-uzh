@@ -4,6 +4,7 @@ import {
   CaseStudyElementResultCriterionInfo,
   CaseStudyElementResultItemInfo,
 } from '@klicker-uzh/graphql/dist/ops'
+import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Button,
@@ -27,23 +28,27 @@ import CSEvaluationHistogramSidebar from './CSEvaluationHistogramSidebar'
 
 interface CSEvaluationHistogramProps {
   evaluationId: number
+  explanation?: string | null
   results: CSResultsEvaluationObject
   cases: CaseStudyElementResultCaseInfo[]
   items: CaseStudyElementResultItemInfo[]
   criteria: CaseStudyElementResultCriterionInfo[]
   textSize: TextSizeType
   showSolution: boolean
+  showExplanation: boolean
   type: ActivityEvaluationType
 }
 
 function CSEvaluationHistogram({
   evaluationId,
+  explanation,
   results,
   cases,
   items,
   criteria,
   textSize,
   showSolution,
+  showExplanation,
   type,
 }: CSEvaluationHistogramProps) {
   const t = useTranslations()
@@ -121,43 +126,58 @@ function CSEvaluationHistogram({
       <ResizablePanel
         defaultSize={70}
         minSize={50}
-        className="flex items-center justify-center px-4"
+        className="flex h-full w-full flex-col px-3"
       >
-        {selectedCases.length > 0 &&
-        selectedItems.length > 0 &&
-        selectedCriterion ? (
-          histogramData.length > 0 ? (
-            <div className="flex h-full w-full flex-col items-center gap-2 py-4">
-              {criteria.length > 1 && (
-                <Button onClick={onHistogramArrowUp}>
-                  <Button.Icon withoutLabel icon={faArrowUp} />
-                </Button>
-              )}
-              <CSEvaluationHistogramChart
-                histogramData={histogramData}
-                solutionData={showSolution ? solutionData : undefined}
-                histogramKeys={histogramKeys}
-                criterionMin={criterionMin}
-                criterionMax={criterionMax}
-                criterionName={criterionName}
-                textSize={textSize}
+        <EvaluationExplanation
+          explanation={explanation}
+          showExplanation={showExplanation}
+          textSize={textSize.text}
+          textSizeLg={textSize.textLg}
+        />
+        <div className="min-h-0 flex-1 items-center justify-center px-1">
+          {selectedCases.length > 0 &&
+          selectedItems.length > 0 &&
+          selectedCriterion ? (
+            histogramData.length > 0 ? (
+              <div className="flex h-full w-full flex-col items-center gap-2 py-4">
+                {criteria.length > 1 && (
+                  <Button onClick={onHistogramArrowUp}>
+                    <Button.Icon withoutLabel icon={faArrowUp} />
+                  </Button>
+                )}
+                <CSEvaluationHistogramChart
+                  histogramData={histogramData}
+                  solutionData={showSolution ? solutionData : undefined}
+                  histogramKeys={histogramKeys}
+                  criterionMin={criterionMin}
+                  criterionMax={criterionMax}
+                  criterionName={criterionName}
+                  criterionLabels={
+                    criteria.find(
+                      (criterion) => criterion.id === selectedCriterion
+                    )?.labels
+                  }
+                  textSize={textSize}
+                />
+                {criteria.length > 1 && (
+                  <Button onClick={onHistogramArrowDown}>
+                    <Button.Icon withoutLabel icon={faArrowDown} />
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <UserNotification
+                type="warning"
+                message={t(
+                  'manage.evaluation.caseStudySelectCasesItemsCriteria'
+                )}
+                className={{ root: 'text-base' }}
               />
-              {criteria.length > 1 && (
-                <Button onClick={onHistogramArrowDown}>
-                  <Button.Icon withoutLabel icon={faArrowDown} />
-                </Button>
-              )}
-            </div>
+            )
           ) : (
-            <UserNotification
-              type="warning"
-              message={t('manage.evaluation.caseStudySelectCasesItemsCriteria')}
-              className={{ root: 'text-base' }}
-            />
-          )
-        ) : (
-          <Loader />
-        )}
+            <Loader />
+          )}
+        </div>
       </ResizablePanel>
       <ResizableHandle withHandle className="w-0.5" />
       <ResizablePanel

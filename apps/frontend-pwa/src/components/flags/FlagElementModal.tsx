@@ -235,10 +235,11 @@ function FlagElementModal({
                     primary
                     className={{ root: 'order-1 float-right' }}
                     type="submit"
-                    disabled={isSubmitting || !isValid}
+                    disabled={!isValid}
+                    loading={isSubmitting}
                     data={{ cy: 'submit-flag-element' }}
                   >
-                    <Button.Icon icon={faEnvelope} />
+                    <Button.Icon icon={faEnvelope} loading={isSubmitting} />
                     <Button.Label>
                       {!!feedbackValue
                         ? t('pwa.practiceQuiz.updateFeedback')

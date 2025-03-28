@@ -44,7 +44,7 @@ function GroupActivityUnpublishButton({
         cy: `unpublish-groupActivity-${activityName}`,
       }}
     >
-      <Button.Icon icon={faLock} />
+      <Button.Icon icon={faLock} loading={unpublishing} />
       <Button.Label>{t('manage.course.unpublishGroupActivity')}</Button.Label>
     </Button>
   )

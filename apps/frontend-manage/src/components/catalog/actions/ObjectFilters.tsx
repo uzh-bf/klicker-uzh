@@ -28,7 +28,7 @@ function ObjectFilters({
             data: { cy: 'all-object-types' },
           },
           ...Object.values(CatalogObjectType).map((type) => ({
-            label: t(`manage.catalog.objectType${type}`),
+            label: t(`shared.types.${type}`),
             value: type,
             data: { cy: `catalog-object-type-${type}` },
           })),

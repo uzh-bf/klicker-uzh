@@ -41,7 +41,7 @@ function CatalogCollectionDeletionModal({
             name: catalogCollectionName,
           })}
         </div>
-        <div className="mt-4 flex justify-end space-x-2">
+        <div className="mt-4 flex justify-between space-x-2">
           <Button onClick={onClose} data={{ cy: 'cancel-delete-collection' }}>
             {t('shared.generic.cancel')}
           </Button>
@@ -87,7 +87,7 @@ function CatalogCollectionDeletionModal({
             }}
             data={{ cy: 'confirm-delete-collection' }}
           >
-            {t('manage.catalog.deleteConfirm')}
+            <Button.Label>{t('manage.catalog.deleteConfirm')}</Button.Label>
           </Button>
         </div>
       </Modal>

@@ -4,11 +4,13 @@ import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import { ElementFormTypes } from '../types'
 
-interface AnswerFeedbackSettingProps {
+function AnswerFeedbackSetting({
+  disabled,
+  values,
+}: {
+  disabled: boolean
   values: ElementFormTypes
-}
-
-function AnswerFeedbackSetting({ values }: AnswerFeedbackSettingProps) {
+}) {
   const t = useTranslations()
 
   return values.type === ElementType.Sc ||
@@ -17,7 +19,7 @@ function AnswerFeedbackSetting({ values }: AnswerFeedbackSettingProps) {
     <FormikSwitchField
       name="options.hasAnswerFeedbacks"
       label={t('manage.questionPool.answerFeedbacks')}
-      disabled={!values.options.hasSampleSolution}
+      disabled={disabled || !values.options.hasSampleSolution}
       data={{ cy: 'configure-answer-feedbacks' }}
       className={{
         root: twMerge(!values.options.hasSampleSolution && 'opacity-50'),

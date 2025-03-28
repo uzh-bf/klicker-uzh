@@ -2,6 +2,7 @@ import { CatalogObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
+import * as localforage from 'localforage'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
@@ -26,6 +27,7 @@ const loginFactory = (tokenData) => {
     cy.clearAllSessionStorage()
 
     cy.viewport('macbook-16')
+    localforage.setItem('hideLecturerSurvey', 'true')
 
     const secret = new TextEncoder().encode('abcd')
     const alg = 'HS256'
@@ -248,15 +250,6 @@ Cypress.Commands.add(
         .type(explanation)
     }
 
-    if (typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
     cy.get('[data-cy="insert-question-text"]').realClick().type(content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
@@ -270,7 +263,11 @@ Cypress.Commands.add(
         .type(choice.content)
     })
 
-    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
+    // set correctness values for SC question
+    const hasSampleSolution = choices.some(
+      (choice) => typeof choice.correct !== 'undefined'
+    )
+    if (hasSampleSolution) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
       cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
@@ -280,6 +277,17 @@ Cypress.Commands.add(
       })
     }
 
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
+
+    // set answer feedbacks for SC question
     if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
       cy.get('[data-cy="configure-answer-feedbacks"]').click()
 
@@ -335,15 +343,6 @@ Cypress.Commands.add(
       .realClick()
       .type(choices[0].content)
 
-    if (typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
     cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
       cy.get('[data-cy="add-new-answer"]').click()
       cy.wait(500)
@@ -352,13 +351,41 @@ Cypress.Commands.add(
         .type(choice.content)
     })
 
-    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
+    // set correctness values for MC question
+    const hasSampleSolution = choices.some(
+      (choice) => typeof choice.correct !== 'undefined'
+    )
+    if (hasSampleSolution) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
 
       cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
         if (choice.correct) {
           cy.get(`[data-cy="set-correctness-${ix}"]`).click()
         }
+      })
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
+
+    // set answer feedbacks for MC question
+    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
+      cy.get('[data-cy="configure-answer-feedbacks"]').click()
+
+      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+          .realClick()
+          .type(choice.feedback)
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
+          choice.feedback
+        )
       })
     }
 
@@ -408,15 +435,6 @@ Cypress.Commands.add(
         .type(explanation)
     }
 
-    if (typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
     cy.get('[data-cy="insert-question-text"]').realClick().type(content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
@@ -443,10 +461,37 @@ Cypress.Commands.add(
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
 
     // set correctness values for KPRIM question
-    if (choices.some((choice) => typeof choice.correct !== 'undefined')) {
+    const hasSampleSolution = choices.some(
+      (choice) => typeof choice.correct !== 'undefined'
+    )
+    if (hasSampleSolution) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       cy.get('[data-cy="set-correctness-0"]').click().type(choice4.content)
       cy.get('[data-cy="set-correctness-2"]').click().type(choice4.content)
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
+    }
+
+    // set answer feedbacks for KPRIM question
+    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
+      cy.get('[data-cy="configure-answer-feedbacks"]').click()
+
+      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
+          .realClick()
+          .type(choice.feedback)
+        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
+          choice.feedback
+        )
+      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -500,15 +545,6 @@ Cypress.Commands.add(
         .type(explanation)
     }
 
-    if (typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
     if (typeof min !== 'undefined') {
       cy.get('[data-cy="set-numerical-minimum"]').click().type(min)
     }
@@ -522,11 +558,12 @@ Cypress.Commands.add(
       cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
     }
 
-    if (
+    // set solution ranges
+    const hasSampleSolution =
       typeof solutionRanges !== 'undefined' &&
       solutionRanges !== null &&
       solutionRanges.length > 0
-    ) {
+    if (hasSampleSolution) {
       cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
       cy.get('[data-cy="set-solution-type-range"]').click()
       cy.wrap(solutionRanges).each(
@@ -540,6 +577,16 @@ Cypress.Commands.add(
             .type(range.max)
         }
       )
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
+      cy.get('[data-cy="select-multiplier"]')
+        .should('exist')
+        .contains(messages.manage.activityWizard.multiplier1)
+      cy.get('[data-cy="select-multiplier"]').click()
+      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
+      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
     }
 
     if (
@@ -600,25 +647,29 @@ Cypress.Commands.add(
         .type(explanation)
     }
 
-    if (typeof multiplier !== 'undefined') {
+    if (typeof maxLength !== 'undefined') {
+      cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
+    }
+
+    // set solution values
+    const hasSampleSolution =
+      typeof solutions !== 'undefined' && solutions.length > 0
+    if (hasSampleSolution) {
+      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
+      cy.wrap(solutions).each((solution: string, ix) => {
+        cy.get(`[data-cy="add-solution-value"]`).click()
+        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
+      })
+    }
+
+    // multiplier only takes effect with sample solution activated
+    if (hasSampleSolution && typeof multiplier !== 'undefined') {
       cy.get('[data-cy="select-multiplier"]')
         .should('exist')
         .contains(messages.manage.activityWizard.multiplier1)
       cy.get('[data-cy="select-multiplier"]').click()
       cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
       cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    if (typeof maxLength !== 'undefined') {
-      cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
-    }
-
-    if (typeof solutions !== 'undefined' && solutions.length > 0) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.wrap(solutions).each((solution: string, ix) => {
-        cy.get(`[data-cy="add-solution-value"]`).click()
-        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
-      })
     }
 
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -694,11 +745,20 @@ interface CreateCaseStudyArgs {
   collectionName: string
   selectedItems: string[]
   criteria: {
+    mode: 'range' | 'steps'
     name: string
-    min: number
-    max: number
-    step: number
+    // range criterion attributes
+    min?: number
+    max?: number
+    step?: number
     unit?: string
+    // steps criterion attribute
+    steps?: number
+    labels?: {
+      min: string
+      mid?: string
+      max: string
+    }
   }[]
   cases: {
     title: string
@@ -766,47 +826,101 @@ Cypress.Commands.add(
     // add criteria
     cy.wrap(criteria).each(
       (criterion: CreateCaseStudyArgs['criteria'][0], ix) => {
-        // create new criterion and fill in information
-        cy.get('[data-cy="add-new-criterion"]').click()
-        cy.get(`[data-cy="criterion-${ix}-name"]`).click().type(criterion.name)
-        cy.get(`[data-cy="criterion-${ix}-min"]`)
+        cy.get(`[data-cy="add-${criterion.mode}-criterion"]`).click()
+        cy.get(`[data-cy="criterion-${ix}-name"]`)
           .click()
-          .type(String(criterion.min))
-        cy.get(`[data-cy="criterion-${ix}-max"]`)
-          .click()
-          .type(String(criterion.max))
-        cy.get(`[data-cy="criterion-${ix}-step"]`)
-          .click()
-          .type(String(criterion.step))
+          .clear()
+          .type(criterion.name)
 
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`)
+        // for range criteria, enter min, max, and step - unit is optional
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`)
             .click()
-            .type(criterion.unit)
+            .clear()
+            .type(String(criterion.min))
+          cy.get(`[data-cy="criterion-${ix}-max"]`)
+            .click()
+            .clear()
+            .type(String(criterion.max))
+          cy.get(`[data-cy="criterion-${ix}-step"]`)
+            .click()
+            .clear()
+            .type(String(criterion.step))
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`)
+              .click()
+              .type(criterion.unit)
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.min))
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.max))
+          cy.get(`[data-cy="criterion-${ix}-steps"]`)
+            .click()
+            .clear()
+            .type(String(criterion.steps))
+
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`)
+              .click()
+              .clear()
+              .type(String(criterion.labels.mid))
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
 
-        // verify that all data has been entered correctly
+        // validate inputs for both range and steps / likert criteria
         cy.get(`[data-cy="criterion-${ix}-name"]`).should(
           'have.value',
           criterion.name
         )
-        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
-          'have.value',
-          String(criterion.min)
-        )
-        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
-          'have.value',
-          String(criterion.max)
-        )
-        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
-          'have.value',
-          String(criterion.step)
-        )
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`).should(
             'have.value',
-            criterion.unit
+            String(criterion.min)
           )
+          cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+            'have.value',
+            String(criterion.max)
+          )
+          cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+            'have.value',
+            String(criterion.step)
+          )
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+              'have.value',
+              criterion.unit
+            )
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`).should(
+            'have.value',
+            criterion.labels.min
+          )
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`).should(
+            'have.value',
+            criterion.labels.max
+          )
+          cy.get(`[data-cy="criterion-${ix}-steps"]`).should(
+            'have.value',
+            String(criterion.steps)
+          )
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`).should(
+              'have.value',
+              criterion.labels.mid
+            )
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
       }
     )
@@ -920,9 +1034,8 @@ interface DeleteElementArgs {
 }
 
 Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
-  cy.get(`[data-cy="delete-question-${elementName}"]`).click()
+  cy.get(`[data-cy="delete-question-${elementName}"]`).first().click()
   cy.get('[data-cy="confirm-question-deletion"]').click()
-  cy.get(`[data-cy="element-item-${elementName}"]`).should('not.exist')
 })
 
 interface CreateLiveQuizArgs {
@@ -962,6 +1075,61 @@ Cypress.Commands.add(
       type: 'block',
     })
     cy.get('[data-cy="next-or-submit"]').click()
+  }
+)
+
+interface ConvertLiveQuizToTemplateArgs {
+  liveQuiz: string
+  name: string
+  description: string
+  instructions: string
+  copyBeforeConversion: boolean // flag to signal if the existing live quiz should be converted into a template or a copy should be created first
+  resourceAccessRequired: boolean // flag to signal if elements with answer collection dependencies are used in the activity
+}
+
+Cypress.Commands.add(
+  'convertLiveQuizToTemplate',
+  ({
+    liveQuiz,
+    name,
+    description,
+    instructions,
+    copyBeforeConversion,
+    resourceAccessRequired,
+  }: ConvertLiveQuizToTemplateArgs) => {
+    // depending on the setting, choose between conversion and copy & conversion of activity
+    cy.get(`[data-cy="template-from-live-quiz-${liveQuiz}"]`).click()
+
+    if (copyBeforeConversion) {
+      cy.get('[data-cy="copy-option-template"]').click()
+      cy.get('[data-cy="confirm-activity-unavailability"]').should('not.exist')
+    } else {
+      cy.get('[data-cy="convert-option-template"]').click()
+      cy.get('[data-cy="template-next-step"]').should('be.disabled')
+      cy.get('[data-cy="confirm-activity-unavailability"]').click()
+    }
+
+    cy.get('[data-cy="template-next-step"]').should('be.disabled')
+    cy.get('[data-cy="confirm-content-visibility"]').click()
+    cy.get('[data-cy="confirm-content-visibility"]').should('not.exist')
+    cy.get('[data-cy="template-next-step"]').should('be.disabled')
+    cy.get('[data-cy="confirm-question-access"]').click()
+    cy.get('[data-cy="confirm-question-access"]').should('not.exist')
+    if (resourceAccessRequired) {
+      cy.get('[data-cy="template-next-step"]').should('be.disabled')
+      cy.get('[data-cy="confirm-resource-access"]').click()
+    }
+    cy.get('[data-cy="confirm-resource-access"]').should('not.exist')
+    cy.get('[data-cy="template-next-step"]').click()
+
+    // insert name, description and instructions for the new template
+    cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
+    cy.get('[data-cy="template-name"]').click().type(name)
+    cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
+    cy.get('[data-cy="template-description"]').realClick().type(description)
+    cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
+    cy.get('[data-cy="template-instructions"]').realClick().type(instructions)
+    cy.get('[data-cy="submit-template-creation"]').click()
   }
 )
 
@@ -1275,7 +1443,7 @@ interface AnswerCaseStudyArgs {
       }
     }
   }
-  criteria: { min: number; max: number; step: number }[]
+  criteria: { min: number; max: number; step: number; unit?: string | null }[]
   initialValidation?: any
   cases?: { id: string }[]
   sequentialUI?: boolean
@@ -1307,13 +1475,16 @@ Cypress.Commands.add(
             .type(answer.click.repeat(answer.steps))
 
           // verify that correct value is set
+          const criterion = criteria[criterionIx]
           const slidedValue = computeCaseStudySlidedValue({
-            criterion: criteria[criterionIx],
+            criterion,
             answer,
           })
           cy.get(
             `[data-cy="cs-slider-nr-value-${elementIx}-${parseInt(caseIx)}-${parseInt(itemIx)}-${parseInt(criterionIx)}"]`
-          ).should('have.value', slidedValue)
+          ).contains(
+            criterion.unit ? `${slidedValue} ${criterion.unit}` : slidedValue
+          )
         })
       })
 
@@ -1334,7 +1505,7 @@ interface VerifyCaseStudyInputsArgs {
       }
     }
   }
-  criteria: { min: number; max: number; step: number }[]
+  criteria: { min: number; max: number; step: number; unit?: string | null }[]
   verifyValues?: boolean
   verifyDisabled?: boolean
 }
@@ -1353,13 +1524,16 @@ Cypress.Commands.add(
       callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
         // verify that correct value is still set
         if (verifyValues) {
+          const criterion = criteria[criterionIx]
           const slidedValue = computeCaseStudySlidedValue({
-            criterion: criteria[criterionIx],
+            criterion,
             answer: innerValue,
           })
           cy.get(
             `[data-cy="cs-slider-nr-value-${elementIx}-${caseIx}-${itemIx}-${criterionIx}"]`
-          ).should('have.value', slidedValue)
+          ).contains(
+            criterion.unit ? `${slidedValue} ${criterion.unit}` : slidedValue
+          )
         }
 
         // verify that the disabled attribute is set on the slider
@@ -1468,6 +1642,14 @@ declare global {
         courseName,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
+      convertLiveQuizToTemplate({
+        liveQuiz,
+        name,
+        description,
+        instructions,
+        copyBeforeConversion,
+        resourceAccessRequired,
+      }: ConvertLiveQuizToTemplateArgs): Chainable<void>
       createStacks({
         stacks,
         type,

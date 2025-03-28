@@ -2,6 +2,110 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.42...v3.3.0-alpha.43) (2025-03-25)
+
+## [3.3.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.41...v3.3.0-alpha.42) (2025-03-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** remove maximum length for labels on case study likert scale criterion ([3f7278f](https://github.com/uzh-bf/klicker-uzh/commit/3f7278f87307e7a4636d3b6bb3095baa08324f86))
+
+## [3.3.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.40...v3.3.0-alpha.41) (2025-03-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that missing mode attribute on case study criteria is handled gracefully when loaded from local storage ([6cfb45c](https://github.com/uzh-bf/klicker-uzh/commit/6cfb45c77e2429b3184b84ad81369097f506e0e9))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** update validation logic for step and likert criteria on case study elements to support exact solutions ([#4584](https://github.com/uzh-bf/klicker-uzh/issues/4584)) ([5d2cdfd](https://github.com/uzh-bf/klicker-uzh/commit/5d2cdfd91445835f6d638365cbd75f1089d550c0))
+
+## [3.3.0-alpha.40](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.39...v3.3.0-alpha.40) (2025-03-25)
+
+
+### Features
+
+* add possibility to update element instances included in activity templates ([#4583](https://github.com/uzh-bf/klicker-uzh/issues/4583)) ([63e2cbf](https://github.com/uzh-bf/klicker-uzh/commit/63e2cbf87393dd9f62452660eec8fdb475e29eb6))
+* add support for step / likert scale criteria on case study elements ([#4582](https://github.com/uzh-bf/klicker-uzh/issues/4582)) ([133d039](https://github.com/uzh-bf/klicker-uzh/commit/133d03998893982b9a0afc3b6a75a27de1741553))
+
+## [3.3.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.38...v3.3.0-alpha.39) (2025-03-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** fix inconsistencies with filtering and search on catalog ([30922cd](https://github.com/uzh-bf/klicker-uzh/commit/30922cd90b05e0cf75e3fdb0ecdf0e5e2f9e1bc5))
+* **packages/graphql:** make sure that base points are set correctly on demo live quiz ([fa07846](https://github.com/uzh-bf/klicker-uzh/commit/fa0784692ed966c27ee65f073c5c39730525c062))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** improve live quiz template view and template conversion modal ([#4581](https://github.com/uzh-bf/klicker-uzh/issues/4581)) ([0cb3ebe](https://github.com/uzh-bf/klicker-uzh/commit/0cb3ebeae1f33d090a8f391cdde421d6b4fc3570))
+
+## [3.3.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.37...v3.3.0-alpha.38) (2025-03-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** resolve issues with case study options updates on criterion or item deletion ([#4580](https://github.com/uzh-bf/klicker-uzh/issues/4580)) ([59b846d](https://github.com/uzh-bf/klicker-uzh/commit/59b846d1baf8c686cf33725450b070ee25fbf4c0))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add option to show explanation on evaluation view ([#4579](https://github.com/uzh-bf/klicker-uzh/issues/4579)) ([7c68282](https://github.com/uzh-bf/klicker-uzh/commit/7c68282f1c8c81e6929fc1215902fd8f403dd014))
+
+## [3.3.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.36...v3.3.0-alpha.37) (2025-03-23)
+
+
+### Features
+
+* make base points on elements optional and update corresponding grading logic ([#4576](https://github.com/uzh-bf/klicker-uzh/issues/4576)) ([ebcd959](https://github.com/uzh-bf/klicker-uzh/commit/ebcd959d5b17e1128197f37abc6355e9f3b295b1))
+
+## [3.3.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.35...v3.3.0-alpha.36) (2025-03-21)
+
+
+### Features
+
+* rework logic for editing and duplicating activities with respect to instance handling ([#4574](https://github.com/uzh-bf/klicker-uzh/issues/4574)) ([39100ac](https://github.com/uzh-bf/klicker-uzh/commit/39100ac7f94163a26ab24e542cd4605f40803762))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** resolve re-rendering cycle on live quiz template view preview component ([bb2bdf6](https://github.com/uzh-bf/klicker-uzh/commit/bb2bdf69458d96f3cd225c59aa2aff79c872bc3a))
+* **apps/frontend-manage:** separate element and element instance previews ([#4573](https://github.com/uzh-bf/klicker-uzh/issues/4573)) ([9803244](https://github.com/uzh-bf/klicker-uzh/commit/9803244d96a8ba50cf65362e5667dfd54720e540))
+* **packages/graphql:** make sure that graphql test suite runs sequentially ([#4568](https://github.com/uzh-bf/klicker-uzh/issues/4568)) ([a2beb1d](https://github.com/uzh-bf/klicker-uzh/commit/a2beb1da6ae31074e2d5ba456ed4503ebd9e8209))
+* **packages/graphql:** resolve cache update issue when adding templates to catalog collections ([d5a520d](https://github.com/uzh-bf/klicker-uzh/commit/d5a520d5397e3fee06077f477a51e8ea0c36d298))
+* **packages/graphql:** resolve issue where options and answer collections need to be correctly fetched and combined for template usage ([38105ba](https://github.com/uzh-bf/klicker-uzh/commit/38105ba62c8c39487918f14787602caf1c82ffab))
+
+
+### Enhancements
+
+* add creation logic for live quiz templates ([#4553](https://github.com/uzh-bf/klicker-uzh/issues/4553)) ([c3133cb](https://github.com/uzh-bf/klicker-uzh/commit/c3133cbca71a00b08ec369997c51f42ba689eb78))
+* add option for owner to use own template through live quiz list ([0e5c447](https://github.com/uzh-bf/klicker-uzh/commit/0e5c447e89767f9eb0c355c14182237a1479a1b7))
+* add possibility to replace template instances with existing elements ([#4561](https://github.com/uzh-bf/klicker-uzh/issues/4561)) ([5232771](https://github.com/uzh-bf/klicker-uzh/commit/523277110d65a1d0233cd1971a85e70ae09fdeeb))
+* implement functionalities to add and remove live quiz templates to catalog ([#4556](https://github.com/uzh-bf/klicker-uzh/issues/4556)) ([a0193c3](https://github.com/uzh-bf/klicker-uzh/commit/a0193c3fa37f001c347b8d7baa8d4a97f7c56050))
+* implement live quiz template element selection or creation functionalities ([#4559](https://github.com/uzh-bf/klicker-uzh/issues/4559)) ([648dff0](https://github.com/uzh-bf/klicker-uzh/commit/648dff07a572d457db16336b668c89785b787cc9))
+* implement submission logic for live quiz templates ([#4567](https://github.com/uzh-bf/klicker-uzh/issues/4567)) ([3d6da8b](https://github.com/uzh-bf/klicker-uzh/commit/3d6da8bd61f6a8f7888369dbddacc78a6f841d9c))
+* **packages/graphql:** block deletion or removal of answer collections that are linked to activity templates ([#4570](https://github.com/uzh-bf/klicker-uzh/issues/4570)) ([f108904](https://github.com/uzh-bf/klicker-uzh/commit/f10890489ead82eeebc610f72a0587089918214a))
+* **packages/graphql:** implement access control for template queries in backend ([#4565](https://github.com/uzh-bf/klicker-uzh/issues/4565)) ([d212b6d](https://github.com/uzh-bf/klicker-uzh/commit/d212b6d2a306699c1103169d75bc68e34b157c58))
+* show warning if a template element is already available in the user's account (name comparison) ([#4562](https://github.com/uzh-bf/klicker-uzh/issues/4562)) ([55ee230](https://github.com/uzh-bf/klicker-uzh/commit/55ee2308f91790b20b6420fb71feee5b691fd886))
+* support editing and deletion functionalities for live quiz templates ([#4554](https://github.com/uzh-bf/klicker-uzh/issues/4554)) ([d7ac248](https://github.com/uzh-bf/klicker-uzh/commit/d7ac2481b22bd57db7ff9064e277c2ee15209778))
+* support the creation of new elements through the live quiz template view ([#4564](https://github.com/uzh-bf/klicker-uzh/issues/4564)) ([aaaf8db](https://github.com/uzh-bf/klicker-uzh/commit/aaaf8db1ef2665f6838ed51fc881de6bc6a10a88))
+
+
+### Other
+
+* **apps/frontend-manage:** improve UX for element content blocks in live quiz template and switching logic ([4ad7991](https://github.com/uzh-bf/klicker-uzh/commit/4ad7991cb08598409ce7c4a210af6d7c938f64ea))
+* **apps/frontend-manage:** improve UX for live quiz template workflow with unified styling logic ([#4571](https://github.com/uzh-bf/klicker-uzh/issues/4571)) ([100a91f](https://github.com/uzh-bf/klicker-uzh/commit/100a91f8de6b84187f4fd427b728d0ca2f4e492e))
+* implement structure, live quiz settings, and state management for live quiz templates ([#4558](https://github.com/uzh-bf/klicker-uzh/issues/4558)) ([302df98](https://github.com/uzh-bf/klicker-uzh/commit/302df987bdd9b21df8890843a63207478ebf7c26))
+
+
+### Refactors
+
+* update pothos input types to standardized reference-based setup ([6f015c6](https://github.com/uzh-bf/klicker-uzh/commit/6f015c63ad15744897a09d3d6fcda9f4b2636cf2))
+
 ## [3.3.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.34...v3.3.0-alpha.35) (2025-03-12)
 
 

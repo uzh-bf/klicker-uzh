@@ -37,7 +37,10 @@ function App({ Component, pageProps }: AppProps) {
   }, [])
 
   return (
-    <div id="__app" className={`${sourceSansPro.variable} font-sans`}>
+    <div
+      id="__app"
+      className={`flex h-full min-h-full flex-col bg-white ${sourceSansPro.variable} font-sans`}
+    >
       <ApolloProvider client={apolloClient}>
         <NextIntlClientProvider
           timeZone="Europe/Zurich"
@@ -56,14 +59,6 @@ function App({ Component, pageProps }: AppProps) {
         :root {
           --source-sans-pro: ${sourceSansPro.variable};
           --theme-font-primary: ${sourceSansPro.variable};
-        }
-
-        #__app {
-          min-height: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          background-color: white;
         }
       `}</style>
     </div>

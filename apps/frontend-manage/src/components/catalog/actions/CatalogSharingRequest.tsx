@@ -37,7 +37,7 @@ function CatalogSharingRequest({
         <div className="flex flex-row items-center gap-4">
           <div className="font-bold">{request.objectName}</div>
           <div className="rounded bg-slate-300 px-1">
-            {t(`manage.catalog.objectType${request.objectType}`)}
+            {t(`shared.types.${request.objectType}`)}
           </div>
         </div>
         <div className="text-sm">{`${t('shared.generic.user')}: ${request.userShortname} (${request.userEmail})`}</div>

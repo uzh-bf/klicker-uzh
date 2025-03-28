@@ -188,7 +188,7 @@ function AnswerCollectionCreationForm({
                 className={{ root: 'h-8 border-green-700' }}
                 data={{ cy: 'submit-create-answer-collection' }}
               >
-                <Button.Icon icon={faCheck} />
+                <Button.Icon icon={faCheck} loading={isSubmitting} />
                 <Button.Label>{t('shared.generic.create')}</Button.Label>
               </Button>
             </div>

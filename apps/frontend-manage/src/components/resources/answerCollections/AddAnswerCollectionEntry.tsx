@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
+import { faPlusCircle, faX } from '@fortawesome/free-solid-svg-icons'
 import {
   AddAnswerCollectionOptionDocument,
   AnswerCollectionEntry,
@@ -17,10 +17,16 @@ function AddAnswerCollectionEntry({
   collectionId,
   entries,
   setOptionsEditingDisabled,
+  onTouched,
+  onUntouched,
+  onSuccess,
 }: {
   collectionId: number
   entries: AnswerCollectionEntry[]
   setOptionsEditingDisabled: Dispatch<SetStateAction<boolean>>
+  onTouched: () => void
+  onUntouched: () => void
+  onSuccess: () => void
 }) {
   const t = useTranslations()
   const [fieldOpen, setFieldOpen] = useState(false)
@@ -36,9 +42,11 @@ function AddAnswerCollectionEntry({
   if (!fieldOpen) {
     return (
       <Button
+        fluid
         onClick={() => {
           setFieldOpen(true)
           setOptionsEditingDisabled(true)
+          onTouched()
         }}
         className={{ root: 'h-9 py-0' }}
         data={{ cy: 'add-answer-option' }}
@@ -100,6 +108,7 @@ function AddAnswerCollectionEntry({
         })
         setFieldOpen(false)
         setOptionsEditingDisabled(false)
+        onSuccess()
       }}
     >
       {({ isValid, isSubmitting }) => (
@@ -109,6 +118,7 @@ function AddAnswerCollectionEntry({
             className={{ input: 'h-9' }}
             data={{ cy: 'input-new-answer-option' }}
           />
+
           <Button
             primary
             type="submit"
@@ -117,8 +127,20 @@ function AddAnswerCollectionEntry({
             loading={isSubmitting}
             data={{ cy: 'save-new-answer-option' }}
           >
-            <Button.Icon icon={faSave} />
+            <Button.Icon icon={faSave} loading={isSubmitting} />
             <Button.Label>{t('shared.generic.save')}</Button.Label>
+          </Button>
+          <Button
+            type="button"
+            className={{ root: 'h-9 w-9' }}
+            data={{ cy: 'abort-adding-answer-option' }}
+            onClick={() => {
+              setFieldOpen(false)
+              setOptionsEditingDisabled(false)
+              onUntouched()
+            }}
+          >
+            <Button.Icon withoutLabel icon={faX} />
           </Button>
         </Form>
       )}

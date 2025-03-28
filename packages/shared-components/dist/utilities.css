@@ -6,6 +6,10 @@
   position: relative
 }
 
+.-top-5 {
+  top: -1.25rem
+}
+
 .bottom-0 {
   bottom: 0px
 }
@@ -59,6 +63,11 @@
   margin-right: auto
 }
 
+.my-2 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem
+}
+
 .my-auto {
   margin-top: auto;
   margin-bottom: auto
@@ -74,6 +83,14 @@
 
 .-mb-2 {
   margin-bottom: -0.5rem
+}
+
+.-mt-0\.5 {
+  margin-top: -0.125rem
+}
+
+.-mt-4 {
+  margin-top: -1rem
 }
 
 .mb-1 {
@@ -204,10 +221,6 @@
   height: 10rem
 }
 
-.h-6 {
-  height: 1.5rem
-}
-
 .h-7 {
   height: 1.75rem
 }
@@ -248,8 +261,17 @@
   height: 100%
 }
 
+.h-max {
+  height: -moz-max-content;
+  height: max-content
+}
+
 .max-h-32 {
   max-height: 8rem
+}
+
+.min-h-0 {
+  min-height: 0px
 }
 
 .min-h-\[2\.5rem\] {
@@ -282,10 +304,6 @@
 
 .w-32 {
   width: 8rem
-}
-
-.w-40 {
-  width: 10rem
 }
 
 .w-8 {
@@ -412,6 +430,10 @@
   gap: 0.25rem
 }
 
+.gap-1\.5 {
+  gap: 0.375rem
+}
+
 .gap-2 {
   gap: 0.5rem
 }
@@ -517,6 +539,11 @@
   border-bottom-right-radius: 0px
 }
 
+.rounded-t {
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem
+}
+
 .rounded-t-md {
   border-top-left-radius: 0.375rem;
   border-top-right-radius: 0.375rem
@@ -524,6 +551,10 @@
 
 .rounded-bl-sm {
   border-bottom-left-radius: 0.125rem
+}
+
+.rounded-tr-none {
+  border-top-right-radius: 0px
 }
 
 .border {
@@ -667,6 +698,10 @@
   background-color: rgb(234 88 12 / var(--tw-bg-opacity, 1))
 }
 
+.bg-primary-100 {
+  background-color: var(--theme-color-primary)
+}
+
 .bg-primary-20 {
   background-color: var(--theme-color-primary-20)
 }
@@ -807,6 +842,11 @@
   padding-right: 0px
 }
 
+.px-1\.5 {
+  padding-left: 0.375rem;
+  padding-right: 0.375rem
+}
+
 .px-2 {
   padding-left: 0.5rem;
   padding-right: 0.5rem
@@ -849,10 +889,6 @@
 
 .\!pl-0 {
   padding-left: 0px !important
-}
-
-.pb-2 {
-  padding-bottom: 0.5rem
 }
 
 .pb-4 {
@@ -905,10 +941,6 @@
 
 .font-bold {
   font-weight: 700
-}
-
-.font-normal {
-  font-weight: 400
 }
 
 .italic {
@@ -1177,14 +1209,6 @@
     margin-right: 0px
   }
 
-  .md\:block {
-    display: block
-  }
-
-  .md\:hidden {
-    display: none
-  }
-
   .md\:w-64 {
     width: 16rem
   }
@@ -1231,6 +1255,11 @@
   .md\:px-4 {
     padding-left: 1rem;
     padding-right: 1rem
+  }
+
+  .md\:text-base {
+    font-size: 1rem;
+    line-height: 1.5rem
   }
 }
 

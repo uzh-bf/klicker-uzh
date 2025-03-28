@@ -140,10 +140,10 @@ function LoginForm({
                       fluid
                       primary
                       type="submit"
-                      disabled={isSubmitting}
+                      loading={isSubmitting}
                       data={{ cy: 'magic-link-login' }}
                     >
-                      <Button.Icon icon={faEnvelope} />
+                      <Button.Icon icon={faEnvelope} loading={isSubmitting} />
                       <Button.Label>
                         {t('pwa.general.magicLinkLogin')}
                       </Button.Label>

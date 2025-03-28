@@ -10,13 +10,18 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import * as Yup from 'yup'
 import EditorField from '../../activities/creation/EditorField'
+import TouchMonitor from './TouchMonitor'
 
 function AnswerCollectionMetaForm({
   collection,
-  setSuccessToast,
+  onSuccess,
+  metadataTouched,
+  setMetadataTouched,
 }: {
   collection: AnswerCollection
-  setSuccessToast: Dispatch<SetStateAction<boolean>>
+  onSuccess: () => void
+  metadataTouched: boolean
+  setMetadataTouched: Dispatch<SetStateAction<boolean>>
 }) {
   const t = useTranslations()
   const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument)
@@ -27,7 +32,7 @@ function AnswerCollectionMetaForm({
         name: collection.name,
         description: collection.description,
       }}
-      onSubmit={async (values) => {
+      onSubmit={async (values, { resetForm }) => {
         const { data } = await modifyAnswerCollection({
           variables: {
             id: collection.id,
@@ -40,7 +45,8 @@ function AnswerCollectionMetaForm({
         })
 
         if (data?.modifyAnswerCollection?.id) {
-          setSuccessToast(true)
+          onSuccess()
+          resetForm()
         }
       }}
       validationSchema={Yup.object({
@@ -50,8 +56,13 @@ function AnswerCollectionMetaForm({
         ),
       })}
     >
-      {({ isValid, isSubmitting }) => (
+      {({ touched, isValid, isSubmitting }) => (
         <Form className="flex flex-col">
+          <TouchMonitor
+            touched={Object.values(touched).some((t) => t)}
+            stateValue={metadataTouched}
+            setState={setMetadataTouched}
+          />
           <FormikTextField
             required
             name="name"
@@ -79,8 +90,8 @@ function AnswerCollectionMetaForm({
             }}
             data={{ cy: 'save-changes-answer-collection' }}
           >
-            <Button.Icon icon={faSave} />
-            <Button.Label>{t('manage.resources.saveChanges')}</Button.Label>
+            <Button.Icon icon={faSave} loading={isSubmitting} />
+            <Button.Label>{t('manage.resources.saveMetadata')}</Button.Label>
           </Button>
         </Form>
       )}

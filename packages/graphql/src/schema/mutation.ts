@@ -15,7 +15,8 @@ import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
-import { ElementFeedback } from './analytics.js'
+import * as TemplateService from '../services/templates.js'
+import { ActivityType, ElementFeedback } from './analytics.js'
 import { Course } from './course.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import {
@@ -62,6 +63,7 @@ import {
   OptionsNumericalInput,
   OptionsSelectionInput,
   Tag,
+  TemplateBlockInput,
 } from './question.js'
 import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
 import {
@@ -898,6 +900,7 @@ export const Mutation = builder.mutationType({
           status: t.arg({ type: ElementStatus, required: false }),
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
         },
@@ -918,6 +921,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
         },
@@ -939,6 +943,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -959,6 +964,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -982,6 +988,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -1005,6 +1012,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -1028,6 +1036,7 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: false }),
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({
@@ -1046,6 +1055,7 @@ export const Mutation = builder.mutationType({
         type: [ElementInstance],
         args: {
           elementId: t.arg.int({ required: true }),
+          includeTemplates: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return QuestionService.updateElementInstances(args, ctx)
@@ -1313,7 +1323,11 @@ export const Mutation = builder.mutationType({
                   : undefined,
               elementId: undefined,
               courseId: undefined,
-              liveQuizId: undefined,
+              liveQuizId:
+                // TODO: add live quiz with or clause
+                args.objectType === CatalogObjectTypeEnum.LIVE_QUIZ_TEMPLATE
+                  ? args.objectId
+                  : undefined,
               practiceQuizId: undefined,
               microLearningId: undefined,
               groupActivityId: undefined,
@@ -1486,6 +1500,66 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           return SharingService.deleteCatalogCollection(args, ctx)
+        },
+      }),
+
+      createActivityTemplate: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+          templateName: t.arg.string({ required: true }),
+          templateDescription: t.arg.string({ required: true }),
+          templateInstructions: t.arg.string({ required: true }),
+          copyBeforeConversion: t.arg.boolean({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.createActivityTemplate(args, ctx)
+        },
+      }),
+
+      editActivityTemplate: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+          templateId: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          description: t.arg.string({ required: true }),
+          instructions: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.editActivityTemplate(args, ctx)
+        },
+      }),
+
+      deleteActivityTemplate: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.deleteActivityTemplate(args, ctx)
+        },
+      }),
+
+      createLiveQuizFromTemplate: t.withAuth(asUserFullAccess).string({
+        nullable: true,
+        args: {
+          templateId: t.arg.string({ required: true }),
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          courseId: t.arg.string({ required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: true }),
+          blocks: t.arg({
+            type: [TemplateBlockInput],
+            required: true,
+          }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.createLiveQuizFromTemplate(args, ctx)
         },
       }),
 

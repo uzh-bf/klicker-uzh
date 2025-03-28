@@ -12,6 +12,8 @@ import CaseStudyCollectionSelection from './CaseStudyCollectionSelection'
 import CaseStudyCriteriaFields from './CaseStudyCriteriaFields'
 
 interface CaseStudyOptionsProps extends CaseStudySetterProps {
+  templateId?: string
+  isTemplate: boolean
   hasSampleSolution: boolean
   setAnswerCollectionEntries: Dispatch<
     SetStateAction<{ id: number; value: string }[]>
@@ -19,6 +21,8 @@ interface CaseStudyOptionsProps extends CaseStudySetterProps {
 }
 
 function CaseStudyOptions({
+  templateId,
+  isTemplate,
   setFieldValue,
   setFieldTouched,
   hasSampleSolution,
@@ -29,6 +33,7 @@ function CaseStudyOptions({
     { id: number; name: string }[]
   >([])
   const { data, loading } = useQuery(GetAnswerCollectionsElementsDocument, {
+    variables: { templateId },
     fetchPolicy: 'network-only',
   })
   const collections = data?.getAnswerCollectionsElements ?? []
@@ -57,6 +62,7 @@ function CaseStudyOptions({
   return (
     <div className="flex flex-col gap-4">
       <CaseStudyCollectionSelection
+        isTemplate={isTemplate}
         collections={collections}
         setSelectedItems={setSelectedItems}
         hasSampleSolution={hasSampleSolution}

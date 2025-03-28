@@ -1,0 +1,3 @@
+query CheckTemplateElementExists($name: String!) {
+  checkTemplateElementExists(name: $name)
+}

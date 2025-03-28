@@ -2,12 +2,11 @@ import type {
   FreeTextElementOptions,
   FreeTextInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Markdown } from '@klicker-uzh/markdown'
 import React from 'react'
-import { twMerge } from 'tailwind-merge'
 import FTEvaluation from './evaluation/FTEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
+import QuestionContent from './QuestionContent'
 import FREETextAnswerOptions from './questions/FREETextAnswerOptions'
 import { validateFreeTextResponse } from './utils/validateResponse'
 
@@ -20,6 +19,7 @@ interface FreeTextQuestionProps {
   existingResponse?: string
   elementIx: number
   evaluation?: FreeTextInstanceEvaluation
+  noPoints: boolean
   disabled?: boolean
 }
 
@@ -32,23 +32,13 @@ function FreeTextQuestion({
   existingResponse,
   elementIx,
   evaluation,
+  noPoints,
   disabled,
 }: FreeTextQuestionProps) {
   return (
     <div className="flex flex-col gap-4 md:flex-row">
       <div className="flex-1">
-        {content !== '<br>' && (
-          <div
-            className={twMerge(
-              'bg-primary-10 prose prose-p:!m-0 prose-img:!m-0 mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6'
-            )}
-          >
-            <Markdown
-              content={content}
-              data={{ cy: `free-text-question-content` }}
-            />
-          </div>
-        )}
+        <QuestionContent content={content} noPoints={noPoints} />
 
         {evaluation && evaluation.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />

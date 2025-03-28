@@ -1,5 +1,5 @@
-query GetAnswerCollectionsElements {
-  getAnswerCollectionsElements {
+query GetAnswerCollectionsElements($templateId: String) {
+  getAnswerCollectionsElements(templateId: $templateId) {
     id
     name
     isShared

@@ -56,8 +56,8 @@ function QuestionDetails() {
     <div className="flex w-full items-center justify-center">
       <div className="flex w-full flex-col items-center p-6">
         <H2 className={{ root: 'mb-3' }}>
-          {t('manage.general.questionPreview', {
-            question: instance.elementData.name,
+          {t('manage.general.elementPreview', {
+            element: instance.elementData.name,
           })}
         </H2>
         <div className="w-[64rem] max-w-full rounded-lg border border-solid p-5">

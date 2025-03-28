@@ -54,7 +54,12 @@ function CSEvaluation({
                   >
                     <div className="mt-1.5 flex w-full flex-row justify-between text-sm">
                       <div>{criterion.name}</div>
-                      <div className="min-w-max font-bold text-green-700">{`[${evaluationValue.solutionMin}, ${evaluationValue.solutionMax}]`}</div>
+                      <div
+                        className={twMerge(
+                          'min-w-max font-bold text-green-700',
+                          !!criterion.labels && 'hidden'
+                        )}
+                      >{`[${evaluationValue.solutionMin}, ${evaluationValue.solutionMax}]`}</div>
                     </div>
                     <div>
                       <div className="relative">

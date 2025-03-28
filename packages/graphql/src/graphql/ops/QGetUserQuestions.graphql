@@ -9,6 +9,7 @@ query GetUserQuestions {
       type
       content
 
+      basePoints
       pointsMultiplier
       version
 
@@ -44,6 +45,7 @@ query GetUserQuestions {
       type
       content
 
+      basePoints
       pointsMultiplier
       version
 
@@ -86,6 +88,7 @@ query GetUserQuestions {
       type
       content
 
+      basePoints
       pointsMultiplier
       version
 
@@ -119,6 +122,7 @@ query GetUserQuestions {
       type
       content
 
+      basePoints
       pointsMultiplier
       version
 
@@ -147,6 +151,7 @@ query GetUserQuestions {
       type
       content
 
+      basePoints
       pointsMultiplier
       version
 
@@ -166,6 +171,11 @@ query GetUserQuestions {
           max
           step
           unit
+          labels {
+            min
+            mid
+            max
+          }
         }
         cases {
           id
@@ -189,6 +199,7 @@ query GetUserQuestions {
       type
       content
 
+      basePoints
       pointsMultiplier
       version
 
@@ -211,6 +222,7 @@ query GetUserQuestions {
       type
       content
 
+      basePoints
       pointsMultiplier
       version
 

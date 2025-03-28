@@ -99,10 +99,15 @@ function AddObjectToCatalogModal({
                   return
                 }
 
-                const modifiedObjectId = data.addObjectToCatalog.id
                 const newObject = data.addObjectToCatalog
+                const modifiedObjectId = newObject.id
+                const modifiedObjectUuid = newObject.uuid
                 const newObjects = prevObjects.getCatalogObjects
-                  .filter((obj) => obj.id !== modifiedObjectId)
+                  .filter((obj) =>
+                    typeof obj.id !== 'undefined' && obj.id !== null
+                      ? obj.id !== modifiedObjectId
+                      : obj.uuid !== modifiedObjectUuid
+                  )
                   .concat(newObject)
 
                 cache.writeQuery({
@@ -144,6 +149,7 @@ function AddObjectToCatalogModal({
               <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
                 <H4>1. {t('manage.catalog.selectObjectType')}</H4>
                 <ObjectTypeSelection
+                  objectTypeValue={values.objectType}
                   accessValue={values.access}
                   setFieldValue={setFieldValue}
                 />
@@ -172,9 +178,7 @@ function AddObjectToCatalogModal({
               <Button
                 primary
                 type="submit"
-                disabled={
-                  !isValid || !dirty || isSubmitting || !values.objectId
-                }
+                disabled={!isValid || !dirty || !values.objectId}
                 data={{ cy: 'submit-add-object-button' }}
                 loading={isSubmitting}
               >

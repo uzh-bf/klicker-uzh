@@ -8,6 +8,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         displayMode
@@ -26,6 +27,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         accuracy
@@ -46,6 +48,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         restrictions {
@@ -62,6 +65,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         numberOfInputs
@@ -83,6 +87,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
       options {
         hasSampleSolution
@@ -97,6 +102,11 @@ fragment ElementDataWithoutSolutions on ElementInstance {
           max
           step
           unit
+          labels {
+            min
+            mid
+            max
+          }
         }
         cases {
           id
@@ -113,6 +123,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
 
@@ -124,6 +135,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
     }
   }

@@ -14,6 +14,7 @@ import * as QuestionService from '../services/questions.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
+import * as TemplateService from '../services/templates.js'
 import {
   ActivityType,
   CourseActivityAnalytics,
@@ -30,6 +31,7 @@ import {
   LeaderboardEntry,
   StudentCourse,
 } from './course.js'
+import { ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
   GroupActivity,
@@ -64,9 +66,8 @@ import {
   InstanceUpdateActivityInfo,
   Tag,
 } from './question.js'
-import { AnswerCollection } from './resource.js'
+import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
 import {
-  ActivityTemplateInfo,
   CatalogCollection,
   CatalogObject,
   CatalogObjectType,
@@ -74,6 +75,12 @@ import {
   ObjectSharingRequest,
   PermissionInfo,
 } from './sharing.js'
+import {
+  ActivityTemplate,
+  ActivityTemplateInfo,
+  ActivityTemplateMetadata,
+  TemplateElementInformation,
+} from './template.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
@@ -298,6 +305,34 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return LiveQuizService.getCourseRunningLiveQuizzes(args, ctx)
+        },
+      }),
+
+      getCoursePublishedPracticeQuizzes: t.field({
+        nullable: true,
+        type: [PracticeQuiz],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getCoursePublishedPracticeQuizzes(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getCoursePublishedMicroLearnings: t.field({
+        nullable: true,
+        type: [MicroLearning],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getCoursePublishedMicroLearnings(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -548,6 +583,7 @@ export const Query = builder.queryType({
         args: {
           elementId: t.arg.int({ required: true }),
           hasSampleSolution: t.arg.boolean({ required: false }),
+          includeTemplateInstances: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return QuestionService.getInstanceUpdateActivities(args, ctx)
@@ -562,6 +598,17 @@ export const Query = builder.queryType({
         },
         resolve(_, args, ctx) {
           return QuestionService.getArtificialElementInstance(args, ctx)
+        },
+      }),
+
+      getSingleElementInstance: asUser.field({
+        nullable: true,
+        type: ElementInstance,
+        args: {
+          id: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return QuestionService.getSingleElementInstance(args, ctx)
         },
       }),
 
@@ -893,8 +940,11 @@ export const Query = builder.queryType({
       getAnswerCollectionsElements: asUser.field({
         nullable: true,
         type: [AnswerCollection],
-        resolve(_, __, ctx) {
-          return ResourcesService.getAnswerCollectionsElements(ctx)
+        args: {
+          templateId: t.arg.string({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return ResourcesService.getAnswerCollectionsElements(args, ctx)
         },
       }),
 
@@ -925,7 +975,68 @@ export const Query = builder.queryType({
           activityType: t.arg({ type: ActivityType, required: true }),
         },
         resolve(_, args, ctx) {
-          return SharingService.checkTemplateInfoAvailable(args, ctx)
+          return TemplateService.checkTemplateInfoAvailable(args, ctx)
+        },
+      }),
+
+      getTemplateInformation: asUser.field({
+        nullable: true,
+        type: ActivityTemplateMetadata,
+        args: {
+          activityId: t.arg.string({ required: true }),
+          activityType: t.arg({ type: ActivityType, required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.getTemplateInformation(args, ctx)
+        },
+      }),
+
+      getActivityTemplate: asUser.field({
+        nullable: true,
+        type: ActivityTemplate,
+        args: {
+          templateId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.getActivityTemplate(args, ctx)
+        },
+      }),
+
+      getMatchingUserElementsTemplate: asUser.field({
+        nullable: true,
+        type: [TemplateElementInformation],
+        args: {
+          elementType: t.arg({ type: ElementType, required: true }),
+          hasSampleSolution: t.arg.boolean({ required: false }),
+          hasAnswerFeedbacks: t.arg.boolean({ required: false }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.getMatchingUserElementsTemplate(args, ctx)
+        },
+      }),
+
+      checkTemplateElementExists: asUser.boolean({
+        nullable: false,
+        args: {
+          name: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.checkTemplateElementExists(args, ctx)
+        },
+      }),
+
+      getTemplatePreviewAnswerCollectionEntries: asUser.field({
+        nullable: true,
+        type: [AnswerCollectionPreviewEntry],
+        args: {
+          templateId: t.arg.string({ required: true }),
+          answerCollectionId: t.arg.int({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return TemplateService.getTemplatePreviewAnswerCollectionEntries(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -1009,6 +1120,14 @@ export const Query = builder.queryType({
         type: [CatalogSelectionObject],
         resolve(_, __, ctx) {
           return SharingService.getCatalogAnswerCollections(ctx)
+        },
+      }),
+
+      getCatalogLiveQuizTemplates: asUser.field({
+        nullable: true,
+        type: [CatalogSelectionObject],
+        resolve(_, __, ctx) {
+          return SharingService.getCatalogLiveQuizTemplates(ctx)
         },
       }),
 

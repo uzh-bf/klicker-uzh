@@ -218,16 +218,26 @@ function ElementFormErrors({
           errors.options.criteria &&
           typeof errors.options.criteria === 'object' &&
           (
-            errors.options.criteria as {
-              id?: string
-              name?: string
-              min?: string
-              max?: string
-              step?: string
-              unit?: string
-            }[]
-          ).flatMap(
-            (criterionError, ix) =>
+            errors.options.criteria as
+              | {
+                  id?: string
+                  name?: string
+                  min?: string
+                  max?: string
+                  step?: string
+                  unit?: string
+                }[]
+              | string[]
+          ).flatMap((criterionError, ix) => {
+            if (typeof criterionError === 'string') {
+              return [
+                <li key={`criterion-${ix}-${criterionError}`}>
+                  {`${t('shared.generic.criterion')} ${ix + 1}: ${criterionError}`}
+                </li>,
+              ]
+            }
+
+            return (
               criterionError &&
               Object.values(criterionError)
                 .filter((error) => typeof error !== 'undefined')
@@ -236,7 +246,8 @@ function ElementFormErrors({
                     {`${t('shared.generic.criterion')} ${ix + 1}: ${error}`}
                   </li>
                 ))
-          )}
+            )
+          })}
         {'options' in errors &&
           errors.options &&
           'criteria' in errors.options &&

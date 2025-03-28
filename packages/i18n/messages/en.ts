@@ -11,7 +11,7 @@ export default {
       numInvalidValue:
         'The entered value is not a number or is not in the specified range.',
       ftPlaceholder: 'Your answer...',
-      seSelectOption: 'Select an answer option...',
+      seSelectOption: 'Enter & choose option...',
       seSelectNCorrectOptions:
         'Please choose <b>{number} correct answer options</b> from the provided selection.',
       seCorrectAnswerN: 'Answer {number}',
@@ -37,6 +37,9 @@ export default {
     },
     READY: {
       statusLabel: 'Ready',
+    },
+    TEMPLATE: {
+      statusLabel: 'Template',
     },
     SC: {
       short: 'SC',
@@ -148,6 +151,8 @@ export default {
       questions: 'Questions',
       question: 'Question',
       element: 'Element',
+      block: 'Block',
+      stack: 'Stack',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Explanation',
@@ -161,6 +166,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Active Live Quizzes',
+      activePracticeQuizzes: 'Active Practice Quizzes',
+      activeMicroLearnings: 'Active Microlearnings',
       groupActivity: 'Group Activity',
       groupActivities: 'Group Activities',
       characters: 'characters',
@@ -170,6 +177,11 @@ export default {
       minLong: 'Minimum',
       max: 'Max',
       maxLong: 'Maximum',
+      lowerEnd: 'Lower End',
+      midValue: 'Mid Value',
+      upperEnd: 'Upper End',
+      steps: 'Steps',
+      textInput: 'Text Input',
       free: 'Free',
       congrats: 'Congratulations!',
       thanks: 'Thank you!',
@@ -189,6 +201,12 @@ export default {
       solution: 'Solution',
       sampleSolution: 'Sample solution',
       gamification: 'Gamification',
+      basePoints: 'Base points',
+      awardedPoints: 'Awarded points',
+      additionalPoints: 'Additional points',
+      correctnessPoints: 'correctness points',
+      bonusPoints: 'bonus points',
+      scoring: 'Scoring',
       liveQA: 'Live Q&A',
       moderation: 'Moderation',
       feedbackChannel: 'Feedback Channel',
@@ -207,6 +225,7 @@ export default {
       information: 'Information',
       description: 'Description',
       settings: 'Settings',
+      activitySettings: 'Activity Settings',
       course: 'Course',
       availableFrom: 'Available from',
       startDate: 'Start date',
@@ -302,14 +321,29 @@ export default {
       userGroup: 'User group',
       permissionLevel: 'Access level',
       template: 'Template',
+      noPoints: 'no points',
+      criterionN: 'Criterion {number}',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
+      LIVE_QUIZ_TEMPLATE: 'Live Quiz Template',
       PRACTICE_QUIZ: 'Practice Quiz',
+      PRACTICE_QUIZ_TEMPLATE: 'Practice Quiz Template',
       MICRO_LEARNING: 'Microlearning',
+      MICRO_LEARNING_TEMPLATE: 'Microlearning Template',
       GROUP_ACTIVITY: 'Group Activity',
+      GROUP_ACTIVITY_TEMPLATE: 'Group Activity Template',
       ANSWER_COLLECTION: 'Answer Collection',
       CATALOG_COLLECTION: 'Catalog Collection',
+      SC: 'Single Choice Question',
+      MC: 'Multiple Choice Question',
+      KPRIM: 'Kprim Question',
+      NUMERICAL: 'Numerical Question',
+      FREE_TEXT: 'Free Text Question',
+      SELECTION: 'Selection Question',
+      CASE_STUDY: 'Case Study',
+      FLASHCARD: 'Flashcard',
+      CONTENT: 'Content Element',
     },
     contentInput: {
       boldStyle:
@@ -405,9 +439,12 @@ export default {
       userNotLoggedIn:
         'You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress.',
       noLiveQuizzesActive: 'No live quizzes active.',
-      activeLiveQuizzesBy: 'Active live quizzes by <i>{name}</i>',
-      activeLiveQuizzesInCourse: 'Active live quizzes in course <i>{name}</i>',
-      activeLiveQuizzes: 'Active live quizzes',
+      activeLiveQuizzesBy: 'Active live quizzes by {name}',
+      activeLiveQuizzesInCourse: 'Active live quizzes in {name}',
+      noPracticeQuizzesActive: 'No practice quizzes active.',
+      activePracticeQuizzesInCourse: 'Active practice quizzes in {name}',
+      noMicroLearningsActive: 'No microlearnings active.',
+      activeMicroLearningsInCourse: 'Active microlearnings in {name}',
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
@@ -890,7 +927,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sortBy: 'Sort by...',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
-      questionPreview: 'Question Preview: {question}',
+      elementPreview: 'Element Preview: {element}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1068,14 +1105,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Add tags to your question to improve organization and reusability (similar to previous folders).',
       tagFormatting:
         'Temporarily required formatting: Enter tags separated by commas, e.g.: Tag1,Tag2,Tag3',
-      multiplierTooltip:
-        'Select a multiplier with which the points for this question should be multiplied. It can be chosen between 1 and 4.',
+      basePointInformation:
+        'Base points are awarded to all participants for answering the question in a live quiz. These points are not influenced by point multipliers.',
+      multiplierInformation:
+        'Select a multiplier with which the correctness and bonus points for this question should be multiplied. It can be chosen between 1 and 4.',
+      multiplierNoEffect:
+        'Multipliers only influence the scoring of a question if a sample solution is defined and correctness and bonus points (live quiz) are awarded.',
+      liveQuizBasePoints: 'Live quiz base points',
+      zeroPoints: '0 points',
       questionTooltip:
         'Enter the question you want to ask the participants. The rich text editor allows you to use the following (block) formatting: bold text, italic text, code, quotes, numbered lists, unordered lists and LaTeX formulas. Hover over the individual buttons for more information.',
       contentTooltip:
         'Enter the content you want to present to the participants. The rich text editor allows you to use the following (block) formatting: bold text, italic text, code, quotes, numbered lists, unordered lists and LaTeX formulas. Hover over the individual buttons for more information.',
       instructionsTooltip:
         'Enter the instructions for the students here, which serve as a guide for answering the case study.',
+      enableSampleSolution: 'Enable sample solution',
+      sampleSolutionAndScoring: 'Sample Solution and Scoring',
+      scoringDocumentation: 'Scoring documentation',
       questionPlaceholder: 'Enter your question here...',
       contentPlaceholder: 'Enter your content here...',
       instructionsPlaceholder: 'Enter your instructions here...',
@@ -1114,8 +1160,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       caseStudyItemsTooltip:
         'Please select the elements from the answer collection that participants should evaluate in the case study according to the criteria recorded below.',
       selectCaseStudyItems: 'Select items...',
+      caseStudyRangeCriterion: 'Numerical range criterion',
+      caseStudyStepCriterion: 'Step / Likert criterion',
       caseStudyCriteriaDescription:
-        'Please define the criteria according to which the selected elements of the case study above should be evaluated. For more information on the individual fields, please also refer to the corresponding tooltips.',
+        'Please define the criteria according to which the selected elements of the case study above should be evaluated. You can choose between purely numerical criteria (ideal e.g. for probability / cost estimates) and step / Likert criteria (ideal for case studies without exact / known solutions). For more information on the individual fields, please also refer to the corresponding tooltips.',
       caseStudyCriteriaNameTooltip:
         'The name of the criterion is displayed to the students (e.g. "Probability").',
       caseStudyCriteriaMinTooltip:
@@ -1126,7 +1174,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The step size determines the steps when setting the slider.',
       caseStudyCriteriaUnitTooltip:
         'The optional unit is displayed to the students next to the corresponding values (e.g. "%").',
+      caseStudyCriteriaMinLabelTooltip:
+        'This text describes the lower end of your step or Likert criterion (e.g. "very unlikely").',
+      caseStudyCriteriaMidLabelTooltip:
+        'This text describes the middle range of your step or Likert criterion (e.g. "possible").',
+      caseStudyCriteriaMaxLabelTooltip:
+        'This text describes the upper end of your step or Likert criterion (e.g. "very likely").',
+      caseStudyCriteriaStepsTooltip:
+        'Enter the number of steps the slider should have here (at least 3).',
       addCriterion: 'Add new criterion',
+      addRangeCriterion: 'Add numerical range criterion',
+      addStepsCriterion: 'Add step / Likert criterion',
       addCase: 'Add new case',
       removeCase: 'Remove case',
       caseTitle: 'Case name',
@@ -1143,6 +1201,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       caseStudySolutions: 'Sample Solutions for Case {number}',
       caseStudySolutionsTooltip:
         'Please enter the range for each element and criterion that should be considered correct.',
+      caseStudySolutionIntervalStep:
+        'in the interval [{lower}, {upper}], step size {step}',
       lowerLimit: 'Lower limit',
       upperLimit: 'Upper limit',
       LISTDisplay: 'Display as list',
@@ -1175,9 +1235,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       uploadImageHeader: 'Upload Media',
       uploadImageDescription:
         'Drag an image here to upload or click to open file explorer.',
-      updateInstances: 'Update question instances in KlickerUZH elements',
+      updateInstances: 'Update element instances in KlickerUZH activities',
+      includeTemplateInstanceUpdates:
+        'Include instances in template activities for update',
       updateInstancesExplanation:
-        'Use this setting to update the instances of this question in all planned live quizzes, practice quizzes, microlearnings, and group activities shown below. The content of questions in ongoing and completed activities will not be updated. Changed multipliers will be applied to the created instances. Please note that when deactivating the sample solution, only content elements, flashcards, and free text questions in practice quizzes and microlearnings will be updated.',
+        'Use this setting to update the instances of this element in all planned live quizzes, practice quizzes, microlearnings, and group activities shown below. The content of elements in ongoing and completed activities will not be updated. Changed multipliers will be applied to the created instances. Please note that when deactivating the sample solution, only content elements, flashcards, and free text questions in practice quizzes and microlearnings will be updated.',
       questionSavedSuccessfully: 'The question has been saved successfully.',
       questionSavedFailed:
         'An error occurred while saving the question. Please check the error messages in the form and review the entries.',
@@ -1212,6 +1274,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       newQuestion: 'New question',
       blockSettingsTitle: 'Settings Block {blockIx}',
       timeLimit: 'Time limit',
+      noTimeLimit: 'No time limit',
       optionalTimeLimit: 'Optional time limit',
       timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
@@ -1514,7 +1577,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'I understand that elements in this activity depend on resources (e.g., answer collections), access to them will be automatically shared (read permissions) if a user does not replace this information and does not have access to the corresponding resource already.',
       templateInformation: 'Template Information',
       templateInformationDescription:
-        'Please provide the following information for your template. It will be shown to users when they import or use your template.',
+        'Please provide the following information for your template. It will be shown to users when they import it through a catalog collection or use your template for the creation of an activity, respectively.',
+      nameTooltip:
+        'The name will be shown to users when they browse available templates in the catalog.',
+      nameRequired: 'A name for the activity template is required',
       descriptionTooltip:
         'The description will be shown to users when they browse available templates in the catalog.',
       descriptionPlaceholder:
@@ -1527,6 +1593,82 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       createTemplateCopy: 'Create Template Copy',
       descriptionRequired: 'A description is required',
       instructionsRequired: 'Instructions are required',
+      templateCreationSuccess: 'Template was successfully created',
+      templateCreationError: 'Template could not be created',
+      deleteTemplate: 'Delete template',
+      editTemplate: 'Edit template',
+      templateEditSuccess: 'Template updated successfully',
+      templateEditError: 'Error updating template',
+      templateDeletionSuccess: 'Template deleted successfully',
+      templateDeletionError: 'Error deleting template',
+      deleteTemplateExplanation:
+        'Please confirm that you want to delete the selected template. It will be automatically removed from all catalog collections and cannot be used by other users anymore.',
+      editTemplateDescription:
+        'Modify any meta information of the activity template you want to change. Changes will go into effect immediately upon saving and are shown to all users of the template.',
+      saveChanges: 'Save Changes',
+      activityFromTemplate: 'Create Activity from Template',
+      errorLoadingTemplate: 'An error occurred while loading the template...',
+      templateInfoLIVE_QUIZ:
+        'This view allows you to create your own live quiz activity from the live quiz template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      templateInfoPRACTICE_QUIZ:
+        'This view allows you to create your own practice quiz from the practice quiz template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      templateInfoGROUP_ACTIVITY:
+        'This view allows you to create your own group activity from the group activity template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      templateInfoMICRO_LEARNING:
+        'This view allows you to create your own microlearning from the microlearning template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      recoverTemplateActivityInputs: 'Recover Template Activity Inputs',
+      notFoundNotAccessible:
+        'The requested activity template was not found or is not accessible. Please ensure that you have sufficient permissions to access this template.',
+      incompleteActivity:
+        'An incomplete state of this activity template has been auto-saved. Please choose whether you would like to continue editing the activity and recover the auto-saved state or start over with the original version of the template.',
+      startOver: 'Start Over',
+      continueEditing: 'Continue Editing',
+      settingsInstructions:
+        'Here you can change the basic settings of the activity. Please refer to the corresponding tooltips or consult the documentation for further information. Some settings such as point multipliers cannot be changed directly in templates.',
+      reusingElement: 'element reused',
+      replacingElement: 'element replaced',
+      creatingElement: 'element created',
+      forGamifiedCourses: 'for gamified courses',
+      confirmSettings: 'Confirm Settings',
+      settingsNotSaved:
+        'Please save your changes to the settings before continuing to edit the template.',
+      confirmTimeLimit: 'Confirm time limit',
+      elementActionsTemplate:
+        'Elements in this template can either be accepted as they are in the template, replaced by an existing element of the same type and partially matching settings (e.g. sample solution), or replaced by new content. Elements created or accepted without modifications will be available in your library afterwards. Please choose the desired action for this element.',
+      selectActionOptionElement: 'Please select an action for this element',
+      previewTemplateElement: 'Preview template content',
+      acceptTemplateElement: 'Accept template element without modifications',
+      replaceWithExistingElement: 'Replace with existing element from library',
+      insertContentNewElement: 'Insert content for new element',
+      editContentNewElement: 'Continue editing content for new element',
+      selectExistingElement: 'Select existing element',
+      selectElementInstructions:
+        'Select one of your existing elements to replace the template content. Please note that the element type must match the following requirements: {element}. The selection below has already been filtered according to these criteria.',
+      noMatchingQuestionsFound:
+        'No elements were found in your account that match the requirements of the template. Please create your element directly in the template or accept the existing content.',
+      withSampleSolution: 'with sample solution',
+      withoutSampleSolution: 'without sample solution',
+      withAnswerFeedbacks: 'with answer feedbacks',
+      withoutAnswerFeedbacks: 'without answer feedbacks',
+      nextElement: 'Next element',
+      availableActions: 'Available actions',
+      sameNamedElementExists:
+        'Your library already contains an element with the name "{elementName}". Please consider selecting an existing element or creating a new one. If you choose to accept the template element without modifications, a copy of it will be added to your account.',
+      discardEnteredElementContent: 'Discard Data for Element Creation',
+      confirmDiscardEnteredElementContent:
+        'By performing this action, all entered data for the creation of a new element at this point in the template will be discarded. This action cannot be undone.',
+      createLIVE_QUIZ: 'Create Live Quiz',
+      templateInputsIncomplete:
+        'The template contains incomplete inputs. Please check the settings and elements, not yet edited components are marked with an orange status.',
+      errorCreatingLiveQuizFromTemplate:
+        'An error occurred while creating the live quiz. Please check that all your inputs are valid and try again.',
+      activityRemainsAvailable:
+        'When creating the template as a copy, the original activity remains unchanged and available.',
+      confirmActivityConversion:
+        'Your activity will be converted into a template and can no longer be executed subsequently.',
+      expandAll: 'Expand all',
+      collapseAll: 'Collapse all',
+      basedOnObject: 'based on {object}',
     },
     formErrors: {
       resolveErrors:
@@ -1589,6 +1731,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CSCriteriaStepRequired: 'Please enter a step size for the criterion.',
       CSStepSizeTooLarge:
         'The step size must be less than or equal to half of the interval width.',
+      CSLabelsRequired:
+        'Please define at least one label for the lower and upper limit for the step / Likert criterion.',
+      CSStepsDefinitionRequired:
+        'Please define a number of steps for the step / Likert criterion (at least 3).',
       CSCriteriaRequired:
         'At least one criterion is required to create a case study.',
       CSCasesRequired: 'At least one case is required to create a case study.',
@@ -1607,13 +1753,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       CSSolutionsMinMaxBounds:
         'The lower and upper limits of the solution interval must lie within the value range of the criterion (item {itemNumber}, criterion "{criterionName}").',
       CSSolutionsMinMaxStep:
-        'The lower and upper limits of the solution interval must be at least one step size apart (item {itemNumber}, criterion "{criterionName}").',
+        'The lower and upper limits of the solution interval must be at least one step size apart for numerical criteria (item {itemNumber}, criterion "{criterionName}").',
+      CSSolutionsMinMaxIntegers:
+        'The lower and upper limits of the solution interval must be integers for step / Likert criteria (item {itemNumber}, criterion "{criterionName}").',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Running Live Quizzes',
       plannedLiveQuizzes: 'Planned Live Quizzes',
       preparedLiveQuizzes: 'Prepared Live Quizzes',
       completedLiveQuizzes: 'Completed Live Quizzes',
+      liveQuizTemplates: 'Live Quiz Templates',
       embeddingEvaluation: 'Embed Evaluation',
       lecturerCockpit: 'Lecturer Cockpit',
       liveQuizEvaluation: 'Quiz Evaluation',
@@ -1647,6 +1796,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name of the live quiz could not be changed.',
     },
     cockpit: {
+      liveQuizQRCodes: 'Live Quiz QR-Code',
       qrCodeAccountLinkTitle: 'Account Link',
       qrCodeAccountLinkDescription:
         'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname.',
@@ -1729,6 +1879,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       totalParticipantsInclAnon:
         'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
+      showExplanation: 'Show explanation',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
       correctSolutionRanges: 'Correct solution ranges',
@@ -1960,6 +2111,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Share this link or QR code with your course participants to allow them to join.',
       copyAccessLink: 'Copy access link',
       copyLTIAccessLink: 'Copy LTI link',
+      liveQuizList: 'Live Quiz List',
+      practiceQuizList: 'Practice Quiz List',
+      microLearningList: 'Microlearning List',
       linkAccessCopied:
         'The link for accessing the item has been copied to the clipboard.',
       linkLTICopied:
@@ -1967,6 +2121,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Practice Quizzes',
+      linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit microlearning',
       duplicateMicroLearning: 'Duplicate microlearning',
@@ -2135,9 +2291,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       byOwner: 'by {owner}',
       cancelRequest: 'Cancel Request',
       answerCollection: 'Answer Collection: {name}',
+      nameAndDescription: 'Name and Description',
+      saveBeforeClosing: 'Please save your changes before closing the section.',
+      searchAnswerOptions: 'Search answer option...',
+      noMatchingOptions: 'No matching answer options found.',
       saveChanges: 'Save changes',
+      saveMetadata: 'Save Metadata',
       successfulCollectionEdit:
         'The changes to the answer collection have been saved successfully.',
+      changesImmediateEffect:
+        'Changes to answer options (and deletions) are immediately saved and applied to corresponding questions. Question in existing activities must be updated via the element editor to apply any changes.',
       answerOptions: 'Answer Options',
       addAnswerOption: 'Add Answer Option',
       showAnswers: 'Show Answers',
@@ -2152,10 +2315,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       requestedAccess: 'Requested Access',
       deleteCollection: 'Delete collection',
       deletionDisabledInUse:
-        'This collection is used by at least one of your questions. Therefore, you cannot delete the collection. To delete the collection, please first remove it from all questions that use it.',
+        'This collection is used by at least one of your questions or templates. Therefore, you cannot delete the collection. To delete the collection, please first remove it from all questions that use it.',
       removeCollection: 'Remove collection',
       removalDisabledInUse:
-        'This collection is used by at least one of your questions. Therefore, you cannot remove the collection.',
+        'This collection is used by at least one of your questions or templates. Therefore, you cannot remove the collection.',
       deleteAnswerCollection: 'Delete Answer Collection',
       confirmCollectionDeletion:
         'Are you sure you want to delete the answer collection "{name}" from your profile? For shared answer collections, access for other users remains as long as they use the collection. All users who are not using the collection will loose access to it.',
@@ -2182,11 +2345,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       all: 'All',
       sharingRequests: 'Sharing Requests',
       unresolved: 'Unresolved',
-      objectTypeANSWER_COLLECTION: 'Answer Collection',
-      objectTypeCATALOG_COLLECTION: 'Catalog Collection',
       noObjectsFoundInCatalog:
         'No public or restricted objects were found for the entered search criteria and filters.',
       requestAccess: 'Request Access',
+      useTemplate: 'Use template',
       importObject: 'Import Object',
       importObjectType: 'Import {object}',
       accessRequested: 'Access requested',
@@ -2235,6 +2397,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       removeCATALOG_COLLECTIONtitle: 'Remove Catalog Collection',
       removeANSWER_COLLECTION: 'Remove Answer Collection',
       removeANSWER_COLLECTIONtitle: 'Remove Answer Collection from Catalog',
+      removeLIVE_QUIZ_TEMPLATE: 'Remove Live-Quiz Template',
+      removeLIVE_QUIZ_TEMPLATEtitle: 'Remove Live-Quiz Template from Catalog',
       removeObjectTitle: 'Remove Object from Catalog Collection',
       removeObjectDescription:
         'Are you sure you want to remove the {objectType} "{objectName}" from the catalog collection? Users will then no longer be able to import it or request access to it.',
@@ -2278,6 +2442,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Once the owner accepts your request, you will have access to the catalog collection and can request/import objects within.',
       requestSuccessInfoANSWER_COLLECTION:
         'Once the owner accepts your request, you will have access to the answer collection and can use it in your selection questions and case studies.',
+      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
+        'Once the owner accepts your request, you will have access to the live quiz template and can use it to create new live quizzes.',
       requestCatalogObjectSuccess:
         'The access request was successfully submitted.',
       requestCatalogObjectFailed:
@@ -2326,18 +2492,23 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       revokeAccessDisabledTooltip:
         'The access to the answer collection cannot be revoked because this user is actively using the collection.',
       noUserGroupSelected: 'No user group selected',
-      usernameEmailOrGroupRequired:
-        'Please enter a username / email address or select a user group.',
+      shortnameEmailOrGroupRequired:
+        'Please enter a shortname / email address or select a user group.',
       infoTransferOwnershipCATALOG_COLLECTION:
         'You are about to transfer all ownership rights of the catalog collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
       infoTransferOwnershipANSWER_COLLECTION:
         'You are about to transfer all ownership rights of the answer collection <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this collection, while you will retain admin access. This action cannot be undone.',
+      infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
+        'You are about to transfer all ownership rights of the live quiz template <b>{objectName}</b> to another user. After transferring the ownership, the new owner will have full control over this template, while you will retain admin access. This action cannot be undone.',
       shareANSWER_COLLECTION: 'Share Answer Collection',
       shareCATALOG_COLLECTION: 'Share Catalog Collection',
+      shareLIVE_QUIZ_TEMPLATE: 'Share Live Quiz Template',
       infoSharingANSWER_COLLECTION:
         'This view allows you to share the answer collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the content of the collection, add more users or make other changes.',
       infoSharingCATALOG_COLLECTION:
         'This view allows you to share the catalog collection "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can add objects to the collection, add more users or make other changes.',
+      infoSharingLIVE_QUIZ_TEMPLATE:
+        'This view allows you to share the live quiz template "<b>{objectName}</b>" with other users or user groups and change granted access rights. Depending on the assigned rights, the corresponding users can edit the metadata of the template or make other changes.',
       sharingSuccessful: 'The object was shared successfully.',
       sharingFailed:
         'An error occurred while sharing the object or the specified user could not be found.',
@@ -2346,10 +2517,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Failed to remove access. Please try again or contact support.',
       removeCATALOG_COLLECTION: 'Remove Catalog Collection',
       removeANSWER_COLLECTION: 'Remove Answer Collection',
+      removeLIVE_QUIZ_TEMPLATE: 'Remove Live Quiz Template',
       confirmRemovalCATALOG_COLLECTION:
         'Are you sure you want to remove the catalog collection "{objectName}" from your profile?',
       confirmRemovalANSWER_COLLECTION:
         'Are you sure you want to remove the answer collection "{objectName}" from your profile?',
+      confirmRemovalLIVE_QUIZ_TEMPLATE:
+        'Are you sure you want to remove the live quiz template "{objectName}" from your profile?',
       confirmRemoval: 'Confirm removal',
       removalSuccessful:
         'The object has been removed successfully from your account.',

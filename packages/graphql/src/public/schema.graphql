@@ -75,11 +75,30 @@ type ActivitySummary {
   numOfResponses: Int!
 }
 
+type ActivityTemplate {
+  activityType: ActivityType!
+  answerCollections: [AnswerCollection!]
+  description: String!
+  groupActivity: GroupActivity
+  id: String!
+  instructions: String!
+  liveQuiz: LiveQuiz
+  microLearning: MicroLearning
+  practiceQuiz: PracticeQuiz
+}
+
 type ActivityTemplateInfo {
   noInstances: Boolean!
   noResourcesRequired: Boolean!
   resourcesRequiredExist: Boolean!
   resourcesRequiredMissing: Boolean!
+}
+
+type ActivityTemplateMetadata {
+  description: String!
+  instructions: String!
+  name: String!
+  templateId: String!
 }
 
 enum ActivityType {
@@ -109,6 +128,11 @@ type AnswerCollection {
 type AnswerCollectionEntry {
   id: Int!
   numSolutionUsages: Int
+  value: String!
+}
+
+type AnswerCollectionPreviewEntry {
+  id: Int!
   value: String!
 }
 
@@ -206,6 +230,7 @@ input CaseStudyCriteriaSolutionInput {
 
 type CaseStudyCriterion {
   id: String!
+  labels: CaseStudyCriterionLabels
   max: Float!
   min: Float!
   name: String!
@@ -216,6 +241,7 @@ type CaseStudyCriterion {
 
 input CaseStudyCriterionInput {
   id: String!
+  labels: CaseStudyCriterionLabelsInput
   max: Float!
   min: Float!
   name: String!
@@ -224,12 +250,25 @@ input CaseStudyCriterionInput {
   unit: String
 }
 
+type CaseStudyCriterionLabels {
+  max: String!
+  mid: String
+  min: String!
+}
+
+input CaseStudyCriterionLabelsInput {
+  max: String!
+  mid: String
+  min: String!
+}
+
 input CaseStudyCriterionResponse {
   criterionId: String!
   response: Float!
 }
 
 type CaseStudyElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -247,6 +286,7 @@ type CaseStudyElement {
 }
 
 type CaseStudyElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -292,6 +332,7 @@ type CaseStudyElementResultCriterion {
 
 type CaseStudyElementResultCriterionInfo {
   id: String!
+  labels: CaseStudyCriterionLabels
   name: String!
 }
 
@@ -374,12 +415,14 @@ type CatalogObject {
   name: String!
   objectType: CatalogObjectType!
   ownerShortname: String
+  templateId: String
   uuid: String
 }
 
 enum CatalogObjectType {
   ANSWER_COLLECTION
   CATALOG_COLLECTION
+  LIVE_QUIZ_TEMPLATE
 }
 
 type CatalogSelectionObject {
@@ -427,6 +470,7 @@ type ChoicesActivityEvaluationData {
 }
 
 type ChoicesElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -444,6 +488,7 @@ type ChoicesElement {
 }
 
 type ChoicesElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -507,6 +552,7 @@ type ContentActivityEvaluationData {
 }
 
 type ContentElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -523,6 +569,7 @@ type ContentElement {
 }
 
 type ContentElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -702,11 +749,14 @@ type ElementInstance {
 union ElementInstanceEvaluation = CaseStudyActivityEvaluationData | ChoicesActivityEvaluationData | ContentActivityEvaluationData | FlashcardActivityEvaluationData | FreeTextActivityEvaluationData | NumericalActivityEvaluationData | SelectionActivityEvaluationData
 
 input ElementInstanceInput {
+  duplicateInstance: Boolean!
   elementId: Int!
+  existingInstanceId: Int
   order: Int!
 }
 
 type ElementInstanceOptions {
+  basePoints: Boolean
   pointsMultiplier: Int
   resetTimeDays: Int
 }
@@ -751,7 +801,6 @@ input ElementStackInput {
 
 enum ElementStackType {
   GROUP_ACTIVITY
-  LIVE_QUIZ
   MICROLEARNING
   PRACTICE_QUIZ
 }
@@ -825,6 +874,7 @@ enum FlashcardCorrectnessType {
 }
 
 type FlashcardElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -841,6 +891,7 @@ type FlashcardElement {
 }
 
 type FlashcardElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -902,6 +953,7 @@ type FreeTextActivityEvaluationData {
 }
 
 type FreeTextElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -919,6 +971,7 @@ type FreeTextElement {
 }
 
 type FreeTextElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -984,6 +1037,7 @@ type GroupActivity {
   scheduledStartAt: Date!
   stacks: [ElementStack!]
   status: PublicationStatus!
+  templateName: String
 }
 
 type GroupActivityClue {
@@ -1026,12 +1080,6 @@ type GroupActivityDecision {
   numericalResponse: Float
   selectionResponse: [Int!]
   type: ElementType!
-}
-
-input GroupActivityDecisionInput {
-  id: Int!
-  response: String
-  selectedOptions: [Int!]
 }
 
 type GroupActivityDetails {
@@ -1233,6 +1281,8 @@ type LiveQuiz {
   pointsMultiplier: Int!
   startedAt: Date
   status: PublicationStatus!
+  templateId: String
+  templateName: String
   timeToZeroBonus: Int
   updatedAt: Date
 }
@@ -1287,6 +1337,7 @@ type MicroLearning {
   scheduledStartAt: Date!
   stacks: [ElementStack!]
   status: PublicationStatus!
+  templateName: String
 }
 
 type Mutation {
@@ -1311,12 +1362,14 @@ type Mutation {
   changePermissionLevel(objectId: String!, objectType: CatalogObjectType!, permissionId: Int!, permissionLevel: PermissionLevel!): Boolean!
   changeShortname(shortname: String!): User
   changeUserLocale(locale: LocaleType!): User
+  createActivityTemplate(activityId: String!, activityType: ActivityType!, copyBeforeConversion: Boolean!, templateDescription: String!, templateInstructions: String!, templateName: String!): Boolean
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
+  createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): MicroLearning
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
@@ -1324,6 +1377,7 @@ type Mutation {
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   declineObjectSharingRequest(permissionId: Int!, userId: String!): Boolean!
+  deleteActivityTemplate(activityId: String!, activityType: ActivityType!): String
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
@@ -1338,6 +1392,7 @@ type Mutation {
   deleteQuestion(id: Int!): Element
   deleteTag(id: Int!): Tag
   deleteUserLogin(id: String!): UserLogin
+  editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
   editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): LiveQuiz
@@ -1371,13 +1426,13 @@ type Mutation {
   loginUserToken(shortname: String!, token: String!): ID
   logoutParticipant: ID
   logoutUser: ID
-  manipulateCaseStudyQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateChoicesQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
-  manipulateContentElement(content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateFlashcardElement(content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateFreeTextQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateNumericalQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateSelectionQuestion(content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateChoicesQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
+  manipulateContentElement(basePoints: Boolean, content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateFlashcardElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateFreeTextQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateNumericalQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateSelectionQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): Course
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
@@ -1414,7 +1469,7 @@ type Mutation {
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, name: String, notificationEmail: String, startDate: Date): Course
-  updateElementInstances(elementId: Int!): [ElementInstance!]!
+  updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]!
   updateGroupAverageScores: Boolean!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
@@ -1438,6 +1493,7 @@ type NumericalActivityEvaluationData {
 }
 
 type NumericalElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -1455,6 +1511,7 @@ type NumericalElement {
 }
 
 type NumericalElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -1524,8 +1581,6 @@ type NumericalRestrictions {
 }
 
 input NumericalRestrictionsInput {
-  hasAnswerFeedbacks: Boolean
-  hasSampleSolution: Boolean
   max: Float
   min: Float
 }
@@ -1758,6 +1813,7 @@ type PracticeQuiz {
   resetTimeDays: Int!
   stacks: [ElementStack!]
   status: PublicationStatus!
+  templateName: String
   updatedAt: Date
 }
 
@@ -1782,6 +1838,7 @@ type Query {
   checkPrivatePreviewAvailable: Boolean!
   checkPublicPreviewAvailable: Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
+  checkTemplateElementExists(name: String!): Boolean!
   checkTemplateInfoAvailable(activityId: String!, activityType: ActivityType!): ActivityTemplateInfo
   checkValidCoursePin(pin: Int!): String
   cockpitQuiz(id: String!): LiveQuiz
@@ -1794,14 +1851,16 @@ type Query {
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses: [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
+  getActivityTemplate(templateId: String!): ActivityTemplate
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
-  getAnswerCollectionsElements: [AnswerCollection!]
+  getAnswerCollectionsElements(templateId: String): [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogAnswerCollections: [CatalogSelectionObject!]
   getCatalogCollectionInfo(catalogCollectionId: String): CatalogCollection
   getCatalogCollectionsList: [CatalogCollection!]
+  getCatalogLiveQuizTemplates: [CatalogSelectionObject!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getCourseActivities(courseId: String!): Course
@@ -1810,16 +1869,19 @@ type Query {
   getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, days: Int, endDate: String, rollingSelection: Boolean!, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
+  getCoursePublishedMicroLearnings(courseId: String!): [MicroLearning!]
+  getCoursePublishedPracticeQuizzes(courseId: String!): [PracticeQuiz!]
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
   getCourseStudentTimelines: [CourseStudentTimeline!]
   getCourseSummary(courseId: String!): CourseSummary
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
-  getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean): [InstanceUpdateActivityInfo!]
+  getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
   getLoginToken: User
+  getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectPermissions(objectId: String!, objectType: CatalogObjectType!): [PermissionInfo!]
@@ -1830,10 +1892,13 @@ type Query {
   getPracticeQuizSummary(id: String!): ActivitySummary
   getPreviousStackEvaluation(stackId: Int!): StackFeedback
   getSingleAnswerCollection(id: Int!): AnswerCollection
+  getSingleElementInstance(id: Int!): ElementInstance
   getSingleMicroLearning(id: String!): MicroLearning
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
   getStudentCourseLeaderboard(courseId: String!, mode: String!): StudentCourseLeaderboard
+  getTemplateInformation(activityId: String!, activityType: ActivityType!): ActivityTemplateMetadata
+  getTemplatePreviewAnswerCollectionEntries(answerCollectionId: Int!, templateId: String!): [AnswerCollectionPreviewEntry!]
   groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
@@ -1905,6 +1970,7 @@ type SelectionActivityEvaluationData {
 }
 
 type SelectionElement {
+  basePoints: Boolean!
   content: String!
   createdAt: Date
   explanation: String
@@ -1922,6 +1988,7 @@ type SelectionElement {
 }
 
 type SelectionElementData {
+  basePoints: Boolean!
   content: String!
   elementId: Int!
   explanation: String
@@ -2138,6 +2205,43 @@ type Tag {
   id: Int!
   name: String!
   order: Int!
+}
+
+input TemplateBlockElementInput {
+  existingElementId: Int
+  newElement: TemplateElementManipulationInput
+  order: Int!
+  useExistingElement: Boolean!
+  useNewElement: Boolean!
+}
+
+input TemplateBlockInput {
+  elements: [TemplateBlockElementInput!]!
+  order: Int!
+  timeLimit: Int
+}
+
+type TemplateElementInformation {
+  content: String!
+  id: Int!
+  name: String!
+}
+
+input TemplateElementManipulationInput {
+  basePoints: Boolean
+  caseStudyOptions: OptionsCaseStudyInput
+  choicesOptions: OptionsChoicesInput
+  content: String
+  explanation: String
+  freeTextOptions: OptionsFreeTextInput
+  id: Int
+  name: String
+  numericalOptions: OptionsNumericalInput
+  pointsMultiplier: Int
+  selectionOptions: OptionsSelectionInput
+  status: ElementStatus
+  tags: [String!]
+  type: ElementType!
 }
 
 type Title {

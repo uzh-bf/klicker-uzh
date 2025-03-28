@@ -5,16 +5,17 @@ import {
   generateBlobSASQueryParameters,
 } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma'
-import { ActivityType } from '@klicker-uzh/types'
-import { getInitialElementResults, processElementData } from '@klicker-uzh/util'
+import { ActivityType, ElementManipulationInput } from '@klicker-uzh/types'
+import {
+  getInitialInstanceResults,
+  processElementData,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
 import type { ContextWithUser } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
-import validateElementInputs, {
-  ManipulateQuestionArgs,
-} from '../lib/validateElementInputs.js'
+import validateElementInputs from '../lib/validateElementInputs.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -52,6 +53,7 @@ export async function getSingleQuestion(
   const question = await ctx.prisma.element.findUnique({
     where: {
       id,
+      isDeleted: false,
       ownerId: ctx.user.sub,
     },
     include: {
@@ -112,7 +114,7 @@ export async function getArtificialElementInstance(
   if (!element) return null
 
   const elementData = processElementData(element)
-  const initialResults = getInitialElementResults(element)
+  const initialResults = getInitialInstanceResults(elementData)
 
   return {
     id: 0,
@@ -124,6 +126,7 @@ export async function getArtificialElementInstance(
     type: DB.ElementInstanceType.LIVE_QUIZ,
     elementData,
     options: {
+      basePoints: element.basePoints,
       pointsMultiplier: element.pointsMultiplier,
     },
     results: initialResults,
@@ -136,6 +139,20 @@ export async function getArtificialElementInstance(
   }
 }
 
+export async function getSingleElementInstance(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  const instance = await ctx.prisma.elementInstance.findUnique({
+    where: {
+      id,
+      ownerId: ctx.user.sub,
+    },
+  })
+
+  return instance
+}
+
 export async function manipulateQuestion(
   {
     id,
@@ -145,10 +162,17 @@ export async function manipulateQuestion(
     content,
     explanation,
     options,
+    basePoints,
     pointsMultiplier,
     tags,
-  }: ManipulateQuestionArgs,
-  ctx: ContextWithUser
+  }: ElementManipulationInput,
+  // type modification required for method to be usable inside transaction without type errors
+  ctx: Omit<ContextWithUser, 'prisma'> & {
+    prisma: Omit<
+      DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    >
+  }
 ) {
   let tagsToDisconnect: string[] = []
   let collectionAnswersToDisconnect: number[] = []
@@ -161,6 +185,7 @@ export async function manipulateQuestion(
     name,
     content,
     explanation,
+    basePoints,
     pointsMultiplier,
   })
   const processedOptions = validateAndProcessElementOptions(type, options)
@@ -175,6 +200,7 @@ export async function manipulateQuestion(
       ? await ctx.prisma.element.findUnique({
           where: {
             id: id,
+            isDeleted: false,
             ownerId: ctx.user.sub,
           },
           include: {
@@ -232,6 +258,7 @@ export async function manipulateQuestion(
       name: name!,
       content: content!,
       explanation: explanation ?? undefined,
+      basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier!,
       options: processedOptions,
       owner: {
@@ -279,6 +306,7 @@ export async function manipulateQuestion(
       name: name ?? undefined,
       content: content ?? undefined,
       explanation: typeof explanation === 'undefined' ? undefined : explanation,
+      basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier ?? 1,
       version: {
         increment: 1,
@@ -583,11 +611,23 @@ export async function getInstanceUpdateActivities(
   {
     elementId,
     hasSampleSolution,
-  }: { elementId: number; hasSampleSolution?: boolean | null },
+    includeTemplateInstances,
+  }: {
+    elementId: number
+    hasSampleSolution?: boolean | null
+    includeTemplateInstances: boolean
+  },
   ctx: ContextWithUser
 ) {
   // fetch meta information on all activities that would be affected by the element update
   // fetch the question and return null, if the question does not exist
+  const acceptedStatusValues = includeTemplateInstances
+    ? [
+        DB.PublicationStatus.DRAFT,
+        DB.PublicationStatus.SCHEDULED,
+        DB.PublicationStatus.TEMPLATE,
+      ]
+    : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
@@ -600,30 +640,21 @@ export async function getInstanceUpdateActivities(
               microLearning: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
               practiceQuiz: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
               groupActivity: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
@@ -662,7 +693,11 @@ export async function getInstanceUpdateActivities(
   >((acc, instance) => {
     if (
       instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
-      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.SCHEDULED
+      instance.elementBlock?.liveQuiz?.status ===
+        DB.PublicationStatus.SCHEDULED ||
+      (includeTemplateInstances &&
+        instance.elementBlock?.liveQuiz?.status ===
+          DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
         activityName: instance.elementBlock.liveQuiz.name,
@@ -675,7 +710,10 @@ export async function getInstanceUpdateActivities(
       (instance.elementStack?.microLearning?.status ===
         DB.PublicationStatus.DRAFT ||
         instance.elementStack?.microLearning?.status ===
-          DB.PublicationStatus.SCHEDULED) &&
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplateInstances &&
+          instance.elementStack?.microLearning?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -689,7 +727,10 @@ export async function getInstanceUpdateActivities(
       (instance.elementStack?.practiceQuiz?.status ===
         DB.PublicationStatus.DRAFT ||
         instance.elementStack?.practiceQuiz?.status ===
-          DB.PublicationStatus.SCHEDULED) &&
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplateInstances &&
+          instance.elementStack?.practiceQuiz?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -703,7 +744,10 @@ export async function getInstanceUpdateActivities(
       instance.elementStack?.groupActivity?.status ===
         DB.PublicationStatus.DRAFT ||
       instance.elementStack?.groupActivity?.status ===
-        DB.PublicationStatus.SCHEDULED
+        DB.PublicationStatus.SCHEDULED ||
+      (includeTemplateInstances &&
+        instance.elementStack?.groupActivity?.status ===
+          DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
         activityName: instance.elementStack.groupActivity.name,
@@ -728,13 +772,25 @@ export async function getInstanceUpdateActivities(
 }
 
 export async function updateElementInstances(
-  { elementId }: { elementId: number },
+  {
+    elementId,
+    includeTemplates,
+  }: { elementId: number; includeTemplates: boolean },
   ctx: ContextWithUser
 ) {
   // fetch the question and return null, if the question does not exist
+  const acceptedStatusValues = includeTemplates
+    ? [
+        DB.PublicationStatus.DRAFT,
+        DB.PublicationStatus.SCHEDULED,
+        DB.PublicationStatus.TEMPLATE,
+      ]
+    : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
+      isDeleted: false,
+      ownerId: ctx.user.sub,
     },
     include: {
       elementInstances: {
@@ -744,30 +800,21 @@ export async function updateElementInstances(
               microLearning: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
               practiceQuiz: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
               groupActivity: {
                 where: {
                   status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                    ],
+                    in: acceptedStatusValues,
                   },
                 },
               },
@@ -823,7 +870,11 @@ export async function updateElementInstances(
   >((acc, instance) => {
     if (
       instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
-      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.SCHEDULED
+      instance.elementBlock?.liveQuiz?.status ===
+        DB.PublicationStatus.SCHEDULED ||
+      (includeTemplates &&
+        instance.elementBlock?.liveQuiz?.status ===
+          DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
         instanceId: instance.id,
@@ -839,7 +890,10 @@ export async function updateElementInstances(
       (instance.elementStack?.microLearning?.status ===
         DB.PublicationStatus.DRAFT ||
         instance.elementStack?.microLearning?.status ===
-          DB.PublicationStatus.SCHEDULED) &&
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplates &&
+          instance.elementStack?.microLearning?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -856,7 +910,10 @@ export async function updateElementInstances(
       (instance.elementStack?.practiceQuiz?.status ===
         DB.PublicationStatus.DRAFT ||
         instance.elementStack?.practiceQuiz?.status ===
-          DB.PublicationStatus.SCHEDULED) &&
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplates &&
+          instance.elementStack?.practiceQuiz?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -873,7 +930,10 @@ export async function updateElementInstances(
       instance.elementStack?.groupActivity?.status ===
         DB.PublicationStatus.DRAFT ||
       instance.elementStack?.groupActivity?.status ===
-        DB.PublicationStatus.SCHEDULED
+        DB.PublicationStatus.SCHEDULED ||
+      (includeTemplates &&
+        instance.elementStack?.groupActivity?.status ===
+          DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
         instanceId: instance.id,
@@ -911,7 +971,7 @@ export async function updateElementInstances(
           const newElementData = processElementData(element)
 
           // prepare new results objects
-          const newResults = getInitialElementResults(element)
+          const newResults = getInitialInstanceResults(newElementData)
 
           const instance = await ctx.prisma.elementInstance.update({
             where: { id: instanceId },
@@ -922,6 +982,7 @@ export async function updateElementInstances(
               // keep previous options where possible and update them only where required
               options: {
                 ...oldInstance.options,
+                basePoints: element.basePoints,
                 pointsMultiplier: multiplier * element.pointsMultiplier,
               },
             },

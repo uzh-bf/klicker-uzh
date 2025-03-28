@@ -69,8 +69,9 @@ interface PracticeQuizWizardProps {
   }
   selection: Record<number, Element>
   resetSelection: () => void
-  editMode: boolean
   conversion: boolean
+  editMode: boolean
+  duplicationMode: boolean
 }
 
 function PracticeQuizWizard({
@@ -82,6 +83,7 @@ function PracticeQuizWizard({
   resetSelection,
   conversion,
   editMode,
+  duplicationMode,
 }: PracticeQuizWizardProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -231,6 +233,8 @@ function PracticeQuizWizard({
                   'options' in element.elementData
                     ? (element.elementData.options.hasSampleSolution ?? false)
                     : true,
+                existingInstanceId: element.id,
+                duplicateInstance: duplicationMode || conversion,
               }
             }),
           }

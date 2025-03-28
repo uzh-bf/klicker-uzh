@@ -13,8 +13,11 @@ const synchronousActivityEnd = `${currentYear + 1}-12-31T18:00`
 
 describe('Create and solve a group activity', function () {
   beforeEach('Load fixture for this test case', function () {
-    cy.fixture('J-group-activity.json').then((data) => {
-      this.data = data
+    cy.fixture('questions.json').then((questionData) => {
+      this.data = questionData
+    })
+    cy.fixture('J-group-activity.json').then((liveQuizData) => {
+      this.data = { ...this.data, ...liveQuizData }
     })
   })
 
@@ -25,77 +28,77 @@ describe('Create and solve a group activity', function () {
 
     // SC question with solution
     cy.createQuestionSC({
-      title: this.data.questions.SC.title,
-      content: this.data.questions.SC.content,
-      choices: this.data.questions.SC.choices,
+      title: this.data.SCML.title,
+      content: this.data.SCML.content,
+      choices: this.data.SCML.choices,
       multiplier: messages.manage.activityWizard.multiplier2,
     })
 
     // MC question
     cy.createQuestionMC({
-      title: this.data.questions.MC.title,
-      content: this.data.questions.MC.content,
-      choices: this.data.questions.MC.choices,
+      title: this.data.MCML.title,
+      content: this.data.MCML.content,
+      choices: this.data.MCML.choices,
     })
 
     // KPRIM question
     cy.createQuestionKPRIM({
-      title: this.data.questions.KP.title,
-      content: this.data.questions.KP.content,
-      choices: this.data.questions.KP.choices,
+      title: this.data.KPML.title,
+      content: this.data.KPML.content,
+      choices: this.data.KPML.choices,
     })
 
     // NR question
     cy.createQuestionNR({
-      title: this.data.questions.NR.title,
-      content: this.data.questions.NR.content,
-      ...this.data.questions.NR.options,
+      title: this.data.NRML.title,
+      content: this.data.NRML.content,
+      ...this.data.NRML.options,
       multiplier: messages.manage.activityWizard.multiplier3,
     })
 
     // FT question
     cy.createQuestionFT({
-      title: this.data.questions.FT.title,
-      content: this.data.questions.FT.content,
-      ...this.data.questions.FT.options,
+      title: this.data.FTML.title,
+      content: this.data.FTML.content,
+      ...this.data.FTML.options,
     })
 
     // CT question
     cy.createContent({
-      title: this.data.questions.CT.title,
-      content: this.data.questions.CT.content,
+      title: this.data.CT.title,
+      content: this.data.CT.content,
     })
 
     // create answer collection
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
-      name: this.data.questions.collection.name,
-      description: this.data.questions.collection.description,
-      entries: this.data.questions.collection.options,
+      name: this.data.collection.name,
+      description: this.data.collection.description,
+      entries: this.data.collection.options,
     })
 
     // create selection question
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.questions.SE.title,
-      content: this.data.questions.SE.content,
-      numberOfInputs: this.data.questions.SE.inputs,
-      collectionName: this.data.questions.collection.name,
+      title: this.data.SEML.title,
+      content: this.data.SEML.content,
+      numberOfInputs: this.data.SEML.inputs,
+      collectionName: this.data.collection.name,
     })
 
     // create case study question
     cy.createQuestionCS({
-      title: this.data.questions.CS.title,
-      content: this.data.questions.CS.content,
-      explanation: this.data.questions.CS.explanation,
-      collectionName: this.data.questions.collection.name,
-      selectedItems: this.data.questions.collection.options.filter((_, i) =>
-        this.data.questions.CS.selectedItems.includes(i)
+      title: this.data.CSML.title,
+      content: this.data.CSML.content,
+      explanation: this.data.CSML.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CSML.selectedItems.includes(i)
       ),
-      criteria: this.data.questions.CS.criteria,
-      cases: this.data.questions.CS.cases,
-      solutions: this.data.questions.CS.solutions,
+      criteria: this.data.CSML.criteria,
+      cases: this.data.CSML.cases,
+      solutions: this.data.CSML.solutions,
     })
   })
   // #endregion
@@ -224,13 +227,13 @@ describe('Create and solve a group activity', function () {
       stacks: [
         {
           elements: [
-            this.data.questions.SC.title,
-            this.data.questions.MC.title,
-            this.data.questions.KP.title,
-            this.data.questions.NR.title,
-            this.data.questions.FT.title,
-            this.data.questions.SE.title,
-            this.data.questions.CS.title,
+            this.data.SCML.title,
+            this.data.MCML.title,
+            this.data.KPML.title,
+            this.data.NRML.title,
+            this.data.FTML.title,
+            this.data.SEML.title,
+            this.data.CSML.title,
           ],
         },
       ],
@@ -241,7 +244,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(this.data.activity.name).should('exist')
   })
@@ -258,9 +261,9 @@ describe('Create and solve a group activity', function () {
       clues: this.data.synchronous.clues,
       stack: {
         elements: [
-          this.data.questions.SC.title,
-          this.data.questions.MC.title,
-          this.data.questions.KP.title,
+          this.data.SCML.title,
+          this.data.MCML.title,
+          this.data.KPML.title,
         ],
       },
     })
@@ -403,8 +406,8 @@ describe('Create and solve a group activity', function () {
 
     // add another question to the group activity
     const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.questions.SC.title}"]`)
-      .contains(this.data.questions.SC.title)
+    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`)
+      .contains(this.data.SCML.title)
       .trigger('dragstart', {
         dataTransfer,
       })
@@ -413,8 +416,8 @@ describe('Create and solve a group activity', function () {
     })
 
     const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.questions.CT.title}"]`)
-      .contains(this.data.questions.CT.title)
+    cy.get(`[data-cy="element-item-${this.data.CT.title}"]`)
+      .contains(this.data.CT.title)
       .trigger('dragstart', {
         dataTransfer2,
       })
@@ -425,35 +428,35 @@ describe('Create and solve a group activity', function () {
     // verify that the contained questions are correct
     cy.get(`[data-cy="element-0-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.SC.title.substring(0, 20))
+      .should('contain', this.data.SCML.title.substring(0, 20))
     cy.get(`[data-cy="element-1-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.MC.title.substring(0, 20))
+      .should('contain', this.data.MCML.title.substring(0, 20))
     cy.get(`[data-cy="element-2-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.KP.title.substring(0, 20))
+      .should('contain', this.data.KPML.title.substring(0, 20))
     cy.get(`[data-cy="element-3-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.NR.title.substring(0, 20))
+      .should('contain', this.data.NRML.title.substring(0, 20))
     cy.get(`[data-cy="element-4-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.FT.title.substring(0, 20))
+      .should('contain', this.data.FTML.title.substring(0, 20))
     cy.get(`[data-cy="element-5-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.SE.title.substring(0, 20))
+      .should('contain', this.data.SEML.title.substring(0, 20))
     cy.get(`[data-cy="element-6-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.CS.title.substring(0, 20))
+      .should('contain', this.data.CSML.title.substring(0, 20))
     cy.get(`[data-cy="element-7-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.SC.title.substring(0, 20))
+      .should('contain', this.data.SCML.title.substring(0, 20))
     cy.get(`[data-cy="element-8-stack-0"]`)
       .should('exist')
-      .should('contain', this.data.questions.CT.title.substring(0, 20))
+      .should('contain', this.data.CT.title.substring(0, 20))
     cy.get('[data-cy="next-or-submit"]').click()
 
     // check if the created group activity exists
-    cy.get('[data-cy="load-live-quiz-list"]').click()
+    cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.findByText(this.data.running.name).should('exist')
   })
@@ -481,35 +484,25 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[id="selection-5-field-0"]').click()
     cy.get('[id="react-select-selection-5-field-0-option-0"]').click()
-    cy.get('[id="selection-5-field-0"]').contains(
-      data.questions.collection.options[0]
-    )
+    cy.get('[id="selection-5-field-0"]').contains(data.collection.options[0])
     cy.get('[id="selection-5-field-0"]').click()
     cy.get('[id="react-select-selection-5-field-0-option-1"]').click()
-    cy.get('[id="selection-5-field-0"]').contains(
-      data.questions.collection.options[2]
-    )
+    cy.get('[id="selection-5-field-0"]').contains(data.collection.options[2])
     cy.get('[id="selection-5-field-1"]').click()
     // option numbers smaller than ix since only available objects are shown in select component (0 removed here)
     cy.get('[id="react-select-selection-5-field-1-option-0"]').click()
-    cy.get('[id="selection-5-field-1"]').contains(
-      data.questions.collection.options[0]
-    )
+    cy.get('[id="selection-5-field-1"]').contains(data.collection.options[0])
     cy.get('[id="selection-5-field-2"]').click()
     cy.get('[id="react-select-selection-5-field-2-option-1"]').click()
-    cy.get('[id="selection-5-field-2"]').contains(
-      data.questions.collection.options[3]
-    )
+    cy.get('[id="selection-5-field-2"]').contains(data.collection.options[3])
     cy.get('[id="selection-5-field-2"]').click()
     cy.get('[id="react-select-selection-5-field-2-option-1"]').click()
-    cy.get('[id="selection-5-field-2"]').contains(
-      data.questions.collection.options[4]
-    )
+    cy.get('[id="selection-5-field-2"]').contains(data.collection.options[4])
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.answerCaseStudy({
       elementIx: 6,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
       initialValidation: cy
         .get('[data-cy="submit-group-activity"]')
         .should('be.disabled'), // full answer required
@@ -540,15 +533,13 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.get('[id="selection-5-field-0"]').click()
     cy.get('[id="react-select-selection-5-field-0-option-0"]').click()
-    cy.get('[id="selection-5-field-0"]').contains(
-      data.questions.collection.options[0]
-    )
+    cy.get('[id="selection-5-field-0"]').contains(data.collection.options[0])
     cy.get('[id="selection-5-field-1"]').click()
     cy.get('[data-cy="submit-group-activity"]').should('be.disabled')
     cy.answerCaseStudy({
       elementIx: 6,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
       initialValidation: cy
         .get('[data-cy="submit-group-activity"]')
         .should('be.disabled'), // full answer required
@@ -585,8 +576,8 @@ describe('Create and solve a group activity', function () {
     )
     cy.verifyCaseStudyInputs({
       elementIx: 6,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
       verifyValues: false,
       verifyDisabled: true,
     })
@@ -601,7 +592,6 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
     cy.get('[data-cy="mc-1-answer-option-3"]').should('be.disabled')
-    cy.get('[data-cy="mc-1-answer-option-4"]').should('be.disabled')
 
     cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').should('be.disabled')
@@ -621,18 +611,18 @@ describe('Create and solve a group activity', function () {
       .contains(data.running.answers.freeText)
 
     cy.get('[id="selection-5-field-0"]')
-      .contains(data.questions.collection.options[2])
+      .contains(data.collection.options[2])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-5-field-1"]')
-      .contains(data.questions.collection.options[0])
+      .contains(data.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-5-field-2"]')
-      .contains(data.questions.collection.options[4])
+      .contains(data.collection.options[4])
       .should('have.css', 'pointer-events', 'none')
     cy.verifyCaseStudyInputs({
       elementIx: 6,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
     })
     cy.get('[data-cy="sc-7-answer-option-0"]').should('be.disabled')
     cy.get('[data-cy="sc-7-answer-option-1"]').should('be.disabled')
@@ -645,7 +635,6 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="mc-1-answer-option-1"]').should('be.disabled')
     cy.get('[data-cy="mc-1-answer-option-2"]').should('be.disabled')
     cy.get('[data-cy="mc-1-answer-option-3"]').should('be.disabled')
-    cy.get('[data-cy="mc-1-answer-option-4"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-2-answer-0-correct"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-2-answer-1-correct"]').should('be.disabled')
     cy.get('[data-cy="toggle-kp-2-answer-2-correct"]').should('be.disabled')
@@ -661,7 +650,7 @@ describe('Create and solve a group activity', function () {
       .should('be.disabled')
       .contains(data.running.answers.freeText)
     cy.get('[id="selection-5-field-0"]')
-      .contains(data.questions.collection.options[0])
+      .contains(data.collection.options[0])
       .should('have.css', 'pointer-events', 'none')
     cy.get('[id="selection-5-field-1"]')
       .contains(messages.shared.questions.seSelectOption)
@@ -671,8 +660,8 @@ describe('Create and solve a group activity', function () {
       .should('have.css', 'pointer-events', 'none')
     cy.verifyCaseStudyInputs({
       elementIx: 6,
-      answers: data.questions.CS.answers,
-      criteria: data.questions.CS.criteria,
+      answers: data.CSML.answers,
+      criteria: data.CSML.criteria,
       verifyDisabled: true,
     })
     cy.get('[data-cy="sc-7-answer-option-0"]').should('be.disabled')
@@ -1432,14 +1421,14 @@ describe('Create and solve a group activity', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
     const questions = [
-      this.data.questions.SC.title,
-      this.data.questions.MC.title,
-      this.data.questions.KP.title,
-      this.data.questions.NR.title,
-      this.data.questions.FT.title,
-      this.data.questions.SE.title,
-      this.data.questions.CS.title,
-      this.data.questions.CT.title,
+      this.data.SCML.title,
+      this.data.MCML.title,
+      this.data.KPML.title,
+      this.data.NRML.title,
+      this.data.FTML.title,
+      this.data.SEML.title,
+      this.data.CSML.title,
+      this.data.CT.title,
     ]
 
     cy.wrap(questions).each((title: string) => {
@@ -1452,7 +1441,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({
-      collectionName: this.data.questions.collection.name,
+      collectionName: this.data.collection.name,
     })
   })
 

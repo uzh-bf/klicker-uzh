@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma'
-import type { AvatarSettings as AvatarSettingsType } from '@klicker-uzh/types'
+import {
+  type AvatarSettingsInput as AvatarSettingsInputType,
+  type AvatarSettings as AvatarSettingsType,
+  type SubscriptionKeysInput as SubscriptionKeysInputType,
+  type SubscriptionObjectInput as SubscriptionObjectInputType,
+} from '@klicker-uzh/types'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import builder from '../builder.js'
 import {
@@ -24,7 +29,10 @@ import {
 } from './groupActivity.js'
 import { LocaleType } from './user.js'
 
-export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
+export const AvatarSettingsInputRef = builder.inputRef<AvatarSettingsInputType>(
+  'AvatarSettingsInput'
+)
+export const AvatarSettingsInput = AvatarSettingsInputRef.implement({
   fields: (t) => ({
     skinTone: t.string({ required: true }),
     eyes: t.string({ required: true }),
@@ -38,29 +46,27 @@ export const AvatarSettingsInput = builder.inputType('AvatarSettingsInput', {
   }),
 })
 
-export const SubscriptionKeysInput = builder.inputType(
-  'SubscriptionKeysInput',
-  {
-    fields: (t) => ({
-      p256dh: t.string({ required: true }),
-      auth: t.string({ required: true }),
-    }),
-  }
-)
+export const SubscriptionKeysInputRef =
+  builder.inputRef<SubscriptionKeysInputType>('SubscriptionKeysInput')
+export const SubscriptionKeysInput = SubscriptionKeysInputRef.implement({
+  fields: (t) => ({
+    p256dh: t.string({ required: true }),
+    auth: t.string({ required: true }),
+  }),
+})
 
-export const SubscriptionObjectInput = builder.inputType(
-  'SubscriptionObjectInput',
-  {
-    fields: (t) => ({
-      endpoint: t.string({ required: true }),
-      expirationTime: t.int({ required: false }),
-      keys: t.field({
-        type: SubscriptionKeysInput,
-        required: true,
-      }),
+export const SubscriptionObjectInputRef =
+  builder.inputRef<SubscriptionObjectInputType>('SubscriptionObjectInput')
+export const SubscriptionObjectInput = SubscriptionObjectInputRef.implement({
+  fields: (t) => ({
+    endpoint: t.string({ required: true }),
+    expirationTime: t.int({ required: false }),
+    keys: t.field({
+      type: SubscriptionKeysInput,
+      required: true,
     }),
-  }
-)
+  }),
+})
 
 export interface ILevel extends DB.Level {
   nextLevel?: ILevel | null

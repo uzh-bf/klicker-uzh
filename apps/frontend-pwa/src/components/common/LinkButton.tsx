@@ -12,6 +12,9 @@ interface LinkButtonProps {
   disabled?: boolean
   className?: {
     root?: string
+    active?: string
+    icon?: string
+    label?: string
   }
   [key: string]: any
 }
@@ -33,13 +36,22 @@ function LinkButton({
         fluid
         className={{
           root: twMerge('text-lg', className?.root),
+          active: className?.active,
         }}
         onClick={onClick}
         data={data}
         disabled={disabled}
       >
-        {icon && <Button.Icon icon={icon} />}
-        <Button.Label className={{ root: 'flex-1 text-left' }}>
+        {icon && (
+          <Button.Icon
+            icon={icon}
+            loading={props?.loading}
+            className={{ root: className?.icon }}
+          />
+        )}
+        <Button.Label
+          className={{ root: twMerge('flex-1 text-left', className?.label) }}
+        >
           {children}
         </Button.Label>
       </Button>

@@ -42,7 +42,7 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
   return (
     <Button
       basic
-      disabled={startingQuiz}
+      loading={startingQuiz}
       onClick={async () => {
         try {
           await startLiveQuiz({
@@ -58,7 +58,7 @@ function StartLiveQuizButton({ liveQuiz }: StartLiveQuizButtonProps) {
       }}
       data={{ cy: `start-live-quiz-${liveQuiz.name}` }}
     >
-      <Button.Icon icon={faPlay} />
+      <Button.Icon icon={faPlay} loading={startingQuiz} />
       <Button.Label>{t('manage.liveQuizzes.startLiveQuiz')}</Button.Label>
     </Button>
   )

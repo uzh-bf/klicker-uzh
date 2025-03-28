@@ -8,6 +8,7 @@ interface SharedQuestionFormProps {
   name: string
   status: ElementStatus
   content: string
+  basePoints: boolean
   pointsMultiplier: string
   tags?: string[] | null
 }
@@ -87,11 +88,17 @@ export type ElementFormTypesCaseStudySolutions = Record<
 
 export type ElementFormTypesCaseStudyCriterion = {
   id: string // short id
+  mode: 'range' | 'steps'
   name: string
-  min: string
-  max: string
+  min?: number
+  max?: number
   step: string
   unit?: string | null
+  labels?: {
+    min: string
+    mid?: string | null
+    max: string
+  } | null
 }
 
 export interface ElementFormTypesCaseStudy extends SharedQuestionFormProps {

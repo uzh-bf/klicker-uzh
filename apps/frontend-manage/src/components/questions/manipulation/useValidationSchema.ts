@@ -460,44 +460,100 @@ function useOptionsSchemaCaseStudy() {
     criteria: yup
       .array()
       .of(
-        yup.object().shape({
-          id: yup.string().required(),
-          name: yup
-            .string()
-            .required(t('manage.formErrors.CSCriteriaNameRequired')),
-          min: yup
-            .number()
-            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
-            .max(1e30, t('manage.formErrors.NumericalOverflow'))
-            .required(t('manage.formErrors.CSCriteriaMinRequired'))
-            .when('max', {
-              is: (max?: number) => typeof max !== 'undefined' && max !== null,
+        yup
+          .object()
+          .shape({
+            id: yup.string().required(),
+            name: yup
+              .string()
+              .required(t('manage.formErrors.CSCriteriaNameRequired')),
+            mode: yup.string().oneOf(['range', 'steps']).required(),
+            min: yup.number().when('mode', {
+              is: 'range',
               then: (schema) =>
-                schema.lessThan(
-                  yup.ref('max'),
-                  t('manage.formErrors.CSCriteriaMinLessThanMax')
-                ),
+                schema
+                  .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+                  .max(1e30, t('manage.formErrors.NumericalOverflow'))
+                  .required(t('manage.formErrors.CSCriteriaMinRequired'))
+                  .when('max', {
+                    is: (max?: number) =>
+                      typeof max !== 'undefined' && max !== null,
+                    then: (schema) =>
+                      schema.lessThan(
+                        yup.ref('max'),
+                        t('manage.formErrors.CSCriteriaMinLessThanMax')
+                      ),
+                  }),
+              otherwise: undefined, // value cannot be set by user
             }),
-          max: yup
-            .number()
-            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
-            .max(1e30, t('manage.formErrors.NumericalOverflow'))
-            .required(t('manage.formErrors.CSCriteriaMaxRequired')),
-          step: yup
-            .number()
-            .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
-            .max(1e30, t('manage.formErrors.NumericalOverflow'))
-            .required(t('manage.formErrors.CSCriteriaStepRequired'))
-            .test({
-              message: t('manage.formErrors.CSStepSizeTooLarge'),
-              test: function (step) {
-                const max = this.parent.max
-                const min = this.parent.min
-                return step <= (max - min) / 2
-              },
+            max: yup.number().when('mode', {
+              is: 'range',
+              then: (schema) =>
+                schema
+                  .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+                  .max(1e30, t('manage.formErrors.NumericalOverflow'))
+                  .required(t('manage.formErrors.CSCriteriaMaxRequired')),
+              otherwise: undefined, // value cannot be set by user
             }),
-          unit: yup.string().nullable(),
-        })
+            step: yup.number().when('mode', {
+              is: 'range',
+              then: (schema) =>
+                schema
+                  .min(-1e30, t('manage.formErrors.NumericalUnderflow'))
+                  .max(1e30, t('manage.formErrors.NumericalOverflow'))
+                  .required(t('manage.formErrors.CSCriteriaStepRequired'))
+                  .test({
+                    message: t('manage.formErrors.CSStepSizeTooLarge'),
+                    test: function (step) {
+                      const max = this.parent.max
+                      const min = this.parent.min
+                      return step <= (max - min) / 2
+                    },
+                  }),
+              otherwise: undefined, // value cannot be set by user
+            }),
+            unit: yup.string().nullable(),
+            labels: yup.object().when('mode', {
+              is: 'steps',
+              then: (schema) =>
+                schema.test({
+                  message: t('manage.formErrors.CSLabelsRequired'),
+                  test: function (labels: {
+                    min?: string
+                    mid?: string
+                    max?: string
+                  }) {
+                    if (!labels) return false
+
+                    const minLabel = labels.min
+                    const maxLabel = labels.max
+
+                    return (
+                      typeof minLabel === 'string' &&
+                      minLabel.trim().length > 0 &&
+                      typeof maxLabel === 'string' &&
+                      maxLabel.trim().length > 0
+                    )
+                  },
+                }),
+              otherwise: (schema) => schema.nullable(),
+            }),
+          })
+          .test({
+            message: t('manage.formErrors.CSStepsDefinitionRequired'),
+            test: function (criterion) {
+              if (criterion.mode !== 'steps') return true
+
+              const max = criterion.max
+              const min = criterion.min
+
+              if (typeof max === 'undefined' || max === null) return false
+              if (typeof min === 'undefined' || min === null) return false
+
+              // check if the number of steps is chosen sufficiently large
+              return max + 1 - min >= 2
+            },
+          })
       )
       .required(t('manage.formErrors.CSCriteriaRequired'))
       .min(1, t('manage.formErrors.CSCriteriaRequired')),
@@ -596,8 +652,8 @@ function useOptionsSchemaCaseStudy() {
                     })
                   }
 
-                  const criterionMin = parseFloat(criterion.min)
-                  const criterionMax = parseFloat(criterion.max)
+                  const criterionMin = parseFloat(String(criterion.min))
+                  const criterionMax = parseFloat(String(criterion.max))
                   const stepValue = parseFloat(criterion.step)
 
                   if (
@@ -617,13 +673,35 @@ function useOptionsSchemaCaseStudy() {
                       })
                     }
 
-                    if (minValue + stepValue > maxValue) {
+                    // for numerical range criteria, enforce that min and max are at least one step width apart
+                    if (
+                      criterion.mode === 'range' &&
+                      minValue + stepValue > maxValue
+                    ) {
                       return this.createError({
                         message: t('manage.formErrors.CSSolutionsMinMaxStep', {
                           itemNumber: itemIx + 1,
                           criterionName: criterion.name,
                         }),
                       })
+                    }
+
+                    // for step / likert criteria, enforce that min and max are integers
+                    if (criterion.mode === 'steps') {
+                      const minInt = Math.floor(minValue)
+                      const maxInt = Math.floor(maxValue)
+
+                      if (minInt !== minValue || maxInt !== maxValue) {
+                        return this.createError({
+                          message: t(
+                            'manage.formErrors.CSSolutionsMinMaxIntegers',
+                            {
+                              itemNumber: itemIx + 1,
+                              criterionName: criterion.name,
+                            }
+                          ),
+                        })
+                      }
                     }
                   }
                 }

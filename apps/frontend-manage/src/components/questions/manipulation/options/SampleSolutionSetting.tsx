@@ -3,17 +3,21 @@ import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { FormikSwitchField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-interface SampleSolutionSettingProps {
+function SampleSolutionSetting({
+  disabled = false,
+  type,
+}: {
+  disabled: boolean
   type: ElementType
-}
-
-function SampleSolutionSetting({ type }: SampleSolutionSettingProps) {
+}) {
   const t = useTranslations()
 
   return QUESTION_GROUPS.ALL.includes(type) ? (
     <FormikSwitchField
+      size="sm"
+      disabled={disabled}
       name="options.hasSampleSolution"
-      label={t('shared.generic.sampleSolution')}
+      label={t('manage.questionForms.enableSampleSolution')}
       data={{ cy: 'configure-sample-solution' }}
       className={{ label: 'text-gray-600' }}
     />

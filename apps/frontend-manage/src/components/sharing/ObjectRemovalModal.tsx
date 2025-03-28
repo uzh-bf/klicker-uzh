@@ -58,7 +58,7 @@ function ObjectRemovalModal({
         }}
         data={{ cy: 'confirm-remove-object' }}
       >
-        <Button.Icon icon={faTrashCan} />
+        <Button.Icon icon={faTrashCan} loading={removing} />
         <Button.Label>{t('manage.sharing.confirmRemoval')}</Button.Label>
       </Button>
     </Modal>

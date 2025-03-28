@@ -25,14 +25,24 @@ interface CommonFormValues {
   multiplier: string
 }
 
+export interface ElementInstanceFormInput {
+  id: number
+  title: string
+  type: ElementType
+  hasSampleSolution: boolean
+  existingInstanceId: number | null
+  duplicateInstance: boolean
+}
+
 export interface ElementBlockFormValues {
   timeLimit?: number
-  elements: {
-    id: number
-    title: string
-    type: ElementType
-    hasSampleSolution: boolean
-  }[]
+  elements: ElementInstanceFormInput[]
+}
+
+export interface ElementStackFormValues {
+  displayName?: string
+  description?: string
+  elements: ElementInstanceFormInput[]
 }
 
 export interface ElementBlockErrorValues {
@@ -45,17 +55,6 @@ export interface ElementBlockErrorValues {
         type: string
         hasSampleSolution: string
       }[]
-}
-
-export interface ElementStackFormValues {
-  displayName?: string
-  description?: string
-  elements: {
-    id: number
-    title: string
-    type: ElementType
-    hasSampleSolution: boolean
-  }[]
 }
 
 export interface ElementStackErrorValues {

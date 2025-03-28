@@ -709,7 +709,7 @@ describe('Test course creation and editing functionalities', function () {
 
     // check that the live quiz has been removed from the course
     cy.get('[data-cy="live-quizzes"]').click()
-    cy.contains('[data-cy="live-quiz-block"]', this.data.deletion.lqName)
+    cy.get(`[data-cy="live-quiz-${this.data.deletion.lqName}"]`).should('exist')
     cy.get(`[data-cy="edit-live-quiz-${this.data.deletion.lqName}"]`).click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()

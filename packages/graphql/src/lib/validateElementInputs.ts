@@ -1,17 +1,5 @@
 import * as DB from '@klicker-uzh/prisma'
-import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
-
-export interface ManipulateQuestionArgs {
-  id?: number | null
-  status?: DB.ElementStatus | null
-  type: DB.ElementType
-  name?: string | null
-  content?: string | null
-  explanation?: string | null
-  options?: ElementOptionsArgs | null
-  pointsMultiplier?: number | null
-  tags?: string[] | null
-}
+import { ElementManipulationInput } from '@klicker-uzh/types'
 
 function validateElementInputs({
   id,
@@ -20,8 +8,9 @@ function validateElementInputs({
   name,
   content,
   explanation,
+  basePoints,
   pointsMultiplier,
-}: Omit<ManipulateQuestionArgs, 'tags' | 'options'>) {
+}: Omit<ElementManipulationInput, 'tags' | 'options'>) {
   // validate if required fields are present when creating a new element
   if (typeof id === 'undefined' || id === null) {
     if (!status) {
@@ -47,6 +36,14 @@ function validateElementInputs({
         explanation === '')
     ) {
       console.error('Explanation is required for flashcards')
+      return false
+    }
+    if (
+      typeof basePoints !== 'boolean' &&
+      type !== DB.ElementType.CONTENT &&
+      type !== DB.ElementType.FLASHCARD
+    ) {
+      console.error('Base points setting is required')
       return false
     }
     if (

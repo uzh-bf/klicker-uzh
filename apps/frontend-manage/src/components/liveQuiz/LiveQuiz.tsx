@@ -1,5 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faClock, faCopy } from '@fortawesome/free-regular-svg-icons'
+import { faWpforms } from '@fortawesome/free-brands-svg-icons'
+import {
+  faClock,
+  faCopy,
+  faFile,
+  faFileLines,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   IconDefinition,
   faArrowUpRightFromSquare,
@@ -29,23 +35,38 @@ import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { WizardMode } from '../activities/ElementCreation'
 import LiveQuizDeletionModal from '../courses/modals/LiveQuizDeletionModal'
 import TemplateConversionModal from '../courses/modals/TemplateConversionModal'
+import TemplateCreationErrorToast from '../courses/modals/TemplateCreationErrorToast'
+import TemplateCreationSuccessToast from '../courses/modals/TemplateCreationSuccessToast'
+import TemplateDeletionErrorToast from '../courses/modals/TemplateDeletionErrorToast'
+import TemplateDeletionModal from '../courses/modals/TemplateDeletionModal'
+import TemplateDeletionSuccessToast from '../courses/modals/TemplateDeletionSuccessToast'
+import TemplateEditErrorToast from '../courses/modals/TemplateEditErrorToast'
+import TemplateEditModal from '../courses/modals/TemplateEditModal'
+import TemplateEditSuccessToast from '../courses/modals/TemplateEditSuccessToast'
 import EmbeddingModal from './EmbeddingModal'
 import LiveQuizNameChangeModal from './LiveQuizNameChangeModal'
 import LiveQuizQRModal from './cockpit/LiveQuizQRModal'
 
 function LiveQuiz({
+  isTemplate = false,
+  highlighted = false,
   quiz,
 }: {
+  isTemplate?: boolean
+  highlighted?: boolean
   quiz: Pick<
     LiveQuizType,
     | 'id'
     | 'name'
     | 'displayName'
     | 'status'
+    | 'templateId'
+    | 'templateName'
     | 'numOfBlocks'
     | 'numOfInstances'
     | 'createdAt'
@@ -119,11 +140,19 @@ function LiveQuiz({
   )
 
   const [showDetails, setShowDetails] = useState<boolean>(false)
-  const [selectedLiveQuiz, setSelectedLiveQuiz] = useState<string>('')
   const [embedModalOpen, setEmbedModalOpen] = useState<boolean>(false)
   const [qrModalOpen, setQrModalOpen] = useState<boolean>(false)
   const [deletionModal, setDeletionModal] = useState<boolean>(false)
+  const [editTemplateModal, setEditTemplateModal] = useState<boolean>(false)
+  const [deletionTemplateModal, setDeletionTemplateModal] =
+    useState<boolean>(false)
   const [changeName, setChangeName] = useState<boolean>(false)
+  const [templateCreationSuccess, setTemplateCreationSuccess] = useState(false)
+  const [templateCreationError, setTemplateCreationError] = useState(false)
+  const [templateEditSuccess, setTemplateEditSuccess] = useState(false)
+  const [templateEditError, setTemplateEditError] = useState(false)
+  const [templateDeletionSuccess, setTemplateDeletionSuccess] = useState(false)
+  const [templateDeletionError, setTemplateDeletionError] = useState(false)
 
   const [conversionModal, setConversionModal] = useState<{
     open: boolean
@@ -137,6 +166,7 @@ function LiveQuiz({
     [PublicationStatus.Published]: faPlay,
     [PublicationStatus.Ended]: faCheck,
     [PublicationStatus.Graded]: faCheck,
+    [PublicationStatus.Template]: faFileLines,
   }
   const timeStamp: Record<PublicationStatus, string | null> = {
     [PublicationStatus.Draft]: quiz.createdAt,
@@ -144,152 +174,180 @@ function LiveQuiz({
     [PublicationStatus.Published]: quiz.startedAt,
     [PublicationStatus.Ended]: quiz.finishedAt,
     [PublicationStatus.Graded]: quiz.finishedAt,
+    [PublicationStatus.Template]: null,
   }
+
+  useEffect(() => {
+    if (highlighted) {
+      setShowDetails(true)
+    }
+  }, [highlighted])
 
   return (
     <>
-      <div key={quiz.id} className="rounded border p-1" data-cy="live-quiz">
+      <div
+        key={quiz.id}
+        className={twMerge(
+          'rounded-md border p-1',
+          highlighted && 'border-primary-100 border-2 bg-orange-50'
+        )}
+        data-cy={`live-quiz-${quiz.name}`}
+      >
         {/* // TODO: remove additional tailwind styles, which are not imported correctly */}
         {/* <div className="col-span-1 col-span-2 col-span-3 col-span-4 col-span-5" /> */}
         <Collapsible
-          className={{ root: 'border-0 !py-0.5' }}
+          className={{
+            root: 'border-0 !py-0.5',
+          }}
           key={quiz.id}
-          open={showDetails && quiz.id === selectedLiveQuiz}
+          open={showDetails}
           onChange={() => {
-            if (quiz.id === selectedLiveQuiz) {
-              setShowDetails(!showDetails)
-            } else {
-              setShowDetails(true)
-              setSelectedLiveQuiz(quiz.id)
-            }
+            setShowDetails((prev) => !prev)
           }}
           staticContent={
-            <div
-              className="flex flex-row justify-between"
-              data-cy="live-quiz-block"
-            >
+            <div className="flex flex-row justify-between">
               <div className="flex flex-row items-center gap-3">
                 <H3 className={{ root: 'mb-0' }}>{quiz.name}</H3>
-                <FontAwesomeIcon
-                  icon={faPencil}
-                  size="sm"
-                  onClick={() => setChangeName(true)}
-                  className="hover:cursor-pointer"
-                  data-cy={`change-liveQuiz-name-${quiz.name}`}
-                />
+                {!isTemplate && (
+                  <FontAwesomeIcon
+                    icon={faPencil}
+                    size="sm"
+                    onClick={() => setChangeName(true)}
+                    className="hover:cursor-pointer"
+                    data-cy={`change-liveQuiz-name-${quiz.name}`}
+                  />
+                )}
+                {quiz.templateName !== null &&
+                  typeof quiz.templateName !== 'undefined' && (
+                    <div className="text-sm text-gray-600">
+                      {`(${t('manage.template.basedOnObject', {
+                        object: quiz.templateName,
+                      })})`}
+                    </div>
+                  )}
               </div>
-              <div className="mr-2 flex flex-row">
-                {quiz.blocks?.length !== 0 && (
-                  <>
+              {isTemplate ? (
+                <div className="text-primary-100 flex items-center gap-1 rounded-md px-2 py-1 font-semibold">
+                  <FontAwesomeIcon icon={faFile} className="mr-1" />
+                  {t('shared.generic.template')}
+                </div>
+              ) : (
+                <div className="mr-2 flex flex-row">
+                  {quiz.blocks?.length !== 0 && (
+                    <>
+                      <Button
+                        basic
+                        className={{ root: 'h-7 text-sm' }}
+                        onClick={() => setEmbedModalOpen(true)}
+                        data={{ cy: `show-embedding-modal-${quiz.name}` }}
+                      >
+                        <Button.Icon icon={faCode} />
+                        <Button.Label>
+                          {t('manage.liveQuizzes.embeddingEvaluation')}
+                        </Button.Label>
+                      </Button>
+                      <EmbeddingModal
+                        key={quiz.id}
+                        open={embedModalOpen}
+                        onClose={() => setEmbedModalOpen(false)}
+                        quizId={quiz.id}
+                        elements={quiz.blocks
+                          ?.flatMap((block) => block.elements)
+                          .filter(
+                            (instance) =>
+                              typeof instance !== 'undefined' &&
+                              instance !== null
+                          )}
+                      />
+                    </>
+                  )}
+
+                  {quiz.status !== PublicationStatus.Ended && (
+                    <>
+                      <Button
+                        basic
+                        onClick={() => setQrModalOpen(true)}
+                        className={{ root: 'h-7 text-sm' }}
+                        data={{ cy: `show-qr-modal-${quiz.name}` }}
+                      >
+                        <Button.Icon icon={faQrcode} />
+                        <Button.Label>
+                          {t('manage.general.qrCode')}
+                        </Button.Label>
+                      </Button>
+                      <LiveQuizQRModal
+                        quizId={quiz.id}
+                        open={qrModalOpen}
+                        setOpen={setQrModalOpen}
+                      />
+                    </>
+                  )}
+
+                  {PublicationStatus.Published === quiz.status && (
                     <Button
                       basic
+                      onClick={() => router.push(`/quizzes/${quiz.id}/cockpit`)}
                       className={{ root: 'h-7 text-sm' }}
-                      onClick={() => setEmbedModalOpen(true)}
-                      data={{ cy: `show-embedding-modal-${quiz.name}` }}
+                      data={{ cy: `live-quiz-cockpit-${quiz.name}` }}
                     >
-                      <Button.Icon icon={faCode} />
+                      <Button.Icon icon={faArrowUpRightFromSquare} />
                       <Button.Label>
-                        {t('manage.liveQuizzes.embeddingEvaluation')}
+                        {t('manage.liveQuizzes.lecturerCockpit')}
                       </Button.Label>
                     </Button>
-                    <EmbeddingModal
-                      key={quiz.id}
-                      open={embedModalOpen}
-                      onClose={() => setEmbedModalOpen(false)}
-                      quizId={quiz.id}
-                      elements={quiz.blocks
-                        ?.flatMap((block) => block.elements)
-                        .filter(
-                          (instance) =>
-                            typeof instance !== 'undefined' && instance !== null
-                        )}
-                    />
-                  </>
-                )}
-
-                {quiz.status !== PublicationStatus.Ended && (
-                  <>
+                  )}
+                  {PublicationStatus.Ended === quiz.status && (
                     <Button
                       basic
-                      onClick={() => setQrModalOpen(true)}
+                      onClick={() =>
+                        window.open(`/quizzes/${quiz.id}/evaluation`, '_blank')
+                      }
                       className={{ root: 'h-7 text-sm' }}
-                      data={{ cy: `show-qr-modal-${quiz.name}` }}
+                      data={{ cy: `live-quiz-evaluation-${quiz.name}` }}
                     >
-                      <Button.Icon icon={faQrcode} />
-                      <Button.Label>{t('manage.general.qrCode')}</Button.Label>
+                      <Button.Icon
+                        icon={faArrowUpRightFromSquare}
+                        className={{ root: 'h-3.5 w-3.5' }}
+                      />
+                      <Button.Label>
+                        {t('manage.liveQuizzes.liveQuizEvaluation')}
+                      </Button.Label>
                     </Button>
-                    <LiveQuizQRModal
-                      quizId={quiz.id}
-                      open={qrModalOpen}
-                      setOpen={setQrModalOpen}
+                  )}
+                  {(PublicationStatus.Draft === quiz.status ||
+                    PublicationStatus.Scheduled === quiz.status) && (
+                    <Button
+                      basic
+                      disabled={startingQuiz}
+                      onClick={async () => {
+                        await startLiveQuiz()
+                        router.push(`quizzes/${quiz.id}/cockpit`)
+                      }}
+                      className={{ root: 'h-7 text-sm' }}
+                      data={{ cy: `start-live-quiz-${quiz.name}` }}
+                    >
+                      <Button.Icon
+                        icon={faPlay}
+                        className={{ root: 'h-3.5 w-3.5' }}
+                      />
+                      <Button.Label>
+                        {t('manage.liveQuizzes.startLiveQuiz')}
+                      </Button.Label>
+                    </Button>
+                  )}
+                  <div className="ml-3 flex flex-row items-center gap-1 text-sm">
+                    <FontAwesomeIcon
+                      icon={timeIcon[quiz.status]}
+                      className="mr-1"
                     />
-                  </>
-                )}
-
-                {PublicationStatus.Published === quiz.status && (
-                  <Button
-                    basic
-                    onClick={() => router.push(`/quizzes/${quiz.id}/cockpit`)}
-                    className={{ root: 'h-7 text-sm' }}
-                    data={{ cy: `live-quiz-cockpit-${quiz.name}` }}
-                  >
-                    <Button.Icon icon={faArrowUpRightFromSquare} />
-                    <Button.Label>
-                      {t('manage.liveQuizzes.lecturerCockpit')}
-                    </Button.Label>
-                  </Button>
-                )}
-                {PublicationStatus.Ended === quiz.status && (
-                  <Button
-                    basic
-                    onClick={() =>
-                      window.open(`/quizzes/${quiz.id}/evaluation`, '_blank')
-                    }
-                    className={{ root: 'h-7 text-sm' }}
-                    data={{ cy: `live-quiz-evaluation-${quiz.name}` }}
-                  >
-                    <Button.Icon
-                      icon={faArrowUpRightFromSquare}
-                      className={{ root: 'h-3.5 w-3.5' }}
-                    />
-                    <Button.Label>
-                      {t('manage.liveQuizzes.liveQuizEvaluation')}
-                    </Button.Label>
-                  </Button>
-                )}
-                {(PublicationStatus.Draft === quiz.status ||
-                  PublicationStatus.Scheduled === quiz.status) && (
-                  <Button
-                    basic
-                    disabled={startingQuiz}
-                    onClick={async () => {
-                      await startLiveQuiz()
-                      router.push(`quizzes/${quiz.id}/cockpit`)
-                    }}
-                    className={{ root: 'h-7 text-sm' }}
-                    data={{ cy: `start-live-quiz-${quiz.name}` }}
-                  >
-                    <Button.Icon
-                      icon={faPlay}
-                      className={{ root: 'h-3.5 w-3.5' }}
-                    />
-                    <Button.Label>
-                      {t('manage.liveQuizzes.startLiveQuiz')}
-                    </Button.Label>
-                  </Button>
-                )}
-                <div className="ml-3 flex flex-row items-center gap-1 text-sm">
-                  <FontAwesomeIcon
-                    icon={timeIcon[quiz.status]}
-                    className="mr-1"
-                  />
-                  {dayjs(timeStamp[quiz.status]).format('YYYY-MM-DD HH:mm')}
+                    {dayjs(timeStamp[quiz.status]).format('YYYY-MM-DD HH:mm')}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           }
           closedContent={
-            <div className="italic">
+            <div>
               {t('manage.liveQuizzes.nBlocksQuestions', {
                 blocks: quiz.numOfBlocks,
                 questions: quiz.numOfInstances,
@@ -297,25 +355,27 @@ function LiveQuiz({
             </div>
           }
           primary={
-            <div className="float-right flex flex-row gap-1">
-              <Button
-                className={{ root: 'px-3 py-1 text-sm' }}
-                onClick={() =>
-                  router.push({
-                    pathname: '/',
-                    query: {
-                      elementId: quiz.id,
-                      duplicationMode: WizardMode.LiveQuiz,
-                    },
-                  })
-                }
-                data={{ cy: `duplicate-live-quiz-${quiz.name}` }}
-              >
-                <Button.Icon icon={faCopy} />
-                <Button.Label>
-                  {t('manage.liveQuizzes.duplicateLiveQuiz')}
-                </Button.Label>
-              </Button>
+            <div className="float-right flex flex-row gap-2">
+              {quiz.status !== PublicationStatus.Template && (
+                <Button
+                  className={{ root: 'px-3 py-1 text-sm' }}
+                  onClick={() =>
+                    router.push({
+                      pathname: '/',
+                      query: {
+                        elementId: quiz.id,
+                        duplicationMode: WizardMode.LiveQuiz,
+                      },
+                    })
+                  }
+                  data={{ cy: `duplicate-live-quiz-${quiz.name}` }}
+                >
+                  <Button.Icon icon={faCopy} />
+                  <Button.Label>
+                    {t('manage.liveQuizzes.duplicateLiveQuiz')}
+                  </Button.Label>
+                </Button>
+              )}
               {(PublicationStatus.Draft === quiz.status ||
                 PublicationStatus.Scheduled === quiz.status) && (
                 <Button
@@ -337,9 +397,7 @@ function LiveQuiz({
                   </Button.Label>
                 </Button>
               )}
-              {/* // TODO: re-introduce template button */}
-              {false &&
-                PublicationStatus.Draft === quiz.status &&
+              {PublicationStatus.Draft === quiz.status &&
                 privatePreviewData?.checkPrivatePreviewAvailable && (
                   <Button
                     className={{ root: 'px-3 py-1 text-sm' }}
@@ -375,8 +433,51 @@ function LiveQuiz({
                   </Button.Label>
                 </Button>
               )}
+              {quiz.status === PublicationStatus.Template &&
+                quiz.templateId && (
+                  <>
+                    <Button
+                      className={{ root: 'px-3 py-1 text-sm' }}
+                      onClick={() => setEditTemplateModal(true)}
+                      data={{ cy: `edit-template-${quiz.name}` }}
+                    >
+                      <Button.Icon icon={faPencil} />
+                      <Button.Label>
+                        {t('manage.template.editTemplate')}
+                      </Button.Label>
+                    </Button>
+                    <Button
+                      className={{ root: 'px-3 py-1 text-sm' }}
+                      onClick={() =>
+                        router.push(`/templates/${quiz.templateId}`)
+                      }
+                      data={{ cy: `use-template-${quiz.name}` }}
+                    >
+                      <Button.Icon icon={faWpforms} />
+                      <Button.Label>
+                        {t('manage.catalog.useTemplate')}
+                      </Button.Label>
+                    </Button>
+                    <Button
+                      className={{
+                        root: 'border-red-600 px-3 py-1 text-sm',
+                      }}
+                      onClick={() => setDeletionTemplateModal(true)}
+                      data={{ cy: `delete-template-${quiz.name}` }}
+                    >
+                      <Button.Icon
+                        icon={faTrash}
+                        className={{ root: 'text-red-600' }}
+                      />
+                      <Button.Label>
+                        {t('manage.template.deleteTemplate')}
+                      </Button.Label>
+                    </Button>
+                  </>
+                )}
             </div>
           }
+          data={{ cy: `live-quiz-collapsible-${quiz.name}` }}
         >
           <div className="mb-6 mt-4 flex flex-row gap-4 overflow-x-auto overflow-y-hidden">
             {quiz.blocks?.map((block, index) => (
@@ -403,7 +504,7 @@ function LiveQuiz({
                 <div>
                   {block.elements?.map((instance) => (
                     <Link
-                      href={`/questions/${instance.elementData!.elementId}`}
+                      href={`/instances/${instance.id}`}
                       className="text-sm hover:text-slate-700"
                       key={instance.id}
                       legacyBehavior
@@ -438,26 +539,71 @@ function LiveQuiz({
           </div>
         </Collapsible>
       </div>
-      <LiveQuizDeletionModal
-        quizId={quiz.id}
-        open={deletionModal}
-        setOpen={setDeletionModal}
-        onDelete={deleteLiveQuiz}
-        deleting={deletingLiveQuiz}
-      />
-      <LiveQuizNameChangeModal
-        quizId={quiz.id}
-        name={quiz.name}
-        displayName={quiz.displayName}
-        open={changeName}
-        setOpen={setChangeName}
-      />
-      <TemplateConversionModal
-        open={conversionModal.open}
-        setOpen={(open) => setConversionModal({ ...conversionModal, open })}
-        activityId={conversionModal.activityId}
-        activityType={conversionModal.activityType}
-      />
+      <div>
+        <LiveQuizDeletionModal
+          quizId={quiz.id}
+          open={deletionModal}
+          setOpen={setDeletionModal}
+          onDelete={deleteLiveQuiz}
+          deleting={deletingLiveQuiz}
+        />
+        <LiveQuizNameChangeModal
+          quizId={quiz.id}
+          name={quiz.name}
+          displayName={quiz.displayName}
+          open={changeName}
+          setOpen={setChangeName}
+        />
+        <TemplateDeletionModal
+          activityId={quiz.id}
+          activityType={ActivityType.LiveQuiz}
+          open={deletionTemplateModal}
+          setOpen={setDeletionTemplateModal}
+          onSuccess={() => setTemplateDeletionSuccess(true)}
+          onError={() => setTemplateDeletionError(true)}
+        />
+        <TemplateEditModal
+          activityId={quiz.id}
+          activityType={ActivityType.LiveQuiz}
+          open={editTemplateModal}
+          setOpen={setEditTemplateModal}
+          onSuccess={() => setTemplateEditSuccess(true)}
+          onError={() => setTemplateEditError(true)}
+        />
+
+        <TemplateConversionModal
+          open={conversionModal.open}
+          setOpen={(open) => setConversionModal({ ...conversionModal, open })}
+          activityId={conversionModal.activityId}
+          activityType={conversionModal.activityType}
+          onSuccess={() => setTemplateCreationSuccess(true)}
+          onError={() => setTemplateCreationError(true)}
+        />
+        <TemplateCreationSuccessToast
+          open={templateCreationSuccess}
+          onClose={() => setTemplateCreationSuccess(false)}
+        />
+        <TemplateCreationErrorToast
+          open={templateCreationError}
+          onClose={() => setTemplateCreationError(false)}
+        />
+        <TemplateEditSuccessToast
+          open={templateEditSuccess}
+          onClose={() => setTemplateEditSuccess(false)}
+        />
+        <TemplateEditErrorToast
+          open={templateEditError}
+          onClose={() => setTemplateEditError(false)}
+        />
+        <TemplateDeletionSuccessToast
+          open={templateDeletionSuccess}
+          onClose={() => setTemplateDeletionSuccess(false)}
+        />
+        <TemplateDeletionErrorToast
+          open={templateDeletionError}
+          onClose={() => setTemplateDeletionError(false)}
+        />
+      </div>
     </>
   )
 }

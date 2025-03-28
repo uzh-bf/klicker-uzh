@@ -2,14 +2,17 @@ import { CatalogObjectType, ObjectAccess } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField, UserNotification } from '@uzh-bf/design-system'
 import { FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 import { CatalogObjectAdditionFormValues } from './AddObjectToCatalogModal'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
 function ObjectTypeSelection({
   accessValue,
+  objectTypeValue,
   setFieldValue,
 }: {
   accessValue: ObjectAccess
+  objectTypeValue?: CatalogObjectType
   setFieldValue: (
     field: string,
     value: any,
@@ -17,6 +20,15 @@ function ObjectTypeSelection({
   ) => Promise<void | FormikErrors<CatalogObjectAdditionFormValues>>
 }) {
   const t = useTranslations()
+
+  // for templates the default object access type is public
+  useEffect(() => {
+    if (objectTypeValue === CatalogObjectType.LiveQuizTemplate) {
+      setFieldValue('access', ObjectAccess.Public)
+    } else {
+      setFieldValue('access', ObjectAccess.Restricted)
+    }
+  }, [objectTypeValue, setFieldValue])
 
   return (
     <div>
@@ -41,6 +53,10 @@ function ObjectTypeSelection({
         </div>
         <div className="w-full md:w-1/2">
           <ObjectAccessSelection
+            // TODO: remove this constraint, once templates also support sharing and restricted access
+            restrictedDisabled={
+              objectTypeValue === CatalogObjectType.LiveQuizTemplate
+            }
             value={accessValue}
             onChange={(value) => setFieldValue('access', value)}
             cyPrefix="modal"

@@ -38,6 +38,7 @@ function DirectSharingForm({
 
   return (
     <Formik
+      validateOnChange
       isInitialValid={false}
       initialValues={{
         shortnameOrEmail: '',
@@ -71,22 +72,29 @@ function DirectSharingForm({
           setSubmitting(false)
         }
       }}
-      validationSchema={Yup.object()
-        .shape({
-          shortnameOrEmail: Yup.string(),
-          userGroupId: Yup.number(),
-          permissionLevel: Yup.string().required(),
-        })
-        .test(
-          'either-user-or-group',
-          t('manage.sharing.usernameEmailOrGroupRequired'),
-          function (values) {
-            const { shortnameOrEmail, userGroupId } = values
+      validationSchema={Yup.object().shape({
+        shortnameOrEmail: Yup.string().test(
+          'either-shortname-or-group',
+          t('manage.sharing.shortnameEmailOrGroupRequired'),
+          function (value) {
+            // if userGroupId exists in the parent, this field can be empty
+            return this.parent.userGroupId || (!!value && value !== '')
+          }
+        ),
+        userGroupId: Yup.number().test(
+          'either-group-or-shortname',
+          t('manage.sharing.shortnameEmailOrGroupRequired'),
+          function (value) {
+            // if shortnameOrEmail exists in the parent, this field can be empty
             return (
-              (!!shortnameOrEmail && shortnameOrEmail !== '') || !!userGroupId
+              (!!this.parent.shortnameOrEmail &&
+                this.parent.shortnameOrEmail !== '') ||
+              !!value
             )
           }
-        )}
+        ),
+        permissionLevel: Yup.string().required(),
+      })}
     >
       {({ isSubmitting, isValid, submitForm }) => (
         <tr className="border-t border-gray-200 hover:bg-gray-50">

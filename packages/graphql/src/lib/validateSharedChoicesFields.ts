@@ -1,7 +1,6 @@
-import { DisplayMode } from '@klicker-uzh/types'
-import { ElementOptionsArgs } from './validateAndProcessElementOptions.js'
+import { DisplayMode, ElementOptionsInput } from '@klicker-uzh/types'
 
-function validateSharedChoicesFields(options?: ElementOptionsArgs | null) {
+function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
   // options and choices therein need to be defined
   if (!options || !options.choices) {
     console.error('Options are required on choices questions')

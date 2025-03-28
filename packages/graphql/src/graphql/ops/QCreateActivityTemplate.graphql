@@ -1,0 +1,17 @@
+mutation createActivityTemplate(
+  $activityId: String!
+  $activityType: ActivityType!
+  $templateName: String!
+  $templateDescription: String!
+  $templateInstructions: String!
+  $copyBeforeConversion: Boolean!
+) {
+  createActivityTemplate(
+    activityId: $activityId
+    activityType: $activityType
+    templateName: $templateName
+    templateDescription: $templateDescription
+    templateInstructions: $templateInstructions
+    copyBeforeConversion: $copyBeforeConversion
+  )
+}

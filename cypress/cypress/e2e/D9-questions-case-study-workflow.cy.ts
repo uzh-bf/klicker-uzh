@@ -1,5 +1,22 @@
 import messages from '../../../packages/i18n/messages/en'
 
+type CriterionDataType = {
+  mode: 'range' | 'steps'
+  name: string
+  // range criterion attributes
+  min?: number
+  max?: number
+  step?: number
+  unit?: string
+  // steps criterion attribute
+  steps?: number
+  labels?: {
+    min: string
+    mid?: string
+    max: string
+  }
+}
+
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
@@ -79,71 +96,104 @@ describe('Test creation and editing functionalities, validation, etc. for case s
 
     // add new criteria, and remove one again
     cy.wrap([...this.data.CS.criteria, this.data.CS.removedCriterion]).each(
-      (
-        criterion: {
-          name: string
-          min: number
-          max: number
-          step: number
-          unit?: string
-        },
-        ix
-      ) => {
-        cy.get('[data-cy="add-new-criterion"]').click()
-        cy.get(`[data-cy="criterion-${ix}-name"]`).click().type(criterion.name)
-        cy.get(`[data-cy="criterion-${ix}-min"]`)
+      (criterion: CriterionDataType, ix) => {
+        cy.get(`[data-cy="add-${criterion.mode}-criterion"]`).click()
+        cy.get(`[data-cy="criterion-${ix}-name"]`)
           .click()
-          .type(String(criterion.min))
-        cy.get(`[data-cy="criterion-${ix}-max"]`)
-          .click()
-          .type(String(criterion.max))
-        cy.get(`[data-cy="criterion-${ix}-step"]`)
-          .click()
-          .type(String(criterion.step))
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`)
+          .clear()
+          .type(criterion.name)
+
+        // for range criteria, enter min, max, and step - unit is optional
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`)
             .click()
-            .type(criterion.unit)
+            .clear()
+            .type(String(criterion.min))
+          cy.get(`[data-cy="criterion-${ix}-max"]`)
+            .click()
+            .clear()
+            .type(String(criterion.max))
+          cy.get(`[data-cy="criterion-${ix}-step"]`)
+            .click()
+            .clear()
+            .type(String(criterion.step))
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`)
+              .click()
+              .type(criterion.unit)
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.min))
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.max))
+          cy.get(`[data-cy="criterion-${ix}-steps"]`)
+            .click()
+            .clear()
+            .type(String(criterion.steps))
+
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`)
+              .click()
+              .clear()
+              .type(String(criterion.labels.mid))
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
 
+        // validate inputs
         cy.get(`[data-cy="criterion-${ix}-name"]`).should(
           'have.value',
           criterion.name
         )
-        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
-          'have.value',
-          String(criterion.min)
-        )
-        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
-          'have.value',
-          String(criterion.max)
-        )
-        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
-          'have.value',
-          String(criterion.step)
-        )
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`).should(
             'have.value',
-            criterion.unit
+            String(criterion.min)
           )
+          cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+            'have.value',
+            String(criterion.max)
+          )
+          cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+            'have.value',
+            String(criterion.step)
+          )
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+              'have.value',
+              criterion.unit
+            )
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`).should(
+            'have.value',
+            criterion.labels.min
+          )
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`).should(
+            'have.value',
+            criterion.labels.max
+          )
+          cy.get(`[data-cy="criterion-${ix}-steps"]`).should(
+            'have.value',
+            String(criterion.steps)
+          )
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`).should(
+              'have.value',
+              criterion.labels.mid
+            )
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
       }
-    )
-    cy.get(
-      `[data-cy="remove-criterion-${this.data.CS.criteria.length}"]`
-    ).click()
-    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-name"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-min"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-max"]`).should(
-      'not.exist'
-    )
-    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-step"]`).should(
-      'not.exist'
     )
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
@@ -215,38 +265,53 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       cy.get('[data-cy="choose-case-study-items"]').contains(item)
     })
 
-    cy.wrap(this.data.CS.criteria).each(
-      (
-        criterion: {
-          name: string
-          min: number
-          max: number
-          step: number
-          unit?: string
-        },
-        ix
-      ) => {
+    cy.wrap([...this.data.CS.criteria, this.data.CS.removedCriterion]).each(
+      (criterion: CriterionDataType, ix) => {
         cy.get(`[data-cy="criterion-${ix}-name"]`).should(
           'have.value',
           criterion.name
         )
-        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
-          'have.value',
-          String(criterion.min)
-        )
-        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
-          'have.value',
-          String(criterion.max)
-        )
-        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
-          'have.value',
-          String(criterion.step)
-        )
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`).should(
             'have.value',
-            criterion.unit
+            String(criterion.min)
           )
+          cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+            'have.value',
+            String(criterion.max)
+          )
+          cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+            'have.value',
+            String(criterion.step)
+          )
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+              'have.value',
+              criterion.unit
+            )
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`).should(
+            'have.value',
+            criterion.labels.min
+          )
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`).should(
+            'have.value',
+            criterion.labels.max
+          )
+          cy.get(`[data-cy="criterion-${ix}-steps"]`).should(
+            'have.value',
+            String(criterion.steps)
+          )
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`).should(
+              'have.value',
+              criterion.labels.mid
+            )
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
       }
     )
@@ -296,37 +361,45 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       this.data.CS.criteria[0].min +
       (this.data.CS.criteria[0].max - this.data.CS.criteria[0].min) / 2
     const slidedValue = midValue + steps * this.data.CS.criteria[0].step
-    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should('have.value', '')
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').contains(
+      this.data.CS.criteria[0].unit ? `- ${this.data.CS.criteria[0].unit}` : '-'
+    )
     cy.get('[data-cy="cs-slider-0-0-0-0"]')
       .click()
       .type('{rightarrow}{leftarrow}')
-    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should(
-      'have.value',
-      String(midValue)
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').contains(
+      this.data.CS.criteria[0].unit
+        ? `${midValue} ${this.data.CS.criteria[0].unit}`
+        : String(midValue)
     )
     cy.get('[data-cy="cs-slider-0-0-0-0"]')
       .click()
       .type('{rightarrow}'.repeat(steps))
-    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').should(
-      'have.value',
-      String(slidedValue)
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-0"]').contains(
+      this.data.CS.criteria[0].unit
+        ? `${slidedValue} ${this.data.CS.criteria[0].unit}`
+        : String(slidedValue)
     )
 
     // check that moving a slider all the way to one end works to be expected
-    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should('have.value', '')
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').contains(
+      this.data.CS.criteria[1].unit ? `- ${this.data.CS.criteria[1].unit}` : '-'
+    )
     cy.get('[data-cy="cs-slider-0-0-0-1"]')
       .click()
       .type('{leftarrow}'.repeat(260))
-    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should(
-      'have.value',
-      String(this.data.CS.criteria[1].min)
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').contains(
+      this.data.CS.criteria[1].unit
+        ? `${this.data.CS.criteria[1].min} ${this.data.CS.criteria[1].unit}`
+        : String(this.data.CS.criteria[1].min)
     )
     cy.get('[data-cy="cs-slider-0-0-0-1"]')
       .click()
       .type('{rightarrow}'.repeat(600))
-    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').should(
-      'have.value',
-      String(this.data.CS.criteria[1].max)
+    cy.get('[data-cy="cs-slider-nr-value-0-0-0-1"]').contains(
+      this.data.CS.criteria[1].unit
+        ? `${this.data.CS.criteria[1].max} ${this.data.CS.criteria[1].unit}`
+        : String(this.data.CS.criteria[1].max)
     )
 
     // check that sliders are shown for all response items
@@ -353,6 +426,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
 
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -377,6 +451,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       'data-disabled'
     )
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
   })
 
@@ -390,7 +465,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="configure-sample-solution"]').click()
     cy.get('[data-cy="save-new-question"]').should('be.disabled') // correct answers for all criteria & items are required
     cy.caseStudyLoop({
-      object: this.data.CS.solutions,
+      object: this.data.CS.solutionsWithAdditionalCriterion,
       callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
         const value = innerValue as { lower: number; upper: number }
 
@@ -426,7 +501,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     )
 
     cy.caseStudyLoop({
-      object: this.data.CS.solutions,
+      object: this.data.CS.solutionsWithAdditionalCriterion,
       callback: ({ caseIx, itemIx, criterionIx, innerValue }) => {
         const value = innerValue as { lower: number; upper: number }
 
@@ -466,9 +541,9 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .realClick()
       .type(this.data.CS.explanation)
 
-    // criteria name, min, max, step required -> invalid (if removed)
+    // range criterion name, min, max, step required -> invalid (if removed)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
-    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="configure-sample-solution"]').click() // disable sample solution to ensure origin or errors is the criterion
     cy.get('[data-cy="criterion-0-name"]').click().clear()
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="criterion-0-name"]')
@@ -495,7 +570,53 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="criterion-0-step"]')
       .click()
       .type(String(this.data.CS.criteria[0].step))
-    cy.get('[data-cy="configure-sample-solution"]').click()
+    cy.get('[data-cy="configure-sample-solution"]').click() // enable sample solution again (previous solution states should persist)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // step criterion name, labels min, labels max, step (min. 2) required -> invalid if removed
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="configure-sample-solution"]').click() // disable sample solution to ensure origin or errors is the criterion
+    cy.get('[data-cy="criterion-2-name"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-2-name"]')
+      .click()
+      .type(this.data.CS.removedCriterion.name)
+
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-2-min-label"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-2-min-label"]')
+      .click()
+      .type(String(this.data.CS.removedCriterion.labels.min))
+
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-2-mid-label"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled') // mid label is optional
+    cy.get('[data-cy="criterion-2-mid-label"]')
+      .click()
+      .type(String(this.data.CS.removedCriterion.labels.mid))
+
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-2-max-label"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-2-max-label"]')
+      .click()
+      .type(String(this.data.CS.removedCriterion.labels.max))
+
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-2-steps"]').click().clear()
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-2-steps"]').click().clear().type('0')
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-2-steps"]').click().clear().type('1')
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="criterion-2-steps"]').click().clear().type('2')
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="criterion-2-steps"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.removedCriterion.steps))
+    cy.get('[data-cy="configure-sample-solution"]').click() // enable sample solution again (previous solution states should persist)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // criterion min <= max required & max - min >= 2 * step -> otherwise invalid
@@ -645,9 +766,70 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .clear()
       .type(this.data.CS.solutions[1][3][0].lower)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // solutions: step criteria can have the same value for min and max, but min <= max needs to be satisfied
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-2-lower"]').click().clear().type('1')
+    cy.get('[data-cy="case-solution-1-3-2-upper"]').click().clear().type('1')
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="case-solution-1-3-2-lower"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.removedCriterion.steps))
+    cy.get('[data-cy="case-solution-1-3-2-upper"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.removedCriterion.steps))
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="case-solution-1-3-2-lower"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.removedCriterion.steps))
+    cy.get('[data-cy="case-solution-1-3-2-upper"]').click().clear().type('1')
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+
+    cy.get('[data-cy="case-solution-1-3-2-lower"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutionsWithAdditionalCriterion[1][3][2].lower)
+    cy.get('[data-cy="case-solution-1-3-2-upper"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutionsWithAdditionalCriterion[1][3][2].upper)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    // solutions: solution needs to be within the bounds of the criterion
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+    cy.get('[data-cy="case-solution-1-3-2-lower"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.removedCriterion.steps + 1))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-2-lower"]').click().clear().type('0')
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-2-lower"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutionsWithAdditionalCriterion[1][3][2].lower)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
+
+    cy.get('[data-cy="case-solution-1-3-2-upper"]')
+      .click()
+      .clear()
+      .type(String(this.data.CS.removedCriterion.steps + 1))
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-2-upper"]').click().clear().type('0')
+    cy.get('[data-cy="save-new-question"]').should('be.disabled')
+    cy.get('[data-cy="case-solution-1-3-2-upper"]')
+      .click()
+      .clear()
+      .type(this.data.CS.solutionsWithAdditionalCriterion[1][3][2].upper)
+    cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
   })
 
-  it('Edit the case study question and change the answer collection (including new sample solutions)', function () {
+  it('Edit the case study question, change the answer collection (including new sample solutions), and remove one criterion', function () {
     cy.get(`[data-cy="edit-question-${this.data.CS.title}"]`).click()
     cy.get('[data-cy="insert-question-title"]')
       .click()
@@ -680,63 +862,120 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       cy.get('[data-cy="choose-case-study-items"]').contains(item)
     })
 
+    // remove one criterion
+    cy.get(
+      `[data-cy="remove-criterion-${this.data.CS.criteria.length}"]`
+    ).click()
+    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-name"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-min"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-max"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="criterion-${this.data.CS.criteria.length}-step"]`).should(
+      'not.exist'
+    )
+
     // clear all fields, enter new criteria
     cy.wrap(this.data.CS.criteriaEdited).each(
-      (
-        criterion: {
-          name: string
-          min: number
-          max: number
-          step: number
-          unit?: string
-        },
-        ix
-      ) => {
+      (criterion: CriterionDataType, ix) => {
         cy.get(`[data-cy="criterion-${ix}-name"]`)
           .click()
           .clear()
           .type(criterion.name)
-        cy.get(`[data-cy="criterion-${ix}-min"]`)
-          .click()
-          .clear()
-          .type(String(criterion.min))
-        cy.get(`[data-cy="criterion-${ix}-max"]`)
-          .click()
-          .clear()
-          .type(String(criterion.max))
-        cy.get(`[data-cy="criterion-${ix}-step"]`)
-          .click()
-          .clear()
-          .type(String(criterion.step))
-        cy.get(`[data-cy="criterion-${ix}-unit"]`).click().clear()
 
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`)
+        // for range criteria, enter min, max, and step - unit is optional
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`)
             .click()
-            .type(criterion.unit)
+            .clear()
+            .type(String(criterion.min))
+          cy.get(`[data-cy="criterion-${ix}-max"]`)
+            .click()
+            .clear()
+            .type(String(criterion.max))
+          cy.get(`[data-cy="criterion-${ix}-step"]`)
+            .click()
+            .clear()
+            .type(String(criterion.step))
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`)
+              .click()
+              .type(criterion.unit)
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.min))
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`)
+            .click()
+            .clear()
+            .type(String(criterion.labels.max))
+          cy.get(`[data-cy="criterion-${ix}-steps"]`)
+            .click()
+            .clear()
+            .type(String(criterion.steps))
+
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`)
+              .click()
+              .clear()
+              .type(String(criterion.labels.mid))
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
 
+        // validate inputs
         cy.get(`[data-cy="criterion-${ix}-name"]`).should(
           'have.value',
           criterion.name
         )
-        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
-          'have.value',
-          String(criterion.min)
-        )
-        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
-          'have.value',
-          String(criterion.max)
-        )
-        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
-          'have.value',
-          String(criterion.step)
-        )
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`).should(
             'have.value',
-            criterion.unit
+            String(criterion.min)
           )
+          cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+            'have.value',
+            String(criterion.max)
+          )
+          cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+            'have.value',
+            String(criterion.step)
+          )
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+              'have.value',
+              criterion.unit
+            )
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`).should(
+            'have.value',
+            criterion.labels.min
+          )
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`).should(
+            'have.value',
+            criterion.labels.max
+          )
+          cy.get(`[data-cy="criterion-${ix}-steps"]`).should(
+            'have.value',
+            String(criterion.steps)
+          )
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`).should(
+              'have.value',
+              criterion.labels.mid
+            )
+          }
+        } else {
+          throw new Error('Invalid criterion mode')
         }
       }
     )
@@ -808,37 +1047,50 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     })
 
     cy.wrap(this.data.CS.criteriaEdited).each(
-      (
-        criterion: {
-          name: string
-          min: number
-          max: number
-          step: number
-          unit?: string
-        },
-        ix
-      ) => {
+      (criterion: CriterionDataType, ix) => {
         cy.get(`[data-cy="criterion-${ix}-name"]`).should(
           'have.value',
           criterion.name
         )
-        cy.get(`[data-cy="criterion-${ix}-min"]`).should(
-          'have.value',
-          String(criterion.min)
-        )
-        cy.get(`[data-cy="criterion-${ix}-max"]`).should(
-          'have.value',
-          String(criterion.max)
-        )
-        cy.get(`[data-cy="criterion-${ix}-step"]`).should(
-          'have.value',
-          String(criterion.step)
-        )
-        if (criterion.unit) {
-          cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+
+        if (criterion.mode === 'range') {
+          cy.get(`[data-cy="criterion-${ix}-min"]`).should(
             'have.value',
-            criterion.unit
+            String(criterion.min)
           )
+          cy.get(`[data-cy="criterion-${ix}-max"]`).should(
+            'have.value',
+            String(criterion.max)
+          )
+          cy.get(`[data-cy="criterion-${ix}-step"]`).should(
+            'have.value',
+            String(criterion.step)
+          )
+          if (criterion.unit) {
+            cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
+              'have.value',
+              criterion.unit
+            )
+          }
+        } else if (criterion.mode === 'steps') {
+          cy.get(`[data-cy="criterion-${ix}-min-label"]`).should(
+            'have.value',
+            criterion.labels.min
+          )
+          cy.get(`[data-cy="criterion-${ix}-max-label"]`).should(
+            'have.value',
+            criterion.labels.max
+          )
+          cy.get(`[data-cy="criterion-${ix}-steps"]`).should(
+            'have.value',
+            String(criterion.steps)
+          )
+          if (criterion.labels.mid) {
+            cy.get(`[data-cy="criterion-${ix}-mid-label"]`).should(
+              'have.value',
+              criterion.labels.mid
+            )
+          }
         }
       }
     )
@@ -884,6 +1136,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       'data-disabled'
     )
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -909,6 +1162,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       'data-disabled'
     )
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.itemsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -938,6 +1192,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       `[data-cy="answer-collection-actions-${this.data.CS.collection}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -956,6 +1211,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       `[data-cy="answer-collection-actions-${this.data.CS.collectionEdited}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.itemsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'

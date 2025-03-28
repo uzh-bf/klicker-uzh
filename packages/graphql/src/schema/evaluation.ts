@@ -1,11 +1,12 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  CaseStudyCriterionLabelsInput,
   FlashcardCorrectness as FlashcardCorrectnessType,
   InstanceEvaluation as IInstanceEvaluation,
   StackFeedbackStatus as StackFeedbackStatusType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { ElementType } from './elementData.js'
+import { CaseStudyCriterionLabels, ElementType } from './elementData.js'
 import { ConfusionTimestepRef, FeedbackRef, IFeedback } from './liveQuiz.js'
 
 export interface IActivityEvaluation {
@@ -153,6 +154,7 @@ export interface ICaseStudyElementEvaluationResults {
         max: number
         step: number
         unit?: string | null
+        // TODO: add labels here for evaluation view
 
         // sample solutions (not required)
         solutionMin?: number | null
@@ -183,6 +185,7 @@ export interface ICaseStudyActivityEvaluationData
   criteria: {
     id: string
     name: string
+    labels: CaseStudyCriterionLabelsInput
   }[]
   results: ICaseStudyElementEvaluationResults
 }
@@ -497,6 +500,10 @@ export const CaseStudyElementResultCriterionInfo =
     fields: (t) => ({
       id: t.exposeString('id'),
       name: t.exposeString('name'),
+      labels: t.expose('labels', {
+        type: CaseStudyCriterionLabels,
+        nullable: true,
+      }),
     }),
   })
 
@@ -539,6 +546,7 @@ export const CaseStudyElementResultCriterion =
       max: t.exposeFloat('max'),
       step: t.exposeFloat('step'),
       unit: t.exposeString('unit', { nullable: true }),
+      // TODO: add labels here for evaluation view
 
       // sample solutions (not required)
       solutionMin: t.exposeFloat('solutionMin', { nullable: true }),

@@ -127,13 +127,14 @@ function CreateAccountForm({
               <Button
                 primary
                 type="submit"
-                disabled={!tosChecked || isSubmitting || !isValid}
+                disabled={!tosChecked || !isValid}
+                loading={isSubmitting}
                 className={{
                   root: 'h-8 w-full flex-none md:w-max',
                 }}
                 data={{ cy: 'create-profile-button' }}
               >
-                <Button.Icon icon={faSave} />
+                <Button.Icon icon={faSave} loading={isSubmitting} />
                 <Button.Label>{t('pwa.profile.createProfile')}</Button.Label>
               </Button>
             </div>

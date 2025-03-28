@@ -10,6 +10,7 @@ query GetSingleQuestion($id: Int!) {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
 
       options {
@@ -40,6 +41,7 @@ query GetSingleQuestion($id: Int!) {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
 
       options {
@@ -73,6 +75,7 @@ query GetSingleQuestion($id: Int!) {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
 
       options {
@@ -98,6 +101,7 @@ query GetSingleQuestion($id: Int!) {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
 
       options {
@@ -124,6 +128,7 @@ query GetSingleQuestion($id: Int!) {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
 
       options {
@@ -138,6 +143,11 @@ query GetSingleQuestion($id: Int!) {
           max
           step
           unit
+          labels {
+            min
+            mid
+            max
+          }
         }
         cases {
           id
@@ -170,6 +180,7 @@ query GetSingleQuestion($id: Int!) {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
 
       tags {
@@ -187,6 +198,7 @@ query GetSingleQuestion($id: Int!) {
       type
       content
       explanation
+      basePoints
       pointsMultiplier
 
       tags {

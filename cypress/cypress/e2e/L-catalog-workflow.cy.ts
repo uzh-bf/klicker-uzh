@@ -6,6 +6,9 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.fixture('L-catalog.json').then((data) => {
       this.data = data
     })
+    cy.fixture('questions.json').then((data) => {
+      this.data = { ...this.data, ...data }
+    })
   })
 
   // ! Helpers
@@ -66,9 +69,22 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${data.AC2.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
+
+    // verify that the live quiz template can be used or removed from the catalog collection
+    cy.get(`[data-cy="catalog-object-${data.liveQuiz.template.name}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessPUBLIC)
+    cy.get(
+      `[data-cy="actions-dropdown-${data.liveQuiz.template.name}"]`
+    ).realClick()
+    cy.get(`[data-cy="use-template-${data.liveQuiz.template.name}"]`).should(
+      'exist'
+    )
+    cy.get(`[data-cy="remove-object-${data.liveQuiz.template.name}"]`).click()
+    cy.get('[data-cy="cancel-removal"]').click()
   }
 
-  // ! Part 1: Creation of Catalog Collections
+  // ! Part 1: Creation of Catalog Collections and Content
   // #region
   it('Create a new answer collection AC1 in lecturer account', function () {
     cy.loginLecturer()
@@ -96,6 +112,41 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="answer-collection-${this.data.AC2.name}"]`).should(
       'exist'
     )
+  })
+
+  it('Create the questions that will be required for this test workflow', function () {
+    cy.loginLecturer()
+    cy.createQuestionSC({
+      title: this.data.SC.title,
+      content: this.data.SC.content,
+      choices: this.data.SC.choices,
+    })
+    cy.createQuestionSC({
+      title: this.data.SCML.title,
+      content: this.data.SCML.content,
+      choices: this.data.SCML.choices,
+    })
+  })
+
+  it('Create a live quiz template', function () {
+    cy.loginLecturer()
+
+    cy.createLiveQuiz({
+      name: this.data.liveQuiz.name,
+      displayName: this.data.liveQuiz.displayName,
+      courseName: this.data.liveQuiz.course,
+      blocks: [{ elements: [this.data.SC.title, this.data.SCML.title] }],
+    })
+    cy.get('[data-cy="open-activity-overview"]').click()
+
+    cy.convertLiveQuizToTemplate({
+      liveQuiz: this.data.liveQuiz.name,
+      name: this.data.liveQuiz.template.name,
+      description: this.data.liveQuiz.template.description,
+      instructions: this.data.liveQuiz.template.instructions,
+      copyBeforeConversion: false,
+      resourceAccessRequired: false,
+    })
   })
 
   it('Share the answer collection AC1 with other users', function () {
@@ -446,6 +497,62 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
   })
 
+  it('Add the live quiz template to the top level of the catalog and both collections', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+
+    // add live quiz template to public catalog collection (public object)
+    cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(
+      `[data-cy="object-type-${CatalogObjectType.LIVE_QUIZ_TEMPLATE}"]`
+    ).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessPUBLIC
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.liveQuiz.template.name
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.liveQuiz.template.name}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessPUBLIC)
+
+    // TODO: change the object access of this live quiz template to restricted (once supported)
+    // add live quiz template to the restricted catalog collection (public object)
+    cy.get('[data-cy="leave-catalog-collection"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
+    cy.get('[data-cy="add-object-to-catalog-button"]').click()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(
+      `[data-cy="object-type-${CatalogObjectType.LIVE_QUIZ_TEMPLATE}"]`
+    ).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="modal-object-access"]').contains(
+      messages.manage.catalog.accessPUBLIC
+    )
+    cy.get('[id="object-selection-catalog-addition"]').click()
+    cy.get(
+      '[id="react-select-object-selection-catalog-addition-option-0"]'
+    ).click()
+    cy.get('[id="object-selection-catalog-addition"]').contains(
+      this.data.liveQuiz.template.name
+    )
+    cy.get('[data-cy="submit-add-object-button"]').click()
+    cy.get(
+      `[data-cy="catalog-object-${this.data.liveQuiz.template.name}"]`
+    ).contains(messages.manage.catalog.accessPUBLIC)
+  })
+
   it('Verify that the permissions on the catalog collections are correctly set for lecturer', function () {
     // test owner privileges on public catalog collection (share, transfer ownership, delete, edit)
     cy.loginLecturer()
@@ -453,7 +560,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog"]').click()
     verifyAdminOwnerPermissionsCCPublic({ data: this.data, ownership: true })
 
-    // test minimal owner privileges on restricted catalog collection
+    // minimal testing of owner privileges on restricted catalog collection
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
@@ -498,6 +605,21 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${this.data.AC2.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
+
+    // test that the live quiz templates can be used or removed from the catalog collection
+    cy.get(`[data-cy="catalog-object-${this.data.liveQuiz.template.name}"]`)
+      .should('exist')
+      .contains(messages.manage.catalog.accessPUBLIC)
+    cy.get(
+      `[data-cy="actions-dropdown-${this.data.liveQuiz.template.name}"]`
+    ).realClick()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template.name}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="remove-object-${this.data.liveQuiz.template.name}"]`
+    ).click()
+    cy.get('[data-cy="cancel-removal"]').click()
   })
 
   it('Verify that user pro2 without permissions on the public catalog collection can see and request / import content', function () {
@@ -521,6 +643,17 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-request-access"]`).click()
+
+    // test that the live quiz templates can be used
+    cy.get(
+      `[data-cy="actions-dropdown-${this.data.liveQuiz.template.name}"]`
+    ).realClick()
+    cy.get(
+      `[data-cy="use-template-${this.data.liveQuiz.template.name}"]`
+    ).click() // open template
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click() // navigate back to catalog collection
   })
 
   it('Verify that user pro3 can see and request access to objects in restricted answer collection with READ permissions', function () {
@@ -679,6 +812,25 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.AC2.name })
+  })
+
+  it('Cleanup: Delete the live quiz template', function () {
+    cy.loginLecturer()
+
+    cy.get('[data-cy="live-quizzes"]').click()
+    cy.get(
+      `[data-cy="delete-template-${this.data.liveQuiz.template.name}"]`
+    ).click()
+    cy.get('[data-cy="confirm-template-deletion"]').click()
+    cy.get(`[data-cy="live-quiz-${this.data.liveQuiz.template.name}"]`).should(
+      'not.exist'
+    )
+  })
+
+  it('Cleanup: Delete all questions that have been created', function () {
+    cy.loginLecturer()
+    cy.deleteElement({ elementName: this.data.SC.title })
+    cy.deleteElement({ elementName: this.data.SCML.title })
   })
 
   it('Cleanup: Remove the two catalog collections through the lecturer account (owner)', function () {

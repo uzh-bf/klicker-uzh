@@ -1,24 +1,23 @@
 import { AnswerCollection } from '@klicker-uzh/graphql/dist/ops'
-import {
-  FormikSwitchField,
-  FormLabel,
-  SelectField,
-} from '@uzh-bf/design-system'
+import { FormLabel, SelectField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import Select from 'react-select'
+import { ElementFormTypesCaseStudy } from '../types'
 import CaseStudyCollectionChangeModal from './CaseStudyCollectionChangeModal'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
 import useSelectedAnswerEntry from './useSelectedAnswerEntry'
 
 function CaseStudyCollectionSelection({
+  isTemplate,
   collections,
   setSelectedItems,
   hasSampleSolution,
   setAnswerCollectionEntries,
 }: {
+  isTemplate: boolean
   collections: Pick<AnswerCollection, 'id' | 'name' | 'entries'>[]
   setSelectedItems: Dispatch<SetStateAction<{ id: number; name: string }[]>>
   hasSampleSolution: boolean
@@ -36,6 +35,8 @@ function CaseStudyCollectionSelection({
   const [collectionField, __, collectionHelpers] = useField<string>(
     'options.answerCollection'
   )
+  const [casesField, ___, casesHelpers] =
+    useField<ElementFormTypesCaseStudy['options']['cases']>('options.cases')
 
   // get all answer options from the selected collections
   const collectionAnswers = useSelectAnswerCollectionOptions({
@@ -69,7 +70,10 @@ function CaseStudyCollectionSelection({
               setNewValue(value)
               setChangeModalOpen(true)
             } else {
+              // set the selected answer collection to the new value
               collectionHelpers.setValue(value)
+
+              // reset the selected items (resetting solutions is not required, since sample solution is disabled)
               itemsHelpers.setValue([])
             }
           }}
@@ -90,15 +94,6 @@ function CaseStudyCollectionSelection({
             root: 'order-2 lg:order-1',
           }}
         />
-        <FormikSwitchField
-          name="options.hasSampleSolution"
-          label={t('shared.generic.sampleSolution')}
-          data={{ cy: 'configure-sample-solution' }}
-          className={{
-            label: 'text-gray-600',
-            root: 'order-1 mt-2 self-end lg:order-2 lg:self-start',
-          }}
-        />
       </div>
       <div>
         <FormLabel
@@ -117,9 +112,47 @@ function CaseStudyCollectionSelection({
             classNames={{
               container: () => 'w-full',
             }}
-            onChange={(newValue) =>
-              itemsHelpers.setValue(newValue.map((tag) => tag.value))
-            }
+            onChange={(newValue) => {
+              const prevItemIds = itemsField.value
+              const newItemIds = newValue.map((item) => item.value)
+
+              // check if an item has been removed and conditionally remove the solutions for this item
+              if (newItemIds.length < prevItemIds.length) {
+                // identify the removed item
+                const removedItem = prevItemIds.find(
+                  (itemId) => !newItemIds.includes(itemId)
+                )
+
+                // if an item has been removed, remove the corresponding key from the case solutions
+                if (removedItem) {
+                  const newCases = casesField.value?.map((caseItem) => {
+                    // if no solutions are set, skip this case
+                    if (!('solutions' in caseItem) || !caseItem.solutions) {
+                      return caseItem
+                    }
+
+                    // filter out all solution entries for the removed item
+                    const newSolutions = Object.fromEntries(
+                      Object.entries(caseItem.solutions).filter(
+                        ([itemIdString]) =>
+                          itemIdString !== `itemId-${removedItem}`
+                      )
+                    )
+
+                    return {
+                      ...caseItem,
+                      solutions: newSolutions,
+                    }
+                  })
+
+                  // update the cases field
+                  casesHelpers.setValue(newCases)
+                }
+              }
+
+              // update the selected items
+              itemsHelpers.setValue(newItemIds)
+            }}
             placeholder={t('manage.questionForms.selectCaseStudyItems')}
             noOptionsMessage={() =>
               t('manage.questionForms.noMatchingOptionFound')
@@ -133,8 +166,25 @@ function CaseStudyCollectionSelection({
             setChangeModalOpen(false)
           }}
           onConfirm={() => {
+            // set the selected answer collection to the new value
             collectionHelpers.setValue(newValue)
+
+            // reset the selected items
             itemsHelpers.setValue([])
+
+            // reset all solutions inside the cases
+            casesHelpers.setValue(
+              casesField.value?.map((caseItem) => {
+                if ('solutions' in caseItem) {
+                  return {
+                    ...caseItem,
+                    solutions: undefined,
+                  }
+                }
+
+                return caseItem
+              })
+            )
           }}
         />
       </div>

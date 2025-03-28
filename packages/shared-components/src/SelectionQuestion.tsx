@@ -2,12 +2,11 @@ import type {
   SelectionElementOptions,
   SelectionInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Markdown } from '@klicker-uzh/markdown'
 import React, { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'
 import SEEValuation from './evaluation/SEEvaluation'
+import QuestionContent from './QuestionContent'
 import SELECTIONAnswerOptions from './questions/SELECTIONAnswerOptions'
 import type { SelectionStudentResponseType } from './StudentElement'
 import completeSelectionResponse from './utils/completeSelectionResponse'
@@ -24,6 +23,7 @@ interface SelectionQuestionProps {
   elementIx: number
   evaluation?: SelectionInstanceEvaluation
   disabled?: boolean
+  noPoints: boolean
   preview: boolean
 }
 
@@ -37,6 +37,7 @@ function SelectionQuestion({
   elementIx,
   evaluation,
   disabled,
+  noPoints,
   preview,
 }: SelectionQuestionProps) {
   const emptyResponses = useMemo(
@@ -60,18 +61,7 @@ function SelectionQuestion({
   return (
     <div className="flex flex-col gap-4 md:flex-row">
       <div className="flex-1">
-        {content !== '<br>' && (
-          <div
-            className={twMerge(
-              'bg-primary-10 prose prose-p:!m-0 prose-img:!m-0 mb-4 min-h-[6rem] max-w-none flex-initial rounded border border-slate-300 p-4 leading-6'
-            )}
-          >
-            <Markdown
-              content={content}
-              data={{ cy: `selection-question-content` }}
-            />
-          </div>
-        )}
+        <QuestionContent content={content} noPoints={noPoints} />
 
         {evaluation && evaluation.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />

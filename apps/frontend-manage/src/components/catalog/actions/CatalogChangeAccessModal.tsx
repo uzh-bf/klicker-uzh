@@ -54,7 +54,7 @@ function CatalogChangeAccessModal({
               newAccess: t(`manage.catalog.access${newAccess}`),
             })}
           </div>
-          <div className="mt-2 flex flex-row justify-end gap-2">
+          <div className="mt-2 flex flex-row justify-between gap-2">
             <Button
               onClick={onClose}
               className={{ root: 'w-auto' }}

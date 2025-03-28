@@ -1,7 +1,14 @@
 import * as DB from '@klicker-uzh/prisma'
 import {
+  CaseStudyCaseResponse as CaseStudyCaseResponseType,
+  CaseStudyCriterionResponse as CaseStudyCriterionResponseType,
+  CaseStudyItemResponse as CaseStudyItemResponseType,
+  ElementBlockInput as ElementBlockInputType,
+  ElementInstanceInput as ElementInstanceInputType,
+  ElementStackInput as ElementStackInputType,
   FlashcardCorrectness,
   StackFeedbackStatus as StackFeedbackStatusType,
+  StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
@@ -32,7 +39,9 @@ export const StackFeedbackStatus = builder.enumType('StackFeedbackStatus', {
   values: Object.values(StackFeedbackStatusType),
 })
 
-export const ElementBlockInput = builder.inputType('ElementBlockInput', {
+export const ElementBlockInputRef =
+  builder.inputRef<ElementBlockInputType>('ElementBlockInput')
+export const ElementBlockInput = ElementBlockInputRef.implement({
   fields: (t) => ({
     order: t.int({ required: true }),
     timeLimit: t.int({ required: false }),
@@ -40,7 +49,9 @@ export const ElementBlockInput = builder.inputType('ElementBlockInput', {
   }),
 })
 
-export const ElementStackInput = builder.inputType('ElementStackInput', {
+export const ElementStackInputRef =
+  builder.inputRef<ElementStackInputType>('ElementStackInput')
+export const ElementStackInput = ElementStackInputRef.implement({
   fields: (t) => ({
     order: t.int({ required: true }),
     displayName: t.string({ required: false }),
@@ -49,48 +60,52 @@ export const ElementStackInput = builder.inputType('ElementStackInput', {
   }),
 })
 
-export const ElementInstanceInput = builder.inputType('ElementInstanceInput', {
+export const ElementInstanceInputRef =
+  builder.inputRef<ElementInstanceInputType>('ElementInstanceInput')
+export const ElementInstanceInput = ElementInstanceInputRef.implement({
   fields: (t) => ({
     elementId: t.int({ required: true }),
     order: t.int({ required: true }),
+    existingInstanceId: t.int({ required: false }),
+    duplicateInstance: t.boolean({ required: true }),
   }),
 })
 
-export const CaseStudyCriterionResponse = builder.inputType(
-  'CaseStudyCriterionResponse',
-  {
+export const CaseStudyCriterionResponseRef =
+  builder.inputRef<CaseStudyCriterionResponseType>('CaseStudyCriterionResponse')
+export const CaseStudyCriterionResponse =
+  CaseStudyCriterionResponseRef.implement({
     fields: (t) => ({
       criterionId: t.string({ required: true }),
       response: t.float({ required: true }),
     }),
-  }
-)
+  })
 
-export const CaseStudyItemResponse = builder.inputType(
-  'CaseStudyItemResponse',
-  {
-    fields: (t) => ({
-      itemId: t.int({ required: true }),
-      criterionResponses: t.field({
-        type: [CaseStudyCriterionResponse],
-        required: true,
-      }),
+export const CaseStudyItemResponseRef =
+  builder.inputRef<CaseStudyItemResponseType>('CaseStudyItemResponse')
+export const CaseStudyItemResponse = CaseStudyItemResponseRef.implement({
+  fields: (t) => ({
+    itemId: t.int({ required: true }),
+    criterionResponses: t.field({
+      type: [CaseStudyCriterionResponse],
+      required: true,
     }),
-  }
-)
+  }),
+})
 
-export const CaseStudyCaseResponse = builder.inputType(
-  'CaseStudyCaseResponse',
-  {
-    fields: (t) => ({
-      caseId: t.string({ required: true }),
-      itemResponses: t.field({ type: [CaseStudyItemResponse], required: true }),
-    }),
-  }
-)
+export const CaseStudyCaseResponseRef =
+  builder.inputRef<CaseStudyCaseResponseType>('CaseStudyCaseResponse')
+export const CaseStudyCaseResponse = CaseStudyCaseResponseRef.implement({
+  fields: (t) => ({
+    caseId: t.string({ required: true }),
+    itemResponses: t.field({ type: [CaseStudyItemResponse], required: true }),
+  }),
+})
 
 // this type needs to be consistent with the ElementResponseInput type in the stacks service
-export const StackResponseInput = builder.inputType('StackResponseInput', {
+export const StackResponseInputRef =
+  builder.inputRef<StackResponseInputType>('StackResponseInput')
+export const StackResponseInput = StackResponseInputRef.implement({
   fields: (t) => ({
     instanceId: t.int({ required: true }),
     type: t.field({ type: ElementType, required: true }),
@@ -162,6 +177,8 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     name: t.exposeString('name'),
     displayName: t.exposeString('displayName'),
     description: t.exposeString('description', { nullable: true }),
+    templateName: t.exposeString('templateName', { nullable: true }),
+
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays'),
     orderType: t.expose('orderType', { type: ElementOrderType }),

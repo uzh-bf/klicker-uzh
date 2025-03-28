@@ -63,6 +63,8 @@ interface GroupActivityWizardProps {
   selection: Record<number, Element>
   resetSelection: () => void
   initialValues?: GroupActivity
+  editMode: boolean
+  duplicationMode: boolean
 }
 
 function GroupActivityWizard({
@@ -72,12 +74,13 @@ function GroupActivityWizard({
   selection,
   resetSelection,
   initialValues,
+  editMode,
+  duplicationMode,
 }: GroupActivityWizardProps) {
   const router = useRouter()
   const t = useTranslations()
 
   const [errorToastOpen, setErrorToastOpen] = useState(false)
-  const [editMode, setEditMode] = useState(false)
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
     undefined
@@ -266,6 +269,8 @@ function GroupActivityWizard({
               title: element.elementData.name,
               type: element.elementData.type,
               hasSampleSolution: false,
+              existingInstanceId: element.id,
+              duplicateInstance: duplicationMode,
             }
           }),
         }
@@ -297,7 +302,6 @@ function GroupActivityWizard({
         values,
         createGroupActivity,
         editGroupActivity,
-        setEditMode,
         setIsWizardCompleted,
         setErrorToastOpen,
         setSelectedCourseId,

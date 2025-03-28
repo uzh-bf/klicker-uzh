@@ -1,4 +1,3 @@
-import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   FormLabel,
@@ -7,7 +6,6 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
-import MultiplierSelector from '../../activities/creation/MultiplierSelector'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'
@@ -15,12 +13,14 @@ import useElementTypeOptions from './useElementTypeOptions'
 import useStatusOptions from './useStatusOptions'
 
 interface ElementInformationFieldsProps {
+  isTemplate?: boolean
   mode: ElementEditMode
   values: ElementFormTypes
   isSubmitting: boolean
 }
 
 function ElementInformationFields({
+  isTemplate = false,
   mode,
   values,
   isSubmitting,
@@ -36,7 +36,7 @@ function ElementInformationFields({
           name="type"
           required={mode === ElementEditMode.CREATE}
           contentPosition="popper"
-          disabled={mode === ElementEditMode.EDIT}
+          disabled={mode === ElementEditMode.EDIT || isTemplate}
           label={t('manage.questionForms.elementType')}
           placeholder={t('manage.questionForms.selectQuestionType')}
           items={questionTypeOptions}
@@ -44,15 +44,17 @@ function ElementInformationFields({
           className={{ select: { trigger: 'h-8 w-max' } }}
         />
 
-        <FormikSelectField
-          name="status"
-          contentPosition="popper"
-          label={t('manage.questionForms.questionStatus')}
-          placeholder={t('manage.questionForms.selectQuestionStatus')}
-          items={statusOptions}
-          data={{ cy: 'select-question-status' }}
-          className={{ select: { trigger: 'h-8 w-32' } }}
-        />
+        {!isTemplate ? (
+          <FormikSelectField
+            name="status"
+            contentPosition="popper"
+            label={t('manage.questionForms.questionStatus')}
+            placeholder={t('manage.questionForms.selectQuestionStatus')}
+            items={statusOptions}
+            data={{ cy: 'select-question-status' }}
+            className={{ select: { trigger: 'h-8 w-32' } }}
+          />
+        ) : null}
       </div>
 
       <div className="mt-2 flex flex-row">
@@ -69,26 +71,19 @@ function ElementInformationFields({
       </div>
 
       <div className="mt-2 flex flex-row gap-2">
-        {values.type !== ElementType.Content &&
-          values.type !== ElementType.Flashcard && (
-            <div>
-              <MultiplierSelector
-                name="pointsMultiplier"
-                disabled={isSubmitting}
-              />
-            </div>
-          )}
-        <div className="flex w-full flex-col">
-          <FormLabel
-            required={false}
-            label={t('manage.questionPool.tags')}
-            labelType="small"
-            tooltip={t('manage.questionForms.tagsTooltip')}
-          />
-          <Suspense fallback={<Loader />}>
-            <SuspendedTagInput />
-          </Suspense>
-        </div>
+        {!isTemplate ? (
+          <div className="flex w-full flex-col" data-cy="element-tag-input">
+            <FormLabel
+              required={false}
+              label={t('manage.questionPool.tags')}
+              labelType="small"
+              tooltip={t('manage.questionForms.tagsTooltip')}
+            />
+            <Suspense fallback={<Loader />}>
+              <SuspendedTagInput />
+            </Suspense>
+          </div>
+        ) : null}
       </div>
     </>
   )

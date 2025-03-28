@@ -1,0 +1,58 @@
+import { LiveQuiz } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LQ_DEFAULT_CORRECT_POINTS,
+  LQ_DEFAULT_POINTS,
+  LQ_MAX_BONUS_POINTS,
+  LQ_TIME_TO_ZERO_BONUS,
+} from '@klicker-uzh/shared-components/src/constants'
+import { useMemo } from 'react'
+import { LiveQuizTemplateFormValues } from '../types'
+
+function useInitialLiveQuizTemplateFormData({
+  liveQuiz,
+}: {
+  liveQuiz?: LiveQuiz | null
+}) {
+  return useMemo((): LiveQuizTemplateFormValues | undefined => {
+    if (!liveQuiz) {
+      return undefined
+    }
+
+    return {
+      name: liveQuiz.name,
+      displayName: liveQuiz.displayName,
+      description: liveQuiz.description ?? undefined,
+      courseId: undefined,
+      multiplier: String(liveQuiz.pointsMultiplier),
+      settingsProcessed: false,
+
+      isGamificationEnabled: liveQuiz.isGamificationEnabled,
+      isConfusionFeedbackEnabled: liveQuiz.isConfusionFeedbackEnabled,
+      isLiveQAEnabled: liveQuiz.isLiveQAEnabled,
+      isModerationEnabled: liveQuiz.isModerationEnabled,
+      defaultPoints: liveQuiz.defaultPoints ?? LQ_DEFAULT_POINTS,
+      defaultCorrectPoints:
+        liveQuiz.defaultCorrectPoints ?? LQ_DEFAULT_CORRECT_POINTS,
+      maxBonusPoints: liveQuiz.maxBonusPoints ?? LQ_MAX_BONUS_POINTS,
+      timeToZeroBonus: liveQuiz.timeToZeroBonus ?? LQ_TIME_TO_ZERO_BONUS,
+
+      blocks:
+        liveQuiz.blocks?.map((block) => ({
+          timeLimit: block.timeLimit ? String(block.timeLimit) : undefined,
+          elements:
+            block.elements?.map((element) => ({
+              processed: false,
+              useTemplateInstance: false,
+              useExistingElement: false,
+              useNewElement: false,
+              instance: element,
+              formValues: null,
+              elementId: null,
+              elementName: null,
+            })) ?? [],
+        })) ?? [],
+    }
+  }, [liveQuiz])
+}
+
+export default useInitialLiveQuizTemplateFormData

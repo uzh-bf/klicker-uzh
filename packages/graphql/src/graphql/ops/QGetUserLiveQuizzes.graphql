@@ -4,6 +4,9 @@ query GetUserLiveQuizzes {
     name
     displayName
     namespace
+    templateId
+    templateName
+
     pointsMultiplier
     accessMode
     status

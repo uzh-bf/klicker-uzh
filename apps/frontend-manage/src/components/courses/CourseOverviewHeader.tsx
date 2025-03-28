@@ -129,6 +129,20 @@ function CourseOverviewHeader({
                       label: t('manage.course.linkLTILiveQuizzesLabel'),
                     }),
                     getLTIAccessLink({
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes`,
+                      setCopyToast,
+                      t,
+                      name,
+                      label: t('manage.course.linkLTIPracticeQuizzesLabel'),
+                    }),
+                    getLTIAccessLink({
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings`,
+                      setCopyToast,
+                      t,
+                      name,
+                      label: t('manage.course.linkLTIMicroLearningsLabel'),
+                    }),
+                    getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
                       setCopyToast,
                       t,

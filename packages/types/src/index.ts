@@ -1,7 +1,9 @@
 import type {
   Element,
+  ElementStatus,
   ElementType,
   ObjectAccess,
+  ParameterType,
   PerformanceLevel,
 } from '@klicker-uzh/prisma'
 
@@ -16,7 +18,13 @@ export enum DisplayMode {
 export enum CatalogObjectType {
   ANSWER_COLLECTION = 'ANSWER_COLLECTION',
   CATALOG_COLLECTION = 'CATALOG_COLLECTION',
+  LIVE_QUIZ_TEMPLATE = 'LIVE_QUIZ_TEMPLATE',
+
   // TODO: add more object types once they are supported
+  // PRACTICE_QUIZ_TEMPLATE = 'PRACTICE_QUIZ_TEMPLATE',
+  // MICRO_LEARNING_TEMPLATE = 'MICRO_LEARNING_TEMPLATE',
+  // GROUP_ACTIVITY_TEMPLATE = 'GROUP_ACTIVITY_TEMPLATE',
+
   // ELEMENT = 'ELEMENT',
   // COURSE = 'COURSE
   // LIVE_QUIZ = 'LIVE_QUIZ',
@@ -32,23 +40,240 @@ export enum ActivityType {
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
 }
 
-export type StackInput = {
-  displayName?: string | null
-  description?: string | null
+export type ElementBlockInput = {
   order: number
-  elements: {
-    elementId: number
-    order: number
-  }[]
+  timeLimit?: number | null
+  elements: ElementInstanceInput[]
 }
 
-export type BlockInput = {
+export type ElementStackInput = {
+  order: number
+  displayName?: string | null
+  description?: string | null
+  elements: ElementInstanceInput[]
+}
+
+export type ElementInstanceInput = {
+  elementId: number
+  order: number
+  existingInstanceId?: number | null
+  duplicateInstance: boolean
+}
+
+export type CaseStudyCriterionResponse = {
+  criterionId: string
+  response: number
+}
+
+export type CaseStudyItemResponse = {
+  itemId: number
+  criterionResponses: CaseStudyCriterionResponse[]
+}
+
+export type CaseStudyCaseResponse = {
+  caseId: string
+  itemResponses: CaseStudyItemResponse[]
+}
+
+export type ChoiceInput = {
+  ix: number
+  value: string
+  correct?: boolean | null
+  feedback?: string | null
+}
+
+export type OptionsChoicesInput = {
+  displayMode?: DisplayMode | null
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  choices?: ChoiceInput[] | null
+}
+
+export type NumericalRestrictionsInput = {
+  min?: number | null
+  max?: number | null
+}
+
+export type SolutionRangeInput = {
+  min?: number | null
+  max?: number | null
+}
+
+export type OptionsNumericalInput = {
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  accuracy?: number | null
+  unit?: string | null
+  restrictions?: NumericalRestrictionsInput | null
+  solutionRanges?: SolutionRangeInput[] | null
+  exactSolutions?: number[] | null
+  feedback?: string | null
+}
+
+export type FreeTextRestrictionsInput = {
+  maxLength?: number | null
+  minLength?: number | null
+  pattern?: string | null
+}
+
+export type OptionsFreeTextInput = {
+  hasSampleSolution?: boolean | null
+  hasAnswerFeedbacks?: boolean | null
+  placeholder?: string | null
+  restrictions?: FreeTextRestrictionsInput | null
+  solutions?: string[] | null
+  feedback?: string | null
+}
+
+export type CaseStudyCriteriaSolutionInput = {
+  criterionId: string
+  min: number
+  max: number
+}
+
+export type CaseStudySolutionInput = {
+  itemId: number
+  criteriaSolutions: CaseStudyCriteriaSolutionInput[]
+}
+
+export type CaseStudyCriterionLabelsInput = {
+  min: string
+  mid?: string | null
+  max: string
+}
+
+export type CaseStudyCriterionInput = {
+  id: string
+  name: string
+  order: number
+  min: number
+  max: number
+  step: number
+  unit?: string | null
+  labels?: CaseStudyCriterionLabelsInput | null
+}
+
+export type CaseStudyCaseInput = {
+  id: string
+  title: string
+  description: string
+  order: number
+  solutions?: CaseStudySolutionInput[] | null
+}
+
+export type OptionsCaseStudyInput = {
+  hasSampleSolution?: boolean | null
+  answerCollection?: number | null
+  collectionItemIds?: number[] | null
+  criteria?: CaseStudyCriterionInput[] | null
+  cases?: CaseStudyCaseInput[] | null
+}
+
+export type OptionsSelectionInput = {
+  hasSampleSolution?: boolean | null
+  answerCollection?: number | null
+  numberOfInputs?: number | null
+  correctAnswers?: number[] | null
+}
+
+export type ResponseInput = {
+  choices?: number[] | null
+  value?: string | null
+  selection?: number[] | null
+  assessment?: CaseStudyCaseResponse[] | null
+}
+
+export type ElementOptionsInput = OptionsChoicesInput &
+  OptionsNumericalInput &
+  OptionsFreeTextInput &
+  OptionsSelectionInput &
+  OptionsCaseStudyInput
+
+export type ElementManipulationInput = {
+  id?: number | null
+  status?: ElementStatus | null
+  type: ElementType
+  name?: string | null
+  content?: string | null
+  explanation?: string | null
+  options?: ElementOptionsInput | null
+  choicesOptions?: OptionsChoicesInput | null
+  numericalOptions?: OptionsNumericalInput | null
+  freeTextOptions?: OptionsFreeTextInput | null
+  selectionOptions?: OptionsSelectionInput | null
+  caseStudyOptions?: OptionsCaseStudyInput | null
+  basePoints?: boolean | null
+  pointsMultiplier?: number | null
+  tags?: string[] | null
+}
+
+export type TemplateBlockElementInput = {
+  order: number
+  useExistingElement: boolean // boolean to signal that an existing element should be loaded into the template
+  existingElementId?: number | null // id of the existing instance that should be loaded into the template
+  useNewElement: boolean // boolean to signal that either the existing template instance should be copied into the user account or a new element should be created
+  newElement?: ElementManipulationInput | null // content for the element, if the user has chosen to insert their own content
+}
+
+export type TemplateBlockInput = {
   timeLimit?: number | null
   order: number
-  elements: {
-    elementId: number
-    order: number
-  }[]
+  elements: TemplateBlockElementInput[]
+}
+
+export type StackResponseInput = {
+  instanceId: number
+  type: ElementType
+  flashcardResponse?: FlashcardCorrectness | null
+  contentReponse?: boolean | null
+  choicesResponse?: number[] | null
+  numericalResponse?: number | null
+  freeTextResponse?: string | null
+  selectionResponse?: number[] | null
+  caseStudyResponse?: CaseStudyCaseResponse[] | null
+}
+
+export type GroupActivityClueInput = {
+  name: string
+  displayName: string
+  type: ParameterType
+  value: string
+  unit?: string | null
+}
+
+export type GroupActivityGradingDecisionInput = {
+  instanceId: number
+  score: number
+  feedback?: string | null
+}
+
+export type GroupActivityGradingInput = {
+  passed: boolean
+  comment?: string | null
+  grading: GroupActivityGradingDecisionInput[]
+}
+
+export type AvatarSettingsInput = {
+  skinTone: string
+  eyes: string
+  mouth: string
+  hair: string
+  accessory: string
+  hairColor: string
+  clothing: string
+  clothingColor: string
+  facialHair: string
+}
+
+export type SubscriptionKeysInput = {
+  p256dh: string
+  auth: string
+}
+
+export type SubscriptionObjectInput = {
+  endpoint: string
+  expirationTime?: number | null
+  keys: SubscriptionKeysInput
 }
 
 // ----- AVATAR SETTINGS -----
@@ -129,6 +354,7 @@ export type CatalogObject = {
   name: string
   objectType: CatalogObjectType
   assignmentId: number
+  templateId?: string
   access: ObjectAccess
   ownerShortname?: string
   isOwner: boolean
@@ -264,6 +490,12 @@ export interface ElementOptionsSelection extends BaseElementOptions {
   answerCollectionSolutionIds?: number[] | null // instance and element data fetching only (not stored here on db element = relation)
 }
 
+export type CaseStudyCriterionLabels = {
+  min: string
+  mid?: string | null
+  max: string
+}
+
 export type CaseStudyCriterion = {
   id: string // use nanoid (as for choices) to simplify distinction from items & ordering
   name: string
@@ -272,6 +504,7 @@ export type CaseStudyCriterion = {
   max: number
   step: number
   unit?: string | null
+  labels?: CaseStudyCriterionLabels | null
 }
 
 export type CaseStudyCaseCriterionSolution = {
@@ -358,7 +591,7 @@ export type CaseStudyElementData = IElementData<
   ElementOptionsCaseStudy
 >
 
-export type AllElementTypeData =
+export type ElementData =
   | ChoicesElementData
   | FreeTextElementData
   | NumericalElementData
@@ -368,6 +601,7 @@ export type AllElementTypeData =
   | CaseStudyElementData
 
 export type ElementInstanceOptions = {
+  basePoints?: boolean
   pointsMultiplier?: number
   resetTimeDays?: number
 }

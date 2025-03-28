@@ -9,12 +9,14 @@ import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import Layout from '../../components/Layout'
 import LiveQuiz from '../../components/liveQuiz/LiveQuiz'
 
 function LiveQuizList() {
   const t = useTranslations()
+  const router = useRouter()
 
   const { loading, data } = useQuery(GetUserLiveQuizzesDocument)
 
@@ -42,6 +44,12 @@ function LiveQuizList() {
       .sort((a, b) => (dayjs(b.finishedAt) > dayjs(a.finishedAt) ? 1 : -1))
   }, [data])
 
+  const liveQuizTemplates = useMemo(() => {
+    return data?.userLiveQuizzes
+      ?.filter((quiz) => quiz?.status === PublicationStatus.Template)
+      .sort((a, b) => (dayjs(b.finishedAt) > dayjs(a.finishedAt) ? 1 : -1))
+  }, [data])
+
   if (loading) {
     return (
       <Layout displayName={t('shared.generic.liveQuizzes')}>
@@ -58,7 +66,15 @@ function LiveQuizList() {
             <H2>{t('manage.liveQuizzes.runningLiveQuizzes')}</H2>
             <div className="flex flex-col gap-2">
               {runningLiveQuizzes.map((quiz) => (
-                <LiveQuiz key={quiz.id} quiz={quiz} />
+                <LiveQuiz
+                  key={quiz.id}
+                  quiz={quiz}
+                  highlighted={
+                    router.query?.highlight
+                      ? (router.query.highlight as string) === quiz.id
+                      : undefined
+                  }
+                />
               ))}
             </div>
           </div>
@@ -68,7 +84,15 @@ function LiveQuizList() {
             <H2>{t('manage.liveQuizzes.plannedLiveQuizzes')}</H2>
             <div className="flex flex-col gap-2">
               {scheduledLiveQuizzes.map((quiz) => (
-                <LiveQuiz key={quiz.id} quiz={quiz} />
+                <LiveQuiz
+                  key={quiz.id}
+                  quiz={quiz}
+                  highlighted={
+                    router.query?.highlight
+                      ? (router.query.highlight as string) === quiz.id
+                      : undefined
+                  }
+                />
               ))}
             </div>
           </div>
@@ -78,7 +102,34 @@ function LiveQuizList() {
             <H2>{t('manage.liveQuizzes.preparedLiveQuizzes')}</H2>
             <div className="flex flex-col gap-2">
               {preparedLiveQuizzes.map((quiz) => (
-                <LiveQuiz key={quiz.id} quiz={quiz} />
+                <LiveQuiz
+                  key={quiz.id}
+                  quiz={quiz}
+                  highlighted={
+                    router.query?.highlight
+                      ? (router.query.highlight as string) === quiz.id
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        {liveQuizTemplates && liveQuizTemplates.length > 0 && (
+          <div>
+            <H2>{t('manage.liveQuizzes.liveQuizTemplates')}</H2>
+            <div className="flex flex-col gap-2">
+              {liveQuizTemplates.map((quiz) => (
+                <LiveQuiz
+                  isTemplate
+                  key={quiz.id}
+                  quiz={quiz}
+                  highlighted={
+                    router.query?.highlight
+                      ? (router.query.highlight as string) === quiz.id
+                      : undefined
+                  }
+                />
               ))}
             </div>
           </div>
@@ -88,7 +139,15 @@ function LiveQuizList() {
             <H2>{t('manage.liveQuizzes.completedLiveQuizzes')}</H2>
             <div className="flex flex-col gap-2">
               {completedLiveQuizzes.map((quiz) => (
-                <LiveQuiz key={quiz.id} quiz={quiz} />
+                <LiveQuiz
+                  key={quiz.id}
+                  quiz={quiz}
+                  highlighted={
+                    router.query?.highlight
+                      ? (router.query.highlight as string) === quiz.id
+                      : undefined
+                  }
+                />
               ))}
             </div>
           </div>
@@ -96,7 +155,8 @@ function LiveQuizList() {
         {scheduledLiveQuizzes?.length === 0 &&
           preparedLiveQuizzes?.length === 0 &&
           runningLiveQuizzes?.length === 0 &&
-          completedLiveQuizzes?.length === 0 && (
+          completedLiveQuizzes?.length === 0 &&
+          liveQuizTemplates?.length === 0 && (
             <UserNotification
               type="warning"
               message={t('manage.liveQuizzes.noLiveQuizzes')}

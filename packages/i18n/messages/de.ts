@@ -11,7 +11,7 @@ export default {
       numInvalidValue:
         'Der eingegebene Wert ist keine Zahl oder liegt nicht im vorgegebenen Bereich.',
       ftPlaceholder: 'Ihre Antwort...',
-      seSelectOption: 'Antwort-Option auswählen...',
+      seSelectOption: 'Antwort eingeben & auswählen...',
       seSelectNCorrectOptions:
         'Bitte wählen Sie <b>{number} korrekte Antwort-Optionen</b> aus der vorgegebenen Liste.',
       seCorrectAnswerN: 'Antwort {number}',
@@ -37,6 +37,9 @@ export default {
     },
     READY: {
       statusLabel: 'Bereit',
+    },
+    TEMPLATE: {
+      statusLabel: 'Vorlage',
     },
     SC: {
       short: 'SC',
@@ -149,6 +152,8 @@ export default {
       questions: 'Fragen',
       question: 'Frage',
       element: 'Element',
+      block: 'Block',
+      stack: 'Stack',
       feedbacks: 'Feedbacks',
       feedback: 'Feedback',
       explanation: 'Erklärung',
@@ -162,6 +167,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Aktive Live Quizzes',
+      activePracticeQuizzes: 'Aktive Übungs-Quizzes',
+      activeMicroLearnings: 'Aktive Microlearnings',
       groupActivity: 'Gruppenaktivität',
       groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',
@@ -171,6 +178,11 @@ export default {
       minLong: 'Minimum',
       max: 'Max',
       maxLong: 'Maximum',
+      lowerEnd: 'Untergrenze',
+      midValue: 'Zentralwert',
+      upperEnd: 'Obergrenze',
+      steps: 'Schritte',
+      textInput: 'Texteingabe',
       free: 'Frei',
       congrats: 'Gratulation!',
       thanks: 'Vielen Dank!',
@@ -190,6 +202,12 @@ export default {
       solution: 'Lösung',
       sampleSolution: 'Musterlösung',
       gamification: 'Gamifizierung',
+      basePoints: 'Basispunkte',
+      awardedPoints: 'Vergebene Punkte',
+      additionalPoints: 'Zusätzliche Punkte',
+      correctnessPoints: 'Korrektheitspunkte',
+      bonusPoints: 'Bonuspunkte',
+      scoring: 'Punktevergabe',
       liveQA: 'Live-Q&A',
       moderation: 'Moderation',
       feedbackChannel: 'Feedback-Channel',
@@ -208,6 +226,7 @@ export default {
       information: 'Information',
       description: 'Beschreibung',
       settings: 'Einstellungen',
+      activitySettings: 'Aktivitätseinstellungen',
       course: 'Kurs',
       availableFrom: 'Verfügbar ab',
       startDate: 'Startdatum',
@@ -303,14 +322,29 @@ export default {
       userGroup: 'Benutzergruppe',
       permissionLevel: 'Zugriffsrechte',
       template: 'Vorlage',
+      noPoints: 'keine Punkte',
+      criterionN: 'Kriterium {number}',
     },
     types: {
       LIVE_QUIZ: 'Live Quiz',
+      LIVE_QUIZ_TEMPLATE: 'Live Quiz Vorlage',
       PRACTICE_QUIZ: 'Übungs-Quiz',
+      PRACTICE_QUIZ_TEMPLATE: 'Übungs-Quiz Vorlage',
       MICRO_LEARNING: 'Microlearning',
+      MICRO_LEARNING_TEMPLATE: 'Microlearning Vorlage',
       GROUP_ACTIVITY: 'Gruppenaktivität',
+      GROUP_ACTIVITY_TEMPLATE: 'Gruppenaktivität Vorlage',
       ANSWER_COLLECTION: 'Antwort-Sammlung',
       CATALOG_COLLECTION: 'Katalog-Sammlung',
+      SC: 'Single Choice Frage',
+      MC: 'Multiple Choice Frage',
+      KPRIM: 'Kprim Frage',
+      NUMERICAL: 'Numerische Frage',
+      FREE_TEXT: 'Freitext Frage',
+      SELECTION: 'Auswahl Frage',
+      CASE_STUDY: 'Fallstudie',
+      FLASHCARD: 'Lernkarte',
+      CONTENT: 'Inhaltselement',
     },
     contentInput: {
       boldStyle:
@@ -406,9 +440,12 @@ export default {
       userNotLoggedIn:
         'Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten.',
       noLiveQuizzesActive: 'Keine Live Quizzes aktiv.',
-      activeLiveQuizzesBy: 'Aktive Live Quizzes von <i>{name}</i>',
-      activeLiveQuizzesInCourse: 'Aktive Live Quizzes in Kurs <i>{name}</i>',
-      activeLiveQuizzes: 'Aktive Live Quizzes',
+      activeLiveQuizzesBy: 'Aktive Live Quizzes von {name}',
+      activeLiveQuizzesInCourse: 'Aktive Live Quizzes in {name}',
+      noPracticeQuizzesActive: 'Keine Übungs-Quizzes aktiv.',
+      activePracticeQuizzesInCourse: 'Aktive Übungs-Quizzes in {name}',
+      noMicroLearningsActive: 'Keine Microlearnings aktiv.',
+      activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
       joinLeaderboardNotice: `
 🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
 
@@ -890,7 +927,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sortBy: 'Sortieren nach..',
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
-      questionPreview: 'Fragevorschau: {question}',
+      elementPreview: 'Elementvorschau: {element}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -1068,14 +1105,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern).',
       tagFormatting:
         'Zwischenzeitlich erforderliche Formattierung: Geben Sie Tags durch Kommas getrennt ein, z.B.: Tag1,Tag2,Tag3',
-      multiplierTooltip:
-        'Wählen Sie einen Multiplikator, mit welchem die Punkte für diese Frage multipliziert werden sollen. Der Multiplikator kann nur zwischen 1 und 4 liegen.',
+      basePointInformation:
+        'Basispunkte werden bei allen Teilnehmern für die Beantwortung der Frage in einem Live Quiz gutgeschrieben. Diese Punkte werden nicht durch Punktmultiplikatoren beeinflusst.',
+      multiplierInformation:
+        'Wählen Sie einen Multiplikator, mit welchem Korrektheits- und Bonuspunkte für diese Frage multipliziert werden sollen. Der Multiplikator kann nur zwischen 1 und 4 liegen.',
+      multiplierNoEffect:
+        'Multiplikatoren beeinflussen die Bepunktung einer Frage nur, wenn eine Musterlösung definiert ist und Korrektheits- und Bonuspunkte (Live Quiz) vergeben werden.',
+      liveQuizBasePoints: 'Live-Quiz Basispunkte',
+      zeroPoints: '0 Punkte',
       questionTooltip:
         'Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen.',
       contentTooltip:
         'Geben Sie den Inhalt ein, den Sie den Teilnehmenden präsentieren möchten. Der Rich Text Editor erlaubt Ihnen folgende (Block-) Formatierungen zu nutzen: fetter Text, kursiver Text, Code, Zitate, nummerierte Listen, unnummerierte Listen und LaTeX Formeln. Fahren Sie mit der Maus über die einzelnen Knöpfe für mehr Informationen.',
       instructionsTooltip:
         'Geben Sie hier die Instruktionen für die Studierenden ein, welche als Wegleitung für die Beantwortung der Fallstudie dienen.',
+      enableSampleSolution: 'Musterlösung aktivieren',
+      sampleSolutionAndScoring: 'Musterlösung & Bewertung',
+      scoringDocumentation: 'Dokumentation zur Bewertung',
       questionPlaceholder: 'Fragetext hier eingeben…',
       contentPlaceholder: 'Inhalt hier eingeben…',
       instructionsPlaceholder: 'Instruktionen hier eingeben…',
@@ -1114,8 +1160,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseStudyItemsTooltip:
         'Bitte wählen Sie hier die Elemente aus der Antwort-Sammlung, welche durch die Teilnehmer in der Fallstudie in bezug auf die unten erfassten Kriterien bewertet werden sollen.',
       selectCaseStudyItems: 'Elemente auswählen...',
+      caseStudyRangeCriterion: 'Numerisches Intervallkriterium',
+      caseStudyStepCriterion: 'Schritt-/Likert-Kriterium',
       caseStudyCriteriaDescription:
-        'Bitte definieren Sie hier die Kriterien gemäss welchen die oben ausgewählten Elemente der Fallstudie bewertet werden sollen. Für mehr Informationen zu den einzelnen Feldern, beachten Sie bitte auch die entsprechenden Tooltips.',
+        'Bitte definieren Sie hier die Kriterien, nach denen die oben ausgewählten Elemente der Fallstudie bewertet werden sollen. Sie können zwischen rein numerischen Kriterien (ideal z.B. für Wahrscheinlichkeits- / Kostenabschätzungen) und Schritt- / Likert-Kriterien (ideal für Fallstudien ohne exakte / bekannte Lösungen) wählen. Für weitere Informationen zu den einzelnen Feldern beachten Sie bitte auch die entsprechenden Tooltips.',
       caseStudyCriteriaNameTooltip:
         'Der Name des Kriteriums wird den Studierenden angezeigt (z.B. "Wahrscheinlichkeit").',
       caseStudyCriteriaMinTooltip:
@@ -1126,7 +1174,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Schrittweite entscheidet über die Schritte bei der Einstellung des Schiebereglers.',
       caseStudyCriteriaUnitTooltip:
         'Die optionale Einheit wird den Studierenden neben den entsprechenden Werten angezeigt (z.B. "%").',
+      caseStudyCriteriaMinLabelTooltip:
+        'Dieser Text beschreibt das untere Ende ihres Schritt- oder Likert-Kriteriums an (z.B. "sehr unwahrscheinlich").',
+      caseStudyCriteriaMidLabelTooltip:
+        'Dieser Text beschreibt den mittleren Bereich ihres Schritt- oder Likert-Kriteriums (z.B. "möglich").',
+      caseStudyCriteriaMaxLabelTooltip:
+        'Dieser Text beschreibt das obere Ende ihres Schritt- oder Likert-Kriteriums an (z.B. "sehr wahrscheinlich").',
+      caseStudyCriteriaStepsTooltip:
+        'Geben Sie hier die Anzahl der Schritte an, die der Schieberegler haben soll (mind. 3).',
       addCriterion: 'Kriterium hinzufügen',
+      addRangeCriterion: 'Numerisches Intervallkriterium hinzufügen',
+      addStepsCriterion: 'Schritt-/Likert-Kriterium hinzufügen',
       addCase: 'Neuen Fall hinzufügen',
       removeCase: 'Fall entfernen',
       caseTitle: 'Fallname',
@@ -1145,6 +1203,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       caseStudySolutions: 'Musterlösungen für Fall {number}',
       caseStudySolutionsTooltip:
         'Bitte geben Sie hier für jedes zu Bewertende Element und Kriterium einen Bereich an, welcher als korrekt bewertet werden soll.',
+      caseStudySolutionIntervalStep:
+        'im Interval [{lower}, {upper}], Schrittweite {step}',
       lowerLimit: 'Untere Grenze',
       upperLimit: 'Obere Grenze',
       LISTDisplay: 'Anzeige als Liste',
@@ -1177,9 +1237,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       uploadImageHeader: 'Medien hinzufügen',
       uploadImageDescription:
         'Ziehen Sie ein Bild auf diese Fläche oder klicken Sie darauf, um den Explorer zu öffnen.',
-      updateInstances: 'Frage-Instanzen in KlickerUZH-Elementen aktualisieren',
+      updateInstances:
+        'Element-Instanzen in KlickerUZH-Aktivitäten aktualisieren',
+      includeTemplateInstanceUpdates:
+        'Instanzen in Vorlagen-Aktivitäten ebenfalls aktualisieren',
       updateInstancesExplanation:
-        'Nutzen sie diese Einstellung, um die Frage in allen angezeigten geplanten Live-Quizzes, Übungs-Quizzes, Microlearnings und Gruppenaktivitäten anzupassen. Der Inhalt von Fragen in laufenden und abgeschlossenen Aktivitäten wird nicht aktualisiert. Veränderte Multiplikatoren werden auf die erstellten Instanzen angewendet. Bitte beachten Sie, dass bei einer Deaktivierung der Musterlösung nur Inhaltselemente, Flashcards und Freitext-Fragen in Übungs-Quizzes und Microlearnings geupdated werden.',
+        'Nutzen sie diese Einstellung, um das Element in allen angezeigten geplanten Live-Quizzes, Übungs-Quizzes, Microlearnings und Gruppenaktivitäten anzupassen. Der Inhalt von Elementen in laufenden und abgeschlossenen Aktivitäten wird nicht aktualisiert. Veränderte Multiplikatoren werden auf die erstellten Instanzen angewendet. Bitte beachten Sie, dass bei einer Deaktivierung der Musterlösung nur Inhaltselemente, Flashcards und Freitext-Fragen in Übungs-Quizzes und Microlearnings geupdated werden.',
       questionSavedSuccessfully: 'Die Frage wurde erfolgreich gespeichert.',
       questionSavedFailed:
         'Beim Speichern der Frage ist ein Fehler aufgetreten. Bitte beachten Sie die Fehlermeldungen im Formular und überprüfen Sie die Eingaben.',
@@ -1214,6 +1277,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newQuestion: 'Neue Frage',
       blockSettingsTitle: 'Einstellungen Block {blockIx}',
       timeLimit: 'Zeit-Limit',
+      noTimeLimit: 'Kein Zeit-Limit',
       optionalTimeLimit: 'Optionales Zeit-Limit',
       timeLimitTooltip: 'Zeit-Limit für Block {blockIx} in Sekunden',
       newBlock: 'Neuer Block',
@@ -1529,7 +1593,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ich verstehe, dass Elemente in dieser Aktivität von Ressourcen abhängen (z.B. Antwort-Sammlungen), und dass der Zugriff auf diese automatisch geteilt wird (Lese-Berechtigungen), wenn ein Benutzer diese Informationen nicht ersetzt und keinen Zugriff auf die entsprechende Ressource hat.',
       templateInformation: 'Vorlagen-Informationen',
       templateInformationDescription:
-        'Bitte geben Sie die folgenden Informationen für Ihre Vorlage an. Diese werden Benutzern angezeigt, wenn sie Ihre Vorlage importieren oder verwenden.',
+        'Bitte geben Sie die folgenden Informationen für Ihre Vorlage an. Diese werden Benutzern angezeigt, wenn diese Ihre Vorlage aus einer Katalog-Sammlung importieren beziehungsweise zur Erstellung einer Aktivität verwenden.',
+      nameTooltip:
+        'Der Name wird Benutzern angezeigt, wenn sie verfügbare Vorlage über den Katalog suchen.',
+      nameRequired: 'Ein Name für das Aktivitäts-Template ist erforderlich',
       descriptionTooltip:
         'Die Beschreibung wird Benutzern angezeigt, wenn sie verfügbare Vorlagen im Katalog durchsuchen.',
       descriptionPlaceholder:
@@ -1542,6 +1609,86 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createTemplateCopy: 'Vorlage-Kopie erstellen',
       descriptionRequired: 'Eine Beschreibung ist erforderlich',
       instructionsRequired: 'Anweisungen sind erforderlich',
+      templateCreationSuccess: 'Vorlage wurde erfolgreich erstellt',
+      templateCreationError: 'Vorlage konnte nicht erstellt werden',
+      deleteTemplate: 'Vorlage löschen',
+      editTemplate: 'Vorlage bearbeiten',
+      templateEditSuccess: 'Vorlage erfolgreich aktualisiert',
+      templateEditError: 'Fehler beim Aktualisieren der Vorlage',
+      templateDeletionSuccess: 'Vorlage erfolgreich gelöscht',
+      templateDeletionError: 'Fehler beim Löschen der Vorlage',
+      deleteTemplateExplanation:
+        'Bitte bestätigen Sie, dass Sie die ausgewählte Vorlage löschen möchten. Sie wird dadurch auch automatisch aus allen Katalog-Sammlungen entfernt und kann nicht mehr durch andere Nutzer eingesetzt werden.',
+      editTemplateDescription:
+        'Editieren Sie alle Metainformationen der Aktivitätsvorlage, die Sie ändern möchten. Änderungen werden nach dem Speichern sofort wirksam und allen Benutzern der Vorlage angezeigt.',
+      saveChanges: 'Änderungen speichern',
+      activityFromTemplate: 'Aktivität aus Vorlage erstellen',
+      errorLoadingTemplate:
+        'Beim Laden der Vorlage ist ein Fehler aufgetreten...',
+      templateInfoLIVE_QUIZ:
+        'Diese Ansicht ermöglicht es Ihnen aus der Live-Quiz Vorlage "{templateName}" ihre eigene Live-Quiz Aktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      templateInfoPRACTICE_QUIZ:
+        'Diese Ansicht ermöglicht es Ihnen aus der Übungs-Quiz Vorlage "{templateName}" ihre eigene Übungs-Quiz Aktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      templateInfoGROUP_ACTIVITY:
+        'Diese Ansicht ermöglicht es Ihnen aus der Gruppenaktivität Vorlage "{templateName}" ihre eigene Gruppenaktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      templateInfoMICRO_LEARNING:
+        'Diese Ansicht ermöglicht es Ihnen aus der Microlearning Vorlage "{templateName}" ihr eigenes Microlearning zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      recoverTemplateActivityInputs:
+        'Eingaben für Vorlagen-Aktivität wiederherstellen',
+      notFoundNotAccessible:
+        'Die angeforderte Aktivitäts-Vorlage wurde nicht gefunden oder ist nicht zugänglich. Bitte Stellen Sie sicher, dass sie über ausreichend Berechtigungen verfügen, um auf diese Vorlage zuzugreifen.',
+      incompleteActivity:
+        'Eine unvollständige Version dieser Aktivitätsvorlage wurde automatisch gespeichert. Bitte wählen Sie, ob Sie die Bearbeitung der Aktivität fortsetzen und den automatisch gespeicherten Zustand wiederherstellen oder mit der ursprünglichen Version der Vorlage neu beginnen möchten.',
+      startOver: 'Neu starten',
+      continueEditing: 'Weiter bearbeiten',
+      settingsInstructions:
+        'Hier können Sie die Grundeinstellungen der Akvitität verändern. Bitte beachten Sie für weitere Informationen die entsprechenden Tooltips oder konsultieren Sie die Dokumentation. Einige Einstellungen wie beispielsweise Punkte-Multiplikatoren können bei Vorlagen nicht direkt verändert werden.',
+      reusingElement: 'Element übernommen',
+      replacingElement: 'Element ersetzt',
+      creatingElement: 'Element erstellt',
+      forGamifiedCourses: 'für gamifizierte Kurse',
+      confirmSettings: 'Einstellungen bestätigen',
+      settingsNotSaved:
+        'Bitte speichern Sie Ihre Änderungen an den Einstellungen, bevor Sie mit der Bearbeitung der Vorlage fortfahren.',
+      confirmTimeLimit: 'Zeitlimit bestätigen',
+      elementActionsTemplate:
+        'Elemente in dieser Vorlage können entweder wie im Template vorhanden übernommen, durch ein bestehendes Element des gleichen Typs und teilweise übereinstimmenden Einstellungen (z.B. Musterlösung) ausgetauscht, oder durch neue Inhalte ersetzt werden. Elemente, welche im Rahmen von Templates erstellt oder übernommen werden, stehen Ihnen im Anschluss in der Bibliothek zur Verfügung. Bitte wählen Sie die gewünschte Aktion für dieses Element aus.',
+      selectActionOptionElement:
+        'Bitte wählen Sie eine Aktion für dieses Element aus',
+      previewTemplateElement: 'Vorschau für Vorlagen-Inhalt',
+      acceptTemplateElement: 'Element aus Template ohne Änderungen übernehmen',
+      replaceWithExistingElement:
+        'Mit bestehendem Element aus Bibliothek ersetzen',
+      insertContentNewElement: 'Inhalt für neues Element erfassen',
+      editContentNewElement: 'Inhalt für neues Element weiter bearbeiten',
+      selectExistingElement: 'Bestehendes Element auswählen',
+      selectElementInstructions:
+        'Wählen Sie eines Ihrer bestehenden Elemente aus, um es in die Vorlage zu übernehmnen. Bitte beachten Sie, dass es sich hierbei um den folgenden Typ Element handeln muss: {element}. Die untenstehende Auswahl wurde bereits nach diesen Kriterien gefiltert.',
+      noMatchingQuestionsFound:
+        'Es konnten keine Elemente in Ihrem Konto gefunden werden, welche mit den Anforderungen der Vorlage übereinstimmen. Bitte erfassen Sie ihr Element direkt in der Vorlage oder übernehmen Sie den bestehenden Inhalt.',
+      withSampleSolution: 'mit Musterlösung',
+      withoutSampleSolution: 'ohne Musterlösung',
+      withAnswerFeedbacks: 'mit Antwortfeedbacks',
+      withoutAnswerFeedbacks: 'ohne Antwortfeedbacks',
+      nextElement: 'Nächstes Element',
+      availableActions: 'Verfügbare Aktionen',
+      sameNamedElementExists:
+        'Ihre Bibliothek enthält bereits ein Element mit dem Namen "{elementName}". Bitte beachten Sie die Möglichkeit, ein bestehendes Element auszuwählen oder fügen Sie neue Inhalte ein. Wenn Sie das Vorlagenelement ohne Änderungen übernehmen, wird eine Kopie davon in Ihrem Konto erstellt.',
+      discardEnteredElementContent: 'Eingaben für Elementerstellung verwerfen',
+      confirmDiscardEnteredElementContent:
+        'Mit dieser Aktion werden alle erfassten Eingaben zur Erstellung eines neuen Elementes an dieser Stelle in der Vorlage verworfen. Diese Aktion kann nicht rückgängig gemacht werden.',
+      createLIVE_QUIZ: 'Live Quiz erstellen',
+      templateInputsIncomplete:
+        'Die Vorlage enthält unvollständige Eingaben. Bitte überprüfen Sie die Einstellungen und Elemente, noch nicht bearbeitete Komponenten sind über einen orangen Status gekennzeichnet.',
+      errorCreatingLiveQuizFromTemplate:
+        'Beim Erstellen des Live-Quizzes ist ein Fehler aufgetreten. Bitte überprüfen Sie, dass alle Ihre eingaben gültig sind und versuchen Sie es erneut.',
+      activityRemainsAvailable:
+        'Beim Erstellen des Templates als Kopie bleibt die ursprüngliche Aktivität weiterhin unverändert verfügbar.',
+      confirmActivityConversion:
+        'Ihre Akvitität wird in eine Vorlage umgewandelt und kann anschliessend nicht mehr ausgeführt werden.',
+      expandAll: 'Alle ausklappen',
+      collapseAll: 'Alle einklappen',
+      basedOnObject: 'basierend auf {object}',
     },
     formErrors: {
       resolveErrors:
@@ -1612,6 +1759,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine Schrittweite für das Kriterium ein.',
       CSStepSizeTooLarge:
         'Die Schrittweite darf maximal der halben Intervallbreite entsprechen.',
+      CSLabelsRequired:
+        'Bei Schritt- / Likert-Kriterien müssen mindestens je ein Label für die Unter- und Obergrenze definiert werden.',
+      CSStepsDefinitionRequired:
+        'Bitte definieren Sie eine Anzahl Schritte für das Schritt- / Likert-Kriterium (mindestens 3).',
       CSCriteriaRequired:
         'Zur Erstellung einer Fallstudie wird mindestens ein Kriterium benötigt.',
       CSCasesRequired:
@@ -1632,19 +1783,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       CSSolutionsMinMaxBounds:
         'Die Unter- und Obergrenze der Lösungsintervalls müssen innerhalb des Wertebereichs des Kriteriums liegen (Element {itemNumber}, Kriterium "{criterionName}").',
       CSSolutionsMinMaxStep:
-        'Unter- und Obergrenze des Lösungsintervalls müssen mindestens eine Schrittweite auseinanderliegen (Element {itemNumber}, Kriterium "{criterionName}").',
+        'Unter- und Obergrenze des Lösungsintervalls müssen bei numerischen Kriterien mindestens eine Schrittweite auseinanderliegen (Element {itemNumber}, Kriterium "{criterionName}").',
+      CSSolutionsMinMaxIntegers:
+        'Die Unter- und Obgrenze des Lösungsintervalls müssen bei Schritt- / Likert-Kriterien ganzzahlig sein (Element {itemNumber}, Kriterium "{criterionName}").',
     },
     liveQuizzes: {
       runningLiveQuizzes: 'Laufende Live Quizzes',
       plannedLiveQuizzes: 'Geplante Live Quizzes',
       preparedLiveQuizzes: 'Vorbereitete Live Quizzes',
       completedLiveQuizzes: 'Abgeschlossene Live Quizzes',
+      liveQuizTemplates: 'Live Quiz Vorlagen',
       embeddingEvaluation: 'Einbettung Evaluation',
       lecturerCockpit: 'Dozierenden Cockpit',
       liveQuizEvaluation: 'Live Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
       editLiveQuiz: 'Quiz bearbeiten',
-      duplicateLiveQuiz: 'Live Quiz duplizieren',
+      duplicateLiveQuiz: 'Quiz duplizieren',
       nBlocksQuestions: '{blocks} Blöcke, {questions} Fragen',
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
       deleteLiveQuiz: 'Live Quiz löschen',
@@ -1673,6 +1827,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Name des Live Quizzes konnte nicht geändert werden.',
     },
     cockpit: {
+      liveQuizQRCodes: 'Live Quiz QR-Codes',
       qrCodeAccountLinkTitle: 'Konto-Link',
       qrCodeAccountLinkDescription:
         'Ihr Konto-Link listet alle aktiven Live-Quizzes. Wenn nur ein Quiz aktiv ist, werden Teilnehmende direkt weitergeleitet, andererseits können sie auswählen, an welchem Quiz sie teilnehmen möchten. Dieser Link wird empfohlen, um ihn zu Folien hinzuzufügen, da er konsistent bleibt, solange Sie Ihren Kurznamen nicht ändern.',
@@ -1755,6 +1910,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       totalParticipantsInclAnon:
         'Total Teilnehmende: {number} ({anonymous} anonym)',
       showSolution: 'Lösung anzeigen',
+      showExplanation: 'Erklärung anzeigen',
       fontSize: 'Schriftgrösse',
       validSolutionRange: 'Erlaubter Antwortbereich',
       correctSolutionRanges: 'Korrekte Lösungsbereiche',
@@ -1993,6 +2149,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Teilen Sie diesen Link oder den QR-Code mit Ihren Teilnehmenden, damit sie dem Kurs beitreten können.',
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
+      liveQuizList: 'Live Quiz Liste',
+      practiceQuizList: 'Übungs-Quiz Liste',
+      microLearningList: 'Microlearning Liste',
       linkAccessCopied:
         'Der Link für den Zugriff wurde in die Zwischenablage kopiert.',
       linkLTICopied:
@@ -2000,6 +2159,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Übungs-Quizzes',
+      linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
@@ -2160,9 +2321,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       byOwner: 'von {owner}',
       cancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
+      nameAndDescription: 'Name und Beschreibung',
+      saveBeforeClosing:
+        'Bitte speichern Sie Ihre Änderungen, bevor Sie die Sektion schliessen.',
+      searchAnswerOptions: 'Antwort-Option suchen...',
+      noMatchingOptions: 'Keine passenden Optionen gefunden.',
       saveChanges: 'Änderungen speichern',
+      saveMetadata: 'Metadaten speichern',
       successfulCollectionEdit:
         'Die Änderungen an der Antwort-Sammlung wurden erfolgreich gespeichert.',
+      changesImmediateEffect:
+        'Änderungen (und Löschungen) an Antwort-Optionen werden sofort gespeichert und in entsprechende Fragen übernommen. Fragen in bestehenden Aktivitäten müssen über den Element-Editor aktualisiert werden, um allfällige Änderungen zu übernehmen.',
       answerOptions: 'Antwort-Optionen',
       addAnswerOption: 'Antwort-Option hinzufügen',
       showAnswers: 'Antworten anzeigen',
@@ -2177,10 +2346,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestedAccess: 'Zugriff beantragt',
       deleteCollection: 'Sammlung löschen',
       deletionDisabledInUse:
-        'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht löschen. Um die Sammlung zu löschen, entfernen Sie sie bitte zuerst aus allen Fragen, die sie verwenden.',
+        'Diese Sammlung wird durch mindestens eine Ihrer Fragen oder Vorlagen genutzt. Sie können die Sammlung daher nicht löschen. Um die Sammlung zu löschen, entfernen Sie sie bitte zuerst aus allen Fragen, die sie verwenden.',
       removeCollection: 'Sammlung entfernen',
       removalDisabledInUse:
-        'Diese Sammlung wird durch mindestens eine Ihrer Fragen genutzt. Sie können die Sammlung daher nicht entfernen.',
+        'Diese Sammlung wird durch mindestens eine Ihrer Fragen oder Vorlagen genutzt. Sie können die Sammlung daher nicht entfernen.',
       deleteAnswerCollection: 'Antwort-Sammlung löschen',
       confirmCollectionDeletion:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung "{name}" aus Ihrem Profil löschen möchten? Bei geteilten Antwort-Sammlungen bleibt der Zugriff für andere Nutzer bestehen, solange diese die Sammlung verwenden. Nutzer welche die Antwort-Sammlung nicht nutzen, verlieren den Zugriff.',
@@ -2207,11 +2376,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       all: 'Alle',
       sharingRequests: 'Zugriffs-Anfragen',
       unresolved: 'Unbearbeitet',
-      objectTypeANSWER_COLLECTION: 'Antwort-Sammlung',
-      objectTypeCATALOG_COLLECTION: 'Katalog-Sammlung',
       noObjectsFoundInCatalog:
         'Für die eingegebenen Suchkriterien und Filter konnten keine öffentlichen oder eingeschränkt verfügbaren Objekte gefunden werden.',
       requestAccess: 'Zugriff beantragen',
+      useTemplate: 'Vorlage verwenden',
       importObject: 'Objekt importieren',
       importObjectType: '{object} importieren',
       accessRequested: 'Zugriff beantragt',
@@ -2263,6 +2431,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       removeCATALOG_COLLECTIONtitle: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
       removeANSWER_COLLECTIONtitle: 'Antwort-Sammlung aus Katalog entfernen',
+      removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
+      removeLIVE_QUIZ_TEMPLATEtitle: 'Live-Quiz Vorlage aus Katalog entfernen',
       removeObjectDescription:
         'Sind Sie sicher, dass Sie {objectType} "{objectName}" aus der Katalogsammlung entfernen möchten? Nutzer verlieren dadurch die Möglichkeit, das Objekt aus dem Katalog zu importieren bzw. Zugriff darauf zu beantragen.',
       createCatalogCollection: 'Sammlung erstellen',
@@ -2305,6 +2475,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Katalogsammlung und können Objekte darin anfordern/importieren.',
       requestSuccessInfoANSWER_COLLECTION:
         'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Antwort-Sammlung und können diese in Ihren Auswahl-Fragen und Fallstudien verwenden.',
+      requestSuccessInfoLIVE_QUIZ_TEMPLATE:
+        'Sobald der Besitzer Ihre Anfrage akzeptiert, haben Sie Zugriff auf die Live-Quiz Vorlage und können diese zur Erstellung von Live Quizzes nutzen.',
       requestCatalogObjectSuccess:
         'Die Zugriffsanfrage wurde erfolgreich übermittelt.',
       requestCatalogObjectFailed:
@@ -2335,7 +2507,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     sharing: {
       permissionsREAD: 'Leserechte',
       permissionsWRITE: 'Schreibrechte',
-      permissionsADMIN: 'Admin-rechte',
+      permissionsADMIN: 'Adminrechte',
       permissionsEXECUTE: 'Ausführungsrechte',
       grantedPermissions: 'Bestehende Berechtigungen',
       transferOwnership: 'Eigentumsrechte übertragen',
@@ -2356,18 +2528,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       revokeAccessDisabledTooltip:
         'Der Zugriff kann nicht entzogen werden, da dieser Nutzer die Sammlung aktiv verwendet.',
       noUserGroupSelected: 'Keine Nutzergruppe ausgewählt',
-      usernameEmailOrGroupRequired:
-        'Bitte geben Sie einen Nutzernamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
+      shortnameEmailOrGroupRequired:
+        'Bitte geben Sie einen Kurznamen / E-Mail Adresse ein oder wählen Sie eine Nutzergruppe.',
       infoTransferOwnershipCATALOG_COLLECTION:
         'Sie sind dabei, die Eigentumsrechte für die Katalog-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       infoTransferOwnershipANSWER_COLLECTION:
         'Sie sind dabei, die Eigentumsrechte für die Antwort-Sammlung <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Sammlung, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
+      infoTransferOwnershipLIVE_QUIZ_TEMPLATE:
+        'Sie sind dabei, die Eigentumsrechte für die Live-Quiz Vorlage <b>{objectName}</b> an einen anderen Benutzer zu übertragen. Nach der Übertragung hat der neue Eigentümer die volle Kontrolle über diese Vorlage, während Sie automatisch einen Admin-Zugriff erhalten. Diese Aktion kann nicht rückgängig gemacht werden.',
       shareANSWER_COLLECTION: 'Antwort-Sammlung teilen',
       shareCATALOG_COLLECTION: 'Katalog-Sammlung teilen',
+      shareLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage teilen',
       infoSharingANSWER_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Antwort-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer den Inhalt der Sammlung bearbeiten, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
       infoSharingCATALOG_COLLECTION:
         'Diese Ansicht erlaubt es Ihnen, die Katalog-Sammlung "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer Objekte zur Sammlung hinzufügen, weitere Nutzer hinzufügen oder andere Veränderungen vornehmen.',
+      infoSharingLIVE_QUIZ_TEMPLATE:
+        'Diese Ansicht erlaubt es Ihnen, die Live-Quiz Vorlage "<b>{objectName}</b>" mit anderen Nutzern oder Nutzergruppen zu teilen und vergebene Zugriffrechte zu verändern. Abhängig von den vergebenen Rechten können die entsprechenden Nutzer die Metadaten der Vorlage bearbeiten oder andere Veränderungen vornehmen.',
       sharingSuccessful: 'Das Objekt wurde erfolgreich geteilt.',
       sharingFailed:
         'Beim Teilen des Objekts ist ein Fehler aufgetreten bzw. der von Ihnen spezifizierte Nutzer konnte nicht gefunden werden.',
@@ -2376,10 +2553,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Entfernen des Zugriffs ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       removeCATALOG_COLLECTION: 'Katalog-Sammlung entfernen',
       removeANSWER_COLLECTION: 'Antwort-Sammlung entfernen',
+      removeLIVE_QUIZ_TEMPLATE: 'Live-Quiz Vorlage entfernen',
       confirmRemovalCATALOG_COLLECTION:
         'Sind Sie sicher, dass Sie die Katalog-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemovalANSWER_COLLECTION:
         'Sind Sie sicher, dass Sie die Antwort-Sammlung "{objectName}" aus Ihrem Profil entfernen möchten?',
+      confirmRemovalLIVE_QUIZ_TEMPLATE:
+        'Sind Sie sicher, dass Sie die Live-Quiz Vorlage "{objectName}" aus Ihrem Profil entfernen möchten?',
       confirmRemoval: 'Entfernung bestätigen',
       removalSuccessful:
         'Das Objekt wurde erfolgreich aus Ihrem Konto entfernt.',

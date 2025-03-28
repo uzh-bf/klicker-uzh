@@ -1,6 +1,5 @@
 import {
   type Course,
-  type Element,
   ElementInstanceType,
   ElementStackType,
   ElementType,
@@ -12,14 +11,10 @@ import {
 } from '@klicker-uzh/prisma'
 import {
   ElementInstanceResults,
+  type ElementStackInput,
   ResponseCorrectness,
-  type StackInput,
 } from '@klicker-uzh/types'
-import {
-  getInitialElementResults,
-  getInitialInstanceStatistics,
-  processElementData,
-} from '@klicker-uzh/util'
+import { getActivityInstanceConnectOrCreate } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
@@ -38,6 +33,7 @@ import {
 } from '../lib/randomizedGroups.js'
 import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+import { splitActivityInstances } from './liveQuizzes.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import {
   type RespondToElementStackInput,
@@ -936,7 +932,7 @@ interface CreateGroupActivityArgs {
   startDate: Date
   endDate: Date
   clues: ClueInput[]
-  stack: StackInput
+  stack: ElementStackInput
 }
 
 export async function manipulateGroupActivity(
@@ -954,37 +950,31 @@ export async function manipulateGroupActivity(
   }: CreateGroupActivityArgs,
   ctx: ContextWithUser
 ) {
+  // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
   if (id) {
-    // delete all old instances and clues as their content might have changed
-    const oldElement = await ctx.prisma.groupActivity.findUnique({
+    const existingActiity = await ctx.prisma.groupActivity.findUnique({
       where: {
         id,
         ownerId: ctx.user.sub,
         isDeleted: false,
       },
-      include: {
-        stacks: true,
-        clues: true,
-      },
     })
 
-    if (!oldElement) {
+    if (!existingActiity) {
       throw new GraphQLError('Group Activity not found')
     }
     if (
-      oldElement.status === PublicationStatus.SCHEDULED ||
-      oldElement.status === PublicationStatus.PUBLISHED ||
-      oldElement.status === PublicationStatus.GRADED
+      existingActiity.status === PublicationStatus.SCHEDULED ||
+      existingActiity.status === PublicationStatus.PUBLISHED ||
+      existingActiity.status === PublicationStatus.GRADED
     ) {
       throw new GraphQLError('Can only edit draft group activities')
     }
 
+    // remove old clues as they will be replaced through new values
     await ctx.prisma.groupActivity.update({
       where: { id },
       data: {
-        stacks: {
-          deleteMany: {},
-        },
         clues: {
           deleteMany: {},
         },
@@ -992,36 +982,37 @@ export async function manipulateGroupActivity(
     })
   }
 
-  const elements = stack.elements
-    .map((stackElem) => stackElem.elementId)
-    .filter(
-      (stackElem) => stackElem !== null && typeof stackElem !== 'undefined'
-    )
+  // get required splits of instances based on provided stacks values
+  const {
+    persistentInstanceIds,
+    persistentInstances,
+    persistentInstanceOrderMap,
+    duplicationInstances,
+    elementMap,
+  } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx)
 
-  const dbElements = await ctx.prisma.element.findMany({
-    where: {
-      id: { in: elements },
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          entries: true,
+  // in EDIT mode - check which instances and stacks should be removed
+  let instancesToDelete: number[] = []
+  let stacksToDelete: number[] = []
+  if (id) {
+    const instances = await ctx.prisma.elementInstance.findMany({
+      where: {
+        id: { notIn: persistentInstanceIds },
+        elementStack: {
+          groupActivityId: id,
         },
       },
-      answerCollectionItems: true,
-    },
-  })
+    })
 
-  const uniqueElements = new Set(dbElements.map((q) => q.id))
-  if (dbElements.length !== uniqueElements.size) {
-    throw new GraphQLError('Not all elements could be found')
+    const stacks = await ctx.prisma.elementStack.findMany({
+      where: {
+        groupActivityId: id,
+      },
+    })
+
+    instancesToDelete = instances.map((instance) => instance.id)
+    stacksToDelete = stacks.map((stack) => stack.id)
   }
-
-  const elementMap = dbElements.reduce<Record<number, Element>>(
-    (acc, elem) => ({ ...acc, [elem.id]: elem }),
-    {}
-  )
 
   const newId = uuidv4()
   const createOrUpdateJSON = {
@@ -1032,7 +1023,6 @@ export async function manipulateGroupActivity(
     status: PublicationStatus.DRAFT,
     scheduledStartAt: startDate,
     scheduledEndAt: endDate,
-    parameters: {},
     pointsMultiplier: multiplier,
     clues: {
       connectOrCreate: [
@@ -1060,35 +1050,17 @@ export async function manipulateGroupActivity(
         displayName: stack.displayName,
         description: stack.description,
         elements: {
-          create: stack.elements.map((elem) => {
-            const element = elementMap[elem.elementId]!
-            const processedElementData = processElementData(element)
-            const initialResults = getInitialElementResults(element)
-
-            return {
-              elementType: element.type,
-              migrationId: uuidv4(),
-              order: elem.order,
-              type: ElementInstanceType.GROUP_ACTIVITY,
-              elementData: processedElementData,
-              options: {
-                pointsMultiplier: multiplier * element.pointsMultiplier,
-              },
-              results: initialResults,
-              anonymousResults: initialResults,
-              instanceStatistics: {
-                create: getInitialInstanceStatistics(
-                  ElementInstanceType.GROUP_ACTIVITY
-                ),
-              },
-              element: {
-                connect: { id: element.id },
-              },
-              owner: {
-                connect: { id: ctx.user.sub },
-              },
-            }
-          }),
+          connectOrCreate: stack.elements.map((instance) =>
+            getActivityInstanceConnectOrCreate({
+              instance,
+              instanceType: ElementInstanceType.GROUP_ACTIVITY,
+              activityMultiplier: multiplier,
+              persistentInstances,
+              duplicationInstances,
+              elementMap,
+              userId: ctx.user.sub,
+            })
+          ),
         },
       },
     },
@@ -1104,15 +1076,54 @@ export async function manipulateGroupActivity(
     },
   }
 
-  const groupActivity = await ctx.prisma.groupActivity.upsert({
-    where: {
-      id: id ?? newId,
-    },
-    create: createOrUpdateJSON,
-    update: createOrUpdateJSON,
+  // Use a transaction to ensure atomicity of all database operations
+  const activity = await ctx.prisma.$transaction(async (prisma) => {
+    // delete all instances that are not used anymore
+    await prisma.elementInstance.deleteMany({
+      where: {
+        id: { in: instancesToDelete },
+      },
+    })
+
+    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+    for (const instance of persistentInstances) {
+      const elementMultiplier =
+        'pointsMultiplier' in instance.elementData
+          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+          : 1
+
+      await prisma.elementInstance.update({
+        where: {
+          id: instance.id,
+        },
+        data: {
+          elementStackId: null,
+          order: persistentInstanceOrderMap[instance.id],
+          options: {
+            ...instance.options,
+            pointsMultiplier: multiplier * elementMultiplier,
+          },
+        },
+      })
+    }
+
+    // delete all stacks
+    await prisma.elementStack.deleteMany({
+      where: {
+        id: { in: stacksToDelete },
+      },
+    })
+
+    return prisma.groupActivity.upsert({
+      where: {
+        id: id ?? newId,
+      },
+      create: createOrUpdateJSON,
+      update: createOrUpdateJSON,
+    })
   })
 
-  return groupActivity
+  return activity
 }
 
 export async function updateGroupAverageScores(ctx: Context) {
@@ -1780,7 +1791,7 @@ export async function deleteGroupActivity(
       },
     })
 
-    ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
     return updatedGroupActivity
   }
 }

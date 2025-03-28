@@ -19,13 +19,17 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import useEvaluationBarChartData from '../hooks/useEvaluationBarChartData'
 
 interface ElementBarChartProps {
   instance: ElementInstanceEvaluation
   showSolution: boolean
+  showExplanation: boolean
   textSize: {
     legend: string
+    text: string
+    textLg: string
     textXl: string
     text3Xl: string
   }
@@ -34,6 +38,7 @@ interface ElementBarChartProps {
 function ElementBarChart({
   instance,
   showSolution,
+  showExplanation,
   textSize,
 }: ElementBarChartProps) {
   const t = useTranslations()
@@ -55,83 +60,93 @@ function ElementBarChart({
   }
 
   return (
-    <ResponsiveContainer className="pb-2" height="99%" width="99%">
-      <BarChartRecharts
-        data={labeledData}
-        margin={{
-          bottom: 20,
-          left: 20,
-          right: 20,
-          top: 20,
-        }}
-      >
-        <XAxis
-          dataKey="xLabel"
-          tick={{
-            fill: 'black',
-            offset: 30,
-            stroke: 'black',
-            style: { fontSize: textSize.legend },
-          }}
-        />
-        <YAxis
-          domain={[
-            0,
-            (dataMax: number): number => {
-              const rounded = Math.ceil(dataMax * 1.1)
-              if (rounded % 2 === 0) {
-                return rounded
-              }
-              return rounded + 1
-            },
-          ]}
-          label={{
-            angle: -90,
-            position: 'insideLeft',
-            value: t('shared.generic.responses'),
-            className: textSize.textXl,
-          }}
-        />
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        <Bar
-          dataKey="count"
-          // HACK: don't animate as it causes labels to disappear
-          isAnimationActive={false}
-          maxBarSize={100}
-        >
-          <LabelList
-            dataKey="labelOut"
-            fill="black"
-            offset={15}
-            position="top"
-            stroke="black"
-            strokeWidth={1}
-            className={textSize.text3Xl}
-          />
-          <LabelList
-            dataKey="labelIn"
-            fill="white"
-            position="inside"
-            stroke="white"
-            className={textSize.text3Xl}
-            id="bar-chart-block"
-          />
-          {instance.__typename === 'ChoicesActivityEvaluationData' &&
-            instance.results.choices.map((choice, index) => (
-              <Cell
-                fill={
-                  showSolution
-                    ? choice.correct
-                      ? CHART_SOLUTION_COLORS.correct
-                      : CHART_SOLUTION_COLORS.incorrect
-                    : CHART_COLORS[index % 12]
-                }
-                key={index}
+    <div className="flex h-full w-full flex-col">
+      <EvaluationExplanation
+        explanation={instance.explanation}
+        showExplanation={showExplanation}
+        textSize={textSize.text}
+        textSizeLg={textSize.textLg}
+      />
+      <div className="min-h-0 flex-1">
+        <ResponsiveContainer width="99%" height="100%">
+          <BarChartRecharts
+            data={labeledData}
+            margin={{
+              bottom: 20,
+              left: 20,
+              right: 20,
+              top: 20,
+            }}
+          >
+            <XAxis
+              dataKey="xLabel"
+              tick={{
+                fill: 'black',
+                offset: 30,
+                stroke: 'black',
+                style: { fontSize: textSize.legend },
+              }}
+            />
+            <YAxis
+              domain={[
+                0,
+                (dataMax: number): number => {
+                  const rounded = Math.ceil(dataMax * 1.1)
+                  if (rounded % 2 === 0) {
+                    return rounded
+                  }
+                  return rounded + 1
+                },
+              ]}
+              label={{
+                angle: -90,
+                position: 'insideLeft',
+                value: t('shared.generic.responses'),
+                className: textSize.textXl,
+              }}
+            />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <Bar
+              dataKey="count"
+              // HACK: don't animate as it causes labels to disappear
+              isAnimationActive={false}
+              maxBarSize={100}
+            >
+              <LabelList
+                dataKey="labelOut"
+                fill="black"
+                offset={15}
+                position="top"
+                stroke="black"
+                strokeWidth={1}
+                className={textSize.text3Xl}
               />
-            ))}
-        </Bar>
-      </BarChartRecharts>
-    </ResponsiveContainer>
+              <LabelList
+                dataKey="labelIn"
+                fill="white"
+                position="inside"
+                stroke="white"
+                className={textSize.text3Xl}
+                id="bar-chart-block"
+              />
+              {instance.__typename === 'ChoicesActivityEvaluationData' &&
+                instance.results.choices.map((choice, index) => (
+                  <Cell
+                    fill={
+                      showSolution
+                        ? choice.correct
+                          ? CHART_SOLUTION_COLORS.correct
+                          : CHART_SOLUTION_COLORS.incorrect
+                        : CHART_COLORS[index % 12]
+                    }
+                    key={index}
+                  />
+                ))}
+            </Bar>
+          </BarChartRecharts>
+        </ResponsiveContainer>
+      </div>
+    </div>
   )
 }
 

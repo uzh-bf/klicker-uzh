@@ -57,7 +57,9 @@ async function seedFlashcardSet(
                   type: ElementInstanceType.PRACTICE_QUIZ,
                   elementType: ElementType.FLASHCARD,
                   elementData: el,
-                  options: {},
+                  options: {
+                    resetTimeDays: 7,
+                  },
                   results: initialResults,
                   anonymousResults: initialResults,
                   ownerId: el.ownerId,

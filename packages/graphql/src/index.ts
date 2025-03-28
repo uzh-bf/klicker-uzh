@@ -12,6 +12,7 @@ import './schema/participant.js'
 import './schema/question.js'
 import './schema/resource.js'
 import './schema/sharing.js'
+import './schema/template.js'
 import './schema/user.js'
 
 import './schema/mutation.js'

@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faCopy, faSave } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
@@ -9,6 +9,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
   CheckTemplateInfoAvailableDocument,
+  CreateActivityTemplateDocument,
+  GetUserLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -21,14 +23,17 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
-import EditorField from '../../activities/creation/EditorField'
 import ConfirmationItem from '../../common/ConfirmationItem'
+import ConversionTypeMonitor from './ConversionTypeMonitor'
+import TemplateFormFields from './TemplateFormFields'
 
 interface TemplateConversionModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   activityId: string
   activityType: ActivityType
+  onSuccess: () => void
+  onError: () => void
 }
 
 function TemplateConversionModal({
@@ -36,10 +41,13 @@ function TemplateConversionModal({
   setOpen,
   activityId,
   activityType,
+  onSuccess,
+  onError,
 }: TemplateConversionModalProps) {
   const t = useTranslations()
   const [currentStep, setCurrentStep] = useState(0)
   const [confirmations, setConfirmations] = useState({
+    activityConversion: false,
     contentVisibility: false,
     questionAccess: false,
     resourceAccess: false,
@@ -55,6 +63,10 @@ function TemplateConversionModal({
   })
   const templateInfo = data?.checkTemplateInfoAvailable
 
+  // mutation for template creation
+  const [createActivityTemplate] = useMutation(CreateActivityTemplateDocument)
+
+  // set corresponding confirmation to true if no resources are required
   useEffect(() => {
     if (templateInfo?.noResourcesRequired) {
       setConfirmations({
@@ -69,6 +81,7 @@ function TemplateConversionModal({
     setOpen(false)
     setCurrentStep(0)
     setConfirmations({
+      activityConversion: false,
       contentVisibility: false,
       questionAccess: false,
       resourceAccess: false,
@@ -77,21 +90,25 @@ function TemplateConversionModal({
 
   return (
     <Modal
+      escapeDisabled
       title={t('manage.template.convertToTemplate', {
         activityType: t(`shared.types.${activityType}`),
       })}
       open={open}
       onClose={handleModalClose}
-      className={{ content: 'gap-2' }}
+      className={{ content: 'gap-2 lg:w-[55rem]' }}
+      dataCloseButton={{ cy: 'close-template-conversion-modal' }}
     >
       <Formik
         validateOnMount
         initialValues={{
+          name: '',
           description: '',
           instructions: '',
           conversionType: null as 'convert' | 'copy' | null,
         }}
         validationSchema={Yup.object().shape({
+          name: Yup.string().required(t('manage.template.nameRequired')),
           description: Yup.string()
             .required(t('manage.template.descriptionRequired'))
             .test({
@@ -109,11 +126,29 @@ function TemplateConversionModal({
           conversionType: Yup.mixed().oneOf(['convert', 'copy']).required(),
         })}
         onSubmit={async (values) => {
-          // TODO: handle form submission
-          console.log(values)
+          try {
+            const result = await createActivityTemplate({
+              variables: {
+                activityId,
+                activityType,
+                templateName: values.name,
+                templateDescription: values.description,
+                templateInstructions: values.instructions,
+                copyBeforeConversion: values.conversionType === 'copy',
+              },
+              refetchQueries: [GetUserLiveQuizzesDocument],
+            })
 
-          // TODO: error and success handling with toasts
-          handleModalClose()
+            if (result.data?.createActivityTemplate) {
+              onSuccess()
+              handleModalClose()
+            } else {
+              onError()
+            }
+          } catch (error) {
+            console.error(error)
+            onError()
+          }
         }}
       >
         {({ isSubmitting, isValid, values, setFieldValue }) => {
@@ -139,6 +174,15 @@ function TemplateConversionModal({
 
           return (
             <Form className="flex flex-col gap-2">
+              <ConversionTypeMonitor
+                conversionType={values.conversionType}
+                setConversionConfirmation={(value) =>
+                  setConfirmations((prev) => ({
+                    ...prev,
+                    activityConversion: value,
+                  }))
+                }
+              />
               {currentStep === 0 && (
                 <div>
                   <FormLabel
@@ -147,13 +191,14 @@ function TemplateConversionModal({
                     label={t('manage.template.conversionType')}
                     className={{ label: 'text-lg' }}
                   />
-                  <div className="mb-2 rounded border p-2 text-sm text-gray-600">
+                  <div className="mb-3 text-sm text-gray-600">
                     {t('manage.template.convertCopyTemplateInfo')}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <Button
-                      primary={values.conversionType === 'convert'}
+                      active={values.conversionType === 'convert'}
                       onClick={() => setFieldValue('conversionType', 'convert')}
+                      data={{ cy: 'convert-option-template' }}
                     >
                       <div className="flex items-center justify-center gap-2">
                         <FontAwesomeIcon icon={faArrowsRotate} />
@@ -161,8 +206,9 @@ function TemplateConversionModal({
                       </div>
                     </Button>
                     <Button
-                      primary={values.conversionType === 'copy'}
+                      active={values.conversionType === 'copy'}
                       onClick={() => setFieldValue('conversionType', 'copy')}
+                      data={{ cy: 'copy-option-template' }}
                     >
                       <div className="flex items-center justify-center gap-2">
                         <FontAwesomeIcon icon={faCopy} />
@@ -180,6 +226,23 @@ function TemplateConversionModal({
                         className={{ label: 'mb-2 mt-6 text-lg' }}
                       />
                       <div className="flex flex-col gap-2">
+                        <ConfirmationItem
+                          label={
+                            values.conversionType === 'copy'
+                              ? t('manage.template.activityRemainsAvailable')
+                              : t('manage.template.confirmActivityConversion')
+                          }
+                          onClick={() => {
+                            setConfirmations((prev) => ({
+                              ...prev,
+                              activityConversion: true,
+                            }))
+                          }}
+                          confirmed={confirmations.activityConversion}
+                          notApplicable={values.conversionType === 'copy'}
+                          confirmationType="confirm"
+                          data={{ cy: 'confirm-activity-unavailability' }}
+                        />
                         <ConfirmationItem
                           label={t('manage.template.confirmContentVisibility')}
                           onClick={() => {
@@ -251,23 +314,12 @@ function TemplateConversionModal({
 
               {currentStep === 1 && (
                 <div>
-                  <div className="text-gray-600">
+                  <div className="text-sm text-gray-600">
                     {t('manage.template.templateInformationDescription')}
                   </div>
-                  <EditorField
-                    required
-                    fieldName="description"
-                    label={t('shared.generic.description')}
-                    placeholder={t('manage.template.descriptionPlaceholder')}
-                    tooltip={t('manage.template.descriptionTooltip')}
-                  />
-                  <EditorField
-                    required
-                    fieldName="instructions"
-                    label={t('shared.generic.instructions')}
-                    placeholder={t('manage.template.instructionsPlaceholder')}
-                    tooltip={t('manage.template.instructionsTooltip')}
-                  />
+
+                  <TemplateFormFields />
+
                   <div className="mt-4 flex justify-between">
                     <Button onClick={() => setCurrentStep(0)}>
                       <Button.Icon icon={faArrowLeft} />
@@ -276,10 +328,11 @@ function TemplateConversionModal({
                     <Button
                       primary
                       type="submit"
-                      disabled={isSubmitting || !isValid}
-                      data={{ cy: 'submit-template-conversion' }}
+                      disabled={!isValid}
+                      loading={isSubmitting}
+                      data={{ cy: 'submit-template-creation' }}
                     >
-                      <Button.Icon icon={faSave} />
+                      <Button.Icon icon={faSave} loading={isSubmitting} />
                       <Button.Label>
                         {t('manage.template.createTemplate')}
                       </Button.Label>
