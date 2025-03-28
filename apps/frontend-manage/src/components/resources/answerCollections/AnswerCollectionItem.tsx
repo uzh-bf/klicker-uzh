@@ -143,7 +143,6 @@ function AnswerCollectionItem({
           collectionId={collection.id}
           open={viewingModal}
           onClose={() => setViewingModal(false)}
-          onRemove={() => setRemovalModal(true)}
         />
       )}
 

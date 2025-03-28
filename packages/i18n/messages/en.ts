@@ -2293,7 +2293,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answerCollection: 'Answer Collection: {name}',
       nameAndDescription: 'Name and Description',
       saveBeforeClosing: 'Please save your changes before closing the section.',
-      searchAnswerOptions: 'Enter answer option...',
+      searchAnswerOptions: 'Search answer option...',
       noMatchingOptions: 'No matching answer options found.',
       saveChanges: 'Save changes',
       saveMetadata: 'Save Metadata',

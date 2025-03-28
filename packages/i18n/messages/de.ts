@@ -2324,7 +2324,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nameAndDescription: 'Name und Beschreibung',
       saveBeforeClosing:
         'Bitte speichern Sie Ihre Änderungen, bevor Sie die Sektion schliessen.',
-      searchAnswerOptions: 'Antwort-Option eingeben...',
+      searchAnswerOptions: 'Antwort-Option suchen...',
       noMatchingOptions: 'Keine passenden Optionen gefunden.',
       saveChanges: 'Änderungen speichern',
       saveMetadata: 'Metadaten speichern',
