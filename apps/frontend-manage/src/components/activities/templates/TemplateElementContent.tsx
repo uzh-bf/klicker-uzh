@@ -162,7 +162,9 @@ function TemplateElementContent({
               >
                 <Button.Icon icon={faPen} />
                 <Button.Label>
-                  {t('manage.template.insertContentNewElement')}
+                  {templateElement.processed && templateElement.useNewElement
+                    ? t('manage.template.editContentNewElement')
+                    : t('manage.template.insertContentNewElement')}
                 </Button.Label>
               </Button>
               {nameCheck?.checkTemplateElementExists &&

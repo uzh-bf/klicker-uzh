@@ -1640,6 +1640,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       acceptTemplateElement: 'Accept template element without modifications',
       replaceWithExistingElement: 'Replace with existing element from library',
       insertContentNewElement: 'Insert content for new element',
+      editContentNewElement: 'Continue editing content for new element',
       selectExistingElement: 'Select existing element',
       selectElementInstructions:
         'Select one of your existing elements to replace the template content. Please note that the element type must match the following requirements: {element}. The selection below has already been filtered according to these criteria.',

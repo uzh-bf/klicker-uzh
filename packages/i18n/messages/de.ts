@@ -1660,6 +1660,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       replaceWithExistingElement:
         'Mit bestehendem Element aus Bibliothek ersetzen',
       insertContentNewElement: 'Inhalt für neues Element erfassen',
+      editContentNewElement: 'Inhalt für neues Element weiter bearbeiten',
       selectExistingElement: 'Bestehendes Element auswählen',
       selectElementInstructions:
         'Wählen Sie eines Ihrer bestehenden Elemente aus, um es in die Vorlage zu übernehmnen. Bitte beachten Sie, dass es sich hierbei um den folgenden Typ Element handeln muss: {element}. Die untenstehende Auswahl wurde bereits nach diesen Kriterien gefiltert.',
