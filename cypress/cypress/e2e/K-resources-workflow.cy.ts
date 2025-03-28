@@ -1481,6 +1481,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="view-answer-collection"]').click()
 
     // validate content of viewing modal
+    cy.get('[data-cy="open-collection-options"]').click()
     cy.wrap(this.data.private.items).each((value: string) => {
       cy.findByText(value).should('exist')
     })
@@ -1547,6 +1548,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="answer-collection-actions-${this.data.direct.name}"]`
     ).click()
     cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
     cy.wrap(this.data.direct.items).each((value: string) => {
       cy.findByText(value).should('exist')
     })
@@ -1614,6 +1616,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="answer-collection-actions-${this.data.direct.name}"]`
     ).click()
     cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
     cy.wrap(this.data.direct.items).each((value: string) => {
       cy.findByText(value).should('exist')
     })
@@ -1866,6 +1869,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="answer-collection-actions-${this.data.access.name}"]`
     ).click()
     cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
     cy.wrap(this.data.access.items).each((value: string) => {
       cy.findByText(value).should('exist')
     })
@@ -2117,6 +2121,7 @@ describe('Create, edit and share answer collections', function () {
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').should('not.exist')
     cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
     cy.wrap(this.data.access.items).each((value: string) => {
       cy.findByText(value).should('exist')
     })
@@ -2276,6 +2281,7 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="answer-collection-actions-${this.data.ownership.name}"]`
     ).click()
     cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
     cy.wrap(this.data.ownership.items).each((value: string) => {
       cy.findByText(value).should('exist')
     })
@@ -2364,6 +2370,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="share-answer-collection"]').should('not.exist')
     cy.get('[data-cy="edit-answer-collection"]').should('not.exist')
     cy.get('[data-cy="view-answer-collection"]').click()
+    cy.get('[data-cy="open-collection-options"]').click()
     cy.wrap(this.data.ownership.items).each((value: string) => {
       cy.findByText(value).should('exist')
     })
