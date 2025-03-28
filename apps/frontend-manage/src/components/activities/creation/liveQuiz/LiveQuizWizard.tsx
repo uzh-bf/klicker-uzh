@@ -33,7 +33,7 @@ import LiveQuizQuestionsStep from './LiveQuizQuestionsStep'
 import LiveQuizSettingsStep from './LiveQuizSettingsStep'
 import submitLiveQuizForm from './submitLiveQuizForm'
 
-// TODO: update accepted types in live quiz to include flashcards
+// TODO: update accepted types in live quiz to include flashcards and content elements
 const acceptedTypes = [
   ElementType.Sc,
   ElementType.Mc,
@@ -41,7 +41,7 @@ const acceptedTypes = [
   ElementType.Numerical,
   ElementType.FreeText,
   // ElementType.Flashcard,
-  ElementType.Content,
+  // ElementType.Content,
   ElementType.Selection,
   ElementType.CaseStudy,
 ]

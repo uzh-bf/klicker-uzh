@@ -2,7 +2,6 @@ import { faImage } from '@fortawesome/free-regular-svg-icons'
 import {
   faBold,
   faCode,
-  faHeading,
   faItalic,
   faListOl,
   faListUl,
@@ -252,7 +251,8 @@ function ContentInput({
               <BlockButton format="bulleted-list" icon={faListUl} />
             </Tooltip>
 
-            <Tooltip
+            {/* TODO: Add heading buttons */}
+            {/* <Tooltip
               tooltip="Heading 1"
               className={{
                 tooltip:
@@ -293,7 +293,7 @@ function ContentInput({
                 icon={faHeading}
                 className="text-xs font-normal"
               />
-            </Tooltip>
+            </Tooltip> */}
 
             <Tooltip
               delay={2000}
