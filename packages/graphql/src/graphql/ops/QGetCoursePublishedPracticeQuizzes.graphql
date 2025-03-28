@@ -1,0 +1,11 @@
+query GetCoursePublishedPracticeQuizzes($courseId: String!) {
+  getCoursePublishedPracticeQuizzes(courseId: $courseId) {
+    id
+    name
+    displayName
+    course {
+      id
+      displayName
+    }
+  }
+}

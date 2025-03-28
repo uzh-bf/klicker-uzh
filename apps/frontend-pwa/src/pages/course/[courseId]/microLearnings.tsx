@@ -1,17 +1,18 @@
 import { useQuery } from '@apollo/client'
-import { faChalkboardUser } from '@fortawesome/free-solid-svg-icons'
-import { GetCourseRunningLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
+import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
+import { GetCoursePublishedMicroLearningsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
+import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../../../components/Layout'
 import LinkButton from '../../../components/common/LinkButton'
 
-function CourseLiveQuizzes({
+function CourseMicroLearnings({
   isInactive,
   courseId,
   participantToken,
@@ -29,7 +30,7 @@ function CourseLiveQuizzes({
     cookiesAvailable,
   })
 
-  const { data, loading } = useQuery(GetCourseRunningLiveQuizzesDocument, {
+  const { data, loading } = useQuery(GetCoursePublishedMicroLearningsDocument, {
     variables: { courseId: courseId },
     skip: isInactive,
   })
@@ -42,20 +43,22 @@ function CourseLiveQuizzes({
     )
   }
 
+  const microlearnings = data?.getCoursePublishedMicroLearnings
+  const course = microlearnings?.[0].course
   if (
     isInactive ||
-    !data ||
-    !data.getCourseRunningLiveQuizzes?.length ||
-    data.getCourseRunningLiveQuizzes.length === 0 ||
-    !data.getCourseRunningLiveQuizzes[0].course
+    !microlearnings ||
+    !microlearnings?.length ||
+    microlearnings.length === 0 ||
+    !course
   ) {
     return (
       <Layout>
         <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
-          <H2>{t.rich('shared.generic.activeLiveQuizzes')}</H2>
+          <H2>{t.rich('shared.generic.activeMicroLearnings')}</H2>
           <UserNotification
             type="warning"
-            message={t('pwa.general.noLiveQuizzesActive')}
+            message={t('pwa.general.noMicroLearningsActive')}
             className={{ root: 'text-base' }}
           />
         </div>
@@ -64,23 +67,28 @@ function CourseLiveQuizzes({
   }
 
   return (
-    <Layout course={data.getCourseRunningLiveQuizzes[0].course}>
+    <Layout course={course}>
       <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H2>
-          {t('pwa.general.activeLiveQuizzesInCourse', {
-            name: data.getCourseRunningLiveQuizzes[0].course.displayName,
+          {t('pwa.general.activeMicroLearningsInCourse', {
+            name: course.displayName,
           })}
         </H2>
         <div className="flex flex-col gap-1.5">
-          {data.getCourseRunningLiveQuizzes.map((quiz) => (
+          {microlearnings.map((microlearning) => (
             <LinkButton
-              key={quiz.id}
-              icon={faChalkboardUser}
-              href={`/session/${quiz.id}`}
-              data={{ cy: `join-live-quiz-${quiz.name}` }}
+              key={microlearning.id}
+              icon={faBookOpenReader}
+              href={`/course/${course.id}/microlearning/${microlearning.id}`}
+              data={{ cy: `open-microlearning-${microlearning.name}` }}
               className={{ root: 'gap-1 text-base', icon: 'h-5 w-5' }}
             >
-              {quiz.displayName}
+              <div>{microlearning.displayName}</div>
+              <div className="text-sm text-gray-600">
+                {`${dayjs(microlearning.scheduledStartAt).format(
+                  'DD.MM.YYYY HH:mm'
+                )} - ${dayjs(microlearning.scheduledEndAt).format('DD.MM.YYYY HH:mm')}`}
+              </div>
             </LinkButton>
           ))}
         </div>
@@ -102,14 +110,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
   const result = await apolloClient.query({
-    query: GetCourseRunningLiveQuizzesDocument,
+    query: GetCoursePublishedMicroLearningsDocument,
     variables: {
       courseId: ctx.params.courseId,
     },
   })
 
   // if there is no result (e.g., the shortname is not valid)
-  if (!result?.data?.getCourseRunningLiveQuizzes) {
+  const course = result.data.getCoursePublishedMicroLearnings?.[0].course
+  if (!result?.data?.getCoursePublishedMicroLearnings || !course) {
     return {
       props: {
         isInactive: true,
@@ -119,10 +128,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // if only a single live quiz is running, redirect directly to the corresponding quiz page
   // or if linkTo is set, redirect to the specified link
-  if (result.data.getCourseRunningLiveQuizzes.length === 1) {
+  if (result.data.getCoursePublishedMicroLearnings.length === 1) {
     return {
       redirect: {
-        destination: `/session/${result.data.getCourseRunningLiveQuizzes[0].id}`,
+        destination: `/course/${course.id}/microlearning/${result.data.getCoursePublishedMicroLearnings[0].id}`,
         permanent: false,
       },
     }
@@ -155,4 +164,4 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   })
 }
 
-export default CourseLiveQuizzes
+export default CourseMicroLearnings
