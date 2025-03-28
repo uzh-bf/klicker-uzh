@@ -4,6 +4,7 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import CatalystNotification from './CatalystNotification'
 import PracticeQuizElement from './PracticeQuizElement'
+import QRCodePopover from './QRCodePopover'
 
 interface PracticeQuizTileProps {
   practiceQuizzes: Pick<
@@ -25,24 +26,30 @@ function PracticeQuizList({
 
   return (
     <div className="flex w-full flex-col items-end">
-      <Button
-        basic
-        onClick={async () => {
-          try {
-            const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes`
-            console.log(link)
-            await navigator.clipboard.writeText(link)
-          } catch (e) {
-            console.log(e)
-          }
-        }}
-        className={{
-          root: 'text-primary-100 hover:text-primary-100 float-right mb-1 h-7 w-max px-1 py-0 text-sm',
-        }}
-      >
-        <Button.Icon icon={faLink} />
-        <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.practiceQuizList')}`}</Button.Label>
-      </Button>
+      <div className="flex flex-row gap-2">
+        <QRCodePopover
+          relHref={`/course/${courseId}/practiceQuizzes`}
+          data={{ cy: `qr-link-microlearning-list` }}
+        />
+        <Button
+          basic
+          onClick={async () => {
+            try {
+              const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes`
+              console.log(link)
+              await navigator.clipboard.writeText(link)
+            } catch (e) {
+              console.log(e)
+            }
+          }}
+          className={{
+            root: 'text-primary-100 hover:text-primary-100 float-right mb-1 h-7 w-max px-2 py-0 text-sm',
+          }}
+        >
+          <Button.Icon icon={faLink} />
+          <Button.Label>{`${t('manage.course.copyLTIAccessLink')}: ${t('manage.course.practiceQuizList')}`}</Button.Label>
+        </Button>
+      </div>
 
       {practiceQuizzes && practiceQuizzes.length > 0 ? (
         <div className="flex w-full flex-col gap-2">
