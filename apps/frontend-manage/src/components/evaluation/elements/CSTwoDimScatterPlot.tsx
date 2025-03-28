@@ -74,8 +74,8 @@ function CSTwoDimScatterPlot({
         margin={{
           top: 20,
           right: 20,
-          bottom: 60,
-          left: 40,
+          bottom: 40,
+          left: 20,
         }}
       >
         <CartesianGrid />

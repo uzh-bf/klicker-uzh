@@ -157,20 +157,6 @@ function CSOneDimScatterPlot({
             if (!payload?.[0]?.payload) return null
             const data = payload[0].payload
 
-            let xValue = data.x.toFixed(2)
-            if (xHasLabels) {
-              if (Math.abs(data.x - xLower) < 0.1) {
-                xValue = `${xValue} (${xCriterionObj?.labels?.min})`
-              } else if (Math.abs(data.x - xUpper) < 0.1) {
-                xValue = `${xValue} (${xCriterionObj?.labels?.max})`
-              } else if (
-                Math.abs(data.x - (xLower + xUpper) / 2) < 0.1 &&
-                xCriterionObj?.labels?.mid
-              ) {
-                xValue = `${xValue} (${xCriterionObj?.labels?.mid})`
-              }
-            }
-
             return (
               <div className="rounded-md border-2 border-black bg-white p-2">
                 <p className="font-bold">{data.itemLabel}</p>
