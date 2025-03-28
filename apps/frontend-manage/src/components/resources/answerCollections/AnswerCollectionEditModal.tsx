@@ -70,7 +70,10 @@ function AnswerCollectionEditModal({
         className="w-full"
       >
         <AccordionItem value="metadata">
-          <AccordionTrigger className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline">
+          <AccordionTrigger
+            className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+            data-cy="open-answer-collection-metadata"
+          >
             {t('manage.resources.nameAndDescription')}
           </AccordionTrigger>
           <AccordionContent className="px-1">
@@ -88,7 +91,10 @@ function AnswerCollectionEditModal({
         </AccordionItem>
 
         <AccordionItem value="options">
-          <AccordionTrigger className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline">
+          <AccordionTrigger
+            className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+            data-cy="open-answer-collection-options"
+          >
             {t('manage.resources.answerOptions')}
           </AccordionTrigger>
           <AccordionContent className="px-1 pb-2">

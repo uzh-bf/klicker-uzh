@@ -175,6 +175,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
 
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -233,8 +234,9 @@ describe('Test creation and editing functionalities, validation, etc. for select
       `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
-    cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
 
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -349,6 +351,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
 
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -367,6 +370,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       `[data-cy="answer-collection-actions-${this.data.SE.collectionEdited}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -395,6 +399,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -413,6 +418,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       `[data-cy="answer-collection-actions-${this.data.SE.collectionEdited}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
