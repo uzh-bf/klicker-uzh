@@ -1,14 +1,21 @@
 import { useQuery } from '@apollo/client'
+import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Modal, Toast, UserNotification } from '@uzh-bf/design-system'
+import {
+  Modal,
+  TextField,
+  Toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@uzh-bf/design-system/dist/future'
+import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import AddAnswerCollectionEntry from './AddAnswerCollectionEntry'
 import AnswerCollectionMetaForm from './AnswerCollectionMetaForm'
 import AnswerCollectionOption from './AnswerCollectionOption'
@@ -38,6 +45,31 @@ function AnswerCollectionEditModal({
   })
 
   const collection = data?.getSingleAnswerCollection
+
+  // setup search
+  const [searchQuery, setSearchQuery] = useState('')
+  const search = useMemo(() => {
+    if (!collection?.entries) {
+      return null
+    }
+
+    const search = new JsSearch.Search('id')
+    search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
+    search.searchIndex = new JsSearch.UnorderedSearchIndex()
+    search.addIndex('value')
+    search.addDocuments(collection.entries)
+    return search
+  }, [collection?.entries])
+
+  // filter entries
+  const filteredEntries = useMemo(() => {
+    if (!collection?.entries || search === null || searchQuery.trim() === '') {
+      return collection?.entries || []
+    }
+
+    return search.search(searchQuery) as typeof collection.entries
+  }, [collection?.entries, searchQuery])
+
   if (loading || !collection) {
     return null
   }
@@ -110,27 +142,42 @@ function AnswerCollectionEditModal({
                 className={{ root: 'mb-2' }}
               />
             ) : null}
-            <div className="my-2 flex max-h-[calc(100vh-30rem)] flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-28rem)] lg:max-h-[calc(100vh-24rem)]">
-              {collection.entries!.map((entry, ix) => (
-                <AnswerCollectionOption
-                  key={`collection-entry-${entry.id}`}
-                  entry={entry}
-                  otherEntries={collection
-                    .entries!.filter((e) => e.id !== entry.id)
-                    .map((e) => e.value)}
-                  last={ix === collection.entries!.length - 1}
-                  collectionId={collection.id}
-                  deletionDisabled={collection.entries!.length <= 2}
-                  editDisabled={optionsEditingDisabled}
-                  setEditDisabled={setOptionsEditingDisabled}
-                  onTouched={() => setOptionsTouched(true)}
-                  onSuccess={() => {
-                    setSaveErrorToast(false)
-                    setOptionsTouched(false)
-                    setSuccessToast(true)
-                  }}
-                />
-              ))}
+
+            <TextField
+              value={searchQuery}
+              onChange={(searchString) => setSearchQuery(searchString)}
+              icon={faSearch}
+              placeholder={t('manage.resources.searchAnswerOptions')}
+              data={{ cy: 'search-answer-options' }}
+              className={{ field: 'mb-2 w-full', input: 'h-8 text-sm' }}
+            />
+            <div className="my-2 flex max-h-[calc(100vh-34rem)] flex-col gap-1 overflow-y-auto md:max-h-[calc(100vh-32rem)] lg:max-h-[calc(100vh-28rem)]">
+              {filteredEntries.length === 0 ? (
+                <UserNotification type="info">
+                  {t('manage.resources.noMatchingOptions')}
+                </UserNotification>
+              ) : (
+                filteredEntries.map((entry, ix) => (
+                  <AnswerCollectionOption
+                    key={`collection-entry-${entry.id}`}
+                    entry={entry}
+                    otherEntries={collection
+                      .entries!.filter((e) => e.id !== entry.id)
+                      .map((e) => e.value)}
+                    last={ix === filteredEntries.length - 1}
+                    collectionId={collection.id}
+                    deletionDisabled={collection.entries!.length <= 2}
+                    editDisabled={optionsEditingDisabled}
+                    setEditDisabled={setOptionsEditingDisabled}
+                    onTouched={() => setOptionsTouched(true)}
+                    onSuccess={() => {
+                      setSaveErrorToast(false)
+                      setOptionsTouched(false)
+                      setSuccessToast(true)
+                    }}
+                  />
+                ))
+              )}
             </div>
             <AddAnswerCollectionEntry
               collectionId={collection.id}
