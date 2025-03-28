@@ -15,6 +15,7 @@ import {
   YAxis,
 } from 'recharts'
 import { TextSizeType } from '../textSizes'
+import getLabelForValue from './getLabelForValue'
 
 function CSEvaluationHistogramChart({
   histogramData,
@@ -23,6 +24,7 @@ function CSEvaluationHistogramChart({
   criterionMin,
   criterionMax,
   criterionName,
+  criterionLabels,
   textSize,
 }: {
   histogramData: {
@@ -38,6 +40,7 @@ function CSEvaluationHistogramChart({
   criterionMin: number
   criterionMax: number
   criterionName: string
+  criterionLabels?: { min: string; mid?: string | null; max: string } | null
   textSize: TextSizeType
 }) {
   const t = useTranslations()
@@ -56,6 +59,18 @@ function CSEvaluationHistogramChart({
 
   // compute the precision of the x-axis such that always at least 5 ticks are shown
   const precision = -Math.floor(Math.log10((maxValue - minValue) / 5))
+
+  // check if labels exist for the criterion
+  const hasLabels = !!(criterionLabels?.min && criterionLabels?.max)
+
+  // for step / likert criteria, set the tick values for min, mid, max
+  const tickValues = hasLabels
+    ? criterionLabels?.mid
+      ? [criterionMin, (criterionMin + criterionMax) / 2, criterionMax]
+      : [criterionMin, criterionMax]
+    : histogramData.map(
+        (d) => Math.round(d.value * 10 ** precision) / 10 ** precision
+      )
 
   return (
     <div className="mt-1 h-full w-full">
@@ -77,10 +92,75 @@ function CSEvaluationHistogramChart({
               value: criterionName,
               position: 'bottom',
             }}
-            ticks={histogramData.map(
-              (d) => Math.round(d.value * 10 ** precision) / 10 ** precision
-            )}
-            tickFormatter={(tick: number) => `  ${tick}  `}
+            ticks={tickValues}
+            tick={(props) => {
+              const { x, y, payload } = props
+
+              if (!hasLabels)
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={16}
+                      textAnchor="middle"
+                      className={textSize.textLg}
+                    >
+                      {payload.value}
+                    </text>
+                  </g>
+                )
+
+              if (Math.abs(payload.value - criterionMin) < 0.1) {
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={16}
+                      textAnchor="start"
+                      className={textSize.textLg}
+                    >
+                      {criterionLabels?.min}
+                    </text>
+                  </g>
+                )
+              } else if (Math.abs(payload.value - criterionMax) < 0.1) {
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={16}
+                      textAnchor="end"
+                      className={textSize.textLg}
+                    >
+                      {criterionLabels?.max}
+                    </text>
+                  </g>
+                )
+              } else if (
+                Math.abs(payload.value - (criterionMin + criterionMax) / 2) <
+                  0.1 &&
+                criterionLabels?.mid
+              ) {
+                return (
+                  <g transform={`translate(${x},${y})`}>
+                    <text
+                      x={0}
+                      y={0}
+                      dy={16}
+                      textAnchor="middle"
+                      className={textSize.textLg}
+                    >
+                      {criterionLabels?.mid}
+                    </text>
+                  </g>
+                )
+              }
+
+              return <></>
+            }}
             className={textSize.textXl}
           />
           <YAxis
@@ -106,21 +186,35 @@ function CSEvaluationHistogramChart({
           <Tooltip
             content={({ active, payload }) => {
               if (active && payload && payload.length > 0) {
+                const data = payload[0].payload
+
                 return (
                   <div className="border-uzh-grey-100 rounded-md border border-solid bg-white p-2">
                     <div>
-                      {payload[0]!.payload.exactBinMatch
+                      {data.exactBinMatch && !hasLabels
                         ? t('manage.evaluation.value')
                         : t('manage.evaluation.histogramRange')}
-                      : {payload[0]!.payload.label}
+                      :{' '}
+                      {hasLabels
+                        ? getLabelForValue(
+                            data.label,
+                            {
+                              id: '',
+                              name: criterionName,
+                              labels: criterionLabels,
+                            },
+                            criterionMin,
+                            criterionMax,
+                            true
+                          )
+                        : data.label}
                     </div>
-                    {typeof payload[0]!.payload.count !== 'undefined' && (
+                    {typeof data.count !== 'undefined' && (
                       <div className="text-primary-100 font-bold">
-                        {t('manage.evaluation.count')}:{' '}
-                        {payload[0]!.payload.count}
+                        {t('manage.evaluation.count')}: {data.count}
                       </div>
                     )}
-                    {typeof payload[0]!.payload.count === 'undefined' &&
+                    {typeof data.count === 'undefined' &&
                       histogramKeys.map((dataKey) => {
                         const itemName = dataKey.split('-')[0]
                         return (
@@ -128,7 +222,7 @@ function CSEvaluationHistogramChart({
                             key={`histogram-key-${dataKey}`}
                             className="text-primary-100 font-bold"
                           >
-                            {itemName}: {payload[0]!.payload[dataKey]}
+                            {itemName}: {data[dataKey]}
                           </div>
                         )
                       })}

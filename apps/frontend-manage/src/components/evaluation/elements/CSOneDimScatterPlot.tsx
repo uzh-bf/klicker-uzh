@@ -17,6 +17,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { TextSizeType } from '../textSizes'
 import { CaseStudyScatterPlotData } from './CSEvaluationScatter'
+import getLabelForValue from './getLabelForValue'
 
 function CSOneDimScatterPlot({
   scatterData,
@@ -37,6 +38,21 @@ function CSOneDimScatterPlot({
   xLower: number
   xUpper: number
 }) {
+  // get the criterion object for the X axis
+  const xCriterionObj = criteria.find((c) => c.id === xCriterion)
+
+  // check if labels exist for the criterion
+  const xHasLabels = !!(
+    xCriterionObj?.labels?.min && xCriterionObj?.labels?.max
+  )
+
+  // for step / likert criteria, set the tick values at the beginning, middle and end of the interval
+  const xTickValues = xHasLabels
+    ? xCriterionObj?.labels?.mid
+      ? [xLower, (xLower + xUpper) / 2, xUpper]
+      : [xLower, xUpper]
+    : undefined
+
   return (
     <ResponsiveContainer width="99%" height="50%">
       <ScatterChart
@@ -53,11 +69,80 @@ function CSOneDimScatterPlot({
           dataKey="x"
           domain={[xLower, xUpper]}
           label={{
-            value: criteria.find((c) => c.id === xCriterion)?.name,
+            value: xCriterionObj?.name,
             position: 'bottom',
             offset: 5,
           }}
           className={textSize.textLg}
+          tick={(props) => {
+            const { x, y, payload } = props
+
+            if (!xHasLabels)
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={16}
+                    textAnchor="middle"
+                    className={textSize.textLg}
+                  >
+                    {payload.value}
+                  </text>
+                </g>
+              )
+
+            if (Math.abs(payload.value - xLower) < 0.1) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={16}
+                    textAnchor="start"
+                    className={textSize.textLg}
+                  >
+                    {xCriterionObj?.labels?.min}
+                  </text>
+                </g>
+              )
+            } else if (Math.abs(payload.value - xUpper) < 0.1) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={16}
+                    textAnchor="end"
+                    className={textSize.textLg}
+                  >
+                    {xCriterionObj?.labels?.max}
+                  </text>
+                </g>
+              )
+            } else if (
+              Math.abs(payload.value - (xLower + xUpper) / 2) < 0.1 &&
+              xCriterionObj?.labels?.mid
+            ) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={16}
+                    textAnchor="middle"
+                    className={textSize.textLg}
+                  >
+                    {xCriterionObj?.labels?.mid}
+                  </text>
+                </g>
+              )
+            }
+
+            return <></>
+          }}
+          ticks={xTickValues}
+          tickLine={true}
         />
         <YAxis
           type="number"
@@ -72,10 +157,24 @@ function CSOneDimScatterPlot({
             if (!payload?.[0]?.payload) return null
             const data = payload[0].payload
 
+            let xValue = data.x.toFixed(2)
+            if (xHasLabels) {
+              if (Math.abs(data.x - xLower) < 0.1) {
+                xValue = `${xValue} (${xCriterionObj?.labels?.min})`
+              } else if (Math.abs(data.x - xUpper) < 0.1) {
+                xValue = `${xValue} (${xCriterionObj?.labels?.max})`
+              } else if (
+                Math.abs(data.x - (xLower + xUpper) / 2) < 0.1 &&
+                xCriterionObj?.labels?.mid
+              ) {
+                xValue = `${xValue} (${xCriterionObj?.labels?.mid})`
+              }
+            }
+
             return (
               <div className="rounded-md border-2 border-black bg-white p-2">
                 <p className="font-bold">{data.itemLabel}</p>
-                <p>{`${data.xCriterionName}: ${data.x.toFixed(2)}`}</p>
+                <p>{`${data.xCriterionName}: ${getLabelForValue(data.x, xCriterionObj, xLower, xUpper)}`}</p>
               </div>
             )
           }}

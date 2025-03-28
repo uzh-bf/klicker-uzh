@@ -16,6 +16,7 @@ import {
 } from 'recharts'
 import { TextSizeType } from '../textSizes'
 import { CaseStudyScatterPlotData } from './CSEvaluationScatter'
+import getLabelForValue from './getLabelForValue'
 
 function CSTwoDimScatterPlot({
   scatterData,
@@ -42,14 +43,39 @@ function CSTwoDimScatterPlot({
   yLower: number
   yUpper: number
 }) {
+  // get the criteria objects for X and Y axes
+  const xCriterionObj = criteria.find((c) => c.id === xCriterion)
+  const yCriterionObj = criteria.find((c) => c.id === yCriterion)
+
+  // check if labels exist for the criteria
+  const xHasLabels = !!(
+    xCriterionObj?.labels?.min && xCriterionObj?.labels?.max
+  )
+  const yHasLabels = !!(
+    yCriterionObj?.labels?.min && yCriterionObj?.labels?.max
+  )
+
+  // for step / likert criteria, set the tick values at the beginning, middle and end of the interval
+  const xTickValues = xHasLabels
+    ? xCriterionObj?.labels?.mid
+      ? [xLower, (xLower + xUpper) / 2, xUpper]
+      : [xLower, xUpper]
+    : undefined
+
+  const yTickValues = yHasLabels
+    ? yCriterionObj?.labels?.mid
+      ? [yLower, (yLower + yUpper) / 2, yUpper]
+      : [yLower, yUpper]
+    : undefined
+
   return (
     <ResponsiveContainer width="99%" height="99%">
       <ScatterChart
         margin={{
           top: 20,
-          right: 10,
-          bottom: 40,
-          left: 20,
+          right: 20,
+          bottom: 60,
+          left: 40,
         }}
       >
         <CartesianGrid />
@@ -58,23 +84,161 @@ function CSTwoDimScatterPlot({
           dataKey="x"
           domain={[xLower, xUpper]}
           label={{
-            value: criteria.find((c) => c.id === xCriterion)?.name,
+            value: xCriterionObj?.name,
             position: 'bottom',
-            offset: 5,
+            offset: 15,
+            className: textSize.textXl,
           }}
-          className={textSize.textXl}
+          tick={(props) => {
+            const { x, y, payload } = props
+
+            if (!xHasLabels)
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={16}
+                    textAnchor="middle"
+                    className={textSize.textLg}
+                  >
+                    {payload.value}
+                  </text>
+                </g>
+              )
+
+            if (Math.abs(payload.value - xLower) < 0.1) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={16}
+                    textAnchor="start"
+                    className={textSize.textLg}
+                  >
+                    {xCriterionObj?.labels?.min}
+                  </text>
+                </g>
+              )
+            } else if (Math.abs(payload.value - xUpper) < 0.1) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={16}
+                    textAnchor="end"
+                    className={textSize.textLg}
+                  >
+                    {xCriterionObj?.labels?.max}
+                  </text>
+                </g>
+              )
+            } else if (
+              Math.abs(payload.value - (xLower + xUpper) / 2) < 0.1 &&
+              xCriterionObj?.labels?.mid
+            ) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={0}
+                    dy={16}
+                    textAnchor="middle"
+                    className={textSize.textLg}
+                  >
+                    {xCriterionObj?.labels?.mid}
+                  </text>
+                </g>
+              )
+            }
+
+            return <></>
+          }}
+          ticks={xTickValues}
+          tickLine={true}
         />
         <YAxis
           type="number"
           dataKey="y"
           domain={[yLower, yUpper]}
           label={{
-            value: criteria.find((c) => c.id === yCriterion)?.name,
+            value: yCriterionObj?.name,
             angle: -90,
             position: 'left',
-            offset: 0,
+            offset: -10,
+            className: textSize.textXl,
           }}
-          className={textSize.textXl}
+          tick={(props) => {
+            const { x, y, payload } = props
+
+            if (!yHasLabels)
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={0}
+                    y={5}
+                    dx={-3}
+                    textAnchor="end"
+                    className={textSize.textLg}
+                  >
+                    {payload.value}
+                  </text>
+                </g>
+              )
+
+            if (Math.abs(payload.value - yLower) < 0.1) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={-20}
+                    y={10}
+                    textAnchor="start"
+                    transform="rotate(-90, -20, 0)"
+                    className={textSize.textLg}
+                  >
+                    {yCriterionObj?.labels?.min}
+                  </text>
+                </g>
+              )
+            } else if (Math.abs(payload.value - yUpper) < 0.1) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={-20}
+                    y={10}
+                    textAnchor="end"
+                    transform="rotate(-90, -20, 0)"
+                    className={textSize.textLg}
+                  >
+                    {yCriterionObj?.labels?.max}
+                  </text>
+                </g>
+              )
+            } else if (
+              Math.abs(payload.value - (yLower + yUpper) / 2) < 0.1 &&
+              yCriterionObj?.labels?.mid
+            ) {
+              return (
+                <g transform={`translate(${x},${y})`}>
+                  <text
+                    x={-20}
+                    y={10}
+                    textAnchor="middle"
+                    transform="rotate(-90, -20, 0)"
+                    className={textSize.textLg}
+                  >
+                    {yCriterionObj?.labels?.mid}
+                  </text>
+                </g>
+              )
+            }
+
+            return <></>
+          }}
+          ticks={yTickValues}
+          tickLine={true}
         />
         <Tooltip
           cursor={{ strokeDasharray: '3 3' }}
@@ -85,8 +249,8 @@ function CSTwoDimScatterPlot({
             return (
               <div className="rounded-md border-2 border-black bg-white p-2">
                 <p className="font-bold">{data.itemLabel}</p>
-                <p>{`${data.xCriterionName}: ${data.x.toFixed(2)}`}</p>
-                <p>{`${data.yCriterionName}: ${data.y.toFixed(2)}`}</p>
+                <p>{`${data.xCriterionName}: ${getLabelForValue(data.x, xCriterionObj, xLower, xUpper)}`}</p>
+                <p>{`${data.yCriterionName}: ${getLabelForValue(data.y, yCriterionObj, yLower, yUpper)}`}</p>
               </div>
             )
           }}
