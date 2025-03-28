@@ -2291,6 +2291,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       byOwner: 'by {owner}',
       cancelRequest: 'Cancel Request',
       answerCollection: 'Answer Collection: {name}',
+      nameAndDescription: 'Name and Description',
+      saveBeforeClosing: 'Please save your changes before closing the section.',
       saveChanges: 'Save changes',
       saveMetadata: 'Save Metadata',
       successfulCollectionEdit:
