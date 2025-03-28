@@ -3652,6 +3652,7 @@ function computeCaseStudyEvaluation({
     criteria: options.criteria.map((criterion) => ({
       id: criterion.id,
       name: criterion.name,
+      labels: criterion.labels,
     })),
     results: {
       totalAnswers: results.total + anonymousResults.total,

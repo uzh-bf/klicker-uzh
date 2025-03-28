@@ -152,6 +152,11 @@ function CSEvaluationHistogram({
                   criterionMin={criterionMin}
                   criterionMax={criterionMax}
                   criterionName={criterionName}
+                  criterionLabels={
+                    criteria.find(
+                      (criterion) => criterion.id === selectedCriterion
+                    )?.labels
+                  }
                   textSize={textSize}
                 />
                 {criteria.length > 1 && (
