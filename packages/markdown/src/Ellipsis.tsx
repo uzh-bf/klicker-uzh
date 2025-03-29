@@ -16,6 +16,7 @@ export interface EllipsisBaseProps {
   maxLines?: 1 | 2 | 3
   withoutPopup?: boolean
   withMarkdown?: boolean
+  withMarkdownTooltip?: boolean
   className?: {
     root?: string
     tooltip?: string
@@ -41,6 +42,7 @@ function Ellipsis({
   maxLines,
   withoutPopup = false,
   withMarkdown = true,
+  withMarkdownTooltip = true,
   className,
 }: EllipsisProps): React.ReactElement {
   if (maxLines) {
@@ -48,7 +50,7 @@ function Ellipsis({
       <Tooltip
         delay={1000}
         tooltip={
-          withMarkdown ? (
+          withMarkdownTooltip ? (
             <Prose
               className={{
                 root: 'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6',
@@ -68,7 +70,7 @@ function Ellipsis({
         }
         className={{
           tooltip: twMerge(
-            'max-w-md border bg-white text-sm shadow',
+            'max-w-md border bg-white text-sm text-black shadow',
             className?.tooltip
           ),
         }}
@@ -106,7 +108,7 @@ function Ellipsis({
               ? decodeHtmlEntities(children)
                   .split('\n')
                   .filter((line) => line.trim() !== '')
-                  .slice(0, maxLines) // Only include the first maxLines lines
+                  .slice(0, maxLines) // only include the first maxLines lines
                   .map((line, i, arr) => (
                     <React.Fragment key={i}>
                       {line}
@@ -218,7 +220,7 @@ function Ellipsis({
         <Tooltip
           delay={1000}
           tooltip={
-            withMarkdown ? (
+            withMarkdownTooltip ? (
               <Markdown
                 withModal={false}
                 content={children
@@ -236,7 +238,7 @@ function Ellipsis({
                     maxLines || maxLength
                       ? Math.min(3, Math.ceil(maxLength / 50))
                       : 3
-                  ) // Limit lines based on context
+                  ) // limit lines based on context
                   .map((line, i, arr) => (
                     <React.Fragment key={i}>
                       {line}

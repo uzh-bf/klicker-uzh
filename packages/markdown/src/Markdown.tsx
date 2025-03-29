@@ -6,8 +6,8 @@ import katex from 'rehype-katex'
 // import rehypePrism from 'rehype-prism-plus'
 import rehype2react from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
-import remarkDirective from 'remark-directive'
-import remarkGfm from 'remark-gfm'
+// import remarkDirective from 'remark-directive'
+// import remarkGfm from 'remark-gfm'
 import math from 'remark-math'
 import markdown from 'remark-parse'
 import remark2rehype from 'remark-rehype'
@@ -76,8 +76,8 @@ function Markdown({
         unified()
           .use(markdown)
           .use(math, { singleDollarTextMath: false })
-          .use(remarkGfm)
-          .use(remarkDirective)
+          // .use(remarkGfm)
+          // .use(remarkDirective)
           .use(remark2rehype, { allowDangerousHtml: false })
           .use(rehypeSanitize, {
             ...defaultSchema,

@@ -32,7 +32,7 @@ function ContentElement({
       <div className="flex-1">
         <div
           className={twMerge(
-            'bg-primary-10 relative max-w-none flex-initial rounded border border-slate-300 p-4 leading-6'
+            'relative max-w-none flex-initial rounded border border-slate-300 p-2 pb-0 leading-6'
           )}
         >
           <span className="absolute right-2 top-1 text-sm text-slate-400">
@@ -42,20 +42,20 @@ function ContentElement({
             content={element.elementData.content}
             withProse
             data={{ cy: `content-element-md-${elementIx}` }}
+            className={{ root: 'p-2' }}
           />
         </div>
       </div>
       {!hideReadButton && (
         <div className="mt-2 flex justify-end">
           <Button
+            primary={!read}
             disabled={read}
             onClick={onRead}
             className={{
               root: twMerge(
                 'h-8 border-0 shadow-sm',
-                read
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-primary-600 hover:bg-primary-700 text-white'
+                read && 'bg-green-600 text-white hover:bg-green-700'
               ),
             }}
             data={{ cy: `read-content-element-${elementIx}` }}
