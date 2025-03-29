@@ -71,9 +71,10 @@ function WizardElementList({
           >
             <div className="flex-1">
               <Ellipsis
-                // maxLines={1}
-                maxLength={40}
+                maxLines={1}
                 className={{ content: 'text-xs' }}
+                withMarkdown={false}
+                withMarkdownTooltip={false}
               >
                 {element.title}
               </Ellipsis>
