@@ -1,18 +1,28 @@
 import { ContentActivityEvaluationData } from '@klicker-uzh/graphql/dist/ops'
-import { UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import { Markdown } from '@klicker-uzh/markdown'
+import { twMerge } from 'tailwind-merge'
+import { TextSizeType } from '../textSizes'
 
 interface CTEvaluationProps {
   evaluation: ContentActivityEvaluationData
+  textSize: TextSizeType
 }
 
-function CTEvaluation({ evaluation }: CTEvaluationProps) {
-  const t = useTranslations()
-
+function CTEvaluation({ evaluation, textSize }: CTEvaluationProps) {
   return (
-    <UserNotification type="info" className={{ root: 'm-3 h-max w-full' }}>
-      {t('manage.evaluation.noContentEvaluation')}
-    </UserNotification>
+    <div className="w-full overflow-auto p-4">
+      <Markdown
+        withProse
+        className={{
+          root: twMerge(
+            'prose-img:max-w-[50%] prose-img:w-[100em] prose-img:max-h-none',
+            textSize.prose
+          ),
+        }}
+        content={evaluation.content}
+        data={{ cy: `content-element-md-${evaluation.id}` }}
+      />
+    </div>
   )
 }
 

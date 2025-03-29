@@ -9,6 +9,18 @@ export const convertToMd = (slateObj: any) => {
       return `>${serialize(line)}\n`
     }
 
+    if (line.type === 'heading_one') {
+      return `# ${formatText(line.children[0])}\n`
+    }
+
+    if (line.type === 'heading_two') {
+      return `## ${formatText(line.children[0])}\n`
+    }
+
+    if (line.type === 'heading_three') {
+      return `### ${formatText(line.children[0])}\n`
+    }
+
     if (line.type === 'bulleted-list') {
       return serialize({
         type: 'bulleted-list',
@@ -91,6 +103,27 @@ export const convertToSlate = (mdObj?: string | null) => {
           }
           return child
         }),
+      }
+    }
+
+    if (line.type === 'heading_one') {
+      return {
+        type: 'heading_one',
+        children: line.children || [{ text: '' }],
+      }
+    }
+
+    if (line.type === 'heading_two') {
+      return {
+        type: 'heading_two',
+        children: line.children || [{ text: '' }],
+      }
+    }
+
+    if (line.type === 'heading_three') {
+      return {
+        type: 'heading_three',
+        children: line.children || [{ text: '' }],
       }
     }
 

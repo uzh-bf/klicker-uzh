@@ -26,40 +26,44 @@ function ContentElement({
 
   return (
     <div
-      className={twMerge(
-        'rounded-md border border-solid bg-slate-100 px-3 py-2',
-        !hideReadButton && 'pb-10'
-      )}
+      className="mb-4 flex flex-col"
       data-cy={`content-element-${elementIx}`}
     >
-      <div
-        className={twMerge(
-          'prose-p:!m-0 prose-img:!m-0 flex flex-row gap-3 leading-6',
-          !hideReadButton && 'mb-1'
-        )}
-      >
-        <FontAwesomeIcon icon={faBookOpen} className="mt-1.5" />
-        <DynamicMarkdown
-          content={element.elementData.content}
-          withProse
-          data={{ cy: `content-element-md-${elementIx}` }}
-        />
+      <div className="flex-1">
+        <div
+          className={twMerge(
+            'relative max-w-none flex-initial rounded border border-slate-300 p-2 pb-0 leading-6'
+          )}
+        >
+          <span className="absolute right-2 top-1 text-sm text-slate-400">
+            <FontAwesomeIcon icon={faBookOpen} />
+          </span>
+          <DynamicMarkdown
+            content={element.elementData.content}
+            withProse
+            data={{ cy: `content-element-md-${elementIx}` }}
+            className={{ root: 'p-2' }}
+          />
+        </div>
       </div>
       {!hideReadButton && (
-        <Button
-          disabled={read}
-          onClick={onRead}
-          className={{
-            root: twMerge(
-              'float-right h-8',
-              read && 'bg-green-700 bg-opacity-50 text-white'
-            ),
-          }}
-          data={{ cy: `read-content-element-${elementIx}` }}
-        >
-          <Button.Icon icon={faCheck} />
-          <Button.Label>{t('pwa.practiceQuiz.read')}</Button.Label>
-        </Button>
+        <div className="mt-2 flex justify-end">
+          <Button
+            primary={!read}
+            disabled={read}
+            onClick={onRead}
+            className={{
+              root: twMerge(
+                'h-8 border-0 shadow-sm',
+                read && 'bg-green-600 text-white hover:bg-green-700'
+              ),
+            }}
+            data={{ cy: `read-content-element-${elementIx}` }}
+          >
+            <Button.Icon icon={faCheck} />
+            <Button.Label>{t('pwa.practiceQuiz.read')}</Button.Label>
+          </Button>
+        </div>
       )}
     </div>
   )
