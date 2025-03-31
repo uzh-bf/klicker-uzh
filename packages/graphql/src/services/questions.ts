@@ -13,9 +13,13 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
-import type { ContextWithUser } from '../lib/context.js'
+import type {
+  ContextWithUser,
+  PrismaTransactionContextWithUser,
+} from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import { getActivityAnswerCollectionIds } from './templates.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -167,12 +171,7 @@ export async function manipulateQuestion(
     tags,
   }: ElementManipulationInput,
   // type modification required for method to be usable inside transaction without type errors
-  ctx: Omit<ContextWithUser, 'prisma'> & {
-    prisma: Omit<
-      DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
-      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-    >
-  }
+  ctx: PrismaTransactionContextWithUser
 ) {
   let tagsToDisconnect: string[] = []
   let collectionAnswersToDisconnect: number[] = []
@@ -775,7 +774,10 @@ export async function updateElementInstances(
   {
     elementId,
     includeTemplates,
-  }: { elementId: number; includeTemplates: boolean },
+  }: {
+    elementId: number
+    includeTemplates: boolean
+  },
   ctx: ContextWithUser
 ) {
   // fetch the question and return null, if the question does not exist
@@ -786,6 +788,7 @@ export async function updateElementInstances(
         DB.PublicationStatus.TEMPLATE,
       ]
     : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
+
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
@@ -803,12 +806,18 @@ export async function updateElementInstances(
                     in: acceptedStatusValues,
                   },
                 },
+                include: {
+                  templateInfo: true,
+                },
               },
               practiceQuiz: {
                 where: {
                   status: {
                     in: acceptedStatusValues,
                   },
+                },
+                include: {
+                  templateInfo: true,
                 },
               },
               groupActivity: {
@@ -817,13 +826,20 @@ export async function updateElementInstances(
                     in: acceptedStatusValues,
                   },
                 },
+                include: {
+                  templateInfo: true,
+                },
               },
             },
           },
           elementBlock: {
             include: {
               // ? where clause is not accepted by prisma for unknown reasons
-              liveQuiz: true,
+              liveQuiz: {
+                include: {
+                  templateInfo: true,
+                },
+              },
             },
           },
         },
@@ -851,14 +867,7 @@ export async function updateElementInstances(
       element.options.hasSampleSolution)
 
   // get all instances and the corresponding element multipliers
-  const instanceData: {
-    instanceId: number
-    multiplier: number
-    liveQuizId: string | undefined
-    practiceQuizId: string | undefined
-    microLearningId: string | undefined
-    groupActivityId: string | undefined
-  }[] = element.elementInstances.reduce<
+  const instanceData = element.elementInstances.reduce<
     {
       instanceId: number
       multiplier: number
@@ -866,6 +875,7 @@ export async function updateElementInstances(
       practiceQuizId: string | undefined
       microLearningId: string | undefined
       groupActivityId: string | undefined
+      templateId: string | undefined
     }[]
   >((acc, instance) => {
     if (
@@ -883,6 +893,7 @@ export async function updateElementInstances(
         practiceQuizId: undefined,
         microLearningId: undefined,
         groupActivityId: undefined,
+        templateId: instance.elementBlock.liveQuiz.templateInfo?.id,
       })
 
       return acc
@@ -903,6 +914,7 @@ export async function updateElementInstances(
         practiceQuizId: undefined,
         microLearningId: instance.elementStack.microLearning.id,
         groupActivityId: undefined,
+        templateId: instance.elementStack.microLearning.templateInfo?.id,
       })
 
       return acc
@@ -923,6 +935,7 @@ export async function updateElementInstances(
         practiceQuizId: instance.elementStack.practiceQuiz.id,
         microLearningId: undefined,
         groupActivityId: undefined,
+        templateId: instance.elementStack.practiceQuiz.templateInfo?.id,
       })
 
       return acc
@@ -942,6 +955,7 @@ export async function updateElementInstances(
         practiceQuizId: undefined,
         microLearningId: undefined,
         groupActivityId: instance.elementStack.groupActivity.id,
+        templateId: instance.elementStack.groupActivity.templateInfo?.id,
       })
 
       return acc
@@ -960,6 +974,7 @@ export async function updateElementInstances(
           practiceQuizId,
           microLearningId,
           groupActivityId,
+          templateId,
         }) => {
           const oldInstance = await ctx.prisma.elementInstance.findUnique({
             where: { id: instanceId },
@@ -988,6 +1003,111 @@ export async function updateElementInstances(
             },
           })
 
+          if (
+            includeTemplates &&
+            typeof templateId !== 'undefined' &&
+            (element.type === DB.ElementType.SELECTION ||
+              element.type === DB.ElementType.CASE_STUDY) &&
+            element.answerCollectionId !== null
+          ) {
+            // get all answer collections connected to one of the impacted template activities
+            let instanceCollectionIds: number[] = []
+            if (typeof liveQuizId !== 'undefined') {
+              const { answerCollectionIds: ids } =
+                await getActivityAnswerCollectionIds(
+                  {
+                    activityId: liveQuizId,
+                    activityType: ActivityType.LIVE_QUIZ,
+                  },
+                  ctx
+                )
+              instanceCollectionIds = ids
+            } else if (typeof practiceQuizId !== 'undefined') {
+              const { answerCollectionIds: ids } =
+                await getActivityAnswerCollectionIds(
+                  {
+                    activityId: practiceQuizId,
+                    activityType: ActivityType.PRACTICE_QUIZ,
+                  },
+                  ctx
+                )
+              instanceCollectionIds = ids
+            } else if (typeof microLearningId !== 'undefined') {
+              const { answerCollectionIds: ids } =
+                await getActivityAnswerCollectionIds(
+                  {
+                    activityId: microLearningId,
+                    activityType: ActivityType.MICRO_LEARNING,
+                  },
+                  ctx
+                )
+              instanceCollectionIds = ids
+            } else if (typeof groupActivityId !== 'undefined') {
+              const { answerCollectionIds: ids } =
+                await getActivityAnswerCollectionIds(
+                  {
+                    activityId: groupActivityId,
+                    activityType: ActivityType.GROUP_ACTIVITY,
+                  },
+                  ctx
+                )
+              instanceCollectionIds = ids
+            }
+
+            // fetch the existing template and the contained answer collections
+            const template = await ctx.prisma.activityTemplate.findUnique({
+              where: {
+                id: templateId,
+              },
+              include: {
+                answerCollections: true,
+              },
+            })
+
+            if (!template) {
+              return null
+            }
+
+            // find answer collections that should be connected and or disconnected from the template
+            const templateCollectionIds = template.answerCollections.map(
+              (collection) => collection.id
+            )
+            const collectionsToDisconnect = templateCollectionIds.filter(
+              (id) => !instanceCollectionIds.includes(id)
+            )
+            const collectionsToConnect = instanceCollectionIds.filter(
+              (id) => !templateCollectionIds.includes(id)
+            )
+
+            // check if the list of answer collection ids in the template and the ones used in the instance coincide, otherwise update these links
+            if (
+              collectionsToConnect.length > 0 ||
+              collectionsToDisconnect.length > 0
+            ) {
+              await ctx.prisma.activityTemplate.update({
+                where: {
+                  id: templateId,
+                },
+                data: {
+                  answerCollections: {
+                    connect:
+                      collectionsToConnect.length > 0
+                        ? collectionsToConnect.map((id) => ({
+                            id,
+                          }))
+                        : [],
+                    disconnect:
+                      collectionsToDisconnect.length > 0
+                        ? collectionsToDisconnect.map((id) => ({
+                            id,
+                          }))
+                        : [],
+                  },
+                },
+              })
+            }
+          }
+
           if (!instance) return null
 
           if (typeof liveQuizId !== 'undefined') {
@@ -1009,6 +1129,11 @@ export async function updateElementInstances(
             ctx.emitter.emit('invalidate', {
               typename: 'GroupActivity',
               id: groupActivityId,
+            })
+          } else if (typeof templateId !== 'undefined') {
+            ctx.emitter.emit('invalidate', {
+              typename: 'Template',
+              id: templateId,
             })
           }
 
