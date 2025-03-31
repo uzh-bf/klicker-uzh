@@ -12,11 +12,11 @@ import {
   processElementData,
 } from '@klicker-uzh/util'
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
-import type { ContextWithUser } from '../lib/context.js'
-import {
-  manipulateQuestion,
+import type {
+  ContextWithUser,
   PrismaTransactionContextWithUser,
-} from './questions.js'
+} from '../lib/context.js'
+import { manipulateQuestion } from './questions.js'
 import {
   getAnswerCollectionsElements,
   validateAnswerCollectionPermissions,

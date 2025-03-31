@@ -13,20 +13,13 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
-import type { ContextWithUser } from '../lib/context.js'
+import type {
+  ContextWithUser,
+  PrismaTransactionContextWithUser,
+} from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
-
-export type PrismaTransactionContextWithUser = Omit<
-  ContextWithUser,
-  'prisma'
-> & {
-  prisma: Omit<
-    DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-  >
-}
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
@@ -1091,7 +1084,7 @@ export async function updateElementInstances(
               collectionsToConnect.length > 0 ||
               collectionsToDisconnect.length > 0
             ) {
-              const updatedTemplate = await ctx.prisma.activityTemplate.update({
+              await ctx.prisma.activityTemplate.update({
                 where: {
                   id: templateId,
                 },

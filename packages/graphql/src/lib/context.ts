@@ -1,4 +1,9 @@
-import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
+import {
+  Prisma,
+  PrismaClient,
+  UserLoginScope,
+  UserRole,
+} from '@klicker-uzh/prisma'
 import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -33,6 +38,16 @@ export interface ContextWithUser extends Context {
     catalystIndividual: boolean
     // affiliations?: string[]
   }
+}
+
+export type PrismaTransactionContextWithUser = Omit<
+  ContextWithUser,
+  'prisma'
+> & {
+  prisma: Omit<
+    PrismaClient<Prisma.PrismaClientOptions, never>,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >
 }
 
 function enhanceContext(args = {}) {
