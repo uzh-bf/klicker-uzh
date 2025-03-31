@@ -1,20 +1,31 @@
 import {
+  ElementInstanceType,
   ElementType,
   ObjectAccess,
   PermissionLevel,
   PermissionStatus,
   PrismaClient,
+  PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
+import { ActivityType } from '@klicker-uzh/types'
+import {
+  getInitialInstanceResults,
+  processElementData,
+} from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { updateElementInstances } from '../src/services/questions.js'
 import {
   getAnswerCollectionsElements,
   getAnswerCollectionsInfo,
 } from '../src/services/resources.js'
 import { MISSING_CATALOG_COLLECTION_ID } from '../src/services/sharing.js'
-import { getMatchingUserElementsTemplate } from '../src/services/templates.js'
+import {
+  createActivityTemplate,
+  getMatchingUserElementsTemplate,
+} from '../src/services/templates.js'
 import { questionsSLAF, userOne, userTwo } from './templateData.js'
 
 // setup test database configuration
@@ -718,6 +729,450 @@ describe('Unit tests for template service', () => {
     expect(liveQuizCount).toBe(0)
     const answerCollectionCount = await prisma.answerCollection.count()
     expect(answerCollectionCount).toBe(0)
+  })
+
+  it('Verify that when updating element instances in templates, answer collection - template links are updated correctly', async () => {
+    // seed three answer collections, one selection question (1) and one case study question (2)
+    const AC1 = await userOneCtx.prisma.answerCollection.create({
+      data: {
+        name: 'AC1',
+        description: '',
+        owner: { connect: { id: userOneCtx.user.sub } },
+        entries: {
+          create: [
+            { value: 'AC1 Entry 1' },
+            { value: 'AC1 Entry 2' },
+            { value: 'AC1 Entry 3' },
+          ],
+        },
+      },
+      include: {
+        entries: true,
+      },
+    })
+    const AC2 = await userOneCtx.prisma.answerCollection.create({
+      data: {
+        name: 'AC2',
+        description: '',
+        owner: { connect: { id: userOneCtx.user.sub } },
+        entries: {
+          create: [
+            { value: 'AC2 Entry 1' },
+            { value: 'AC2 Entry 2' },
+            { value: 'AC2 Entry 3' },
+          ],
+        },
+      },
+      include: {
+        entries: true,
+      },
+    })
+    const AC3 = await userOneCtx.prisma.answerCollection.create({
+      data: {
+        name: 'AC3',
+        description: '',
+        owner: { connect: { id: userOneCtx.user.sub } },
+        entries: {
+          create: [
+            { value: 'AC3 Entry 1' },
+            { value: 'AC3 Entry 2' },
+            { value: 'AC3 Entry 3' },
+          ],
+        },
+      },
+      include: {
+        entries: true,
+      },
+    })
+
+    const SEQuestion = await userOneCtx.prisma.element.create({
+      data: {
+        name: 'Selection Question',
+        content: '',
+        type: ElementType.SELECTION,
+        options: {
+          criteria: [],
+          cases: [],
+          hasSampleSolution: false,
+          numberOfInputs: 2,
+        },
+        answerCollection: { connect: { id: AC1.id } },
+        owner: { connect: { id: userOneCtx.user.sub } },
+      },
+      include: {
+        answerCollectionItems: true,
+        answerCollection: {
+          include: {
+            entries: true,
+          },
+        },
+      },
+    })
+
+    const CSQuestion = await userOneCtx.prisma.element.create({
+      data: {
+        name: 'Case Study Question',
+        content: '',
+        type: ElementType.CASE_STUDY,
+        options: {
+          criteria: [],
+          cases: [],
+          items: [],
+          hasSampleSolution: false,
+        },
+        answerCollection: { connect: { id: AC2.id } },
+        answerCollectionItems: {
+          connect: [{ id: AC2.entries[0]!.id }, { id: AC2.entries[1]!.id }],
+        },
+        owner: { connect: { id: userOneCtx.user.sub } },
+      },
+      include: {
+        answerCollectionItems: true,
+        answerCollection: {
+          include: {
+            entries: true,
+          },
+        },
+      },
+    })
+
+    // combine these questions into a live quiz and create a template
+    const activityId = 'a7b750a4-5fd9-4575-85f1-9f981206477f'
+    const SEElementData = processElementData(SEQuestion)
+    const CSElementData = processElementData(CSQuestion)
+    const LQ = await userOneCtx.prisma.liveQuiz.create({
+      data: {
+        id: activityId,
+        name: 'Test Quiz',
+        displayName: 'Test Quiz',
+        status: PublicationStatus.TEMPLATE,
+        owner: { connect: { id: userOneCtx.user.sub } },
+        blocks: {
+          create: [
+            {
+              order: 0,
+              elements: {
+                create: [
+                  {
+                    migrationId: '0fbd0e21-f5d7-4e60-8f4a-a7f3e7703cab',
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    elementData: SEElementData,
+                    elementType: ElementType.SELECTION,
+                    order: 0,
+                    options: {
+                      basePoints: false,
+                      pointsMultiplier: 0,
+                      resetTimeDays: 0,
+                    },
+                    results: getInitialInstanceResults(SEElementData),
+                    anonymousResults: getInitialInstanceResults(SEElementData),
+                    elementId: SEQuestion.id,
+                    ownerId: userOneCtx.user.sub,
+                  },
+                ],
+              },
+            },
+            {
+              order: 1,
+              elements: {
+                create: [
+                  {
+                    migrationId: '3c0f2df0-62fa-4e42-a028-2b95f4355a18',
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    elementData: CSElementData,
+                    elementType: ElementType.CASE_STUDY,
+                    order: 0,
+                    options: {
+                      basePoints: false,
+                      pointsMultiplier: 0,
+                      resetTimeDays: 0,
+                    },
+                    results: getInitialInstanceResults(CSElementData),
+                    anonymousResults: getInitialInstanceResults(CSElementData),
+                    elementId: CSQuestion.id,
+                    ownerId: userOneCtx.user.sub,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    await createActivityTemplate(
+      {
+        activityId,
+        activityType: ActivityType.LIVE_QUIZ,
+        templateName: 'Template',
+        templateDescription: '',
+        templateInstructions: '',
+        copyBeforeConversion: false,
+      },
+      userOneCtx
+    )
+
+    // verify that answer collections 1 and 2 are linked to the template
+    const template = await prisma.activityTemplate.findUnique({
+      where: {
+        liveQuizId: activityId,
+      },
+      include: {
+        answerCollections: true,
+        liveQuiz: {
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    const templateId = template?.id
+    const answerCollectionIds = template?.answerCollections.map(
+      (collection) => collection.id
+    )
+    expect(templateId).toBeTruthy()
+    expect(answerCollectionIds).toHaveLength(2)
+    expect(answerCollectionIds).toEqual(
+      expect.arrayContaining([AC1.id, AC2.id])
+    )
+    expect(template?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
+      SEQuestion.name
+    )
+    expect(template?.liveQuiz?.blocks[1]?.elements[0]?.elementData.name).toBe(
+      CSQuestion.name
+    )
+
+    // use the database function to update the selection question without modifying the answer collection
+    const SEQuestion2 = await prisma.element.update({
+      where: { id: SEQuestion.id },
+      data: {
+        name: 'Updated Selection Question',
+      },
+    })
+    await updateElementInstances(
+      { elementId: SEQuestion.id, includeTemplates: false },
+      userOneCtx
+    )
+    const template2 = await prisma.activityTemplate.findUnique({
+      where: {
+        id: templateId,
+      },
+      include: {
+        answerCollections: true,
+        liveQuiz: {
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    expect(template2?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
+      SEQuestion.name
+    )
+    expect(template2?.liveQuiz?.blocks[1]?.elements[0]?.elementData.name).toBe(
+      CSQuestion.name
+    )
+
+    await updateElementInstances(
+      { elementId: SEQuestion.id, includeTemplates: true },
+      userOneCtx
+    )
+
+    // verify that the content of the corresponding element instance has changed, the answer collections linked to the template not
+    const template3 = await prisma.activityTemplate.findUnique({
+      where: {
+        id: templateId,
+      },
+      include: {
+        answerCollections: true,
+        liveQuiz: {
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    const answerCollectionIds3 = template3?.answerCollections.map(
+      (collection) => collection.id
+    )
+    expect(answerCollectionIds3).toHaveLength(2)
+    expect(answerCollectionIds3).toEqual(
+      expect.arrayContaining([AC1.id, AC2.id])
+    )
+    expect(template3?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
+      SEQuestion2.name
+    )
+    expect(template3?.liveQuiz?.blocks[1]?.elements[0]?.elementData.name).toBe(
+      CSQuestion.name
+    )
+
+    // use the database function to update the selection question with modification of the answer collection (1 -> 3)
+    const SEQuestion3 = await prisma.element.update({
+      where: { id: SEQuestion.id },
+      data: {
+        name: 'Updated Selection Question 3',
+        answerCollection: {
+          connect: { id: AC3.id },
+        },
+      },
+    })
+    await updateElementInstances(
+      { elementId: SEQuestion.id, includeTemplates: true },
+      userOneCtx
+    )
+
+    // verify that the instance was correctly updated and that answer collections 2 and 3 are now linked to the template
+    const template4 = await prisma.activityTemplate.findUnique({
+      where: {
+        id: templateId,
+      },
+      include: {
+        answerCollections: true,
+        liveQuiz: {
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    const answerCollectionIds4 = template4?.answerCollections.map(
+      (collection) => collection.id
+    )
+    expect(answerCollectionIds4).toHaveLength(2)
+    expect(answerCollectionIds4).toEqual(
+      expect.arrayContaining([AC2.id, AC3.id])
+    )
+    expect(template4?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
+      SEQuestion3.name
+    )
+    expect(template4?.liveQuiz?.blocks[1]?.elements[0]?.elementData.name).toBe(
+      CSQuestion.name
+    )
+
+    // use the database function to update the case study question with modification of the answer collection (2 -> 3)
+    const CSQuestion2 = await prisma.element.update({
+      where: { id: CSQuestion.id },
+      data: {
+        name: 'Updated Case Study Question',
+        answerCollection: {
+          connect: { id: AC3.id },
+        },
+        answerCollectionItems: {
+          disconnect: [{ id: AC2.entries[0]!.id }, { id: AC2.entries[1]!.id }],
+          connect: [{ id: AC3.entries[0]!.id }, { id: AC3.entries[1]!.id }],
+        },
+      },
+    })
+    await updateElementInstances(
+      { elementId: CSQuestion.id, includeTemplates: true },
+      userOneCtx
+    )
+
+    // verify that the instance was correctly updated and that only answer collection 3 is now linked to the template
+    const template5 = await prisma.activityTemplate.findUnique({
+      where: {
+        id: templateId,
+      },
+      include: {
+        answerCollections: true,
+        liveQuiz: {
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    const answerCollectionIds5 = template5?.answerCollections.map(
+      (collection) => collection.id
+    )
+    expect(answerCollectionIds5).toHaveLength(1)
+    expect(answerCollectionIds5).toEqual(expect.arrayContaining([AC3.id]))
+    expect(template5?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
+      SEQuestion3.name
+    )
+    expect(template5?.liveQuiz?.blocks[1]?.elements[0]?.elementData.name).toBe(
+      CSQuestion2.name
+    )
+
+    // use the database function to update the case study question with modification of the answer collection (3 -> 1)
+    const CSQuestion3 = await prisma.element.update({
+      where: { id: CSQuestion.id },
+      data: {
+        name: 'Updated Case Study Question 3',
+        answerCollection: {
+          connect: { id: AC1.id },
+        },
+        answerCollectionItems: {
+          disconnect: [{ id: AC3.entries[0]!.id }, { id: AC3.entries[1]!.id }],
+          connect: [{ id: AC1.entries[0]!.id }, { id: AC1.entries[1]!.id }],
+        },
+      },
+    })
+    await updateElementInstances(
+      { elementId: CSQuestion.id, includeTemplates: true },
+      userOneCtx
+    )
+
+    // verify that the instance was correctly updated and that answer collections 1 and 3 is now linked to the template
+    const template6 = await prisma.activityTemplate.findUnique({
+      where: {
+        id: templateId,
+      },
+      include: {
+        answerCollections: true,
+        liveQuiz: {
+          include: {
+            blocks: {
+              include: {
+                elements: true,
+              },
+            },
+          },
+        },
+      },
+    })
+    const answerCollectionIds6 = template6?.answerCollections.map(
+      (collection) => collection.id
+    )
+    expect(answerCollectionIds6).toHaveLength(2)
+    expect(answerCollectionIds6).toEqual(
+      expect.arrayContaining([AC1.id, AC3.id])
+    )
+    expect(template6?.liveQuiz?.blocks[0]?.elements[0]?.elementData.name).toBe(
+      SEQuestion3.name
+    )
+    expect(template6?.liveQuiz?.blocks[1]?.elements[0]?.elementData.name).toBe(
+      CSQuestion3.name
+    )
+
+    // delete the live quiz / template, answer collections and questions
+    await prisma.liveQuiz.delete({ where: { id: activityId } })
+    await prisma.answerCollection.deleteMany({
+      where: { id: { in: [AC1.id, AC2.id, AC3.id] } },
+    })
+    await prisma.element.deleteMany({
+      where: { id: { in: [SEQuestion.id, CSQuestion.id] } },
+    })
   })
 
   it('Cleanup: delete all created data used in this unit test', async () => {
