@@ -13,7 +13,10 @@ import {
 } from '@klicker-uzh/util'
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
-import { manipulateQuestion } from './questions.js'
+import {
+  manipulateQuestion,
+  PrismaTransactionContextWithUser,
+} from './questions.js'
 import {
   getAnswerCollectionsElements,
   validateAnswerCollectionPermissions,
@@ -317,12 +320,12 @@ export async function validateTemplateAccessible(
 // ! Template management functions
 // #region
 
-async function getActivityAnswerCollectionIds(
+export async function getActivityAnswerCollectionIds(
   {
     activityId,
     activityType,
   }: { activityId: string; activityType: ActivityType },
-  ctx: ContextWithUser
+  ctx: PrismaTransactionContextWithUser
 ): Promise<{
   error: boolean
   activity:
