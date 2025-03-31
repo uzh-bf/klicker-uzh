@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.44...v3.3.0-alpha.45) (2025-03-31)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that links between templates and required resources are updated on element instance update ([#4594](https://github.com/uzh-bf/klicker-uzh/issues/4594)) ([19f5116](https://github.com/uzh-bf/klicker-uzh/commit/19f51167d0009975b8cf6530c971229eeef68439))
+
 ## [3.3.0-alpha.44](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.43...v3.3.0-alpha.44) (2025-03-29)
 
 
