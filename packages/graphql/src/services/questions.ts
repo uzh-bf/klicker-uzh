@@ -1018,8 +1018,7 @@ export async function updateElementInstances(
             element.answerCollectionId !== null
           ) {
             // get all answer collections connected to one of the impacted template activities
-            let answerCollectionIds: number[] = []
-
+            let instanceCollectionIds: number[] = []
             if (typeof liveQuizId !== 'undefined') {
               const { answerCollectionIds: ids } =
                 await getActivityAnswerCollectionIds(
@@ -1029,7 +1028,7 @@ export async function updateElementInstances(
                   },
                   ctx
                 )
-              answerCollectionIds = ids
+              instanceCollectionIds = ids
             } else if (typeof practiceQuizId !== 'undefined') {
               const { answerCollectionIds: ids } =
                 await getActivityAnswerCollectionIds(
@@ -1039,7 +1038,7 @@ export async function updateElementInstances(
                   },
                   ctx
                 )
-              answerCollectionIds = ids
+              instanceCollectionIds = ids
             } else if (typeof microLearningId !== 'undefined') {
               const { answerCollectionIds: ids } =
                 await getActivityAnswerCollectionIds(
@@ -1049,7 +1048,7 @@ export async function updateElementInstances(
                   },
                   ctx
                 )
-              answerCollectionIds = ids
+              instanceCollectionIds = ids
             } else if (typeof groupActivityId !== 'undefined') {
               const { answerCollectionIds: ids } =
                 await getActivityAnswerCollectionIds(
@@ -1059,26 +1058,57 @@ export async function updateElementInstances(
                   },
                   ctx
                 )
-              answerCollectionIds = ids
+              instanceCollectionIds = ids
             }
 
-            // only if the list of fetched ids is not empty and the new answer collection is not part of it, update the linked collections
+            // fetch the existing template and the contained answer collections
+            const template = await ctx.prisma.activityTemplate.findUnique({
+              where: {
+                id: templateId,
+              },
+              include: {
+                answerCollections: true,
+              },
+            })
+
+            if (!template) {
+              return null
+            }
+
+            // find answer collections that should be connected and or disconnected from the template
+            const templateCollectionIds = template.answerCollections.map(
+              (collection) => collection.id
+            )
+            const collectionsToDisconnect = templateCollectionIds.filter(
+              (id) => !instanceCollectionIds.includes(id)
+            )
+            const collectionsToConnect = instanceCollectionIds.filter(
+              (id) => !templateCollectionIds.includes(id)
+            )
+
+            // check if the list of answer collection ids in the template and the ones used in the instance coincide, otherwise update these links
             if (
-              answerCollectionIds.length > 0 &&
-              !answerCollectionIds.includes(element.answerCollectionId)
+              collectionsToConnect.length > 0 ||
+              collectionsToDisconnect.length > 0
             ) {
-              await ctx.prisma.activityTemplate.update({
+              const updatedTemplate = await ctx.prisma.activityTemplate.update({
                 where: {
                   id: templateId,
                 },
                 data: {
                   answerCollections: {
-                    connect: [
-                      ...answerCollectionIds,
-                      element.answerCollectionId,
-                    ].map((id) => ({
-                      id,
-                    })),
+                    connect:
+                      collectionsToConnect.length > 0
+                        ? collectionsToConnect.map((id) => ({
+                            id,
+                          }))
+                        : [],
+                    disconnect:
+                      collectionsToDisconnect.length > 0
+                        ? collectionsToDisconnect.map((id) => ({
+                            id,
+                          }))
+                        : [],
                   },
                 },
               })
