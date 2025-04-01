@@ -109,19 +109,21 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE.title,
+      name: this.data.SE.title,
       content: this.data.SE.content,
       numberOfInputs: this.data.SE.inputs,
       collectionName: this.data.collection.name,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionCS({
@@ -246,19 +248,21 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE2.title,
+      name: this.data.SE2.title,
       content: this.data.SE2.content,
       numberOfInputs: this.data.SE2.inputs,
       collectionName: this.data.collection2.name,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML2.title,
+      name: this.data.SEML2.title,
       content: this.data.SEML2.content,
       numberOfInputs: this.data.SEML2.inputs,
       collectionName: this.data.collection2.name,
       correctAnswers: this.data.collection2.options.filter((_, i) =>
         this.data.SEML2.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionCS({
@@ -383,19 +387,21 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE3.title,
+      name: this.data.SE3.title,
       content: this.data.SE3.content,
       numberOfInputs: this.data.SE3.inputs,
       collectionName: this.data.collection3.name,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML3.title,
+      name: this.data.SEML3.title,
       content: this.data.SEML3.content,
       numberOfInputs: this.data.SEML3.inputs,
       collectionName: this.data.collection3.name,
       correctAnswers: this.data.collection3.options.filter((_, i) =>
         this.data.SEML3.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionCS({

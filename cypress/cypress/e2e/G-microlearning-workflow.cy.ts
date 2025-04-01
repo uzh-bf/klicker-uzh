@@ -102,13 +102,14 @@ describe('Different microlearning workflows', function () {
     // create selection question
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create a case study question
@@ -1360,13 +1361,14 @@ describe('Different microlearning workflows', function () {
     })
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SEML2.title,
+      name: this.data.SEML2.title,
       content: this.data.SEML2.content,
       numberOfInputs: this.data.SEML2.inputs,
       collectionName: this.data.collection2.name,
       correctAnswers: this.data.collection2.options.filter((_, i) =>
         this.data.SEML2.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create microlearning with selection question

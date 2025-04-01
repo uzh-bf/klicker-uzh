@@ -22,7 +22,7 @@
   "SCML2": {
     "title": "SC Title Test 2 (Version 2)",
     "content": "SC Question Content 2 (Version 2)",
-    "choices": [{ " value": "50%", "correct": true }, { " value": "100%" }]
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCML3": {
     "title": "SC Title Test 2 (Version 3)",
@@ -342,37 +342,19 @@
     "answer": "Answer 2"
   },
   "collection": {
-    "name": "SE Collection LQ (Version 1)",
-    "description": "SE Collection Description",
-    "options": [
-      "SE Option 1",
-      "SE Option 2",
-      "SE Option 3",
-      "SE Option 4",
-      "SE Option 5"
-    ]
+    "name": "Collection (Version 1)",
+    "description": "Collection Description",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
   },
   "collection2": {
-    "name": "SE Collection LQ (Version 2)",
-    "description": "SE Collection Description (Version 2)",
-    "options": [
-      "SE Option 1",
-      "SE Option 2",
-      "SE Option 3",
-      "SE Option 4",
-      "SE Option 5"
-    ]
+    "name": "Collection (Version 2)",
+    "description": "Collection Description (Version 2)",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
   },
   "collection3": {
-    "name": "SE Collection LQ (Version 3)",
-    "description": "SE Collection Description (Version 3)",
-    "options": [
-      "SE Option 1",
-      "SE Option 2",
-      "SE Option 3",
-      "SE Option 4",
-      "SE Option 5"
-    ]
+    "name": "Collection (Version 3)",
+    "description": "Collection Description (Version 3)",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
   },
   "SE": {
     "title": "SE Title Test 1 (Version 1)",

@@ -310,13 +310,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.private.name,
       correctAnswers: this.data.private.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // check that question exists
@@ -654,13 +655,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.restricted.name,
       correctAnswers: this.data.restricted.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
   })
 
@@ -874,13 +876,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.restricted.name,
       correctAnswers: this.data.restricted.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_INST_ID'),
     })
   })
 
@@ -1194,13 +1197,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.public.name,
       correctAnswers: this.data.public.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_INST_ID'),
     })
 
     // check that question exists
@@ -1898,13 +1902,14 @@ describe('Create, edit and share answer collections', function () {
   it("Verify that user 'pro1' can use the created answer collection in a question", function () {
     cy.loginIndividualCatalyst()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.access.name,
       correctAnswers: this.data.access.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
   })
 
@@ -1951,13 +1956,14 @@ describe('Create, edit and share answer collections', function () {
   it("Verify that user 'pro2' can use the answer collection in a question", function () {
     cy.loginInstitutionalCatalyst()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.access.name,
       correctAnswers: this.data.access.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_INST_ID'),
     })
   })
 
@@ -2004,13 +2010,14 @@ describe('Create, edit and share answer collections', function () {
   it("Verify that user 'pro3' can use the answer collection in a question", function () {
     cy.loginInstitutionalCatalyst2()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.access.name,
       correctAnswers: this.data.access.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_INST2_ID'),
     })
   })
 

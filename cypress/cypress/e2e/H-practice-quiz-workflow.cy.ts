@@ -95,13 +95,14 @@ describe('Different practice quiz workflows', function () {
     // create selection question
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create a case study question

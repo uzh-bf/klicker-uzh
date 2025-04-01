@@ -1,4 +1,12 @@
 import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
+import {
+  ElementOptionsChoices,
+  ElementOptionsContent,
+  ElementOptionsFlashcard,
+  ElementOptionsFreeText,
+  ElementOptionsNumerical,
+  ElementOptionsSelection,
+} from '@klicker-uzh/types'
 import { defineConfig } from 'cypress'
 
 // ! Copy of seeded user ids from prisma/seedUsers.ts
@@ -152,7 +160,7 @@ export default defineConfig({
                       : undefined,
                     feedback: hasAnswerFeedbacks ? choice.feedback : undefined,
                   })),
-                },
+                } as ElementOptionsChoices,
                 owner: {
                   connect: {
                     id: userId,
@@ -241,7 +249,7 @@ export default defineConfig({
                   exactSolutions: exactSolutions
                     ? exactSolutions.map((solution) => parseFloat(solution))
                     : undefined,
-                },
+                } as ElementOptionsNumerical,
                 owner: {
                   connect: {
                     id: userId,
@@ -306,7 +314,7 @@ export default defineConfig({
                     maxLength: maxLength ? parseInt(maxLength) : undefined,
                   },
                   solutions,
-                },
+                } as ElementOptionsFreeText,
                 owner: {
                   connect: {
                     id: userId,
@@ -324,8 +332,113 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async createQuestionSelection({
+          name,
+          content,
+          explanation,
+          multiplier,
+          collectionName,
+          numberOfInputs,
+          correctAnswers,
+          userId,
+        }: {
+          name: string
+          content: string
+          explanation?: string
+          multiplier?: number
+          collectionName: string
+          numberOfInputs: number
+          correctAnswers?: string[]
+          userId: string
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
 
-        // TODO: create SE question
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const dbAnswerCollection = await prisma.answerCollection.findFirst({
+              where: {
+                name: collectionName,
+              },
+            })
+
+            if (!dbAnswerCollection) {
+              throw new Error(`Answer collection ${collectionName} not found`)
+            }
+
+            const hasSampleSolution =
+              typeof correctAnswers !== 'undefined' && correctAnswers.length > 0
+            const dbAnswerCollectionItems = hasSampleSolution
+              ? await prisma.answerCollectionEntry.findMany({
+                  where: {
+                    collectionId: dbAnswerCollection.id,
+                    value: {
+                      in: correctAnswers,
+                    },
+                  },
+                })
+              : []
+
+            if (
+              hasSampleSolution &&
+              correctAnswers.length !== dbAnswerCollectionItems.length
+            ) {
+              throw new Error(
+                `Answer collection ${collectionName} does not contain all correct answers`
+              )
+            }
+
+            const ContentElement = await prisma.element.create({
+              data: {
+                type: 'SELECTION',
+                name,
+                content,
+                explanation,
+                pointsMultiplier: multiplier,
+                options: {
+                  hasSampleSolution,
+                  numberOfInputs,
+                } as ElementOptionsSelection,
+                // connect answer collection
+                answerCollection: {
+                  connect: {
+                    id: dbAnswerCollection.id,
+                  },
+                },
+                // connect answer collection entries (if defined)
+                answerCollectionItems: hasSampleSolution
+                  ? {
+                      connect: dbAnswerCollectionItems.map((item) => ({
+                        id: item.id,
+                      })),
+                    }
+                  : undefined,
+                owner: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            })
+
+            if (!ContentElement) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
         // TODO: create CS question
 
         async createContentElement({
@@ -355,7 +468,7 @@ export default defineConfig({
                 type: 'CONTENT',
                 name,
                 content,
-                options: {},
+                options: {} as ElementOptionsContent,
                 owner: {
                   connect: {
                     id: userId,
@@ -403,7 +516,7 @@ export default defineConfig({
                 name,
                 content,
                 explanation,
-                options: {},
+                options: {} as ElementOptionsFlashcard,
                 owner: {
                   connect: {
                     id: userId,

@@ -1,4 +1,3 @@
-// import { ElementType } from '@klicker-uzh/prisma'
 import { CatalogObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
@@ -417,63 +416,48 @@ Cypress.Commands.add(
 )
 
 interface CreateSelectionArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
+  multiplier?: number
   collectionName: string
   numberOfInputs: number
   correctAnswers?: string[]
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionSE',
   ({
-    title,
+    name,
     content,
     explanation,
+    multiplier,
     collectionName,
     numberOfInputs,
     correctAnswers,
+    userId,
   }: CreateSelectionArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.SELECTION.typeLabel)
+    // trigger selection question creation directly through prisma action
+    cy.task('createQuestionSelection', {
+      name,
+      content,
+      explanation,
+      multiplier,
+      collectionName,
+      numberOfInputs,
+      correctAnswers,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Selection question creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    cy.get('[data-cy="select-answer-collection"]').contains(
-      messages.manage.questionForms.selectCollection
-    )
-    cy.get('[data-cy="select-answer-collection"]').click()
-    cy.get(`[data-cy="select-answer-collection-${collectionName}"]`).click()
-    cy.get('[data-cy="select-answer-collection"]').contains(collectionName)
-    cy.get('[data-cy="configure-number-of-inputs"]')
-      .click()
-      .type(String(numberOfInputs))
-
-    if (correctAnswers && correctAnswers.length > 0) {
-      cy.get('[data-cy="configure-sample-solution"]').click()
-      correctAnswers.forEach((solution) => {
-        cy.get('[data-cy="choose-correct-answer-options"]').click()
-        cy.findByText(solution).realClick()
-        cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click()
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
@@ -1362,12 +1346,13 @@ declare global {
         userId,
       }: CreateQuestionFTArgs): Chainable<void>
       createQuestionSE({
-        title,
+        name,
         content,
         explanation,
         collectionName,
         numberOfInputs,
         correctAnswers,
+        userId,
       }: CreateSelectionArgs): Chainable<void>
       createQuestionCS({
         title,

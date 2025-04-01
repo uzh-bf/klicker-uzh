@@ -88,10 +88,11 @@ describe('Create and solve a group activity', function () {
     // create selection question
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create case study question

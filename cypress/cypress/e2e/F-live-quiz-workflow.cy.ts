@@ -90,19 +90,21 @@ describe('Different live-quiz workflows', function () {
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE.title,
+      name: this.data.SE.title,
       content: this.data.SE.content,
       numberOfInputs: this.data.SE.inputs,
       collectionName: this.data.collection.name,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionCS({
