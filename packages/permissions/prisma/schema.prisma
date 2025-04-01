@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db" // Path to the SQLite database file
+}
+
+model PermissionGrant {
+  id                 String   @id @default(uuid())
+  resourceId         String   @map("resource_id")
+  resourceType       String   @map("resource_type") // Consider defining an Enum later if needed
+  principalUserId    String?  @map("principal_user_id") // NEW: Optional FK to User
+  principalGroupId   String?  @map("principal_group_id") // NEW: Optional FK to UserGroup
+  level              String // AccessLevel enum value stored as string
+  grantedByUserId    String   @map("granted_by_user_id")
+  grantedAt          DateTime @default(now()) @map("granted_at")
+  derivedFromGrantId String?  @map("derived_from_grant_id") // Nullable self-relation ID
+
+  scope String? // 'GLOBAL', 'ACTIVITY_ONLY', etc.
+
+  // Propagation fields
+  propagateToObject    Boolean? @map("propagate_to_object")
+  propagateObjectLevel String?  @map("propagate_object_level")
+
+  // Define the self-relation for derived grants
+  derivedFrom   PermissionGrant?  @relation("DerivedGrants", fields: [derivedFromGrantId], references: [id], onDelete: Cascade)
+  derivedGrants PermissionGrant[] @relation("DerivedGrants")
+
+  // Relation to the user who granted the permission
+  grantedBy User @relation("GrantedByUser", fields: [grantedByUserId], references: [id])
+
+  // UPDATED Relations using separate FK fields
+  principalUser  User?      @relation("PrincipalUserPermissions", fields: [principalUserId], references: [id])
+  principalGroup UserGroup? @relation("PrincipalGroupPermissions", fields: [principalGroupId], references: [id])
+
+  @@map("permission_grants")
+}
+
+// Define the User model
+model User {
+  id    String  @id @default(uuid())
+  email String  @unique
+  name  String?
+
+  // Relations
+  ownedGroups        UserGroup[]       @relation("OwnedGroups")
+  ownedElements      Element[]         @relation("OwnedElements")
+  ownedActivities    Activity[]        @relation("OwnedActivities")
+  grantedPermissions PermissionGrant[] @relation("GrantedByUser")
+  groupMemberships   GroupMembership[] @relation("UserMemberships")
+  addedGroupMembers  GroupMembership[] @relation("AddedMembersByUser")
+  auditLogs          AuditLog[]        @relation("PerformedByUser")
+  // Direct permissions where this user is the principal
+  directPermissions  PermissionGrant[] @relation("PrincipalUserPermissions") // Relation name matches principalUser
+
+  @@map("users")
+}
+
+model UserGroup {
+  id          String   @id
+  name        String
+  description String?
+  ownerId     String   @map("owner_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  isDeleted   Boolean  @default(false) @map("is_deleted")
+
+  owner            User              @relation("OwnedGroups", fields: [ownerId], references: [id])
+  memberships      GroupMembership[]
+  permissionGrants PermissionGrant[] @relation("PrincipalGroupPermissions") // Relation name matches principalGroup
+
+  @@map("user_groups")
+}
+
+model GroupMembership {
+  id            String   @id @default(uuid())
+  groupId       String   @map("group_id")
+  userId        String   @map("user_id")
+  addedByUserId String   @map("added_by_user_id")
+  addedAt       DateTime @default(now()) @map("added_at")
+
+  group   UserGroup @relation(fields: [groupId], references: [id])
+  user    User      @relation("UserMemberships", fields: [userId], references: [id]) // Define relation to User
+  addedBy User      @relation("AddedMembersByUser", fields: [addedByUserId], references: [id]) // Define relation to User
+
+  @@unique([groupId, userId]) // Prevent duplicate memberships
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_memberships")
+}
+
+model AuditLog {
+  id                String   @id @default(uuid())
+  timestamp         DateTime @default(now())
+  actionType        String   @map("action_type")
+  performedByUserId String   @map("performed_by_user_id")
+  resourceId        String?  @map("resource_id") // Optional resource ID
+  resourceType      String?  @map("resource_type") // Optional resource type
+  details           String? // Store details as JSON string for SQLite compatibility
+
+  performedBy User @relation("PerformedByUser", fields: [performedByUserId], references: [id]) // Define relation to User
+
+  @@map("audit_logs")
+}
+
+model Element {
+  id          String   @id // Use `elem-...` prefix via application logic? Or UUID? Let's use String for flexibility.
+  name        String
+  content     String? // Assuming content can be optional or large
+  explanation String?
+  ownerId     String   @map("owner_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  isDeleted   Boolean  @default(false) @map("is_deleted") // For soft delete
+
+  // Relation to activities
+  activities Activity[]
+
+  // Relation to the owning user? Depends on overall schema design.
+  owner User @relation("OwnedElements", fields: [ownerId], references: [id]) // Define relation to User
+
+  @@map("elements")
+}
+
+model Activity {
+  id           String   @id // Use `act-...` prefix via application logic? Or UUID?
+  name         String // Internal name/slug
+  displayName  String   @map("display_name")
+  description  String?
+  activityType String   @map("activity_type") // Store ActivityType enum as string
+  ownerId      String   @map("owner_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  isDeleted    Boolean  @default(false) @map("is_deleted")
+
+  // Relation to elements (many-to-many)
+  elements Element[]
+
+  // Relation to the owning user?
+  owner User @relation("OwnedActivities", fields: [ownerId], references: [id]) // Define relation to User
+
+  @@map("activities")
+}

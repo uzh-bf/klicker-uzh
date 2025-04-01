@@ -1,8 +1,11 @@
 import {
   AccessLevel,
+  Activity,
   ActivityType,
   AuditActionType,
+  AuditLogEntry,
   calculateEffectivePermission,
+  Element,
   getAuditLogs,
   mockActivities,
   mockElements,
@@ -11,7 +14,14 @@ import {
   ResourceType,
   shareActivity,
   ShareMode,
-} from './index'
+} from './index.js'
+
+// Define a local interface for users in this demo, including email
+interface DemoUser {
+  id: string
+  name: string
+  email?: string // Made email optional to match original mockUsers if needed, though it's added here
+}
 
 /**
  * Demonstrates the activity sharing functionality with different sharing modes
@@ -21,14 +31,16 @@ export function runActivitySharingDemo(): void {
 
   // Create test users if they don't exist
   if (!mockUsers.some((u) => u.id === 'user1')) {
+    // Removed User type hint, relies on inferred type
     mockUsers.push({
       id: 'user1',
       name: 'Owner User',
-      email: 'owner@example.com',
+      email: 'owner@example.com', // This property is not in the base mockUsers type
     })
   }
 
   if (!mockUsers.some((u) => u.id === 'user2')) {
+    // Removed User type hint
     mockUsers.push({
       id: 'user2',
       name: 'Viewer User',
@@ -37,6 +49,7 @@ export function runActivitySharingDemo(): void {
   }
 
   if (!mockUsers.some((u) => u.id === 'user3')) {
+    // Removed User type hint
     mockUsers.push({
       id: 'user3',
       name: 'Editor User',
@@ -48,7 +61,7 @@ export function runActivitySharingDemo(): void {
   const elementIds: string[] = []
   for (let i = 1; i <= 3; i++) {
     const elementId = `element${i}`
-    if (!mockElements.some((e) => e.id === elementId)) {
+    if (!mockElements.some((e: Element) => e.id === elementId)) {
       mockElements.push({
         id: elementId,
         type: ResourceType.ELEMENT,
@@ -63,7 +76,7 @@ export function runActivitySharingDemo(): void {
 
   // Create a test activity if it doesn't exist
   const activityId = 'activity1'
-  if (!mockActivities.some((a) => a.id === activityId)) {
+  if (!mockActivities.some((a: Activity) => a.id === activityId)) {
     mockActivities.push({
       id: activityId,
       type: ResourceType.ACTIVITY,
@@ -78,7 +91,8 @@ export function runActivitySharingDemo(): void {
 
   // Clear any existing permissions
   const filteredPermissions = mockPermissionGrants.filter(
-    (p) => !(p.resourceId === activityId || elementIds.includes(p.resourceId))
+    (p: PermissionGrant) =>
+      !(p.resourceId === activityId || elementIds.includes(p.resourceId))
   )
   mockPermissionGrants.length = 0
   mockPermissionGrants.push(...filteredPermissions)
@@ -132,7 +146,7 @@ export function runActivitySharingDemo(): void {
 
   // Clear previous permissions for user3
   const filteredUser3Permissions = mockPermissionGrants.filter(
-    (p) =>
+    (p: PermissionGrant) =>
       !(
         p.userId === 'user3' &&
         (p.resourceId === activityId || elementIds.includes(p.resourceId))
@@ -183,11 +197,12 @@ export function runActivitySharingDemo(): void {
     actionType: AuditActionType.ACTIVITY_SHARE,
   })
 
-  sharingLogs.forEach((log, index) => {
+  sharingLogs.forEach((log: AuditLogEntry, index: number) => {
     console.log(`\nLog #${index + 1}:`)
     console.log(`Action: ${log.actionType}`)
     console.log(
-      `Performed by: ${log.performedBy} (${mockUsers.find((u) => u.id === log.performedBy)?.name || 'Unknown User'})`
+      // Using DemoUser type for the find callback user
+      `Performed by: ${log.performedBy} (${(mockUsers.find((u: DemoUser) => u.id === log.performedBy) as DemoUser)?.name || 'Unknown User'})`
     )
     console.log(`Resource: ${log.resourceId} (${log.resourceType})`)
     console.log(`Timestamp: ${log.timestamp}`)
@@ -198,4 +213,3 @@ export function runActivitySharingDemo(): void {
 }
 
 // Run the demo
-runActivitySharingDemo()

@@ -1,4 +1,4 @@
-import { runPermissionDerivationDemo } from './databasePermissions'
+import { runPermissionDerivationDemo } from './permissionDerivationDemo.js'
 
 /**
  * Run the permission derivation tests
