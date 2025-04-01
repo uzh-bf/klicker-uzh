@@ -717,54 +717,58 @@ Cypress.Commands.add(
 )
 
 interface CreateFlashcardArgs {
-  title: string
+  name: string
   content: string
   explanation: string
+  userId: string
 }
 
 Cypress.Commands.add(
   'createFlashcard',
-  ({ title, content, explanation }: CreateFlashcardArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.FLASHCARD.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.FLASHCARD.typeLabel)
+  ({ name, content, explanation, userId }: CreateFlashcardArgs) => {
+    // trigger flashcard creation directly through prisma action
+    cy.task('createFlashcard', {
+      name,
+      content,
+      explanation,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Flashcard creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-    cy.get('[data-cy="insert-question-explanation"]')
-      .realClick()
-      .type(explanation)
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created flashcard is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 interface CreateContentArgs {
-  title: string
+  name: string
   content: string
+  userId: string
 }
 
 Cypress.Commands.add(
   'createContent',
-  ({ title, content }: CreateContentArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.CONTENT.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.CONTENT.typeLabel)
+  ({ name, content, userId }: CreateContentArgs) => {
+    // trigger flashcard creation directly through prisma action
+    cy.task('createContentElement', {
+      name,
+      content,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Content element creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created content element is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
@@ -1376,11 +1380,16 @@ declare global {
         solutions,
       }: CreateCaseStudyArgs): Chainable<void>
       createFlashcard({
-        title,
+        name,
         content,
         explanation,
+        userId,
       }: CreateFlashcardArgs): Chainable<void>
-      createContent({ title, content }: CreateContentArgs): Chainable<void>
+      createContent({
+        name,
+        content,
+        userId,
+      }: CreateContentArgs): Chainable<void>
       deleteElement({ elementName }: DeleteElementArgs): Chainable<void>
       createLiveQuiz({
         name,

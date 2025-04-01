@@ -76,15 +76,17 @@ describe('Different microlearning workflows', function () {
 
     // FC question
     cy.createFlashcard({
-      title: this.data.FC.title,
+      name: this.data.FC.title,
       content: this.data.FC.content,
       explanation: this.data.FC.explanation,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // CT question
     cy.createContent({
-      title: this.data.CT.title,
+      name: this.data.CT.title,
       content: this.data.CT.content,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create answer collection

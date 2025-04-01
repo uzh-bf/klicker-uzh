@@ -213,7 +213,7 @@ export default defineConfig({
           })
 
           try {
-            const ChoicesQuestion = await prisma.element.create({
+            const NumericalQuestion = await prisma.element.create({
               data: {
                 type: 'NUMERICAL',
                 name,
@@ -250,7 +250,7 @@ export default defineConfig({
               },
             })
 
-            if (!ChoicesQuestion) {
+            if (!NumericalQuestion) {
               return false
             }
 
@@ -259,8 +259,6 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
-
-        // TODO: create FT question
         async createQuestionFreeText({
           name,
           content,
@@ -294,7 +292,7 @@ export default defineConfig({
           })
 
           try {
-            const ChoicesQuestion = await prisma.element.create({
+            const FreeTextQuestion = await prisma.element.create({
               data: {
                 type: 'FREE_TEXT',
                 name,
@@ -317,7 +315,7 @@ export default defineConfig({
               },
             })
 
-            if (!ChoicesQuestion) {
+            if (!FreeTextQuestion) {
               return false
             }
 
@@ -329,8 +327,100 @@ export default defineConfig({
 
         // TODO: create SE question
         // TODO: create CS question
-        // TODO: create CT element
-        // TODO: create Flashcard
+
+        async createContentElement({
+          name,
+          content,
+          userId,
+        }: {
+          name: string
+          content: string
+          userId: string
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const ContentElement = await prisma.element.create({
+              data: {
+                type: 'CONTENT',
+                name,
+                content,
+                options: {},
+                owner: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            })
+
+            if (!ContentElement) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async createFlashcard({
+          name,
+          content,
+          explanation,
+          userId,
+        }: {
+          name: string
+          content: string
+          explanation: string
+          userId: string
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const Flashcard = await prisma.element.create({
+              data: {
+                type: 'FLASHCARD',
+                name,
+                content,
+                explanation,
+                options: {},
+                owner: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            })
+
+            if (!Flashcard) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
         // #endregion
 
         // ! Practice Quiz queries / mutations

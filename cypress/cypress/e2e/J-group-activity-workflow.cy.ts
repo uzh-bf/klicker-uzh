@@ -70,8 +70,9 @@ describe('Create and solve a group activity', function () {
 
     // CT question
     cy.createContent({
-      title: this.data.CT.title,
+      name: this.data.CT.title,
       content: this.data.CT.content,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create answer collection
