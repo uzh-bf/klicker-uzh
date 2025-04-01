@@ -4,6 +4,8 @@
   "devDependencies": {
     "@cypress/code-coverage": "~3.13.11",
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
     "@testing-library/cypress": "~10.0.3",
     "@types/node": "^20.16.1",
     "@types/uuid": "^10.0.0",

@@ -2,235 +2,235 @@
   "SC": {
     "title": "SC Title Test 1 (Version 1)",
     "content": "SC Question Content 1",
-    "choices": [{ "content": "50%" }, { "content": "100%" }]
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SC2": {
     "title": "SC Title Test 1 (Version 2)",
     "content": "SC Question Content 1 (Version 2)",
-    "choices": [{ "content": "50%" }, { "content": "100%" }]
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SC3": {
     "title": "SC Title Test 1 (Version 3)",
     "content": "SC Question Content 1 (Version 3)",
-    "choices": [{ "content": "50%" }, { "content": "100%" }]
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SCML": {
     "title": "SC Title Test 2 (Version 1)",
     "content": "SC Question Content 2",
-    "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCML2": {
     "title": "SC Title Test 2 (Version 2)",
     "content": "SC Question Content 2 (Version 2)",
-    "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCML3": {
     "title": "SC Title Test 2 (Version 3)",
     "content": "SC Question Content 2 (Version 3)",
-    "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCMLAF": {
     "title": "SC Title Test 3 (Version 1)",
     "content": "SC Question Content 3",
     "choices": [
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "SCMLAF2": {
     "title": "SC Title Test 3 (Version 2)",
     "content": "SC Question Content 3 (Version 2)",
     "choices": [
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "SCMLAF3": {
     "title": "SC Title Test 3 (Version 3)",
     "content": "SC Question Content 3 (Version 3)",
     "choices": [
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "MC": {
     "title": "MC Title Test 1 (Version 1)",
     "content": "MC Question Content 1",
     "choices": [
-      { "content": "25%" },
-      { "content": "50%" },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MC2": {
     "title": "MC Title Test 1 (Version 2)",
     "content": "MC Question Content 1 (Version 2)",
     "choices": [
-      { "content": "25%" },
-      { "content": "50%" },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MC3": {
     "title": "MC Title Test 1 (Version 3)",
     "content": "MC Question Content 1 (Version 3)",
     "choices": [
-      { "content": "25%" },
-      { "content": "50%" },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MCML": {
     "title": "MC Title Test 2 (Version 1)",
     "content": "MC Question Content 2",
     "choices": [
-      { "content": "25%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MCML2": {
     "title": "MC Title Test 2 (Version 2)",
     "content": "MC Question Content 2 (Version 2)",
     "choices": [
-      { "content": "25%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MCML3": {
     "title": "MC Title Test 2 (Version 3)",
     "content": "MC Question Content 2 (Version 3)",
     "choices": [
-      { "content": "25%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MCMLAF": {
     "title": "MC Title Test 3 (Version 1)",
     "content": "MC Question Content 3",
     "choices": [
-      { "content": "25%", "feedback": "Feedback Option 25%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "75%", "feedback": "Feedback Option 75%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "MCMLAF2": {
     "title": "MC Title Test 3 (Version 2)",
     "content": "MC Question Content 3 (Version 2)",
     "choices": [
-      { "content": "25%", "feedback": "Feedback Option 25%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "75%", "feedback": "Feedback Option 75%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "MCMLAF3": {
     "title": "MC Title Test 3 (Version 3)",
     "content": "MC Question Content 3 (Version 3)",
     "choices": [
-      { "content": "25%", "feedback": "Feedback Option 25%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "75%", "feedback": "Feedback Option 75%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "KP": {
     "title": "KPRIM Title Test 1 (Version 1)",
     "content": "KPRIM Question Content 1",
     "choices": [
-      { "content": "10%" },
-      { "content": "50%" },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KP2": {
     "title": "KPRIM Title Test 1 (Version 2)",
     "content": "KPRIM Question Content 1 (Version 2)",
     "choices": [
-      { "content": "10%" },
-      { "content": "50%" },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KP3": {
     "title": "KPRIM Title Test 1 (Version 3)",
     "content": "KPRIM Question Content 1 (Version 3)",
     "choices": [
-      { "content": "10%" },
-      { "content": "50%" },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KPML": {
     "title": "KPRIM Title Test 2 (Version 1)",
     "content": "KPRIM Question Content 2",
     "choices": [
-      { "content": "10%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KPML2": {
     "title": "KPRIM Title Test 2 (Version 2)",
     "content": "KPRIM Question Content 2 (Version 2)",
     "choices": [
-      { "content": "10%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KPML3": {
     "title": "KPRIM Title Test 2 (Version 3)",
     "content": "KPRIM Question Content 2 (Version 3)",
     "choices": [
-      { "content": "10%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KPMLAF": {
     "title": "KPRIM Title Test 3 (Version 1)",
     "content": "KPRIM Question Content 3",
     "choices": [
-      { "content": "10%", "feedback": "Feedback Option 10%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "80%", "feedback": "Feedback Option 80%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "KPMLAF2": {
     "title": "KPRIM Title Test 3 (Version 2)",
     "content": "KPRIM Question Content 3 (Version 2)",
     "choices": [
-      { "content": "10%", "feedback": "Feedback Option 10%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "80%", "feedback": "Feedback Option 80%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "KPMLAF3": {
     "title": "KPRIM Title Test 3 (Version 3)",
     "content": "KPRIM Question Content 3 (Version 3)",
     "choices": [
-      { "content": "10%", "feedback": "Feedback Option 10%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "80%", "feedback": "Feedback Option 80%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "NR": {
@@ -342,37 +342,19 @@
     "answer": "Answer 2"
   },
   "collection": {
-    "name": "SE Collection LQ (Version 1)",
-    "description": "SE Collection Description",
-    "options": [
-      "SE Option 1",
-      "SE Option 2",
-      "SE Option 3",
-      "SE Option 4",
-      "SE Option 5"
-    ]
+    "name": "Collection (Version 1)",
+    "description": "Collection Description",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
   },
   "collection2": {
-    "name": "SE Collection LQ (Version 2)",
-    "description": "SE Collection Description (Version 2)",
-    "options": [
-      "SE Option 1",
-      "SE Option 2",
-      "SE Option 3",
-      "SE Option 4",
-      "SE Option 5"
-    ]
+    "name": "Collection (Version 2)",
+    "description": "Collection Description (Version 2)",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
   },
   "collection3": {
-    "name": "SE Collection LQ (Version 3)",
-    "description": "SE Collection Description (Version 3)",
-    "options": [
-      "SE Option 1",
-      "SE Option 2",
-      "SE Option 3",
-      "SE Option 4",
-      "SE Option 5"
-    ]
+    "name": "Collection (Version 3)",
+    "description": "Collection Description (Version 3)",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
   },
   "SE": {
     "title": "SE Title Test 1 (Version 1)",
@@ -415,6 +397,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "ayTOU7QLxu",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -423,6 +406,7 @@
         "unit": "%"
       },
       {
+        "id": "oPrEkBpIdc",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -432,10 +416,12 @@
     ],
     "cases": [
       {
+        "id": "_7zcnLGFTX",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "EScOftRpjg",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -515,6 +501,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "WbalWEa1a8",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -523,6 +510,7 @@
         "unit": "%"
       },
       {
+        "id": "qg3BQke2Z7",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -532,10 +520,12 @@
     ],
     "cases": [
       {
+        "id": "P3H1jIVxUv",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "d8UH0PkLV5",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -615,6 +605,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "S8EZajl3ja",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -623,6 +614,7 @@
         "unit": "%"
       },
       {
+        "id": "bflTUKOU81",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -632,10 +624,12 @@
     ],
     "cases": [
       {
+        "id": "txQnoypwKa",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "XUXVNy4vSj",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -715,6 +709,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "90OfR7GSUB",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -723,6 +718,7 @@
         "unit": "%"
       },
       {
+        "id": "cAJKuQKzm5",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -732,10 +728,12 @@
     ],
     "cases": [
       {
+        "id": "SrrZEpetE2",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "KELATtvxs_",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -881,6 +879,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "KCxYhNqkF8",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -889,6 +888,7 @@
         "unit": "%"
       },
       {
+        "id": "wyXtDB0uc6",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -898,10 +898,12 @@
     ],
     "cases": [
       {
+        "id": "2ofletuhR7",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "TnMbz7CMtQ",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -1047,6 +1049,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "4GoHYaZBwp",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -1055,6 +1058,7 @@
         "unit": "%"
       },
       {
+        "id": "TK7nPU7CW5",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -1064,10 +1068,12 @@
     ],
     "cases": [
       {
+        "id": "6kU1KuOheS",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "ScVppYMltS",
         "title": "Case 2",
         "description": "Case 2 Description"
       }

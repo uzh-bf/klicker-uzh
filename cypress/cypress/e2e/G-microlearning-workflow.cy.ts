@@ -28,57 +28,65 @@ describe('Different microlearning workflows', function () {
 
     // SC question without solution
     cy.createQuestionSC({
-      title: this.data.SC.title,
+      name: this.data.SC.title,
       content: this.data.SC.content,
       choices: this.data.SC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // SC question with solution
     cy.createQuestionSC({
-      title: this.data.SCML.title,
+      name: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // MC question
     cy.createQuestionMC({
-      title: this.data.MCML.title,
+      name: this.data.MCML.title,
       content: this.data.MCML.content,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // KPRIM question
     cy.createQuestionKPRIM({
-      title: this.data.KPML.title,
+      name: this.data.KPML.title,
       content: this.data.KPML.content,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // NR question
     cy.createQuestionNR({
-      title: this.data.NRML.title,
+      name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // FT question
     cy.createQuestionFT({
-      title: this.data.FTML.title,
+      name: this.data.FTML.title,
       content: this.data.FTML.content,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // FC question
     cy.createFlashcard({
-      title: this.data.FC.title,
+      name: this.data.FC.title,
       content: this.data.FC.content,
       explanation: this.data.FC.explanation,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // CT question
     cy.createContent({
-      title: this.data.CT.title,
+      name: this.data.CT.title,
       content: this.data.CT.content,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create answer collection
@@ -88,23 +96,25 @@ describe('Different microlearning workflows', function () {
       name: this.data.collection.name,
       description: this.data.collection.description,
       entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create selection question
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create a case study question
     cy.createQuestionCS({
-      title: this.data.CSML.title,
+      name: this.data.CSML.title,
       content: this.data.CSML.content,
       explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
@@ -114,6 +124,7 @@ describe('Different microlearning workflows', function () {
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
   // #endregion
@@ -1347,16 +1358,18 @@ describe('Different microlearning workflows', function () {
       name: this.data.collection2.name,
       description: this.data.collection2.description,
       entries: this.data.collection2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SEML2.title,
+      name: this.data.SEML2.title,
       content: this.data.SEML2.content,
       numberOfInputs: this.data.SEML2.inputs,
       collectionName: this.data.collection2.name,
       correctAnswers: this.data.collection2.options.filter((_, i) =>
         this.data.SEML2.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create microlearning with selection question
@@ -1428,7 +1441,7 @@ describe('Different microlearning workflows', function () {
 
     // create new case study element
     cy.createQuestionCS({
-      title: this.data.CSML2.title,
+      name: this.data.CSML2.title,
       content: this.data.CSML2.content,
       explanation: this.data.CSML2.explanation,
       collectionName: this.data.collection2.name,
@@ -1438,6 +1451,7 @@ describe('Different microlearning workflows', function () {
       criteria: this.data.CSML2.criteria,
       cases: this.data.CSML2.cases,
       solutions: this.data.CSML2.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // include both the updated selection question and case study in the microlearning

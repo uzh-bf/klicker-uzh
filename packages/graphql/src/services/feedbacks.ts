@@ -89,7 +89,6 @@ export async function createFeedback(
   ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id: quizId })
 
   if (!quiz.isModerationEnabled) {
-    console.log('TRIGGERING FEEDBACK ADDED SUBSCRIPTION')
     ctx.pubSub.publish('feedbackAdded', newFeedback)
   }
 

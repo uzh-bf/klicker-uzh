@@ -15,58 +15,68 @@ describe('Different live-quiz workflows', function () {
   it('Create the questions required in the live quiz test workflows', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.SC.title,
+      name: this.data.SC.title,
       content: this.data.SC.content,
       choices: this.data.SC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML.title,
+      name: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.MC.title,
+      name: this.data.MC.title,
       content: this.data.MC.content,
       choices: this.data.MC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML.title,
+      name: this.data.MCML.title,
       content: this.data.MCML.content,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP.title,
+      name: this.data.KP.title,
       content: this.data.KP.content,
       choices: this.data.KP.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML.title,
+      name: this.data.KPML.title,
       content: this.data.KPML.content,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionNR({
-      title: this.data.NR.title,
+      name: this.data.NR.title,
       content: this.data.NR.content,
       ...this.data.NR.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML.title,
+      name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionFT({
-      title: this.data.FT.title,
+      name: this.data.FT.title,
       content: this.data.FT.content,
       ...this.data.FT.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML.title,
+      name: this.data.FTML.title,
       content: this.data.FTML.content,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="resources"]').click()
@@ -75,27 +85,30 @@ describe('Different live-quiz workflows', function () {
       name: this.data.collection.name,
       description: this.data.collection.description,
       entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE.title,
+      name: this.data.SE.title,
       content: this.data.SE.content,
       numberOfInputs: this.data.SE.inputs,
       collectionName: this.data.collection.name,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionCS({
-      title: this.data.CS.title,
+      name: this.data.CS.title,
       content: this.data.CS.content,
       explanation: this.data.CS.explanation,
       collectionName: this.data.collection.name,
@@ -105,9 +118,10 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CS.criteria,
       cases: this.data.CS.cases,
       solutions: this.data.CS.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML.title,
+      name: this.data.CSML.title,
       content: this.data.CSML.content,
       explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
@@ -117,6 +131,7 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
   // #endregion
@@ -1310,9 +1325,10 @@ describe('Different live-quiz workflows', function () {
 
     // create single choice question and live quiz
     cy.createQuestionSC({
-      title: this.data.SC2.title,
+      name: this.data.SC2.title,
       content: this.data.SC2.content,
       choices: this.data.SC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createLiveQuiz({
       name: this.data.liveQuiz.name,
@@ -1375,9 +1391,10 @@ describe('Different live-quiz workflows', function () {
 
     // create single choice question and live quiz
     cy.createQuestionMC({
-      title: this.data.MC2.title,
+      name: this.data.MC2.title,
       content: this.data.MC2.content,
       choices: this.data.MC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // edit the live quiz and add the modified SC and the new MC question

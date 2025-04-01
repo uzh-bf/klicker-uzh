@@ -302,6 +302,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.private.name,
       description: this.data.private.description,
       entries: this.data.private.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -309,13 +310,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.private.name,
       correctAnswers: this.data.private.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // check that question exists
@@ -384,6 +386,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.restricted.name,
       description: this.data.restricted.description,
       entries: this.data.restricted.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -652,13 +655,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.restricted.name,
       correctAnswers: this.data.restricted.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
   })
 
@@ -872,13 +876,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.restricted.name,
       correctAnswers: this.data.restricted.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_INST_ID'),
     })
   })
 
@@ -960,6 +965,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.public.name,
       description: this.data.public.description,
       entries: this.data.public.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -1191,13 +1197,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.public.name,
       correctAnswers: this.data.public.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_INST_ID'),
     })
 
     // check that question exists
@@ -1290,6 +1297,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.private.name,
       description: this.data.private.description,
       entries: this.data.private.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -1511,6 +1519,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.direct.name,
       description: this.data.direct.description,
       entries: this.data.direct.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -1774,6 +1783,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.access.name,
       description: this.data.access.description,
       entries: this.data.access.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -1892,13 +1902,14 @@ describe('Create, edit and share answer collections', function () {
   it("Verify that user 'pro1' can use the created answer collection in a question", function () {
     cy.loginIndividualCatalyst()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.access.name,
       correctAnswers: this.data.access.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
   })
 
@@ -1945,13 +1956,14 @@ describe('Create, edit and share answer collections', function () {
   it("Verify that user 'pro2' can use the answer collection in a question", function () {
     cy.loginInstitutionalCatalyst()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.access.name,
       correctAnswers: this.data.access.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_INST_ID'),
     })
   })
 
@@ -1998,13 +2010,14 @@ describe('Create, edit and share answer collections', function () {
   it("Verify that user 'pro3' can use the answer collection in a question", function () {
     cy.loginInstitutionalCatalyst2()
     cy.createQuestionSE({
-      title: this.data.question.title,
+      name: this.data.question.title,
       content: this.data.question.content,
       numberOfInputs: this.data.question.numberOfInputs,
       collectionName: this.data.access.name,
       correctAnswers: this.data.access.items.filter((_, i) =>
         this.data.question.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_INST2_ID'),
     })
   })
 
@@ -2197,6 +2210,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.ownership.name,
       description: this.data.ownership.description,
       entries: this.data.ownership.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
