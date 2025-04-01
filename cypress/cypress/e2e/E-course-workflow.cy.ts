@@ -622,9 +622,10 @@ describe('Test course creation and editing functionalities', function () {
     // create a question with sample solution
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSC({
-      title: this.data.deletion.qTitle,
+      name: this.data.deletion.qTitle,
       content: this.data.deletion.qContent,
-      choices: [{ content: '50%', correct: true }, { content: '100%' }],
+      choices: [{ value: '50%', correct: true }, { value: '100%' }],
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create a live quiz in the course

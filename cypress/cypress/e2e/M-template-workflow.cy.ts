@@ -16,51 +16,60 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Create a set of questions in the lecturer account for the template test suite', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.SC.title,
+      name: this.data.SC.title,
       content: this.data.SC.content,
       choices: this.data.SC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML.title,
+      name: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCMLAF.title,
+      name: this.data.SCMLAF.title,
       content: this.data.SCMLAF.content,
       choices: this.data.SCMLAF.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.MC.title,
+      name: this.data.MC.title,
       content: this.data.MC.content,
       choices: this.data.MC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML.title,
+      name: this.data.MCML.title,
       content: this.data.MCML.content,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCMLAF.title,
+      name: this.data.MCMLAF.title,
       content: this.data.MCMLAF.content,
       choices: this.data.MCMLAF.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP.title,
+      name: this.data.KP.title,
       content: this.data.KP.content,
       choices: this.data.KP.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML.title,
+      name: this.data.KPML.title,
       content: this.data.KPML.content,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPMLAF.title,
+      name: this.data.KPMLAF.title,
       content: this.data.KPMLAF.content,
       choices: this.data.KPMLAF.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionNR({
@@ -140,51 +149,60 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Create a second set of questions in the lecturer user account for the use in the template test suite', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.SC2.title,
+      name: this.data.SC2.title,
       content: this.data.SC2.content,
       choices: this.data.SC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML2.title,
+      name: this.data.SCML2.title,
       content: this.data.SCML2.content,
       choices: this.data.SCML2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCMLAF2.title,
+      name: this.data.SCMLAF2.title,
       content: this.data.SCMLAF2.content,
       choices: this.data.SCMLAF2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.MC2.title,
+      name: this.data.MC2.title,
       content: this.data.MC2.content,
       choices: this.data.MC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML2.title,
+      name: this.data.MCML2.title,
       content: this.data.MCML2.content,
       choices: this.data.MCML2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCMLAF2.title,
+      name: this.data.MCMLAF2.title,
       content: this.data.MCMLAF2.content,
       choices: this.data.MCMLAF2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP2.title,
+      name: this.data.KP2.title,
       content: this.data.KP2.content,
       choices: this.data.KP2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML2.title,
+      name: this.data.KPML2.title,
       content: this.data.KPML2.content,
       choices: this.data.KPML2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPMLAF2.title,
+      name: this.data.KPMLAF2.title,
       content: this.data.KPMLAF2.content,
       choices: this.data.KPMLAF2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionNR({
@@ -264,51 +282,60 @@ describe('Test all functionalities related to the creation, management, sharing 
   it("Create another set of questions in the account of user 'pro1' for the use in template", function () {
     cy.loginIndividualCatalyst()
     cy.createQuestionSC({
-      title: this.data.SC3.title,
+      name: this.data.SC3.title,
       content: this.data.SC3.content,
       choices: this.data.SC3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML3.title,
+      name: this.data.SCML3.title,
       content: this.data.SCML3.content,
       choices: this.data.SCML3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCMLAF3.title,
+      name: this.data.SCMLAF3.title,
       content: this.data.SCMLAF3.content,
       choices: this.data.SCMLAF3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.MC3.title,
+      name: this.data.MC3.title,
       content: this.data.MC3.content,
       choices: this.data.MC3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML3.title,
+      name: this.data.MCML3.title,
       content: this.data.MCML3.content,
       choices: this.data.MCML3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCMLAF3.title,
+      name: this.data.MCMLAF3.title,
       content: this.data.MCMLAF3.content,
       choices: this.data.MCMLAF3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP3.title,
+      name: this.data.KP3.title,
       content: this.data.KP3.content,
       choices: this.data.KP3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML3.title,
+      name: this.data.KPML3.title,
       content: this.data.KPML3.content,
       choices: this.data.KPML3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPMLAF3.title,
+      name: this.data.KPMLAF3.title,
       content: this.data.KPMLAF3.content,
       choices: this.data.KPMLAF3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionNR({

@@ -413,8 +413,8 @@ describe('Create different types of elements (with and without sample solution) 
 
     // validate choices content
     cy.wrap(choices).each(
-      (choice: { content: string; feedback?: string }, ix) => {
-        cy.get(`[data-cy="sc-0-answer-option-${ix}"]`).contains(choice.content)
+      (choice: { value: string; feedback?: string }, ix) => {
+        cy.get(`[data-cy="sc-0-answer-option-${ix}"]`).contains(choice.value)
       }
     )
 
@@ -423,7 +423,7 @@ describe('Create different types of elements (with and without sample solution) 
       cy.get('[data-cy="sc-0-answer-option-0"]').click()
       cy.get('[data-cy="student-stack-submit"]').click()
       cy.wrap(choices).each(
-        (choice: { content: string; feedback?: string }, ix) => {
+        (choice: { value: string; feedback?: string }, ix) => {
           cy.get(`[data-cy="sc-0-feedback-${ix}"]`).contains(choice.feedback)
         }
       )
@@ -434,9 +434,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginLecturer()
 
     cy.createQuestionSC({
-      title: this.data.update.title1,
+      name: this.data.update.title1,
       content: this.data.update.content1,
       choices: this.data.update.choices1,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -551,14 +552,12 @@ describe('Create different types of elements (with and without sample solution) 
       .type(this.data.update.content2)
 
     // update choices of the question
-    cy.wrap(this.data.update.choices2).each(
-      (choice: { content: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-field-${ix}"]`)
-          .realClick()
-          .clear()
-          .type(choice.content)
-      }
-    )
+    cy.wrap(this.data.update.choices2).each((choice: { value: string }, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .clear()
+        .type(choice.value)
+    })
 
     // update feedbacks of the question
     cy.wrap(this.data.update.choices2).each(
@@ -628,14 +627,12 @@ describe('Create different types of elements (with and without sample solution) 
       .type(this.data.update.content3)
 
     // update choices of the question
-    cy.wrap(this.data.update.choices3).each(
-      (choice: { content: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-field-${ix}"]`)
-          .realClick()
-          .clear()
-          .type(choice.content)
-      }
-    )
+    cy.wrap(this.data.update.choices3).each((choice: { value: string }, ix) => {
+      cy.get(`[data-cy="insert-answer-field-${ix}"]`)
+        .realClick()
+        .clear()
+        .type(choice.value)
+    })
 
     // disable sample solution
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })

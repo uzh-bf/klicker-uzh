@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
 import { defineConfig } from 'cypress'
 
 // ! Copy of seeded user ids from prisma/seedUsers.ts
@@ -83,9 +83,94 @@ export default defineConfig({
 
         // ! Element creation
         // #region
-        // TODO: create SC question
-        // TODO: create MC question
-        // TODO: create KPRIM question
+        async createQuestionChoices({
+          type,
+          name,
+          content,
+          explanation,
+          multiplier,
+          choices,
+          userId,
+        }: {
+          type: ElementType
+          name: string
+          content: string
+          explanation?: string
+          multiplier?: number
+          choices: { value: string; correct?: boolean; feedback?: string }[]
+          userId: string
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          if (type === ElementType.SC && choices.length < 2) {
+            throw new Error('SC questions require at least 2 choices')
+          }
+
+          if (type === ElementType.MC && choices.length < 2) {
+            throw new Error('MC questions require at least 2 choices')
+          }
+
+          if (type === ElementType.KPRIM && choices.length !== 4) {
+            throw new Error('KPRIM questions require exactly 4 choices')
+          }
+
+          const hasSampleSolution = choices.some(
+            (choice) => typeof choice.correct !== 'undefined'
+          )
+          const hasAnswerFeedbacks = choices.every(
+            (choice) => typeof choice.feedback !== 'undefined'
+          )
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const ChoicesQuestion = await prisma.element.create({
+              data: {
+                type,
+                name,
+                content,
+                explanation: explanation ?? undefined,
+                basePoints: true,
+                pointsMultiplier: multiplier,
+                options: {
+                  hasSampleSolution,
+                  hasAnswerFeedbacks,
+                  displayMode: 'LIST',
+                  choices: choices.map((choice, ix) => ({
+                    ix,
+                    value: choice.value,
+                    correct: hasSampleSolution
+                      ? (choice.correct ?? false)
+                      : undefined,
+                    feedback: hasAnswerFeedbacks ? choice.feedback : undefined,
+                  })),
+                },
+                owner: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            })
+
+            if (!ChoicesQuestion) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
         // TODO: create NR question
         // TODO: create FT question
         // TODO: create SE question
@@ -96,7 +181,6 @@ export default defineConfig({
 
         // ! Practice Quiz queries / mutations
         // #region
-
         async getPracticeQuizInfo({ quizName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')

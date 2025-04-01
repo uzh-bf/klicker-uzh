@@ -15,36 +15,42 @@ describe('Different live-quiz workflows', function () {
   it('Create the questions required in the live quiz test workflows', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.SC.title,
+      name: this.data.SC.title,
       content: this.data.SC.content,
       choices: this.data.SC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML.title,
+      name: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.MC.title,
+      name: this.data.MC.title,
       content: this.data.MC.content,
       choices: this.data.MC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML.title,
+      name: this.data.MCML.title,
       content: this.data.MCML.content,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP.title,
+      name: this.data.KP.title,
       content: this.data.KP.content,
       choices: this.data.KP.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML.title,
+      name: this.data.KPML.title,
       content: this.data.KPML.content,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionNR({
@@ -1311,9 +1317,10 @@ describe('Different live-quiz workflows', function () {
 
     // create single choice question and live quiz
     cy.createQuestionSC({
-      title: this.data.SC2.title,
+      name: this.data.SC2.title,
       content: this.data.SC2.content,
       choices: this.data.SC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createLiveQuiz({
       name: this.data.liveQuiz.name,
@@ -1376,9 +1383,10 @@ describe('Different live-quiz workflows', function () {
 
     // create single choice question and live quiz
     cy.createQuestionMC({
-      title: this.data.MC2.title,
+      name: this.data.MC2.title,
       content: this.data.MC2.content,
       choices: this.data.MC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // edit the live quiz and add the modified SC and the new MC question

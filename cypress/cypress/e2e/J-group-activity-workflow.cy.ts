@@ -28,24 +28,27 @@ describe('Create and solve a group activity', function () {
 
     // SC question with solution
     cy.createQuestionSC({
-      title: this.data.SCML.title,
+      name: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
-      multiplier: messages.manage.activityWizard.multiplier2,
+      multiplier: 2,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // MC question
     cy.createQuestionMC({
-      title: this.data.MCML.title,
+      name: this.data.MCML.title,
       content: this.data.MCML.content,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // KPRIM question
     cy.createQuestionKPRIM({
-      title: this.data.KPML.title,
+      name: this.data.KPML.title,
       content: this.data.KPML.content,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // NR question

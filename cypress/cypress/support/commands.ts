@@ -1,3 +1,4 @@
+// import { ElementType } from '@klicker-uzh/prisma'
 import { CatalogObjectType } from '@klicker-uzh/types'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
@@ -150,9 +151,9 @@ Cypress.Commands.add(
       description,
       entries,
       userId,
-    }).then((quiz: { id: string; courseId: string }) => {
+    }).then((result: boolean) => {
       // check if the query was successful
-      if (quiz === null) {
+      if (result === false) {
         throw new Error('Answer collection creation failed!')
       }
     })
@@ -213,283 +214,107 @@ Cypress.Commands.add(
 )
 
 interface CreateChoicesQuestionArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
-  choices: { content: string; feedback?: string; correct?: boolean }[]
-  multiplier?: string
+  choices: { value: string; correct?: boolean; feedback?: string }[]
+  multiplier?: number
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionSC',
   ({
-    title,
+    name,
     content,
     explanation,
     choices,
     multiplier,
+    userId,
   }: CreateChoicesQuestionArgs) => {
-    // throw an error if no choices were provided
-    if (choices.length < 2) {
-      throw new Error('SC questions require at least 2 choices')
-    }
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(title)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .type(choices[0].content)
-
-    cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
-      cy.get('[data-cy="add-new-answer"]').click()
-      cy.wait(500)
-      cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-        .realClick()
-        .type(choice.content)
+    // trigger single choice question creation directly through prisma action
+    cy.task('createQuestionChoices', {
+      type: 'SC',
+      name,
+      content,
+      explanation,
+      multiplier,
+      choices,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Single choice question creation failed!')
+      }
     })
 
-    // set correctness values for SC question
-    const hasSampleSolution = choices.some(
-      (choice) => typeof choice.correct !== 'undefined'
-    )
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-
-      cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
-        if (choice.correct) {
-          cy.get(`[data-cy="set-correctness-${ix}"]`).click()
-        }
-      })
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    // set answer feedbacks for SC question
-    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
-      cy.get('[data-cy="configure-answer-feedbacks"]').click()
-
-      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
-          .realClick()
-          .type(choice.feedback)
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
-          choice.feedback
-        )
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 Cypress.Commands.add(
   'createQuestionMC',
   ({
-    title,
+    name,
     content,
     explanation,
     choices,
     multiplier,
+    userId,
   }: CreateChoicesQuestionArgs) => {
-    // throw an error if no choices were provided
-    if (choices.length < 2) {
-      throw new Error('MC questions require at least 2 choices')
-    }
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.MC.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.MC.typeLabel)
-
-    cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .type(choices[0].content)
-
-    cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
-      cy.get('[data-cy="add-new-answer"]').click()
-      cy.wait(500)
-      cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-        .realClick()
-        .type(choice.content)
+    // trigger multiple choice question creation directly through prisma action
+    cy.task('createQuestionChoices', {
+      type: 'MC',
+      name,
+      content,
+      explanation,
+      multiplier,
+      choices,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Multiple choice question creation failed!')
+      }
     })
 
-    // set correctness values for MC question
-    const hasSampleSolution = choices.some(
-      (choice) => typeof choice.correct !== 'undefined'
-    )
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-
-      cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
-        if (choice.correct) {
-          cy.get(`[data-cy="set-correctness-${ix}"]`).click()
-        }
-      })
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    // set answer feedbacks for MC question
-    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
-      cy.get('[data-cy="configure-answer-feedbacks"]').click()
-
-      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
-          .realClick()
-          .type(choice.feedback)
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
-          choice.feedback
-        )
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 Cypress.Commands.add(
   'createQuestionKPRIM',
   ({
-    title,
+    name,
     content,
     explanation,
     choices,
     multiplier,
+    userId,
   }: CreateChoicesQuestionArgs) => {
-    // throw an error if there are not 4 choices
-    if (choices.length !== 4) {
-      throw new Error('KPRIM questions require exactly 4 choices')
-    }
+    // trigger kprim question creation directly through prisma action
+    cy.task('createQuestionChoices', {
+      type: 'KPRIM',
+      name,
+      content,
+      explanation,
+      multiplier,
+      choices,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('KPRIM question creation failed!')
+      }
+    })
 
-    const choice1 = choices[0]
-    const choice2 = choices[1]
-    const choice3 = choices[2]
-    const choice4 = choices[3]
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.KPRIM.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.KPRIM.typeLabel)
-
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="select-question-status"]').click()
-    cy.get(
-      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .type(choice1.content)
-    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1.content)
-    cy.get('[data-cy="add-new-answer"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="insert-answer-field-1"]')
-      .realClick()
-      .type(choice2.content)
-    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2.content)
-    cy.get('[data-cy="add-new-answer"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="insert-answer-field-2"]')
-      .realClick()
-      .type(choice3.content)
-    cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3.content)
-    cy.get('[data-cy="add-new-answer"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="insert-answer-field-3"]')
-      .realClick()
-      .type(choice4.content)
-    cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4.content)
-    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
-
-    // set correctness values for KPRIM question
-    const hasSampleSolution = choices.some(
-      (choice) => typeof choice.correct !== 'undefined'
-    )
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.get('[data-cy="set-correctness-0"]').click().type(choice4.content)
-      cy.get('[data-cy="set-correctness-2"]').click().type(choice4.content)
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    // set answer feedbacks for KPRIM question
-    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
-      cy.get('[data-cy="configure-answer-feedbacks"]').click()
-
-      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
-          .realClick()
-          .type(choice.feedback)
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
-          choice.feedback
-        )
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
@@ -1567,25 +1392,28 @@ declare global {
         permissionLevel,
       }: AddObjectToCatalogArgs): Chainable<void>
       createQuestionSC({
-        title,
+        name,
         content,
         explanation,
         choices,
         multiplier,
+        userId,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionMC({
-        title,
+        name,
         content,
         explanation,
         choices,
         multiplier,
+        userId,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionKPRIM({
-        title,
+        name,
         content,
         explanation,
         choices,
         multiplier,
+        userId,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionNR({
         title,

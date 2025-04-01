@@ -2,235 +2,235 @@
   "SC": {
     "title": "SC Title Test 1 (Version 1)",
     "content": "SC Question Content 1",
-    "choices": [{ "content": "50%" }, { "content": "100%" }]
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SC2": {
     "title": "SC Title Test 1 (Version 2)",
     "content": "SC Question Content 1 (Version 2)",
-    "choices": [{ "content": "50%" }, { "content": "100%" }]
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SC3": {
     "title": "SC Title Test 1 (Version 3)",
     "content": "SC Question Content 1 (Version 3)",
-    "choices": [{ "content": "50%" }, { "content": "100%" }]
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SCML": {
     "title": "SC Title Test 2 (Version 1)",
     "content": "SC Question Content 2",
-    "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCML2": {
     "title": "SC Title Test 2 (Version 2)",
     "content": "SC Question Content 2 (Version 2)",
-    "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+    "choices": [{ " value": "50%", "correct": true }, { " value": "100%" }]
   },
   "SCML3": {
     "title": "SC Title Test 2 (Version 3)",
     "content": "SC Question Content 2 (Version 3)",
-    "choices": [{ "content": "50%", "correct": true }, { "content": "100%" }]
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCMLAF": {
     "title": "SC Title Test 3 (Version 1)",
     "content": "SC Question Content 3",
     "choices": [
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "SCMLAF2": {
     "title": "SC Title Test 3 (Version 2)",
     "content": "SC Question Content 3 (Version 2)",
     "choices": [
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "SCMLAF3": {
     "title": "SC Title Test 3 (Version 3)",
     "content": "SC Question Content 3 (Version 3)",
     "choices": [
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "MC": {
     "title": "MC Title Test 1 (Version 1)",
     "content": "MC Question Content 1",
     "choices": [
-      { "content": "25%" },
-      { "content": "50%" },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MC2": {
     "title": "MC Title Test 1 (Version 2)",
     "content": "MC Question Content 1 (Version 2)",
     "choices": [
-      { "content": "25%" },
-      { "content": "50%" },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MC3": {
     "title": "MC Title Test 1 (Version 3)",
     "content": "MC Question Content 1 (Version 3)",
     "choices": [
-      { "content": "25%" },
-      { "content": "50%" },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MCML": {
     "title": "MC Title Test 2 (Version 1)",
     "content": "MC Question Content 2",
     "choices": [
-      { "content": "25%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MCML2": {
     "title": "MC Title Test 2 (Version 2)",
     "content": "MC Question Content 2 (Version 2)",
     "choices": [
-      { "content": "25%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MCML3": {
     "title": "MC Title Test 2 (Version 3)",
     "content": "MC Question Content 2 (Version 3)",
     "choices": [
-      { "content": "25%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "75%" },
-      { "content": "100%" }
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
     ]
   },
   "MCMLAF": {
     "title": "MC Title Test 3 (Version 1)",
     "content": "MC Question Content 3",
     "choices": [
-      { "content": "25%", "feedback": "Feedback Option 25%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "75%", "feedback": "Feedback Option 75%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "MCMLAF2": {
     "title": "MC Title Test 3 (Version 2)",
     "content": "MC Question Content 3 (Version 2)",
     "choices": [
-      { "content": "25%", "feedback": "Feedback Option 25%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "75%", "feedback": "Feedback Option 75%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "MCMLAF3": {
     "title": "MC Title Test 3 (Version 3)",
     "content": "MC Question Content 3 (Version 3)",
     "choices": [
-      { "content": "25%", "feedback": "Feedback Option 25%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "75%", "feedback": "Feedback Option 75%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "KP": {
     "title": "KPRIM Title Test 1 (Version 1)",
     "content": "KPRIM Question Content 1",
     "choices": [
-      { "content": "10%" },
-      { "content": "50%" },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KP2": {
     "title": "KPRIM Title Test 1 (Version 2)",
     "content": "KPRIM Question Content 1 (Version 2)",
     "choices": [
-      { "content": "10%" },
-      { "content": "50%" },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KP3": {
     "title": "KPRIM Title Test 1 (Version 3)",
     "content": "KPRIM Question Content 1 (Version 3)",
     "choices": [
-      { "content": "10%" },
-      { "content": "50%" },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KPML": {
     "title": "KPRIM Title Test 2 (Version 1)",
     "content": "KPRIM Question Content 2",
     "choices": [
-      { "content": "10%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KPML2": {
     "title": "KPRIM Title Test 2 (Version 2)",
     "content": "KPRIM Question Content 2 (Version 2)",
     "choices": [
-      { "content": "10%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KPML3": {
     "title": "KPRIM Title Test 2 (Version 3)",
     "content": "KPRIM Question Content 2 (Version 3)",
     "choices": [
-      { "content": "10%", "correct": false },
-      { "content": "50%", "correct": true },
-      { "content": "80%" },
-      { "content": "100%" }
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
     ]
   },
   "KPMLAF": {
     "title": "KPRIM Title Test 3 (Version 1)",
     "content": "KPRIM Question Content 3",
     "choices": [
-      { "content": "10%", "feedback": "Feedback Option 10%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "80%", "feedback": "Feedback Option 80%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "KPMLAF2": {
     "title": "KPRIM Title Test 3 (Version 2)",
     "content": "KPRIM Question Content 3 (Version 2)",
     "choices": [
-      { "content": "10%", "feedback": "Feedback Option 10%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "80%", "feedback": "Feedback Option 80%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "KPMLAF3": {
     "title": "KPRIM Title Test 3 (Version 3)",
     "content": "KPRIM Question Content 3 (Version 3)",
     "choices": [
-      { "content": "10%", "feedback": "Feedback Option 10%", "correct": false },
-      { "content": "50%", "feedback": "Feedback Option 50%", "correct": true },
-      { "content": "80%", "feedback": "Feedback Option 80%" },
-      { "content": "100%", "feedback": "Feedback Option 100%" }
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
     ]
   },
   "NR": {
