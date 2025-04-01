@@ -17,6 +17,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       name: this.data.SE.collection,
       description: this.data.SE.collectionDescription,
       entries: [...this.data.SE.solutions, ...this.data.SE.solutionsNotChosen],
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createAnswerCollection({
       name: this.data.SE.collectionEdited,
@@ -25,6 +26,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
         ...this.data.SE.solutionsEdited,
         ...this.data.SE.solutionsNotChosenEdited,
       ],
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 

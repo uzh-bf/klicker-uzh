@@ -75,6 +75,7 @@ describe('Different live-quiz workflows', function () {
       name: this.data.collection.name,
       description: this.data.collection.description,
       entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="library"]').click()

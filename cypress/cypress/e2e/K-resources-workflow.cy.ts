@@ -302,6 +302,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.private.name,
       description: this.data.private.description,
       entries: this.data.private.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -384,6 +385,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.restricted.name,
       description: this.data.restricted.description,
       entries: this.data.restricted.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -960,6 +962,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.public.name,
       description: this.data.public.description,
       entries: this.data.public.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -1290,6 +1293,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.private.name,
       description: this.data.private.description,
       entries: this.data.private.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -1511,6 +1515,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.direct.name,
       description: this.data.direct.description,
       entries: this.data.direct.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -1774,6 +1779,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.access.name,
       description: this.data.access.description,
       entries: this.data.access.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -2197,6 +2203,7 @@ describe('Create, edit and share answer collections', function () {
       name: this.data.ownership.name,
       description: this.data.ownership.description,
       entries: this.data.ownership.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 

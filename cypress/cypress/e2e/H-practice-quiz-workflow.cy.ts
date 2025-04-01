@@ -81,6 +81,7 @@ describe('Different practice quiz workflows', function () {
       name: this.data.collection.name,
       description: this.data.collection.description,
       entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create selection question

@@ -138,33 +138,27 @@ interface AnswerCollectionArgs {
   name: string
   description: string
   entries: string[]
+  userId: string
 }
 
 Cypress.Commands.add(
   'createAnswerCollection',
-  ({ name, description, entries }: AnswerCollectionArgs) => {
-    cy.get('[data-cy="create-answer-collection"]').click()
-    cy.get('[data-cy="answer-collection-name"]').type(name)
-    cy.get('[data-cy="answer-collection-name"]').should('have.value', name)
-
-    cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
-      .type(description)
-    cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
-      .contains(description)
-
-    cy.get('[data-cy="response-entry-0"]').type(entries[0])
-    cy.get('[data-cy="response-entry-0"]').should('have.value', entries[0])
-    cy.get('[data-cy="response-entry-1"]').type(entries[1])
-    cy.get('[data-cy="response-entry-1"]').should('have.value', entries[1])
-    entries.slice(2).forEach((value, ix) => {
-      cy.get('[data-cy="add-response-entry"]').click()
-      cy.get(`[data-cy="response-entry-${ix + 2}"]`).type(value)
-      cy.get(`[data-cy="response-entry-${ix + 2}"]`).should('have.value', value)
+  ({ name, description, entries, userId }: AnswerCollectionArgs) => {
+    // trigger answer collection creation directly through prisma action
+    cy.task('createAnswerCollection', {
+      name,
+      description,
+      entries,
+      userId,
+    }).then((quiz: { id: string; courseId: string }) => {
+      // check if the query was successful
+      if (quiz === null) {
+        throw new Error('Answer collection creation failed!')
+      }
     })
 
-    cy.get('[data-cy="submit-create-answer-collection"]').click()
+    // check if the created answer collection is visible
+    cy.reload()
     cy.get(`[data-cy="answer-collection-${name}"]`).should('exist')
   }
 )
@@ -1562,6 +1556,7 @@ declare global {
         name,
         description,
         entries,
+        userId,
       }: AnswerCollectionArgs): Chainable<void>
       deleteAnswerCollection({
         collectionName,

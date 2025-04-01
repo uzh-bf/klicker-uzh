@@ -94,6 +94,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       name: this.data.AC1.name,
       description: this.data.AC1.description,
       entries: this.data.AC1.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.get(`[data-cy="answer-collection-${this.data.AC1.name}"]`).should(
       'exist'
@@ -108,6 +109,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       name: this.data.AC2.name,
       description: this.data.AC2.description,
       entries: this.data.AC2.items,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.get(`[data-cy="answer-collection-${this.data.AC2.name}"]`).should(
       'exist'

@@ -91,6 +91,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       name: this.data.collection.name,
       description: this.data.collection.description,
       entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="library"]').click()
@@ -214,6 +215,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       name: this.data.collection2.name,
       description: this.data.collection2.description,
       entries: this.data.collection2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="library"]').click()
@@ -337,6 +339,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       name: this.data.collection3.name,
       description: this.data.collection3.description,
       entries: this.data.collection3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.get('[data-cy="library"]').click()

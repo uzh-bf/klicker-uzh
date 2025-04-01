@@ -88,6 +88,7 @@ describe('Different microlearning workflows', function () {
       name: this.data.collection.name,
       description: this.data.collection.description,
       entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create selection question
@@ -1347,6 +1348,7 @@ describe('Different microlearning workflows', function () {
       name: this.data.collection2.name,
       description: this.data.collection2.description,
       entries: this.data.collection2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({

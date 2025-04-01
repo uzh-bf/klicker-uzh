@@ -1,6 +1,13 @@
 import { PrismaClient } from '@klicker-uzh/prisma'
 import { defineConfig } from 'cypress'
 
+// ! Copy of seeded user ids from prisma/seedUsers.ts
+const USER_ID_TEST = '76047345-3801-4628-ae7b-adbebcfe8821'
+const USER_ID_TEST2 = '76047345-3801-4628-ae7b-adbebcfe8822'
+const USER_ID_TEST3 = '76047345-3801-4628-ae7b-adbebcfe8823'
+const USER_ID_TEST4 = '76047345-3801-4628-ae7b-adbebcfe8824'
+const USER_ID_TEST5 = '76047345-3801-4628-ae7b-adbebcfe8825'
+
 export default defineConfig({
   watchForFileChanges: true,
   projectId: 'y436dx',
@@ -10,12 +17,16 @@ export default defineConfig({
     URL_MANAGE: 'http://127.0.0.1:3002',
     URL_CONTROL: 'http://127.0.0.1:3003',
     URL_AUTH: 'http://127.0.0.1:3010',
+    LECTURER_ID: USER_ID_TEST,
     LECTURER_EMAIL: 'lecturer@df.uzh.ch',
     LECTURER_SHORTNAME: 'lecturer',
+    LECTURER_IND_ID: USER_ID_TEST3,
     LECTURER_IND_SHORTNAME: 'pro1',
     LECTURER_IND_EMAIL: 'pro1@df.uzh.ch',
+    LECTURER_INST_ID: USER_ID_TEST4,
     LECTURER_INST_SHORTNAME: 'pro2',
     LECTURER_INST_EMAIL: 'pro2@df.uzh.ch',
+    LECTURER_INST2_ID: USER_ID_TEST5,
     LECTURER_INST2_SHORTNAME: 'pro3',
     LECTURER_INST2_EMAIL: 'pro3@df.uzh.ch',
     LECTURER_PASSWORD: 'abcd',
@@ -51,6 +62,41 @@ export default defineConfig({
 
       require('@cypress/code-coverage/task')(on, config)
       on('task', {
+        // ! Helper functions
+        // #region
+        async connectToDB() {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          return prisma
+        },
+        // #endregion
+
+        // ! Element creation
+        // #region
+        // TODO: create SC question
+        // TODO: create MC question
+        // TODO: create KPRIM question
+        // TODO: create NR question
+        // TODO: create FT question
+        // TODO: create SE question
+        // TODO: create CS question
+        // TODO: create CT element
+        // TODO: create Flashcard
+        // #endregion
+
+        // ! Practice Quiz queries / mutations
+        // #region
+
         async getPracticeQuizInfo({ quizName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
@@ -113,6 +159,10 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        // #endregion
+
+        // ! Microlearning queries / mutations
+        // #region
         async getMicroLearningInfo({ mlName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
@@ -141,6 +191,90 @@ export default defineConfig({
               id: microLearnings[0].id,
               courseId: microLearnings[0].courseId,
             }
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        async removeSoftDeletedMicrolearning({ mlName }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const microLearnings = await prisma.microLearning.deleteMany({
+              where: {
+                name: mlName,
+                isDeleted: true,
+              },
+            })
+
+            if (!microLearnings) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+        // #endregion
+
+        // ! Answer Collection queries / mutations
+        // #region
+        async createAnswerCollection({
+          name,
+          description,
+          entries,
+          userId,
+        }: {
+          name: string
+          description: string
+          entries: string[]
+          userId: string
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const answerCollection = await prisma.answerCollection.create({
+              data: {
+                name,
+                description,
+                entries: {
+                  create: entries.map((entry) => ({
+                    value: entry,
+                  })),
+                },
+                owner: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            })
+
+            if (!answerCollection) {
+              return false
+            }
+
+            return true
           } finally {
             await prisma.$disconnect()
           }
@@ -189,36 +323,10 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
-        async removeSoftDeletedMicrolearning({ mlName }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
+        // #endregion
 
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
-
-          try {
-            const microLearnings = await prisma.microLearning.deleteMany({
-              where: {
-                name: mlName,
-                isDeleted: true,
-              },
-            })
-
-            if (!microLearnings) {
-              return false
-            }
-
-            return true
-          } finally {
-            await prisma.$disconnect()
-          }
-        },
+        // ! Live Quiz queries / mutations
+        // #region
         async removeSoftDeletedLiveQuiz({ lqName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
@@ -249,6 +357,10 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        // #endregion
+
+        // ! Group Activity queries / mutations
+        // #region
         async removeSoftDeletedGroupActivity({ gaName }) {
           if (!process.env.DATABASE_URL) {
             throw new Error('DATABASE_URL environment variable is not set')
@@ -279,6 +391,10 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        // #endregion
+
+        // ! Permission queries / mutations
+        // #region
         async updateLecturerPermissions({
           publicPreview,
           privatePreview,
@@ -314,6 +430,7 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        // #endregion
       })
       return config
     },

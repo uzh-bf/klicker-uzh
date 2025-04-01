@@ -34,6 +34,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       name: this.data.CS.collection,
       description: this.data.CS.collectionDescription,
       entries: [...this.data.CS.items, ...this.data.CS.unselectedItems],
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createAnswerCollection({
       name: this.data.CS.collectionEdited,
@@ -42,6 +43,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
         ...this.data.CS.itemsEdited,
         ...this.data.CS.unselectedItemsEdited,
       ],
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
