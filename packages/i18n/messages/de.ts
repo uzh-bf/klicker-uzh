@@ -1689,6 +1689,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       expandAll: 'Alle ausklappen',
       collapseAll: 'Alle einklappen',
       basedOnObject: 'basierend auf {object}',
+      recoveredTemplateData:
+        'Für diese Vorlage wurden Ihre Eingaben automatisch zwischengespeichert und geladen. Möchten Sie das Template zurücksetzen, nutzen Sie bitte den hierfür vorgesehenen Knopf.',
+      resetTemplateData: 'Eingaben zurücksetzen',
+      resetConfirmation: 'Bestätigung Zurücksetzung des Templates',
+      resetWarning:
+        'Bitte bestätigen Sie, dass Sie alle Eingaben für dieses Template zurücksetzen möchten. Alle eingegebenen Daten, inkl. potentiell im Template erstellte Elemente werden gelöscht und können nicht wiederhergestellt werden.',
+      confirmReset: 'Zurücksetzen bestätigen',
     },
     formErrors: {
       resolveErrors:
