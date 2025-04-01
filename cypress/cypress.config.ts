@@ -527,7 +527,7 @@ export default defineConfig({
               })
 
             if (
-              !dbAnswerCollectionItems &&
+              !dbAnswerCollectionItems ||
               selectedItems.length !== dbAnswerCollectionItems.length
             ) {
               throw new Error(
