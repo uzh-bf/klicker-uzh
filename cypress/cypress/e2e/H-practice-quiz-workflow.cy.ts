@@ -61,9 +61,10 @@ describe('Different practice quiz workflows', function () {
 
     // FT question
     cy.createQuestionFT({
-      title: this.data.FTML.title,
+      name: this.data.FTML.title,
       content: this.data.FTML.content,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // FC question
@@ -1228,9 +1229,10 @@ describe('Different practice quiz workflows', function () {
 
     // create a new FT question
     cy.createQuestionFT({
-      title: this.data.FTML2.title,
+      name: this.data.FTML2.title,
       content: this.data.FTML2.content,
       ...this.data.FTML2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // edit the practice quiz again and add the modified NR question and the new FT question

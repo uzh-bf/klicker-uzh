@@ -347,8 +347,8 @@ Cypress.Commands.add(
     exactSolutions,
     userId,
   }: CreateQuestionNRArgs) => {
-    // trigger kprim question creation directly through prisma action
-    cy.task('createQuestionChoices', {
+    // trigger numerical question creation directly through prisma action
+    cy.task('createQuestionNumerical', {
       name,
       content,
       explanation,
@@ -363,7 +363,7 @@ Cypress.Commands.add(
     }).then((result: boolean) => {
       // check if the query was successful
       if (result === null) {
-        throw new Error('KPRIM question creation failed!')
+        throw new Error('Numerical question creation failed!')
       }
     })
 
@@ -374,70 +374,45 @@ Cypress.Commands.add(
 )
 
 interface CreateQuestionFTArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
+  multiplier?: number
   maxLength?: string
   solutions?: string[]
-  multiplier?: string
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionFT',
   ({
-    title,
+    name,
     content,
     explanation,
+    multiplier,
     maxLength,
     solutions,
-    multiplier,
+    userId,
   }: CreateQuestionFTArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.FREE_TEXT.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.FREE_TEXT.typeLabel)
+    // trigger free text question creation directly through prisma action
+    cy.task('createQuestionFreeText', {
+      name,
+      content,
+      explanation,
+      multiplier,
+      maxLength,
+      solutions,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Free Text question creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    if (typeof maxLength !== 'undefined') {
-      cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
-    }
-
-    // set solution values
-    const hasSampleSolution =
-      typeof solutions !== 'undefined' && solutions.length > 0
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.wrap(solutions).each((solution: string, ix) => {
-        cy.get(`[data-cy="add-solution-value"]`).click()
-        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
-      })
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
@@ -1374,12 +1349,13 @@ declare global {
         userId,
       }: CreateQuestionNRArgs): Chainable<void>
       createQuestionFT({
-        title,
+        name,
         content,
         explanation,
+        multiplier,
         maxLength,
         solutions,
-        multiplier,
+        userId,
       }: CreateQuestionFTArgs): Chainable<void>
       createQuestionSE({
         title,

@@ -260,8 +260,73 @@ export default defineConfig({
           }
         },
 
-        // TODO: create NR question
         // TODO: create FT question
+        async createQuestionFreeText({
+          name,
+          content,
+          explanation,
+          multiplier,
+          maxLength,
+          solutions,
+          userId,
+        }: {
+          name: string
+          content: string
+          explanation?: string
+          multiplier?: number
+          maxLength?: string
+          solutions?: string[]
+          userId: string
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const hasSampleSolution =
+            typeof solutions !== 'undefined' && solutions.length > 0
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const ChoicesQuestion = await prisma.element.create({
+              data: {
+                type: 'FREE_TEXT',
+                name,
+                content,
+                explanation: explanation ?? undefined,
+                basePoints: true,
+                pointsMultiplier: multiplier,
+                options: {
+                  hasSampleSolution,
+                  restrictions: {
+                    maxLength: maxLength ? parseInt(maxLength) : undefined,
+                  },
+                  solutions,
+                },
+                owner: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            })
+
+            if (!ChoicesQuestion) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
         // TODO: create SE question
         // TODO: create CS question
         // TODO: create CT element

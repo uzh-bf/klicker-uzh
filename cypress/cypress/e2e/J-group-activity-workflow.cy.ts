@@ -62,9 +62,10 @@ describe('Create and solve a group activity', function () {
 
     // FT question
     cy.createQuestionFT({
-      title: this.data.FTML.title,
+      name: this.data.FTML.title,
       content: this.data.FTML.content,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // CT question

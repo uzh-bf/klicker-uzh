@@ -86,14 +86,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionFT({
-      title: this.data.FT.title,
+      name: this.data.FT.title,
       content: this.data.FT.content,
       ...this.data.FT.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML.title,
+      name: this.data.FTML.title,
       content: this.data.FTML.content,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="resources"]').click()
@@ -221,14 +223,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionFT({
-      title: this.data.FT2.title,
+      name: this.data.FT2.title,
       content: this.data.FT2.content,
       ...this.data.FT2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML2.title,
+      name: this.data.FTML2.title,
       content: this.data.FTML2.content,
       ...this.data.FTML2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="resources"]').click()
@@ -356,14 +360,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionFT({
-      title: this.data.FT3.title,
+      name: this.data.FT3.title,
       content: this.data.FT3.content,
       ...this.data.FT3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML3.title,
+      name: this.data.FTML3.title,
       content: this.data.FTML3.content,
       ...this.data.FTML3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.get('[data-cy="resources"]').click()

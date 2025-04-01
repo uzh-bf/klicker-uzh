@@ -67,14 +67,16 @@ describe('Different live-quiz workflows', function () {
     })
 
     cy.createQuestionFT({
-      title: this.data.FT.title,
+      name: this.data.FT.title,
       content: this.data.FT.content,
       ...this.data.FT.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML.title,
+      name: this.data.FTML.title,
       content: this.data.FTML.content,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="resources"]').click()
