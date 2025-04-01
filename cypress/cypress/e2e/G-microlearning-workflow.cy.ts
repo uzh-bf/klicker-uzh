@@ -114,7 +114,7 @@ describe('Different microlearning workflows', function () {
 
     // create a case study question
     cy.createQuestionCS({
-      title: this.data.CSML.title,
+      name: this.data.CSML.title,
       content: this.data.CSML.content,
       explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
@@ -124,6 +124,7 @@ describe('Different microlearning workflows', function () {
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
   // #endregion
@@ -1440,7 +1441,7 @@ describe('Different microlearning workflows', function () {
 
     // create new case study element
     cy.createQuestionCS({
-      title: this.data.CSML2.title,
+      name: this.data.CSML2.title,
       content: this.data.CSML2.content,
       explanation: this.data.CSML2.explanation,
       collectionName: this.data.collection2.name,
@@ -1450,6 +1451,7 @@ describe('Different microlearning workflows', function () {
       criteria: this.data.CSML2.criteria,
       cases: this.data.CSML2.cases,
       solutions: this.data.CSML2.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // include both the updated selection question and case study in the microlearning

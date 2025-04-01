@@ -108,7 +108,7 @@ describe('Different live-quiz workflows', function () {
     })
 
     cy.createQuestionCS({
-      title: this.data.CS.title,
+      name: this.data.CS.title,
       content: this.data.CS.content,
       explanation: this.data.CS.explanation,
       collectionName: this.data.collection.name,
@@ -118,9 +118,10 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CS.criteria,
       cases: this.data.CS.cases,
       solutions: this.data.CS.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML.title,
+      name: this.data.CSML.title,
       content: this.data.CSML.content,
       explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
@@ -130,6 +131,7 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
   // #endregion

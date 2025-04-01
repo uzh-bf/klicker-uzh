@@ -109,6 +109,7 @@
     "unselectedItems": ["USA", "UK", "Japan", "China"],
     "criteria": [
       {
+        "id": "oYTzF78iey",
         "mode": "range",
         "name": "Population",
         "min": 1000000,
@@ -116,6 +117,7 @@
         "step": 1000
       },
       {
+        "id": "YQoyvwFJIr",
         "mode": "range",
         "name": "Area",
         "min": 100,
@@ -125,6 +127,7 @@
       }
     ],
     "removedCriterion": {
+      "id": "gWG1frjdTF",
       "mode": "steps",
       "name": "Closeness to Europe",
       "steps": 5,
@@ -136,10 +139,12 @@
     },
     "cases": [
       {
+        "id": "8tgJNRi9o1",
         "title": "Case 1",
         "description": "Case 1 Description - Data from 1800"
       },
       {
+        "id": "Ovzf8gzSpZ",
         "title": "Case 2",
         "description": "Case 2 Description - Data from 2000"
       }

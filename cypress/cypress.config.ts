@@ -1,5 +1,8 @@
 import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
 import {
+  CaseStudyCaseCriterionSolution,
+  CaseStudyCaseSolution,
+  ElementOptionsCaseStudy,
   ElementOptionsChoices,
   ElementOptionsContent,
   ElementOptionsFlashcard,
@@ -396,7 +399,7 @@ export default defineConfig({
               )
             }
 
-            const ContentElement = await prisma.element.create({
+            const SelectionQuestion = await prisma.element.create({
               data: {
                 type: 'SELECTION',
                 name,
@@ -429,7 +432,7 @@ export default defineConfig({
               },
             })
 
-            if (!ContentElement) {
+            if (!SelectionQuestion) {
               return false
             }
 
@@ -438,9 +441,217 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async createQuestionCaseStudy({
+          name,
+          content,
+          explanation,
+          multiplier,
+          collectionName,
+          selectedItems,
+          criteria,
+          cases,
+          solutions,
+          userId,
+        }: {
+          name: string
+          content: string
+          explanation?: string
+          multiplier?: number
+          collectionName: string
+          selectedItems: string[]
+          criteria: {
+            mode: 'range' | 'steps'
+            id: string
+            name: string
+            // range criterion attributes
+            min?: number
+            max?: number
+            step?: number
+            unit?: string
+            // steps criterion attribute
+            steps?: number
+            labels?: {
+              min: string
+              mid?: string
+              max: string
+            }
+          }[]
+          cases: {
+            id: string
+            title: string
+            description: string
+          }[]
+          solutions?: {
+            [caseIx: string]: {
+              [itemIx: string]: {
+                [criterionIx: string]: {
+                  lower: number
+                  upper: number
+                }
+              }
+            }
+          }
+          userId: string
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
 
-        // TODO: create CS question
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
 
+          try {
+            const dbAnswerCollection = await prisma.answerCollection.findFirst({
+              where: {
+                name: collectionName,
+              },
+            })
+
+            if (!dbAnswerCollection) {
+              throw new Error(`Answer collection ${collectionName} not found`)
+            }
+
+            const dbAnswerCollectionItems =
+              await prisma.answerCollectionEntry.findMany({
+                where: {
+                  collectionId: dbAnswerCollection.id,
+                  value: {
+                    in: selectedItems,
+                  },
+                },
+              })
+
+            if (
+              !dbAnswerCollectionItems &&
+              selectedItems.length !== dbAnswerCollectionItems.length
+            ) {
+              throw new Error(
+                `Answer collection ${collectionName} does not contain all required items for this case study`
+              )
+            }
+
+            const hasSampleSolution = !!solutions
+            const CaseStudyQuestion = await prisma.element.create({
+              data: {
+                type: 'CASE_STUDY',
+                name,
+                content,
+                explanation,
+                pointsMultiplier: multiplier,
+                options: {
+                  hasSampleSolution,
+                  criteria: criteria.map((criterion, ix) => ({
+                    id: criterion.id,
+                    name: criterion.name,
+                    order: ix,
+                    min: criterion.mode === 'steps' ? 1 : criterion.min,
+                    max:
+                      criterion.mode === 'steps'
+                        ? criterion.steps
+                        : criterion.max,
+                    step: criterion.mode === 'steps' ? 1 : criterion.step,
+                    unit: criterion.unit,
+                    labels:
+                      criterion.mode === 'steps' ? criterion.labels : undefined,
+                  })),
+                  cases: cases.map((caseItem, caseIx) => {
+                    const caseSolutionsObject = solutions
+                      ? solutions[caseIx]
+                      : undefined
+
+                    if (!!solutions && !caseSolutionsObject) {
+                      throw new Error(
+                        `Case study ${name} does not contain all required solutions`
+                      )
+                    }
+
+                    const caseSolutions = solutions
+                      ? Object.entries(caseSolutionsObject).reduce<
+                          CaseStudyCaseSolution[]
+                        >((acc, [itemIx, itemSolutions]) => {
+                          const item = dbAnswerCollectionItems[parseInt(itemIx)]
+
+                          if (!item) {
+                            throw new Error(
+                              `Case study ${name} does not contain all required solutions`
+                            )
+                          }
+
+                          const criteriaSolutions = Object.entries(
+                            itemSolutions
+                          ).reduce<CaseStudyCaseCriterionSolution[]>(
+                            (criterionAcc, [criterionIx, solution]) => {
+                              const criterion = criteria[parseInt(criterionIx)]
+
+                              if (!criterion) {
+                                throw new Error(
+                                  `Case study ${name} does not contain all required solutions`
+                                )
+                              }
+
+                              criterionAcc.push({
+                                criterionId: criterion.id,
+                                min: solution.lower,
+                                max: solution.upper,
+                              })
+
+                              return criterionAcc
+                            },
+                            []
+                          )
+
+                          acc.push({
+                            itemId: item.id,
+                            criteriaSolutions,
+                          })
+
+                          return acc
+                        }, [])
+                      : undefined
+
+                    return {
+                      id: caseItem.id,
+                      order: caseIx,
+                      title: caseItem.title,
+                      description: caseItem.description,
+                      solutions: caseSolutions,
+                    }
+                  }),
+                } as ElementOptionsCaseStudy,
+                // connect answer collection
+                answerCollection: {
+                  connect: {
+                    id: dbAnswerCollection.id,
+                  },
+                },
+                // connect answer collection entries (if defined)
+                answerCollectionItems: {
+                  connect: dbAnswerCollectionItems.map((item) => ({
+                    id: item.id,
+                  })),
+                },
+                owner: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            })
+
+            if (!CaseStudyQuestion) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
         async createContentElement({
           name,
           content,

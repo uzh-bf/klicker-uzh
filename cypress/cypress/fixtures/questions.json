@@ -397,6 +397,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "ayTOU7QLxu",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -405,6 +406,7 @@
         "unit": "%"
       },
       {
+        "id": "oPrEkBpIdc",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -414,10 +416,12 @@
     ],
     "cases": [
       {
+        "id": "_7zcnLGFTX",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "EScOftRpjg",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -497,6 +501,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "WbalWEa1a8",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -505,6 +510,7 @@
         "unit": "%"
       },
       {
+        "id": "qg3BQke2Z7",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -514,10 +520,12 @@
     ],
     "cases": [
       {
+        "id": "P3H1jIVxUv",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "d8UH0PkLV5",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -597,6 +605,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "S8EZajl3ja",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -605,6 +614,7 @@
         "unit": "%"
       },
       {
+        "id": "bflTUKOU81",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -614,10 +624,12 @@
     ],
     "cases": [
       {
+        "id": "txQnoypwKa",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "XUXVNy4vSj",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -697,6 +709,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "90OfR7GSUB",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -705,6 +718,7 @@
         "unit": "%"
       },
       {
+        "id": "cAJKuQKzm5",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -714,10 +728,12 @@
     ],
     "cases": [
       {
+        "id": "SrrZEpetE2",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "KELATtvxs_",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -863,6 +879,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "KCxYhNqkF8",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -871,6 +888,7 @@
         "unit": "%"
       },
       {
+        "id": "wyXtDB0uc6",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -880,10 +898,12 @@
     ],
     "cases": [
       {
+        "id": "2ofletuhR7",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "TnMbz7CMtQ",
         "title": "Case 2",
         "description": "Case 2 Description"
       }
@@ -1029,6 +1049,7 @@
     "selectedItems": [0, 2, 4],
     "criteria": [
       {
+        "id": "4GoHYaZBwp",
         "mode": "range",
         "name": "Criterion 1 with range 0-100",
         "min": 0,
@@ -1037,6 +1058,7 @@
         "unit": "%"
       },
       {
+        "id": "TK7nPU7CW5",
         "mode": "range",
         "name": "Criterion 2 with range -500 to 1000",
         "min": -500,
@@ -1046,10 +1068,12 @@
     ],
     "cases": [
       {
+        "id": "6kU1KuOheS",
         "title": "Case 1",
         "description": "Case 1 Description"
       },
       {
+        "id": "ScVppYMltS",
         "title": "Case 2",
         "description": "Case 2 Description"
       }

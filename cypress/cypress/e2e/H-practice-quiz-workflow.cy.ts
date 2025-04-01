@@ -107,7 +107,7 @@ describe('Different practice quiz workflows', function () {
 
     // create a case study question
     cy.createQuestionCS({
-      title: this.data.CSML.title,
+      name: this.data.CSML.title,
       content: this.data.CSML.content,
       explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
@@ -117,6 +117,7 @@ describe('Different practice quiz workflows', function () {
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
   // #endregion

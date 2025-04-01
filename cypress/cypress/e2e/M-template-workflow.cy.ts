@@ -127,7 +127,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionCS({
-      title: this.data.CS.title,
+      name: this.data.CS.title,
       content: this.data.CS.content,
       explanation: this.data.CS.explanation,
       collectionName: this.data.collection.name,
@@ -137,9 +137,10 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CS.criteria,
       cases: this.data.CS.cases,
       solutions: this.data.CS.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML.title,
+      name: this.data.CSML.title,
       content: this.data.CSML.content,
       explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
@@ -149,6 +150,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -266,7 +268,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionCS({
-      title: this.data.CS2.title,
+      name: this.data.CS2.title,
       content: this.data.CS2.content,
       explanation: this.data.CS2.explanation,
       collectionName: this.data.collection2.name,
@@ -276,9 +278,10 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CS2.criteria,
       cases: this.data.CS2.cases,
       solutions: this.data.CS2.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML2.title,
+      name: this.data.CSML2.title,
       content: this.data.CSML2.content,
       explanation: this.data.CSML2.explanation,
       collectionName: this.data.collection2.name,
@@ -288,6 +291,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CSML2.criteria,
       cases: this.data.CSML2.cases,
       solutions: this.data.CSML2.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -405,7 +409,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionCS({
-      title: this.data.CS3.title,
+      name: this.data.CS3.title,
       content: this.data.CS3.content,
       explanation: this.data.CS3.explanation,
       collectionName: this.data.collection3.name,
@@ -415,9 +419,10 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CS3.criteria,
       cases: this.data.CS3.cases,
       solutions: this.data.CS3.solutions,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML3.title,
+      name: this.data.CSML3.title,
       content: this.data.CSML3.content,
       explanation: this.data.CSML3.explanation,
       collectionName: this.data.collection3.name,
@@ -427,6 +432,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CSML3.criteria,
       cases: this.data.CSML3.cases,
       solutions: this.data.CSML3.solutions,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
   })
   // #endregion

@@ -462,13 +462,15 @@ Cypress.Commands.add(
 )
 
 interface CreateCaseStudyArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
+  multiplier?: number
   collectionName: string
   selectedItems: string[]
   criteria: {
     mode: 'range' | 'steps'
+    id: string
     name: string
     // range criterion attributes
     min?: number
@@ -484,6 +486,7 @@ interface CreateCaseStudyArgs {
     }
   }[]
   cases: {
+    id: string
     title: string
     description: string
   }[]
@@ -497,206 +500,45 @@ interface CreateCaseStudyArgs {
       }
     }
   }
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionCS',
   ({
-    title,
+    name,
     content,
     explanation,
+    multiplier,
     collectionName,
     selectedItems,
     criteria,
     cases,
     solutions,
+    userId,
   }: CreateCaseStudyArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.CASE_STUDY.typeLabel)
-
-    // enter title and content
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    // select an answer collection
-    cy.get('[data-cy="select-answer-collection"]').contains(
-      messages.manage.questionForms.selectCollection
-    )
-    cy.get('[data-cy="select-answer-collection"]').click()
-    cy.get(`[data-cy="select-answer-collection-${collectionName}"]`).click()
-    cy.get('[data-cy="select-answer-collection"]').contains(collectionName)
-
-    // select items for case study
-    cy.wrap(selectedItems).each((item: string) => {
-      cy.get('[data-cy="choose-case-study-items"]').click()
-      cy.findByText(item).realClick()
-      cy.get('[data-cy="choose-case-study-items"]').contains(item)
-    })
-
-    // add criteria
-    cy.wrap(criteria).each(
-      (criterion: CreateCaseStudyArgs['criteria'][0], ix) => {
-        cy.get(`[data-cy="add-${criterion.mode}-criterion"]`).click()
-        cy.get(`[data-cy="criterion-${ix}-name"]`)
-          .click()
-          .clear()
-          .type(criterion.name)
-
-        // for range criteria, enter min, max, and step - unit is optional
-        if (criterion.mode === 'range') {
-          cy.get(`[data-cy="criterion-${ix}-min"]`)
-            .click()
-            .clear()
-            .type(String(criterion.min))
-          cy.get(`[data-cy="criterion-${ix}-max"]`)
-            .click()
-            .clear()
-            .type(String(criterion.max))
-          cy.get(`[data-cy="criterion-${ix}-step"]`)
-            .click()
-            .clear()
-            .type(String(criterion.step))
-          if (criterion.unit) {
-            cy.get(`[data-cy="criterion-${ix}-unit"]`)
-              .click()
-              .type(criterion.unit)
-          }
-        } else if (criterion.mode === 'steps') {
-          cy.get(`[data-cy="criterion-${ix}-min-label"]`)
-            .click()
-            .clear()
-            .type(String(criterion.labels.min))
-          cy.get(`[data-cy="criterion-${ix}-max-label"]`)
-            .click()
-            .clear()
-            .type(String(criterion.labels.max))
-          cy.get(`[data-cy="criterion-${ix}-steps"]`)
-            .click()
-            .clear()
-            .type(String(criterion.steps))
-
-          if (criterion.labels.mid) {
-            cy.get(`[data-cy="criterion-${ix}-mid-label"]`)
-              .click()
-              .clear()
-              .type(String(criterion.labels.mid))
-          }
-        } else {
-          throw new Error('Invalid criterion mode')
-        }
-
-        // validate inputs for both range and steps / likert criteria
-        cy.get(`[data-cy="criterion-${ix}-name"]`).should(
-          'have.value',
-          criterion.name
-        )
-
-        if (criterion.mode === 'range') {
-          cy.get(`[data-cy="criterion-${ix}-min"]`).should(
-            'have.value',
-            String(criterion.min)
-          )
-          cy.get(`[data-cy="criterion-${ix}-max"]`).should(
-            'have.value',
-            String(criterion.max)
-          )
-          cy.get(`[data-cy="criterion-${ix}-step"]`).should(
-            'have.value',
-            String(criterion.step)
-          )
-          if (criterion.unit) {
-            cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
-              'have.value',
-              criterion.unit
-            )
-          }
-        } else if (criterion.mode === 'steps') {
-          cy.get(`[data-cy="criterion-${ix}-min-label"]`).should(
-            'have.value',
-            criterion.labels.min
-          )
-          cy.get(`[data-cy="criterion-${ix}-max-label"]`).should(
-            'have.value',
-            criterion.labels.max
-          )
-          cy.get(`[data-cy="criterion-${ix}-steps"]`).should(
-            'have.value',
-            String(criterion.steps)
-          )
-          if (criterion.labels.mid) {
-            cy.get(`[data-cy="criterion-${ix}-mid-label"]`).should(
-              'have.value',
-              criterion.labels.mid
-            )
-          }
-        } else {
-          throw new Error('Invalid criterion mode')
-        }
+    // trigger case study question creation directly through prisma action
+    cy.task('createQuestionCaseStudy', {
+      name,
+      content,
+      explanation,
+      multiplier,
+      collectionName,
+      selectedItems,
+      criteria,
+      cases,
+      solutions,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Case study question creation failed!')
       }
-    )
-
-    // add cases
-    cy.wrap(cases).each((caseItem: CreateCaseStudyArgs['cases'][0], ix) => {
-      // add new case information
-      cy.get('[data-cy="add-new-case"]').click()
-      cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
-      cy.get(`[data-cy="case-description-${ix}"]`)
-        .realClick()
-        .type(caseItem.description)
-
-      // verify that all data has been entered correctly
-      cy.get(`[data-cy="case-title-${ix}"]`).should(
-        'have.value',
-        caseItem.title
-      )
-      cy.get(`[data-cy="case-description-${ix}"]`).contains(
-        caseItem.description
-      )
     })
 
-    // add solutions (if defined)
-    if (solutions) {
-      cy.get('[data-cy="configure-sample-solution"]').click()
-      Object.entries(solutions).forEach(([caseIx, caseValue]) => {
-        Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
-          Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-            )
-              .click()
-              .type(String(criterionValue.lower))
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-            )
-              .click()
-              .type(String(criterionValue.upper))
-
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-            ).should('have.value', String(criterionValue.lower))
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-            ).should('have.value', String(criterionValue.upper))
-          })
-        })
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click()
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
@@ -1355,14 +1197,16 @@ declare global {
         userId,
       }: CreateSelectionArgs): Chainable<void>
       createQuestionCS({
-        title,
+        name,
         content,
         explanation,
+        multiplier,
         collectionName,
         selectedItems,
         criteria,
         cases,
         solutions,
+        userId,
       }: CreateCaseStudyArgs): Chainable<void>
       createFlashcard({
         name,

@@ -80,14 +80,14 @@ describe('Create different types of elements (with and without sample solution) 
       .type(data.autoSave.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
-      .type(data.autoSave.choices[0].content)
+      .type(data.autoSave.choices[0].value)
     cy.wrap(data.autoSave.choices.slice(1)).each(
-      (choice: { content: string }, ix) => {
+      (choice: { value: string }, ix) => {
         cy.get('[data-cy="add-new-answer"]').click()
         cy.wait(500)
         cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
           .realClick()
-          .type(choice.content)
+          .type(choice.value)
       }
     )
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
@@ -136,8 +136,8 @@ describe('Create different types of elements (with and without sample solution) 
       .realClick()
       .contains(this.data.autoSave.content)
     cy.wrap(this.data.autoSave.choices).each(
-      (choice: { content: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-field-${ix}"]`).contains(choice.content)
+      (choice: { value: string }, ix) => {
+        cy.get(`[data-cy="insert-answer-field-${ix}"]`).contains(choice.value)
       }
     )
   })
