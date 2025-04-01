@@ -53,10 +53,11 @@ describe('Create and solve a group activity', function () {
 
     // NR question
     cy.createQuestionNR({
-      title: this.data.NRML.title,
+      name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
       multiplier: messages.manage.activityWizard.multiplier3,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // FT question

@@ -73,14 +73,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionNR({
-      title: this.data.NR.title,
+      name: this.data.NR.title,
       content: this.data.NR.content,
       ...this.data.NR.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML.title,
+      name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionFT({
@@ -206,14 +208,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionNR({
-      title: this.data.NR2.title,
+      name: this.data.NR2.title,
       content: this.data.NR2.content,
       ...this.data.NR2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML2.title,
+      name: this.data.NRML2.title,
       content: this.data.NRML2.content,
       ...this.data.NRML2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionFT({
@@ -339,14 +343,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
 
     cy.createQuestionNR({
-      title: this.data.NR3.title,
+      name: this.data.NR3.title,
       content: this.data.NR3.content,
       ...this.data.NR3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML3.title,
+      name: this.data.NRML3.title,
       content: this.data.NRML3.content,
       ...this.data.NRML3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionFT({

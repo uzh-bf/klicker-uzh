@@ -170,6 +170,95 @@ export default defineConfig({
             await prisma.$disconnect()
           }
         },
+        async createQuestionNumerical({
+          name,
+          content,
+          explanation,
+          multiplier,
+          min,
+          max,
+          unit,
+          accuracy,
+          solutionRanges,
+          exactSolutions,
+          userId,
+        }: {
+          name: string
+          content: string
+          explanation?: string
+          multiplier?: number
+          min?: string
+          max?: string
+          unit?: string
+          accuracy?: string
+          solutionRanges?: { min: string; max: string }[] | null
+          exactSolutions?: string[] | null
+          userId: string
+        }) {
+          if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set')
+          }
+
+          const hasSampleSolution =
+            typeof solutionRanges !== 'undefined' &&
+            solutionRanges !== null &&
+            solutionRanges.length > 0
+
+          const prisma = new PrismaClient({
+            datasources: {
+              db: {
+                url: process.env.DATABASE_URL,
+              },
+            },
+          })
+
+          try {
+            const ChoicesQuestion = await prisma.element.create({
+              data: {
+                type: 'NUMERICAL',
+                name,
+                content,
+                explanation: explanation ?? undefined,
+                basePoints: true,
+                pointsMultiplier: multiplier,
+                options: {
+                  hasSampleSolution,
+                  unit,
+                  accuracy: accuracy ? parseFloat(accuracy) : undefined,
+                  restrictions:
+                    typeof min !== 'undefined' || typeof max !== 'undefined'
+                      ? {
+                          min: min ? parseFloat(min) : null,
+                          max: max ? parseFloat(max) : null,
+                        }
+                      : undefined,
+                  solutionRanges: solutionRanges
+                    ? solutionRanges.map((range) => ({
+                        min: parseFloat(range.min),
+                        max: parseFloat(range.max),
+                      }))
+                    : undefined,
+                  exactSolutions: exactSolutions
+                    ? exactSolutions.map((solution) => parseFloat(solution))
+                    : undefined,
+                },
+                owner: {
+                  connect: {
+                    id: userId,
+                  },
+                },
+              },
+            })
+
+            if (!ChoicesQuestion) {
+              return false
+            }
+
+            return true
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
 
         // TODO: create NR question
         // TODO: create FT question

@@ -53,9 +53,10 @@ describe('Different practice quiz workflows', function () {
 
     // NR question
     cy.createQuestionNR({
-      title: this.data.NRML.title,
+      name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // FT question
@@ -1155,9 +1156,10 @@ describe('Different practice quiz workflows', function () {
   it('Create a numerical question and included it in a practice quiz', function () {
     cy.loginLecturer()
     cy.createQuestionNR({
-      title: this.data.NRML2.title,
+      name: this.data.NRML2.title,
       content: this.data.NRML2.content,
       ...this.data.NRML2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createPracticeQuiz({
       name: this.data.manipulation.name,

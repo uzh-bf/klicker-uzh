@@ -54,14 +54,16 @@ describe('Different live-quiz workflows', function () {
     })
 
     cy.createQuestionNR({
-      title: this.data.NR.title,
+      name: this.data.NR.title,
       content: this.data.NR.content,
       ...this.data.NR.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML.title,
+      name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionFT({

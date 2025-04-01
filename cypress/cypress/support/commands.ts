@@ -319,112 +319,57 @@ Cypress.Commands.add(
 )
 
 interface CreateQuestionNRArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
+  multiplier?: number
   min?: string
   max?: string
   unit?: string
   accuracy?: string
   solutionRanges?: { min: string; max: string }[] | null
   exactSolutions?: string[] | null
-  multiplier?: string
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionNR',
   ({
-    title,
+    name,
     content,
     explanation,
+    multiplier,
     min,
     max,
     unit,
     accuracy,
     solutionRanges,
     exactSolutions,
-    multiplier,
+    userId,
   }: CreateQuestionNRArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.NUMERICAL.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.NUMERICAL.typeLabel)
+    // trigger kprim question creation directly through prisma action
+    cy.task('createQuestionChoices', {
+      name,
+      content,
+      explanation,
+      multiplier,
+      min,
+      max,
+      unit,
+      accuracy,
+      solutionRanges,
+      exactSolutions,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('KPRIM question creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    if (typeof min !== 'undefined') {
-      cy.get('[data-cy="set-numerical-minimum"]').click().type(min)
-    }
-    if (typeof max !== 'undefined') {
-      cy.get('[data-cy="set-numerical-maximum"]').click().type(max)
-    }
-    if (typeof unit !== 'undefined') {
-      cy.get('[data-cy="set-numerical-unit"]').click().type(unit)
-    }
-    if (typeof accuracy !== 'undefined') {
-      cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
-    }
-
-    // set solution ranges
-    const hasSampleSolution =
-      typeof solutionRanges !== 'undefined' &&
-      solutionRanges !== null &&
-      solutionRanges.length > 0
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.get('[data-cy="set-solution-type-range"]').click()
-      cy.wrap(solutionRanges).each(
-        (range: { min: string; max: string }, ix) => {
-          cy.get('[data-cy="add-solution-range"]').click()
-          cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
-            .click()
-            .type(range.min)
-          cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
-            .click()
-            .type(range.max)
-        }
-      )
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    if (
-      typeof exactSolutions !== 'undefined' &&
-      exactSolutions !== null &&
-      exactSolutions.length > 0
-    ) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.get('[data-cy="set-solution-type-exact"]').click()
-      cy.wrap(exactSolutions).each((solution: string, ix) => {
-        cy.get(`[data-cy="add-exact-solution"]`).click()
-        cy.get(`[data-cy="set-exact-solution-${ix}"]`)
-          .click()
-          .type(String(solution))
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
@@ -1416,15 +1361,17 @@ declare global {
         userId,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionNR({
-        title,
+        name,
         content,
         explanation,
+        multiplier,
         min,
         max,
         unit,
         accuracy,
         solutionRanges,
-        multiplier,
+        exactSolutions,
+        userId,
       }: CreateQuestionNRArgs): Chainable<void>
       createQuestionFT({
         title,
