@@ -1072,7 +1072,10 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // reload and reset progress
     cy.reload()
-    cy.get('[data-cy="discard-recovered-activity-data"]').click()
+    cy.get('[data-cy="reset-template-data"]').click()
+    cy.get('[data-cy="cancel-template-reset"]').click()
+    cy.get('[data-cy="reset-template-data"]').click()
+    cy.get('[data-cy="confirm-template-reset"]').click()
 
     // re-do settings section and the first block
     cy.get('[data-cy="live-quiz-template-settings"]').click()
@@ -1214,7 +1217,6 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // reload and restore progress, make sure that all inputs persisted
     cy.reload()
-    cy.get('[data-cy="load-recovered-activity-data"]').click()
     cy.wrap([
       { identifier: '0-0', content: this.data.SC.content },
       { identifier: '0-1', content: this.data.MC.content },

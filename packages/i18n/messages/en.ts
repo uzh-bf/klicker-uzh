@@ -1669,6 +1669,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       expandAll: 'Expand all',
       collapseAll: 'Collapse all',
       basedOnObject: 'based on {object}',
+      recoveredTemplateData:
+        'The template contains auto-saved data from your previous inputs. If you want to reset the template, please use the corresponding button.',
+      resetTemplateData: 'Reset inputs',
+      resetConfirmation: 'Reset Template Confirmation',
+      resetWarning:
+        'Please confirm that you want to reset all inputs for this template. All entered data, including potential element content entered in the template, will be deleted and cannot be restored.',
+      confirmReset: 'Confirm reset',
     },
     formErrors: {
       resolveErrors:
