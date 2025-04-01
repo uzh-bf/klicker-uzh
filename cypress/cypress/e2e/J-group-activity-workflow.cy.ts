@@ -56,7 +56,7 @@ describe('Create and solve a group activity', function () {
       name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
-      multiplier: messages.manage.activityWizard.multiplier3,
+      multiplier: 3,
       userId: Cypress.env('LECTURER_ID'),
     })
 
