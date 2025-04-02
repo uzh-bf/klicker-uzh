@@ -8,6 +8,7 @@ import {
   type CaseStudySolutionInput as CaseStudySolutionInputType,
   type CaseStudySolution as CaseStudySolutionType,
   type ChoiceInput as ChoiceInputType,
+  type ChoicesResponse as ChoicesResponseType,
   type ElementManipulationInput as ElementManipulationInputType,
   type ElementOptionsCaseStudy as ElementOptionsCaseStudyType,
   type ElementOptionsChoices as ElementOptionsChoicesType,
@@ -63,7 +64,11 @@ import {
   SelectionElementOptions,
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
-import { CaseStudyCaseResponse, PublicationStatus } from './practiceQuiz.js'
+import {
+  CaseStudyCaseResponse,
+  ChoicesResponse,
+  PublicationStatus,
+} from './practiceQuiz.js'
 
 // ----- QUESTION INPUTS -----
 // #region
@@ -164,7 +169,10 @@ export const ResponseInputRef =
   builder.inputRef<ResponseInputType>('ResponseInput')
 export const ResponseInput = ResponseInputRef.implement({
   fields: (t) => ({
-    choices: t.intList({ required: false }),
+    choices: t.field({
+      type: [ChoicesResponse],
+      required: false,
+    }),
     value: t.string({ required: false }),
     selection: t.intList({ required: false }),
     assessment: t.field({
@@ -329,11 +337,21 @@ export const TemplateBlockInput = TemplateBlockInputRef.implement({
 
 // ----- SINGLE QUESTION RESPONSE INTERFACES -----
 // #region
+export const ChoicesResponseObject = builder
+  .objectRef<ChoicesResponseType>('ChoicesResponseObject')
+  .implement({
+    fields: (t) => ({
+      ix: t.exposeInt('ix'),
+      selected: t.exposeBoolean('selected'),
+    }),
+  })
 export const SingleQuestionResponseChoices = builder
   .objectRef<SingleQuestionResponseChoicesType>('SingleQuestionResponseChoices')
   .implement({
     fields: (t) => ({
-      choices: t.exposeIntList('choices'),
+      choices: t.expose('choices', {
+        type: [ChoicesResponseObject],
+      }),
     }),
   })
 

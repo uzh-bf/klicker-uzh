@@ -15,7 +15,14 @@ describe('@klicker-uzh/grading', () => {
   it('should grade MC questions correctly', () => {
     const points = gradeQuestionMC({
       responseCount: 6,
-      response: [0, 1, 2, 3, 4, 5],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: true },
+        { ix: 3, selected: true },
+        { ix: 4, selected: true },
+        { ix: 5, selected: true },
+      ],
       solution: [0, 1, 3],
     })
 
@@ -23,7 +30,15 @@ describe('@klicker-uzh/grading', () => {
 
     const points2 = gradeQuestionMC({
       responseCount: 6,
-      response: [0, 1, 3],
+      // response: [0, 1, 3],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+        { ix: 4, selected: false },
+        { ix: 5, selected: false },
+      ],
       solution: [0, 1, 3],
     })
 
@@ -31,7 +46,12 @@ describe('@klicker-uzh/grading', () => {
 
     const points3 = gradeQuestionMC({
       responseCount: 4,
-      response: [0, 1, 3],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+      ],
       solution: [0, 1],
     })
 
@@ -41,7 +61,14 @@ describe('@klicker-uzh/grading', () => {
   it('should grade SC questions correctly', () => {
     const points = gradeQuestionSC({
       responseCount: 6,
-      response: [0, 1, 2, 3, 4, 5],
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: false },
+        { ix: 4, selected: false },
+        { ix: 5, selected: false },
+      ],
       solution: [0],
     })
 
@@ -49,7 +76,12 @@ describe('@klicker-uzh/grading', () => {
 
     const points2 = gradeQuestionSC({
       responseCount: 4,
-      response: [3],
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: false },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+      ],
       solution: [3],
     })
 
@@ -58,28 +90,88 @@ describe('@klicker-uzh/grading', () => {
 
   it('should grade KPRIM questions correctly', () => {
     const points = gradeQuestionKPRIM({
-      responseCount: 6,
-      response: [0, 1, 2, 3, 4, 5],
+      responseCount: 4,
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: true },
+        { ix: 2, selected: true },
+        { ix: 3, selected: true },
+      ],
       solution: [0, 1, 3],
     })
-
     expect(points).toEqual(0)
 
     const points2 = gradeQuestionKPRIM({
-      responseCount: 6,
-      response: [0, 1, 3],
+      responseCount: 4,
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: false },
+        { ix: 2, selected: true },
+        { ix: 3, selected: false },
+      ],
       solution: [0, 1, 3],
     })
-
-    expect(points2).toEqual(1)
+    expect(points2).toEqual(0)
 
     const points3 = gradeQuestionKPRIM({
       responseCount: 4,
-      response: [0, 1, 3],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+      ],
+      solution: [0, 1, 3],
+    })
+    expect(points3).toEqual(1)
+
+    const points4 = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+      ],
       solution: [0, 1],
     })
+    expect(points4).toEqual(0.5)
 
-    expect(points3).toEqual(0.5)
+    const points5 = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: false },
+        { ix: 2, selected: false },
+        { ix: 3, selected: false },
+      ],
+      solution: [],
+    })
+    expect(points5).toEqual(1)
+
+    const points6 = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: true },
+        { ix: 3, selected: true },
+      ],
+      solution: [],
+    })
+    expect(points6).toEqual(0)
+
+    const points7 = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: false },
+        { ix: 2, selected: false },
+        { ix: 3, selected: false },
+      ],
+      solution: [],
+    })
+    expect(points7).toEqual(0.5)
   })
 
   it('should grade NUMERICAL questions correctly', () => {

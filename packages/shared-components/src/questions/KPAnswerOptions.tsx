@@ -68,7 +68,13 @@ export function KPAnswerOptions({
                     'h-9 w-9 border-slate-400 !p-0',
                     disabled && 'bg-accent disabled:opacity-90',
                     value?.[choice.ix] === true &&
-                      'bg-primary-20 border-primary-100 hover:bg-primary-20'
+                      'bg-primary-20 border-primary-100 hover:bg-primary-20 cursor-not-allowed',
+                    value?.[choice.ix] === false &&
+                      'cursor-not-allowed bg-white hover:bg-white',
+                    feedbacks?.[choice.ix]?.correct === true &&
+                      'border-2 border-green-600',
+                    feedbacks?.[choice.ix]?.correct === false &&
+                      'border-2 border-red-600'
                   ),
                 }}
                 onClick={() => onChange({ ...value, [choice.ix]: true })}
@@ -89,7 +95,13 @@ export function KPAnswerOptions({
                     'h-9 w-9 border-slate-400',
                     disabled && 'bg-accent disabled:opacity-90',
                     value?.[choice.ix] === false &&
-                      'bg-primary-20 border-primary-100 hover:bg-primary-20'
+                      'bg-primary-20 border-primary-100 hover:bg-primary-20 cursor-not-allowed',
+                    value?.[choice.ix] === true &&
+                      'cursor-not-allowed bg-white hover:bg-white',
+                    feedbacks?.[choice.ix]?.correct === false &&
+                      'border-2 border-green-600',
+                    feedbacks?.[choice.ix]?.correct === true &&
+                      'border-2 border-red-600'
                   ),
                 }}
                 onClick={() => onChange({ ...value, [choice.ix]: false })}

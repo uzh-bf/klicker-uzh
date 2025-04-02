@@ -103,6 +103,7 @@ function Index({ id }: { id: string }) {
       credentials: 'include',
     }
     if (QUESTION_GROUPS.CHOICES.includes(type)) {
+      // TODO
       requestOptions = {
         ...requestOptions,
         body: JSON.stringify({

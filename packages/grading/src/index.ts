@@ -2,7 +2,7 @@ import { isDeepEqual, toLowerCase } from 'remeda'
 
 interface GradeQuestionChoicesArgs {
   responseCount: number
-  response: number[]
+  response: { ix: number; selected: boolean }[]
   solution: number[]
 }
 
@@ -14,7 +14,12 @@ function hammingDistance({
 }: GradeQuestionChoicesArgs) {
   const baseArr = new Array(responseCount).fill(0)
 
-  const responseArr = baseArr.map((_, ix) => (response.includes(ix) ? 1 : 0))
+  const selectedChoiceIxs = response
+    .filter((choice) => choice.selected)
+    .map((choice) => choice.ix)
+  const responseArr = baseArr.map((_, ix) =>
+    selectedChoiceIxs.includes(ix) ? 1 : 0
+  )
   const solutionArr = baseArr.map((_, ix) => (solution.includes(ix) ? 1 : 0))
 
   let distance = 0
@@ -30,7 +35,11 @@ export function gradeQuestionSC({
 }: GradeQuestionChoicesArgs): number | null {
   if (!solution || solution.length === 0) return null
 
-  if (isDeepEqual(response, solution)) return 1
+  const selectedChoiceIxs = response
+    .filter((choice) => choice.selected)
+    .map((choice) => choice.ix)
+
+  if (isDeepEqual(selectedChoiceIxs, solution)) return 1
 
   return 0
 }
@@ -58,7 +67,7 @@ export function gradeQuestionKPRIM({
   response,
   solution,
 }: GradeQuestionChoicesArgs): number | null {
-  if (!solution) return null
+  if (solution === null || typeof solution === 'undefined') return null
 
   const distance = hammingDistance({
     responseCount,

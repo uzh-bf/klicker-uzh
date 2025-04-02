@@ -524,6 +524,16 @@ type ChoicesInstanceEvaluation {
   xpAwarded: Int
 }
 
+input ChoicesResponse {
+  ix: Int!
+  selected: Boolean!
+}
+
+type ChoicesResponseObject {
+  ix: Int!
+  selected: Boolean!
+}
+
 type ClassAchievementInstance {
   id: Int!
 }
@@ -1073,7 +1083,7 @@ type GroupActivityClueInstance {
 
 type GroupActivityDecision {
   caseStudyResponse: [SingleQuestionResponseCaseStudyCase!]
-  choicesResponse: [Int!]
+  choicesResponse: [ChoicesResponseObject!]
   contentResponse: Boolean
   freeTextResponse: String
   instanceId: Int!
@@ -1953,7 +1963,7 @@ enum ResponseCorrectnessType {
 
 input ResponseInput {
   assessment: [CaseStudyCaseResponse!]
-  choices: [Int!]
+  choices: [ChoicesResponse!]
   selection: [Int!]
   value: String
 }
@@ -2088,7 +2098,7 @@ type SingleQuestionResponseCaseStudyItem {
 }
 
 type SingleQuestionResponseChoices {
-  choices: [Int!]!
+  choices: [ChoicesResponseObject!]!
 }
 
 type SingleQuestionResponseContent {
@@ -2143,7 +2153,7 @@ enum StackFeedbackStatus {
 
 input StackResponseInput {
   caseStudyResponse: [CaseStudyCaseResponse!]
-  choicesResponse: [Int!]
+  choicesResponse: [ChoicesResponse!]
   contentReponse: Boolean
   flashcardResponse: FlashcardCorrectnessType
   freeTextResponse: String

@@ -15,6 +15,7 @@ import StudentElement, {
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
+import { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -181,7 +182,7 @@ function ElementStack({
                 type: elementType,
                 response: storedChoices.reduce<Record<number, boolean>>(
                   (choiceAcc, choice) => {
-                    choiceAcc[choice] = true
+                    choiceAcc[choice.ix] = true
                     return choiceAcc
                   },
                   {}
@@ -193,15 +194,17 @@ function ElementStack({
               elementType === ElementType.Kprim &&
               evaluation.__typename === 'ChoicesInstanceEvaluation'
             ) {
-              const storedChoices = evaluation.lastResponse.choices
+              const storedChoicesIxs = evaluation.lastResponse.choices
+                .filter((choice) => choice.selected)
+                .map((choice) => choice.ix)
               acc[evaluation.instanceId] = {
                 ...commonAttributes,
                 type: elementType,
                 response: {
-                  0: storedChoices.includes(0),
-                  1: storedChoices.includes(1),
-                  2: storedChoices.includes(2),
-                  3: storedChoices.includes(3),
+                  0: storedChoicesIxs.includes(0),
+                  1: storedChoicesIxs.includes(1),
+                  2: storedChoicesIxs.includes(2),
+                  3: storedChoicesIxs.includes(3),
                 },
               }
 
@@ -462,9 +465,14 @@ function ElementStack({
                       value.type === ElementType.Kprim
                     ) {
                       // convert the solution objects into integer lists
-                      const responseList = Object.entries(value.response!)
+                      const responseList: ChoicesResponse[] = Object.entries(
+                        value.response!
+                      )
                         .filter(([, value]) => value)
-                        .map(([key]) => parseInt(key))
+                        .map(([key, value]) => ({
+                          ix: parseInt(key),
+                          selected: value ?? false,
+                        }))
 
                       return {
                         instanceId: parseInt(instanceId),
