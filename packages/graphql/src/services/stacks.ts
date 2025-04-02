@@ -1484,8 +1484,11 @@ export function evaluateChoicesAnswerCorrectness({
 }) {
   if (
     !('choices' in response) ||
-    !response.choices ||
-    response.choices.length === 0
+    response.choices === null ||
+    typeof response.choices === 'undefined' ||
+    ((elementData.type === ElementType.SC ||
+      elementData.type === ElementType.MC) &&
+      response.choices.length === 0)
   ) {
     return null
   }
@@ -1645,8 +1648,8 @@ export function updateChoicesResults({
 
   if (
     !('choices' in response) ||
-    !response.choices ||
-    response.choices.length === 0
+    response.choices === null ||
+    typeof response.choices === 'undefined'
   ) {
     return { results: results, modified: false }
   }
