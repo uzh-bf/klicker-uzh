@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.46](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.45...v3.3.0-alpha.46) (2025-04-02)
+
+
+### Bug Fixes
+
+* ensure that KPRIM questions are also accepted with all-wrong answer options ([#4599](https://github.com/uzh-bf/klicker-uzh/issues/4599)) ([abe263c](https://github.com/uzh-bf/klicker-uzh/commit/abe263cbba04cd6b16490af244eb783f6ac5ce8c))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** automatically load template inputs and add option to reset inputs ([#4596](https://github.com/uzh-bf/klicker-uzh/issues/4596)) ([a2f23a3](https://github.com/uzh-bf/klicker-uzh/commit/a2f23a3e3baa838b26e5528b20cb6ef65fe391c5))
+* **cypress:** replace repetitive element creation in UI with direct database interations during e2e testing ([#4597](https://github.com/uzh-bf/klicker-uzh/issues/4597)) ([b82b75b](https://github.com/uzh-bf/klicker-uzh/commit/b82b75b7da0d7bbe5adf5e987e533224eb43f897))
+
 ## [3.3.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.44...v3.3.0-alpha.45) (2025-03-31)
 
 
