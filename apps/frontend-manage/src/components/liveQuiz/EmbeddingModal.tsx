@@ -4,6 +4,7 @@ import {
   ElementInstance,
   GetLiveQuizHmacDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, Modal, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -11,34 +12,21 @@ import { useState } from 'react'
 
 function LazyHMACLink({
   quizId,
+  hmac,
   params,
   identifier,
-  skipQuery = false,
 }: {
   quizId: string
+  hmac: string
   params: string
   identifier: string
-  skipQuery?: boolean
 }) {
-  const quizHMAC = useQuery(GetLiveQuizHmacDocument, {
-    variables: {
-      id: quizId,
-    },
-    skip: skipQuery,
-  })
-
-  if (quizHMAC.loading || !quizHMAC.data?.liveQuizHMAC) {
-    return <></>
-  }
-
   const link = `${
     process.env.NEXT_PUBLIC_MANAGE_URL
-  }/quizzes/${quizId}/evaluation?hmac=${quizHMAC.data?.liveQuizHMAC}${
-    params ? `&${params}` : ''
-  }`
+  }/quizzes/${quizId}/evaluation?hmac=${hmac}${params ? `&${params}` : ''}`
 
   return (
-    <div className="flex max-w-full flex-row items-center justify-between gap-3 rounded bg-slate-100 px-2 py-1">
+    <div className="bg-accent flex max-w-full flex-row items-center justify-between gap-3 rounded px-2 py-1">
       <Link
         href={link}
         target="_blank"
@@ -77,67 +65,88 @@ function EmbeddingModal({
   elements,
 }: EmbeddingModalProps) {
   const t = useTranslations()
-
   const [showSolution, setShowSolution] = useState(false)
+  const [showExplanation, setShowExplanation] = useState(false)
+  const { data, loading } = useQuery(GetLiveQuizHmacDocument, {
+    variables: {
+      id: quizId,
+    },
+    skip: !open,
+  })
 
   return (
     <Modal
       title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
       open={open}
       onClose={onClose}
-      className={{ content: 'h-2/3' }}
-      hideCloseButton
+      className={{ content: 'max-h-[calc(100%-3rem)]' }}
       onPrimaryAction={
         <Button onClick={onClose} data={{ cy: 'close-embedding-modal' }}>
           <Button.Label>{t('shared.generic.close')}</Button.Label>
         </Button>
       }
     >
-      <div className="mb-4">
+      <div className="mb-4 rounded-md border py-2 pl-1 pr-2">
         <Switch
           label={t('manage.evaluation.showSolution')}
           checked={showSolution}
           onCheckedChange={(val) => setShowSolution(val)}
         />
-      </div>
-      <div className="mb-4">
-        <div className="w-30 font-bold">{t('shared.generic.evaluation')}</div>
-        <LazyHMACLink
-          quizId={quizId}
-          params={``}
-          identifier="generic-evaluation"
-          skipQuery={!open}
+        <div className="mb-3 pl-[3.75rem] text-sm">
+          {t('manage.evaluation.showSolutionInfo')}
+        </div>
+        <Switch
+          label={t('manage.evaluation.showExplanation')}
+          checked={showExplanation}
+          onCheckedChange={(val) => setShowExplanation(val)}
         />
-      </div>
-      <div className="flex flex-col gap-2">
-        {elements?.map((element, ix) => {
-          return (
-            <div key={element.id}>
-              <div className="font-bold">
-                {ix + 1}{' '}
-                {element.elementData.name.length > 25
-                  ? `${element.elementData.name.substring(0, 25)}...`
-                  : element.elementData.name}
-              </div>
-              <LazyHMACLink
-                quizId={quizId}
-                params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}`}
-                identifier={`question-${ix}`}
-              />
-            </div>
-          )
-        })}
-        <div>
-          <div className="w-30 font-bold">
-            {t('shared.generic.leaderboard')}:
-          </div>
-          <LazyHMACLink
-            quizId={quizId}
-            params={`leaderboard=true&hideControls=true`}
-            identifier={`leaderboard`}
-          />
+        <div className="pl-[3.75rem] text-sm">
+          {t('manage.evaluation.showExplanationInfo')}
         </div>
       </div>
+      {loading || !data?.liveQuizHMAC ? (
+        <Loader />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="w-30 font-bold">
+              {t('shared.generic.evaluation')}
+            </div>
+            <LazyHMACLink
+              quizId={quizId}
+              hmac={data.liveQuizHMAC!}
+              params={``}
+              identifier="generic-evaluation"
+            />
+          </div>
+          {elements?.map((element, ix) => {
+            return (
+              <div key={element.id}>
+                <div className="line-clamp-1 font-bold">
+                  {ix + 1} {element.elementData.name}
+                </div>
+                <LazyHMACLink
+                  quizId={quizId}
+                  hmac={data.liveQuizHMAC!}
+                  params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
+                  identifier={`question-${ix}`}
+                />
+              </div>
+            )
+          })}
+          <div>
+            <div className="w-30 font-bold">
+              {t('shared.generic.leaderboard')}:
+            </div>
+            <LazyHMACLink
+              quizId={quizId}
+              hmac={data.liveQuizHMAC!}
+              params={`leaderboard=true&hideControls=true`}
+              identifier={`leaderboard`}
+            />
+          </div>
+        </div>
+      )}
     </Modal>
   )
 }

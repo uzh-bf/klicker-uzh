@@ -7,7 +7,6 @@ import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import Leaderboard, {
   LeaderboardCombinedEntry,
 } from '@klicker-uzh/shared-components/src/Leaderboard'
-import useEvaluationInitialization from '@lib/hooks/useEvaluationInitialization'
 import { useSessionStorage } from '@uidotdev/usehooks'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -18,6 +17,8 @@ import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
 import { useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
+import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
 import ElementEvaluation from './ElementEvaluation'
 import EvaluationFooter from './EvaluationFooter'
 import EvaluationUnavailableNotification from './EvaluationUnavailableNotification'
@@ -71,16 +72,26 @@ function ActivityEvaluation({
 
   const instanceResults = stacks.flatMap((stack) => stack.instances)
 
-  // automatically switch to correct instance and use correct settings depending on URL params
+  // automatically switch to correct instance
   useEvaluationInitialization({
     setActiveInstance,
     setActiveStack,
-    setShowSolution,
     questionIx: router.query.questionIx as string | null,
     showLeaderboard: router.query.leaderboard === 'true',
-    showSolution: router.query.showSolution === 'true',
     missingInstanceResults: instanceResults.length === 0,
     type,
+  })
+
+  // automatically use correct settings depending on URL params
+  useEvaluationSettingsInitialization({
+    setShowSolution,
+    setShowExplanation,
+    paramsLoaded:
+      typeof router.query.questionIx !== 'undefined' &&
+      parseInt(router.query.questionIx as string) === activeInstance,
+    showSolution: router.query.showSolution === 'true',
+    showExplanation: router.query.showExplanation === 'true',
+    activeInstance,
   })
 
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
