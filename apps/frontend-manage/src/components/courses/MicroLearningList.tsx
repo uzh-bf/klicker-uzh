@@ -31,6 +31,8 @@ function MicroLearningList({
     <div className="flex w-full flex-col items-end">
       <div className="flex flex-row gap-2">
         <QRCodePopover
+          triggerStyle="basic"
+          triggerText={t('manage.general.qrCode')}
           relHref={`/course/${courseId}/microLearnings`}
           data={{ cy: `qr-link-practice-quiz-list` }}
         />

@@ -11,9 +11,15 @@ import Link from 'next/link'
 import QR from '~/pages/qr/[...args]'
 
 function QRCodePopover({
+  triggerStyle,
+  triggerText,
+  infoComponent,
   relHref,
   data,
 }: {
+  triggerStyle: 'basic' | 'button'
+  triggerText: string
+  infoComponent?: React.ReactNode
   relHref: string
   data?: { cy?: string; test?: string }
 }) {
@@ -21,11 +27,20 @@ function QRCodePopover({
 
   return (
     <Popover>
-      <PopoverTrigger className="hover:bg-accent text-primary-100 mb-1 flex flex-row items-center gap-2.5 rounded px-2 py-0 text-sm">
-        <FontAwesomeIcon icon={faQrcode} />
-        <div>{t('manage.general.qrCode')}</div>
-      </PopoverTrigger>
+      {triggerStyle === 'basic' && (
+        <PopoverTrigger className="hover:bg-accent text-primary-100 mb-1 flex flex-row items-center gap-2.5 rounded px-2 py-0 text-sm">
+          <FontAwesomeIcon icon={faQrcode} />
+          <div>{triggerText}</div>
+        </PopoverTrigger>
+      )}
+      {triggerStyle === 'button' && (
+        <PopoverTrigger className="hover:bg-accent border-input flex h-8 flex-row items-center gap-2.5 rounded-md border px-3 py-0">
+          <FontAwesomeIcon icon={faQrcode} />
+          <div>{triggerText}</div>
+        </PopoverTrigger>
+      )}
       <PopoverContent className="w-max">
+        {infoComponent}
         <QR
           className={{
             title: 'mt-0 w-80 text-center text-sm',
