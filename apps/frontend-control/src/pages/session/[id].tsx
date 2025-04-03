@@ -233,7 +233,7 @@ function RunningLiveQuiz() {
                 )
               }}
               className={{
-                root: 'bg-uzh-red-100 float-right text-white',
+                root: 'bg-uzh-red-100 hover:bg-uzh-red-100 float-right text-white',
               }}
               data={{ cy: 'end-live-quiz' }}
             >
