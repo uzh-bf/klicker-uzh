@@ -3197,6 +3197,7 @@ export async function respondToElementStack(
     })
 
     if (
+      !isOwner &&
       stack?.microLearning &&
       (stack.elements.some((element) => element.responses.length > 0) ||
         dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
