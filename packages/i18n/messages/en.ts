@@ -118,6 +118,7 @@ export default {
       points: 'Points',
       title: 'KlickerUZH',
       send: 'Send',
+      next: 'Next',
       submit: 'Submit',
       save: 'Save',
       start: 'Start',
@@ -1349,7 +1350,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
-        'Live quizzes can only contain single choice, multiple choice, kprim, numerical, free-text, and selection questions.',
+        'Live quizzes support all question types as well as content elements. Flashcards cannot be used in live quizzes.',
       liveQuizTimeRestriction: 'Please enter a valid time restriction.',
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',

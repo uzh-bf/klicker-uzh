@@ -335,6 +335,10 @@ async function getCachedBlockResults({
         assessments,
         total: parseInt(results.participants),
       } as ElementResultsCaseStudy
+    } else if (instance.elementType === ElementType.CONTENT) {
+      anonymousResults = {
+        total: parseInt(results.participants),
+      } as ElementResultsChoices
     }
 
     instanceResults[instance.id] = {
@@ -1295,6 +1299,14 @@ export async function activateLiveQuizBlock(
         })
         break
       }
+
+      case ElementType.CONTENT: {
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, commonInfo)
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+        break
+      }
     }
   })
 
@@ -1588,7 +1600,8 @@ export async function endLiveQuiz(
       const awardAchievements = quiz.blocks.some(
         (block) =>
           block.elements.some((instance) => {
-            return 'hasSampleSolution' in instance.elementData.options
+            return instance.elementType !== ElementType.CONTENT &&
+              'hasSampleSolution' in instance.elementData.options
               ? (instance.elementData.options.hasSampleSolution ?? false)
               : false
           }) &&
@@ -2115,10 +2128,6 @@ export async function getLiveQuizEvaluation(
     | (ElementBlock & { elements: ElementInstance[] })
     | undefined
   if (liveQuiz.activeBlockId && liveQuiz.activeBlock) {
-    const activeInstanceIds = liveQuiz.activeBlock.elements.map(
-      (instance) => instance.id
-    )
-
     const cachedResults = await getCachedBlockResults({
       ctx,
       activeBlock: liveQuiz.activeBlock,
