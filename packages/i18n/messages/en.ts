@@ -1888,6 +1888,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
       showExplanation: 'Show explanation',
+      showSolutionInfo:
+        'This option allows you to pre-select whether or not the sample solution should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
+      showExplanationInfo:
+        'This option allows you to pre-select whether or not the explanation (if captured) should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
       correctSolutionRanges: 'Correct solution ranges',

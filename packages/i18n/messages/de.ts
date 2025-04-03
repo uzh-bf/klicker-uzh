@@ -1919,6 +1919,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Total Teilnehmende: {number} ({anonymous} anonym)',
       showSolution: 'Lösung anzeigen',
       showExplanation: 'Erklärung anzeigen',
+      showSolutionInfo:
+        'Diese Option ermöglicht es Ihnen, vorab auszuwählen, ob die Musterlösung auf der eingebetteten Auswertungsansicht angezeigt werden soll, sobald Sie die entsprechende Seite oder Folie öffnen. Diese Einstellung kann geändert werden, sobald die entsprechende Ansicht geöffnet wurde.',
+      showExplanationInfo:
+        'Diese Option ermöglicht es Ihnen, vorab auszuwählen, ob die Erklärung (falls erfasst) auf der eingebetteten Auswertungsansicht angezeigt werden soll, sobald Sie die entsprechende Seite oder Folie öffnen. Diese Einstellung kann geändert werden, sobald die entsprechende Ansicht geöffnet wurde.',
       fontSize: 'Schriftgrösse',
       validSolutionRange: 'Erlaubter Antwortbereich',
       correctSolutionRanges: 'Korrekte Lösungsbereiche',
