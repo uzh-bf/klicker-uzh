@@ -43,14 +43,14 @@ function useEvaluationBarChartData({
           xLabel: t('manage.evaluation.answerNotRemembered'),
         },
         {
-          count: results.incorrectCount,
+          count: results.partialCount,
           labelIn:
-            results.incorrectCount / results.totalAnswers > SMALL_BAR_THRESHOLD
-              ? results.incorrectCount
+            results.partialCount / results.totalAnswers > SMALL_BAR_THRESHOLD
+              ? results.partialCount
               : undefined,
           labelOut:
-            results.incorrectCount / results.totalAnswers <= SMALL_BAR_THRESHOLD
-              ? results.incorrectCount
+            results.partialCount / results.totalAnswers <= SMALL_BAR_THRESHOLD
+              ? results.partialCount
               : undefined,
           xLabel: t('manage.evaluation.answerPartiallyRemembered'),
         },
