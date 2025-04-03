@@ -28,13 +28,21 @@ function QRCodePopover({
   return (
     <Popover>
       {triggerStyle === 'basic' && (
-        <PopoverTrigger className="hover:bg-accent text-primary-100 mb-1 flex flex-row items-center gap-2.5 rounded px-2 py-0 text-sm">
+        <PopoverTrigger
+          className="hover:bg-accent text-primary-100 mb-1 flex flex-row items-center gap-2.5 rounded px-2 py-0 text-sm"
+          data-cy={data?.cy}
+          data-test={data?.test}
+        >
           <FontAwesomeIcon icon={faQrcode} />
           <div>{triggerText}</div>
         </PopoverTrigger>
       )}
       {triggerStyle === 'button' && (
-        <PopoverTrigger className="hover:bg-accent border-input flex h-8 flex-row items-center gap-2.5 rounded-md border px-3 py-0">
+        <PopoverTrigger
+          className="hover:bg-accent border-input flex h-8 flex-row items-center gap-2.5 rounded-md border px-3 py-0"
+          data-cy={data?.cy}
+          data-test={data?.test}
+        >
           <FontAwesomeIcon icon={faQrcode} />
           <div>{triggerText}</div>
         </PopoverTrigger>
@@ -50,7 +58,7 @@ function QRCodePopover({
           width={100}
         />
         <Link passHref href={`/qr${relHref}`} target="_blank">
-          <Button fluid primary className={{ root: 'mt-2' }} data={data}>
+          <Button fluid primary className={{ root: 'mt-2' }}>
             <Button.Label>{t('manage.general.presentQrCode')}</Button.Label>
           </Button>
         </Link>

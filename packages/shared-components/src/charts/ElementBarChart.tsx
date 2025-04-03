@@ -28,6 +28,7 @@ interface ElementBarChartProps {
   showExplanation: boolean
   textSize: {
     legend: string
+    legendMd: string
     text: string
     textLg: string
     textXl: string
@@ -47,6 +48,7 @@ function ElementBarChart({
     ElementType.Mc,
     ElementType.Kprim,
     ElementType.Numerical,
+    ElementType.Flashcard,
   ]
 
   const labeledData = useEvaluationBarChartData({ instance })
@@ -84,7 +86,12 @@ function ElementBarChart({
                 fill: 'black',
                 offset: 30,
                 stroke: 'black',
-                style: { fontSize: textSize.legend },
+                style: {
+                  fontSize:
+                    instance.__typename === 'FlashcardActivityEvaluationData'
+                      ? textSize.legendMd
+                      : textSize.legend,
+                },
               }}
             />
             <YAxis
@@ -142,6 +149,13 @@ function ElementBarChart({
                     key={index}
                   />
                 ))}
+              {instance.__typename === 'FlashcardActivityEvaluationData' && (
+                <>
+                  <Cell fill="#cc0000" key={0} />
+                  <Cell fill="#ff9900" key={1} />
+                  <Cell fill="#00b20a" key={2} />
+                </>
+              )}
             </Bar>
           </BarChartRecharts>
         </ResponsiveContainer>
