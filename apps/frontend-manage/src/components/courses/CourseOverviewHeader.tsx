@@ -90,7 +90,7 @@ function CourseOverviewHeader({
             />
           }
           relHref={`/course/${course.id}/join?pin=${pinCode}`}
-          data={{ cy: `course-join-button` }}
+          data={{ cy: `course-join-qr-code` }}
         />
         {user?.publicPreview ? (
           <Button
