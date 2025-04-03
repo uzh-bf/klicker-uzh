@@ -1973,10 +1973,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningEvaluation: 'Microlearning Evaluation',
       chartTypeNotSupported:
         'Derzeit wird der ausgewählte Diagrammtyp für diesen Elementtyp nicht unterstützt.',
-      noFlashcardEvaluation:
-        'Derzeit ist keine Auswertungsansicht für Flashcards in KlickerUZH-Aktivitäten verfügbar.',
-      noContentEvaluation:
-        'Derzeit ist keine Auswertungsansicht für Inhaltselemente in KlickerUZH-Aktivitäten verfügbar.',
       histogramNotSupported:
         'Histogramme werden für diesen Fragetyp nicht unterstützt.',
       criterionXAxis: 'Kriterium X-Achse',
@@ -1988,6 +1984,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie können entweder mehrere Fälle oder mehrere Fallstudien-Elemente auswählen, um die entsprechenden Resultate zu vergleichen. Eine Kombination von mehreren Fällen und mehreren Fallstudien-Elementen kann nicht dargestellt werden.',
       caseStudySelectCasesItemsCriteria:
         'Bitte wählen Sie mindestens einen Fall, ein Fallstudien-Element und Kriterien aus, um eine Auswertung anzuzeigen.',
+      answerNotRemembered: 'Antwort nicht bekannt',
+      answerPartiallyRemembered: 'Antwort teilweise bekannt',
+      answerRemembered: 'Antwort bekannt',
+      frontSide: 'Vorderseite',
+      backSide: 'Rückseite',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',

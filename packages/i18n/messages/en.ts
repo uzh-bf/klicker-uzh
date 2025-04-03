@@ -1942,10 +1942,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microLearningEvaluation: 'Microlearning Evaluation',
       chartTypeNotSupported:
         'At the moment, the selected chart type is not supported for this element type.',
-      noFlashcardEvaluation:
-        'Currently, no evaluation view is available for flashcards in KlickerUZH activities.',
-      noContentEvaluation:
-        'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
       histogramNotSupported:
         'Histograms are not supported for this question type.',
       criterionXAxis: 'Criterion X-Axis',
@@ -1957,6 +1953,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You can either select multiple cases or multiple case study elements to compare the corresponding results. A combination of multiple cases and multiple case study elements cannot be displayed.',
       caseStudySelectCasesItemsCriteria:
         'Please select at least one case, one case study item and criteria to display the evaluation.',
+      answerNotRemembered: 'Answer not remembered',
+      answerPartiallyRemembered: 'Answer partially remembered',
+      answerRemembered: 'Answer remembered',
+      frontSide: 'Front Side',
+      backSide: 'Back Side',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

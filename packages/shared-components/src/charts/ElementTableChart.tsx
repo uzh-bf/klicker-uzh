@@ -42,6 +42,7 @@ function ElementTableChart({
     ElementType.Numerical,
     ElementType.FreeText,
     ElementType.Selection,
+    ElementType.Flashcard,
   ]
 
   const columns = useEvaluationTableColumns({
