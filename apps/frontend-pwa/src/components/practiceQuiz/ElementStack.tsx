@@ -420,11 +420,8 @@ function ElementStack({
           primary
           loading={submittingResponse}
           disabled={
-            !previewOnly &&
-            (activityExpired ||
-              Object.values(studentResponse).some(
-                (response) => !response.valid
-              ))
+            (!previewOnly && activityExpired) ||
+            Object.values(studentResponse).some((response) => !response.valid)
           }
           className={{ root: 'float-right mt-4' }}
           onClick={async () => {
