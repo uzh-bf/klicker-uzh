@@ -141,6 +141,15 @@ function Index({ id }: { id: string }) {
           response: { assessment: answer },
         }),
       }
+    } else if (type === ElementType.Content) {
+      requestOptions = {
+        ...requestOptions,
+        body: JSON.stringify({
+          instanceId: instanceId,
+          sessionId: id,
+          response: { read: true },
+        }),
+      }
     } else {
       return null
     }

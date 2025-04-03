@@ -119,6 +119,7 @@ export default {
       points: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
+      next: 'Weiter',
       submit: 'Absenden',
       save: 'Speichern',
       start: 'Starten',
@@ -1356,7 +1357,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveQuizTypes:
-        'Live Quizzes können nur Single-Choice, Multiple-Choice, Kprim, Numerische, Freitext, und Auswahl-Fragen enthalten.',
+        'Live Quizzes unterstützen alle Fragetypen, sowie Inhaltelemente. Lernkarten können nicht in Live Quizzes genutzt werden.',
       liveQuizTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
       liveQuizMinQuestions:
