@@ -29,6 +29,8 @@ interface CSEvaluationProps {
   chartType: ChartType
   showSolution: boolean
   showExplanation: boolean
+  hasSolution: boolean
+  hasExplanation: boolean
   type: ActivityEvaluationType
 }
 
@@ -39,6 +41,8 @@ function CSEvaluation({
   chartType,
   showSolution,
   showExplanation,
+  hasSolution,
+  hasExplanation,
   type,
 }: CSEvaluationProps) {
   const t = useTranslations()
@@ -98,9 +102,13 @@ function CSEvaluation({
         </Tabs.TabList>
         <Tabs.TabContent value="instructions" className={{ root: 'px-0 py-0' }}>
           <QuestionCollapsible
-            activeInstance={activeInstance}
             content={instanceEvaluation.content}
             proseSize={textSize.prose}
+            maxExpandedHeight={
+              hasSolution && hasExplanation
+                ? 'max-h-[calc(100vh-10.35rem)]'
+                : 'max-h-[calc(100vh-10rem)]'
+            }
           />
         </Tabs.TabContent>
         {instanceEvaluation.cases.map((caseItem) => (
@@ -110,9 +118,13 @@ function CSEvaluation({
             className={{ root: 'px-0 py-0' }}
           >
             <QuestionCollapsible
-              activeInstance={activeInstance}
               content={caseItem.description}
               proseSize={textSize.prose}
+              maxExpandedHeight={
+                hasSolution && hasExplanation
+                  ? 'max-h-[calc(100vh-10.35rem)]'
+                  : 'max-h-[calc(100vh-10rem)]'
+              }
             />
           </Tabs.TabContent>
         ))}
