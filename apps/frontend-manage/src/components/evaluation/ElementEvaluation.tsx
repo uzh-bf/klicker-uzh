@@ -110,6 +110,7 @@ function ElementEvaluation({
         {/* content included in case study evaluation component */}
         {currentInstance.__typename === 'CaseStudyActivityEvaluationData' && (
           <CSEvaluation
+            key={currentInstance.id}
             instanceEvaluation={currentInstance}
             activeInstance={activeInstance}
             textSize={textSize}
@@ -125,6 +126,7 @@ function ElementEvaluation({
         {/* content included in flashcard evaluation component */}
         {currentInstance.__typename === 'FlashcardActivityEvaluationData' && (
           <FCEvaluation
+            key={currentInstance.id}
             evaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
@@ -133,7 +135,11 @@ function ElementEvaluation({
 
         {/* content included in content evaluation component */}
         {currentInstance.__typename === 'ContentActivityEvaluationData' && (
-          <CTEvaluation evaluation={currentInstance} textSize={textSize} />
+          <CTEvaluation
+            key={currentInstance.id}
+            evaluation={currentInstance}
+            textSize={textSize}
+          />
         )}
       </div>
     </div>
