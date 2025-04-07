@@ -119,8 +119,10 @@ model User {
   managedUserGroups         UserGroup[]         @relation("UserGroupOwner")
   managedCatalogCollections CatalogCollection[]
 
-  sharedObjects     Permission[] @relation("SharedObjects")
-  objectPermissions Permission[] @relation("ObjectPermissions")
+  directlySharedObjects Permission[]        @relation("DirectlySharedObjects")
+  sharedObjects         DerivedPermission[] @relation("SharedObjects")
+  requestedObjects      AccessRequest[]     @relation("RequestedObjects") // objects requested by this user
+  pendingRequests       AccessRequest[]     @relation("PendingRequests") // objects requested by other users (this user is OWNER / ADMIN)
 
   firstLogin Boolean @default(true)
 
