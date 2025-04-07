@@ -329,3 +329,47 @@ model CatalogCollection {
 }
 
 // #endregion
+
+// ----- AUDIT LOG -----
+// #region
+enum AuditLogType {
+    PERMISSION_GRANTED // granted direct permission
+    PERMISSION_REVOKED // revoked direct permission
+    PERMISSION_REQUESTED // requested direct permission
+    PERMISSION_DENIED // denied direct permission
+    PERMISSION_CONVERTED // converted derived permission to direct permission (through re-use of a corresponding object)
+}
+
+enum ObjectType {
+    CATALOG_COLLECTION
+    ANSWER_COLLECTION
+    ELEMENT
+    COURSE
+    LIVE_QUIZ
+    PRACTICE_QUIZ
+    MICRO_LEARNING
+    GROUP_ACTIVITY
+}
+
+model AuditLogEntry {
+    id   Int          @id @default(autoincrement())
+    type AuditLogType // type of the audit log entry
+
+    // object information
+    objectType ObjectType
+    objectId   String
+
+    // users / user groups involved in the action
+    sourceUserId      String  @db.Uuid // id of the user who performed the action
+    targetUserId      String? @db.Uuid // id of the user who was affected by the action (can be the same as sourceUserId)
+    targetUserGroupId Int? // id of the user group who was affected by the action (can include the source user)
+
+    // generic message containing more information on the action
+    message String
+
+    // timestamp of the action
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+// #endregion

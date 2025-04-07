@@ -1,0 +1,21 @@
+-- CreateEnum
+CREATE TYPE "AuditLogType" AS ENUM ('PERMISSION_GRANTED', 'PERMISSION_REVOKED', 'PERMISSION_REQUESTED', 'PERMISSION_DENIED', 'PERMISSION_CONVERTED');
+
+-- CreateEnum
+CREATE TYPE "ObjectType" AS ENUM ('CATALOG_COLLECTION', 'ANSWER_COLLECTION', 'ELEMENT', 'COURSE', 'LIVE_QUIZ', 'PRACTICE_QUIZ', 'MICRO_LEARNING', 'GROUP_ACTIVITY');
+
+-- CreateTable
+CREATE TABLE "AuditLogEntry" (
+    "id" SERIAL NOT NULL,
+    "type" "AuditLogType" NOT NULL,
+    "objectType" "ObjectType" NOT NULL,
+    "objectId" TEXT NOT NULL,
+    "sourceUserId" UUID NOT NULL,
+    "targetUserId" UUID,
+    "targetUserGroupId" INTEGER,
+    "message" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AuditLogEntry_pkey" PRIMARY KEY ("id")
+);
