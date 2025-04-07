@@ -36,7 +36,9 @@ model PracticeQuiz {
   performance             ActivityPerformance?
   progress                ActivityProgress?
 
-  permissions        Permission[]
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
@@ -191,7 +193,9 @@ model LiveQuiz {
   feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]
 
-  permissions        Permission[]
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
 
   templateInfo ActivityTemplate?
@@ -234,7 +238,9 @@ model MicroLearning {
   performance             ActivityPerformance?
   progress                ActivityProgress?
 
-  permissions        Permission[]
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
 
   startedCount   Int @default(0) // >= completedCount (at least one answer given to quiz)
@@ -331,7 +337,9 @@ model GroupActivity {
   clues             GroupActivityClue[]
   activityInstances GroupActivityInstance[]
 
-  permissions        Permission[]
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
   catalogAssignments CatalogCollectionAssignment[]
 
   templateInfo ActivityTemplate? // template information set for the corresponding publication status
