@@ -5,6 +5,7 @@ enum PermissionLevel {
     WRITE // edit access (no deletion, no sharing)
     EXECUTE // e.g. for live quizzes: only inspect evaluation
     ADMIN // e.g. admins can not only edit (= WRITE) but also change access rights
+    OWNER // (derived permissions only)
 }
 
 model UserGroup {
@@ -174,9 +175,9 @@ model DerivedPermission {
     id              Int             @id @default(autoincrement())
     permissionLevel PermissionLevel
 
-    // permission from which this derived permission was created
-    directPermission   Permission @relation(fields: [directPermissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    directPermissionId Int
+    // permission from which this derived permission was created (not required to allow storing owner permission also as derived permission)
+    directPermission   Permission? @relation(fields: [directPermissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    directPermissionId Int?
 
     // user or user group requesting access
     user   User   @relation("SharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -219,6 +220,15 @@ model DerivedPermission {
     @@unique([practiceQuizId, userId])
     @@unique([microLearningId, userId])
     @@unique([groupActivityId, userId])
+    // index on permission level and object id to efficiently retrieve all users with a specific access level to the object
+    @@index([catalogCollectionId, permissionLevel])
+    @@index([answerCollectionId, permissionLevel])
+    @@index([elementId, permissionLevel])
+    @@index([courseId, permissionLevel])
+    @@index([liveQuizId, permissionLevel])
+    @@index([practiceQuizId, permissionLevel])
+    @@index([microLearningId, permissionLevel])
+    @@index([groupActivityId, permissionLevel])
 }
 
 // #endregion

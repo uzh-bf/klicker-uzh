@@ -5,6 +5,9 @@
   - You are about to drop the column `permissionStatus` on the `Permission` table. All the data in the column will be lost.
 
 */
+-- AlterEnum
+ALTER TYPE "PermissionLevel" ADD VALUE 'OWNER';
+
 -- DropForeignKey
 ALTER TABLE "Permission" DROP CONSTRAINT "Permission_objectOwnerId_fkey";
 
@@ -41,7 +44,7 @@ CREATE TABLE "AccessRequest" (
 CREATE TABLE "DerivedPermission" (
     "id" SERIAL NOT NULL,
     "permissionLevel" "PermissionLevel" NOT NULL,
-    "directPermissionId" INTEGER NOT NULL,
+    "directPermissionId" INTEGER,
     "userId" UUID NOT NULL,
     "catalogCollectionId" UUID,
     "answerCollectionId" INTEGER,
@@ -135,6 +138,30 @@ CREATE UNIQUE INDEX "AccessRequest_microLearningId_userId_objectAdminOrOwnerId_k
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AccessRequest_groupActivityId_userId_objectAdminOrOwnerId_key" ON "AccessRequest"("groupActivityId", "userId", "objectAdminOrOwnerId");
+
+-- CreateIndex
+CREATE INDEX "DerivedPermission_catalogCollectionId_permissionLevel_idx" ON "DerivedPermission"("catalogCollectionId", "permissionLevel");
+
+-- CreateIndex
+CREATE INDEX "DerivedPermission_answerCollectionId_permissionLevel_idx" ON "DerivedPermission"("answerCollectionId", "permissionLevel");
+
+-- CreateIndex
+CREATE INDEX "DerivedPermission_elementId_permissionLevel_idx" ON "DerivedPermission"("elementId", "permissionLevel");
+
+-- CreateIndex
+CREATE INDEX "DerivedPermission_courseId_permissionLevel_idx" ON "DerivedPermission"("courseId", "permissionLevel");
+
+-- CreateIndex
+CREATE INDEX "DerivedPermission_liveQuizId_permissionLevel_idx" ON "DerivedPermission"("liveQuizId", "permissionLevel");
+
+-- CreateIndex
+CREATE INDEX "DerivedPermission_practiceQuizId_permissionLevel_idx" ON "DerivedPermission"("practiceQuizId", "permissionLevel");
+
+-- CreateIndex
+CREATE INDEX "DerivedPermission_microLearningId_permissionLevel_idx" ON "DerivedPermission"("microLearningId", "permissionLevel");
+
+-- CreateIndex
+CREATE INDEX "DerivedPermission_groupActivityId_permissionLevel_idx" ON "DerivedPermission"("groupActivityId", "permissionLevel");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "DerivedPermission_catalogCollectionId_userId_key" ON "DerivedPermission"("catalogCollectionId", "userId");

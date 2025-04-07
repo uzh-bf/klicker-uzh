@@ -49,20 +49,14 @@ export async function validateActivityPermissions(
     const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: { in: acceptedPermissionLevels },
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [...acceptedPermissionLevels, DB.PermissionLevel.OWNER],
             },
           },
-        ],
+        },
       },
     })
 
@@ -74,20 +68,14 @@ export async function validateActivityPermissions(
     const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: { in: acceptedPermissionLevels },
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [...acceptedPermissionLevels, DB.PermissionLevel.OWNER],
             },
           },
-        ],
+        },
       },
     })
 
@@ -99,20 +87,14 @@ export async function validateActivityPermissions(
     const microLearning = await ctx.prisma.microLearning.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: { in: acceptedPermissionLevels },
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [...acceptedPermissionLevels, DB.PermissionLevel.OWNER],
             },
           },
-        ],
+        },
       },
     })
 
@@ -124,20 +106,14 @@ export async function validateActivityPermissions(
     const groupActivity = await ctx.prisma.groupActivity.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: { in: acceptedPermissionLevels },
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [...acceptedPermissionLevels, DB.PermissionLevel.OWNER],
             },
           },
-        ],
+        },
       },
     })
 
@@ -163,7 +139,6 @@ export async function validateTemplateAccessible(
         include: {
           permissions: {
             where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
               userId: ctx.user.sub,
             },
           },
@@ -173,7 +148,6 @@ export async function validateTemplateAccessible(
                 include: {
                   permissions: {
                     where: {
-                      permissionStatus: DB.PermissionStatus.GRANTED,
                       userId: ctx.user.sub,
                     },
                   },
@@ -187,7 +161,6 @@ export async function validateTemplateAccessible(
         include: {
           permissions: {
             where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
               userId: ctx.user.sub,
             },
           },
@@ -197,7 +170,6 @@ export async function validateTemplateAccessible(
                 include: {
                   permissions: {
                     where: {
-                      permissionStatus: DB.PermissionStatus.GRANTED,
                       userId: ctx.user.sub,
                     },
                   },
@@ -211,7 +183,6 @@ export async function validateTemplateAccessible(
         include: {
           permissions: {
             where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
               userId: ctx.user.sub,
             },
           },
@@ -221,7 +192,6 @@ export async function validateTemplateAccessible(
                 include: {
                   permissions: {
                     where: {
-                      permissionStatus: DB.PermissionStatus.GRANTED,
                       userId: ctx.user.sub,
                     },
                   },
@@ -235,7 +205,6 @@ export async function validateTemplateAccessible(
         include: {
           permissions: {
             where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
               userId: ctx.user.sub,
             },
           },
@@ -245,7 +214,6 @@ export async function validateTemplateAccessible(
                 include: {
                   permissions: {
                     where: {
-                      permissionStatus: DB.PermissionStatus.GRANTED,
                       userId: ctx.user.sub,
                     },
                   },
@@ -355,19 +323,11 @@ export async function getActivityAnswerCollectionIds(
     const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
           },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-              },
-            },
-          },
-        ],
+        },
       },
       include: {
         blocks: {
@@ -393,19 +353,11 @@ export async function getActivityAnswerCollectionIds(
     const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
           },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-              },
-            },
-          },
-        ],
+        },
       },
       include: {
         stacks: {
@@ -431,19 +383,11 @@ export async function getActivityAnswerCollectionIds(
     const microLearning = await ctx.prisma.microLearning.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
           },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-              },
-            },
-          },
-        ],
+        },
       },
       include: {
         stacks: {
@@ -469,19 +413,11 @@ export async function getActivityAnswerCollectionIds(
     const groupActivity = await ctx.prisma.groupActivity.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
           },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-              },
-            },
-          },
-        ],
+        },
       },
       include: {
         stacks: {
@@ -588,19 +524,6 @@ export async function checkTemplateInfoAvailable(
       id: {
         in: answerCollectionIds,
       },
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-          },
-        },
-      ],
     },
     select: {
       id: true,
@@ -1039,6 +962,8 @@ export async function createActivityTemplate(
 
     return true
   }
+
+  // TODO: before every return type, update the derived permissions to include a new permission for the template owner
 }
 
 export async function deleteActivityTemplate(
@@ -1100,6 +1025,8 @@ export async function deleteActivityTemplate(
     return deletedGroupActivity.id
   }
 
+  // TODO: before every return, update the derived permissions (the ones derived from this template can be removed)
+
   return null
 }
 
@@ -1118,22 +1045,18 @@ export async function getTemplateInformation(
       where: {
         id: activityId,
         status: DB.PublicationStatus.TEMPLATE,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: {
-                  in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
-                },
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [
+                DB.PermissionLevel.WRITE,
+                DB.PermissionLevel.ADMIN,
+                DB.PermissionLevel.OWNER,
+              ],
             },
           },
-        ],
+        },
       },
       include: {
         templateInfo: true,
@@ -1151,22 +1074,18 @@ export async function getTemplateInformation(
     const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: {
-                  in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
-                },
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [
+                DB.PermissionLevel.WRITE,
+                DB.PermissionLevel.ADMIN,
+                DB.PermissionLevel.OWNER,
+              ],
             },
           },
-        ],
+        },
       },
       include: {
         templateInfo: true,
@@ -1184,22 +1103,18 @@ export async function getTemplateInformation(
     const microLearning = await ctx.prisma.microLearning.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: {
-                  in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
-                },
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [
+                DB.PermissionLevel.WRITE,
+                DB.PermissionLevel.ADMIN,
+                DB.PermissionLevel.OWNER,
+              ],
             },
           },
-        ],
+        },
       },
       include: {
         templateInfo: true,
@@ -1217,22 +1132,18 @@ export async function getTemplateInformation(
     const groupActivity = await ctx.prisma.groupActivity.findUnique({
       where: {
         id: activityId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: {
-                  in: [DB.PermissionLevel.WRITE, DB.PermissionLevel.ADMIN],
-                },
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [
+                DB.PermissionLevel.WRITE,
+                DB.PermissionLevel.ADMIN,
+                DB.PermissionLevel.OWNER,
+              ],
             },
           },
-        ],
+        },
       },
       include: {
         templateInfo: true,
@@ -1513,19 +1424,11 @@ export async function getMatchingUserElementsTemplate(
     where: {
       type: elementType,
       isDeleted: false,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
         },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-          },
-        },
-      ],
+      },
     },
     select: {
       id: true,
@@ -1575,19 +1478,11 @@ export async function checkTemplateElementExists(
   const element = await ctx.prisma.element.findFirst({
     where: {
       name,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
         },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-          },
-        },
-      ],
+      },
     },
   })
 
@@ -1692,19 +1587,11 @@ export async function createLiveQuizFromTemplate(
             const existingElement = await tx.element.findUnique({
               where: {
                 id: element.existingElementId,
-                OR: [
-                  {
-                    ownerId: ctx.user.sub,
+                permissions: {
+                  some: {
+                    userId: ctx.user.sub,
                   },
-                  {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
+                },
               },
               include: {
                 answerCollection: {
@@ -1828,7 +1715,7 @@ export async function createLiveQuizFromTemplate(
                   )
                 }
 
-                // otherwise, create new READ permission for the user on the answer collection
+                // otherwise, grant new direct READ permission for the user on the answer collection
                 await tx.permission.upsert({
                   where: {
                     answerCollectionId_userId: {
@@ -1838,7 +1725,6 @@ export async function createLiveQuizFromTemplate(
                   },
                   create: {
                     permissionLevel: DB.PermissionLevel.READ,
-                    permissionStatus: DB.PermissionStatus.GRANTED,
                     user: {
                       connect: { id: ctx.user.sub },
                     },
@@ -1846,9 +1732,7 @@ export async function createLiveQuizFromTemplate(
                       connect: { id: answerCollectionId },
                     },
                   },
-                  update: {
-                    permissionStatus: DB.PermissionStatus.GRANTED,
-                  },
+                  update: {},
                 })
               }
             }
@@ -1995,6 +1879,8 @@ export async function createLiveQuizFromTemplate(
             : undefined,
       },
     })
+
+    // TODO: trigger recomputation of the derived permissions for the new activity (here inside of the transaction)
 
     return quiz
   })
