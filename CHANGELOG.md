@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.47...v3.3.0-alpha.48) (2025-04-07)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that question collapsible is correctly updated on instance switch ([a636a23](https://github.com/uzh-bf/klicker-uzh/commit/a636a23ac5f13cf1d1f16f77672744ffd6773ebc))
+
 ## [3.3.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.46...v3.3.0-alpha.47) (2025-04-04)
 
 
