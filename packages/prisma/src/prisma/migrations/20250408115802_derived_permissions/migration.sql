@@ -45,6 +45,7 @@ CREATE TABLE "DerivedPermission" (
     "id" SERIAL NOT NULL,
     "permissionLevel" "PermissionLevel" NOT NULL,
     "directPermissionId" INTEGER,
+    "derived" BOOLEAN NOT NULL DEFAULT false,
     "userId" UUID NOT NULL,
     "catalogCollectionId" UUID,
     "answerCollectionId" INTEGER,

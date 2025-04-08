@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
 import type { ContextWithUser } from '../lib/context.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections
@@ -91,31 +92,39 @@ export async function createAnswerCollection(
     return null
   }
 
-  const newCollection = await ctx.prisma.answerCollection.create({
-    data: {
-      name,
-      description,
-      entries: {
-        create: answers.map((answer) => ({
-          value: answer,
-        })),
-      },
-      owner: {
-        connect: {
-          id: ctx.user.sub,
+  const newCollection = await ctx.prisma.$transaction(async (prisma) => {
+    const collection = await prisma.answerCollection.create({
+      data: {
+        name,
+        description,
+        entries: {
+          create: answers.map((answer) => ({
+            value: answer,
+          })),
+        },
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
         },
       },
-    },
-    include: {
-      _count: {
-        select: {
-          entries: true,
+      include: {
+        _count: {
+          select: {
+            entries: true,
+          },
         },
       },
-    },
-  })
+    })
 
-  // TODO: trigger recomputation of derived permissions (-> owner should get new one)
+    // trigger recomputation of derived permissions (-> owner should get new one)
+    await recomputeDerivedPermissions(
+      { answerCollectionId: collection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return collection
+  })
 
   return {
     ...newCollection,
@@ -713,9 +722,9 @@ export async function deleteAnswerCollection(
   // if there are any elements or templates still linked to the collection, revoke all unused permissions and then soft-delete the collection
   let updatedCollection: DB.AnswerCollection
   if (remainingLinkedElements > 0 || remainingLinkedTemplates > 0) {
-    updatedCollection = await ctx.prisma.$transaction(async (tx) => {
+    updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
       // ? Remove all access requests
-      await tx.accessRequest.deleteMany({
+      await prisma.accessRequest.deleteMany({
         where: {
           answerCollectionId: collectionId,
         },
@@ -723,21 +732,21 @@ export async function deleteAnswerCollection(
 
       // ? Revoke all direct permissions on the answer collection
       // only users with linked elements or templates should retain valid access --> stored in derived permissions
-      await tx.permission.deleteMany({
+      await prisma.permission.deleteMany({
         where: {
           answerCollectionId: collectionId,
         },
       })
 
       // ? Remove all catalog assignments
-      await tx.catalogCollectionAssignment.deleteMany({
+      await prisma.catalogCollectionAssignment.deleteMany({
         where: {
           answerCollectionId: collectionId,
         },
       })
 
       // ? Disconnect the owner from the answer collection
-      const updatedAnswerCollection = await tx.answerCollection.update({
+      const updatedAnswerCollection = await prisma.answerCollection.update({
         where: {
           id: collectionId,
         },
@@ -748,7 +757,12 @@ export async function deleteAnswerCollection(
         },
       })
 
-      // TODO: trigger recomputation of derived permissions (potentially removed derived permissions need to be re-added due to valid access to linked objects)
+      // trigger recomputation of all derived permissions for this answer collection object
+      // (required, since some users will retain derived access through linked elements)
+      await recomputeDerivedPermissions(
+        { answerCollectionId: updatedAnswerCollection.id },
+        prisma
+      )
 
       return updatedAnswerCollection
     })
@@ -872,13 +886,19 @@ export async function removeAnswerCollection(
     })
   } else {
     // otherwise, delete the sharing permission
-    await ctx.prisma.permission.delete({
-      where: {
-        id: permission.id,
-      },
-    })
+    await ctx.prisma.$transaction(async (prisma) => {
+      await prisma.permission.delete({
+        where: {
+          id: permission.id,
+        },
+      })
 
-    // TODO: trigger recomputation of derived permissions (combined transaction with the deletion above?)
+      // trigger recomputation of derived permissions
+      await recomputeDerivedPermissions(
+        { answerCollectionId: collectionId, userId: ctx.user.sub },
+        prisma
+      )
+    })
   }
 
   ctx.emitter.emit('invalidate', {

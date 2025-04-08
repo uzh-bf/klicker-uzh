@@ -179,6 +179,9 @@ model DerivedPermission {
     directPermission   Permission? @relation(fields: [directPermissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     directPermissionId Int?
 
+    // true if the permission is not based on a direct permission (user or user group), but derived from another object (e.g. element -> answer collection)
+    derived Boolean @default(false)
+
     // user or user group requesting access
     user   User   @relation("SharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     userId String @db.Uuid

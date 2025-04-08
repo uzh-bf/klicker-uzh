@@ -16,6 +16,7 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 import { manipulateQuestion } from './questions.js'
 import {
   getAnswerCollectionsElements,
@@ -1559,7 +1560,7 @@ export async function createLiveQuizFromTemplate(
   }
 
   // inside a prisma transaction, create all required elements, permissions and the activity
-  const newLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
+  const newLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
     const liveQuizContent: {
       blocks: {
         order: number
@@ -1584,7 +1585,7 @@ export async function createLiveQuizFromTemplate(
             }
 
             // find existing element in user account
-            const existingElement = await tx.element.findUnique({
+            const existingElement = await prisma.element.findUnique({
               where: {
                 id: element.existingElementId,
                 permissions: {
@@ -1704,7 +1705,7 @@ export async function createLiveQuizFromTemplate(
                     DB.PermissionLevel.ADMIN,
                   ],
                 },
-                { ...ctx, prisma: tx }
+                { ...ctx, prisma }
               )
 
               if (!valid) {
@@ -1716,7 +1717,7 @@ export async function createLiveQuizFromTemplate(
                 }
 
                 // otherwise, grant new direct READ permission for the user on the answer collection
-                await tx.permission.upsert({
+                await prisma.permission.upsert({
                   where: {
                     answerCollectionId_userId: {
                       answerCollectionId,
@@ -1758,7 +1759,7 @@ export async function createLiveQuizFromTemplate(
             // create a new element based on the provided data
             const createdElement = await manipulateQuestion(
               { ...values, options },
-              { ...ctx, prisma: tx }
+              { ...ctx, prisma }
             )
 
             // throw an error if the element could not be created
@@ -1772,7 +1773,7 @@ export async function createLiveQuizFromTemplate(
 
             // TODO: make this a bit more efficient by not fetching the just created element again
             // re-fetch the created element including the answer collection and corresponding entries
-            const newElement = await tx.element.findUnique({
+            const newElement = await prisma.element.findUnique({
               where: {
                 id: createdElement.id,
                 ownerId: ctx.user.sub,
@@ -1810,7 +1811,7 @@ export async function createLiveQuizFromTemplate(
       })
     }
 
-    const quiz = await tx.liveQuiz.create({
+    const quiz = await prisma.liveQuiz.create({
       data: {
         name: name.trim(),
         displayName: displayName.trim(),
@@ -1880,7 +1881,11 @@ export async function createLiveQuizFromTemplate(
       },
     })
 
-    // TODO: trigger recomputation of the derived permissions for the new activity (here inside of the transaction)
+    // trigger recomputation of the derived permissions for the new activity
+    await recomputeDerivedPermissions(
+      { liveQuizId: quiz.id, userId: ctx.user.sub },
+      prisma
+    )
 
     return quiz
   })

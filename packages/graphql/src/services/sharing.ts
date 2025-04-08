@@ -205,10 +205,7 @@ export async function createCatalogCollection(
 
   // trigger recomputation of derived permissions
   await recomputeDerivedPermissions(
-    {
-      catalogCollectionId: collection.id,
-      userId: ctx.user.sub,
-    },
+    { catalogCollectionId: collection.id, userId: ctx.user.sub },
     ctx.prisma
   )
 
@@ -1483,18 +1480,30 @@ export async function changeCatalogCollectionPermissionLevel(
     return false
   }
 
-  // update the access level of the permission
-  const permission = await ctx.prisma.permission.update({
-    where: {
-      id: permissionId,
-      catalogCollectionId,
-    },
-    data: {
-      permissionLevel,
-    },
-  })
+  const permission = await ctx.prisma.$transaction(async (prisma) => {
+    // update the permission level
+    const updatedPermission = await prisma.permission.update({
+      where: {
+        id: permissionId,
+        catalogCollectionId,
+      },
+      data: {
+        permissionLevel,
+      },
+    })
 
-  // TODO: trigger recomputation of derived permissions for the object (in transaction with update above)
+    // trigger recomputation of derived permissions within the same transaction
+    await recomputeDerivedPermissions(
+      {
+        catalogCollectionId,
+        userId: updatedPermission.userId ?? undefined,
+        userGroupId: updatedPermission.userGroupId ?? undefined,
+      },
+      prisma
+    )
+
+    return updatedPermission
+  })
 
   // if the permission did not exist in the first place, return null
   if (!permission) {
@@ -1553,29 +1562,50 @@ export async function changeCatalogObjectPermissionLevel(
     return false
   }
 
-  // update the access level of the permission
-  const permission = await ctx.prisma.permission.update({
-    where: {
-      id: permissionId,
-      answerCollectionId,
-      elementId,
-      courseId,
-      liveQuizId,
-      practiceQuizId,
-      microLearningId,
-      groupActivityId,
-    },
-    data: {
-      permissionLevel,
-    },
+  // execute the update and recomputation in a single transaction
+  const permission = await ctx.prisma.$transaction(async (prisma) => {
+    // update the access level of the permission
+    const updatedPermission = await prisma.permission.update({
+      where: {
+        id: permissionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      },
+      data: {
+        permissionLevel,
+      },
+    })
+
+    // if the permission exists, trigger recomputation of derived permissions
+    if (updatedPermission) {
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+          userId: updatedPermission.userId ?? undefined,
+          userGroupId: updatedPermission.userGroupId ?? undefined,
+        },
+        prisma
+      )
+    }
+
+    return updatedPermission
   })
 
   // if the permission did not exist in the first place, return null
   if (!permission) {
     return false
   }
-
-  // TODO: trigger recomputation of derived permissions for the object
 
   // invalidate permission
   ctx.emitter.emit('invalidate', {
@@ -1701,14 +1731,25 @@ export async function revokeAnswerCollectionAccess(
     return null
   }
 
-  // delete the direct permission
-  const deletedPermission = await ctx.prisma.permission.delete({
-    where: {
-      id: permissionId,
-    },
-  })
+  // delete the direct permission and recompute derived permissions
+  const deletedPermission = await ctx.prisma.$transaction(async (prisma) => {
+    const deleted = await prisma.permission.delete({
+      where: {
+        id: permissionId,
+      },
+    })
 
-  // TODO: trigger recomputation of derived permissions for the object (in transaction with deletion)
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: collectionId,
+        userId: deleted.userId ?? undefined,
+        userGroupId: deleted.userGroupId ?? undefined,
+      },
+      prisma
+    )
+
+    return deleted
+  })
 
   // invalidate permission
   ctx.emitter.emit('invalidate', {
@@ -1826,70 +1867,82 @@ export async function transferCatalogCollectionOwnership(
     return null
   }
 
-  // update the owner of the collection and grant admin permissions to the current user
-  const updatedCollection = await ctx.prisma.catalogCollection.update({
-    where: {
-      id: catalogCollectionId,
-    },
-    data: {
-      owner: {
-        connect: {
-          id: newOwner.id,
-        },
+  const updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the collection and grant admin permissions to the current user
+    const updated = await prisma.catalogCollection.update({
+      where: {
+        id: catalogCollectionId,
       },
-      directPermissions: {
-        upsert: {
-          where: {
-            catalogCollectionId_userId: {
-              catalogCollectionId,
-              userId: ctx.user.sub,
+      data: {
+        owner: {
+          connect: {
+            id: newOwner.id,
+          },
+        },
+        directPermissions: {
+          upsert: {
+            where: {
+              catalogCollectionId_userId: {
+                catalogCollectionId,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: {
+                connect: {
+                  id: ctx.user.sub,
+                },
+              },
+            },
+            update: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
             },
           },
-          create: {
-            permissionLevel: DB.PermissionLevel.ADMIN,
+        },
+      },
+      include: {
+        directPermissions: {
+          where: {
+            userId: ctx.user.sub,
+          },
+          include: {
             user: {
-              connect: {
-                id: ctx.user.sub,
+              select: {
+                id: true,
+                shortname: true,
+                email: true,
               },
             },
           },
-          update: {
-            permissionLevel: DB.PermissionLevel.ADMIN,
-          },
-        },
-      },
-    },
-    include: {
-      directPermissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              shortname: true,
-              email: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  // if the new owner previously had a permission on the collection, delete it
-  if (newOwner.directlySharedObjects.length > 0) {
-    await ctx.prisma.permission.delete({
-      where: {
-        catalogCollectionId_userId: {
-          catalogCollectionId,
-          userId: newOwner.id,
         },
       },
     })
-  }
 
-  // TODO: trigger recomputation of derived permissions for the object (and wrap deletion and upsert in transaction together with this update)
+    // if the new owner previously had a direct permission on the collection, delete it
+    if (newOwner.directlySharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // trigger recomputation of derived permissions for the catalog collection for both users
+    await recomputeDerivedPermissions(
+      { catalogCollectionId, userId: newOwner.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { catalogCollectionId, userId: ctx.user.sub },
+      prisma
+    )
+
+    return updated
+  })
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedCollection.directPermissions[0]
@@ -1990,13 +2043,7 @@ export async function shareCatalogCollection(
       })
 
       // trigger recomputation of derived permissions within the same transaction
-      await recomputeDerivedPermissions(
-        {
-          catalogCollectionId,
-          userId,
-        },
-        prisma
-      )
+      await recomputeDerivedPermissions({ catalogCollectionId, userId }, prisma)
 
       return newPermission
     })
@@ -2128,70 +2175,82 @@ export async function transferAnswerCollectionOwnership(
     return null
   }
 
-  // update the owner of the collection and grant admin permissions to the current user
-  const updatedCollection = await ctx.prisma.answerCollection.update({
-    where: {
-      id: collectionId,
-    },
-    data: {
-      owner: {
-        connect: {
-          id: newOwner.id,
-        },
+  const updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the collection and grant admin permissions to the current user
+    const updated = await prisma.answerCollection.update({
+      where: {
+        id: collectionId,
       },
-      directPermissions: {
-        upsert: {
-          where: {
-            answerCollectionId_userId: {
-              answerCollectionId: collectionId,
-              userId: ctx.user.sub,
+      data: {
+        owner: {
+          connect: {
+            id: newOwner.id,
+          },
+        },
+        directPermissions: {
+          upsert: {
+            where: {
+              answerCollectionId_userId: {
+                answerCollectionId: collectionId,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: {
+                connect: {
+                  id: ctx.user.sub,
+                },
+              },
+            },
+            update: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
             },
           },
-          create: {
-            permissionLevel: DB.PermissionLevel.ADMIN,
+        },
+      },
+      include: {
+        directPermissions: {
+          where: {
+            userId: ctx.user.sub,
+          },
+          include: {
             user: {
-              connect: {
-                id: ctx.user.sub,
+              select: {
+                id: true,
+                shortname: true,
+                email: true,
               },
             },
           },
-          update: {
-            permissionLevel: DB.PermissionLevel.ADMIN,
-          },
-        },
-      },
-    },
-    include: {
-      directPermissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              shortname: true,
-              email: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  // if the new owner previously had a permission on the collection, delete it
-  if (newOwner.directlySharedObjects.length > 0) {
-    await ctx.prisma.permission.delete({
-      where: {
-        answerCollectionId_userId: {
-          answerCollectionId: collectionId,
-          userId: newOwner.id,
         },
       },
     })
-  }
 
-  // TODO: trigger recomputation of derived permissions for the object (and wrap deletion and upsert in transaction together with this update)
+    // if the new owner previously had a permission on the collection, delete it
+    if (newOwner.directlySharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: collectionId,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // trigger recomputation of derived permissions for the answer collection for both users
+    await recomputeDerivedPermissions(
+      { answerCollectionId: collectionId, userId: newOwner.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { answerCollectionId: collectionId, userId: ctx.user.sub },
+      prisma
+    )
+
+    return updated
+  })
 
   // return info for new admin permission and corresponding cache update
   const permission = updatedCollection.directPermissions[0]
@@ -2279,129 +2338,151 @@ export async function shareCatalogObject(
       return null
     }
 
-    // upsert new permission for the answer collection under consideration
-    const permission = await ctx.prisma.permission.upsert({
-      where: {
-        answerCollectionId_userId:
-          typeof answerCollectionId !== 'undefined'
-            ? {
-                answerCollectionId,
-                userId,
-              }
-            : undefined,
-        elementId_userId:
-          typeof elementId !== 'undefined'
-            ? {
-                elementId,
-                userId,
-              }
-            : undefined,
-        courseId_userId:
-          typeof courseId !== 'undefined'
-            ? {
-                courseId,
-                userId,
-              }
-            : undefined,
-        liveQuizId_userId:
-          typeof liveQuizId !== 'undefined'
-            ? {
-                liveQuizId,
-                userId,
-              }
-            : undefined,
-        practiceQuizId_userId:
-          typeof practiceQuizId !== 'undefined'
-            ? {
-                practiceQuizId,
-                userId,
-              }
-            : undefined,
-        microLearningId_userId:
-          typeof microLearningId !== 'undefined'
-            ? {
-                microLearningId,
-                userId,
-              }
-            : undefined,
-        groupActivityId_userId:
-          typeof groupActivityId !== 'undefined'
-            ? {
-                groupActivityId,
-                userId,
-              }
-            : undefined,
-      },
-      create: {
-        permissionLevel,
-        user: {
-          connect: {
-            id: userId,
-          },
+    const permission = await ctx.prisma.$transaction(async (prisma) => {
+      // upsert new permission for the answer collection under consideration
+      const newPermission = await prisma.permission.upsert({
+        where: {
+          answerCollectionId_userId:
+            typeof answerCollectionId !== 'undefined'
+              ? {
+                  answerCollectionId,
+                  userId,
+                }
+              : undefined,
+          elementId_userId:
+            typeof elementId !== 'undefined'
+              ? {
+                  elementId,
+                  userId,
+                }
+              : undefined,
+          courseId_userId:
+            typeof courseId !== 'undefined'
+              ? {
+                  courseId,
+                  userId,
+                }
+              : undefined,
+          liveQuizId_userId:
+            typeof liveQuizId !== 'undefined'
+              ? {
+                  liveQuizId,
+                  userId,
+                }
+              : undefined,
+          practiceQuizId_userId:
+            typeof practiceQuizId !== 'undefined'
+              ? {
+                  practiceQuizId,
+                  userId,
+                }
+              : undefined,
+          microLearningId_userId:
+            typeof microLearningId !== 'undefined'
+              ? {
+                  microLearningId,
+                  userId,
+                }
+              : undefined,
+          groupActivityId_userId:
+            typeof groupActivityId !== 'undefined'
+              ? {
+                  groupActivityId,
+                  userId,
+                }
+              : undefined,
         },
-        answerCollection:
-          typeof answerCollectionId !== 'undefined'
-            ? {
-                connect: {
-                  id: answerCollectionId,
-                },
-              }
-            : undefined,
-        element:
-          typeof elementId !== 'undefined'
-            ? {
-                connect: {
-                  id: elementId,
-                },
-              }
-            : undefined,
-        course:
-          typeof courseId !== 'undefined'
-            ? {
-                connect: {
-                  id: courseId,
-                },
-              }
-            : undefined,
-        liveQuiz:
-          typeof liveQuizId !== 'undefined'
-            ? {
-                connect: {
-                  id: liveQuizId,
-                },
-              }
-            : undefined,
-        practiceQuiz:
-          typeof practiceQuizId !== 'undefined'
-            ? {
-                connect: {
-                  id: practiceQuizId,
-                },
-              }
-            : undefined,
-        microLearning:
-          typeof microLearningId !== 'undefined'
-            ? {
-                connect: {
-                  id: microLearningId,
-                },
-              }
-            : undefined,
-        groupActivity:
-          typeof groupActivityId !== 'undefined'
-            ? {
-                connect: {
-                  id: groupActivityId,
-                },
-              }
-            : undefined,
-      },
-      update: {
-        permissionLevel,
-      },
-    })
+        create: {
+          permissionLevel,
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          answerCollection:
+            typeof answerCollectionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: answerCollectionId,
+                  },
+                }
+              : undefined,
+          element:
+            typeof elementId !== 'undefined'
+              ? {
+                  connect: {
+                    id: elementId,
+                  },
+                }
+              : undefined,
+          course:
+            typeof courseId !== 'undefined'
+              ? {
+                  connect: {
+                    id: courseId,
+                  },
+                }
+              : undefined,
+          liveQuiz:
+            typeof liveQuizId !== 'undefined'
+              ? {
+                  connect: {
+                    id: liveQuizId,
+                  },
+                }
+              : undefined,
+          practiceQuiz:
+            typeof practiceQuizId !== 'undefined'
+              ? {
+                  connect: {
+                    id: practiceQuizId,
+                  },
+                }
+              : undefined,
+          microLearning:
+            typeof microLearningId !== 'undefined'
+              ? {
+                  connect: {
+                    id: microLearningId,
+                  },
+                }
+              : undefined,
+          groupActivity:
+            typeof groupActivityId !== 'undefined'
+              ? {
+                  connect: {
+                    id: groupActivityId,
+                  },
+                }
+              : undefined,
+        },
+        update: {
+          permissionLevel,
+        },
+      })
 
-    // TODO: trigger recomputation of derived permissions for the object (in transaction with upsert above)
+      // trigger recomputation of derived permissions for the object
+      if (typeof answerCollectionId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { answerCollectionId, userId },
+          prisma
+        )
+      } else if (typeof elementId !== 'undefined') {
+        await recomputeDerivedPermissions({ elementId, userId }, prisma)
+      } else if (typeof courseId !== 'undefined') {
+        await recomputeDerivedPermissions({ courseId, userId }, prisma)
+      } else if (typeof liveQuizId !== 'undefined') {
+        await recomputeDerivedPermissions({ liveQuizId, userId }, prisma)
+      } else if (typeof practiceQuizId !== 'undefined') {
+        await recomputeDerivedPermissions({ practiceQuizId, userId }, prisma)
+      } else if (typeof microLearningId !== 'undefined') {
+        await recomputeDerivedPermissions({ microLearningId, userId }, prisma)
+      } else if (typeof groupActivityId !== 'undefined') {
+        await recomputeDerivedPermissions({ groupActivityId, userId }, prisma)
+      }
+
+      return newPermission
+    })
 
     // invalidate permission
     ctx.emitter.emit('invalidate', {
@@ -2489,32 +2570,40 @@ export async function importAnswerCollection(
     },
   })
 
-  // create new answer collection with the content of the original one
-  await ctx.prisma.answerCollection.create({
-    data: {
-      originalId: collection.id,
-      name:
-        importCount > 0
-          ? `${collection.name} (${importCount})`
-          : collection.name,
-      description: collection.description,
-      owner: {
-        connect: {
-          id: ctx.user.sub,
+  await ctx.prisma.$transaction(async (prisma) => {
+    // create new answer collection with the content of the original one
+    const newCollection = await prisma.answerCollection.create({
+      data: {
+        originalId: collection.id,
+        name:
+          importCount > 0
+            ? `${collection.name} (${importCount})`
+            : collection.name,
+        description: collection.description,
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+        entries: {
+          create: collection.entries.map((entry) => ({
+            value: entry.value,
+          })),
         },
       },
-      entries: {
-        create: collection.entries.map((entry) => ({
-          value: entry.value,
-        })),
+      include: {
+        entries: true,
       },
-    },
-    include: {
-      entries: true,
-    },
-  })
+    })
 
-  // TODO: trigger recomputation of derived permissions for the object (in transaction with creation)
+    // trigger recomputation of derived permissions for the object within the transaction
+    await recomputeDerivedPermissions(
+      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return newCollection
+  })
 
   // invalidate cache for the existing collection
   ctx.emitter.emit('invalidate', {
