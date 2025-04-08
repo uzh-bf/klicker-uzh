@@ -1040,6 +1040,7 @@ export async function prepareFlashcardsFromFile(
 
   const elementsFC = await Promise.allSettled(
     quizInfo.elements.map(async (data: any) => {
+      // TODO: manually create required derived permissions here (recomputation functions from backend not available)
       const flashcard = await prismaClient.element.upsert({
         where: {
           ownerId_originalId: {
@@ -1086,6 +1087,7 @@ export async function prepareContentElements(
 ) {
   const elementsCE = await Promise.allSettled(
     Object.entries(content).map(async ([name, data]) => {
+      // TODO: manually create required derived permissions here (recomputation functions from backend not available)
       const contentElement = await prismaClient.element.create({
         data: {
           name: name.trim(),

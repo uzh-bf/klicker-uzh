@@ -331,6 +331,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         }
       }
 
+      // TODO: manually create required derived permissions here (recomputation functions from backend not available)
       return prisma.element.upsert({
         ...prepareQuestion({
           ownerId: USER_ID_TEST,

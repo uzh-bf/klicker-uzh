@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -1026,6 +1027,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
 
+  await recomputeDerivedPermissions(
+    { elementId: questionSC.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
+
   // create multiple choice demo question
   const questionMC = await ctx.prisma.element.create({
     data: {
@@ -1087,6 +1093,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
 
+  await recomputeDerivedPermissions(
+    { elementId: questionMC.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
+
   // create KPRIM demo question
   const questionKPRIM = await ctx.prisma.element.create({
     data: {
@@ -1146,6 +1157,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
 
+  await recomputeDerivedPermissions(
+    { elementId: questionKPRIM.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
+
   // create Numerical demo question
   const questionNR = await ctx.prisma.element.create({
     data: {
@@ -1179,6 +1195,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
 
+  await recomputeDerivedPermissions(
+    { elementId: questionNR.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
+
   // create Free Text demo question
   const questionFT = await ctx.prisma.element.create({
     data: {
@@ -1210,6 +1231,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
 
+  await recomputeDerivedPermissions(
+    { elementId: questionFT.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
+
   // create demo Flashcard
   const flashcard = await ctx.prisma.element.create({
     data: {
@@ -1236,6 +1262,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
   })
 
+  await recomputeDerivedPermissions(
+    { elementId: flashcard.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
+
   // create demo Content Element
   const contentElement = await ctx.prisma.element.create({
     data: {
@@ -1259,6 +1290,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       },
     },
   })
+
+  await recomputeDerivedPermissions(
+    { elementId: contentElement.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
 
   const blockData = [
     {

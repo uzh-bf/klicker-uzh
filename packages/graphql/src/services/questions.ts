@@ -19,6 +19,7 @@ import type {
 } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
@@ -368,22 +369,11 @@ export async function manipulateQuestion(
     },
   })
 
-  // TODO: replace this with a proper implementation of derived permissions computation
-  await ctx.prisma.derivedPermission.upsert({
-    where: {
-      elementId_userId: {
-        elementId: question.id,
-        userId: ctx.user.sub,
-      },
-    },
-    create: {
-      permissionLevel: DB.PermissionLevel.OWNER,
-      derived: false,
-      element: { connect: { id: question.id } },
-      user: { connect: { id: ctx.user.sub } },
-    },
-    update: {},
-  })
+  // compute derived permissions as required for this question
+  await recomputeDerivedPermissions(
+    { elementId: question.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',

@@ -94,6 +94,7 @@ export default defineConfig({
 
         // ! Element creation
         // #region
+        // TODO: directly create required derived permissions in database for these elements
         async createQuestionChoices({
           type,
           name,
