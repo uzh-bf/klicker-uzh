@@ -6,6 +6,7 @@ import {
   ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
 import { validateActivityPermissions } from './templates.js'
 
@@ -202,23 +203,14 @@ export async function createCatalogCollection(
     },
   })
 
-  // TODO: replace this with generic function to recompute derived permissions for this object
-  // add derived owner permission for owner
-  await ctx.prisma.derivedPermission.create({
-    data: {
-      permissionLevel: DB.PermissionLevel.OWNER,
-      catalogCollection: {
-        connect: {
-          id: collection.id,
-        },
-      },
-      user: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+  // trigger recomputation of derived permissions
+  await recomputeDerivedPermissions(
+    {
+      catalogCollectionId: collection.id,
+      userId: ctx.user.sub,
     },
-  })
+    ctx.prisma
+  )
 
   return {
     ...collection,
@@ -1196,8 +1188,8 @@ export async function resolveObjectSharingRequest(
   }
 
   await ctx.prisma.$transaction(async (prisma) => {
-    // update the collection with the new access rights
     if (approved) {
+      // add a direct permission for the user with approved request
       await prisma.permission.upsert({
         where: {
           catalogCollectionId_userId:
@@ -1337,7 +1329,7 @@ export async function resolveObjectSharingRequest(
     // remove the access request
     await prisma.accessRequest.deleteMany({
       where: {
-        userId: ctx.user.sub,
+        userId,
         catalogCollectionId: pendingRequest.catalogCollectionId ?? undefined,
         answerCollectionId: pendingRequest.answerCollectionId ?? undefined,
         elementId: pendingRequest.elementId ?? undefined,
@@ -1349,7 +1341,72 @@ export async function resolveObjectSharingRequest(
       },
     })
 
-    // TODO: trigger recomputation of derived permissions for the object
+    // trigger recomputation of derived permissions within the same transaction
+    if (pendingRequest.catalogCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          catalogCollectionId: pendingRequest.catalogCollectionId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.answerCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          answerCollectionId: pendingRequest.answerCollectionId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.elementId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          elementId: pendingRequest.elementId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.courseId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          courseId: pendingRequest.courseId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.liveQuizId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          liveQuizId: pendingRequest.liveQuizId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.practiceQuizId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          practiceQuizId: pendingRequest.practiceQuizId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.microLearningId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          microLearningId: pendingRequest.microLearningId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.groupActivityId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          groupActivityId: pendingRequest.groupActivityId,
+        },
+        prisma
+      )
+    }
   })
 
   // invalidate the related objects
@@ -1549,7 +1606,7 @@ export async function revokeCatalogCollectionAccess(
     return null
   }
 
-  // verify that the permission belongs to the specified catalog collection
+  // verify that the direct permission belongs to the specified catalog collection
   const permission = await ctx.prisma.permission.findUnique({
     where: {
       id: permissionId,
@@ -1568,14 +1625,26 @@ export async function revokeCatalogCollectionAccess(
     return null
   }
 
-  // delete the permission
-  const deletedPermission = await ctx.prisma.permission.delete({
-    where: {
-      id: permissionId,
-    },
-  })
+  const deletedPermission = await ctx.prisma.$transaction(async (prisma) => {
+    // delete the direct permission
+    const deleted = await prisma.permission.delete({
+      where: {
+        id: permissionId,
+      },
+    })
 
-  // TODO: trigger recomputation of derived permissions for the object
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions(
+      {
+        catalogCollectionId,
+        userId: permission.userId ?? undefined,
+        userGroupId: permission.userGroupId ?? undefined,
+      },
+      prisma
+    )
+
+    return deleted
+  })
 
   // invalidate permission
   ctx.emitter.emit('invalidate', {
@@ -1893,33 +1962,44 @@ export async function shareCatalogCollection(
       return null
     }
 
-    // upsert new permission for the answer collection under consideration
-    const permission = await ctx.prisma.permission.upsert({
-      where: {
-        catalogCollectionId_userId: {
+    const permission = await ctx.prisma.$transaction(async (prisma) => {
+      // upsert new permission for the catalog collection
+      const newPermission = await prisma.permission.upsert({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId,
+            userId,
+          },
+        },
+        create: {
+          permissionLevel,
+          catalogCollection: {
+            connect: {
+              id: catalogCollectionId,
+            },
+          },
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+        },
+        update: {
+          permissionLevel,
+        },
+      })
+
+      // trigger recomputation of derived permissions within the same transaction
+      await recomputeDerivedPermissions(
+        {
           catalogCollectionId,
           userId,
         },
-      },
-      create: {
-        permissionLevel,
-        catalogCollection: {
-          connect: {
-            id: catalogCollectionId,
-          },
-        },
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
-      },
-      update: {
-        permissionLevel,
-      },
-    })
+        prisma
+      )
 
-    // TODO: trigger recomputation of derived permissions for the object (in transaction with upsert above)
+      return newPermission
+    })
 
     // invalidate permission
     ctx.emitter.emit('invalidate', {

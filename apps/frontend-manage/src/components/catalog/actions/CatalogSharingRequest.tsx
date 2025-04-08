@@ -67,7 +67,7 @@ function CatalogSharingRequest({
             e?.stopPropagation()
             const result = await declineObjectSharingRequest({
               variables: {
-                permissionId: request.permissionId,
+                requestId: request.permissionId,
                 userId: request.userId,
               },
               optimisticResponse: {
