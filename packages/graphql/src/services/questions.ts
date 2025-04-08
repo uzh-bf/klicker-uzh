@@ -368,6 +368,25 @@ export async function manipulateQuestion(
     },
   })
 
+  // TODO: replace this with a proper implementation of derived permissions computation
+  if (question.answerCollectionId !== null) {
+    await ctx.prisma.derivedPermission.upsert({
+      where: {
+        elementId_userId: {
+          elementId: question.id,
+          userId: ctx.user.sub,
+        },
+      },
+      create: {
+        permissionLevel: DB.PermissionLevel.OWNER,
+        derived: false,
+        element: { connect: { id: question.id } },
+        user: { connect: { id: ctx.user.sub } },
+      },
+      update: {},
+    })
+  }
+
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
     id: question.id,

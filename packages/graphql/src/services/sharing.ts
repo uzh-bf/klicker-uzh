@@ -184,30 +184,35 @@ export async function createCatalogCollection(
   },
   ctx: ContextWithUser
 ) {
-  const collection = await ctx.prisma.catalogCollection.create({
-    data: {
-      name,
-      access,
-      owner: {
-        connect: {
-          id: ctx.user.sub,
+  const collection = await ctx.prisma.$transaction(async (prisma) => {
+    // create the new catalog collection
+    const newCollection = await prisma.catalogCollection.create({
+      data: {
+        name,
+        access,
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
         },
       },
-    },
-    include: {
-      owner: {
-        select: {
-          shortname: true,
+      include: {
+        owner: {
+          select: {
+            shortname: true,
+          },
         },
       },
-    },
-  })
+    })
 
-  // trigger recomputation of derived permissions
-  await recomputeDerivedPermissions(
-    { catalogCollectionId: collection.id, userId: ctx.user.sub },
-    ctx.prisma
-  )
+    // trigger a recomputation of the corresponding derived permission for this new collection
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: newCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return newCollection
+  })
 
   return {
     ...collection,
@@ -1497,7 +1502,6 @@ export async function changeCatalogCollectionPermissionLevel(
       {
         catalogCollectionId,
         userId: updatedPermission.userId ?? undefined,
-        userGroupId: updatedPermission.userGroupId ?? undefined,
       },
       prisma
     )
@@ -1593,7 +1597,6 @@ export async function changeCatalogObjectPermissionLevel(
           microLearningId,
           groupActivityId,
           userId: updatedPermission.userId ?? undefined,
-          userGroupId: updatedPermission.userGroupId ?? undefined,
         },
         prisma
       )
@@ -1668,7 +1671,6 @@ export async function revokeCatalogCollectionAccess(
       {
         catalogCollectionId,
         userId: permission.userId ?? undefined,
-        userGroupId: permission.userGroupId ?? undefined,
       },
       prisma
     )
@@ -1743,7 +1745,6 @@ export async function revokeAnswerCollectionAccess(
       {
         answerCollectionId: collectionId,
         userId: deleted.userId ?? undefined,
-        userGroupId: deleted.userGroupId ?? undefined,
       },
       prisma
     )

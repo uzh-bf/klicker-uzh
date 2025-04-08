@@ -78,7 +78,7 @@ export async function createAnswerCollection(
   },
   ctx: ContextWithUser
 ) {
-  const collection = await ctx.prisma.answerCollection.findUnique({
+  const oldCollection = await ctx.prisma.answerCollection.findUnique({
     where: {
       ownerId_name: {
         ownerId: ctx.user.sub,
@@ -88,12 +88,12 @@ export async function createAnswerCollection(
   })
 
   // if collection already exists for the user, notify him that a new name needs to be chosen
-  if (collection) {
+  if (oldCollection) {
     return null
   }
 
-  const newCollection = await ctx.prisma.$transaction(async (prisma) => {
-    const collection = await prisma.answerCollection.create({
+  const collection = await ctx.prisma.$transaction(async (prisma) => {
+    const newCollection = await prisma.answerCollection.create({
       data: {
         name,
         description,
@@ -119,17 +119,17 @@ export async function createAnswerCollection(
 
     // trigger recomputation of derived permissions (-> owner should get new one)
     await recomputeDerivedPermissions(
-      { answerCollectionId: collection.id, userId: ctx.user.sub },
+      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
       prisma
     )
 
-    return collection
+    return newCollection
   })
 
   return {
-    ...newCollection,
+    ...collection,
     numSharedUsers: 0,
-    numOfEntries: newCollection._count.entries,
+    numOfEntries: collection._count.entries,
     isOwner: true,
     isManager: true,
     isEditor: true,
