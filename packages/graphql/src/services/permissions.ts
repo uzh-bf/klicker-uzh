@@ -604,7 +604,7 @@ async function recomputeAnswerCollectionPermissionsObject(
 }
 // #endregion
 
-// ! Derived permission recomputation for answer collections
+// ! Derived permission recomputation for elements
 // #region
 async function recomputeElementPermissions(
   {
