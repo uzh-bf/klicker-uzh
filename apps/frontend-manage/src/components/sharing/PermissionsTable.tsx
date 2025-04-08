@@ -27,6 +27,7 @@ function PermissionsTable({
     [PermissionLevel.Write]: 2, // Write is the third column (index 2)
     [PermissionLevel.Admin]: 3, // Admin is the fourth column (index 3)
     [PermissionLevel.Execute]: -1, // Execution rights are not present in this table
+    [PermissionLevel.Owner]: -1, // Owner rights are not present in this table
   }
 
   // get the active column index based on the corresponding access level
