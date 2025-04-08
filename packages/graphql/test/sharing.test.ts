@@ -311,7 +311,6 @@ describe('Unit tests for sharing service', () => {
     expect(res5!.username).toBe(userTwo.shortname)
     expect(res5!.userEmail).toBe(userTwo.email)
     expect(res5!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(res5!.isRevokable).toBe(true)
     expect(res5!.isOwn).toBe(false)
 
     const res6 = await shareCatalogObject(
@@ -327,7 +326,6 @@ describe('Unit tests for sharing service', () => {
     expect(res6!.username).toBe(userThree.shortname)
     expect(res6!.userEmail).toBe(userThree.email)
     expect(res6!.permissionLevel).toBe(PermissionLevel.WRITE)
-    expect(res6!.isRevokable).toBe(true)
     expect(res6!.isOwn).toBe(false)
 
     const res7 = await shareCatalogObject(
@@ -343,7 +341,6 @@ describe('Unit tests for sharing service', () => {
     expect(res7!.username).toBe(userFour.shortname)
     expect(res7!.userEmail).toBe(userFour.email)
     expect(res7!.permissionLevel).toBe(PermissionLevel.READ)
-    expect(res7!.isRevokable).toBe(true)
     expect(res7!.isOwn).toBe(false)
 
     // user 1 shares the answer collection 2 with user 2
@@ -360,7 +357,6 @@ describe('Unit tests for sharing service', () => {
     expect(res8!.username).toBe(userTwo.shortname)
     expect(res8!.userEmail).toBe(userTwo.email)
     expect(res8!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(res8!.isRevokable).toBe(true)
     expect(res8!.isOwn).toBe(false)
 
     // user 2 uses admin permissions to share collection with users 3 and 4
@@ -377,7 +373,6 @@ describe('Unit tests for sharing service', () => {
     expect(res9!.username).toBe(userThree.shortname)
     expect(res9!.userEmail).toBe(userThree.email)
     expect(res9!.permissionLevel).toBe(PermissionLevel.WRITE)
-    expect(res9!.isRevokable).toBe(true)
     expect(res9!.isOwn).toBe(false)
 
     const res10 = await shareCatalogObject(
@@ -393,7 +388,6 @@ describe('Unit tests for sharing service', () => {
     expect(res10!.username).toBe(userFour.shortname)
     expect(res10!.userEmail).toBe(userFour.email)
     expect(res10!.permissionLevel).toBe(PermissionLevel.READ)
-    expect(res10!.isRevokable).toBe(true)
     expect(res10!.isOwn).toBe(false)
 
     // verify that users 3 and 4 still have insufficient permissions to share the object further (with user 5)
@@ -1300,7 +1294,6 @@ describe('Unit tests for sharing service', () => {
     expect(successPermission1!.username).toBe(userOne.shortname)
     expect(successPermission1!.userEmail).toBe(userOne.email)
     expect(successPermission1!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(successPermission1!.isRevokable).toBe(true)
     expect(successPermission1!.isOwn).toBe(true)
 
     const dbPermission1 = await prisma.permission.findUnique({
@@ -1337,7 +1330,6 @@ describe('Unit tests for sharing service', () => {
     expect(successfulPermission2!.username).toBe(userTwo.shortname)
     expect(successfulPermission2!.userEmail).toBe(userTwo.email)
     expect(successfulPermission2!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(successfulPermission2!.isRevokable).toBe(true)
     expect(successfulPermission2!.isOwn).toBe(true)
 
     const dbPermission3 = await prisma.permission.findUnique({
@@ -1573,7 +1565,6 @@ describe('Unit tests for sharing service', () => {
       expect(newPermission!.username).toBe(user.shortname)
       expect(newPermission!.userEmail).toBe(user.email)
       expect(newPermission!.permissionLevel).toBe(permissionLevel)
-      expect(newPermission!.isRevokable).toBe(true)
       expect(newPermission!.isOwn).toBe(false)
 
       const newPermission2 = await shareCatalogCollection(
@@ -1589,7 +1580,6 @@ describe('Unit tests for sharing service', () => {
       expect(newPermission2!.username).toBe(user.shortname)
       expect(newPermission2!.userEmail).toBe(user.email)
       expect(newPermission2!.permissionLevel).toBe(permissionLevel)
-      expect(newPermission2!.isRevokable).toBe(true)
       expect(newPermission2!.isOwn).toBe(false)
     }
   })
@@ -2673,7 +2663,6 @@ describe('Unit tests for sharing service', () => {
     expect(newPermission1!.username).toBe(userOne.shortname)
     expect(newPermission1!.userEmail).toBe(userOne.email)
     expect(newPermission1!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(newPermission1!.isRevokable).toBe(true)
     expect(newPermission1!.isOwn).toBe(true)
 
     const dbPermission2 = await prisma.permission.findUnique({

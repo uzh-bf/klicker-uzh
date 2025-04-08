@@ -3,7 +3,6 @@ import {
   ElementType,
   ObjectAccess,
   PermissionLevel,
-  PermissionStatus,
   PrismaClient,
   PublicationStatus,
   UserLoginScope,
@@ -551,11 +550,11 @@ describe('Unit tests for template service', () => {
         name: 'AC1',
         description: '',
         owner: { connect: { id: userOne.id } },
-        permissions: {
+        accessRequests: {
           create: {
             permissionLevel: PermissionLevel.READ,
-            permissionStatus: PermissionStatus.REQUESTED, // requested permissions should not affect access
             user: { connect: { id: userTwo.id } },
+            objectAdminOrOwner: { connect: { id: userOne.id } },
           },
         },
       },
@@ -579,7 +578,6 @@ describe('Unit tests for template service', () => {
         permissions: {
           create: {
             permissionLevel: PermissionLevel.READ,
-            permissionStatus: PermissionStatus.GRANTED,
             user: { connect: { id: userTwo.id } },
           },
         },
@@ -595,7 +593,6 @@ describe('Unit tests for template service', () => {
         permissions: {
           create: {
             permissionLevel: PermissionLevel.WRITE,
-            permissionStatus: PermissionStatus.GRANTED,
             user: { connect: { id: userTwo.id } },
           },
         },
