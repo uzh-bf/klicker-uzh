@@ -1,8 +1,4 @@
-import {
-  ElementType,
-  PermissionStatus,
-  PrismaClient,
-} from '@klicker-uzh/prisma'
+import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
 import {
   CaseStudyCaseCriterionSolution,
   CaseStudyCaseSolution,
@@ -375,19 +371,11 @@ export default defineConfig({
               where: {
                 name: collectionName,
                 isDeleted: false,
-                OR: [
-                  {
-                    ownerId: userId,
+                permissions: {
+                  some: {
+                    userId: userId,
                   },
-                  {
-                    permissions: {
-                      some: {
-                        userId: userId,
-                        permissionStatus: PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
+                },
               },
             })
 
@@ -528,19 +516,11 @@ export default defineConfig({
               where: {
                 name: collectionName,
                 isDeleted: false,
-                OR: [
-                  {
-                    ownerId: userId,
+                permissions: {
+                  some: {
+                    userId: userId,
                   },
-                  {
-                    permissions: {
-                      some: {
-                        userId: userId,
-                        permissionStatus: PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
+                },
               },
             })
 

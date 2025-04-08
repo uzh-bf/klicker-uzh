@@ -2522,6 +2522,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       permissionsWRITE: 'Schreibrechte',
       permissionsADMIN: 'Adminrechte',
       permissionsEXECUTE: 'Ausführungsrechte',
+      permissionsOWNER: 'Eigentümerrechte',
       grantedPermissions: 'Bestehende Berechtigungen',
       transferOwnership: 'Eigentumsrechte übertragen',
       importantInformation: 'Wichtige Information',

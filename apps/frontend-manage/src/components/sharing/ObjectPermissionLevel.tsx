@@ -19,6 +19,7 @@ const PermissionLevelIcons: Record<
   [PermissionLevel.Execute]: { icon: faPersonRunning, color: 'text-green-600' },
   [PermissionLevel.Write]: { icon: faPencil, color: 'text-orange-600' },
   [PermissionLevel.Admin]: { icon: faUserTie, color: 'text-red-600' },
+  [PermissionLevel.Owner]: { icon: faUserTie, color: 'text-purple-600' },
 }
 
 function ObjectPermissionLevel({

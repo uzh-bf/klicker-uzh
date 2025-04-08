@@ -4,7 +4,7 @@ import {
   PermissionInfo,
   PermissionLevel,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Select, Tooltip } from '@uzh-bf/design-system'
+import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -179,20 +179,7 @@ function ExistingPermissionEntries({
               />
             </td>
             <td className="w-10 text-center">
-              {permission.isRevokable ? (
-                <AccessRevokationButton permission={permission} />
-              ) : (
-                <Tooltip
-                  tooltip={t('manage.sharing.revokeAccessDisabledTooltip')}
-                  className={{ tooltip: 'max-w-[30rem] text-sm' }}
-                >
-                  <AccessRevokationButton
-                    disabled
-                    permission={permission}
-                    className="text-gray-400 hover:text-gray-400"
-                  />
-                </Tooltip>
-              )}
+              <AccessRevokationButton permission={permission} />
             </td>
           </tr>
         ))}

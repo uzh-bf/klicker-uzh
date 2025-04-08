@@ -6,6 +6,7 @@ import {
   ObjectSharingRequest,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
 import { validateActivityPermissions } from './templates.js'
 
@@ -45,12 +46,10 @@ async function validateCatalogCollectionPermissions(
       permissions: {
         where: {
           userId: ctx.user.sub,
-          permissionStatus: DB.PermissionStatus.GRANTED,
           permissionLevel: {
-            in: acceptedPermissionLevels,
+            in: [...acceptedPermissionLevels, DB.PermissionLevel.OWNER],
           },
         },
-        // TODO: handle user groups
       },
     },
   })
@@ -59,10 +58,7 @@ async function validateCatalogCollectionPermissions(
     return { valid: false, catalogCollection: null }
   }
 
-  const validAccess =
-    catalogCollection.permissions.length > 0 ||
-    catalogCollection.ownerId === ctx.user.sub
-
+  const validAccess = catalogCollection.permissions.length > 0
   return { valid: validAccess, catalogCollection }
 }
 
@@ -188,23 +184,34 @@ export async function createCatalogCollection(
   },
   ctx: ContextWithUser
 ) {
-  const collection = await ctx.prisma.catalogCollection.create({
-    data: {
-      name,
-      access,
-      owner: {
-        connect: {
-          id: ctx.user.sub,
+  const collection = await ctx.prisma.$transaction(async (prisma) => {
+    // create the new catalog collection
+    const newCollection = await prisma.catalogCollection.create({
+      data: {
+        name,
+        access,
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
         },
       },
-    },
-    include: {
-      owner: {
-        select: {
-          shortname: true,
+      include: {
+        owner: {
+          select: {
+            shortname: true,
+          },
         },
       },
-    },
+    })
+
+    // trigger a recomputation of the corresponding derived permission for this new collection
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: newCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return newCollection
   })
 
   return {
@@ -255,6 +262,11 @@ export async function getCatalogCollectionInfo(
           userId: ctx.user.sub,
         },
       },
+      accessRequests: {
+        where: {
+          userId: ctx.user.sub,
+        },
+      },
     },
   })
 
@@ -262,27 +274,19 @@ export async function getCatalogCollectionInfo(
     return null
   }
 
-  const isRequested = collection.permissions.some(
+  const isRequested = collection.accessRequests.length > 0
+  const isShared = collection.permissions.length > 0
+  const isManager = collection.permissions.some(
     (permission) =>
-      permission.permissionStatus === DB.PermissionStatus.REQUESTED
+      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission.permissionLevel === DB.PermissionLevel.OWNER
   )
-  const isShared = collection.permissions.some(
-    (permission) => permission.permissionStatus === DB.PermissionStatus.GRANTED
+  const isEditor = collection.permissions.some(
+    (permission) =>
+      permission.permissionLevel === DB.PermissionLevel.WRITE ||
+      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission.permissionLevel === DB.PermissionLevel.OWNER
   )
-  const isManager =
-    collection.ownerId === ctx.user.sub ||
-    collection.permissions.some(
-      (permission) =>
-        permission.permissionLevel === DB.PermissionLevel.ADMIN &&
-        permission.permissionStatus === DB.PermissionStatus.GRANTED
-    )
-  const isEditor =
-    collection.permissions.some(
-      (permission) =>
-        (permission.permissionLevel === DB.PermissionLevel.WRITE ||
-          permission.permissionLevel === DB.PermissionLevel.ADMIN) &&
-        permission.permissionStatus === DB.PermissionStatus.GRANTED
-    ) || collection.ownerId === ctx.user.sub
 
   return {
     ...collection,
@@ -351,8 +355,8 @@ export async function changeCatalogCollectionName(
     {
       catalogCollectionId,
       acceptedPermissionLevels: [
-        DB.PermissionLevel.ADMIN,
         DB.PermissionLevel.WRITE,
+        DB.PermissionLevel.ADMIN,
       ],
     },
     ctx
@@ -440,6 +444,11 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
           userId: ctx.user.sub,
         },
       },
+      accessRequests: {
+        where: {
+          userId: ctx.user.sub,
+        },
+      },
       owner: {
         select: {
           shortname: true,
@@ -451,36 +460,25 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
   const mappedCollections = collections
     .filter(
       (collection) =>
-        !(
-          collection.ownerId !== ctx.user.sub &&
-          collection.access === DB.ObjectAccess.PUBLIC &&
-          collection._count.objectAssignments === 0 &&
-          collection.permissions.length === 0
-        )
+        collection.ownerId === ctx.user.sub ||
+        collection.access !== DB.ObjectAccess.PUBLIC ||
+        collection._count.objectAssignments !== 0 ||
+        collection.permissions.length !== 0
     )
     .map((collection) => {
-      const isRequested = collection.permissions.some(
+      const isRequested = collection.accessRequests.length > 0
+      const isShared = collection.permissions.length > 0
+      const isManager = collection.permissions.some(
         (permission) =>
-          permission.permissionStatus === DB.PermissionStatus.REQUESTED
+          permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+          permission.permissionLevel === DB.PermissionLevel.OWNER
       )
-      const isShared = collection.permissions.some(
+      const isEditor = collection.permissions.some(
         (permission) =>
-          permission.permissionStatus === DB.PermissionStatus.GRANTED
+          permission.permissionLevel === DB.PermissionLevel.WRITE ||
+          permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+          permission.permissionLevel === DB.PermissionLevel.OWNER
       )
-      const isManager =
-        collection.ownerId === ctx.user.sub ||
-        collection.permissions.some(
-          (permission) =>
-            permission.permissionLevel === DB.PermissionLevel.ADMIN &&
-            permission.permissionStatus === DB.PermissionStatus.GRANTED
-        )
-      const isEditor =
-        collection.permissions.some(
-          (permission) =>
-            (permission.permissionLevel === DB.PermissionLevel.WRITE ||
-              permission.permissionLevel === DB.PermissionLevel.ADMIN) &&
-            permission.permissionStatus === DB.PermissionStatus.GRANTED
-        ) || collection.ownerId === ctx.user.sub
 
       return {
         ...collection,
@@ -497,7 +495,13 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
 }
 
 export async function requestCatalogCollection(
-  { catalogCollectionId }: { catalogCollectionId: string },
+  {
+    catalogCollectionId,
+    requestedPermissionLevel,
+  }: {
+    catalogCollectionId: string
+    requestedPermissionLevel?: DB.PermissionLevel | null
+  },
   ctx: ContextWithUser
 ) {
   // fetch the catalog collection including potential pending permission requests
@@ -512,6 +516,13 @@ export async function requestCatalogCollection(
       permissions: {
         where: {
           userId: ctx.user.sub,
+          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
+        },
+      },
+      accessRequests: {
+        where: {
+          userId: ctx.user.sub,
+          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
         },
       },
       owner: {
@@ -522,46 +533,75 @@ export async function requestCatalogCollection(
     },
   })
 
-  // check if granted / requested permission already exist
+  // check if requested permission level has already been requested or granted
   if (
     !catalogCollection ||
     catalogCollection.permissions.length > 0 ||
+    catalogCollection.accessRequests.length > 0 ||
     !catalogCollection.ownerId
   ) {
     return null
   }
 
-  // create a new permission request
-  await ctx.prisma.permission.create({
-    data: {
-      permissionLevel: DB.PermissionLevel.READ,
-      permissionStatus: DB.PermissionStatus.REQUESTED,
-      catalogCollection: {
-        connect: {
-          id: catalogCollectionId,
-        },
-      },
-      user: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
-      objectOwner: {
-        connect: {
-          id: catalogCollection.ownerId,
-        },
-      },
-    },
-    include: {
-      objectOwner: {
-        select: {
-          shortname: true,
-        },
+  // find all users with admin or owner permissions on the collection
+  const adminOwnerPermissions = await ctx.prisma.derivedPermission.findMany({
+    where: {
+      catalogCollectionId,
+      permissionLevel: {
+        in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
       },
     },
   })
 
-  // TODO: notify owner of the collection by e-mail that there is a new access request
+  // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
+  if (adminOwnerPermissions.length === 0) {
+    console.log(
+      'No admin or owner could be found on the catalog collection ',
+      catalogCollectionId
+    )
+    return null
+  }
+
+  // TODO: upsert audit log entry (wrapped into transaction with access request upsert)
+
+  // upsert access requests for all owners and admins
+  const ownerAdminIds = adminOwnerPermissions.map(
+    (permission) => permission.userId
+  )
+  await Promise.all(
+    ownerAdminIds.map(async (adminOwnerId) => {
+      await ctx.prisma.accessRequest.upsert({
+        where: {
+          catalogCollectionId_userId_objectAdminOrOwnerId: {
+            catalogCollectionId,
+            userId: ctx.user.sub,
+            objectAdminOrOwnerId: adminOwnerId,
+          },
+        },
+        create: {
+          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          catalogCollection: {
+            connect: {
+              id: catalogCollectionId,
+            },
+          },
+          user: {
+            connect: {
+              id: ctx.user.sub,
+            },
+          },
+          objectAdminOrOwner: {
+            connect: {
+              id: adminOwnerId,
+            },
+          },
+        },
+        update: {
+          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
+        },
+      })
+    })
+  )
 
   // invalidate cache for the imported collection
   ctx.emitter.emit('invalidate', {
@@ -627,11 +667,7 @@ export async function countCatalogSharingRequests(ctx: ContextWithUser) {
       id: ctx.user.sub,
     },
     include: {
-      objectPermissions: {
-        where: {
-          permissionStatus: DB.PermissionStatus.REQUESTED,
-        },
-      },
+      pendingRequests: true,
     },
   })
 
@@ -639,7 +675,7 @@ export async function countCatalogSharingRequests(ctx: ContextWithUser) {
     return 0
   }
 
-  return user.objectPermissions.length
+  return user.pendingRequests.length
 }
 
 export async function getCatalogSharingRequests(ctx: ContextWithUser) {
@@ -648,22 +684,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
       id: ctx.user.sub,
     },
     include: {
-      objectPermissions: {
-        where: {
-          permissionStatus: DB.PermissionStatus.REQUESTED,
-          OR: [
-            {
-              catalogCollectionId: {
-                not: null,
-              },
-            },
-            {
-              answerCollectionId: {
-                not: null,
-              },
-            },
-          ],
-        },
+      pendingRequests: {
         include: {
           user: {
             select: {
@@ -681,6 +702,36 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
               name: true,
             },
           },
+          element: {
+            select: {
+              name: true,
+            },
+          },
+          course: {
+            select: {
+              name: true,
+            },
+          },
+          liveQuiz: {
+            select: {
+              name: true,
+            },
+          },
+          practiceQuiz: {
+            select: {
+              name: true,
+            },
+          },
+          microLearning: {
+            select: {
+              name: true,
+            },
+          },
+          groupActivity: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },
@@ -690,39 +741,40 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
     return null
   }
 
-  const sharingRequests = user.objectPermissions.reduce<ObjectSharingRequest[]>(
+  const sharingRequests = user.pendingRequests.reduce<ObjectSharingRequest[]>(
     (acc, request) => {
+      const sharedRequestAttributes = {
+        permissionId: request.id,
+        userId: request.userId,
+        userShortname: request.user.shortname,
+        userEmail: request.user.email,
+      }
+
       // sharing request for catalog collection
       if (
         typeof request.catalogCollection !== 'undefined' &&
-        request.catalogCollection !== null &&
-        request.user
+        request.catalogCollection !== null
       ) {
         acc.push({
-          permissionId: request.id,
+          ...sharedRequestAttributes,
           objectName: request.catalogCollection.name,
           objectType: CatalogObjectType.CATALOG_COLLECTION,
-          userId: request.userId!,
-          userShortname: request.user.shortname,
-          userEmail: request.user.email,
         })
       }
 
       // sharing request for answer collection
       else if (
         typeof request.answerCollection !== 'undefined' &&
-        request.answerCollection !== null &&
-        request.user
+        request.answerCollection !== null
       ) {
         acc.push({
-          permissionId: request.id,
+          ...sharedRequestAttributes,
           objectName: request.answerCollection.name,
           objectType: CatalogObjectType.ANSWER_COLLECTION,
-          userId: request.userId!,
-          userShortname: request.user.shortname,
-          userEmail: request.user.email,
         })
       }
+
+      // TODO: add more object types as soon as they can be requested / shared
 
       return acc
     },
@@ -736,6 +788,7 @@ export async function requestCatalogObject(
   // one of the object ids should be defined for the object that is to be added to the catalog
   // otherwise, the function will return failure
   {
+    requestedPermissionLevel,
     catalogCollectionId, // catalog collection id to which the shared object should be added to
     answerCollectionId,
     elementId,
@@ -745,6 +798,7 @@ export async function requestCatalogObject(
     microLearningId,
     groupActivityId,
   }: {
+    requestedPermissionLevel?: DB.PermissionLevel | null
     catalogCollectionId?: string | null
     answerCollectionId?: number
     elementId?: number
@@ -768,8 +822,8 @@ export async function requestCatalogObject(
   // collect the required object information to create the permission request
   let objectInfo:
     | {
-        ownerId: string | null
-        existingPermissions: boolean
+        existingPermission: boolean
+        existingRequest: boolean
       }
     | undefined = undefined
 
@@ -786,6 +840,15 @@ export async function requestCatalogObject(
         permissions: {
           where: {
             userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+        accessRequests: {
+          where: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
           },
         },
       },
@@ -797,8 +860,8 @@ export async function requestCatalogObject(
 
     // set the object information
     objectInfo = {
-      ownerId: collection.ownerId,
-      existingPermissions: collection.permissions.length > 0,
+      existingPermission: collection.permissions.length > 0,
+      existingRequest: collection.accessRequests.length > 0,
     }
   }
   // TODO: ... add more object types once they are supported for sharing
@@ -806,90 +869,182 @@ export async function requestCatalogObject(
     return false
   }
 
-  // check if granted / requested permission already exist and if there is still an owner that can grant access
+  // check if access with requested level has already been requested / granted
   if (
     typeof objectInfo === 'undefined' ||
-    objectInfo.ownerId === null ||
-    objectInfo.existingPermissions
+    objectInfo.existingPermission ||
+    objectInfo.existingRequest
   ) {
     return false
   }
 
-  // create a new permission request
-  const permissionRequest = await ctx.prisma.permission.create({
-    data: {
-      permissionLevel: DB.PermissionLevel.READ,
-      permissionStatus: DB.PermissionStatus.REQUESTED,
-      user: {
-        connect: {
-          id: ctx.user.sub,
-        },
+  // find all users with admin or owner permissions on the object
+  const adminOwnerPermissions = await ctx.prisma.derivedPermission.findMany({
+    where: {
+      permissionLevel: {
+        in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
       },
-      objectOwner: {
-        connect: {
-          id: objectInfo.ownerId,
-        },
-      },
-      answerCollection:
-        typeof answerCollectionId !== 'undefined'
-          ? {
-              connect: {
-                id: answerCollectionId,
-              },
-            }
-          : undefined,
-      element:
-        typeof elementId !== 'undefined'
-          ? {
-              connect: {
-                id: elementId,
-              },
-            }
-          : undefined,
-      course:
-        typeof courseId !== 'undefined'
-          ? {
-              connect: {
-                id: courseId,
-              },
-            }
-          : undefined,
-      liveQuiz:
-        typeof liveQuizId !== 'undefined'
-          ? {
-              connect: {
-                id: liveQuizId,
-              },
-            }
-          : undefined,
-      practiceQuiz:
-        typeof practiceQuizId !== 'undefined'
-          ? {
-              connect: {
-                id: practiceQuizId,
-              },
-            }
-          : undefined,
-      microLearning:
-        typeof microLearningId !== 'undefined'
-          ? {
-              connect: {
-                id: microLearningId,
-              },
-            }
-          : undefined,
-      groupActivity:
-        typeof groupActivityId !== 'undefined'
-          ? {
-              connect: {
-                id: groupActivityId,
-              },
-            }
-          : undefined,
+      answerCollectionId,
+      elementId,
+      courseId,
+      liveQuizId,
+      practiceQuizId,
+      microLearningId,
+      groupActivityId,
     },
   })
 
-  // TODO: notify owner of the collection by e-mail that there is a new access request
+  // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
+  if (adminOwnerPermissions.length === 0) {
+    console.log(
+      'No admin or owner could be found on the catalog collection ',
+      catalogCollectionId
+    )
+    return false
+  }
+
+  // TODO: upsert audit log entry (wrapped into transaction with access request upsert)
+
+  // upsert access requests for all owners and admins
+  const ownerAdminIds = adminOwnerPermissions.map(
+    (permission) => permission.userId
+  )
+  await Promise.all(
+    ownerAdminIds.map(async (adminOwnerId) => {
+      await ctx.prisma.accessRequest.upsert({
+        where: {
+          answerCollectionId_userId_objectAdminOrOwnerId:
+            typeof answerCollectionId !== 'undefined'
+              ? {
+                  answerCollectionId,
+                  userId: ctx.user.sub,
+                  objectAdminOrOwnerId: adminOwnerId,
+                }
+              : undefined,
+          elementId_userId_objectAdminOrOwnerId:
+            typeof elementId !== 'undefined'
+              ? {
+                  elementId,
+                  userId: ctx.user.sub,
+                  objectAdminOrOwnerId: adminOwnerId,
+                }
+              : undefined,
+          courseId_userId_objectAdminOrOwnerId:
+            typeof courseId !== 'undefined'
+              ? {
+                  courseId,
+                  userId: ctx.user.sub,
+                  objectAdminOrOwnerId: adminOwnerId,
+                }
+              : undefined,
+          liveQuizId_userId_objectAdminOrOwnerId:
+            typeof liveQuizId !== 'undefined'
+              ? {
+                  liveQuizId,
+                  userId: ctx.user.sub,
+                  objectAdminOrOwnerId: adminOwnerId,
+                }
+              : undefined,
+          practiceQuizId_userId_objectAdminOrOwnerId:
+            typeof practiceQuizId !== 'undefined'
+              ? {
+                  practiceQuizId,
+                  userId: ctx.user.sub,
+                  objectAdminOrOwnerId: adminOwnerId,
+                }
+              : undefined,
+          microLearningId_userId_objectAdminOrOwnerId:
+            typeof microLearningId !== 'undefined'
+              ? {
+                  microLearningId,
+                  userId: ctx.user.sub,
+                  objectAdminOrOwnerId: adminOwnerId,
+                }
+              : undefined,
+          groupActivityId_userId_objectAdminOrOwnerId:
+            typeof groupActivityId !== 'undefined'
+              ? {
+                  groupActivityId,
+                  userId: ctx.user.sub,
+                  objectAdminOrOwnerId: adminOwnerId,
+                }
+              : undefined,
+        },
+        create: {
+          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          user: {
+            connect: {
+              id: ctx.user.sub,
+            },
+          },
+          objectAdminOrOwner: {
+            connect: {
+              id: adminOwnerId,
+            },
+          },
+          answerCollection:
+            typeof answerCollectionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: answerCollectionId,
+                  },
+                }
+              : undefined,
+          element:
+            typeof elementId !== 'undefined'
+              ? {
+                  connect: {
+                    id: elementId,
+                  },
+                }
+              : undefined,
+          course:
+            typeof courseId !== 'undefined'
+              ? {
+                  connect: {
+                    id: courseId,
+                  },
+                }
+              : undefined,
+          liveQuiz:
+            typeof liveQuizId !== 'undefined'
+              ? {
+                  connect: {
+                    id: liveQuizId,
+                  },
+                }
+              : undefined,
+          practiceQuiz:
+            typeof practiceQuizId !== 'undefined'
+              ? {
+                  connect: {
+                    id: practiceQuizId,
+                  },
+                }
+              : undefined,
+          microLearning:
+            typeof microLearningId !== 'undefined'
+              ? {
+                  connect: {
+                    id: microLearningId,
+                  },
+                }
+              : undefined,
+          groupActivity:
+            typeof groupActivityId !== 'undefined'
+              ? {
+                  connect: {
+                    id: groupActivityId,
+                  },
+                }
+              : undefined,
+        },
+        update: {
+          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
+        },
+      })
+    })
+  )
 
   // invalidate cache for the imported object
   if (typeof answerCollectionId !== 'undefined') {
@@ -900,8 +1055,8 @@ export async function requestCatalogObject(
   }
   // TODO: ... add more object types once they are supported for
 
-  // return updated catalog object
-  return permissionRequest ? true : false
+  // TODO: update return value to success of transaction
+  return true
 }
 
 export async function cancelObjectSharingRequest(
@@ -925,135 +1080,379 @@ export async function cancelObjectSharingRequest(
   ctx: ContextWithUser
 ) {
   // verify that the user has requested access to the collection
-  const permission = await ctx.prisma.permission.findUnique({
+  const requests = await ctx.prisma.accessRequest.findMany({
     where: {
-      permissionStatus: DB.PermissionStatus.REQUESTED,
-      answerCollectionId_userId:
-        typeof answerCollectionId !== 'undefined'
-          ? {
-              answerCollectionId,
-              userId: ctx.user.sub,
-            }
-          : undefined,
-      elementId_userId:
-        typeof elementId !== 'undefined'
-          ? {
-              elementId,
-              userId: ctx.user.sub,
-            }
-          : undefined,
-      courseId_userId:
-        typeof courseId !== 'undefined'
-          ? {
-              courseId,
-              userId: ctx.user.sub,
-            }
-          : undefined,
-      liveQuizId_userId:
-        typeof liveQuizId !== 'undefined'
-          ? {
-              liveQuizId,
-              userId: ctx.user.sub,
-            }
-          : undefined,
-      practiceQuizId_userId:
-        typeof practiceQuizId !== 'undefined'
-          ? {
-              practiceQuizId,
-              userId: ctx.user.sub,
-            }
-          : undefined,
-      microLearningId_userId:
-        typeof microLearningId !== 'undefined'
-          ? {
-              microLearningId,
-              userId: ctx.user.sub,
-            }
-          : undefined,
-      groupActivityId_userId:
-        typeof groupActivityId !== 'undefined'
-          ? {
-              groupActivityId,
-              userId: ctx.user.sub,
-            }
-          : undefined,
+      userId: ctx.user.sub,
+      answerCollectionId,
+      elementId,
+      courseId,
+      liveQuizId,
+      practiceQuizId,
+      microLearningId,
+      groupActivityId,
     },
   })
 
-  if (!permission) {
+  if (requests.length === 0) {
     return false
   }
 
   // remove the access request
-  const deletedPermission = await ctx.prisma.permission.delete({
+  await ctx.prisma.accessRequest.deleteMany({
     where: {
-      id: permission.id,
+      userId: ctx.user.sub,
+      answerCollectionId,
+      elementId,
+      courseId,
+      liveQuizId,
+      practiceQuizId,
+      microLearningId,
+      groupActivityId,
     },
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'Permission',
-    id: deletedPermission.id,
-  })
+  // invalidate all access requests that were deleted
+  for (const request of requests) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'AccessRequest',
+      id: request.id,
+    })
+  }
+
+  // invalidate the related objects
+  if (typeof answerCollectionId !== 'undefined') {
+    ctx.emitter.emit('invalidate', {
+      typename: 'AnswerCollection',
+      id: answerCollectionId,
+    })
+  } else if (typeof elementId !== 'undefined') {
+    ctx.emitter.emit('invalidate', {
+      typename: 'Element',
+      id: elementId,
+    })
+  } else if (typeof courseId !== 'undefined') {
+    ctx.emitter.emit('invalidate', {
+      typename: 'Course',
+      id: courseId,
+    })
+  } else if (typeof liveQuizId !== 'undefined') {
+    ctx.emitter.emit('invalidate', {
+      typename: 'LiveQuiz',
+      id: liveQuizId,
+    })
+  } else if (typeof practiceQuizId !== 'undefined') {
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id: practiceQuizId,
+    })
+  } else if (typeof microLearningId !== 'undefined') {
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: microLearningId,
+    })
+  } else if (typeof groupActivityId !== 'undefined') {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: groupActivityId,
+    })
+  }
 
   return true
 }
 
 export async function resolveObjectSharingRequest(
   {
-    permissionId,
+    requestId,
     userId,
     permissionLevel,
     approved,
+    propagation,
   }: {
-    permissionId: number
+    requestId: number
     userId: string
-    permissionLevel?: DB.PermissionLevel
+    permissionLevel: DB.PermissionLevel
     approved: boolean
+    propagation: boolean
   },
   ctx: ContextWithUser
 ) {
-  // check that the access request exists and that the user is the owner of the collection
-  const accessRequest = await ctx.prisma.permission.findUnique({
+  // check that an access request is available for the user
+  const pendingRequest = await ctx.prisma.accessRequest.findUnique({
     where: {
-      id: permissionId,
+      id: requestId,
       userId,
-      permissionLevel: DB.PermissionLevel.READ, // access requests are always assigned read access level
-      permissionStatus: DB.PermissionStatus.REQUESTED,
-      objectOwnerId: ctx.user.sub,
+      objectAdminOrOwnerId: ctx.user.sub,
     },
   })
 
-  if (!accessRequest) {
+  if (!pendingRequest) {
     return false
   }
 
-  // update the collection with the new access rights
-  if (approved) {
-    await ctx.prisma.permission.update({
+  await ctx.prisma.$transaction(async (prisma) => {
+    if (approved) {
+      // add a direct permission for the user with approved request
+      await prisma.permission.upsert({
+        where: {
+          catalogCollectionId_userId:
+            pendingRequest.catalogCollectionId !== null
+              ? {
+                  catalogCollectionId: pendingRequest.catalogCollectionId,
+                  userId,
+                }
+              : undefined,
+          answerCollectionId_userId:
+            pendingRequest.answerCollectionId !== null
+              ? {
+                  answerCollectionId: pendingRequest.answerCollectionId,
+                  userId,
+                }
+              : undefined,
+          elementId_userId:
+            pendingRequest.elementId !== null
+              ? {
+                  elementId: pendingRequest.elementId,
+                  userId,
+                }
+              : undefined,
+          courseId_userId:
+            pendingRequest.courseId !== null
+              ? {
+                  courseId: pendingRequest.courseId,
+                  userId,
+                }
+              : undefined,
+          liveQuizId_userId:
+            pendingRequest.liveQuizId !== null
+              ? {
+                  liveQuizId: pendingRequest.liveQuizId,
+                  userId,
+                }
+              : undefined,
+          practiceQuizId_userId:
+            pendingRequest.practiceQuizId !== null
+              ? {
+                  practiceQuizId: pendingRequest.practiceQuizId,
+                  userId,
+                }
+              : undefined,
+          microLearningId_userId:
+            pendingRequest.microLearningId !== null
+              ? {
+                  microLearningId: pendingRequest.microLearningId,
+                  userId,
+                }
+              : undefined,
+          groupActivityId_userId:
+            pendingRequest.groupActivityId !== null
+              ? {
+                  groupActivityId: pendingRequest.groupActivityId,
+                  userId,
+                }
+              : undefined,
+        },
+        create: {
+          permissionLevel,
+          propagation,
+          user: {
+            connect: {
+              id: userId,
+            },
+          },
+          catalogCollection:
+            pendingRequest.catalogCollectionId !== null
+              ? {
+                  connect: {
+                    id: pendingRequest.catalogCollectionId,
+                  },
+                }
+              : undefined,
+          answerCollection:
+            pendingRequest.answerCollectionId !== null
+              ? {
+                  connect: {
+                    id: pendingRequest.answerCollectionId,
+                  },
+                }
+              : undefined,
+          element:
+            pendingRequest.elementId !== null
+              ? {
+                  connect: {
+                    id: pendingRequest.elementId,
+                  },
+                }
+              : undefined,
+          course:
+            pendingRequest.courseId !== null
+              ? {
+                  connect: {
+                    id: pendingRequest.courseId,
+                  },
+                }
+              : undefined,
+          liveQuiz:
+            pendingRequest.liveQuizId !== null
+              ? {
+                  connect: {
+                    id: pendingRequest.liveQuizId,
+                  },
+                }
+              : undefined,
+          practiceQuiz:
+            pendingRequest.practiceQuizId !== null
+              ? {
+                  connect: {
+                    id: pendingRequest.practiceQuizId,
+                  },
+                }
+              : undefined,
+          microLearning:
+            pendingRequest.microLearningId !== null
+              ? {
+                  connect: {
+                    id: pendingRequest.microLearningId,
+                  },
+                }
+              : undefined,
+          groupActivity:
+            pendingRequest.groupActivityId !== null
+              ? {
+                  connect: {
+                    id: pendingRequest.groupActivityId,
+                  },
+                }
+              : undefined,
+        },
+        update: {},
+      })
+    }
+
+    // remove the access request
+    await prisma.accessRequest.deleteMany({
       where: {
-        id: accessRequest.id,
-      },
-      data: {
-        permissionStatus: DB.PermissionStatus.GRANTED,
-        permissionLevel,
+        userId,
+        catalogCollectionId: pendingRequest.catalogCollectionId ?? undefined,
+        answerCollectionId: pendingRequest.answerCollectionId ?? undefined,
+        elementId: pendingRequest.elementId ?? undefined,
+        courseId: pendingRequest.courseId ?? undefined,
+        liveQuizId: pendingRequest.liveQuizId ?? undefined,
+        practiceQuizId: pendingRequest.practiceQuizId ?? undefined,
+        microLearningId: pendingRequest.microLearningId ?? undefined,
+        groupActivityId: pendingRequest.groupActivityId ?? undefined,
       },
     })
-  } else {
-    await ctx.prisma.permission.delete({
-      where: {
-        id: accessRequest.id,
-      },
+
+    // trigger recomputation of derived permissions within the same transaction
+    if (pendingRequest.catalogCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          catalogCollectionId: pendingRequest.catalogCollectionId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.answerCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          answerCollectionId: pendingRequest.answerCollectionId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.elementId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          elementId: pendingRequest.elementId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.courseId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          courseId: pendingRequest.courseId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.liveQuizId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          liveQuizId: pendingRequest.liveQuizId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.practiceQuizId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          practiceQuizId: pendingRequest.practiceQuizId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.microLearningId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          microLearningId: pendingRequest.microLearningId,
+        },
+        prisma
+      )
+    } else if (pendingRequest.groupActivityId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          userId,
+          groupActivityId: pendingRequest.groupActivityId,
+        },
+        prisma
+      )
+    }
+  })
+
+  // invalidate the related objects
+  if (pendingRequest.catalogCollectionId !== null) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'CatalogCollection',
+      id: pendingRequest.catalogCollectionId,
+    })
+  } else if (pendingRequest.answerCollectionId !== null) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'AnswerCollection',
+      id: pendingRequest.answerCollectionId,
+    })
+  } else if (pendingRequest.elementId !== null) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'Element',
+      id: pendingRequest.elementId,
+    })
+  } else if (pendingRequest.courseId !== null) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'Course',
+      id: pendingRequest.courseId,
+    })
+  } else if (pendingRequest.liveQuizId !== null) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'LiveQuiz',
+      id: pendingRequest.liveQuizId,
+    })
+  } else if (pendingRequest.practiceQuizId !== null) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'PracticeQuiz',
+      id: pendingRequest.practiceQuizId,
+    })
+  } else if (pendingRequest.microLearningId !== null) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: pendingRequest.microLearningId,
+    })
+  } else if (pendingRequest.groupActivityId !== null) {
+    ctx.emitter.emit('invalidate', {
+      typename: 'GroupActivity',
+      id: pendingRequest.groupActivityId,
     })
   }
-
-  // TODO: send email to user that requested access about the approval / (and denial?)
-
-  // invalidate the corresponding permission
-  ctx.emitter.emit('invalidate', {
-    typename: 'Permission',
-    id: permissionId,
-  })
 
   return true
 }
@@ -1086,15 +1485,28 @@ export async function changeCatalogCollectionPermissionLevel(
     return false
   }
 
-  // update the access level of the permission
-  const permission = await ctx.prisma.permission.update({
-    where: {
-      id: permissionId,
-      catalogCollectionId,
-    },
-    data: {
-      permissionLevel,
-    },
+  const permission = await ctx.prisma.$transaction(async (prisma) => {
+    // update the permission level
+    const updatedPermission = await prisma.permission.update({
+      where: {
+        id: permissionId,
+        catalogCollectionId,
+      },
+      data: {
+        permissionLevel,
+      },
+    })
+
+    // trigger recomputation of derived permissions within the same transaction
+    await recomputeDerivedPermissions(
+      {
+        catalogCollectionId,
+        userId: updatedPermission.userId ?? undefined,
+      },
+      prisma
+    )
+
+    return updatedPermission
   })
 
   // if the permission did not exist in the first place, return null
@@ -1154,21 +1566,43 @@ export async function changeCatalogObjectPermissionLevel(
     return false
   }
 
-  // update the access level of the permission
-  const permission = await ctx.prisma.permission.update({
-    where: {
-      id: permissionId,
-      answerCollectionId,
-      elementId,
-      courseId,
-      liveQuizId,
-      practiceQuizId,
-      microLearningId,
-      groupActivityId,
-    },
-    data: {
-      permissionLevel,
-    },
+  // execute the update and recomputation in a single transaction
+  const permission = await ctx.prisma.$transaction(async (prisma) => {
+    // update the access level of the permission
+    const updatedPermission = await prisma.permission.update({
+      where: {
+        id: permissionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      },
+      data: {
+        permissionLevel,
+      },
+    })
+
+    // if the permission exists, trigger recomputation of derived permissions
+    if (updatedPermission) {
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+          userId: updatedPermission.userId ?? undefined,
+        },
+        prisma
+      )
+    }
+
+    return updatedPermission
   })
 
   // if the permission did not exist in the first place, return null
@@ -1205,7 +1639,7 @@ export async function revokeCatalogCollectionAccess(
     return null
   }
 
-  // verify that the permission belongs to the specified catalog collection
+  // verify that the direct permission belongs to the specified catalog collection
   const permission = await ctx.prisma.permission.findUnique({
     where: {
       id: permissionId,
@@ -1220,15 +1654,28 @@ export async function revokeCatalogCollectionAccess(
     },
   })
 
-  if (!permission || permission.id !== permissionId) {
+  if (!permission) {
     return null
   }
 
-  // delete the permission
-  const deletedPermission = await ctx.prisma.permission.delete({
-    where: {
-      id: permissionId,
-    },
+  const deletedPermission = await ctx.prisma.$transaction(async (prisma) => {
+    // delete the direct permission
+    const deleted = await prisma.permission.delete({
+      where: {
+        id: permissionId,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions(
+      {
+        catalogCollectionId,
+        userId: permission.userId ?? undefined,
+      },
+      prisma
+    )
+
+    return deleted
   })
 
   // invalidate permission
@@ -1247,7 +1694,7 @@ export async function revokeAnswerCollectionAccess(
   }: { permissionId: number; collectionId: number },
   ctx: ContextWithUser
 ) {
-  // verify that the permission belongs to the specified collection
+  // verify that the direct permission belongs to the specified collection
   const permission = await ctx.prisma.permission.findUnique({
     where: {
       id: permissionId,
@@ -1266,115 +1713,17 @@ export async function revokeAnswerCollectionAccess(
     return null
   }
 
+  // TODO: access control should be handled separately on level above
   // verify that the requesting user has sufficient permissions to revoke access (ADMIN or OWNER)
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
           },
-        },
-      ],
-    },
-    include: {
-      linkedElements: {
-        where: {
-          OR: [
-            {
-              ownerId: permission.user?.id,
-            },
-            {
-              permissions: {
-                some: {
-                  userId: permission.user?.id,
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-              },
-            },
-          ],
-        },
-      },
-      linkedTemplates: {
-        where: {
-          OR: [
-            {
-              liveQuiz: {
-                OR: [
-                  {
-                    ownerId: permission.user?.id,
-                  },
-                  {
-                    permissions: {
-                      some: {
-                        userId: permission.user?.id,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-            {
-              practiceQuiz: {
-                OR: [
-                  {
-                    ownerId: permission.user?.id,
-                  },
-                  {
-                    permissions: {
-                      some: {
-                        userId: permission.user?.id,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-            {
-              microLearning: {
-                OR: [
-                  {
-                    ownerId: permission.user?.id,
-                  },
-                  {
-                    permissions: {
-                      some: {
-                        userId: permission.user?.id,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-            {
-              groupActivity: {
-                OR: [
-                  {
-                    ownerId: permission.user?.id,
-                  },
-                  {
-                    permissions: {
-                      some: {
-                        userId: permission.user?.id,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-          ],
         },
       },
     },
@@ -1384,19 +1733,23 @@ export async function revokeAnswerCollectionAccess(
     return null
   }
 
-  // verify that the collection is not used (access cannot be removed in these cases)
-  if (
-    collection.linkedElements.length > 0 ||
-    collection.linkedTemplates.length > 0
-  ) {
-    return null
-  }
+  // delete the direct permission and recompute derived permissions
+  const deletedPermission = await ctx.prisma.$transaction(async (prisma) => {
+    const deleted = await prisma.permission.delete({
+      where: {
+        id: permissionId,
+      },
+    })
 
-  // delete the permission
-  const deletedPermission = await ctx.prisma.permission.delete({
-    where: {
-      id: permissionId,
-    },
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: collectionId,
+        userId: deleted.userId ?? undefined,
+      },
+      prisma
+    )
+
+    return deleted
   })
 
   // invalidate permission
@@ -1415,31 +1768,22 @@ export async function getCatalogCollectionPermissions(
   { catalogCollectionId }: { catalogCollectionId: string },
   ctx: ContextWithUser
 ) {
+  // TODO: move access control with where and some permission checking to outside of this function (if possible)
   // verify that sufficient permissions are given (ADMIN / OWNER for sharing) and load linked permissions
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
           },
         },
-        // TODO: also include permissions from user groups
-      ],
+      },
     },
     include: {
-      permissions: {
-        where: {
-          permissionStatus: DB.PermissionStatus.GRANTED,
-        },
+      directPermissions: {
         include: {
           user: {
             select: {
@@ -1458,8 +1802,7 @@ export async function getCatalogCollectionPermissions(
     return []
   }
 
-  // TODO: once permissions from user groups are included, deduplicate and use highest available permission level
-  return catalogCollection.permissions
+  return catalogCollection.directPermissions
     .map((permission) => ({
       permissionId: permission.id,
       userId: permission.user?.id,
@@ -1468,8 +1811,7 @@ export async function getCatalogCollectionPermissions(
       userGroupId: undefined,
       userGroupName: undefined,
       permissionLevel: permission.permissionLevel,
-      isRevokable: true,
-      isOwn: permission.user?.id === ctx.user.sub,
+      isOwn: permission.userId === ctx.user.sub,
     }))
     .sort((a, b) => {
       if (a.username === b.username) {
@@ -1502,7 +1844,7 @@ export async function transferCatalogCollectionOwnership(
       ],
     },
     include: {
-      sharedObjects: {
+      directlySharedObjects: {
         where: {
           catalogCollectionId,
         },
@@ -1526,78 +1868,85 @@ export async function transferCatalogCollectionOwnership(
     return null
   }
 
-  // update the owner of the collection and grant admin permissions to the current user
-  const updatedCollection = await ctx.prisma.catalogCollection.update({
-    where: {
-      id: catalogCollectionId,
-    },
-    data: {
-      owner: {
-        connect: {
-          id: newOwner.id,
-        },
-      },
-      permissions: {
-        upsert: {
-          where: {
-            catalogCollectionId_userId: {
-              catalogCollectionId,
-              userId: ctx.user.sub,
-            },
-          },
-          create: {
-            permissionLevel: DB.PermissionLevel.ADMIN,
-            permissionStatus: DB.PermissionStatus.GRANTED,
-            user: {
-              connect: {
-                id: ctx.user.sub,
-              },
-            },
-            objectOwner: {
-              connect: {
-                id: newOwner.id,
-              },
-            },
-          },
-          update: {
-            permissionLevel: DB.PermissionLevel.ADMIN,
-            permissionStatus: DB.PermissionStatus.GRANTED,
-          },
-        },
-      },
-    },
-    include: {
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              shortname: true,
-              email: true,
-            },
-          },
-        },
-      },
-    },
-  })
-
-  // if the new owner previously had a permission on the collection, delete it
-  if (newOwner.sharedObjects.length > 0) {
-    await ctx.prisma.permission.delete({
+  const updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the collection and grant admin permissions to the current user
+    const updated = await prisma.catalogCollection.update({
       where: {
-        catalogCollectionId_userId: {
-          catalogCollectionId,
-          userId: newOwner.id,
+        id: catalogCollectionId,
+      },
+      data: {
+        owner: {
+          connect: {
+            id: newOwner.id,
+          },
+        },
+        directPermissions: {
+          upsert: {
+            where: {
+              catalogCollectionId_userId: {
+                catalogCollectionId,
+                userId: ctx.user.sub,
+              },
+            },
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: {
+                connect: {
+                  id: ctx.user.sub,
+                },
+              },
+            },
+            update: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          },
+        },
+      },
+      include: {
+        directPermissions: {
+          where: {
+            userId: ctx.user.sub,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                shortname: true,
+                email: true,
+              },
+            },
+          },
         },
       },
     })
-  }
+
+    // if the new owner previously had a direct permission on the collection, delete it
+    if (newOwner.directlySharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // trigger recomputation of derived permissions for the catalog collection for both users
+    await recomputeDerivedPermissions(
+      { catalogCollectionId, userId: newOwner.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { catalogCollectionId, userId: ctx.user.sub },
+      prisma
+    )
+
+    return updated
+  })
 
   // return info for new admin permission and corresponding cache update
-  const permission = updatedCollection.permissions[0]
+  const permission = updatedCollection.directPermissions[0]
   return permission && permission.user
     ? {
         permissionId: permission.id,
@@ -1607,7 +1956,6 @@ export async function transferCatalogCollectionOwnership(
         userGroupId: undefined,
         userGroupName: undefined,
         permissionLevel: permission.permissionLevel,
-        isRevokable: true,
         isOwn: true,
       }
     : null
@@ -1627,6 +1975,7 @@ export async function shareCatalogCollection(
   },
   ctx: ContextWithUser
 ) {
+  // TODO: move access validation out of the function itself (to pothos, if possible)
   // verify that the requesting user has sufficient permissions to share object (ADMIN or OWNER)
   const { valid, catalogCollection } =
     await validateCatalogCollectionPermissions(
@@ -1667,37 +2016,37 @@ export async function shareCatalogCollection(
       return null
     }
 
-    // upsert new permission for the answer collection under consideration
-    const permission = await ctx.prisma.permission.upsert({
-      where: {
-        catalogCollectionId_userId: {
-          catalogCollectionId,
-          userId,
-        },
-      },
-      create: {
-        permissionLevel,
-        permissionStatus: DB.PermissionStatus.GRANTED,
-        catalogCollection: {
-          connect: {
-            id: catalogCollectionId,
+    const permission = await ctx.prisma.$transaction(async (prisma) => {
+      // upsert new permission for the catalog collection
+      const newPermission = await prisma.permission.upsert({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId,
+            userId,
           },
         },
-        user: {
-          connect: {
-            id: userId,
+        create: {
+          permissionLevel,
+          catalogCollection: {
+            connect: {
+              id: catalogCollectionId,
+            },
+          },
+          user: {
+            connect: {
+              id: userId,
+            },
           },
         },
-        objectOwner: {
-          connect: {
-            id: ctx.user.sub,
-          },
+        update: {
+          permissionLevel,
         },
-      },
-      update: {
-        permissionLevel,
-        permissionStatus: DB.PermissionStatus.GRANTED,
-      },
+      })
+
+      // trigger recomputation of derived permissions within the same transaction
+      await recomputeDerivedPermissions({ catalogCollectionId, userId }, prisma)
+
+      return newPermission
     })
 
     // invalidate permission
@@ -1714,7 +2063,6 @@ export async function shareCatalogCollection(
       userGroupId: undefined,
       userGroupName: undefined,
       permissionLevel: permission.permissionLevel,
-      isRevokable: true,
       isOwn: false,
     }
   } else if (userGroupId) {
@@ -1732,27 +2080,18 @@ export async function getAnswerCollectionPermissions(
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
+      // TODO: move access check out of this mutation (to pothos level, if possible)
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
           },
         },
-        // TODO: also include permissions from user groups
-      ],
+      },
     },
     include: {
-      permissions: {
-        where: {
-          permissionStatus: DB.PermissionStatus.GRANTED,
-        },
+      directPermissions: {
         include: {
           user: {
             select: {
@@ -1764,90 +2103,6 @@ export async function getAnswerCollectionPermissions(
           // TODO: also include permissions awarded to user groups and set in return object
         },
       },
-      linkedElements: {
-        include: {
-          permissions: {
-            where: {
-              permissionStatus: DB.PermissionStatus.GRANTED,
-            },
-            include: {
-              user: {
-                select: {
-                  id: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      linkedTemplates: {
-        include: {
-          liveQuiz: {
-            include: {
-              permissions: {
-                where: {
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          practiceQuiz: {
-            include: {
-              permissions: {
-                where: {
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          microLearning: {
-            include: {
-              permissions: {
-                where: {
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          groupActivity: {
-            include: {
-              permissions: {
-                where: {
-                  permissionStatus: DB.PermissionStatus.GRANTED,
-                },
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     },
   })
 
@@ -1855,70 +2110,7 @@ export async function getAnswerCollectionPermissions(
     return []
   }
 
-  // aggregate which users have permissions / are the owner of at least one linked element
-  const usersWithElementUsage = collection.linkedElements.reduce<{
-    [userId: string]: boolean
-  }>((acc, element) => {
-    // owner of the element
-    if (element.ownerId) {
-      acc[element.ownerId] = true
-    }
-
-    // users with whom the element is shared
-    element.permissions.forEach((permission) => {
-      if (permission.user?.id) {
-        acc[permission.user.id] = true
-      }
-    })
-
-    return acc
-  }, {})
-
-  // aggregate which users have permissions / are the owner of at least one linked template
-  const usersWithTemplateUsage = collection.linkedTemplates.reduce<{
-    [userId: string]: boolean
-  }>((acc, template) => {
-    // owner of the template
-    if (template.liveQuiz?.ownerId) {
-      acc[template.liveQuiz.ownerId] = true
-    }
-    if (template.practiceQuiz?.ownerId) {
-      acc[template.practiceQuiz.ownerId] = true
-    }
-    if (template.microLearning?.ownerId) {
-      acc[template.microLearning.ownerId] = true
-    }
-    if (template.groupActivity?.ownerId) {
-      acc[template.groupActivity.ownerId] = true
-    }
-
-    // users with whom the template is shared
-    template.liveQuiz?.permissions.forEach((permission) => {
-      if (permission.user?.id) {
-        acc[permission.user.id] = true
-      }
-    })
-    template.practiceQuiz?.permissions.forEach((permission) => {
-      if (permission.user?.id) {
-        acc[permission.user.id] = true
-      }
-    })
-    template.microLearning?.permissions.forEach((permission) => {
-      if (permission.user?.id) {
-        acc[permission.user.id] = true
-      }
-    })
-    template.groupActivity?.permissions.forEach((permission) => {
-      if (permission.user?.id) {
-        acc[permission.user.id] = true
-      }
-    })
-
-    return acc
-  }, {})
-
-  // TODO: once permissions from user groups are included, deduplicate and use highest available permission level
-  return collection.permissions
+  return collection.directPermissions
     .map((permission) => ({
       permissionId: permission.id,
       userId: permission.user?.id,
@@ -1927,9 +2119,6 @@ export async function getAnswerCollectionPermissions(
       userGroupId: undefined,
       userGroupName: undefined,
       permissionLevel: permission.permissionLevel,
-      isRevokable:
-        !usersWithElementUsage[permission.user?.id ?? ''] &&
-        !usersWithTemplateUsage[permission.user?.id ?? ''],
       isOwn: permission.user?.id === ctx.user.sub,
     }))
     .sort((a, b) => {
@@ -1963,7 +2152,7 @@ export async function transferAnswerCollectionOwnership(
       ],
     },
     include: {
-      sharedObjects: {
+      directlySharedObjects: {
         where: {
           answerCollectionId: collectionId,
         },
@@ -1987,169 +2176,85 @@ export async function transferAnswerCollectionOwnership(
     return null
   }
 
-  // update the owner of the collection and grant admin permissions to the current user
-  const updatedCollection = await ctx.prisma.answerCollection.update({
-    where: {
-      id: collectionId,
-    },
-    data: {
-      owner: {
-        connect: {
-          id: newOwner.id,
-        },
+  const updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    // update the owner of the collection and grant admin permissions to the current user
+    const updated = await prisma.answerCollection.update({
+      where: {
+        id: collectionId,
       },
-      permissions: {
-        upsert: {
-          where: {
-            answerCollectionId_userId: {
-              answerCollectionId: collectionId,
-              userId: ctx.user.sub,
-            },
+      data: {
+        owner: {
+          connect: {
+            id: newOwner.id,
           },
-          create: {
-            permissionLevel: DB.PermissionLevel.ADMIN,
-            permissionStatus: DB.PermissionStatus.GRANTED,
-            user: {
-              connect: {
-                id: ctx.user.sub,
+        },
+        directPermissions: {
+          upsert: {
+            where: {
+              answerCollectionId_userId: {
+                answerCollectionId: collectionId,
+                userId: ctx.user.sub,
               },
             },
-            objectOwner: {
-              connect: {
-                id: newOwner.id,
-              },
-            },
-          },
-          update: {
-            permissionLevel: DB.PermissionLevel.ADMIN,
-            permissionStatus: DB.PermissionStatus.GRANTED,
-          },
-        },
-      },
-    },
-    include: {
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              shortname: true,
-              email: true,
-            },
-          },
-        },
-      },
-      linkedElements: {
-        where: {
-          OR: [
-            {
-              ownerId: ctx.user.sub,
-            },
-            {
-              permissions: {
-                some: {
-                  userId: ctx.user.sub,
-                  permissionStatus: DB.PermissionStatus.GRANTED,
+            create: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+              user: {
+                connect: {
+                  id: ctx.user.sub,
                 },
               },
             },
-          ],
+            update: {
+              permissionLevel: DB.PermissionLevel.ADMIN,
+            },
+          },
         },
       },
-      linkedTemplates: {
-        where: {
-          OR: [
-            {
-              liveQuiz: {
-                OR: [
-                  {
-                    ownerId: ctx.user.sub,
-                  },
-                  {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
+      include: {
+        directPermissions: {
+          where: {
+            userId: ctx.user.sub,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                shortname: true,
+                email: true,
               },
             },
-            {
-              practiceQuiz: {
-                OR: [
-                  {
-                    ownerId: ctx.user.sub,
-                  },
-                  {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-            {
-              microLearning: {
-                OR: [
-                  {
-                    ownerId: ctx.user.sub,
-                  },
-                  {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-            {
-              groupActivity: {
-                OR: [
-                  {
-                    ownerId: ctx.user.sub,
-                  },
-                  {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                        permissionStatus: DB.PermissionStatus.GRANTED,
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
-    },
-  })
-
-  // if the new owner previously had a permission on the collection, delete it
-  if (newOwner.sharedObjects.length > 0) {
-    await ctx.prisma.permission.delete({
-      where: {
-        answerCollectionId_userId: {
-          answerCollectionId: collectionId,
-          userId: newOwner.id,
+          },
         },
       },
     })
-  }
+
+    // if the new owner previously had a permission on the collection, delete it
+    if (newOwner.directlySharedObjects.length > 0) {
+      await prisma.permission.delete({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: collectionId,
+            userId: newOwner.id,
+          },
+        },
+      })
+    }
+
+    // trigger recomputation of derived permissions for the answer collection for both users
+    await recomputeDerivedPermissions(
+      { answerCollectionId: collectionId, userId: newOwner.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { answerCollectionId: collectionId, userId: ctx.user.sub },
+      prisma
+    )
+
+    return updated
+  })
 
   // return info for new admin permission and corresponding cache update
-  const permission = updatedCollection.permissions[0]
+  const permission = updatedCollection.directPermissions[0]
   return permission && permission.user
     ? {
         permissionId: permission.id,
@@ -2159,9 +2264,6 @@ export async function transferAnswerCollectionOwnership(
         userGroupId: undefined,
         userGroupName: undefined,
         permissionLevel: permission.permissionLevel,
-        isRevokable:
-          updatedCollection.linkedElements.length === 0 &&
-          updatedCollection.linkedTemplates.length === 0,
         isOwn: true,
       }
     : null
@@ -2237,133 +2339,150 @@ export async function shareCatalogObject(
       return null
     }
 
-    // upsert new permission for the answer collection under consideration
-    const permission = await ctx.prisma.permission.upsert({
-      where: {
-        answerCollectionId_userId:
-          typeof answerCollectionId !== 'undefined'
-            ? {
-                answerCollectionId,
-                userId,
-              }
-            : undefined,
-        elementId_userId:
-          typeof elementId !== 'undefined'
-            ? {
-                elementId,
-                userId,
-              }
-            : undefined,
-        courseId_userId:
-          typeof courseId !== 'undefined'
-            ? {
-                courseId,
-                userId,
-              }
-            : undefined,
-        liveQuizId_userId:
-          typeof liveQuizId !== 'undefined'
-            ? {
-                liveQuizId,
-                userId,
-              }
-            : undefined,
-        practiceQuizId_userId:
-          typeof practiceQuizId !== 'undefined'
-            ? {
-                practiceQuizId,
-                userId,
-              }
-            : undefined,
-        microLearningId_userId:
-          typeof microLearningId !== 'undefined'
-            ? {
-                microLearningId,
-                userId,
-              }
-            : undefined,
-        groupActivityId_userId:
-          typeof groupActivityId !== 'undefined'
-            ? {
-                groupActivityId,
-                userId,
-              }
-            : undefined,
-      },
-      create: {
-        permissionLevel,
-        permissionStatus: DB.PermissionStatus.GRANTED,
-        user: {
-          connect: {
-            id: userId,
-          },
+    const permission = await ctx.prisma.$transaction(async (prisma) => {
+      // upsert new permission for the answer collection under consideration
+      const newPermission = await prisma.permission.upsert({
+        where: {
+          answerCollectionId_userId:
+            typeof answerCollectionId !== 'undefined'
+              ? {
+                  answerCollectionId,
+                  userId,
+                }
+              : undefined,
+          elementId_userId:
+            typeof elementId !== 'undefined'
+              ? {
+                  elementId,
+                  userId,
+                }
+              : undefined,
+          courseId_userId:
+            typeof courseId !== 'undefined'
+              ? {
+                  courseId,
+                  userId,
+                }
+              : undefined,
+          liveQuizId_userId:
+            typeof liveQuizId !== 'undefined'
+              ? {
+                  liveQuizId,
+                  userId,
+                }
+              : undefined,
+          practiceQuizId_userId:
+            typeof practiceQuizId !== 'undefined'
+              ? {
+                  practiceQuizId,
+                  userId,
+                }
+              : undefined,
+          microLearningId_userId:
+            typeof microLearningId !== 'undefined'
+              ? {
+                  microLearningId,
+                  userId,
+                }
+              : undefined,
+          groupActivityId_userId:
+            typeof groupActivityId !== 'undefined'
+              ? {
+                  groupActivityId,
+                  userId,
+                }
+              : undefined,
         },
-        objectOwner: {
-          connect: {
-            id: ctx.user.sub,
+        create: {
+          permissionLevel,
+          user: {
+            connect: {
+              id: userId,
+            },
           },
+          answerCollection:
+            typeof answerCollectionId !== 'undefined'
+              ? {
+                  connect: {
+                    id: answerCollectionId,
+                  },
+                }
+              : undefined,
+          element:
+            typeof elementId !== 'undefined'
+              ? {
+                  connect: {
+                    id: elementId,
+                  },
+                }
+              : undefined,
+          course:
+            typeof courseId !== 'undefined'
+              ? {
+                  connect: {
+                    id: courseId,
+                  },
+                }
+              : undefined,
+          liveQuiz:
+            typeof liveQuizId !== 'undefined'
+              ? {
+                  connect: {
+                    id: liveQuizId,
+                  },
+                }
+              : undefined,
+          practiceQuiz:
+            typeof practiceQuizId !== 'undefined'
+              ? {
+                  connect: {
+                    id: practiceQuizId,
+                  },
+                }
+              : undefined,
+          microLearning:
+            typeof microLearningId !== 'undefined'
+              ? {
+                  connect: {
+                    id: microLearningId,
+                  },
+                }
+              : undefined,
+          groupActivity:
+            typeof groupActivityId !== 'undefined'
+              ? {
+                  connect: {
+                    id: groupActivityId,
+                  },
+                }
+              : undefined,
         },
-        answerCollection:
-          typeof answerCollectionId !== 'undefined'
-            ? {
-                connect: {
-                  id: answerCollectionId,
-                },
-              }
-            : undefined,
-        element:
-          typeof elementId !== 'undefined'
-            ? {
-                connect: {
-                  id: elementId,
-                },
-              }
-            : undefined,
-        course:
-          typeof courseId !== 'undefined'
-            ? {
-                connect: {
-                  id: courseId,
-                },
-              }
-            : undefined,
-        liveQuiz:
-          typeof liveQuizId !== 'undefined'
-            ? {
-                connect: {
-                  id: liveQuizId,
-                },
-              }
-            : undefined,
-        practiceQuiz:
-          typeof practiceQuizId !== 'undefined'
-            ? {
-                connect: {
-                  id: practiceQuizId,
-                },
-              }
-            : undefined,
-        microLearning:
-          typeof microLearningId !== 'undefined'
-            ? {
-                connect: {
-                  id: microLearningId,
-                },
-              }
-            : undefined,
-        groupActivity:
-          typeof groupActivityId !== 'undefined'
-            ? {
-                connect: {
-                  id: groupActivityId,
-                },
-              }
-            : undefined,
-      },
-      update: {
-        permissionLevel,
-        permissionStatus: DB.PermissionStatus.GRANTED,
-      },
+        update: {
+          permissionLevel,
+        },
+      })
+
+      // trigger recomputation of derived permissions for the object
+      if (typeof answerCollectionId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { answerCollectionId, userId },
+          prisma
+        )
+      } else if (typeof elementId !== 'undefined') {
+        await recomputeDerivedPermissions({ elementId, userId }, prisma)
+      } else if (typeof courseId !== 'undefined') {
+        await recomputeDerivedPermissions({ courseId, userId }, prisma)
+      } else if (typeof liveQuizId !== 'undefined') {
+        await recomputeDerivedPermissions({ liveQuizId, userId }, prisma)
+      } else if (typeof practiceQuizId !== 'undefined') {
+        await recomputeDerivedPermissions({ practiceQuizId, userId }, prisma)
+      } else if (typeof microLearningId !== 'undefined') {
+        await recomputeDerivedPermissions({ microLearningId, userId }, prisma)
+      } else if (typeof groupActivityId !== 'undefined') {
+        await recomputeDerivedPermissions({ groupActivityId, userId }, prisma)
+      }
+
+      return newPermission
     })
 
     // invalidate permission
@@ -2380,7 +2499,6 @@ export async function shareCatalogObject(
       userGroupId: undefined,
       userGroupName: undefined,
       permissionLevel: permission.permissionLevel,
-      isRevokable: true,
       isOwn: false,
     }
   } else if (userGroupId) {
@@ -2400,6 +2518,7 @@ export async function importAnswerCollection(
   }: { collectionId: number; catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
+  // TODO: move access control to pothos level (if possible)
   // verify that the user has access to the catalog collection the answer collection is contained in
   const validAccess = catalogCollectionId
     ? await verifyCatalogCollectionBrowsable(
@@ -2452,29 +2571,39 @@ export async function importAnswerCollection(
     },
   })
 
-  // create new answer collection with the content of the original one
-  await ctx.prisma.answerCollection.create({
-    data: {
-      originalId: collection.id,
-      name:
-        importCount > 0
-          ? `${collection.name} (${importCount})`
-          : collection.name,
-      description: collection.description,
-      owner: {
-        connect: {
-          id: ctx.user.sub,
+  await ctx.prisma.$transaction(async (prisma) => {
+    // create new answer collection with the content of the original one
+    const newCollection = await prisma.answerCollection.create({
+      data: {
+        originalId: collection.id,
+        name:
+          importCount > 0
+            ? `${collection.name} (${importCount})`
+            : collection.name,
+        description: collection.description,
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
+        },
+        entries: {
+          create: collection.entries.map((entry) => ({
+            value: entry.value,
+          })),
         },
       },
-      entries: {
-        create: collection.entries.map((entry) => ({
-          value: entry.value,
-        })),
+      include: {
+        entries: true,
       },
-    },
-    include: {
-      entries: true,
-    },
+    })
+
+    // trigger recomputation of derived permissions for the object within the transaction
+    await recomputeDerivedPermissions(
+      { answerCollectionId: newCollection.id, userId: ctx.user.sub },
+      prisma
+    )
+
+    return newCollection
   })
 
   // invalidate cache for the existing collection
@@ -2505,7 +2634,6 @@ export async function getAnswerCollectionCatalogInfo(
       permissions: {
         where: {
           userId: ctx.user.sub,
-          permissionStatus: DB.PermissionStatus.GRANTED,
         },
       },
       entries: true,
@@ -2518,10 +2646,7 @@ export async function getAnswerCollectionCatalogInfo(
   })
 
   // check if the user has access to the collection
-  if (
-    !collection ||
-    (collection.permissions.length === 0 && collection.ownerId !== ctx.user.sub)
-  ) {
+  if (!collection || collection.permissions.length === 0) {
     return null
   }
 
@@ -2598,7 +2723,12 @@ export async function getCatalogObjects(
                   shortname: true,
                 },
               },
-              permissions: {
+              directPermissions: {
+                where: {
+                  userId: ctx.user.sub,
+                },
+              },
+              accessRequests: {
                 where: {
                   userId: ctx.user.sub,
                 },
@@ -2616,7 +2746,12 @@ export async function getCatalogObjects(
                   shortname: true,
                 },
               },
-              permissions: {
+              directPermissions: {
+                where: {
+                  userId: ctx.user.sub,
+                },
+              },
+              accessRequests: {
                 where: {
                   userId: ctx.user.sub,
                 },
@@ -2637,7 +2772,7 @@ export async function getCatalogObjects(
     catalogCollection?.objectAssignments.flatMap((assignment) => {
       if (assignment.answerCollection) {
         const answerCollection = assignment.answerCollection
-        const permission = answerCollection.permissions[0]
+        const permission = answerCollection.directPermissions[0]
 
         return {
           id: answerCollection.id,
@@ -2648,20 +2783,14 @@ export async function getCatalogObjects(
           ownerShortname: answerCollection.owner?.shortname,
           isOwner: answerCollection.ownerId === ctx.user.sub,
           isManager:
-            answerCollection.ownerId === ctx.user.sub ||
-            permission?.permissionLevel === DB.PermissionLevel.ADMIN,
-          isRequested:
-            answerCollection.permissions.length > 0 &&
-            typeof permission !== 'undefined' &&
-            permission.permissionStatus === DB.PermissionStatus.REQUESTED,
-          isShared:
-            answerCollection.permissions.length > 0 &&
-            typeof permission !== 'undefined' &&
-            permission.permissionStatus === DB.PermissionStatus.GRANTED,
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+            permission?.permissionLevel === DB.PermissionLevel.OWNER,
+          isRequested: answerCollection.accessRequests.length > 0,
+          isShared: typeof permission !== 'undefined',
         }
       } else if (assignment.liveQuiz) {
         const liveQuiz = assignment.liveQuiz
-        const permission = liveQuiz.permissions[0]
+        const permission = liveQuiz.directPermissions[0]
 
         return {
           uuid: liveQuiz.id,
@@ -2677,16 +2806,10 @@ export async function getCatalogObjects(
           ownerShortname: liveQuiz.owner?.shortname,
           isOwner: liveQuiz.ownerId === ctx.user.sub,
           isManager:
-            liveQuiz.ownerId === ctx.user.sub ||
-            permission?.permissionLevel === DB.PermissionLevel.ADMIN,
-          isRequested:
-            liveQuiz.permissions.length > 0 &&
-            typeof permission !== 'undefined' &&
-            permission.permissionStatus === DB.PermissionStatus.REQUESTED,
-          isShared:
-            liveQuiz.permissions.length > 0 &&
-            typeof permission !== 'undefined' &&
-            permission.permissionStatus === DB.PermissionStatus.GRANTED,
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+            permission?.permissionLevel === DB.PermissionLevel.OWNER,
+          isRequested: liveQuiz.accessRequests.length > 0,
+          isShared: typeof permission !== 'undefined',
         }
       }
 
@@ -2726,20 +2849,14 @@ export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
       ownerId: {
         not: null, // soft deleted answer collections cannot be added to the catalog
       },
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
           },
         },
-      ],
+      },
     },
     orderBy: {
       name: 'asc',
@@ -2757,20 +2874,14 @@ export async function getCatalogLiveQuizTemplates(ctx: ContextWithUser) {
   const liveQuizzes = await ctx.prisma.liveQuiz.findMany({
     where: {
       status: DB.PublicationStatus.TEMPLATE,
-      OR: [
-        {
-          ownerId: ctx.user.sub,
-        },
-        {
-          permissions: {
-            some: {
-              userId: ctx.user.sub,
-              permissionStatus: DB.PermissionStatus.GRANTED,
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
           },
         },
-      ],
+      },
     },
     orderBy: {
       name: 'asc',
@@ -2844,20 +2955,14 @@ export async function addObjectToCatalog(
     const answerCollection = await ctx.prisma.answerCollection.findUnique({
       where: {
         id: answerCollectionId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: DB.PermissionLevel.ADMIN,
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
             },
           },
-        ],
+        },
       },
       include: {
         owner: {
@@ -2866,15 +2971,7 @@ export async function addObjectToCatalog(
           },
         },
         _count: {
-          select: {
-            permissions: {
-              where: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: DB.PermissionLevel.ADMIN,
-              },
-            },
-          },
+          select: { permissions: { where: { userId: ctx.user.sub } } },
         },
       },
     })
@@ -2897,20 +2994,14 @@ export async function addObjectToCatalog(
     const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
       where: {
         id: liveQuizId,
-        OR: [
-          {
-            ownerId: ctx.user.sub,
-          },
-          {
-            permissions: {
-              some: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: DB.PermissionLevel.ADMIN,
-              },
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
             },
           },
-        ],
+        },
       },
       include: {
         owner: {
@@ -2924,15 +3015,7 @@ export async function addObjectToCatalog(
           },
         },
         _count: {
-          select: {
-            permissions: {
-              where: {
-                userId: ctx.user.sub,
-                permissionStatus: DB.PermissionStatus.GRANTED,
-                permissionLevel: DB.PermissionLevel.ADMIN,
-              },
-            },
-          },
+          select: { permissions: { where: { userId: ctx.user.sub } } },
         },
       },
     })

@@ -81,9 +81,10 @@ function SharingRequestApprovalModal({
             e?.stopPropagation()
             const result = await approveObjectSharingRequest({
               variables: {
-                permissionId: request.permissionId,
+                requestId: request.permissionId,
                 userId: request.userId,
                 permissionLevel,
+                propagation: false, // TODO: update this parameter based on user input
               },
               optimisticResponse: {
                 approveObjectSharingRequest: true,

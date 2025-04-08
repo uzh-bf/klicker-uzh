@@ -1365,10 +1365,15 @@ export const Mutation = builder.mutationType({
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
+          requestedPermissionLevel: t.arg({
+            type: PermissionLevel,
+            required: false,
+          }),
         },
         resolve(_, args, ctx) {
           return SharingService.requestCatalogObject(
             {
+              requestedPermissionLevel: args.requestedPermissionLevel,
               catalogCollectionId: args.catalogCollectionId,
               answerCollectionId:
                 args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
@@ -1487,6 +1492,10 @@ export const Mutation = builder.mutationType({
         type: CatalogCollection,
         args: {
           catalogCollectionId: t.arg.string({ required: true }),
+          requestedPermissionLevel: t.arg({
+            type: PermissionLevel,
+            required: false,
+          }),
         },
         resolve(_, args, ctx) {
           return SharingService.requestCatalogCollection(args, ctx)
@@ -1725,9 +1734,10 @@ export const Mutation = builder.mutationType({
       approveObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          permissionId: t.arg.int({ required: true }),
+          requestId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          propagation: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
           return SharingService.resolveObjectSharingRequest(
@@ -1740,12 +1750,17 @@ export const Mutation = builder.mutationType({
       declineObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
-          permissionId: t.arg.int({ required: true }),
+          requestId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
           return SharingService.resolveObjectSharingRequest(
-            { ...args, approved: false },
+            {
+              ...args,
+              permissionLevel: DB.PermissionLevel.READ, // dummy value for interface typing
+              propagation: false,
+              approved: false,
+            },
             ctx
           )
         },

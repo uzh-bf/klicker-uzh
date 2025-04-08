@@ -1347,7 +1347,7 @@ type Mutation {
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!): CatalogObject
-  approveObjectSharingRequest(permissionId: Int!, permissionLevel: PermissionLevel!, userId: String!): Boolean!
+  approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: CatalogObjectType!): Boolean!
@@ -1376,7 +1376,7 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
-  declineObjectSharingRequest(permissionId: Int!, userId: String!): Boolean!
+  declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
   deleteActivityTemplate(activityId: String!, activityType: ActivityType!): String
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
@@ -1447,8 +1447,8 @@ type Mutation {
   removeAnswerCollection(collectionId: Int!): Int
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
-  requestCatalogCollection(catalogCollectionId: String!): CatalogCollection
-  requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!): Boolean!
+  requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
+  requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, responseContent: String!): Feedback
@@ -1776,7 +1776,6 @@ type PerformanceRates {
 
 type PermissionInfo {
   isOwn: Boolean
-  isRevokable: Boolean
   permissionId: Int!
   permissionLevel: PermissionLevel!
   userEmail: String
@@ -1788,13 +1787,9 @@ type PermissionInfo {
 enum PermissionLevel {
   ADMIN
   EXECUTE
+  OWNER
   READ
   WRITE
-}
-
-enum PermissionStatus {
-  GRANTED
-  REQUESTED
 }
 
 type PracticeQuiz {

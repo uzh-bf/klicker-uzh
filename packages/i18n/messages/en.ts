@@ -2488,6 +2488,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       permissionsWRITE: 'Write permissions',
       permissionsADMIN: 'Admin permissions',
       permissionsEXECUTE: 'Execution permissions',
+      permissionsOWNER: 'Owner permissions',
       grantedPermissions: 'Granted Permissions',
       transferOwnership: 'Transfer Ownership',
       importantInformation: 'Important Information',

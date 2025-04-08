@@ -1,5 +1,11 @@
-mutation RequestCatalogCollection($catalogCollectionId: String!) {
-  requestCatalogCollection(catalogCollectionId: $catalogCollectionId) {
+mutation RequestCatalogCollection(
+  $catalogCollectionId: String!
+  $requestedPermissionLevel: PermissionLevel
+) {
+  requestCatalogCollection(
+    catalogCollectionId: $catalogCollectionId
+    requestedPermissionLevel: $requestedPermissionLevel
+  ) {
     id
     name
     access

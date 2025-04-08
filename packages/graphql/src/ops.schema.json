@@ -15477,22 +15477,6 @@
             "description": null,
             "args": [
               {
-                "name": "permissionId",
-                "description": null,
-                "type": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Int",
-                    "ofType": null
-                  }
-                },
-                "defaultValue": null,
-                "isDeprecated": false,
-                "deprecationReason": null
-              },
-              {
                 "name": "permissionLevel",
                 "description": null,
                 "type": {
@@ -15501,6 +15485,38 @@
                   "ofType": {
                     "kind": "ENUM",
                     "name": "PermissionLevel",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "propagation",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "requestId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
                     "ofType": null
                   }
                 },
@@ -17738,7 +17754,7 @@
             "description": null,
             "args": [
               {
-                "name": "permissionId",
+                "name": "requestId",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -21536,6 +21552,18 @@
                 "defaultValue": null,
                 "isDeprecated": false,
                 "deprecationReason": null
+              },
+              {
+                "name": "requestedPermissionLevel",
+                "description": null,
+                "type": {
+                  "kind": "ENUM",
+                  "name": "PermissionLevel",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
               }
             ],
             "type": {
@@ -21589,6 +21617,18 @@
                     "name": "CatalogObjectType",
                     "ofType": null
                   }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "requestedPermissionLevel",
+                "description": null,
+                "type": {
+                  "kind": "ENUM",
+                  "name": "PermissionLevel",
+                  "ofType": null
                 },
                 "defaultValue": null,
                 "isDeprecated": false,
@@ -26315,18 +26355,6 @@
             "deprecationReason": null
           },
           {
-            "name": "isRevokable",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "Boolean",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
             "name": "permissionId",
             "description": null,
             "args": [],
@@ -26434,6 +26462,12 @@
             "deprecationReason": null
           },
           {
+            "name": "OWNER",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "READ",
             "description": null,
             "isDeprecated": false,
@@ -26441,30 +26475,6 @@
           },
           {
             "name": "WRITE",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "PermissionStatus",
-        "description": null,
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "GRANTED",
-            "description": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "REQUESTED",
             "description": null,
             "isDeprecated": false,
             "deprecationReason": null
