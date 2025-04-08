@@ -80,7 +80,13 @@ export async function recomputeDerivedPermissions(
       prisma
     )
   } else if (typeof elementId !== 'undefined') {
-    // TODO: call corresponding function
+    await recomputeElementPermissions(
+      {
+        id: elementId,
+        userId,
+      },
+      prisma
+    )
   } else if (typeof courseId !== 'undefined') {
     // TODO: call corresponding function
   } else if (typeof liveQuizId !== 'undefined') {
@@ -110,7 +116,7 @@ async function recomputeCatalogCollectionPermissions(
 ) {
   // for the top-level default catalog collection, no permissions are awarded
   if (id === MISSING_CATALOG_COLLECTION_ID) {
-    return null
+    return
   }
 
   // if a user is defined, only recompute derived permissions for this user
@@ -168,9 +174,9 @@ async function recomputeCatalogCollectionPermissionsUser(
     },
   })
 
-  // if the catalog collection does not exist, return null
+  // if the catalog collection does not exist, return
   if (!catalogCollection) {
-    return null
+    return
   }
 
   // determine the maximum access level of the user
@@ -180,20 +186,17 @@ async function recomputeCatalogCollectionPermissionsUser(
   if (catalogCollection.ownerId === userId) {
     maxAccessLevel = DB.PermissionLevel.OWNER
   } else if (catalogCollection.directPermissions.length > 0) {
-    // if there is more than one direct permission, something went wrong
-    if (catalogCollection.directPermissions.length > 1) {
-      throw new Error(
-        `More than one direct permission found for catalog collection ${id} and a single user with id ${userId}.`
-      )
-    }
+    // determine the highest available direct permission level
+    const { maxDirectPermission, directPermissionId } =
+      getMaxAccessLevelIndividual({
+        directPermissions: catalogCollection.directPermissions,
+      })
 
-    // extract the object access from the direct permission
-    const directPermission = catalogCollection.directPermissions[0]!
-    maxAccessLevel = directPermission.permissionLevel
-    parentPermissionId = directPermission.id
+    maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
+    parentPermissionId = directPermissionId
   } else {
     // no permission found that would justify access
-    return null
+    return
   }
 
   // if the user still has access, add a corresponding derived permission
@@ -209,11 +212,9 @@ async function recomputeCatalogCollectionPermissionsUser(
         user: { connect: { id: userId } },
       },
     })
-
-    return derivedPermission
   }
 
-  return null
+  return
 }
 
 async function recomputeCatalogCollectionPermissionsObject(
@@ -319,7 +320,7 @@ async function recomputeAnswerCollectionPermissionsUser(
     })
   }
 
-  // check if the user is the owner of the catalog collection or has a direct permission
+  // check for ownership, direct permissions or links to other objects that would imply derived permissions
   const answerCollection = await prisma.answerCollection.findUnique({
     where: {
       id,
@@ -358,9 +359,9 @@ async function recomputeAnswerCollectionPermissionsUser(
     },
   })
 
-  // if the answer collection does not exist, return null
+  // if the answer collection does not exist, return
   if (!answerCollection) {
-    return null
+    return
   }
 
   // determine the maximum access level of the user
@@ -378,18 +379,15 @@ async function recomputeAnswerCollectionPermissionsUser(
     answerCollection.linkedElements.length > 0 ||
     answerCollection.linkedTemplates.length > 0
   ) {
-    // if there is more than one direct permission, something went wrong
-    if (answerCollection.directPermissions.length > 1) {
-      throw new Error(
-        `More than one direct permission found for answer collection ${id} (id) and a single user ${userId} (id).`
-      )
-    }
-
     if (answerCollection.directPermissions.length > 0) {
-      // extract the object access from the direct permission
-      const directPermission = answerCollection.directPermissions[0]!
-      maxAccessLevel = directPermission.permissionLevel
-      parentPermissionId = directPermission.id
+      // determine the highest available direct permission level
+      const { maxDirectPermission, directPermissionId } =
+        getMaxAccessLevelIndividual({
+          directPermissions: answerCollection.directPermissions,
+        })
+
+      maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
+      parentPermissionId = directPermissionId
     }
     // if the user does not have direct access to the answer collection, but has access to linked elements -> derived permission
     // if direct access was granted, inherited permissions do not need to be considered -> can only be READ level for answer collections
@@ -443,7 +441,7 @@ async function recomputeAnswerCollectionPermissionsUser(
     }
   } else {
     // no direct permission or derived access found that would justify access
-    return null
+    return
   }
 
   // if the user still has access, add a corresponding derived permission
@@ -472,11 +470,9 @@ async function recomputeAnswerCollectionPermissionsUser(
         },
       },
     })
-
-    return derivedPermission
   }
 
-  return null
+  return
 }
 
 async function recomputeAnswerCollectionPermissionsObject(
@@ -608,37 +604,495 @@ async function recomputeAnswerCollectionPermissionsObject(
 }
 // #endregion
 
+// ! Derived permission recomputation for answer collections
+// #region
+async function recomputeElementPermissions(
+  {
+    id,
+    userId,
+  }: {
+    id: number
+    userId?: string
+  },
+  prisma: PrismaTransactionClient
+) {
+  // if a user is defined, only recompute derived permissions for this user
+  if (userId) {
+    return await recomputeElementPermissionsUser({ id, userId }, prisma)
+  }
+
+  // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
+  return await recomputeElementPermissionsObject({ id }, prisma)
+}
+
+async function recomputeElementPermissionsUser(
+  { id, userId }: { id: number; userId: string },
+  prisma: PrismaTransactionClient
+) {
+  // check if a permission for this user exists
+  const existingPermission = await prisma.derivedPermission.findUnique({
+    where: {
+      elementId_userId: {
+        elementId: id,
+        userId,
+      },
+    },
+  })
+
+  // if a derived permission exists, remove it
+  if (existingPermission) {
+    await prisma.derivedPermission.delete({
+      where: {
+        elementId_userId: {
+          elementId: id,
+          userId,
+        },
+      },
+    })
+  }
+
+  // check if the user has a direct permission or ownership on the element, fetch linked answer collections and activities the element is included in
+  const element = await prisma.element.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      directPermissions: {
+        where: {
+          OR: [
+            { userId },
+            { userGroup: { members: { some: { id: userId } } } },
+          ],
+        },
+      },
+      // fetch all instances that are included in acitvities where the user has admin permissions -> derived admin permissions
+      elementInstances: {
+        take: 1, // a single instance in the corresponding activity is sufficient for admin permissions
+        where: {
+          OR: [
+            {
+              elementStack: {
+                OR: [
+                  {
+                    practiceQuiz: {
+                      permissions: {
+                        some: {
+                          userId,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.ADMIN,
+                              DB.PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                  {
+                    microLearning: {
+                      permissions: {
+                        some: {
+                          userId,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.ADMIN,
+                              DB.PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                  {
+                    groupActivity: {
+                      permissions: {
+                        some: {
+                          userId,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.ADMIN,
+                              DB.PermissionLevel.OWNER,
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+            {
+              elementBlock: {
+                liveQuiz: {
+                  permissions: {
+                    some: {
+                      userId,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+        include: {
+          elementBlock: {
+            include: {
+              liveQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          elementStack: {
+            include: {
+              practiceQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+              microLearning: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+              groupActivity: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // if the element does not exist, return
+  if (!element) {
+    return
+  }
+
+  // determine the maximum access level of the user
+  let maxAccessLevel: DB.PermissionLevel | undefined = undefined
+  let parentPermissionId: number | undefined = undefined
+  let derived = false
+
+  if (element.ownerId === userId) {
+    maxAccessLevel = DB.PermissionLevel.OWNER
+  } else {
+    // determine the highest available direct permission level (groups and individual direct permissions)
+    if (element.directPermissions.length > 0) {
+      const { maxDirectPermission, directPermissionId } =
+        getMaxAccessLevelIndividual({
+          directPermissions: element.directPermissions,
+        })
+
+      maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
+      parentPermissionId = directPermissionId
+    }
+
+    // if the element is included in an activity where the user has ADMIN / OWNER permissions
+    // --> owner requires derived admin permissions (at least) - skip if direct ADMIn permissions are already granted
+    if (
+      element.elementInstances.length > 0 &&
+      maxAccessLevel !== DB.PermissionLevel.ADMIN
+    ) {
+      const instance = element.elementInstances[0]!
+      const permission =
+        instance.elementBlock?.liveQuiz?.permissions[0] ??
+        instance.elementStack?.practiceQuiz?.permissions[0] ??
+        instance.elementStack?.microLearning?.permissions[0] ??
+        instance.elementStack?.groupActivity?.permissions[0]
+
+      if (permission) {
+        maxAccessLevel = DB.PermissionLevel.ADMIN
+        parentPermissionId = permission.directPermissionId ?? undefined
+        derived = true // permission was derived from another element
+      }
+    }
+  }
+
+  // if the user has access, add a corresponding derived permission
+  if (typeof maxAccessLevel !== 'undefined') {
+    await prisma.derivedPermission.create({
+      data: {
+        permissionLevel: maxAccessLevel,
+        derived,
+        element: { connect: { id } },
+        directPermission:
+          typeof parentPermissionId !== 'undefined'
+            ? { connect: { id: parentPermissionId } }
+            : undefined,
+        user: { connect: { id: userId } },
+      },
+    })
+  }
+
+  // compute derived permissions for answer collections that are linked to the element (= PROPAGATION = MIN. REQUIRED)
+  if (element.answerCollectionId !== null) {
+    await recomputeAnswerCollectionPermissionsUser(
+      { id: element.answerCollectionId, userId },
+      prisma
+    )
+  }
+
+  return
+}
+
+async function recomputeElementPermissionsObject(
+  { id }: { id: number },
+  prisma: PrismaTransactionClient
+) {
+  // delete all derived permissions for this element
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      elementId: id,
+    },
+  })
+
+  // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
+  // (ADMIN / OWNER permissions on the activity should automatically imply ADMIN permissions on the contained elements to enable propagation)
+  const element = await prisma.element.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      directPermissions: {
+        include: {
+          userGroup: {
+            include: {
+              members: true,
+            },
+          },
+        },
+      },
+      elementInstances: {
+        include: {
+          elementBlock: {
+            include: {
+              liveQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          elementStack: {
+            include: {
+              practiceQuiz: {
+                include: {
+                  permissions: {
+                    where: {
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+              microLearning: {
+                include: {
+                  permissions: {
+                    where: {
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+              groupActivity: {
+                include: {
+                  permissions: {
+                    where: {
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!element || !element.ownerId) {
+    throw new Error(`Catalog collection with id ${id} not found`)
+  }
+
+  // determine the access map based on ownership and direct permissions
+  const directUserAccess = getMaxAccessLevelCombined({
+    directPermissions: element.directPermissions,
+    ownerId: element.ownerId,
+  })
+
+  // get all activity permissions (ADMIN and OWNER level), which make a user qualify for ADMIN access on the element
+  const adminActivityPermissions: DB.DerivedPermission[] =
+    element.elementInstances.flatMap((instance) => [
+      ...(instance.elementBlock?.liveQuiz.permissions ?? []),
+      ...(instance.elementStack?.practiceQuiz?.permissions ?? []),
+      ...(instance.elementStack?.microLearning?.permissions ?? []),
+      ...(instance.elementStack?.groupActivity?.permissions ?? []),
+    ])
+
+  // extend the user access map based on the activity permissions resulting in derived ADMIN access
+  const userAccess =
+    adminActivityPermissions.length > 0
+      ? adminActivityPermissions.reduce<UserAccessMap>(
+          (acc, permission) => {
+            // if the user already has a permission, check if it is already on ADMIN level
+            if (
+              typeof acc[permission.userId] !== 'undefined' &&
+              acc[permission.userId]!.maxAccessLevel !==
+                DB.PermissionLevel.ADMIN &&
+              acc[permission.userId]!.maxAccessLevel !==
+                DB.PermissionLevel.OWNER
+            ) {
+              acc[permission.userId]!.maxAccessLevel = DB.PermissionLevel.ADMIN
+              acc[permission.userId]!.parentPermissionId =
+                permission.directPermissionId ?? undefined
+              acc[permission.userId]!.derived = true // permission was derived from an activity with ADMIN permissions
+            }
+
+            // if user does not have a permission yet, add it
+            if (typeof acc[permission.userId] === 'undefined') {
+              acc[permission.userId] = {
+                maxAccessLevel: DB.PermissionLevel.ADMIN,
+                parentPermissionId: permission.directPermissionId ?? undefined,
+                derived: true, // permission was derived from an activity with ADMIN permissions
+              }
+            }
+
+            return acc
+          },
+          { ...directUserAccess }
+        )
+      : directUserAccess
+
+  // create derived permissions for each user with access
+  await prisma.derivedPermission.createMany({
+    data: Object.entries(userAccess).map(
+      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
+        permissionLevel: maxAccessLevel,
+        derived,
+        userId,
+        elementId: id,
+        directPermissionId: parentPermissionId,
+      })
+    ),
+  })
+
+  // compute derived permissions for answer collections that are linked to the element (= PROPAGATION = MIN. REQUIRED)
+  if (element.answerCollectionId !== null) {
+    await recomputeAnswerCollectionPermissionsObject(
+      { id: element.answerCollectionId },
+      prisma
+    )
+  }
+}
+// #endregion
+
+// TODO: for activity permissions: check if course above has permissions that propagate downwards & call element derived permission propagation to continue propagation (if necessary = ADMIN / OWNER permissions on activity)
+// TODO: for course permissions: compute derived permissions based on direct permissions and call activity permission recomputation depending on the access level of the user (however, pretty much every permission level on the course implies permissions on the contained activities - KEEP IN MIND EFFECT OF PROPAGATION PARAMETER HERE)
+
 // ! Generic helper functions for maximum access level determination (for objects WITHOUT derived access rights)
-// TODO: remove this function if it is not useful in any case
-// function getMaxAccessLevelIndividual({
-//   directPermissions,
-// }: {
-//   directPermissions: DB.Permission[]
-// }) {
-//   return directPermissions.reduce<{
-//     maxDirectPermission: number
-//     directPermissionId: number | undefined
-//   }>(
-//     (acc, directPermission) => {
-//       if (
-//         permissionLevelMap[directPermission.permissionLevel] >
-//         acc.maxDirectPermission
-//       ) {
-//         return {
-//           maxDirectPermission:
-//             permissionLevelMap[directPermission.permissionLevel],
-//           directPermissionId: directPermission.id,
-//         }
-//       } else {
-//         return acc
-//       }
-//     },
-//     {
-//       maxDirectPermission: permissionLevelMap['NONE'],
-//       directPermissionId: undefined,
-//     }
-//   )
-// }
+function getMaxAccessLevelIndividual({
+  directPermissions,
+}: {
+  directPermissions: DB.Permission[]
+}) {
+  return directPermissions.reduce<{
+    maxDirectPermission: number
+    directPermissionId: number | undefined
+  }>(
+    (acc, directPermission) => {
+      if (
+        permissionLevelMap[directPermission.permissionLevel] >
+        acc.maxDirectPermission
+      ) {
+        return {
+          maxDirectPermission:
+            permissionLevelMap[directPermission.permissionLevel],
+          directPermissionId: directPermission.id,
+        }
+      } else {
+        return acc
+      }
+    },
+    {
+      maxDirectPermission: permissionLevelMap['NONE'],
+      directPermissionId: undefined,
+    }
+  )
+}
 
 function getMaxAccessLevelCombined({
   directPermissions,
