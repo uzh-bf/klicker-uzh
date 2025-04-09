@@ -1072,6 +1072,7 @@ async function recomputeElementPermissionsObject(
 // #endregion
 
 // ! Derived permission recomputation for live quizzes
+// #region
 async function recomputeLiveQuizPermissions(
   {
     id,
@@ -1158,68 +1159,22 @@ async function recomputeLiveQuizPermissionsUser(
     return
   }
 
-  // determine the maximum access level of the user
-  let maxAccessLevel: DB.PermissionLevel | undefined = undefined
-  let parentPermissionId: number | undefined = undefined
-  let derived = false
+  // compute the derived permission level (maximum) for this user on the activity
+  const res = getActivityPermissionsUser({
+    activityOwnerId: liveQuiz.ownerId,
+    activityDeleted: liveQuiz.isDeleted,
+    userId,
+    directPermissions: liveQuiz.directPermissions,
+    coursePermissions: liveQuiz.course?.permissions ?? [],
+  })
 
-  // if user is answer collection owner, set the corresponding permission
-  if (liveQuiz.ownerId === userId) {
-    maxAccessLevel = DB.PermissionLevel.OWNER
-  }
-  // if the user has a direct permission or a derived access, use this case
-  else if (
-    liveQuiz.directPermissions.length > 0 ||
-    (liveQuiz.course?.permissions.length ?? -1) > 0
-  ) {
-    // if the activity is soft-deleted, no direct permissions are valid anymore
-    if (liveQuiz.directPermissions.length > 0 && !liveQuiz.isDeleted) {
-      // determine the highest available direct permission level
-      const { maxDirectPermission, directPermissionId } =
-        getMaxAccessLevelIndividual({
-          directPermissions: liveQuiz.directPermissions,
-        })
-
-      maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
-      parentPermissionId = directPermissionId
-    }
-    // if the user does not have direct access to the quiz, but has access to the course this quiz is inside of
-    // depending on the propagation setting, the user will receive different permissions
-    // since permissions on courses cannot be derived, derived permission entries should always be linked to direct permission
-    else if (
-      typeof maxAccessLevel === 'undefined' &&
-      (liveQuiz.course?.permissions.length ?? -1) > 0 &&
-      !!liveQuiz.course?.permissions[0]?.directPermission
-    ) {
-      // if the user has more than one derived permission on the linked element, something went wrong
-      if (liveQuiz.course.permissions.length !== 1) {
-        throw new Error(
-          `More or less than one derived permission found for answer collection ${id} (id) and a single user ${userId} (id).`
-        )
-      }
-
-      // derived permission on this object for this user should be unique
-      const permission = liveQuiz.course.permissions[0]!
-
-      // compute the derived permissions based on the course permissions
-      const {
-        maxAccessLevel: courseMaxAccessLevel,
-        parentPermissionId: courseParentPermissionId,
-        derived: courseDerived,
-      } = getActivityAccessFromCourse({
-        coursePermissionLevel: permission.permissionLevel,
-        directCoursePermission: permission.directPermission!,
-      })
-      maxAccessLevel = courseMaxAccessLevel
-      parentPermissionId = courseParentPermissionId
-      derived = courseDerived
-    }
-  } else {
-    // no direct permission or derived access found that would justify access
+  // if no valid derived permission was computed, return early
+  if (res === null) {
     return
   }
 
   // if the user still has access, add a corresponding derived permission
+  const { maxAccessLevel, parentPermissionId, derived } = res
   if (typeof maxAccessLevel !== 'undefined') {
     await prisma.derivedPermission.create({
       data: {
@@ -1247,17 +1202,9 @@ async function recomputeLiveQuizPermissionsUser(
     })
 
     // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    const elementIds = liveQuiz.blocks.flatMap((block) =>
-      block.elements.map((instance) => instance.elementId)
-    )
-    await Promise.all(
-      elementIds.map(
-        async (elementId) =>
-          await recomputeElementPermissionsUser(
-            { id: elementId, userId },
-            prisma
-          )
-      )
+    await propagateActivityToElementsUser(
+      { stacks: liveQuiz.blocks, userId },
+      prisma
     )
   }
 
@@ -1315,56 +1262,12 @@ async function recomputeLiveQuizPermissionsObject(
     throw new Error(`Live quiz with id ${id} or corresponding owner not found`)
   }
 
-  // determine the access map based on ownership and direct permissions
-  const directUserAccess = getMaxAccessLevelCombined({
+  // compute a map between all users with direct or direct access to the considered activity
+  const userAccess = getActivityPermissionsObject({
+    activityOwnerId: liveQuiz.ownerId,
     directPermissions: liveQuiz.directPermissions,
-    ownerId: liveQuiz.ownerId,
+    coursePermissions: liveQuiz.course?.permissions ?? [],
   })
-
-  // get all permissions on the course that would give rise to a derived permission on the activity
-  const coursePermissions = liveQuiz.course?.permissions ?? []
-
-  // extend the user access map based on the course permissions
-  const userAccess =
-    coursePermissions.length > 0
-      ? coursePermissions.reduce<UserAccessMap>(
-          (acc, coursePermission) => {
-            // get the corresponding direct permission
-            const directCoursePermission = coursePermission.directPermission
-
-            if (!directCoursePermission) {
-              return acc
-            }
-
-            // check if the user does not have a permission on the activity yet or if the new permission is higher
-            if (
-              typeof acc[coursePermission.userId] === 'undefined' ||
-              permissionLevelMap[coursePermission.permissionLevel] >
-                permissionLevelMap[acc[coursePermission.userId]!.maxAccessLevel]
-            ) {
-              // depending on the permission level and the propagation setting on the direct course permission, choose the derived permission level
-              const {
-                maxAccessLevel: courseMaxAccessLevel,
-                parentPermissionId: courseParentPermissionId,
-                derived: courseDerived,
-              } = getActivityAccessFromCourse({
-                coursePermissionLevel: coursePermission.permissionLevel,
-                directCoursePermission: coursePermission.directPermission!,
-              })
-
-              if (typeof courseMaxAccessLevel !== 'undefined')
-                acc[coursePermission.userId] = {
-                  maxAccessLevel: courseMaxAccessLevel,
-                  parentPermissionId: courseParentPermissionId,
-                  derived: courseDerived,
-                }
-            }
-
-            return acc
-          },
-          { ...directUserAccess }
-        )
-      : directUserAccess
 
   // create derived permissions for each user with access
   await prisma.derivedPermission.createMany({
@@ -1380,16 +1283,15 @@ async function recomputeLiveQuizPermissionsObject(
   })
 
   // recompute the derived permissions on all elements contained in this activity
-  const elementIds = liveQuiz.blocks.flatMap((block) =>
-    block.elements.map((instance) => instance.elementId)
-  )
-  Promise.all(
-    elementIds.map(
-      async (elementId) =>
-        await recomputeElementPermissionsObject({ id: elementId }, prisma)
-    )
+  await propagateActivityToElements(
+    {
+      stacks: liveQuiz.blocks,
+      userId: liveQuiz.ownerId,
+    },
+    prisma
   )
 }
+// #endregion
 
 // TODO: for course permissions: compute derived permissions based on direct permissions and call activity permission recomputation depending on the access level of the user (however, pretty much every permission level on the course implies permissions on the contained activities - KEEP IN MIND EFFECT OF PROPAGATION PARAMETER HERE)
 
@@ -1543,5 +1445,191 @@ function getActivityAccessFromCourse({
   }
 
   return { maxAccessLevel, parentPermissionId, derived }
+}
+
+function getActivityPermissionsUser({
+  activityOwnerId,
+  activityDeleted,
+  userId,
+  directPermissions,
+  coursePermissions,
+}: {
+  activityOwnerId: string
+  activityDeleted: boolean
+  userId: string
+  directPermissions: DB.Permission[]
+  coursePermissions: (DB.DerivedPermission & {
+    directPermission?: DB.Permission | null
+  })[]
+}) {
+  // determine the maximum access level of the user
+  let maxAccessLevel: DB.PermissionLevel | undefined = undefined
+  let parentPermissionId: number | undefined = undefined
+  let derived = false
+
+  // if user is answer collection owner, set the corresponding permission
+  if (activityOwnerId === userId) {
+    maxAccessLevel = DB.PermissionLevel.OWNER
+  }
+  // if the user has a direct permission or a derived access, use this case
+  else if (
+    directPermissions.length > 0 ||
+    (coursePermissions.length ?? -1) > 0
+  ) {
+    // if the activity is soft-deleted, no direct permissions are valid anymore
+    if (directPermissions.length > 0 && !activityDeleted) {
+      // determine the highest available direct permission level
+      const { maxDirectPermission, directPermissionId } =
+        getMaxAccessLevelIndividual({
+          directPermissions: directPermissions,
+        })
+
+      maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
+      parentPermissionId = directPermissionId
+    }
+    // if the user does not have direct access to the quiz, but has access to the course this quiz is inside of
+    // depending on the propagation setting, the user will receive different permissions
+    // since permissions on courses cannot be derived, derived permission entries should always be linked to direct permission
+    else if (
+      typeof maxAccessLevel === 'undefined' &&
+      (coursePermissions.length ?? -1) > 0 &&
+      !!coursePermissions[0]?.directPermission
+    ) {
+      // if the user has more than one derived permission on the linked element, something went wrong
+      if (coursePermissions.length !== 1) {
+        throw new Error(
+          `More or less than one derived permission found for a course linked to an activity and a single user ${userId} (id).`
+        )
+      }
+
+      // derived permission on this object for this user should be unique
+      const permission = coursePermissions[0]!
+
+      // compute the derived permissions based on the course permissions
+      const {
+        maxAccessLevel: courseMaxAccessLevel,
+        parentPermissionId: courseParentPermissionId,
+        derived: courseDerived,
+      } = getActivityAccessFromCourse({
+        coursePermissionLevel: permission.permissionLevel,
+        directCoursePermission: permission.directPermission!,
+      })
+      maxAccessLevel = courseMaxAccessLevel
+      parentPermissionId = courseParentPermissionId
+      derived = courseDerived
+    }
+  } else {
+    return null
+  }
+
+  return { maxAccessLevel, parentPermissionId, derived }
+}
+
+async function propagateActivityToElementsUser(
+  {
+    stacks,
+    userId,
+  }: {
+    stacks:
+      | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] }[])
+      | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] }[])
+    userId: string
+  },
+  prisma: PrismaTransactionClient
+) {
+  const elementIds = stacks.flatMap((stack) =>
+    stack.elements.map((instance) => instance.elementId)
+  )
+  await Promise.all(
+    elementIds.map(
+      async (elementId) =>
+        await recomputeElementPermissionsUser({ id: elementId, userId }, prisma)
+    )
+  )
+}
+
+function getActivityPermissionsObject({
+  activityOwnerId,
+  directPermissions,
+  coursePermissions,
+}: {
+  activityOwnerId: string
+  directPermissions: DB.Permission[]
+  coursePermissions: (DB.DerivedPermission & {
+    directPermission?: DB.Permission | null
+  })[]
+}) {
+  // determine the access map based on ownership and direct permissions
+  const directUserAccess = getMaxAccessLevelCombined({
+    directPermissions: directPermissions,
+    ownerId: activityOwnerId,
+  })
+
+  // extend the user access map based on the course permissions
+  const userAccess =
+    coursePermissions.length > 0
+      ? coursePermissions.reduce<UserAccessMap>(
+          (acc, coursePermission) => {
+            // get the corresponding direct permission
+            const directCoursePermission = coursePermission.directPermission
+
+            if (!directCoursePermission) {
+              return acc
+            }
+
+            // check if the user does not have a permission on the activity yet or if the new permission is higher
+            if (
+              typeof acc[coursePermission.userId] === 'undefined' ||
+              permissionLevelMap[coursePermission.permissionLevel] >
+                permissionLevelMap[acc[coursePermission.userId]!.maxAccessLevel]
+            ) {
+              // depending on the permission level and the propagation setting on the direct course permission, choose the derived permission level
+              const {
+                maxAccessLevel: courseMaxAccessLevel,
+                parentPermissionId: courseParentPermissionId,
+                derived: courseDerived,
+              } = getActivityAccessFromCourse({
+                coursePermissionLevel: coursePermission.permissionLevel,
+                directCoursePermission: coursePermission.directPermission!,
+              })
+
+              if (typeof courseMaxAccessLevel !== 'undefined')
+                acc[coursePermission.userId] = {
+                  maxAccessLevel: courseMaxAccessLevel,
+                  parentPermissionId: courseParentPermissionId,
+                  derived: courseDerived,
+                }
+            }
+
+            return acc
+          },
+          { ...directUserAccess }
+        )
+      : directUserAccess
+
+  return userAccess
+}
+
+async function propagateActivityToElements(
+  {
+    stacks,
+    userId,
+  }: {
+    stacks:
+      | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] }[])
+      | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] }[])
+    userId: string
+  },
+  prisma: PrismaTransactionClient
+) {
+  const elementIds = stacks.flatMap((stack) =>
+    stack.elements.map((instance) => instance.elementId)
+  )
+  Promise.all(
+    elementIds.map(
+      async (elementId) =>
+        await recomputeElementPermissionsObject({ id: elementId }, prisma)
+    )
+  )
 }
 // #endregion
