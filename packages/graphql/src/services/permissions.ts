@@ -96,11 +96,29 @@ export async function recomputeDerivedPermissions(
       prisma
     )
   } else if (typeof practiceQuizId !== 'undefined') {
-    // TODO: call corresponding function
+    await recomputePracticeQuizPermissions(
+      {
+        id: practiceQuizId,
+        userId,
+      },
+      prisma
+    )
   } else if (typeof microLearningId !== 'undefined') {
-    // TODO: call corresponding function
+    await recomputeMicroLearningPermissions(
+      {
+        id: microLearningId,
+        userId,
+      },
+      prisma
+    )
   } else if (typeof groupActivityId !== 'undefined') {
-    // TODO: call corresponding function
+    await recomputeGroupActivityPermissions(
+      {
+        id: groupActivityId,
+        userId,
+      },
+      prisma
+    )
   } else if (typeof courseId !== 'undefined') {
     // TODO: call corresponding function
   } else {
@@ -1287,6 +1305,678 @@ async function recomputeLiveQuizPermissionsObject(
     {
       stacks: liveQuiz.blocks,
       userId: liveQuiz.ownerId,
+    },
+    prisma
+  )
+}
+// #endregion
+
+// ! Derived permission recomputation for practice quizzes
+// #region
+async function recomputePracticeQuizPermissions(
+  {
+    id,
+    userId,
+  }: {
+    id: string
+    userId?: string
+  },
+  prisma: PrismaTransactionClient
+) {
+  // if a user is defined, only recompute derived permissions for this user
+  if (userId) {
+    return await recomputePracticeQuizPermissionsUser({ id, userId }, prisma)
+  }
+
+  // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
+  return await recomputePracticeQuizPermissionsObject({ id }, prisma)
+}
+
+async function recomputePracticeQuizPermissionsUser(
+  { id, userId }: { id: string; userId: string },
+  prisma: PrismaTransactionClient
+) {
+  // check if a permission for this user exists
+  const existingPermission = await prisma.derivedPermission.findUnique({
+    where: {
+      practiceQuizId_userId: {
+        practiceQuizId: id,
+        userId,
+      },
+    },
+  })
+
+  // if a derived permission exists, remove it
+  if (existingPermission) {
+    await prisma.derivedPermission.delete({
+      where: {
+        practiceQuizId_userId: {
+          practiceQuizId: id,
+          userId,
+        },
+      },
+    })
+  }
+
+  // check for ownership, direct permissions, links to a course that would imply derived permissions
+  const practiceQuiz = await prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      directPermissions: {
+        where: {
+          OR: [
+            { userId },
+            { userGroup: { members: { some: { id: userId } } } },
+          ],
+        },
+      },
+      // course from which derived permissions would be inherited
+      course: {
+        include: {
+          permissions: {
+            where: {
+              userId,
+            },
+            include: {
+              directPermission: true,
+            },
+          },
+        },
+      },
+      // element instances (with elementId on them) contained in this quiz to propagate the derived permission update to elements
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  // if the practice quiz does not exist, return
+  if (!practiceQuiz) {
+    return
+  }
+
+  // compute the derived permission level (maximum) for this user on the activity
+  const res = getActivityPermissionsUser({
+    activityOwnerId: practiceQuiz.ownerId,
+    activityDeleted: practiceQuiz.isDeleted,
+    userId,
+    directPermissions: practiceQuiz.directPermissions,
+    coursePermissions: practiceQuiz.course?.permissions ?? [],
+  })
+
+  // if no valid derived permission was computed, return early
+  if (res === null) {
+    return
+  }
+
+  // if the user still has access, add a corresponding derived permission
+  const { maxAccessLevel, parentPermissionId, derived } = res
+  if (typeof maxAccessLevel !== 'undefined') {
+    await prisma.derivedPermission.create({
+      data: {
+        permissionLevel: maxAccessLevel,
+        derived,
+        practiceQuiz: {
+          connect: {
+            id,
+          },
+        },
+        directPermission:
+          typeof parentPermissionId !== 'undefined'
+            ? {
+                connect: {
+                  id: parentPermissionId,
+                },
+              }
+            : undefined,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    })
+
+    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
+    await propagateActivityToElementsUser(
+      { stacks: practiceQuiz.stacks, userId },
+      prisma
+    )
+  }
+
+  return
+}
+
+async function recomputePracticeQuizPermissionsObject(
+  { id }: { id: string },
+  prisma: PrismaTransactionClient
+) {
+  // delete all derived permissions for this element
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      practiceQuizId: id,
+    },
+  })
+
+  // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
+  // permissions on the course should automatically imply corresponding permissions on the contained practice quizzes
+  // depending on the permission level on the activity, derived permissions on the contained elements might be required
+  const practiceQuiz = await prisma.practiceQuiz.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      directPermissions: {
+        include: {
+          userGroup: {
+            include: {
+              members: true,
+            },
+          },
+        },
+      },
+      // course from which derived permissions would be inherited
+      course: {
+        include: {
+          permissions: {
+            include: {
+              directPermission: true,
+            },
+          },
+        },
+      },
+      // element instances contained in the activity to propagate the derived permission update to elements
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!practiceQuiz || !practiceQuiz.ownerId) {
+    throw new Error(
+      `Practice quiz with id ${id} or corresponding owner not found`
+    )
+  }
+
+  // compute a map between all users with direct or direct access to the considered activity
+  const userAccess = getActivityPermissionsObject({
+    activityOwnerId: practiceQuiz.ownerId,
+    directPermissions: practiceQuiz.directPermissions,
+    coursePermissions: practiceQuiz.course?.permissions ?? [],
+  })
+
+  // create derived permissions for each user with access
+  await prisma.derivedPermission.createMany({
+    data: Object.entries(userAccess).map(
+      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
+        permissionLevel: maxAccessLevel,
+        derived,
+        userId,
+        practiceQuizId: id,
+        directPermissionId: parentPermissionId,
+      })
+    ),
+  })
+
+  // recompute the derived permissions on all elements contained in this activity
+  await propagateActivityToElements(
+    {
+      stacks: practiceQuiz.stacks,
+      userId: practiceQuiz.ownerId,
+    },
+    prisma
+  )
+}
+// #endregion
+
+// ! Derived permission recomputation for microlearnings
+// #region
+async function recomputeMicroLearningPermissions(
+  {
+    id,
+    userId,
+  }: {
+    id: string
+    userId?: string
+  },
+  prisma: PrismaTransactionClient
+) {
+  // if a user is defined, only recompute derived permissions for this user
+  if (userId) {
+    return await recomputeMicroLearningPermissionsUser({ id, userId }, prisma)
+  }
+
+  // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
+  return await recomputeMicroLearningPermissionsObject({ id }, prisma)
+}
+
+async function recomputeMicroLearningPermissionsUser(
+  { id, userId }: { id: string; userId: string },
+  prisma: PrismaTransactionClient
+) {
+  // check if a permission for this user exists
+  const existingPermission = await prisma.derivedPermission.findUnique({
+    where: {
+      microLearningId_userId: {
+        microLearningId: id,
+        userId,
+      },
+    },
+  })
+
+  // if a derived permission exists, remove it
+  if (existingPermission) {
+    await prisma.derivedPermission.delete({
+      where: {
+        microLearningId_userId: {
+          microLearningId: id,
+          userId,
+        },
+      },
+    })
+  }
+
+  // check for ownership, direct permissions, links to a course that would imply derived permissions
+  const microLearning = await prisma.microLearning.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      directPermissions: {
+        where: {
+          OR: [
+            { userId },
+            { userGroup: { members: { some: { id: userId } } } },
+          ],
+        },
+      },
+      // course from which derived permissions would be inherited
+      course: {
+        include: {
+          permissions: {
+            where: {
+              userId,
+            },
+            include: {
+              directPermission: true,
+            },
+          },
+        },
+      },
+      // element instances (with elementId on them) contained in this quiz to propagate the derived permission update to elements
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  // if the microlearning does not exist, return
+  if (!microLearning) {
+    return
+  }
+
+  // compute the derived permission level (maximum) for this user on the activity
+  const res = getActivityPermissionsUser({
+    activityOwnerId: microLearning.ownerId,
+    activityDeleted: microLearning.isDeleted,
+    userId,
+    directPermissions: microLearning.directPermissions,
+    coursePermissions: microLearning.course?.permissions ?? [],
+  })
+
+  // if no valid derived permission was computed, return early
+  if (res === null) {
+    return
+  }
+
+  // if the user still has access, add a corresponding derived permission
+  const { maxAccessLevel, parentPermissionId, derived } = res
+  if (typeof maxAccessLevel !== 'undefined') {
+    await prisma.derivedPermission.create({
+      data: {
+        permissionLevel: maxAccessLevel,
+        derived,
+        microLearning: {
+          connect: {
+            id,
+          },
+        },
+        directPermission:
+          typeof parentPermissionId !== 'undefined'
+            ? {
+                connect: {
+                  id: parentPermissionId,
+                },
+              }
+            : undefined,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    })
+
+    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
+    await propagateActivityToElementsUser(
+      { stacks: microLearning.stacks, userId },
+      prisma
+    )
+  }
+
+  return
+}
+
+async function recomputeMicroLearningPermissionsObject(
+  { id }: { id: string },
+  prisma: PrismaTransactionClient
+) {
+  // delete all derived permissions for this element
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      microLearningId: id,
+    },
+  })
+
+  // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
+  // permissions on the course should automatically imply corresponding permissions on the contained microlearning
+  // depending on the permission level on the activity, derived permissions on the contained elements might be required
+  const microLearning = await prisma.microLearning.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      directPermissions: {
+        include: {
+          userGroup: {
+            include: {
+              members: true,
+            },
+          },
+        },
+      },
+      // course from which derived permissions would be inherited
+      course: {
+        include: {
+          permissions: {
+            include: {
+              directPermission: true,
+            },
+          },
+        },
+      },
+      // element instances contained in the activity to propagate the derived permission update to elements
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!microLearning || !microLearning.ownerId) {
+    throw new Error(
+      `Microlearning with id ${id} or corresponding owner not found`
+    )
+  }
+
+  // compute a map between all users with direct or direct access to the considered activity
+  const userAccess = getActivityPermissionsObject({
+    activityOwnerId: microLearning.ownerId,
+    directPermissions: microLearning.directPermissions,
+    coursePermissions: microLearning.course?.permissions ?? [],
+  })
+
+  // create derived permissions for each user with access
+  await prisma.derivedPermission.createMany({
+    data: Object.entries(userAccess).map(
+      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
+        permissionLevel: maxAccessLevel,
+        derived,
+        userId,
+        microLearningId: id,
+        directPermissionId: parentPermissionId,
+      })
+    ),
+  })
+
+  // recompute the derived permissions on all elements contained in this activity
+  await propagateActivityToElements(
+    {
+      stacks: microLearning.stacks,
+      userId: microLearning.ownerId,
+    },
+    prisma
+  )
+}
+// #endregion
+
+// ! Derived permission recomputation for group activities
+// #region
+async function recomputeGroupActivityPermissions(
+  {
+    id,
+    userId,
+  }: {
+    id: string
+    userId?: string
+  },
+  prisma: PrismaTransactionClient
+) {
+  // if a user is defined, only recompute derived permissions for this user
+  if (userId) {
+    return await recomputeGroupActivityPermissionsUser({ id, userId }, prisma)
+  }
+
+  // if the permission of a user group was modified or anything else, all derived permissions for the object need to be recomputed
+  return await recomputeGroupActivityPermissionsObject({ id }, prisma)
+}
+
+async function recomputeGroupActivityPermissionsUser(
+  { id, userId }: { id: string; userId: string },
+  prisma: PrismaTransactionClient
+) {
+  // check if a permission for this user exists
+  const existingPermission = await prisma.derivedPermission.findUnique({
+    where: {
+      groupActivityId_userId: {
+        groupActivityId: id,
+        userId,
+      },
+    },
+  })
+
+  // if a derived permission exists, remove it
+  if (existingPermission) {
+    await prisma.derivedPermission.delete({
+      where: {
+        groupActivityId_userId: {
+          groupActivityId: id,
+          userId,
+        },
+      },
+    })
+  }
+
+  // check for ownership, direct permissions, links to a course that would imply derived permissions
+  const groupActivity = await prisma.groupActivity.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      directPermissions: {
+        where: {
+          OR: [
+            { userId },
+            { userGroup: { members: { some: { id: userId } } } },
+          ],
+        },
+      },
+      // course from which derived permissions would be inherited
+      course: {
+        include: {
+          permissions: {
+            where: {
+              userId,
+            },
+            include: {
+              directPermission: true,
+            },
+          },
+        },
+      },
+      // element instances (with elementId on them) contained in this quiz to propagate the derived permission update to elements
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  // if the group activity does not exist, return
+  if (!groupActivity) {
+    return
+  }
+
+  // compute the derived permission level (maximum) for this user on the activity
+  const res = getActivityPermissionsUser({
+    activityOwnerId: groupActivity.ownerId,
+    activityDeleted: groupActivity.isDeleted,
+    userId,
+    directPermissions: groupActivity.directPermissions,
+    coursePermissions: groupActivity.course?.permissions ?? [],
+  })
+
+  // if no valid derived permission was computed, return early
+  if (res === null) {
+    return
+  }
+
+  // if the user still has access, add a corresponding derived permission
+  const { maxAccessLevel, parentPermissionId, derived } = res
+  if (typeof maxAccessLevel !== 'undefined') {
+    await prisma.derivedPermission.create({
+      data: {
+        permissionLevel: maxAccessLevel,
+        derived,
+        groupActivity: {
+          connect: {
+            id,
+          },
+        },
+        directPermission:
+          typeof parentPermissionId !== 'undefined'
+            ? {
+                connect: {
+                  id: parentPermissionId,
+                },
+              }
+            : undefined,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    })
+
+    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
+    await propagateActivityToElementsUser(
+      { stacks: groupActivity.stacks, userId },
+      prisma
+    )
+  }
+
+  return
+}
+
+async function recomputeGroupActivityPermissionsObject(
+  { id }: { id: string },
+  prisma: PrismaTransactionClient
+) {
+  // delete all derived permissions for this element
+  await prisma.derivedPermission.deleteMany({
+    where: {
+      groupActivityId: id,
+    },
+  })
+
+  // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
+  // permissions on the course should automatically imply corresponding permissions on the contained group activities
+  // depending on the permission level on the activity, derived permissions on the contained elements might be required
+  const groupActivity = await prisma.groupActivity.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      directPermissions: {
+        include: {
+          userGroup: {
+            include: {
+              members: true,
+            },
+          },
+        },
+      },
+      // course from which derived permissions would be inherited
+      course: {
+        include: {
+          permissions: {
+            include: {
+              directPermission: true,
+            },
+          },
+        },
+      },
+      // element instances contained in the activity to propagate the derived permission update to elements
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
+    },
+  })
+
+  if (!groupActivity || !groupActivity.ownerId) {
+    throw new Error(
+      `Group activity with id ${id} or corresponding owner not found`
+    )
+  }
+
+  // compute a map between all users with direct or direct access to the considered activity
+  const userAccess = getActivityPermissionsObject({
+    activityOwnerId: groupActivity.ownerId,
+    directPermissions: groupActivity.directPermissions,
+    coursePermissions: groupActivity.course?.permissions ?? [],
+  })
+
+  // create derived permissions for each user with access
+  await prisma.derivedPermission.createMany({
+    data: Object.entries(userAccess).map(
+      ([userId, { maxAccessLevel, parentPermissionId, derived }]) => ({
+        permissionLevel: maxAccessLevel,
+        derived,
+        userId,
+        groupActivityId: id,
+        directPermissionId: parentPermissionId,
+      })
+    ),
+  })
+
+  // recompute the derived permissions on all elements contained in this activity
+  await propagateActivityToElements(
+    {
+      stacks: groupActivity.stacks,
+      userId: groupActivity.ownerId,
     },
     prisma
   )
