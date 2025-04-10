@@ -1264,6 +1264,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           'have.value',
           oldTitle
         )
+        cy.wait(300)
         cy.get('[data-cy="insert-question-title"]')
           .click()
           .clear()
