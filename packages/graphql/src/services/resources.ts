@@ -293,6 +293,11 @@ export async function getSingleAnswerCollection(
   const permissionLevel = collection.permissions[0]?.permissionLevel
   return {
     ...collection,
+    entries: collection.entries.map((entry) => ({
+      ...entry,
+      numSolutionUsages: entry._count?.itemUsages,
+    })),
+    numSharedUsers: collection._count?.directPermissions,
     permissionLevel: permissionLevel ?? DB.PermissionLevel.READ,
     ownerShortname: collection.owner?.shortname,
     isOwner: permissionLevel === DB.PermissionLevel.OWNER,
