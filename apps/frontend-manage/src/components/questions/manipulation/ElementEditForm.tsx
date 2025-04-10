@@ -95,7 +95,6 @@ function ElementEditForm({
         // close modal, set success toast
         setSubmitting(false)
         onSuccess()
-        onClose()
       }}
     >
       {({
