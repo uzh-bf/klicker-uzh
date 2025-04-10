@@ -152,7 +152,6 @@ model InstanceStatistics {
   updatedAt DateTime @updatedAt
 }
 
-// TODO: remove after migration to new data structure
 enum ElementStackType {
   PRACTICE_QUIZ
   MICROLEARNING

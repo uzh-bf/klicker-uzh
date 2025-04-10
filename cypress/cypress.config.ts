@@ -953,6 +953,16 @@ export default defineConfig({
           const prisma = await connect()
 
           try {
+            // delete all answer collections that have no derived permissions on them
+            await prisma.answerCollection.deleteMany({
+              where: {
+                permissions: {
+                  none: {},
+                },
+              },
+            })
+
+            // verify that only the seeded answer collections remain
             const count = await prisma.answerCollection.count()
             return count === NUM_SEEDED_ANSWER_COLLECTIONS
           } finally {
@@ -965,6 +975,16 @@ export default defineConfig({
           const prisma = await connect()
 
           try {
+            // delete all catalog collections that have no derived permissions on them
+            await prisma.catalogCollection.deleteMany({
+              where: {
+                permissions: {
+                  none: {},
+                },
+              },
+            })
+
+            // verify that only the seeded catalog collections remain
             const count = await prisma.catalogCollection.count()
             return count === NUM_SEEDED_CATALOG_COLLECTIONS
           } finally {

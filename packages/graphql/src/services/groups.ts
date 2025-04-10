@@ -16,6 +16,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
@@ -1757,6 +1758,11 @@ export async function deleteGroupActivity(
     where: { id, ownerId: ctx.user.sub },
     include: {
       activityInstances: true,
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
     },
   })
 
@@ -1778,6 +1784,13 @@ export async function deleteGroupActivity(
       },
     })
 
+    // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
+    // this case cannot be handled by the permissions module, since the group activity is already hard deleted
+    await propagateActivityToElements(
+      { stacks: groupActivity.stacks },
+      ctx.prisma
+    )
+
     ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
     return deletedItem
   } else {
@@ -1794,6 +1807,8 @@ export async function deleteGroupActivity(
           },
         })
 
+        // update derived permissions for this group activity (after soft deletion)
+        // this function call automatically includes permission updates for all linked elements
         await recomputeDerivedPermissions(
           { groupActivityId: updatedActivity.id },
           prisma

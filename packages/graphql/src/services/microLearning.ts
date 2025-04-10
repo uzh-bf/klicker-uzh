@@ -6,6 +6,7 @@ import {
 import type { ElementStackInput } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
@@ -545,6 +546,11 @@ export async function deleteMicroLearning(
     },
     include: {
       responses: true,
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
     },
   })
 
@@ -566,6 +572,13 @@ export async function deleteMicroLearning(
       },
     })
 
+    // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
+    // this case cannot be handled by the permissions module, since the microlearning is already hard deleted
+    await propagateActivityToElements(
+      { stacks: microLearning.stacks },
+      ctx.prisma
+    )
+
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
 
     return deletedItem
@@ -583,10 +596,10 @@ export async function deleteMicroLearning(
           },
         })
 
+        // update derived permissions for this microlearning (after soft deletion)
+        // this function call automatically includes permission updates for all linked elements
         await recomputeDerivedPermissions(
-          {
-            microLearningId: updated.id,
-          },
+          { microLearningId: updated.id },
           prisma
         )
 

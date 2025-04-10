@@ -28,6 +28,7 @@ import type {
 import {
   getActivityInstanceConnectOrCreate,
   getInitialInstanceResults,
+  propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
@@ -2186,14 +2187,18 @@ export async function deleteLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  // fetch live quiz to check its status
+  // fetch live quiz to check its status, remember the contained elements
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
       ownerId: ctx.user.sub,
     },
-    select: {
-      status: true,
+    include: {
+      blocks: {
+        include: {
+          elements: true,
+        },
+      },
     },
   })
 
@@ -2215,12 +2220,9 @@ export async function deleteLiveQuiz(
         },
       })
 
-      await recomputeDerivedPermissions(
-        {
-          liveQuizId: quiz.id,
-        },
-        prisma
-      )
+      // update derived permissions for this live quiz (after soft deletion)
+      // this function call automatically includes permission updates for all linked elements
+      await recomputeDerivedPermissions({ liveQuizId: quiz.id }, prisma)
 
       return quiz
     })
@@ -2232,14 +2234,22 @@ export async function deleteLiveQuiz(
 
     return deletedLiveQuiz
   } else {
-    const deletedLiveQuiz = await ctx.prisma.liveQuiz.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: {
-          in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+    const deletedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
+      const quiz = await prisma.liveQuiz.delete({
+        where: {
+          id,
+          ownerId: ctx.user.sub,
+          status: {
+            in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+          },
         },
-      },
+      })
+
+      // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
+      // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
+      await propagateActivityToElements({ stacks: liveQuiz.blocks }, prisma)
+
+      return quiz
     })
 
     ctx.emitter.emit('invalidate', {

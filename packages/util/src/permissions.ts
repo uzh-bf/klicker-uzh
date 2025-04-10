@@ -1229,13 +1229,16 @@ async function recomputeLiveQuizPermissionsUser(
         },
       },
     })
-
-    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    await propagateActivityToElementsUser(
-      { stacks: liveQuiz.blocks, userId },
-      prisma
-    )
   }
+
+  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
+  // the derived element permissions need to be recomputed (-> complete recompute required)
+  // users with lower permissions on the activity will never obtained derived permissions through it
+  // --> however, since the computation is based on derived activity permissions, we need to compute these before
+  await propagateActivityToElementsUser(
+    { stacks: liveQuiz.blocks, userId },
+    prisma
+  )
 
   return
 }
@@ -1446,13 +1449,16 @@ async function recomputePracticeQuizPermissionsUser(
         },
       },
     })
-
-    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    await propagateActivityToElementsUser(
-      { stacks: practiceQuiz.stacks, userId },
-      prisma
-    )
   }
+
+  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
+  // the derived element permissions need to be recomputed (-> complete recompute required)
+  // users with lower permissions on the activity will never obtained derived permissions through it
+  // --> however, since the computation is based on derived activity permissions, we need to compute these before
+  await propagateActivityToElementsUser(
+    { stacks: practiceQuiz.stacks, userId },
+    prisma
+  )
 
   return
 }
@@ -1665,13 +1671,16 @@ async function recomputeMicroLearningPermissionsUser(
         },
       },
     })
-
-    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    await propagateActivityToElementsUser(
-      { stacks: microLearning.stacks, userId },
-      prisma
-    )
   }
+
+  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
+  // the derived element permissions need to be recomputed (-> complete recompute required)
+  // users with lower permissions on the activity will never obtained derived permissions through it
+  // --> however, since the computation is based on derived activity permissions, we need to compute these before
+  await propagateActivityToElementsUser(
+    { stacks: microLearning.stacks, userId },
+    prisma
+  )
 
   return
 }
@@ -1884,13 +1893,16 @@ async function recomputeGroupActivityPermissionsUser(
         },
       },
     })
-
-    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    await propagateActivityToElementsUser(
-      { stacks: groupActivity.stacks, userId },
-      prisma
-    )
   }
+
+  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
+  // the derived element permissions need to be recomputed (-> complete recompute required)
+  // users with lower permissions on the activity will never obtained derived permissions through it
+  // --> however, since the computation is based on derived activity permissions, we need to compute these before
+  await propagateActivityToElementsUser(
+    { stacks: groupActivity.stacks, userId },
+    prisma
+  )
 
   return
 }
@@ -2513,7 +2525,7 @@ function getActivityPermissionsObject({
   return userAccess
 }
 
-async function propagateActivityToElements(
+export async function propagateActivityToElements(
   {
     stacks,
   }: {

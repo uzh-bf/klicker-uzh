@@ -11,6 +11,7 @@ import {
   getInitialInstanceStatistics,
   MISSING_CATALOG_COLLECTION_ID,
   processElementData,
+  propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
@@ -1045,37 +1046,147 @@ export async function deleteActivityTemplate(
 
   // delete the activity linked to the template (automatically deleting the template through cascading delete)
   if (activityType === ActivityType.LIVE_QUIZ) {
-    const deletedLiveQuiz = await ctx.prisma.liveQuiz.delete({
+    // fetch live quiz alongside all linked elements (for derived permissions update)
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
       where: {
         id: activityId,
+        status: DB.PublicationStatus.TEMPLATE,
+      },
+      include: {
+        blocks: {
+          include: {
+            elements: true,
+          },
+        },
       },
     })
 
-    return deletedLiveQuiz.id
+    if (!liveQuiz) {
+      return null
+    }
+
+    const deletedId = await ctx.prisma.$transaction(async (prisma) => {
+      const deletedLiveQuiz = await prisma.liveQuiz.delete({
+        where: {
+          id: activityId,
+        },
+      })
+
+      // update derived permissions on all linked elements
+      await propagateActivityToElements({ stacks: liveQuiz.blocks }, prisma)
+
+      return deletedLiveQuiz.id
+    })
+
+    return deletedId
   } else if (activityType === ActivityType.PRACTICE_QUIZ) {
-    const deletedPracticeQuiz = await ctx.prisma.practiceQuiz.delete({
+    // fetch practice quiz alongside all linked elements (for derived permissions update)
+    const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id: activityId,
+        status: DB.PublicationStatus.TEMPLATE,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
       },
     })
 
-    return deletedPracticeQuiz.id
+    if (!practiceQuiz) {
+      return null
+    }
+
+    const deletedId = await ctx.prisma.$transaction(async (prisma) => {
+      const deletedPracticeQuiz = await prisma.practiceQuiz.delete({
+        where: {
+          id: activityId,
+        },
+      })
+
+      // update derived permissions on all linked elements
+      await propagateActivityToElements({ stacks: practiceQuiz.stacks }, prisma)
+
+      return deletedPracticeQuiz.id
+    })
+
+    return deletedId
   } else if (activityType === ActivityType.MICRO_LEARNING) {
-    const deletedMicroLearning = await ctx.prisma.microLearning.delete({
+    // fetch microlearning alongside all linked elements (for derived permissions update)
+    const microLearning = await ctx.prisma.microLearning.findUnique({
       where: {
         id: activityId,
+        status: DB.PublicationStatus.TEMPLATE,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
       },
     })
 
-    return deletedMicroLearning.id
+    if (!microLearning) {
+      return null
+    }
+
+    const deletedId = await ctx.prisma.$transaction(async (prisma) => {
+      const deletedMicroLearning = await prisma.microLearning.delete({
+        where: {
+          id: activityId,
+        },
+      })
+
+      // update derived permissions on all linked elements
+      await propagateActivityToElements(
+        { stacks: microLearning.stacks },
+        prisma
+      )
+
+      return deletedMicroLearning.id
+    })
+
+    return deletedId
   } else if (activityType === ActivityType.GROUP_ACTIVITY) {
-    const deletedGroupActivity = await ctx.prisma.groupActivity.delete({
+    // fetch group activity alongside all linked elements (for derived permissions update)
+    const groupActivity = await ctx.prisma.groupActivity.findUnique({
       where: {
         id: activityId,
+        status: DB.PublicationStatus.TEMPLATE,
+      },
+      include: {
+        stacks: {
+          include: {
+            elements: true,
+          },
+        },
       },
     })
 
-    return deletedGroupActivity.id
+    if (!groupActivity) {
+      return null
+    }
+
+    const deletedId = await ctx.prisma.$transaction(async (prisma) => {
+      const deletedGroupActivity = await prisma.groupActivity.delete({
+        where: {
+          id: activityId,
+        },
+      })
+
+      // update derived permissions on all linked elements
+      await propagateActivityToElements(
+        { stacks: groupActivity.stacks },
+        prisma
+      )
+
+      return deletedGroupActivity.id
+    })
+
+    return deletedId
   }
 
   return null

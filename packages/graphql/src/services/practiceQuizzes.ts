@@ -8,6 +8,7 @@ import {
 import type { ElementStackInput } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
@@ -499,6 +500,11 @@ export async function deletePracticeQuiz(
     },
     include: {
       responses: true,
+      stacks: {
+        include: {
+          elements: true,
+        },
+      },
     },
   })
 
@@ -519,6 +525,13 @@ export async function deletePracticeQuiz(
         ownerId: ctx.user.sub,
       },
     })
+
+    // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
+    // this case cannot be handled by the permissions module, since the practice quiz is already hard deleted
+    await propagateActivityToElements(
+      { stacks: practiceQuiz.stacks },
+      ctx.prisma
+    )
 
     ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
 
@@ -553,12 +566,9 @@ export async function deletePracticeQuiz(
           },
         })
 
-        await recomputeDerivedPermissions(
-          {
-            practiceQuizId: quiz.id,
-          },
-          prisma
-        )
+        // update derived permissions for this practice quiz (after soft deletion)
+        // this function call automatically includes permission updates for all linked elements
+        await recomputeDerivedPermissions({ practiceQuizId: quiz.id }, prisma)
 
         return quiz
       }

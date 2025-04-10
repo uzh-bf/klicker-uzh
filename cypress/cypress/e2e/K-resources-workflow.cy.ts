@@ -9,11 +9,11 @@ describe('Create, edit and share answer collections', function () {
   })
 
   // ! DEV: if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
-  })
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
 
   // ! Helper functions
   // #region
@@ -952,10 +952,13 @@ describe('Create, edit and share answer collections', function () {
       'not.exist'
     )
 
-    // remove the answer collection (actual deletion, since no other users have access / no dependencies)
+    // since the user only retained a derived permission on the collection, the removal of
+    // the parent element should have resulted in the automatic removal of the access
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    removeAnswerCollection({ name: this.data.restricted.name })
+    cy.get(`[data-cy="answer-collection-${this.data.restricted.name}"]`).should(
+      'not.exist'
+    )
   })
 
   it('Cleanup: Verify that all created answer collections have been deleted properly', function () {
@@ -2120,16 +2123,16 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsREAD)
 
-    // verify that none of the permissions can be revoked (as they are all used)
+    // verify that direct permissions can be revoked (despite being used) --> however derived permissions would be created automatically
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).should('be.disabled')
+    ).should('not.be.disabled')
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).should('be.disabled')
+    ).should('not.be.disabled')
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
-    ).should('be.disabled')
+    ).should('not.be.disabled')
   })
 
   it("Verify that user 'pro1' has read permissions again and can view the answer collection", function () {
@@ -2172,13 +2175,14 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
 
-    // verify that the remaining permissions can still not be revoked
+    // verify that the remaining permissions can be removed, but would result in derived permissions on removal
+    // TODO: cover their removal and the automatic creation of derived permissions here in test suite
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).should('be.disabled')
+    ).should('not.be.disabled')
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
-    ).should('be.disabled')
+    ).should('not.be.disabled')
   })
 
   it("Cleanup: Remove the created question and answer collection for user 'pro2'", function () {
@@ -2199,6 +2203,7 @@ describe('Create, edit and share answer collections', function () {
     removeAnswerCollection({ name: this.data.access.name })
   })
 
+  // TODO: experiment with soft deletion of answer collection, persistent of derived permissions (revokal of direct permissions)
   it('Cleanup: Delete the answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()

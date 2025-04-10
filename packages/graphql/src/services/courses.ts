@@ -1,6 +1,7 @@
 import {
   ElementOrderType,
   LeaderboardType,
+  PermissionLevel,
   PublicationStatus,
   TimelineEntryType,
   UserRole,
@@ -940,12 +941,99 @@ export async function deleteCourse(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  // permission updates should be automatic through cascading delete (since course is hard-deleted)
-  const deletedCourse = await ctx.prisma.course.delete({
+  // updates of derived permissions on the course and some cascaded objects are automatic (since course is hard-deleted)
+  // live quizzes, which are only disconnected from the course need to be handled separately
+  // elements that are contained in asynchronous activities (cascading delete) need to be updated manually
+  const course = await ctx.prisma.course.findUnique({
     where: {
       id,
-      ownerId: ctx.user.sub,
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
+          },
+        },
+      },
     },
+    include: {
+      liveQuizzes: true,
+      practiceQuizzes: {
+        include: {
+          stacks: {
+            include: {
+              elements: true,
+            },
+          },
+        },
+      },
+      microLearnings: {
+        include: {
+          stacks: {
+            include: {
+              elements: true,
+            },
+          },
+        },
+      },
+      groupActivities: {
+        include: {
+          stacks: {
+            include: {
+              elements: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) {
+    throw new Error('Course not found or permission denied')
+  }
+
+  const deletedCourse = await ctx.prisma.$transaction(async (prisma) => {
+    // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
+    // live quizzes are disconnected from the course on deletion
+    const deleted = await prisma.course.delete({
+      where: {
+        id,
+        ownerId: ctx.user.sub,
+      },
+    })
+
+    // trigger a recomputation of all permissions related to the live quizzes of the course
+    // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
+    for (const liveQuiz of course.liveQuizzes) {
+      await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
+    }
+
+    // trigger a recomputation of all permissions on element contained in the stacks of the deleted activities
+    // this action should be executed sequentially to avoid race conditions (same resource in multiple elements)
+    const elementIds = [
+      ...new Set([
+        ...course.practiceQuizzes.flatMap((quiz) =>
+          quiz.stacks.flatMap((stack) =>
+            stack.elements.map((instance) => instance.elementId)
+          )
+        ),
+        ...course.microLearnings.flatMap((ml) =>
+          ml.stacks.flatMap((stack) =>
+            stack.elements.map((instance) => instance.elementId)
+          )
+        ),
+        ...course.groupActivities.flatMap((ga) =>
+          ga.stacks.flatMap((stack) =>
+            stack.elements.map((instance) => instance.elementId)
+          )
+        ),
+      ]),
+    ]
+    for (const elementId of elementIds) {
+      await recomputeDerivedPermissions({ elementId }, prisma)
+    }
+
+    return deleted
   })
 
   ctx.emitter.emit('invalidate', {
