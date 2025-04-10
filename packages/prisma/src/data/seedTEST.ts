@@ -3,10 +3,11 @@ import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { v4 as uuid } from 'uuid'
 import Prisma from '../../dist/index.js'
-import { ElementType, type Element } from '../prisma/client/index.js'
+import { ElementType, type Element } from '../prisma/client/index.js' // TODO: replace this through Prisma.something import?!
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -126,34 +127,45 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   // seed answer collections
-  const answerCollections = await Promise.all(
-    DATA_TEST.ANSWER_COLLECTIONS.map(async (data) => {
-      return prisma.answerCollection.upsert({
-        where: {
-          ownerId_name: {
-            ownerId: USER_ID_TEST,
-            name: data.name,
-          },
-        },
-        create: {
+  const answerCollections: (Prisma.AnswerCollection & {
+    entries: Prisma.AnswerCollectionEntry[]
+  })[] = []
+  for (const data of DATA_TEST.ANSWER_COLLECTIONS) {
+    const answerCollection = await prisma.answerCollection.upsert({
+      where: {
+        ownerId_name: {
+          ownerId: USER_ID_TEST,
           name: data.name,
-          description: data.description,
-          owner: {
-            connect: {
-              id: USER_ID_TEST,
-            },
-          },
-          entries: {
-            create: data.entries,
+        },
+      },
+      create: {
+        name: data.name,
+        description: data.description,
+        owner: {
+          connect: {
+            id: USER_ID_TEST,
           },
         },
-        update: {},
-        include: {
-          entries: true,
+        entries: {
+          create: data.entries,
         },
-      })
+      },
+      update: {},
+      include: {
+        entries: true,
+      },
     })
-  )
+
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: (answerCollection as any).id,
+        userId: USER_ID_TEST,
+      },
+      prisma
+    )
+
+    answerCollections.push(answerCollection)
+  }
 
   // assign answer collections to catalog collections, if defined in relation
   const catalogAnswerCollectionAssignments = await Promise.all(
@@ -249,210 +261,223 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
   )
 
-  const questionsTest = await Promise.all(
-    DATA_TEST.QUESTIONS.map((data) => {
-      let collectionId: number | undefined = undefined
-      let usedCollectionEntries: number[] = []
-      let caseStudyCasesWithSolution:
-        | ElementOptionsCaseStudy['cases']
-        | undefined
+  const questionsTest: (Prisma.Element & {
+    answerCollection?:
+      | (Prisma.AnswerCollection & { entries: Prisma.AnswerCollectionEntry[] })
+      | null
+    answerCollectionItems?: Prisma.AnswerCollectionEntry[] | null
+  })[] = []
+  for (const data of DATA_TEST.QUESTIONS) {
+    let collectionId: number | undefined = undefined
+    let usedCollectionEntries: number[] = []
+    let caseStudyCasesWithSolution: ElementOptionsCaseStudy['cases'] | undefined
 
-      if (data.collectionName && data.answerCollectionItems) {
-        const collection = answerCollections.find(
-          (ac) => ac.name === data.collectionName
+    if (data.collectionName && data.answerCollectionItems) {
+      const collection = answerCollections.find(
+        (ac) => ac.name === data.collectionName
+      )
+
+      if (!collection) {
+        throw new Error(
+          `Answer collection with name ${data.collectionName} not found`
+        )
+      }
+
+      collectionId = collection.id
+      usedCollectionEntries = data.answerCollectionItems.map((solValue) => {
+        const entry = collection.entries.find(
+          (entry) => entry.value === solValue
         )
 
-        if (!collection) {
+        if (typeof entry === 'undefined') {
           throw new Error(
-            `Answer collection with name ${data.collectionName} not found`
+            `Option with value ${solValue} not found in answer collection ${collection.name}`
           )
         }
 
-        collectionId = collection.id
-        usedCollectionEntries = data.answerCollectionItems.map((solValue) => {
-          const entry = collection.entries.find(
-            (entry) => entry.value === solValue
+        return entry.id
+      })
+
+      // if sample solutions are activated for the case study, map the corresponding items to respective ids
+      if (
+        data.type === Prisma.ElementType.CASE_STUDY &&
+        data.options.hasSampleSolution
+      ) {
+        // verify that cases and solutions therein are given
+        if (!data.options.cases || data.options.cases.length === 0) {
+          throw new Error('Cases for case study need to be defined')
+        }
+
+        const cases = data.options.cases
+        if (cases.some((caseItem) => !('solutions' in caseItem))) {
+          throw new Error(
+            'Cases need to have solutions defined, if sample solutions are activated'
           )
+        }
 
-          if (typeof entry === 'undefined') {
+        // map the items in the solutions to their respective ids
+        caseStudyCasesWithSolution = cases.map((caseItem) => {
+          if (!('solutions' in caseItem) || !caseItem.solutions) {
             throw new Error(
-              `Option with value ${solValue} not found in answer collection ${collection.name}`
+              'Solutions need to be defined for case study cases with sample solution activated'
             )
           }
 
-          return entry.id
-        })
-
-        // if sample solutions are activated for the case study, map the corresponding items to respective ids
-        if (
-          data.type === Prisma.ElementType.CASE_STUDY &&
-          data.options.hasSampleSolution
-        ) {
-          // verify that cases and solutions therein are given
-          if (!data.options.cases || data.options.cases.length === 0) {
-            throw new Error('Cases for case study need to be defined')
-          }
-
-          const cases = data.options.cases
-          if (cases.some((caseItem) => !('solutions' in caseItem))) {
-            throw new Error(
-              'Cases need to have solutions defined, if sample solutions are activated'
-            )
-          }
-
-          // map the items in the solutions to their respective ids
-          caseStudyCasesWithSolution = cases.map((caseItem) => {
-            if (!('solutions' in caseItem) || !caseItem.solutions) {
-              throw new Error(
-                'Solutions need to be defined for case study cases with sample solution activated'
+          return {
+            ...caseItem,
+            solutions: caseItem.solutions.map((solution) => {
+              const entry = collection.entries.find(
+                (entry) => entry.value === solution.item
               )
-            }
 
-            return {
-              ...caseItem,
-              solutions: caseItem.solutions.map((solution) => {
-                const entry = collection.entries.find(
-                  (entry) => entry.value === solution.item
+              if (typeof entry === 'undefined') {
+                throw new Error(
+                  `Item with value ${solution.item} not found in answer collection ${collection.name}`
                 )
+              }
 
-                if (typeof entry === 'undefined') {
+              return {
+                itemId: entry.id,
+                criteriaSolutions: solution.criteriaSolutions,
+              }
+            }),
+          }
+        })
+      }
+    }
+
+    const newElement = await prisma.element.upsert({
+      ...prepareQuestion({
+        ownerId: USER_ID_TEST,
+        ...data,
+        options: caseStudyCasesWithSolution
+          ? {
+              ...data.options,
+              cases: caseStudyCasesWithSolution,
+            }
+          : data.options,
+        collectionId,
+        usedCollectionEntries,
+      }),
+      include: {
+        answerCollection: {
+          include: {
+            entries: true,
+          },
+        },
+        answerCollectionItems: true,
+      },
+    })
+
+    await recomputeDerivedPermissions(
+      { elementId: newElement.id, userId: USER_ID_TEST },
+      prisma
+    )
+
+    // Add the processed question to our array
+    questionsTest.push(newElement)
+  }
+
+  for (const data of DATA_TEST.LIVE_QUIZZES) {
+    const liveQuiz = await prismaClient.liveQuiz.upsert({
+      where: {
+        id: data.id,
+      },
+      create: {
+        id: data.id,
+        name: data.name,
+        displayName: data.displayName,
+        description: data.description,
+        isModerationEnabled: data.isModerationEnabled,
+        isLiveQAEnabled: data.isLiveQAEnabled,
+        isConfusionFeedbackEnabled: data.isConfusionFeedbackEnabled,
+        isGamificationEnabled: data.isGamificationEnabled,
+        status: data.status ?? Prisma.PublicationStatus.DRAFT,
+        pointsMultiplier: data.pointsMultiplier,
+        defaultPoints: data.defaultPoints,
+        defaultCorrectPoints: data.defaultCorrectPoints,
+        maxBonusPoints: data.maxBonusPoints,
+        timeToZeroBonus: data.timeToZeroBonus,
+        blocks: {
+          create: data.blocks.map((block, ix) => ({
+            order: ix,
+            timeLimit: block.timeLimit,
+            elements: {
+              create: block.questions.map((elementId, elementIx) => {
+                const el = questionsTest.find(
+                  (el) => el.originalId === String(elementId)
+                )
+                if (typeof el === 'undefined') {
                   throw new Error(
-                    `Item with value ${solution.item} not found in answer collection ${collection.name}`
+                    `Element with id ${elementId} not found in questionsTest`
                   )
                 }
 
+                const elementData = processElementData(el)
+                const initialResults = getInitialInstanceResults(elementData)
+
                 return {
-                  itemId: entry.id,
-                  criteriaSolutions: solution.criteriaSolutions,
+                  migrationId: uuid(),
+                  order: elementIx,
+                  type: Prisma.ElementInstanceType.LIVE_QUIZ,
+                  elementType: el.type,
+                  elementData,
+                  options: {
+                    basePoints: el.basePoints,
+                    pointsMultiplier:
+                      (data.pointsMultiplier ?? 1) * el.pointsMultiplier,
+                  },
+                  results: initialResults,
+                  anonymousResults: initialResults,
+                  instanceStatistics: {
+                    create: getInitialInstanceStatistics(
+                      Prisma.ElementInstanceType.LIVE_QUIZ
+                    ),
+                  },
+                  element: {
+                    connect: {
+                      id: el.id,
+                    },
+                  },
+                  owner: {
+                    connect: {
+                      id: USER_ID_TEST,
+                    },
+                  },
                 }
               }),
-            }
-          })
-        }
-      }
-
-      // TODO: manually create required derived permissions here (recomputation functions from backend not available)
-      return prisma.element.upsert({
-        ...prepareQuestion({
-          ownerId: USER_ID_TEST,
-          ...data,
-          options: caseStudyCasesWithSolution
-            ? {
-                ...data.options,
-                cases: caseStudyCasesWithSolution,
-              }
-            : data.options,
-          collectionId,
-          usedCollectionEntries,
-        }),
-        include: {
-          answerCollection: {
-            include: {
-              entries: true,
             },
-          },
-          answerCollectionItems: true,
+          })),
         },
-      })
-    })
-  )
-
-  await Promise.all(
-    DATA_TEST.LIVE_QUIZZES.map(
-      async (data) =>
-        await prismaClient.liveQuiz.upsert({
-          where: {
-            id: data.id,
+        owner: {
+          connect: {
+            id: USER_ID_TEST,
           },
-          create: {
-            id: data.id,
-            name: data.name,
-            displayName: data.displayName,
-            description: data.description,
-            isModerationEnabled: data.isModerationEnabled,
-            isLiveQAEnabled: data.isLiveQAEnabled,
-            isConfusionFeedbackEnabled: data.isConfusionFeedbackEnabled,
-            isGamificationEnabled: data.isGamificationEnabled,
-            status: data.status ?? Prisma.PublicationStatus.DRAFT,
-            pointsMultiplier: data.pointsMultiplier,
-            defaultPoints: data.defaultPoints,
-            defaultCorrectPoints: data.defaultCorrectPoints,
-            maxBonusPoints: data.maxBonusPoints,
-            timeToZeroBonus: data.timeToZeroBonus,
-            blocks: {
-              create: data.blocks.map((block, ix) => ({
-                order: ix,
-                timeLimit: block.timeLimit,
-                elements: {
-                  create: block.questions.map((elementId, elementIx) => {
-                    const el = questionsTest.find(
-                      (el) => el.originalId === String(elementId)
-                    )
-                    if (typeof el === 'undefined') {
-                      throw new Error(
-                        `Element with id ${elementId} not found in questionsTest`
-                      )
-                    }
-
-                    const elementData = processElementData(el)
-                    const initialResults =
-                      getInitialInstanceResults(elementData)
-
-                    return {
-                      migrationId: uuid(),
-                      order: elementIx,
-                      type: Prisma.ElementInstanceType.LIVE_QUIZ,
-                      elementType: el.type,
-                      elementData,
-                      options: {
-                        basePoints: el.basePoints,
-                        pointsMultiplier:
-                          (data.pointsMultiplier ?? 1) * el.pointsMultiplier,
-                      },
-                      results: initialResults,
-                      anonymousResults: initialResults,
-                      instanceStatistics: {
-                        create: getInitialInstanceStatistics(
-                          Prisma.ElementInstanceType.LIVE_QUIZ
-                        ),
-                      },
-                      element: {
-                        connect: {
-                          id: el.id,
-                        },
-                      },
-                      owner: {
-                        connect: {
-                          id: USER_ID_TEST,
-                        },
-                      },
-                    }
-                  }),
-                },
-              })),
-            },
-            owner: {
-              connect: {
-                id: USER_ID_TEST,
-              },
-            },
-            course: {
-              connect: {
-                id: COURSE_ID_TEST,
-              },
-            },
+        },
+        course: {
+          connect: {
+            id: COURSE_ID_TEST,
           },
-          update: {},
+        },
+      },
+      update: {},
+      include: {
+        blocks: {
           include: {
-            blocks: {
-              include: {
-                elements: true,
-              },
-            },
+            elements: true,
           },
-        })
+        },
+      },
+    })
+
+    await recomputeDerivedPermissions(
+      {
+        liveQuizId: liveQuiz.id,
+        userId: USER_ID_TEST,
+      },
+      prisma
     )
-  )
+  }
 
   // create participants
   const participantsTesting = await Promise.all(
@@ -1022,7 +1047,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     (q) => q.type === Prisma.ElementType.SELECTION
   )
   const selectionResponse =
-    selectionQuestion?.answerCollectionItems.map((sol) => sol.id) ?? []
+    selectionQuestion?.answerCollectionItems?.map((sol) => sol.id) ?? []
 
   const groupActivityDecisions = groupActivityCompleted.stacks[0]!.elements.map(
     (element) => {
@@ -1790,6 +1815,29 @@ Once this microlearning is published, it will be immediately accessible
     },
     update: {},
   })
+
+  // update derived permissions for all test courses
+  await recomputeDerivedPermissions(
+    {
+      courseId: COURSE_ID_TEST,
+      userId: USER_ID_TEST,
+    },
+    prisma
+  )
+  await recomputeDerivedPermissions(
+    {
+      courseId: COURSE_ID_TEST2,
+      userId: USER_ID_TEST,
+    },
+    prisma
+  )
+  await recomputeDerivedPermissions(
+    {
+      courseId: COURSE_ID_TEST3,
+      userId: USER_ID_TEST,
+    },
+    prisma
+  )
 }
 
 const prismaClient = new Prisma.PrismaClient()
