@@ -316,7 +316,8 @@ function ElementEditModal({
             })
           }
         }
-
+      }}
+      onSuccess={() => {
         // remove local storage entry
         if (autoSavedElement) {
           localStorage.removeItem(
@@ -325,8 +326,13 @@ function ElementEditModal({
               : `autosave-element-${elementId}`
           )
         }
+
+        // close modal
+        handleSetIsOpen(false)
+
+        // trigger success toast
+        triggerSuccessToast()
       }}
-      onSuccess={triggerSuccessToast}
       setAutoSavedElement={setAutoSavedElement}
     />
   )
