@@ -446,12 +446,8 @@ export async function bookmarkElementStack(
   return participation.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
-interface GetBookmarkedElementStacksArgs {
-  courseId: string
-}
-
 export async function getBookmarkedElementStacks(
-  { courseId }: GetBookmarkedElementStacksArgs,
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
   const participation = await ctx.prisma.participation.findUnique({
@@ -488,12 +484,16 @@ export async function getBookmarkedElementStacks(
 }
 
 export async function flagElement(
-  args: { elementInstanceId: number; elementId: number; content: string },
+  {
+    elementInstanceId,
+    elementId,
+    content,
+  }: { elementInstanceId: number; elementId: number; content: string },
   ctx: ContextWithUser
 ) {
   const elementInstance = await ctx.prisma.elementInstance.findUnique({
     where: {
-      id: args.elementInstanceId,
+      id: elementInstanceId,
     },
     include: {
       elementStack: {
@@ -517,19 +517,19 @@ export async function flagElement(
     where: {
       participantId_elementInstanceId: {
         participantId: ctx.user.sub,
-        elementInstanceId: args.elementInstanceId,
+        elementInstanceId: elementInstanceId,
       },
     },
     create: {
-      feedback: args.content,
+      feedback: content,
       element: {
         connect: {
-          id: args.elementId,
+          id: elementId,
         },
       },
       elementInstance: {
         connect: {
-          id: args.elementInstanceId,
+          id: elementInstanceId,
         },
       },
       participant: {
@@ -539,7 +539,7 @@ export async function flagElement(
       },
     },
     update: {
-      feedback: args.content,
+      feedback: content,
     },
   })
 
@@ -566,7 +566,7 @@ export async function flagElement(
       elementName: practiceQuiz?.name || microLearning?.name,
       questionId: elementInstance.elementId,
       questionName: elementInstance.elementData.name,
-      content: args.content,
+      content: content,
       participantId: ctx.user?.sub,
       secret: process.env.NOTIFICATION_SECRET,
       notificationEmail:
@@ -579,10 +579,14 @@ export async function flagElement(
 }
 
 export async function rateElement(
-  args: { elementInstanceId: number; elementId: number; rating: number },
+  {
+    elementInstanceId,
+    elementId,
+    rating,
+  }: { elementInstanceId: number; elementId: number; rating: number },
   ctx: ContextWithUser
 ) {
-  if (args.rating !== 1 && args.rating !== -1) {
+  if (rating !== 1 && rating !== -1) {
     return null
   }
 
@@ -593,7 +597,7 @@ export async function rateElement(
       where: {
         participantId_elementInstanceId: {
           participantId: ctx.user.sub,
-          elementInstanceId: args.elementInstanceId,
+          elementInstanceId: elementInstanceId,
         },
       },
     })
@@ -604,27 +608,26 @@ export async function rateElement(
         where: {
           participantId_elementInstanceId: {
             participantId: ctx.user.sub,
-            elementInstanceId: args.elementInstanceId,
+            elementInstanceId: elementInstanceId,
           },
         },
         data: {
-          upvote: args.rating === 1,
-          downvote: args.rating === -1,
+          upvote: rating === 1,
+          downvote: rating === -1,
         },
       })
 
       // update instance statistics (decrement by previous feedback first to only count last feedback)
       await prisma.instanceStatistics.update({
         where: {
-          elementInstanceId: args.elementInstanceId,
+          elementInstanceId: elementInstanceId,
         },
         data: {
           upvoteCount: {
-            increment: Number(args.rating === 1) - Number(prevFeedback.upvote),
+            increment: Number(rating === 1) - Number(prevFeedback.upvote),
           },
           downvoteCount: {
-            increment:
-              Number(args.rating === -1) - Number(prevFeedback.downvote),
+            increment: Number(rating === -1) - Number(prevFeedback.downvote),
           },
         },
       })
@@ -632,16 +635,16 @@ export async function rateElement(
       // create new element feedback
       elementFeedback = await prisma.elementFeedback.create({
         data: {
-          upvote: args.rating === 1,
-          downvote: args.rating === -1,
+          upvote: rating === 1,
+          downvote: rating === -1,
           elementInstance: {
             connect: {
-              id: args.elementInstanceId,
+              id: elementInstanceId,
             },
           },
           element: {
             connect: {
-              id: args.elementId,
+              id: elementId,
             },
           },
           participant: {
@@ -655,14 +658,14 @@ export async function rateElement(
       // update instance statistics
       await prisma.instanceStatistics.update({
         where: {
-          elementInstanceId: args.elementInstanceId,
+          elementInstanceId: elementInstanceId,
         },
         data: {
           upvoteCount: {
-            increment: Number(args.rating === 1),
+            increment: Number(rating === 1),
           },
           downvoteCount: {
-            increment: Number(args.rating === -1),
+            increment: Number(rating === -1),
           },
         },
       })
@@ -673,13 +676,13 @@ export async function rateElement(
 }
 
 export async function getStackElementFeedbacks(
-  args: { elementInstanceIds: number[] },
+  { elementInstanceIds }: { elementInstanceIds: number[] },
   ctx: ContextWithUser
 ) {
   const elementFeedbacks = await ctx.prisma.elementFeedback.findMany({
     where: {
       elementInstanceId: {
-        in: args.elementInstanceIds,
+        in: elementInstanceIds,
       },
       participantId: ctx.user.sub,
     },
@@ -689,7 +692,7 @@ export async function getStackElementFeedbacks(
 }
 
 export async function getPublicParticipantProfile(
-  args: { participantId: string },
+  { participantId }: { participantId: string },
   ctx: ContextWithUser
 ) {
   const self = await ctx.prisma.participant.findUnique({
@@ -703,12 +706,12 @@ export async function getPublicParticipantProfile(
     },
   })
 
-  if (self?.id === args.participantId) {
+  if (self?.id === participantId) {
     return { ...self, isSelf: true }
   }
 
   const participant = await ctx.prisma.participant.findUnique({
-    where: { id: args.participantId },
+    where: { id: participantId },
     include: {
       achievements: {
         include: {
@@ -732,7 +735,7 @@ export async function getPublicParticipantProfile(
 }
 
 export async function getParticipantWithAchievements(ctx: ContextWithUser) {
-  let participant = await ctx.prisma.participant.findUnique({
+  const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
       achievements: {

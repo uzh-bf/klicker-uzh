@@ -585,71 +585,83 @@ export async function createActivityTemplate(
         blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
       }
 
-      const liveQuizTemplate = await ctx.prisma.liveQuiz.create({
-        data: {
-          name: templateName,
-          displayName: liveQuiz.displayName,
-          description: liveQuiz.description,
-          status: DB.PublicationStatus.TEMPLATE,
-          pointsMultiplier: liveQuiz.pointsMultiplier,
-          defaultPoints: liveQuiz.defaultPoints,
-          defaultCorrectPoints: liveQuiz.defaultCorrectPoints,
-          maxBonusPoints: liveQuiz.maxBonusPoints,
-          timeToZeroBonus: liveQuiz.timeToZeroBonus,
-          isGamificationEnabled: liveQuiz.isGamificationEnabled,
-          isConfusionFeedbackEnabled: liveQuiz.isConfusionFeedbackEnabled,
-          isLiveQAEnabled: liveQuiz.isLiveQAEnabled,
-          isModerationEnabled: liveQuiz.isModerationEnabled,
-          // add blocks with elements
-          blocks: {
-            create: liveQuiz.blocks.map((block) => ({
-              order: block.order,
-              timeLimit: block.timeLimit,
-              elements: {
-                create: block.elements.map((element) => ({
-                  elementType: element.elementType,
-                  migrationId: uuidv4(),
-                  order: element.order,
-                  type: DB.ElementInstanceType.LIVE_QUIZ,
-                  elementData: element.elementData,
-                  options: element.options,
-                  results: element.results,
-                  anonymousResults: element.anonymousResults,
-                  instanceStatistics: {
-                    create: getInitialInstanceStatistics(
-                      DB.ElementInstanceType.LIVE_QUIZ
-                    ),
-                  },
-                  element: {
-                    connect: { id: element.elementId },
-                  },
-                  owner: {
-                    connect: { id: ctx.user.sub },
-                  },
-                })),
+      const liveQuizTemplate = await ctx.prisma.$transaction(async (prisma) => {
+        const template = await prisma.liveQuiz.create({
+          data: {
+            name: templateName,
+            displayName: liveQuiz.displayName,
+            description: liveQuiz.description,
+            status: DB.PublicationStatus.TEMPLATE,
+            pointsMultiplier: liveQuiz.pointsMultiplier,
+            defaultPoints: liveQuiz.defaultPoints,
+            defaultCorrectPoints: liveQuiz.defaultCorrectPoints,
+            maxBonusPoints: liveQuiz.maxBonusPoints,
+            timeToZeroBonus: liveQuiz.timeToZeroBonus,
+            isGamificationEnabled: liveQuiz.isGamificationEnabled,
+            isConfusionFeedbackEnabled: liveQuiz.isConfusionFeedbackEnabled,
+            isLiveQAEnabled: liveQuiz.isLiveQAEnabled,
+            isModerationEnabled: liveQuiz.isModerationEnabled,
+            // add blocks with elements
+            blocks: {
+              create: liveQuiz.blocks.map((block) => ({
+                order: block.order,
+                timeLimit: block.timeLimit,
+                elements: {
+                  create: block.elements.map((element) => ({
+                    elementType: element.elementType,
+                    migrationId: uuidv4(),
+                    order: element.order,
+                    type: DB.ElementInstanceType.LIVE_QUIZ,
+                    elementData: element.elementData,
+                    options: element.options,
+                    results: element.results,
+                    anonymousResults: element.anonymousResults,
+                    instanceStatistics: {
+                      create: getInitialInstanceStatistics(
+                        DB.ElementInstanceType.LIVE_QUIZ
+                      ),
+                    },
+                    element: {
+                      connect: { id: element.elementId },
+                    },
+                    owner: {
+                      connect: { id: ctx.user.sub },
+                    },
+                  })),
+                },
+              })),
+            },
+            // add template information
+            templateInfo: {
+              create: {
+                description: templateDescription,
+                instructions: templateInstructions,
+                answerCollections:
+                  answerCollectionIds.length > 0
+                    ? {
+                        connect: answerCollectionIds.map((id) => ({ id })),
+                      }
+                    : undefined,
               },
-            })),
-          },
-          // add template information
-          templateInfo: {
-            create: {
-              description: templateDescription,
-              instructions: templateInstructions,
-              answerCollections:
-                answerCollectionIds.length > 0
-                  ? {
-                      connect: answerCollectionIds.map((id) => ({ id })),
-                    }
-                  : undefined,
+            },
+            // creator of template becomes new owner of the template activity
+            owner: {
+              connect: {
+                id: ctx.user.sub,
+              },
             },
           },
-          // creator of template becomes new owner of the template activity
-          owner: {
-            connect: {
-              id: ctx.user.sub,
-            },
+        })
+
+        await recomputeDerivedPermissions(
+          {
+            liveQuizId: template.id,
+            userId: ctx.user.sub,
           },
-        },
+          prisma
+        )
+
+        return template
       })
 
       return true
@@ -661,68 +673,82 @@ export async function createActivityTemplate(
         stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
       }
 
-      const practiceQuizTemplate = await ctx.prisma.practiceQuiz.create({
-        data: {
-          name: templateName,
-          displayName: practiceQuiz.displayName,
-          description: practiceQuiz.description,
-          status: DB.PublicationStatus.TEMPLATE,
-          pointsMultiplier: practiceQuiz.pointsMultiplier,
-          orderType: practiceQuiz.orderType,
-          resetTimeDays: practiceQuiz.resetTimeDays,
-          // add stacks with elements
-          stacks: {
-            create: practiceQuiz.stacks.map((stack) => ({
-              type: DB.ElementStackType.PRACTICE_QUIZ,
-              order: stack.order,
-              displayName: stack.displayName,
-              description: stack.description,
-              elements: {
-                create: stack.elements.map((element) => ({
-                  elementType: element.elementType,
-                  migrationId: uuidv4(),
-                  order: element.order,
-                  type: DB.ElementInstanceType.PRACTICE_QUIZ,
-                  elementData: element.elementData,
-                  options: element.options,
-                  results: element.results,
-                  anonymousResults: element.anonymousResults,
-                  instanceStatistics: {
-                    create: getInitialInstanceStatistics(
-                      DB.ElementInstanceType.PRACTICE_QUIZ
-                    ),
-                  },
-                  element: {
-                    connect: { id: element.elementId },
-                  },
-                  owner: {
-                    connect: { id: ctx.user.sub },
+      const practiceQuizTemplate = await ctx.prisma.$transaction(
+        async (prisma) => {
+          const template = await prisma.practiceQuiz.create({
+            data: {
+              name: templateName,
+              displayName: practiceQuiz.displayName,
+              description: practiceQuiz.description,
+              status: DB.PublicationStatus.TEMPLATE,
+              pointsMultiplier: practiceQuiz.pointsMultiplier,
+              orderType: practiceQuiz.orderType,
+              resetTimeDays: practiceQuiz.resetTimeDays,
+              // add stacks with elements
+              stacks: {
+                create: practiceQuiz.stacks.map((stack) => ({
+                  type: DB.ElementStackType.PRACTICE_QUIZ,
+                  order: stack.order,
+                  displayName: stack.displayName,
+                  description: stack.description,
+                  elements: {
+                    create: stack.elements.map((element) => ({
+                      elementType: element.elementType,
+                      migrationId: uuidv4(),
+                      order: element.order,
+                      type: DB.ElementInstanceType.PRACTICE_QUIZ,
+                      elementData: element.elementData,
+                      options: element.options,
+                      results: element.results,
+                      anonymousResults: element.anonymousResults,
+                      instanceStatistics: {
+                        create: getInitialInstanceStatistics(
+                          DB.ElementInstanceType.PRACTICE_QUIZ
+                        ),
+                      },
+                      element: {
+                        connect: { id: element.elementId },
+                      },
+                      owner: {
+                        connect: { id: ctx.user.sub },
+                      },
+                    })),
                   },
                 })),
               },
-            })),
-          },
-          // add template information
-          templateInfo: {
-            create: {
-              description: templateDescription,
-              instructions: templateInstructions,
-              answerCollections:
-                answerCollectionIds.length > 0
-                  ? {
-                      connect: answerCollectionIds.map((id) => ({ id })),
-                    }
-                  : undefined,
+              // add template information
+              templateInfo: {
+                create: {
+                  description: templateDescription,
+                  instructions: templateInstructions,
+                  answerCollections:
+                    answerCollectionIds.length > 0
+                      ? {
+                          connect: answerCollectionIds.map((id) => ({ id })),
+                        }
+                      : undefined,
+                },
+              },
+              // templates from asynchronous activities are linked to the same course
+              course: {
+                connect: { id: practiceQuiz.courseId },
+              },
+              // creator of template becomes new owner of the template activity
+              owner: { connect: { id: ctx.user.sub } },
             },
-          },
-          // templates from asynchronous activities are linked to the same course
-          course: {
-            connect: { id: practiceQuiz.courseId },
-          },
-          // creator of template becomes new owner of the template activity
-          owner: { connect: { id: ctx.user.sub } },
-        },
-      })
+          })
+
+          await recomputeDerivedPermissions(
+            {
+              practiceQuizId: template.id,
+              userId: ctx.user.sub,
+            },
+            prisma
+          )
+
+          return template
+        }
+      )
 
       return true
     } else if (activityType === ActivityType.MICRO_LEARNING) {
@@ -733,68 +759,82 @@ export async function createActivityTemplate(
         stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
       }
 
-      const microLearningTemplate = await ctx.prisma.microLearning.create({
-        data: {
-          name: templateName,
-          displayName: microLearning.displayName,
-          description: microLearning.description,
-          status: DB.PublicationStatus.TEMPLATE,
-          pointsMultiplier: microLearning.pointsMultiplier,
-          scheduledStartAt: microLearning.scheduledStartAt,
-          scheduledEndAt: microLearning.scheduledEndAt,
-          // add stacks with elements
-          stacks: {
-            create: microLearning.stacks.map((stack) => ({
-              type: DB.ElementStackType.MICROLEARNING,
-              order: stack.order,
-              displayName: stack.displayName,
-              description: stack.description,
-              elements: {
-                create: stack.elements.map((element) => ({
-                  elementType: element.elementType,
-                  migrationId: uuidv4(),
-                  order: element.order,
-                  type: DB.ElementInstanceType.MICROLEARNING,
-                  elementData: element.elementData,
-                  options: element.options,
-                  results: element.results,
-                  anonymousResults: element.anonymousResults,
-                  instanceStatistics: {
-                    create: getInitialInstanceStatistics(
-                      DB.ElementInstanceType.MICROLEARNING
-                    ),
-                  },
-                  element: {
-                    connect: { id: element.elementId },
-                  },
-                  owner: {
-                    connect: { id: ctx.user.sub },
+      const microLearningTemplate = await ctx.prisma.$transaction(
+        async (prisma) => {
+          const template = await prisma.microLearning.create({
+            data: {
+              name: templateName,
+              displayName: microLearning.displayName,
+              description: microLearning.description,
+              status: DB.PublicationStatus.TEMPLATE,
+              pointsMultiplier: microLearning.pointsMultiplier,
+              scheduledStartAt: microLearning.scheduledStartAt,
+              scheduledEndAt: microLearning.scheduledEndAt,
+              // add stacks with elements
+              stacks: {
+                create: microLearning.stacks.map((stack) => ({
+                  type: DB.ElementStackType.MICROLEARNING,
+                  order: stack.order,
+                  displayName: stack.displayName,
+                  description: stack.description,
+                  elements: {
+                    create: stack.elements.map((element) => ({
+                      elementType: element.elementType,
+                      migrationId: uuidv4(),
+                      order: element.order,
+                      type: DB.ElementInstanceType.MICROLEARNING,
+                      elementData: element.elementData,
+                      options: element.options,
+                      results: element.results,
+                      anonymousResults: element.anonymousResults,
+                      instanceStatistics: {
+                        create: getInitialInstanceStatistics(
+                          DB.ElementInstanceType.MICROLEARNING
+                        ),
+                      },
+                      element: {
+                        connect: { id: element.elementId },
+                      },
+                      owner: {
+                        connect: { id: ctx.user.sub },
+                      },
+                    })),
                   },
                 })),
               },
-            })),
-          },
-          // add template information
-          templateInfo: {
-            create: {
-              description: templateDescription,
-              instructions: templateInstructions,
-              answerCollections:
-                answerCollectionIds.length > 0
-                  ? {
-                      connect: answerCollectionIds.map((id) => ({ id })),
-                    }
-                  : undefined,
+              // add template information
+              templateInfo: {
+                create: {
+                  description: templateDescription,
+                  instructions: templateInstructions,
+                  answerCollections:
+                    answerCollectionIds.length > 0
+                      ? {
+                          connect: answerCollectionIds.map((id) => ({ id })),
+                        }
+                      : undefined,
+                },
+              },
+              // templates from asynchronous activities are linked to the same course
+              course: {
+                connect: { id: microLearning.courseId },
+              },
+              // creator of template becomes new owner of the template activity
+              owner: { connect: { id: ctx.user.sub } },
             },
-          },
-          // templates from asynchronous activities are linked to the same course
-          course: {
-            connect: { id: microLearning.courseId },
-          },
-          // creator of template becomes new owner of the template activity
-          owner: { connect: { id: ctx.user.sub } },
-        },
-      })
+          })
+
+          await recomputeDerivedPermissions(
+            {
+              microLearningId: template.id,
+              userId: ctx.user.sub,
+            },
+            prisma
+          )
+
+          return template
+        }
+      )
 
       return true
     } else if (activityType === ActivityType.GROUP_ACTIVITY) {
@@ -807,75 +847,89 @@ export async function createActivityTemplate(
         clues: DB.GroupActivityClue[]
       }
 
-      const groupActivityTemplate = await ctx.prisma.groupActivity.create({
-        data: {
-          name: templateName,
-          displayName: groupActivity.displayName,
-          description: groupActivity.description,
-          status: DB.PublicationStatus.TEMPLATE,
-          pointsMultiplier: groupActivity.pointsMultiplier,
-          scheduledStartAt: groupActivity.scheduledStartAt,
-          scheduledEndAt: groupActivity.scheduledEndAt,
-          // copy parameters and clues
-          parameters: {
-            create: groupActivity.parameters,
-          },
-          clues: {
-            create: groupActivity.clues,
-          },
-          // add stacks with elements
-          stacks: {
-            create: groupActivity.stacks.map((stack) => ({
-              type: DB.ElementStackType.GROUP_ACTIVITY,
-              order: stack.order,
-              displayName: stack.displayName,
-              description: stack.description,
-              elements: {
-                create: stack.elements.map((element) => ({
-                  elementType: element.elementType,
-                  migrationId: uuidv4(),
-                  order: element.order,
-                  type: DB.ElementInstanceType.GROUP_ACTIVITY,
-                  elementData: element.elementData,
-                  options: element.options,
-                  results: element.results,
-                  anonymousResults: element.anonymousResults,
-                  instanceStatistics: {
-                    create: getInitialInstanceStatistics(
-                      DB.ElementInstanceType.GROUP_ACTIVITY
-                    ),
-                  },
-                  element: {
-                    connect: { id: element.elementId },
-                  },
-                  owner: {
-                    connect: { id: ctx.user.sub },
+      const groupActivityTemplate = await ctx.prisma.$transaction(
+        async (prisma) => {
+          const template = await prisma.groupActivity.create({
+            data: {
+              name: templateName,
+              displayName: groupActivity.displayName,
+              description: groupActivity.description,
+              status: DB.PublicationStatus.TEMPLATE,
+              pointsMultiplier: groupActivity.pointsMultiplier,
+              scheduledStartAt: groupActivity.scheduledStartAt,
+              scheduledEndAt: groupActivity.scheduledEndAt,
+              // copy parameters and clues
+              parameters: {
+                create: groupActivity.parameters,
+              },
+              clues: {
+                create: groupActivity.clues,
+              },
+              // add stacks with elements
+              stacks: {
+                create: groupActivity.stacks.map((stack) => ({
+                  type: DB.ElementStackType.GROUP_ACTIVITY,
+                  order: stack.order,
+                  displayName: stack.displayName,
+                  description: stack.description,
+                  elements: {
+                    create: stack.elements.map((element) => ({
+                      elementType: element.elementType,
+                      migrationId: uuidv4(),
+                      order: element.order,
+                      type: DB.ElementInstanceType.GROUP_ACTIVITY,
+                      elementData: element.elementData,
+                      options: element.options,
+                      results: element.results,
+                      anonymousResults: element.anonymousResults,
+                      instanceStatistics: {
+                        create: getInitialInstanceStatistics(
+                          DB.ElementInstanceType.GROUP_ACTIVITY
+                        ),
+                      },
+                      element: {
+                        connect: { id: element.elementId },
+                      },
+                      owner: {
+                        connect: { id: ctx.user.sub },
+                      },
+                    })),
                   },
                 })),
               },
-            })),
-          },
-          // add template information
-          templateInfo: {
-            create: {
-              description: templateDescription,
-              instructions: templateInstructions,
-              answerCollections:
-                answerCollectionIds.length > 0
-                  ? {
-                      connect: answerCollectionIds.map((id) => ({ id })),
-                    }
-                  : undefined,
+              // add template information
+              templateInfo: {
+                create: {
+                  description: templateDescription,
+                  instructions: templateInstructions,
+                  answerCollections:
+                    answerCollectionIds.length > 0
+                      ? {
+                          connect: answerCollectionIds.map((id) => ({ id })),
+                        }
+                      : undefined,
+                },
+              },
+              // templates from asynchronous activities are linked to the same course
+              course: {
+                connect: { id: groupActivity.courseId },
+              },
+              // creator of template becomes new owner of the template activity
+              owner: { connect: { id: ctx.user.sub } },
             },
-          },
-          // templates from asynchronous activities are linked to the same course
-          course: {
-            connect: { id: groupActivity.courseId },
-          },
-          // creator of template becomes new owner of the template activity
-          owner: { connect: { id: ctx.user.sub } },
-        },
-      })
+          })
+
+          await recomputeDerivedPermissions(
+            {
+              groupActivityId: template.id,
+              userId: ctx.user.sub,
+            },
+            prisma
+          )
+
+          return template
+        }
+      )
 
       return true
     }
@@ -1025,8 +1079,6 @@ export async function deleteActivityTemplate(
 
     return deletedGroupActivity.id
   }
-
-  // TODO: before every return, update the derived permissions (the ones derived from this template can be removed)
 
   return null
 }
@@ -1509,18 +1561,6 @@ export async function getTemplatePreviewAnswerCollectionEntries(
   }))
 }
 
-interface CreateLiveQuizFromTemplateArgs {
-  templateId: string
-  // modified settings - shown in the UI
-  name: string
-  displayName: string
-  description?: string | null
-  courseId?: string | null
-  isGamificationEnabled: boolean
-  // block input - potentially including element data
-  blocks: TemplateBlockInput[]
-}
-
 export async function createLiveQuizFromTemplate(
   {
     templateId,
@@ -1530,7 +1570,17 @@ export async function createLiveQuizFromTemplate(
     blocks,
     courseId,
     isGamificationEnabled,
-  }: CreateLiveQuizFromTemplateArgs,
+  }: {
+    templateId: string
+    // modified settings - shown in the UI
+    name: string
+    displayName: string
+    description?: string | null
+    courseId?: string | null
+    isGamificationEnabled: boolean
+    // block input - potentially including element data
+    blocks: TemplateBlockInput[]
+  },
   ctx: ContextWithUser
 ): Promise<string | null> {
   const { accessible, template } = await validateTemplateAccessible(

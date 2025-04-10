@@ -40,6 +40,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import { upsertDailyTimelineEntry } from './participants.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 import { computeStackEvaluation } from './stacks.js'
 
 // TODO: rework scheduling for serverless
@@ -383,7 +384,6 @@ async function unlinkCachedBlockResults({
 
 // ------ LIVE QUIZ CREATION / EDITING ------
 // #region
-
 export async function splitActivityInstances(
   {
     stacksOrBlocks,
@@ -642,7 +642,7 @@ export async function manipulateLiveQuiz(
       },
     })
 
-    return await prisma.liveQuiz.upsert({
+    const upsertedQuiz = await prisma.liveQuiz.upsert({
       where: { id: id ?? uuidv4() },
       create: {
         ...createOrUpdateJSON,
@@ -680,6 +680,15 @@ export async function manipulateLiveQuiz(
         },
       },
     })
+
+    await recomputeDerivedPermissions(
+      {
+        liveQuizId: upsertedQuiz.id,
+      },
+      prisma
+    )
+
+    return upsertedQuiz
   })
 
   ctx.emitter.emit('invalidate', {
@@ -2194,15 +2203,26 @@ export async function deleteLiveQuiz(
     // running live quizzes cannot be deleted
     return null
   } else if (liveQuiz.status === PublicationStatus.ENDED) {
-    const deletedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        status: PublicationStatus.ENDED,
-      },
-      data: {
-        isDeleted: true,
-      },
+    const deletedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
+      const quiz = await prisma.liveQuiz.update({
+        where: {
+          id,
+          ownerId: ctx.user.sub,
+          status: PublicationStatus.ENDED,
+        },
+        data: {
+          isDeleted: true,
+        },
+      })
+
+      await recomputeDerivedPermissions(
+        {
+          liveQuizId: quiz.id,
+        },
+        prisma
+      )
+
+      return quiz
     })
 
     ctx.emitter.emit('invalidate', {

@@ -608,11 +608,7 @@ export async function modifyAnswerCollection(
 }
 
 export async function deleteAnswerCollection(
-  {
-    collectionId,
-  }: {
-    collectionId: number
-  },
+  { collectionId }: { collectionId: number },
   ctx: ContextWithUser
 ) {
   // fetch answer collection as owner or admin

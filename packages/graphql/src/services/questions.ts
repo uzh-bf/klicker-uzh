@@ -94,11 +94,7 @@ export async function getSingleQuestion(
 }
 
 export async function getArtificialElementInstance(
-  {
-    elementId,
-  }: {
-    elementId: number
-  },
+  { elementId }: { elementId: number },
   ctx: ContextWithUser
 ) {
   const element = await ctx.prisma.element.findUnique({
@@ -413,20 +409,31 @@ export async function deleteQuestion(
   ctx: ContextWithUser
 ) {
   // soft delete question and disconnect linked answer collection and sample solutions
-  const question = await ctx.prisma.element.update({
-    where: {
-      id: id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      isDeleted: true,
-      answerCollection: {
-        disconnect: true,
+  const question = await ctx.prisma.$transaction(async (prisma) => {
+    const updatedQuestion = await prisma.element.update({
+      where: {
+        id: id,
+        ownerId: ctx.user.sub,
       },
-      answerCollectionItems: {
-        set: [],
+      data: {
+        isDeleted: true,
+        answerCollection: {
+          disconnect: true,
+        },
+        answerCollectionItems: {
+          set: [],
+        },
       },
-    },
+    })
+
+    await recomputeDerivedPermissions(
+      {
+        elementId: updatedQuestion.id,
+      },
+      prisma
+    )
+
+    return updatedQuestion
   })
 
   // TODO: Once migration deadline is over, rework approach and delete question for real

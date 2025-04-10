@@ -10,14 +10,11 @@ import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { splitActivityInstances } from './liveQuizzes.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 import { computeStackEvaluation } from './stacks.js'
 
-interface GetMicroLearningArgs {
-  id: string
-}
-
 export async function getMicroLearningData(
-  { id }: GetMicroLearningArgs,
+  { id }: { id: string },
   ctx: Context
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
@@ -58,11 +55,7 @@ export async function getMicroLearningData(
 }
 
 export async function getMicroLearningEvaluation(
-  {
-    id,
-  }: {
-    id: string
-  },
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
@@ -107,7 +100,7 @@ export async function getMicroLearningEvaluation(
 }
 
 export async function getSingleMicroLearning(
-  { id }: GetMicroLearningArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
@@ -165,13 +158,8 @@ export async function getCoursePublishedMicroLearnings(
     : []
 }
 
-interface MarkMicroLearningCompletedArgs {
-  courseId: string
-  id: string
-}
-
 export async function markMicroLearningCompleted(
-  { courseId, id }: MarkMicroLearningCompletedArgs,
+  { courseId, id }: { courseId: string; id: string },
   ctx: ContextWithUser
 ) {
   return ctx.prisma.participation.update({
@@ -343,7 +331,7 @@ export async function manipulateMicroLearning(
       },
     })
 
-    return prisma.microLearning.upsert({
+    const upsertedMicrolearning = await prisma.microLearning.upsert({
       where: { id: id ?? uuidv4() },
       create: createOrUpdateJSON,
       update: createOrUpdateJSON,
@@ -363,6 +351,15 @@ export async function manipulateMicroLearning(
         },
       },
     })
+
+    await recomputeDerivedPermissions(
+      {
+        microLearningId: upsertedMicrolearning.id,
+      },
+      prisma
+    )
+
+    return upsertedMicrolearning
   })
 
   ctx.emitter.emit('invalidate', {
@@ -373,12 +370,8 @@ export async function manipulateMicroLearning(
   return activity
 }
 
-interface PublishMicroLearningArgs {
-  id: string
-}
-
 export async function publishMicroLearning(
-  { id }: PublishMicroLearningArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
@@ -424,12 +417,8 @@ export async function publishMicroLearning(
   return updatedMicroLearning
 }
 
-interface UnpublishMicroLearningArgs {
-  id: string
-}
-
 export async function unpublishMicroLearning(
-  { id }: UnpublishMicroLearningArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.update({
@@ -455,13 +444,7 @@ export async function unpublishMicroLearning(
 }
 
 export async function extendMicroLearning(
-  {
-    id,
-    endDate,
-  }: {
-    id: string
-    endDate: Date
-  },
+  { id, endDate }: { id: string; endDate: Date },
   ctx: ContextWithUser
 ) {
   // check that the new end date lies in the future
@@ -483,11 +466,7 @@ export async function extendMicroLearning(
 }
 
 export async function endMicroLearning(
-  {
-    id,
-  }: {
-    id: string
-  },
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const updatedMicroLearning = await ctx.prisma.microLearning.update({
@@ -553,12 +532,8 @@ export async function getMicroLearningSummary(
   }
 }
 
-interface DeleteMicroLearningArgs {
-  id: string
-}
-
 export async function deleteMicroLearning(
-  { id }: DeleteMicroLearningArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
@@ -594,15 +569,28 @@ export async function deleteMicroLearning(
     return deletedItem
   } else {
     // if the microlearning is published and has responses -> soft deletion
-    const updatedMicroLearning = await ctx.prisma.microLearning.update({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-      data: {
-        isDeleted: true,
-      },
-    })
+    const updatedMicroLearning = await ctx.prisma.$transaction(
+      async (prisma) => {
+        const updated = await prisma.microLearning.update({
+          where: {
+            id,
+            ownerId: ctx.user.sub,
+          },
+          data: {
+            isDeleted: true,
+          },
+        })
+
+        await recomputeDerivedPermissions(
+          {
+            microLearningId: updated.id,
+          },
+          prisma
+        )
+
+        return updated
+      }
+    )
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedMicroLearning

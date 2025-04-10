@@ -29,7 +29,7 @@ export async function getCourseActivityAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, ownerId: ctx.user.sub },
+    where: { id: courseId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on course are required
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -95,7 +95,7 @@ export async function getCourseWeeklyActivity(
   }
 
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, ownerId: ctx.user.sub },
+    where: { id: courseId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on course are required
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -490,7 +490,7 @@ export async function getCoursePerformanceAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, ownerId: ctx.user.sub },
+    where: { id: courseId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on course are required
     include: {
       _count: {
         select: { participations: true },
@@ -619,11 +619,11 @@ export async function getActivityAnalytics(
   }
 
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id: activityId },
+    where: { id: activityId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on activity are required (implied by >= READ permissions on course)
     include: activityIncludes,
   })
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id: activityId },
+    where: { id: activityId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on activity are required (implied by >= READ permissions on course)
     include: activityIncludes,
   })
   const activity = practiceQuiz ?? microLearning

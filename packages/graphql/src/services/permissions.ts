@@ -43,9 +43,6 @@ export async function recomputeDerivedPermissions(
     groupActivityId,
     // optional user to limit the required recomputation
     userId,
-    // parameter to determine whether propagation of permissions is enabled
-    // (this parameter only has an effect for select object types)
-    propagation = false,
   }: {
     catalogCollectionId?: string
     answerCollectionId?: number
@@ -56,7 +53,6 @@ export async function recomputeDerivedPermissions(
     microLearningId?: string
     groupActivityId?: string
     userId?: string
-    propagation?: boolean
   } & (
     | { catalogCollectionId: string }
     | { answerCollectionId: number }
@@ -277,7 +273,8 @@ async function recomputeCatalogCollectionPermissionsObject(
   })
 
   if (!catalogCollection || !catalogCollection.ownerId) {
-    throw new Error(`Catalog collection with id ${id} not found`)
+    console.error(`Catalog collection with id ${id} not found`)
+    return
   }
 
   // determine the maximum access level for each user with individual permissions or inside a user group
@@ -553,7 +550,8 @@ async function recomputeAnswerCollectionPermissionsObject(
   })
 
   if (!answerCollection || !answerCollection.ownerId) {
-    throw new Error(`Answer collection with id ${id} not found`)
+    console.error(`Answer collection with id ${id} not found`)
+    return
   }
 
   // determine the access map based on ownership and direct permissions
@@ -1020,7 +1018,8 @@ async function recomputeElementPermissionsObject(
   })
 
   if (!element || !element.ownerId) {
-    throw new Error(`Element with id ${id} not found`)
+    console.error(`Element with id ${id} not found`)
+    return
   }
 
   // determine the access map based on ownership and direct permissions
@@ -1283,7 +1282,8 @@ async function recomputeLiveQuizPermissionsObject(
   })
 
   if (!liveQuiz || !liveQuiz.ownerId) {
-    throw new Error(`Live quiz with id ${id} or corresponding owner not found`)
+    console.error(`Live quiz with id ${id} or corresponding owner not found`)
+    return
   }
 
   // compute a map between all users with direct or direct access to the considered activity
@@ -1505,9 +1505,10 @@ async function recomputePracticeQuizPermissionsObject(
   })
 
   if (!practiceQuiz || !practiceQuiz.ownerId) {
-    throw new Error(
+    console.error(
       `Practice quiz with id ${id} or corresponding owner not found`
     )
+    return
   }
 
   // compute a map between all users with direct or direct access to the considered activity
@@ -1729,9 +1730,10 @@ async function recomputeMicroLearningPermissionsObject(
   })
 
   if (!microLearning || !microLearning.ownerId) {
-    throw new Error(
+    console.error(
       `Microlearning with id ${id} or corresponding owner not found`
     )
+    return
   }
 
   // compute a map between all users with direct or direct access to the considered activity
@@ -1953,9 +1955,10 @@ async function recomputeGroupActivityPermissionsObject(
   })
 
   if (!groupActivity || !groupActivity.ownerId) {
-    throw new Error(
+    console.error(
       `Group activity with id ${id} or corresponding owner not found`
     )
+    return
   }
 
   // compute a map between all users with direct or direct access to the considered activity
@@ -2162,7 +2165,8 @@ async function recomputeCoursePermissionsObject(
   })
 
   if (!course || !course.ownerId) {
-    throw new Error(`Course with id ${id} not found`)
+    console.error(`Course with id ${id} not found`)
+    return
   }
 
   // determine the access map based on ownership and direct permissions (no derived access on courses is possible)

@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 import { splitActivityInstances } from './liveQuizzes.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getPracticeQuizData(
@@ -91,11 +92,7 @@ export async function getPracticeQuizData(
 }
 
 export async function getPracticeQuizEvaluation(
-  {
-    id,
-  }: {
-    id: string
-  },
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
@@ -346,7 +343,7 @@ export async function manipulatePracticeQuiz(
       },
     })
 
-    return prisma.practiceQuiz.upsert({
+    const upsertedQuiz = await prisma.practiceQuiz.upsert({
       where: { id: id ?? uuidv4() },
       create: createOrUpdateJSON,
       update: createOrUpdateJSON,
@@ -366,6 +363,15 @@ export async function manipulatePracticeQuiz(
         },
       },
     })
+
+    await recomputeDerivedPermissions(
+      {
+        practiceQuizId: upsertedQuiz.id,
+      },
+      prisma
+    )
+
+    return upsertedQuiz
   })
 
   ctx.emitter.emit('invalidate', {
@@ -408,12 +414,8 @@ export async function getBookmarksPracticeQuiz(
   return participation?.bookmarkedElementStacks.map((stack) => stack.id)
 }
 
-interface UnpublishPracticeQuizArgs {
-  id: string
-}
-
 export async function unpublishPracticeQuiz(
-  { id }: UnpublishPracticeQuizArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.update({
@@ -484,12 +486,8 @@ export async function getPracticeQuizSummary(
   }
 }
 
-interface DeletePracticeQuizArgs {
-  id: string
-}
-
 export async function deletePracticeQuiz(
-  { id }: DeletePracticeQuizArgs,
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
@@ -525,31 +523,44 @@ export async function deletePracticeQuiz(
     return deletedItem
   } else {
     // if the practice quiz is published and has responses -> soft deletion
-    const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-      data: {
-        isDeleted: true,
-      },
-      include: {
-        stacks: true,
-      },
-    })
+    const updatedPracticeQuiz = await ctx.prisma.$transaction(
+      async (prisma) => {
+        const quiz = await prisma.practiceQuiz.update({
+          where: {
+            id,
+            ownerId: ctx.user.sub,
+          },
+          data: {
+            isDeleted: true,
+          },
+          include: {
+            stacks: true,
+          },
+        })
 
-    // disconnect the stacks from the course they are linked to
-    const stackIds = updatedPracticeQuiz.stacks.map((stack) => stack.id)
-    await ctx.prisma.elementStack.updateMany({
-      where: {
-        id: {
-          in: stackIds,
-        },
-      },
-      data: {
-        courseId: null,
-      },
-    })
+        // disconnect the stacks from the course they are linked to
+        const stackIds = quiz.stacks.map((stack) => stack.id)
+        await prisma.elementStack.updateMany({
+          where: {
+            id: {
+              in: stackIds,
+            },
+          },
+          data: {
+            courseId: null,
+          },
+        })
+
+        await recomputeDerivedPermissions(
+          {
+            practiceQuizId: quiz.id,
+          },
+          prisma
+        )
+
+        return quiz
+      }
+    )
 
     ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
     return updatedPracticeQuiz

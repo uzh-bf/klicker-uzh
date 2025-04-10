@@ -1026,7 +1026,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       },
     },
   })
-
   await recomputeDerivedPermissions(
     { elementId: questionSC.id, userId: ctx.user.sub },
     ctx.prisma
@@ -1092,7 +1091,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       },
     },
   })
-
   await recomputeDerivedPermissions(
     { elementId: questionMC.id, userId: ctx.user.sub },
     ctx.prisma
@@ -1156,7 +1154,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       },
     },
   })
-
   await recomputeDerivedPermissions(
     { elementId: questionKPRIM.id, userId: ctx.user.sub },
     ctx.prisma
@@ -1194,7 +1191,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       },
     },
   })
-
   await recomputeDerivedPermissions(
     { elementId: questionNR.id, userId: ctx.user.sub },
     ctx.prisma
@@ -1230,7 +1226,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       },
     },
   })
-
   await recomputeDerivedPermissions(
     { elementId: questionFT.id, userId: ctx.user.sub },
     ctx.prisma
@@ -1261,13 +1256,12 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       },
     },
   })
-
   await recomputeDerivedPermissions(
     { elementId: flashcard.id, userId: ctx.user.sub },
     ctx.prisma
   )
 
-  // create demo Content Element
+  // create demo content element
   const contentElement = await ctx.prisma.element.create({
     data: {
       name: 'Demo Content Element',
@@ -1290,7 +1284,6 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       },
     },
   })
-
   await recomputeDerivedPermissions(
     { elementId: contentElement.id, userId: ctx.user.sub },
     ctx.prisma
@@ -1325,7 +1318,7 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
   ]
 
   const quizMultiplier = 2
-  await ctx.prisma.liveQuiz.create({
+  const liveQuiz = await ctx.prisma.liveQuiz.create({
     data: {
       name: 'Demo Live Quiz',
       displayName: 'Demo Live Quiz Display Name',
@@ -1384,4 +1377,8 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       blocks: true,
     },
   })
+  await recomputeDerivedPermissions(
+    { liveQuizId: liveQuiz.id, userId: ctx.user.sub },
+    ctx.prisma
+  )
 }

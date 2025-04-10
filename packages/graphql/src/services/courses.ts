@@ -16,6 +16,7 @@ import { type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
+import { recomputeDerivedPermissions } from './permissions.js'
 
 // custom date parser
 dayjs.extend(customParseFormat)
@@ -699,39 +700,52 @@ export async function createCourse(
 
   const defaultMaxGroupSize = 5
   const defaultPreferredGroupSize = 3
-  const course = await ctx.prisma.course.create({
-    data: {
-      name: name.trim(),
-      displayName: displayName.trim(),
-      description: description,
-      color: color ?? '#CCD5ED',
-      startDate: startDate,
-      endDate: endDate,
-      isGroupCreationEnabled: isGroupCreationEnabled ?? true,
-      groupDeadlineDate: groupDeadlineDate ?? endDate,
-      maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
-      preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
-      notificationEmail: notificationEmail,
-      isGamificationEnabled: isGamificationEnabled,
-      pinCode: randomPin,
-      owner: {
-        connect: {
-          id: ctx.user.sub,
+  const course = await ctx.prisma.$transaction(async (prisma) => {
+    const newCourse = await prisma.course.create({
+      data: {
+        name: name.trim(),
+        displayName: displayName.trim(),
+        description: description,
+        color: color ?? '#CCD5ED',
+        startDate: startDate,
+        endDate: endDate,
+        isGroupCreationEnabled: isGroupCreationEnabled ?? true,
+        groupDeadlineDate: groupDeadlineDate ?? endDate,
+        maxGroupSize: maxGroupSize ?? defaultMaxGroupSize,
+        preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
+        notificationEmail: notificationEmail,
+        isGamificationEnabled: isGamificationEnabled,
+        pinCode: randomPin,
+        owner: {
+          connect: {
+            id: ctx.user.sub,
+          },
         },
       },
-    },
+    })
+
+    await recomputeDerivedPermissions(
+      {
+        courseId: newCourse.id,
+        userId: ctx.user.sub,
+      },
+      prisma
+    )
+
+    return newCourse
   })
 
   return course
 }
 
-interface ToggleArchiveCourseProps {
-  id: string
-  isArchived: boolean
-}
-
 export async function toggleArchiveCourse(
-  { id, isArchived }: ToggleArchiveCourseProps,
+  {
+    id,
+    isArchived,
+  }: {
+    id: string
+    isArchived: boolean
+  },
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
@@ -926,6 +940,7 @@ export async function deleteCourse(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
+  // permission updates should be automatic through cascading delete (since course is hard-deleted)
   const deletedCourse = await ctx.prisma.course.delete({
     where: {
       id,
