@@ -7,7 +7,6 @@ import {
 } from '@klicker-uzh/util'
 import { v4 as uuid } from 'uuid'
 import Prisma from '../../dist/index.js'
-import { ElementType, type Element } from '../prisma/client/index.js' // TODO: replace this through Prisma.something import?!
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -740,7 +739,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     prisma,
     'data/FC_Modul_1.xml',
     USER_ID_TEST
-  )) as Element[]
+  )) as Prisma.Element[]
 
   // seed content elements
   const contentElements = (await prepareContentElements(
@@ -756,7 +755,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         "# Environmental Systems\n\n## Carbon Cycle\n\nThe carbon cycle is a biogeochemical cycle where carbon is exchanged among the biosphere, pedosphere, geosphere, hydrosphere, and atmosphere of the Earth. Human activities have significantly altered the natural carbon cycle, leading to increased atmospheric carbon dioxide concentrations and associated climate change effects.\n\n* **Photosynthesis**: Plants convert CO₂ to organic compounds, $$6CO_2 + 6H_2O + \\text{light} \\rightarrow C_6H_{12}O_6 + 6O_2$$. This process removes approximately 120 gigatons of carbon from the atmosphere annually, playing a crucial role in regulating atmospheric CO₂ levels.\n* **Respiration**: Organisms break down glucose, releasing energy and CO₂. This cellular process occurs in almost all living organisms and returns carbon to the atmosphere or aquatic environments.\n* **Decomposition**: Organic matter breaks down, releasing carbon back to the environment. Microorganisms facilitate this process, converting complex organic molecules into simpler compounds and eventually releasing CO₂.\n* **Ocean exchange**: The ocean absorbs and releases carbon dioxide through various physical, chemical, and biological processes, serving as the largest active carbon sink on Earth.\n* **Fossil fuel combustion**: Human burning of coal, oil, and natural gas releases carbon that was stored over millions of years, significantly altering the carbon cycle's balance.\n\n## Climate Change Factors\n\n1. Greenhouse gas emissions: Carbon dioxide, methane, nitrous oxide, and other gases that trap heat in the atmosphere\n2. Deforestation: Reduction in forest cover, limiting the Earth's capacity to sequester carbon through photosynthesis\n3. Industrial processes: Manufacturing activities that release greenhouse gases and other pollutants\n4. Agricultural practices: Farming methods that release greenhouse gases through soil disturbance, livestock production, and fertilizer use\n5. Land use changes: Conversion of natural ecosystems to human-dominated landscapes, altering carbon storage capacity\n6. Transportation systems: Fossil fuel consumption for moving people and goods globally\n\nThe relationship between radiative forcing (RF) and CO₂ concentration is:\n\n$$\n\\Delta F = 5.35 \\times \\ln\\left(\\frac{C}{C_0}\\right)\n$$\n\nWhere:\n* $$\\Delta F$$ is the radiative forcing in W/m²\n* $$C$$ is the current CO₂ concentration\n* $$C_0$$ is the pre-industrial CO₂ concentration\n\nThis logarithmic relationship explains why each additional unit of CO₂ has a diminishing warming effect, though the cumulative impact remains significant. Understanding these relationships is essential for climate modeling and developing effective mitigation strategies to address global climate change.",
     },
     USER_ID_TEST
-  )) as Element[]
+  )) as Prisma.Element[]
 
   const groupActivityId1 = '99fe99d2-696c-46d7-b6ae-cf385879822a'
   const groupActivityPublished = await prisma.groupActivity.upsert({
@@ -1465,9 +1464,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   // extract all questions that are valid to be used in asynchronous activities (practice quizzes / microlearnings)
   const asyncActivityQuestions = questionsTest.filter(
     (q) =>
-      q.type === ElementType.CONTENT ||
-      q.type === ElementType.FLASHCARD ||
-      q.type === ElementType.FREE_TEXT ||
+      q.type === Prisma.ElementType.CONTENT ||
+      q.type === Prisma.ElementType.FLASHCARD ||
+      q.type === Prisma.ElementType.FREE_TEXT ||
       q.options.hasSampleSolution
   )
 
