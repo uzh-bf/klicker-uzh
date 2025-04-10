@@ -32,7 +32,7 @@ model Permission {
     permissionLevel PermissionLevel
 
     // user or user group requesting access
-    user   User?   @relation("DirectlySharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    user   User?   @relation("sharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     userId String? @db.Uuid
 
     userGroup   UserGroup? @relation(fields: [userGroupId], references: [id], onDelete: Cascade, onUpdate: Cascade)

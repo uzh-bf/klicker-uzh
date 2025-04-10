@@ -42,6 +42,7 @@ function AnswerCollectionEditModal({
   const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
     variables: { id: collectionId },
     fetchPolicy: 'cache-and-network',
+    skip: !open,
   })
 
   const collection = data?.getSingleAnswerCollection

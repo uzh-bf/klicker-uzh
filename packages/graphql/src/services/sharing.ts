@@ -1844,7 +1844,7 @@ export async function transferCatalogCollectionOwnership(
       ],
     },
     include: {
-      directlySharedObjects: {
+      sharedObjects: {
         where: {
           catalogCollectionId,
         },
@@ -1921,7 +1921,7 @@ export async function transferCatalogCollectionOwnership(
     })
 
     // if the new owner previously had a direct permission on the collection, delete it
-    if (newOwner.directlySharedObjects.length > 0) {
+    if (newOwner.sharedObjects.length > 0) {
       await prisma.permission.delete({
         where: {
           catalogCollectionId_userId: {
@@ -2152,7 +2152,7 @@ export async function transferAnswerCollectionOwnership(
       ],
     },
     include: {
-      directlySharedObjects: {
+      sharedObjects: {
         where: {
           answerCollectionId: collectionId,
         },
@@ -2229,7 +2229,7 @@ export async function transferAnswerCollectionOwnership(
     })
 
     // if the new owner previously had a permission on the collection, delete it
-    if (newOwner.directlySharedObjects.length > 0) {
+    if (newOwner.sharedObjects.length > 0) {
       await prisma.permission.delete({
         where: {
           answerCollectionId_userId: {

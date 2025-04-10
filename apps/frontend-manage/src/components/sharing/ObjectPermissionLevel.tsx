@@ -13,13 +13,13 @@ import { twMerge } from 'tailwind-merge'
 
 const PermissionLevelIcons: Record<
   PermissionLevel,
-  { icon: IconDefinition; color: string }
+  { icon: IconDefinition; color: string } | undefined
 > = {
   [PermissionLevel.Read]: { icon: faEye, color: 'text-blue-600' },
   [PermissionLevel.Execute]: { icon: faPersonRunning, color: 'text-green-600' },
   [PermissionLevel.Write]: { icon: faPencil, color: 'text-orange-600' },
   [PermissionLevel.Admin]: { icon: faUserTie, color: 'text-red-600' },
-  [PermissionLevel.Owner]: { icon: faUserTie, color: 'text-purple-600' },
+  [PermissionLevel.Owner]: undefined,
 }
 
 function ObjectPermissionLevel({
@@ -27,15 +27,19 @@ function ObjectPermissionLevel({
 }: {
   permissionLevel: PermissionLevel
 }) {
-  const { icon, color } = PermissionLevelIcons[permissionLevel]
+  const badge = PermissionLevelIcons[permissionLevel]
   const t = useTranslations()
+
+  if (typeof badge === 'undefined') {
+    return null
+  }
 
   return (
     <Badge
       variant="secondary"
-      className={twMerge('ml-2 h-6 gap-2 bg-opacity-20 px-2', color)}
+      className={twMerge('ml-2 h-6 gap-2 bg-opacity-20 px-2', badge.color)}
     >
-      <FontAwesomeIcon icon={icon} size="sm" />
+      <FontAwesomeIcon icon={badge.icon} size="sm" />
       <span className="text-sm">
         {t(`manage.sharing.permissions${permissionLevel}`)}
       </span>

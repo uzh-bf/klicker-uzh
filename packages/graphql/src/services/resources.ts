@@ -149,22 +149,7 @@ export async function getAnswerCollectionsElements(
       id: ctx.user.sub,
     },
     include: {
-      answerCollections: {
-        where: {
-          isDeleted: false,
-        },
-        include: {
-          entries: {
-            orderBy: {
-              value: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          name: 'asc',
-        },
-      },
-      sharedObjects: {
+      objects: {
         where: {
           answerCollectionId: {
             not: null,
@@ -230,11 +215,7 @@ export async function getAnswerCollectionsElements(
   }
 
   const combinedAnswerCollections = [
-    ...user.answerCollections.map((collection) => ({
-      ...collection,
-      isShared: false,
-    })),
-    ...user.sharedObjects.flatMap((object) =>
+    ...user.objects.flatMap((object) =>
       object.answerCollection
         ? {
             ...object.answerCollection,
@@ -309,32 +290,20 @@ export async function getSingleAnswerCollection(
   }
 
   // return owned collection (editable, etc. if the ownerId is the user's id)
-  if (collection.ownerId === ctx.user.sub) {
-    return {
-      ...collection,
-      entries: collection.entries.map((entry) => ({
-        ...entry,
-        numSolutionUsages: entry._count?.itemUsages,
-      })),
-      numSharedUsers: collection._count?.directPermissions,
-      isOwner: true,
-      isManager: true,
-      isEditor: true,
-      isShared: false,
-    }
-  } else {
-    const permissionLevel = collection.permissions[0]?.permissionLevel
-    return {
-      ...collection,
-      permissionLevel: permissionLevel ?? DB.PermissionLevel.READ,
-      ownerShortname: collection.owner?.shortname,
-      isOwner: false,
-      isManager: permissionLevel === DB.PermissionLevel.ADMIN,
-      isEditor:
-        permissionLevel === DB.PermissionLevel.WRITE ||
-        permissionLevel === DB.PermissionLevel.ADMIN,
-      isShared: true,
-    }
+  const permissionLevel = collection.permissions[0]?.permissionLevel
+  return {
+    ...collection,
+    permissionLevel: permissionLevel ?? DB.PermissionLevel.READ,
+    ownerShortname: collection.owner?.shortname,
+    isOwner: permissionLevel === DB.PermissionLevel.OWNER,
+    isManager:
+      permissionLevel === DB.PermissionLevel.ADMIN ||
+      permissionLevel === DB.PermissionLevel.OWNER,
+    isEditor:
+      permissionLevel === DB.PermissionLevel.WRITE ||
+      permissionLevel === DB.PermissionLevel.ADMIN ||
+      permissionLevel === DB.PermissionLevel.OWNER,
+    isShared: true,
   }
 }
 
@@ -344,71 +313,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
       id: ctx.user.sub,
     },
     include: {
-      answerCollections: {
-        include: {
-          _count: {
-            select: {
-              entries: true,
-              linkedElements: {
-                where: {
-                  permissions: {
-                    some: {
-                      userId: ctx.user.sub,
-                    },
-                  },
-                },
-              },
-              linkedTemplates: {
-                where: {
-                  OR: [
-                    {
-                      liveQuiz: {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                          },
-                        },
-                      },
-                    },
-                    {
-                      practiceQuiz: {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                          },
-                        },
-                      },
-                    },
-                    {
-                      microLearning: {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                          },
-                        },
-                      },
-                    },
-                    {
-                      groupActivity: {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                          },
-                        },
-                      },
-                    },
-                  ],
-                },
-              },
-              directPermissions: true,
-            },
-          },
-        },
-        orderBy: {
-          name: 'asc',
-        },
-      },
-      sharedObjects: {
+      objects: {
         where: {
           answerCollectionId: {
             not: null,
@@ -489,21 +394,8 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     return []
   }
 
-  const ownedCollections = user.answerCollections.map((collection) => ({
-    ...collection,
-    numSharedUsers: collection._count?.directPermissions,
-    numOfEntries: collection._count.entries,
-    isOwner: true,
-    isManager: true,
-    isEditor: true,
-    isImported: collection.originalId !== null,
-    isShared: false,
-    isRemovable:
-      collection._count.linkedElements === 0 &&
-      collection._count.linkedTemplates === 0,
-  }))
-
-  const sharedCollections = user.sharedObjects.flatMap((object) => {
+  // owned answer collections are included in shared ones through derived permissions with OWNER level
+  const collections = user.objects.flatMap((object) => {
     const collection = object.answerCollection
 
     if (!collection) {
@@ -515,11 +407,14 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
       numOfEntries: collection._count.entries,
       permissionLevel: object.permissionLevel,
       ownerShortname: collection.owner?.shortname,
-      isOwner: false,
-      isManager: object.permissionLevel === DB.PermissionLevel.ADMIN,
+      isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
+      isManager:
+        object.permissionLevel === DB.PermissionLevel.ADMIN ||
+        object.permissionLevel === DB.PermissionLevel.OWNER,
       isEditor:
         object.permissionLevel === DB.PermissionLevel.WRITE ||
-        object.permissionLevel === DB.PermissionLevel.ADMIN,
+        object.permissionLevel === DB.PermissionLevel.ADMIN ||
+        object.permissionLevel === DB.PermissionLevel.OWNER,
       isImported: false, // shared objects cannot be imported
       isShared: true,
       isRemovable:
@@ -528,7 +423,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
     }
   })
 
-  return [...ownedCollections, ...sharedCollections]
+  return collections
 }
 
 export async function modifyAnswerCollection(

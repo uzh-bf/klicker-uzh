@@ -1017,8 +1017,6 @@ export async function createActivityTemplate(
 
     return true
   }
-
-  // TODO: before every return type, update the derived permissions to include a new permission for the template owner
 }
 
 export async function deleteActivityTemplate(
