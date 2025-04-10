@@ -11,6 +11,7 @@ import {
 import { ActivityType } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
+  MISSING_CATALOG_COLLECTION_ID,
   processElementData,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
@@ -20,7 +21,6 @@ import {
   getAnswerCollectionsElements,
   getAnswerCollectionsInfo,
 } from '../src/services/resources.js'
-import { MISSING_CATALOG_COLLECTION_ID } from '../src/services/sharing.js'
 import {
   createActivityTemplate,
   getMatchingUserElementsTemplate,

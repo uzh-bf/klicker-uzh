@@ -9,6 +9,7 @@ import { ActivityType, ElementManipulationInput } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
@@ -19,7 +20,6 @@ import type {
 } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {

@@ -14,7 +14,10 @@ import {
   type ElementStackInput,
   ResponseCorrectness,
 } from '@klicker-uzh/types'
-import { getActivityInstanceConnectOrCreate } from '@klicker-uzh/util'
+import {
+  getActivityInstanceConnectOrCreate,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
@@ -35,7 +38,6 @@ import { sendTeamsNotifications, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { upsertDailyTimelineEntry } from './participants.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 import {
   type RespondToElementStackInput,
   updateCaseStudyResults,

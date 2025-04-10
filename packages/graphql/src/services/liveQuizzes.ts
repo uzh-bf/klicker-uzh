@@ -28,6 +28,7 @@ import type {
 import {
   getActivityInstanceConnectOrCreate,
   getInitialInstanceResults,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
@@ -40,7 +41,6 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import { upsertDailyTimelineEntry } from './participants.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 import { computeStackEvaluation } from './stacks.js'
 
 // TODO: rework scheduling for serverless

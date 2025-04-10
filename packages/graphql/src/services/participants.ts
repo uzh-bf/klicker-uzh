@@ -6,6 +6,7 @@ import {
   UserRole,
   type ElementFeedback,
 } from '@klicker-uzh/prisma'
+import { PrismaTransactionClient } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek.js'
@@ -13,7 +14,6 @@ import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
-import { PrismaTransactionClient } from './stacks.js'
 
 dayjs.extend(isoWeek)
 

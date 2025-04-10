@@ -25,6 +25,7 @@ function AnswerCollectionViewingModal({
   const t = useTranslations()
   const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
     variables: { id: collectionId },
+    skip: !open,
   })
   const collection = data?.getSingleAnswerCollection
 

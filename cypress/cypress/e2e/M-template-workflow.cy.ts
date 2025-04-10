@@ -1554,6 +1554,9 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it("Open the template in the restricted catalog collection through user 'pro1', test all functionalities and create an activity from it", function () {
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="resources"]').should('exist')
+    cy.get('[data-cy="analytics"]').should('exist')
+
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()

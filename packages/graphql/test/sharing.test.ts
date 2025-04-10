@@ -9,6 +9,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma'
 import { ActivityType, CatalogObjectType } from '@klicker-uzh/types'
+import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -31,7 +32,6 @@ import {
   getCatalogAnswerCollections,
   getCatalogCollectionsList,
   importAnswerCollection,
-  MISSING_CATALOG_COLLECTION_ID,
   requestCatalogCollection,
   requestCatalogObject,
   resolveObjectSharingRequest,

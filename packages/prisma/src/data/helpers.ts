@@ -3,6 +3,7 @@ import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
@@ -1040,7 +1041,6 @@ export async function prepareFlashcardsFromFile(
 
   const elementsFC = await Promise.allSettled(
     quizInfo.elements.map(async (data: any) => {
-      // TODO: manually create required derived permissions here (recomputation functions from backend not available)
       const flashcard = await prismaClient.element.upsert({
         where: {
           ownerId_originalId: {
@@ -1065,6 +1065,15 @@ export async function prepareFlashcardsFromFile(
           },
         },
       })
+
+      await recomputeDerivedPermissions(
+        {
+          elementId: flashcard.id,
+          userId: flashcard.ownerId,
+        },
+        prismaClient
+      )
+
       return flashcard
     })
   )
@@ -1087,7 +1096,6 @@ export async function prepareContentElements(
 ) {
   const elementsCE = await Promise.allSettled(
     Object.entries(content).map(async ([name, data]) => {
-      // TODO: manually create required derived permissions here (recomputation functions from backend not available)
       const contentElement = await prismaClient.element.create({
         data: {
           name: name.trim(),
@@ -1101,6 +1109,15 @@ export async function prepareContentElements(
           },
         },
       })
+
+      await recomputeDerivedPermissions(
+        {
+          elementId: contentElement.id,
+          userId: contentElement.ownerId,
+        },
+        prismaClient
+      )
+
       return contentElement
     })
   )

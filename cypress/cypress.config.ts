@@ -1,4 +1,4 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
+import { ElementType, PermissionLevel, PrismaClient } from '@klicker-uzh/prisma'
 import {
   CaseStudyCaseCriterionSolution,
   CaseStudyCaseSolution,
@@ -19,9 +19,28 @@ const USER_ID_TEST3 = '76047345-3801-4628-ae7b-adbebcfe8823'
 const USER_ID_TEST4 = '76047345-3801-4628-ae7b-adbebcfe8824'
 const USER_ID_TEST5 = '76047345-3801-4628-ae7b-adbebcfe8825'
 
+async function connect() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set')
+  }
+
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
+  })
+
+  return prisma
+}
+
 export default defineConfig({
   watchForFileChanges: true,
   projectId: 'y436dx',
+  trashAssetsBeforeRuns: true,
+  video: true,
+  videoCompression: 10,
   env: {
     URL_STUDENT: 'http://127.0.0.1:3001',
     URL_STUDENT_LOGIN: 'http://127.0.0.1:3001/login',
@@ -76,25 +95,13 @@ export default defineConfig({
         // ! Helper functions
         // #region
         async connectToDB() {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
-
+          const prisma = await connect()
           return prisma
         },
         // #endregion
 
         // ! Element creation
         // #region
-        // TODO: directly create required derived permissions in database for these elements
         async createQuestionChoices({
           type,
           name,
@@ -112,10 +119,6 @@ export default defineConfig({
           choices: { value: string; correct?: boolean; feedback?: string }[]
           userId: string
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
           if (type === ElementType.SC && choices.length < 2) {
             throw new Error('SC questions require at least 2 choices')
           }
@@ -135,13 +138,7 @@ export default defineConfig({
             (choice) => typeof choice.feedback !== 'undefined'
           )
 
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const ChoicesQuestion = await prisma.element.create({
@@ -173,9 +170,18 @@ export default defineConfig({
               },
             })
 
-            if (!ChoicesQuestion) {
-              return false
-            }
+            // create a derived permission for the newly created element
+            await prisma.derivedPermission.create({
+              data: {
+                permissionLevel: PermissionLevel.OWNER,
+                element: {
+                  connect: { id: ChoicesQuestion.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+            })
 
             return true
           } finally {
@@ -207,22 +213,12 @@ export default defineConfig({
           exactSolutions?: string[] | null
           userId: string
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
           const hasSampleSolution =
             typeof solutionRanges !== 'undefined' &&
             solutionRanges !== null &&
             solutionRanges.length > 0
 
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const NumericalQuestion = await prisma.element.create({
@@ -262,9 +258,18 @@ export default defineConfig({
               },
             })
 
-            if (!NumericalQuestion) {
-              return false
-            }
+            // create a derived permission for the newly created element
+            await prisma.derivedPermission.create({
+              data: {
+                permissionLevel: PermissionLevel.OWNER,
+                element: {
+                  connect: { id: NumericalQuestion.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+            })
 
             return true
           } finally {
@@ -288,20 +293,10 @@ export default defineConfig({
           solutions?: string[]
           userId: string
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
           const hasSampleSolution =
             typeof solutions !== 'undefined' && solutions.length > 0
 
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const FreeTextQuestion = await prisma.element.create({
@@ -327,9 +322,18 @@ export default defineConfig({
               },
             })
 
-            if (!FreeTextQuestion) {
-              return false
-            }
+            // create a derived permission for the newly created element
+            await prisma.derivedPermission.create({
+              data: {
+                permissionLevel: PermissionLevel.OWNER,
+                element: {
+                  connect: { id: FreeTextQuestion.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+            })
 
             return true
           } finally {
@@ -355,17 +359,7 @@ export default defineConfig({
           correctAnswers?: string[]
           userId: string
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const dbAnswerCollection = await prisma.answerCollection.findFirst({
@@ -439,9 +433,40 @@ export default defineConfig({
               },
             })
 
-            if (!SelectionQuestion) {
-              return false
-            }
+            // create a derived permission for the newly created element
+            await prisma.derivedPermission.create({
+              data: {
+                permissionLevel: PermissionLevel.OWNER,
+                element: {
+                  connect: { id: SelectionQuestion.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+            })
+
+            // create a derived permission for the answer collection (if not already created)
+            // (existing permission level does not need to be checked - can only be equal or larger)
+            await prisma.derivedPermission.upsert({
+              where: {
+                answerCollectionId_userId: {
+                  answerCollectionId: dbAnswerCollection.id,
+                  userId: userId,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.READ,
+                derived: true,
+                answerCollection: {
+                  connect: { id: dbAnswerCollection.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+              update: {},
+            })
 
             return true
           } finally {
@@ -500,17 +525,7 @@ export default defineConfig({
           }
           userId: string
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const dbAnswerCollection = await prisma.answerCollection.findFirst({
@@ -656,9 +671,40 @@ export default defineConfig({
               },
             })
 
-            if (!CaseStudyQuestion) {
-              return false
-            }
+            // create a derived permission for the newly created element
+            await prisma.derivedPermission.create({
+              data: {
+                permissionLevel: PermissionLevel.OWNER,
+                element: {
+                  connect: { id: CaseStudyQuestion.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+            })
+
+            // create a derived permission for the answer collection (if not already created)
+            // (existing permission level does not need to be checked - can only be equal or larger)
+            await prisma.derivedPermission.upsert({
+              where: {
+                answerCollectionId_userId: {
+                  answerCollectionId: dbAnswerCollection.id,
+                  userId: userId,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.READ,
+                derived: true,
+                answerCollection: {
+                  connect: { id: dbAnswerCollection.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+              update: {},
+            })
 
             return true
           } finally {
@@ -674,17 +720,7 @@ export default defineConfig({
           content: string
           userId: string
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const ContentElement = await prisma.element.create({
@@ -701,9 +737,18 @@ export default defineConfig({
               },
             })
 
-            if (!ContentElement) {
-              return false
-            }
+            // create a derived permission for the newly created element
+            await prisma.derivedPermission.create({
+              data: {
+                permissionLevel: PermissionLevel.OWNER,
+                element: {
+                  connect: { id: ContentElement.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+            })
 
             return true
           } finally {
@@ -721,17 +766,7 @@ export default defineConfig({
           explanation: string
           userId: string
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const Flashcard = await prisma.element.create({
@@ -749,9 +784,18 @@ export default defineConfig({
               },
             })
 
-            if (!Flashcard) {
-              return false
-            }
+            // create a derived permission for the newly created element
+            await prisma.derivedPermission.create({
+              data: {
+                permissionLevel: PermissionLevel.OWNER,
+                element: {
+                  connect: { id: Flashcard.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+            })
 
             return true
           } finally {
@@ -763,17 +807,7 @@ export default defineConfig({
         // ! Practice Quiz queries / mutations
         // #region
         async getPracticeQuizInfo({ quizName }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const practiceQuizzes = await prisma.practiceQuiz.findMany({
@@ -795,17 +829,7 @@ export default defineConfig({
           }
         },
         async removeSoftDeletedPracticeQuiz({ quizName }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const practiceQuizzes = await prisma.practiceQuiz.deleteMany({
@@ -829,17 +853,7 @@ export default defineConfig({
         // ! Microlearning queries / mutations
         // #region
         async getMicroLearningInfo({ mlName }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const microLearnings = await prisma.microLearning.findMany({
@@ -861,17 +875,7 @@ export default defineConfig({
           }
         },
         async removeSoftDeletedMicrolearning({ mlName }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const microLearnings = await prisma.microLearning.deleteMany({
@@ -905,17 +909,7 @@ export default defineConfig({
           entries: string[]
           userId: string
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const answerCollection = await prisma.answerCollection.create({
@@ -935,9 +929,18 @@ export default defineConfig({
               },
             })
 
-            if (!answerCollection) {
-              return false
-            }
+            // create a derived permission for the newly created answer collection
+            await prisma.derivedPermission.create({
+              data: {
+                permissionLevel: PermissionLevel.OWNER,
+                answerCollection: {
+                  connect: { id: answerCollection.id },
+                },
+                user: {
+                  connect: { id: userId },
+                },
+              },
+            })
 
             return true
           } finally {
@@ -947,17 +950,7 @@ export default defineConfig({
         async verifyDeletionAnswerCollections() {
           const NUM_SEEDED_ANSWER_COLLECTIONS = 3 // 3 seeded answer collections that should not be removed through workflows
 
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const count = await prisma.answerCollection.count()
@@ -969,17 +962,7 @@ export default defineConfig({
         async verifyDeletionCatalogCollections() {
           const NUM_SEEDED_CATALOG_COLLECTIONS = 1 // 1 seeded default catalog collections that should not be removed through workflows
 
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const count = await prisma.catalogCollection.count()
@@ -993,17 +976,7 @@ export default defineConfig({
         // ! Live Quiz queries / mutations
         // #region
         async removeSoftDeletedLiveQuiz({ lqName }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const liveQuizzes = await prisma.liveQuiz.deleteMany({
@@ -1027,17 +1000,7 @@ export default defineConfig({
         // ! Group Activity queries / mutations
         // #region
         async removeSoftDeletedGroupActivity({ gaName }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const groupActivities = await prisma.groupActivity.deleteMany({
@@ -1060,24 +1023,14 @@ export default defineConfig({
 
         // ! Permission queries / mutations
         // #region
-        async updateLecturerPermissions({
+        async updateLecturerPreviewFlags({
           publicPreview,
           privatePreview,
         }: {
           publicPreview: boolean
           privatePreview: boolean
         }) {
-          if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL environment variable is not set')
-          }
-
-          const prisma = new PrismaClient({
-            datasources: {
-              db: {
-                url: process.env.DATABASE_URL,
-              },
-            },
-          })
+          const prisma = await connect()
 
           try {
             const user = await prisma.user.update({

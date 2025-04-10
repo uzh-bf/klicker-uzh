@@ -18,8 +18,6 @@ import {
   type InstanceStatistics,
   type Participant,
   type Participation,
-  Prisma,
-  PrismaClient,
   type QuestionResponse as PrismaQuestionResponse,
   ResponseCorrectness,
   UserRole,
@@ -64,7 +62,10 @@ import type {
   SingleQuestionResponseValue,
 } from '@klicker-uzh/types'
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
-import { getInitialInstanceResults } from '@klicker-uzh/util'
+import {
+  getInitialInstanceResults,
+  PrismaTransactionClient,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
 import { createHash } from 'node:crypto'
@@ -78,10 +79,6 @@ import type {
 } from '../ops.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 
-export type PrismaTransactionClient = Omit<
-  PrismaClient<Prisma.PrismaClientOptions, never>,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
->
 type ExistingInstanceType = ElementInstance & {
   elementStack?: {
     practiceQuizId?: string | null

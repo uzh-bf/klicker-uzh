@@ -6,14 +6,16 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma'
 import type { ElementStackInput } from '@klicker-uzh/types'
-import { getActivityInstanceConnectOrCreate } from '@klicker-uzh/util'
+import {
+  getActivityInstanceConnectOrCreate,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 import { splitActivityInstances } from './liveQuizzes.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getPracticeQuizData(

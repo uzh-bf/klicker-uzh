@@ -1,6 +1,8 @@
 import * as DB from '@klicker-uzh/prisma'
-import { MISSING_CATALOG_COLLECTION_ID } from './sharing.js'
-import { PrismaTransactionClient } from './stacks.js'
+import {
+  MISSING_CATALOG_COLLECTION_ID,
+  type PrismaTransactionClient,
+} from './types.js'
 
 // auxilary type definitions
 type UserAccessMap = {
@@ -20,7 +22,11 @@ const permissionLevelMap = {
   [DB.PermissionLevel.READ]: 1,
   ['NONE']: 0,
 }
-const inversePermissionLevelMap = {
+
+const inversePermissionLevelMap: Record<
+  number,
+  DB.PermissionLevel | undefined
+> = {
   0: undefined,
   1: DB.PermissionLevel.READ,
   2: DB.PermissionLevel.EXECUTE,
@@ -1307,13 +1313,7 @@ async function recomputeLiveQuizPermissionsObject(
   })
 
   // recompute the derived permissions on all elements contained in this activity
-  await propagateActivityToElements(
-    {
-      stacks: liveQuiz.blocks,
-      userId: liveQuiz.ownerId,
-    },
-    prisma
-  )
+  await propagateActivityToElements({ stacks: liveQuiz.blocks }, prisma)
 }
 // #endregion
 
@@ -1532,13 +1532,7 @@ async function recomputePracticeQuizPermissionsObject(
   })
 
   // recompute the derived permissions on all elements contained in this activity
-  await propagateActivityToElements(
-    {
-      stacks: practiceQuiz.stacks,
-      userId: practiceQuiz.ownerId,
-    },
-    prisma
-  )
+  await propagateActivityToElements({ stacks: practiceQuiz.stacks }, prisma)
 }
 // #endregion
 
@@ -1757,13 +1751,7 @@ async function recomputeMicroLearningPermissionsObject(
   })
 
   // recompute the derived permissions on all elements contained in this activity
-  await propagateActivityToElements(
-    {
-      stacks: microLearning.stacks,
-      userId: microLearning.ownerId,
-    },
-    prisma
-  )
+  await propagateActivityToElements({ stacks: microLearning.stacks }, prisma)
 }
 // #endregion
 
@@ -1982,13 +1970,7 @@ async function recomputeGroupActivityPermissionsObject(
   })
 
   // recompute the derived permissions on all elements contained in this activity
-  await propagateActivityToElements(
-    {
-      stacks: groupActivity.stacks,
-      userId: groupActivity.ownerId,
-    },
-    prisma
-  )
+  await propagateActivityToElements({ stacks: groupActivity.stacks }, prisma)
 }
 // #endregion
 
@@ -2102,30 +2084,28 @@ async function recomputeCoursePermissionsUser(
     })
   }
 
-  // recompute the derived permissions on all activities contained in this course
-  await Promise.all([
-    ...course.liveQuizzes.map((liveQuiz) =>
-      recomputeLiveQuizPermissionsUser({ id: liveQuiz.id, userId }, prisma)
-    ),
-    ...course.practiceQuizzes.map((practiceQuiz) =>
-      recomputePracticeQuizPermissionsUser(
-        { id: practiceQuiz.id, userId },
-        prisma
-      )
-    ),
-    ...course.microLearnings.map((microLearning) =>
-      recomputeMicroLearningPermissionsUser(
-        { id: microLearning.id, userId },
-        prisma
-      )
-    ),
-    ...course.groupActivities.map((groupActivity) =>
-      recomputeGroupActivityPermissionsUser(
-        { id: groupActivity.id, userId },
-        prisma
-      )
-    ),
-  ])
+  // recompute the derived permissions on all activities contained in this course (sequentially)
+  for (const liveQuiz of course.liveQuizzes) {
+    await recomputeLiveQuizPermissionsUser({ id: liveQuiz.id, userId }, prisma)
+  }
+  for (const practiceQuiz of course.practiceQuizzes) {
+    await recomputePracticeQuizPermissionsUser(
+      { id: practiceQuiz.id, userId },
+      prisma
+    )
+  }
+  for (const microLearning of course.microLearnings) {
+    await recomputeMicroLearningPermissionsUser(
+      { id: microLearning.id, userId },
+      prisma
+    )
+  }
+  for (const groupActivity of course.groupActivities) {
+    await recomputeGroupActivityPermissionsUser(
+      { id: groupActivity.id, userId },
+      prisma
+    )
+  }
 
   return
 }
@@ -2188,21 +2168,28 @@ async function recomputeCoursePermissionsObject(
     ),
   })
 
-  // recompute the derived permissions on all activities contained in this course
-  await Promise.all([
-    ...course.liveQuizzes.map((liveQuiz) =>
-      recomputeLiveQuizPermissionsObject({ id: liveQuiz.id }, prisma)
-    ),
-    ...course.practiceQuizzes.map((practiceQuiz) =>
-      recomputePracticeQuizPermissionsObject({ id: practiceQuiz.id }, prisma)
-    ),
-    ...course.microLearnings.map((microLearning) =>
-      recomputeMicroLearningPermissionsObject({ id: microLearning.id }, prisma)
-    ),
-    ...course.groupActivities.map((groupActivity) =>
-      recomputeGroupActivityPermissionsObject({ id: groupActivity.id }, prisma)
-    ),
-  ])
+  // recompute the derived permissions on all activities contained in this course (sequentially)
+  for (const liveQuiz of course.liveQuizzes) {
+    await recomputeLiveQuizPermissionsObject({ id: liveQuiz.id }, prisma)
+  }
+  for (const practiceQuiz of course.practiceQuizzes) {
+    await recomputePracticeQuizPermissionsObject(
+      { id: practiceQuiz.id },
+      prisma
+    )
+  }
+  for (const microLearning of course.microLearnings) {
+    await recomputeMicroLearningPermissionsObject(
+      { id: microLearning.id },
+      prisma
+    )
+  }
+  for (const groupActivity of course.groupActivities) {
+    await recomputeGroupActivityPermissionsObject(
+      { id: groupActivity.id },
+      prisma
+    )
+  }
 }
 // #endregion
 
@@ -2448,15 +2435,18 @@ async function propagateActivityToElementsUser(
   },
   prisma: PrismaTransactionClient
 ) {
-  const elementIds = stacks.flatMap((stack) =>
-    stack.elements.map((instance) => instance.elementId)
-  )
-  await Promise.all(
-    elementIds.map(
-      async (elementId) =>
-        await recomputeElementPermissionsUser({ id: elementId, userId }, prisma)
-    )
-  )
+  const elementIds = [
+    ...new Set(
+      stacks.flatMap((stack) =>
+        stack.elements.map((instance) => instance.elementId)
+      )
+    ),
+  ]
+
+  // sequentially update all elements
+  for (const elementId of elementIds) {
+    await recomputeElementPermissionsObject({ id: elementId }, prisma)
+  }
 }
 
 function getActivityPermissionsObject({
@@ -2524,23 +2514,24 @@ function getActivityPermissionsObject({
 async function propagateActivityToElements(
   {
     stacks,
-    userId,
   }: {
     stacks:
       | (Partial<DB.ElementBlock> & { elements: DB.ElementInstance[] }[])
       | (Partial<DB.ElementStack> & { elements: DB.ElementInstance[] }[])
-    userId: string
   },
   prisma: PrismaTransactionClient
 ) {
-  const elementIds = stacks.flatMap((stack) =>
-    stack.elements.map((instance) => instance.elementId)
-  )
-  Promise.all(
-    elementIds.map(
-      async (elementId) =>
-        await recomputeElementPermissionsObject({ id: elementId }, prisma)
-    )
-  )
+  const elementIds = [
+    ...new Set(
+      stacks.flatMap((stack) =>
+        stack.elements.map((instance) => instance.elementId)
+      )
+    ),
+  ]
+
+  // sequentially update all elements
+  for (const elementId of elementIds) {
+    await recomputeElementPermissionsObject({ id: elementId }, prisma)
+  }
 }
 // #endregion

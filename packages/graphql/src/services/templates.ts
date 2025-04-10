@@ -9,20 +9,20 @@ import {
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  MISSING_CATALOG_COLLECTION_ID,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 import { manipulateQuestion } from './questions.js'
 import {
   getAnswerCollectionsElements,
   validateAnswerCollectionPermissions,
 } from './resources.js'
-import { MISSING_CATALOG_COLLECTION_ID } from './sharing.js'
 
 // ! Helper functions
 // #region
@@ -1017,8 +1017,6 @@ export async function createActivityTemplate(
 
     return true
   }
-
-  // TODO: before every return type, update the derived permissions to include a new permission for the template owner
 }
 
 export async function deleteActivityTemplate(

@@ -133,7 +133,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
 
   it('Verify that only the public preview features are available if the corresponding flag is set', function () {
     // modify access permissions
-    cy.task('updateLecturerPermissions', {
+    cy.task('updateLecturerPreviewFlags', {
       publicPreview: true,
       privatePreview: false,
     }).then((result: boolean) => {
@@ -157,7 +157,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
 
   it('Verify that only private preview features are available if the corresponding flag is set', function () {
     // modify access permissions
-    cy.task('updateLecturerPermissions', {
+    cy.task('updateLecturerPreviewFlags', {
       publicPreview: false,
       privatePreview: true,
     }).then((result: boolean) => {
@@ -181,7 +181,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
 
   it('Verify that without feature flags, preview features are not visible', function () {
     // modify access permissions
-    cy.task('updateLecturerPermissions', {
+    cy.task('updateLecturerPreviewFlags', {
       publicPreview: false,
       privatePreview: false,
     }).then((result: boolean) => {
@@ -205,7 +205,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
 
   it('Cleanup: Change back the user permissions to their original state', function () {
     // modify access permissions
-    cy.task('updateLecturerPermissions', {
+    cy.task('updateLecturerPreviewFlags', {
       publicPreview: true,
       privatePreview: true,
     }).then((result: boolean) => {
