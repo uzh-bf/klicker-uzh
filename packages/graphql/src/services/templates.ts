@@ -9,6 +9,7 @@ import {
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  MISSING_CATALOG_COLLECTION_ID,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -22,7 +23,6 @@ import {
   getAnswerCollectionsElements,
   validateAnswerCollectionPermissions,
 } from './resources.js'
-import { MISSING_CATALOG_COLLECTION_ID } from './sharing.js'
 
 // ! Helper functions
 // #region

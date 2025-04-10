@@ -120,7 +120,7 @@ model User {
   managedCatalogCollections CatalogCollection[]
 
   objects          DerivedPermission[] @relation("SharedObjects") // all objects a user has access to (derived permissions include OWNER rights)
-  sharedObjects    Permission[]        @relation("sharedObjects") // direct permissions to objects (not derived)
+  sharedObjects    Permission[]        @relation("DirectlySharedObjects") // direct permissions to objects (not derived)
   requestedObjects AccessRequest[]     @relation("RequestedObjects") // objects requested by this user
   pendingRequests  AccessRequest[]     @relation("PendingRequests") // objects requested by other users (this user is OWNER / ADMIN)
 

@@ -6,7 +6,7 @@ export const MISSING_CATALOG_COLLECTION_ID =
   'fde06b3c-d515-4907-99cf-c2ba67583155'
 
 // auxilary type definitions
-export type UserAccessMap = {
+type UserAccessMap = {
   [userId: string]: {
     maxAccessLevel: DB.PermissionLevel
     parentPermissionId: number | undefined
@@ -14,13 +14,13 @@ export type UserAccessMap = {
   }
 }
 
-export type PrismaTransactionClient = Omit<
+type PrismaTransactionClient = Omit<
   DB.PrismaClient,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 
 // map to directly compare permission levels
-export const permissionLevelMap = {
+const permissionLevelMap = {
   [DB.PermissionLevel.OWNER]: 5,
   [DB.PermissionLevel.ADMIN]: 4,
   [DB.PermissionLevel.WRITE]: 3,
@@ -29,7 +29,7 @@ export const permissionLevelMap = {
   ['NONE']: 0,
 }
 
-export const inversePermissionLevelMap: Record<
+const inversePermissionLevelMap: Record<
   number,
   DB.PermissionLevel | undefined
 > = {

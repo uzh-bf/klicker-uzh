@@ -5,14 +5,13 @@ import {
   CatalogObjectType,
   ObjectSharingRequest,
 } from '@klicker-uzh/types'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  MISSING_CATALOG_COLLECTION_ID,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import type { ContextWithUser } from '../lib/context.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
 import { validateActivityPermissions } from './templates.js'
-
-// ! do not modify - required for the import of objects not assigned to any catalogue
-export const MISSING_CATALOG_COLLECTION_ID =
-  'fde06b3c-d515-4907-99cf-c2ba67583155'
 
 // ! Helper functions
 // #region
