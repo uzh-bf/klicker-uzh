@@ -1231,30 +1231,39 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.wrap([
       {
         identifier: '2-0',
+        oldTitle: this.data.SCMLAF.title,
         newTitle: this.data.activity1.newElements.SC.title,
         newContent: this.data.activity1.newElements.SC.content,
       },
       {
         identifier: '2-1',
+        oldTitle: this.data.MCMLAF.title,
         newTitle: this.data.activity1.newElements.MC.title,
         newContent: this.data.activity1.newElements.MC.content,
       },
       {
         identifier: '2-2',
+        oldTitle: this.data.KPMLAF.title,
         newTitle: this.data.activity1.newElements.KP.title,
         newContent: this.data.activity1.newElements.KP.content,
       },
     ]).each(
       ({
         identifier,
+        oldTitle,
         newTitle,
         newContent,
       }: {
         identifier: string
+        oldTitle: string
         newTitle: string
         newContent: string
       }) => {
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
+        cy.get('[data-cy="insert-question-title"]').should(
+          'have.value',
+          oldTitle
+        )
         cy.get('[data-cy="insert-question-title"]')
           .click()
           .clear()
