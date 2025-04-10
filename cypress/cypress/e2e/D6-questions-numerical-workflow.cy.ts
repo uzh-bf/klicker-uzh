@@ -8,6 +8,13 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Numerical questions
   // #region
   it('Create a Numerical question', function () {

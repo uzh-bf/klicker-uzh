@@ -10,6 +10,13 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Part 1: Question duplication
   // #region
   it('Create a new question, duplicates it and then deletes them again', function () {

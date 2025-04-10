@@ -7,6 +7,13 @@ describe('Tests the availability of certain functionalities to catalyst users on
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   function validateFeatureAvailability({
     data,
     publicPreview,

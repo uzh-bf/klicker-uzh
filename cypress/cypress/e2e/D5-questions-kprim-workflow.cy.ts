@@ -8,6 +8,13 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! KPRIM questions
   // #region
   it('Create a KPRIM question', function () {

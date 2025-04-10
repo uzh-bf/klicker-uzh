@@ -8,11 +8,19 @@ describe('Test creation and editing functionalities, validation, etc. for select
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Selection questions
   // #region
   it('Create the answer collections that will be used for the selection question tests', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.SE.collection,
       description: this.data.SE.collectionDescription,

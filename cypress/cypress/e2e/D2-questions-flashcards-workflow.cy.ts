@@ -8,6 +8,13 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Flashcards
   // #region
   it('Create a flashcard element', function () {

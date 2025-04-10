@@ -25,11 +25,19 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Case Study questions
   // #region
   it('Create the answer collection that will be used for the case study question tests', function () {
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.CS.collection,
       description: this.data.CS.collectionDescription,

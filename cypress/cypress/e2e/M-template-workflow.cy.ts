@@ -11,6 +11,13 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Part 0: Preparation
   // #region
   it('Create a set of questions in the lecturer account for the template test suite', function () {
@@ -100,6 +107,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.collection.name,
       description: this.data.collection.description,
@@ -241,6 +249,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.collection2.name,
       description: this.data.collection2.description,
@@ -382,6 +391,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.collection3.name,
       description: this.data.collection3.description,

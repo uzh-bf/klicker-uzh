@@ -8,6 +8,13 @@ describe('Create, edit and share answer collections', function () {
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
+
   // ! Helper functions
   // #region
   function validateDatabaseContent() {
@@ -170,6 +177,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.public.descriptionNew)
+    cy.wait(100) // wait for states to propagate
     cy.get('[data-cy="save-changes-answer-collection"]').click()
 
     // check that current values are correct
@@ -253,6 +261,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.public.descriptionNew)
+    cy.wait(100) // wait for states to propagate
     cy.get('[data-cy="save-changes-answer-collection"]').click()
 
     cy.get('[data-cy="open-answer-collection-options"]').click()
@@ -297,7 +306,7 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.private.name,
       description: this.data.private.description,
@@ -381,7 +390,7 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.restricted.name,
       description: this.data.restricted.description,
@@ -960,7 +969,7 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.public.name,
       description: this.data.public.description,
@@ -1293,6 +1302,7 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.private.name,
       description: this.data.private.description,
@@ -1514,7 +1524,7 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.direct.name,
       description: this.data.direct.description,
@@ -1779,6 +1789,7 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.access.name,
       description: this.data.access.description,
@@ -2206,6 +2217,7 @@ describe('Create, edit and share answer collections', function () {
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.ownership.name,
       description: this.data.ownership.description,

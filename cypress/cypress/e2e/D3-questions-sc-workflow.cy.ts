@@ -8,6 +8,13 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Single choice questions
   // #region
   it('Create a single choice question', function () {

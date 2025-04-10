@@ -8,6 +8,13 @@ describe('Login / Logout workflows for lecturer and students', () => {
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   it('Sign in to student account', () => {
     cy.clearAllCookies()
     cy.visit(Cypress.env('URL_STUDENT_LOGIN'))

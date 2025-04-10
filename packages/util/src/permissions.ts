@@ -278,7 +278,7 @@ async function recomputeCatalogCollectionPermissionsObject(
     },
   })
 
-  if (!catalogCollection || !catalogCollection.ownerId) {
+  if (!catalogCollection) {
     console.error(`Catalog collection with id ${id} not found`)
     return
   }
@@ -555,7 +555,7 @@ async function recomputeAnswerCollectionPermissionsObject(
     },
   })
 
-  if (!answerCollection || !answerCollection.ownerId) {
+  if (!answerCollection) {
     console.error(`Answer collection with id ${id} not found`)
     return
   }
@@ -1023,7 +1023,7 @@ async function recomputeElementPermissionsObject(
     },
   })
 
-  if (!element || !element.ownerId) {
+  if (!element) {
     console.error(`Element with id ${id} not found`)
     return
   }
@@ -1287,7 +1287,7 @@ async function recomputeLiveQuizPermissionsObject(
     },
   })
 
-  if (!liveQuiz || !liveQuiz.ownerId) {
+  if (!liveQuiz) {
     console.error(`Live quiz with id ${id} or corresponding owner not found`)
     return
   }
@@ -1504,7 +1504,7 @@ async function recomputePracticeQuizPermissionsObject(
     },
   })
 
-  if (!practiceQuiz || !practiceQuiz.ownerId) {
+  if (!practiceQuiz) {
     console.error(
       `Practice quiz with id ${id} or corresponding owner not found`
     )
@@ -1723,7 +1723,7 @@ async function recomputeMicroLearningPermissionsObject(
     },
   })
 
-  if (!microLearning || !microLearning.ownerId) {
+  if (!microLearning) {
     console.error(
       `Microlearning with id ${id} or corresponding owner not found`
     )
@@ -1942,7 +1942,7 @@ async function recomputeGroupActivityPermissionsObject(
     },
   })
 
-  if (!groupActivity || !groupActivity.ownerId) {
+  if (!groupActivity) {
     console.error(
       `Group activity with id ${id} or corresponding owner not found`
     )
@@ -2144,7 +2144,7 @@ async function recomputeCoursePermissionsObject(
     },
   })
 
-  if (!course || !course.ownerId) {
+  if (!course) {
     console.error(`Course with id ${id} not found`)
     return
   }
@@ -2234,7 +2234,7 @@ function getMaxAccessLevelCombined({
   directPermissions: (DB.Permission & {
     userGroup?: (DB.UserGroup & { members: DB.User[] }) | null
   })[]
-  ownerId: string
+  ownerId?: string | null
 }) {
   const userAccess = directPermissions.reduce<UserAccessMap>(
     (acc, directPermission) => {
@@ -2286,13 +2286,15 @@ function getMaxAccessLevelCombined({
 
       return acc
     },
-    {
-      [ownerId]: {
-        maxAccessLevel: DB.PermissionLevel.OWNER,
-        parentPermissionId: undefined,
-        derived: false,
-      },
-    }
+    ownerId
+      ? {
+          [ownerId]: {
+            maxAccessLevel: DB.PermissionLevel.OWNER,
+            parentPermissionId: undefined,
+            derived: false,
+          },
+        }
+      : {}
   )
 
   return userAccess

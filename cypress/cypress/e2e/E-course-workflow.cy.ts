@@ -10,6 +10,13 @@ describe('Test course creation and editing functionalities', function () {
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Part 1: Course creation
   // #region
   it('Test the creation of a new course without gamification', function () {

@@ -12,6 +12,13 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Part 0: Preparation - Question Creation
   // #region
   it('Creates the questions that should be bookmarked and/or flagged', function () {

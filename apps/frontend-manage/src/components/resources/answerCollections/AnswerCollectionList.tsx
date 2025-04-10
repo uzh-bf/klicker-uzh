@@ -29,7 +29,7 @@ function AnswerCollectionList({
   }
 
   return (
-    <div>
+    <div data-cy="answer-collection-list">
       <H3>{t('manage.resources.availableAnswerCollections')}</H3>
       {collections && collections.length === 0 ? (
         <UserNotification type="info" className={{ root: 'mt-1.5' }}>
