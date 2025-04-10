@@ -16,7 +16,7 @@ export type UserAccessMap = {
 
 export type PrismaTransactionClient = Omit<
   DB.PrismaClient,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 
 // map to directly compare permission levels

@@ -5,6 +5,7 @@ import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
@@ -14,7 +15,6 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,

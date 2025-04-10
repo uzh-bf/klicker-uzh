@@ -10,13 +10,13 @@ import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { v4 as uuidv4, validate as uuidValidate } from 'uuid'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 import { manipulateQuestion } from './questions.js'
 import {
   getAnswerCollectionsElements,

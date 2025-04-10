@@ -7,6 +7,7 @@ import {
   type Participant,
   type ParticipantGroup,
 } from '@klicker-uzh/prisma'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { levelFromXp } from '@klicker-uzh/util/dist/pure.js'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
@@ -16,7 +17,6 @@ import { type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { orderStacks, sendTeamsNotifications } from '../lib/util.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 
 // custom date parser
 dayjs.extend(customParseFormat)

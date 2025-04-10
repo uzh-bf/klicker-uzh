@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import type { ContextWithUser } from '../lib/context.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections

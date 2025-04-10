@@ -5,8 +5,8 @@ import {
   CatalogObjectType,
   ObjectSharingRequest,
 } from '@klicker-uzh/types'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import type { ContextWithUser } from '../lib/context.js'
-import { recomputeDerivedPermissions } from './permissions.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
 import { validateActivityPermissions } from './templates.js'
 
