@@ -34,7 +34,7 @@ function TemplateNewElementModal({
       templateId={templateId}
       open={open}
       onClose={onClose}
-      onSuccess={() => {}} // success toast is not required -> success immediately visible
+      onSuccess={onClose} // success toast is not required -> success immediately visible
       mode={ElementEditMode.CREATE}
       loading={false}
       initialValues={formValues}
