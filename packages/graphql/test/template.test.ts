@@ -13,6 +13,7 @@ import {
   getInitialInstanceResults,
   MISSING_CATALOG_COLLECTION_ID,
   processElementData,
+  recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -102,6 +103,17 @@ describe('Unit tests for template service', () => {
         ...userOneCtx,
         user: { ...userOneCtx.user, sub: userTwo.sub },
       }
+
+      // seed the top-level catalog collection with fixed ID
+      await prisma.catalogCollection.upsert({
+        where: { id: MISSING_CATALOG_COLLECTION_ID },
+        create: {
+          id: MISSING_CATALOG_COLLECTION_ID,
+          name: '',
+          access: ObjectAccess.PUBLIC,
+        },
+        update: {},
+      })
     } catch (error) {
       console.error('Failed to initialize test environment:', error)
       throw new Error(`Database connection failed: ${error}`)
@@ -117,7 +129,7 @@ describe('Unit tests for template service', () => {
     // seed a number of minimal elements into the database
     const elements = await Promise.all(
       questionsSLAF.map(async (question) => {
-        return await prisma.element.create({
+        const newElement = await prisma.element.create({
           data: {
             name: question.name,
             content: '',
@@ -128,6 +140,16 @@ describe('Unit tests for template service', () => {
             },
           },
         })
+
+        await recomputeDerivedPermissions(
+          {
+            elementId: newElement.id,
+            userId: userOne.id,
+          },
+          prisma
+        )
+
+        return newElement
       })
     )
 
@@ -559,6 +581,10 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: AC1.id, userId: userOne.id },
+      prisma
+    )
 
     // create unshared answer collection for user 1 (not used in activity template)
     const AC2 = await prisma.answerCollection.create({
@@ -568,6 +594,10 @@ describe('Unit tests for template service', () => {
         owner: { connect: { id: userOne.id } },
       },
     })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: AC2.id, userId: userOne.id },
+      prisma
+    )
 
     // create answer collection for user 1 (shared with user 2, used in activity template)
     const AC3 = await prisma.answerCollection.create({
@@ -575,7 +605,7 @@ describe('Unit tests for template service', () => {
         name: 'AC3',
         description: '',
         owner: { connect: { id: userOne.id } },
-        permissions: {
+        directPermissions: {
           create: {
             permissionLevel: PermissionLevel.READ,
             user: { connect: { id: userTwo.id } },
@@ -583,6 +613,7 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions({ answerCollectionId: AC3.id }, prisma)
 
     // create answer collection for user 1 (shared with user 2, not used in activity template)
     const AC4 = await prisma.answerCollection.create({
@@ -590,7 +621,7 @@ describe('Unit tests for template service', () => {
         name: '',
         description: '',
         owner: { connect: { id: userOne.id } },
-        permissions: {
+        directPermissions: {
           create: {
             permissionLevel: PermissionLevel.WRITE,
             user: { connect: { id: userTwo.id } },
@@ -598,6 +629,7 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions({ answerCollectionId: AC4.id }, prisma)
 
     // create unshared answer collection for user 2
     const AC5 = await prisma.answerCollection.create({
@@ -607,6 +639,10 @@ describe('Unit tests for template service', () => {
         owner: { connect: { id: userTwo.id } },
       },
     })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: AC5.id, userId: userTwo.id },
+      prisma
+    )
 
     // verify access to answer collections (user 1: 1-4, user 2: 3-5)
     const collectionsUser1 = await getAnswerCollectionsInfo(userOneCtx)
@@ -646,6 +682,13 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      {
+        liveQuizId: activityId,
+        userId: userOne.id,
+      },
+      prisma
+    )
 
     // add template to the top-level catalog collection (accessible to everyone)
     await prisma.catalogCollectionAssignment.upsert({
@@ -730,7 +773,7 @@ describe('Unit tests for template service', () => {
 
   it('Verify that when updating element instances in templates, answer collection - template links are updated correctly', async () => {
     // seed three answer collections, one selection question (1) and one case study question (2)
-    const AC1 = await userOneCtx.prisma.answerCollection.create({
+    const AC1 = await prisma.answerCollection.create({
       data: {
         name: 'AC1',
         description: '',
@@ -747,7 +790,15 @@ describe('Unit tests for template service', () => {
         entries: true,
       },
     })
-    const AC2 = await userOneCtx.prisma.answerCollection.create({
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC1.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
+
+    const AC2 = await prisma.answerCollection.create({
       data: {
         name: 'AC2',
         description: '',
@@ -764,7 +815,15 @@ describe('Unit tests for template service', () => {
         entries: true,
       },
     })
-    const AC3 = await userOneCtx.prisma.answerCollection.create({
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC2.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
+
+    const AC3 = await prisma.answerCollection.create({
       data: {
         name: 'AC3',
         description: '',
@@ -781,8 +840,15 @@ describe('Unit tests for template service', () => {
         entries: true,
       },
     })
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC3.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
 
-    const SEQuestion = await userOneCtx.prisma.element.create({
+    const SEQuestion = await prisma.element.create({
       data: {
         name: 'Selection Question',
         content: '',
@@ -805,8 +871,15 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      {
+        elementId: SEQuestion.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
 
-    const CSQuestion = await userOneCtx.prisma.element.create({
+    const CSQuestion = await prisma.element.create({
       data: {
         name: 'Case Study Question',
         content: '',
@@ -832,12 +905,19 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      {
+        elementId: CSQuestion.id,
+        userId: userOneCtx.user.sub,
+      },
+      prisma
+    )
 
     // combine these questions into a live quiz and create a template
     const activityId = 'a7b750a4-5fd9-4575-85f1-9f981206477f'
     const SEElementData = processElementData(SEQuestion)
     const CSElementData = processElementData(CSQuestion)
-    const LQ = await userOneCtx.prisma.liveQuiz.create({
+    const LQ = await prisma.liveQuiz.create({
       data: {
         id: activityId,
         name: 'Test Quiz',
@@ -896,6 +976,10 @@ describe('Unit tests for template service', () => {
         },
       },
     })
+    await recomputeDerivedPermissions(
+      { liveQuizId: activityId, userId: userOneCtx.user.sub },
+      prisma
+    )
 
     await createActivityTemplate(
       {
@@ -1176,6 +1260,15 @@ describe('Unit tests for template service', () => {
     // verify that all elements have been deleted already
     const dbElements = await prisma.element.count()
     expect(dbElements).toBe(0)
+
+    // verify that only the top level catalog collection is still around and remove it
+    const catalogCount = await prisma.catalogCollection.count()
+    expect(catalogCount).toBe(1)
+    await prisma.catalogCollection.delete({
+      where: { id: MISSING_CATALOG_COLLECTION_ID },
+    })
+    const catalogCount2 = await prisma.catalogCollection.count()
+    expect(catalogCount2).toBe(0)
 
     // delete all users that have been created for the test and validate that they have been removed
     await prisma.user.deleteMany({
