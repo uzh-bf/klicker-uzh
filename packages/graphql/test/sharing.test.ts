@@ -3091,6 +3091,13 @@ describe('Unit tests for sharing service', () => {
     const dbAssignments2 = await prisma.catalogCollectionAssignment.count()
     expect(dbAssignments2).toBe(0)
 
+    // remove the top level catalog collection for test suite independence
+    await prisma.catalogCollection.delete({
+      where: { id: MISSING_CATALOG_COLLECTION_ID },
+    })
+    const dbCatalogs2 = await prisma.catalogCollection.count()
+    expect(dbCatalogs2).toBe(0)
+
     // verify that no elements are left in the permission table
     const dbPermissions = await prisma.element.count()
     expect(dbPermissions).toBe(0)
