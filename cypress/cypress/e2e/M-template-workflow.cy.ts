@@ -702,6 +702,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Add the live quiz template to the top level catalog collection', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -733,6 +734,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it("Add the second template to a restricted catalog collection and share access to it with user 'pro1'", function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -1564,9 +1566,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it("Open the template in the restricted catalog collection through user 'pro1', test all functionalities and create an activity from it", function () {
     cy.loginIndividualCatalyst()
-    cy.get('[data-cy="resources"]').should('exist')
     cy.get('[data-cy="analytics"]').should('exist')
-
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
@@ -2530,12 +2530,14 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Delete all created resources', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
     cy.deleteAnswerCollection({ collectionName: this.data.collection2.name })
 
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection3.name })
@@ -2543,6 +2545,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Delete all created catalog collections', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(
