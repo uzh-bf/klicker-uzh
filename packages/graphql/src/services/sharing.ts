@@ -2811,11 +2811,6 @@ export async function getCatalogObjects(
         const answerCollection = assignment.answerCollection
         const permission = answerCollection.permissions[0]
 
-        // derived permission should always be defined (even for owner)
-        if (!permission) {
-          return []
-        }
-
         return {
           id: answerCollection.id,
           name: answerCollection.name,
@@ -2823,21 +2818,18 @@ export async function getCatalogObjects(
           objectType: CatalogObjectType.ANSWER_COLLECTION,
           access: assignment.access,
           ownerShortname: answerCollection.owner?.shortname,
-          isOwner: permission.permissionLevel === DB.PermissionLevel.OWNER,
+          isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isManager:
-            permission.permissionLevel === DB.PermissionLevel.ADMIN ||
-            permission.permissionLevel === DB.PermissionLevel.OWNER,
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+            permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isRequested: answerCollection.accessRequests.length > 0,
-          isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
+          isShared:
+            typeof permission !== 'undefined' &&
+            permission.permissionLevel !== DB.PermissionLevel.OWNER,
         }
       } else if (assignment.liveQuiz) {
         const liveQuiz = assignment.liveQuiz
         const permission = liveQuiz.permissions[0]
-
-        // derived permission should always be defined (even for owner)
-        if (!permission) {
-          return []
-        }
 
         return {
           uuid: liveQuiz.id,
@@ -2851,12 +2843,14 @@ export async function getCatalogObjects(
               : CatalogObjectType.LIVE_QUIZ_TEMPLATE,
           access: assignment.access,
           ownerShortname: liveQuiz.owner?.shortname,
-          isOwner: permission.permissionLevel === DB.PermissionLevel.OWNER,
+          isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isManager:
-            permission.permissionLevel === DB.PermissionLevel.ADMIN ||
-            permission.permissionLevel === DB.PermissionLevel.OWNER,
+            permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+            permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isRequested: liveQuiz.accessRequests.length > 0,
-          isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
+          isShared:
+            typeof permission !== 'undefined' &&
+            permission.permissionLevel !== DB.PermissionLevel.OWNER,
         }
       }
 
