@@ -1733,235 +1733,239 @@ export async function createLiveQuizFromTemplate(
 
     // iterate over all blocks and either fetch the existing element from the database or create a new one
     for (const block of blocks) {
-      const elements = await Promise.all(
-        block.elements.map(async (element) => {
-          if (element.useExistingElement) {
-            if (
-              element.existingElementId === null ||
-              typeof element.existingElementId === 'undefined'
-            ) {
-              throw new Error('Existing element id not provided')
-            }
+      const elements: {
+        order: number
+        element: DB.Element & {
+          answerCollection?:
+            | (DB.AnswerCollection & { entries: DB.AnswerCollectionEntry[] })
+            | null
+          answerCollectionItems?: DB.AnswerCollectionEntry[] | null
+        }
+      }[] = []
+      for (const element of block.elements) {
+        if (element.useExistingElement) {
+          if (
+            element.existingElementId === null ||
+            typeof element.existingElementId === 'undefined'
+          ) {
+            throw new Error('Existing element id not provided')
+          }
 
-            // find existing element in user account
-            const existingElement = await prisma.element.findUnique({
-              where: {
-                id: element.existingElementId,
-                permissions: {
-                  some: {
-                    userId: ctx.user.sub,
-                  },
+          // find existing element in user account
+          const existingElement = await prisma.element.findUnique({
+            where: {
+              id: element.existingElementId,
+              permissions: {
+                some: {
+                  userId: ctx.user.sub,
                 },
               },
-              include: {
-                answerCollection: {
-                  include: {
-                    entries: true,
-                  },
+            },
+            include: {
+              answerCollection: {
+                include: {
+                  entries: true,
                 },
-                answerCollectionItems: true,
               },
-            })
+              answerCollectionItems: true,
+            },
+          })
 
-            if (!existingElement) {
-              console.log(
-                'Failed to find element with id',
-                element.existingElementId
-              )
+          if (!existingElement) {
+            console.log(
+              'Failed to find element with id',
+              element.existingElementId
+            )
+            throw new Error(
+              'Existing element does not exist or user does not have access to it'
+            )
+          }
+
+          // add existing element to content map
+          elements.push({
+            order: element.order,
+            element: existingElement,
+          })
+        } else if (element.useNewElement) {
+          if (
+            element.newElement === null ||
+            typeof element.newElement === 'undefined'
+          ) {
+            throw new Error('New element data not provided')
+          }
+
+          // set the options element options value depending on the element type
+          const values = element.newElement
+          if (
+            values.type === DB.ElementType.SC ||
+            values.type === DB.ElementType.MC ||
+            values.type === DB.ElementType.KPRIM
+          ) {
+            if (!('choicesOptions' in values)) {
               throw new Error(
-                'Existing element does not exist or user does not have access to it'
+                'Choices options not provided for Choices element'
               )
             }
 
-            // add existing element to content map
-            return {
-              order: element.order,
-              element: existingElement,
-            }
-          } else if (element.useNewElement) {
-            if (
-              element.newElement === null ||
-              typeof element.newElement === 'undefined'
-            ) {
-              throw new Error('New element data not provided')
-            }
-
-            // set the options element options value depending on the element type
-            const values = element.newElement
-            if (
-              values.type === DB.ElementType.SC ||
-              values.type === DB.ElementType.MC ||
-              values.type === DB.ElementType.KPRIM
-            ) {
-              if (!('choicesOptions' in values)) {
-                throw new Error(
-                  'Choices options not provided for Choices element'
-                )
-              }
-
-              values.options = values.choicesOptions
-            } else if (values.type === DB.ElementType.NUMERICAL) {
-              if (!('numericalOptions' in values)) {
-                throw new Error(
-                  'Numerical options not provided for Numerical element'
-                )
-              }
-
-              values.options = values.numericalOptions
-            } else if (values.type === DB.ElementType.FREE_TEXT) {
-              if (!('freeTextOptions' in values)) {
-                throw new Error(
-                  'Free text options not provided for Free Text element'
-                )
-              }
-
-              values.options = values.freeTextOptions
-            } else if (values.type === DB.ElementType.SELECTION) {
-              if (!('selectionOptions' in values)) {
-                throw new Error(
-                  'Selection options not provided for Selection element'
-                )
-              }
-
-              values.options = values.selectionOptions
-            } else if (values.type === DB.ElementType.CASE_STUDY) {
-              if (!('caseStudyOptions' in values)) {
-                throw new Error(
-                  'Case study options not provided for Case Study element'
-                )
-              }
-
-              values.options = values.caseStudyOptions
-            }
-
-            // check if the user has access to potential answer collections linked to the new element or if they are contained in the template
-            if (
-              values.type === DB.ElementType.SELECTION ||
-              values.type === DB.ElementType.CASE_STUDY
-            ) {
-              if (
-                !('options' in values) ||
-                !values.options ||
-                !('answerCollection' in values.options) ||
-                typeof values.options?.answerCollection === 'undefined' ||
-                values.options.answerCollection === null
-              ) {
-                throw new Error(
-                  'Answer collection not provided for selection or case study element'
-                )
-              }
-
-              // get answer collection id that should be linked to the new element
-              const answerCollectionId = values.options.answerCollection
-
-              // check if the user already has access to the answer collection
-              const { valid } = await validateAnswerCollectionPermissions(
-                {
-                  collectionId: answerCollectionId,
-                  acceptedPermissionLevels: [
-                    DB.PermissionLevel.READ,
-                    DB.PermissionLevel.WRITE,
-                    DB.PermissionLevel.ADMIN,
-                  ],
-                },
-                { ...ctx, prisma }
+            values.options = values.choicesOptions
+          } else if (values.type === DB.ElementType.NUMERICAL) {
+            if (!('numericalOptions' in values)) {
+              throw new Error(
+                'Numerical options not provided for Numerical element'
               )
-
-              if (!valid) {
-                // if access does not already exist, check if the answer collection is linked to the template
-                if (!availableAnswerCollections.includes(answerCollectionId)) {
-                  throw new Error(
-                    'User does not have access to the answer collection linked to the template'
-                  )
-                }
-
-                // otherwise, grant new direct READ permission for the user on the answer collection
-                await prisma.permission.upsert({
-                  where: {
-                    answerCollectionId_userId: {
-                      answerCollectionId,
-                      userId: ctx.user.sub,
-                    },
-                  },
-                  create: {
-                    permissionLevel: DB.PermissionLevel.READ,
-                    user: {
-                      connect: { id: ctx.user.sub },
-                    },
-                    answerCollection: {
-                      connect: { id: answerCollectionId },
-                    },
-                  },
-                  update: {},
-                })
-              }
             }
 
-            // combine the element options depending on the element type
-            let options: ElementOptionsInput | undefined | null = undefined
+            values.options = values.numericalOptions
+          } else if (values.type === DB.ElementType.FREE_TEXT) {
+            if (!('freeTextOptions' in values)) {
+              throw new Error(
+                'Free text options not provided for Free Text element'
+              )
+            }
+
+            values.options = values.freeTextOptions
+          } else if (values.type === DB.ElementType.SELECTION) {
+            if (!('selectionOptions' in values)) {
+              throw new Error(
+                'Selection options not provided for Selection element'
+              )
+            }
+
+            values.options = values.selectionOptions
+          } else if (values.type === DB.ElementType.CASE_STUDY) {
+            if (!('caseStudyOptions' in values)) {
+              throw new Error(
+                'Case study options not provided for Case Study element'
+              )
+            }
+
+            values.options = values.caseStudyOptions
+          }
+
+          // check if the user has access to potential answer collections linked to the new element or if they are contained in the template
+          if (
+            values.type === DB.ElementType.SELECTION ||
+            values.type === DB.ElementType.CASE_STUDY
+          ) {
             if (
-              values.type === DB.ElementType.SC ||
-              values.type === DB.ElementType.MC ||
-              values.type === DB.ElementType.KPRIM
+              !('options' in values) ||
+              !values.options ||
+              !('answerCollection' in values.options) ||
+              typeof values.options?.answerCollection === 'undefined' ||
+              values.options.answerCollection === null
             ) {
-              options = values.choicesOptions
-            } else if (values.type === DB.ElementType.NUMERICAL) {
-              options = values.numericalOptions
-            } else if (values.type === DB.ElementType.FREE_TEXT) {
-              options = values.freeTextOptions
-            } else if (values.type === DB.ElementType.SELECTION) {
-              options = values.selectionOptions
-            } else if (values.type === DB.ElementType.CASE_STUDY) {
-              options = values.caseStudyOptions
+              throw new Error(
+                'Answer collection not provided for selection or case study element'
+              )
             }
 
-            // create a new element based on the provided data
-            const createdElement = await manipulateQuestion(
-              { ...values, options },
+            // get answer collection id that should be linked to the new element
+            const answerCollectionId = values.options.answerCollection
+
+            // check if the user already has access to the answer collection
+            const { valid } = await validateAnswerCollectionPermissions(
+              {
+                collectionId: answerCollectionId,
+                acceptedPermissionLevels: [
+                  DB.PermissionLevel.READ,
+                  DB.PermissionLevel.WRITE,
+                  DB.PermissionLevel.ADMIN,
+                ],
+              },
               { ...ctx, prisma }
             )
 
-            // throw an error if the element could not be created
-            if (!createdElement) {
-              console.log(
-                'Failed to create new element from form inputs',
-                values
-              )
-              throw new Error('Failed to create new element')
-            }
+            if (!valid) {
+              // if access does not already exist, check if the answer collection is linked to the template
+              if (!availableAnswerCollections.includes(answerCollectionId)) {
+                throw new Error(
+                  'User does not have access to the answer collection linked to the template'
+                )
+              }
 
-            // TODO: make this a bit more efficient by not fetching the just created element again
-            // re-fetch the created element including the answer collection and corresponding entries
-            const newElement = await prisma.element.findUnique({
-              where: {
-                id: createdElement.id,
-                ownerId: ctx.user.sub,
-              },
-              include: {
-                answerCollection: {
-                  include: {
-                    entries: true,
+              // otherwise, grant new direct READ permission for the user on the answer collection
+              await prisma.permission.upsert({
+                where: {
+                  answerCollectionId_userId: {
+                    answerCollectionId,
+                    userId: ctx.user.sub,
                   },
                 },
-                answerCollectionItems: true,
-              },
-            })
-
-            if (!newElement) {
-              console.log('Failed to fetch newly created element')
-              throw new Error('Failed to fetch newly created element')
-            }
-
-            return {
-              order: element.order,
-              element: newElement,
+                create: {
+                  permissionLevel: DB.PermissionLevel.READ,
+                  user: {
+                    connect: { id: ctx.user.sub },
+                  },
+                  answerCollection: {
+                    connect: { id: answerCollectionId },
+                  },
+                },
+                update: {},
+              })
             }
           }
 
+          // combine the element options depending on the element type
+          let options: ElementOptionsInput | undefined | null = undefined
+          if (
+            values.type === DB.ElementType.SC ||
+            values.type === DB.ElementType.MC ||
+            values.type === DB.ElementType.KPRIM
+          ) {
+            options = values.choicesOptions
+          } else if (values.type === DB.ElementType.NUMERICAL) {
+            options = values.numericalOptions
+          } else if (values.type === DB.ElementType.FREE_TEXT) {
+            options = values.freeTextOptions
+          } else if (values.type === DB.ElementType.SELECTION) {
+            options = values.selectionOptions
+          } else if (values.type === DB.ElementType.CASE_STUDY) {
+            options = values.caseStudyOptions
+          }
+
+          // create a new element based on the provided data
+          const createdElement = await manipulateQuestion(
+            { ...values, options },
+            { ...ctx, prisma }
+          )
+
+          // throw an error if the element could not be created
+          if (!createdElement) {
+            console.log('Failed to create new element from form inputs', values)
+            throw new Error('Failed to create new element')
+          }
+
+          // TODO: make this a bit more efficient by not fetching the just created element again
+          // re-fetch the created element including the answer collection and corresponding entries
+          const newElement = await prisma.element.findUnique({
+            where: {
+              id: createdElement.id,
+              ownerId: ctx.user.sub,
+            },
+            include: {
+              answerCollection: {
+                include: {
+                  entries: true,
+                },
+              },
+              answerCollectionItems: true,
+            },
+          })
+
+          if (!newElement) {
+            console.log('Failed to fetch newly created element')
+            throw new Error('Failed to fetch newly created element')
+          }
+
+          elements.push({
+            order: element.order,
+            element: newElement,
+          })
+        } else {
           // no option was selected for one of the elements -> invalid input
           throw new Error('Invalid template element modification choice')
-        })
-      )
+        }
+      }
 
       liveQuizContent.blocks.push({
         order: block.order,

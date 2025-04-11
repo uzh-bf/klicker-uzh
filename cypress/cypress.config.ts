@@ -18,6 +18,7 @@ const USER_ID_TEST2 = '76047345-3801-4628-ae7b-adbebcfe8822'
 const USER_ID_TEST3 = '76047345-3801-4628-ae7b-adbebcfe8823'
 const USER_ID_TEST4 = '76047345-3801-4628-ae7b-adbebcfe8824'
 const USER_ID_TEST5 = '76047345-3801-4628-ae7b-adbebcfe8825'
+const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
 
 async function connect() {
   if (!process.env.DATABASE_URL) {
@@ -978,6 +979,9 @@ export default defineConfig({
             // delete all catalog collections that have no derived permissions on them
             await prisma.catalogCollection.deleteMany({
               where: {
+                id: {
+                  not: MISSING_CATALOG_COLLECTION_ID,
+                },
                 permissions: {
                   none: {},
                 },

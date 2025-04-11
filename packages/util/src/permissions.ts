@@ -2459,7 +2459,7 @@ async function propagateActivityToElementsUser(
 
   // sequentially update all elements
   for (const elementId of elementIds) {
-    await recomputeElementPermissionsObject({ id: elementId }, prisma)
+    await recomputeElementPermissionsUser({ id: elementId, userId }, prisma)
   }
 }
 
