@@ -1266,7 +1266,8 @@ describe('Test all functionalities related to the creation, management, sharing 
           'have.value',
           oldTitle
         )
-        cy.wait(300)
+        cy.wait(1000) // wait for form to be fully populated to avoid overlapping inputs
+
         cy.get('[data-cy="insert-question-title"]')
           .click()
           .clear()
