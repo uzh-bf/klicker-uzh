@@ -219,7 +219,7 @@ export async function getAnswerCollectionsElements(
       object.answerCollection
         ? {
             ...object.answerCollection,
-            isShared: true,
+            isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
           }
         : []
     ),
@@ -308,7 +308,7 @@ export async function getSingleAnswerCollection(
       permissionLevel === DB.PermissionLevel.WRITE ||
       permissionLevel === DB.PermissionLevel.ADMIN ||
       permissionLevel === DB.PermissionLevel.OWNER,
-    isShared: true,
+    isShared: permissionLevel !== DB.PermissionLevel.OWNER,
   }
 }
 
@@ -421,7 +421,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
         object.permissionLevel === DB.PermissionLevel.ADMIN ||
         object.permissionLevel === DB.PermissionLevel.OWNER,
       isImported: false, // shared objects cannot be imported
-      isShared: true,
+      isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
       isRemovable:
         collection._count.linkedElements === 0 &&
         collection._count.linkedTemplates === 0,
