@@ -278,6 +278,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // add AC1 as public object to public catalog collection
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -304,6 +305,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     // add AC1 as public object to restricted catalog collection
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -466,6 +468,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // add AC2 as restricted object to public catalog collection
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -491,6 +494,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     // add AC2 as restricted object to restricted catalog collection
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -522,6 +526,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // add live quiz template to public catalog collection (public object)
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -548,6 +553,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     // add live quiz template to the restricted catalog collection (public object)
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
