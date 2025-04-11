@@ -21,6 +21,13 @@ describe('Create and solve a group activity', function () {
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Part 0: Preparation - Question Creation
   // #region
   it('Create questions required for group activity creation', function () {
@@ -78,6 +85,7 @@ describe('Create and solve a group activity', function () {
     // create answer collection
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.collection.name,
       description: this.data.collection.description,

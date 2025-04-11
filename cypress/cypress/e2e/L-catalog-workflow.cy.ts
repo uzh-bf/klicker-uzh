@@ -11,6 +11,13 @@ describe('Test all functionalities of catalog collections and objects contained 
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Helpers
   function verifyAdminOwnerPermissionsCCPublic({
     data,
@@ -90,6 +97,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.loginLecturer()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.AC1.name,
       description: this.data.AC1.description,
@@ -105,6 +113,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.AC2.name,
       description: this.data.AC2.description,

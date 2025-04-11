@@ -8,6 +8,13 @@ describe('Test creation and editing functionalities, validation, etc. for free t
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Free Text questions
   // #region
   it('Create a Free Text question', function () {

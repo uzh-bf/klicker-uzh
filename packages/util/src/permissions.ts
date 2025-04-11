@@ -278,7 +278,7 @@ async function recomputeCatalogCollectionPermissionsObject(
     },
   })
 
-  if (!catalogCollection || !catalogCollection.ownerId) {
+  if (!catalogCollection) {
     console.error(`Catalog collection with id ${id} not found`)
     return
   }
@@ -555,7 +555,7 @@ async function recomputeAnswerCollectionPermissionsObject(
     },
   })
 
-  if (!answerCollection || !answerCollection.ownerId) {
+  if (!answerCollection) {
     console.error(`Answer collection with id ${id} not found`)
     return
   }
@@ -1023,7 +1023,7 @@ async function recomputeElementPermissionsObject(
     },
   })
 
-  if (!element || !element.ownerId) {
+  if (!element) {
     console.error(`Element with id ${id} not found`)
     return
   }
@@ -1229,13 +1229,16 @@ async function recomputeLiveQuizPermissionsUser(
         },
       },
     })
-
-    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    await propagateActivityToElementsUser(
-      { stacks: liveQuiz.blocks, userId },
-      prisma
-    )
   }
+
+  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
+  // the derived element permissions need to be recomputed (-> complete recompute required)
+  // users with lower permissions on the activity will never obtained derived permissions through it
+  // --> however, since the computation is based on derived activity permissions, we need to compute these before
+  await propagateActivityToElementsUser(
+    { stacks: liveQuiz.blocks, userId },
+    prisma
+  )
 
   return
 }
@@ -1287,7 +1290,7 @@ async function recomputeLiveQuizPermissionsObject(
     },
   })
 
-  if (!liveQuiz || !liveQuiz.ownerId) {
+  if (!liveQuiz) {
     console.error(`Live quiz with id ${id} or corresponding owner not found`)
     return
   }
@@ -1446,13 +1449,16 @@ async function recomputePracticeQuizPermissionsUser(
         },
       },
     })
-
-    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    await propagateActivityToElementsUser(
-      { stacks: practiceQuiz.stacks, userId },
-      prisma
-    )
   }
+
+  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
+  // the derived element permissions need to be recomputed (-> complete recompute required)
+  // users with lower permissions on the activity will never obtained derived permissions through it
+  // --> however, since the computation is based on derived activity permissions, we need to compute these before
+  await propagateActivityToElementsUser(
+    { stacks: practiceQuiz.stacks, userId },
+    prisma
+  )
 
   return
 }
@@ -1504,7 +1510,7 @@ async function recomputePracticeQuizPermissionsObject(
     },
   })
 
-  if (!practiceQuiz || !practiceQuiz.ownerId) {
+  if (!practiceQuiz) {
     console.error(
       `Practice quiz with id ${id} or corresponding owner not found`
     )
@@ -1665,13 +1671,16 @@ async function recomputeMicroLearningPermissionsUser(
         },
       },
     })
-
-    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    await propagateActivityToElementsUser(
-      { stacks: microLearning.stacks, userId },
-      prisma
-    )
   }
+
+  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
+  // the derived element permissions need to be recomputed (-> complete recompute required)
+  // users with lower permissions on the activity will never obtained derived permissions through it
+  // --> however, since the computation is based on derived activity permissions, we need to compute these before
+  await propagateActivityToElementsUser(
+    { stacks: microLearning.stacks, userId },
+    prisma
+  )
 
   return
 }
@@ -1723,7 +1732,7 @@ async function recomputeMicroLearningPermissionsObject(
     },
   })
 
-  if (!microLearning || !microLearning.ownerId) {
+  if (!microLearning) {
     console.error(
       `Microlearning with id ${id} or corresponding owner not found`
     )
@@ -1884,13 +1893,16 @@ async function recomputeGroupActivityPermissionsUser(
         },
       },
     })
-
-    // if the quiz was shared with ADMIN or OWNER access, the ADMIN permissions should propagate to the elements
-    await propagateActivityToElementsUser(
-      { stacks: groupActivity.stacks, userId },
-      prisma
-    )
   }
+
+  // if the activity still exists and the user had ADMIN / OWNER permissions on it,
+  // the derived element permissions need to be recomputed (-> complete recompute required)
+  // users with lower permissions on the activity will never obtained derived permissions through it
+  // --> however, since the computation is based on derived activity permissions, we need to compute these before
+  await propagateActivityToElementsUser(
+    { stacks: groupActivity.stacks, userId },
+    prisma
+  )
 
   return
 }
@@ -1942,7 +1954,7 @@ async function recomputeGroupActivityPermissionsObject(
     },
   })
 
-  if (!groupActivity || !groupActivity.ownerId) {
+  if (!groupActivity) {
     console.error(
       `Group activity with id ${id} or corresponding owner not found`
     )
@@ -2144,7 +2156,7 @@ async function recomputeCoursePermissionsObject(
     },
   })
 
-  if (!course || !course.ownerId) {
+  if (!course) {
     console.error(`Course with id ${id} not found`)
     return
   }
@@ -2234,7 +2246,7 @@ function getMaxAccessLevelCombined({
   directPermissions: (DB.Permission & {
     userGroup?: (DB.UserGroup & { members: DB.User[] }) | null
   })[]
-  ownerId: string
+  ownerId?: string | null
 }) {
   const userAccess = directPermissions.reduce<UserAccessMap>(
     (acc, directPermission) => {
@@ -2286,13 +2298,15 @@ function getMaxAccessLevelCombined({
 
       return acc
     },
-    {
-      [ownerId]: {
-        maxAccessLevel: DB.PermissionLevel.OWNER,
-        parentPermissionId: undefined,
-        derived: false,
-      },
-    }
+    ownerId
+      ? {
+          [ownerId]: {
+            maxAccessLevel: DB.PermissionLevel.OWNER,
+            parentPermissionId: undefined,
+            derived: false,
+          },
+        }
+      : {}
   )
 
   return userAccess
@@ -2445,7 +2459,7 @@ async function propagateActivityToElementsUser(
 
   // sequentially update all elements
   for (const elementId of elementIds) {
-    await recomputeElementPermissionsObject({ id: elementId }, prisma)
+    await recomputeElementPermissionsUser({ id: elementId, userId }, prisma)
   }
 }
 
@@ -2511,7 +2525,7 @@ function getActivityPermissionsObject({
   return userAccess
 }
 
-async function propagateActivityToElements(
+export async function propagateActivityToElements(
   {
     stacks,
   }: {

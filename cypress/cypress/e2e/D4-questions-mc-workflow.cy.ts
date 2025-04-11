@@ -8,6 +8,13 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Multiple choice questions
   // #region
   it('Create a multiple choice question', function () {

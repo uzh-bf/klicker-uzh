@@ -5,6 +5,13 @@ describe('Test functionalities of frontend-control application', function () {
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   it('Create a new SC question to use it in a live quiz', function () {
     cy.loginLecturer()
 

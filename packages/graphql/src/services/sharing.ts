@@ -275,22 +275,29 @@ export async function getCatalogCollectionInfo(
 
   const isRequested = collection.accessRequests.length > 0
   const isShared = collection.permissions.length > 0
-  const isManager = collection.permissions.some(
-    (permission) =>
-      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
-      permission.permissionLevel === DB.PermissionLevel.OWNER
-  )
-  const isEditor = collection.permissions.some(
-    (permission) =>
-      permission.permissionLevel === DB.PermissionLevel.WRITE ||
-      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
-      permission.permissionLevel === DB.PermissionLevel.OWNER
+  const { isOwner, isManager, isEditor } = collection.permissions.reduce(
+    (acc, permission) => {
+      const level = permission.permissionLevel
+      return {
+        isOwner: acc.isOwner || level === DB.PermissionLevel.OWNER,
+        isManager:
+          acc.isManager ||
+          level === DB.PermissionLevel.OWNER ||
+          level === DB.PermissionLevel.ADMIN,
+        isEditor:
+          acc.isEditor ||
+          level === DB.PermissionLevel.OWNER ||
+          level === DB.PermissionLevel.ADMIN ||
+          level === DB.PermissionLevel.WRITE,
+      }
+    },
+    { isOwner: false, isManager: false, isEditor: false }
   )
 
   return {
     ...collection,
     ownerShortname: collection.owner?.shortname,
-    isOwner: collection.ownerId === ctx.user.sub,
+    isOwner,
     isManager,
     isEditor,
     isRequested,
@@ -467,22 +474,29 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
     .map((collection) => {
       const isRequested = collection.accessRequests.length > 0
       const isShared = collection.permissions.length > 0
-      const isManager = collection.permissions.some(
-        (permission) =>
-          permission.permissionLevel === DB.PermissionLevel.ADMIN ||
-          permission.permissionLevel === DB.PermissionLevel.OWNER
-      )
-      const isEditor = collection.permissions.some(
-        (permission) =>
-          permission.permissionLevel === DB.PermissionLevel.WRITE ||
-          permission.permissionLevel === DB.PermissionLevel.ADMIN ||
-          permission.permissionLevel === DB.PermissionLevel.OWNER
+      const { isOwner, isManager, isEditor } = collection.permissions.reduce(
+        (acc, permission) => {
+          const level = permission.permissionLevel
+          return {
+            isOwner: acc.isOwner || level === DB.PermissionLevel.OWNER,
+            isManager:
+              acc.isManager ||
+              level === DB.PermissionLevel.OWNER ||
+              level === DB.PermissionLevel.ADMIN,
+            isEditor:
+              acc.isEditor ||
+              level === DB.PermissionLevel.OWNER ||
+              level === DB.PermissionLevel.ADMIN ||
+              level === DB.PermissionLevel.WRITE,
+          }
+        },
+        { isOwner: false, isManager: false, isEditor: false }
       )
 
       return {
         ...collection,
         ownerShortname: collection.owner?.shortname,
-        isOwner: collection.ownerId === ctx.user.sub,
+        isOwner,
         isManager,
         isEditor,
         isRequested,
@@ -507,8 +521,19 @@ export async function requestCatalogCollection(
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId,
-      ownerId: {
-        not: ctx.user.sub,
+      // no permissions have been granted so far
+      permissions: {
+        none: {
+          userId: ctx.user.sub,
+          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
+        },
+      },
+      // the user has not requested access already
+      accessRequests: {
+        none: {
+          userId: ctx.user.sub,
+          permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
+        },
       },
     },
     include: {
@@ -831,8 +856,21 @@ export async function requestCatalogObject(
     const collection = await ctx.prisma.answerCollection.findUnique({
       where: {
         id: answerCollectionId,
-        ownerId: {
-          not: null,
+        // no permissions have been granted so far
+        permissions: {
+          none: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
+        },
+        // the user has not requested access already
+        accessRequests: {
+          none: {
+            userId: ctx.user.sub,
+            permissionLevel:
+              requestedPermissionLevel ?? DB.PermissionLevel.READ,
+          },
         },
       },
       include: {
@@ -2628,13 +2666,13 @@ export async function getAnswerCollectionCatalogInfo(
   const collection = await ctx.prisma.answerCollection.findUnique({
     where: {
       id: collectionId,
-    },
-    include: {
       permissions: {
-        where: {
+        some: {
           userId: ctx.user.sub,
         },
       },
+    },
+    include: {
       entries: true,
       owner: {
         select: {
@@ -2644,8 +2682,8 @@ export async function getAnswerCollectionCatalogInfo(
     },
   })
 
-  // check if the user has access to the collection
-  if (!collection || collection.permissions.length === 0) {
+  // check if the user exists and the user has access
+  if (!collection) {
     return null
   }
 
@@ -2722,7 +2760,7 @@ export async function getCatalogObjects(
                   shortname: true,
                 },
               },
-              directPermissions: {
+              permissions: {
                 where: {
                   userId: ctx.user.sub,
                 },
@@ -2745,7 +2783,7 @@ export async function getCatalogObjects(
                   shortname: true,
                 },
               },
-              directPermissions: {
+              permissions: {
                 where: {
                   userId: ctx.user.sub,
                 },
@@ -2771,7 +2809,7 @@ export async function getCatalogObjects(
     catalogCollection?.objectAssignments.flatMap((assignment) => {
       if (assignment.answerCollection) {
         const answerCollection = assignment.answerCollection
-        const permission = answerCollection.directPermissions[0]
+        const permission = answerCollection.permissions[0]
 
         return {
           id: answerCollection.id,
@@ -2780,7 +2818,7 @@ export async function getCatalogObjects(
           objectType: CatalogObjectType.ANSWER_COLLECTION,
           access: assignment.access,
           ownerShortname: answerCollection.owner?.shortname,
-          isOwner: answerCollection.ownerId === ctx.user.sub,
+          isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isManager:
             permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
             permission?.permissionLevel === DB.PermissionLevel.OWNER,
@@ -2789,7 +2827,7 @@ export async function getCatalogObjects(
         }
       } else if (assignment.liveQuiz) {
         const liveQuiz = assignment.liveQuiz
-        const permission = liveQuiz.directPermissions[0]
+        const permission = liveQuiz.permissions[0]
 
         return {
           uuid: liveQuiz.id,
@@ -2803,7 +2841,7 @@ export async function getCatalogObjects(
               : CatalogObjectType.LIVE_QUIZ_TEMPLATE,
           access: assignment.access,
           ownerShortname: liveQuiz.owner?.shortname,
-          isOwner: liveQuiz.ownerId === ctx.user.sub,
+          isOwner: permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isManager:
             permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
             permission?.permissionLevel === DB.PermissionLevel.OWNER,

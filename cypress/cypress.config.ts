@@ -18,6 +18,7 @@ const USER_ID_TEST2 = '76047345-3801-4628-ae7b-adbebcfe8822'
 const USER_ID_TEST3 = '76047345-3801-4628-ae7b-adbebcfe8823'
 const USER_ID_TEST4 = '76047345-3801-4628-ae7b-adbebcfe8824'
 const USER_ID_TEST5 = '76047345-3801-4628-ae7b-adbebcfe8825'
+const MISSING_CATALOG_COLLECTION_ID = 'fde06b3c-d515-4907-99cf-c2ba67583155'
 
 async function connect() {
   if (!process.env.DATABASE_URL) {
@@ -953,6 +954,16 @@ export default defineConfig({
           const prisma = await connect()
 
           try {
+            // delete all answer collections that have no derived permissions on them
+            await prisma.answerCollection.deleteMany({
+              where: {
+                permissions: {
+                  none: {},
+                },
+              },
+            })
+
+            // verify that only the seeded answer collections remain
             const count = await prisma.answerCollection.count()
             return count === NUM_SEEDED_ANSWER_COLLECTIONS
           } finally {
@@ -965,6 +976,19 @@ export default defineConfig({
           const prisma = await connect()
 
           try {
+            // delete all catalog collections that have no derived permissions on them
+            await prisma.catalogCollection.deleteMany({
+              where: {
+                id: {
+                  not: MISSING_CATALOG_COLLECTION_ID,
+                },
+                permissions: {
+                  none: {},
+                },
+              },
+            })
+
+            // verify that only the seeded catalog collections remain
             const count = await prisma.catalogCollection.count()
             return count === NUM_SEEDED_CATALOG_COLLECTIONS
           } finally {

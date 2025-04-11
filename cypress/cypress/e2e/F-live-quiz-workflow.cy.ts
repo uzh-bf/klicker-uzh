@@ -10,6 +10,13 @@ describe('Different live-quiz workflows', function () {
     })
   })
 
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
+
   // ! Part 0: Preparation
   // #region
   it('Create the questions required in the live quiz test workflows', function () {
@@ -88,6 +95,7 @@ describe('Different live-quiz workflows', function () {
     // create answer collections that are required for selection and case study questions
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
+    cy.get('[data-cy="answer-collection-list"]').should('exist')
     cy.createAnswerCollection({
       name: this.data.collection.name,
       description: this.data.collection.description,

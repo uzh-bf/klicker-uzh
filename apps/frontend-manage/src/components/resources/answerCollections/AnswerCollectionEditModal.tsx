@@ -113,9 +113,9 @@ function AnswerCollectionEditModal({
             <AnswerCollectionMetaForm
               collection={collection}
               onSuccess={() => {
+                setMetadataTouched(false)
                 setSaveErrorToast(false)
                 setSuccessToast(true)
-                setMetadataTouched(false)
               }}
               metadataTouched={metadataTouched}
               setMetadataTouched={setMetadataTouched}

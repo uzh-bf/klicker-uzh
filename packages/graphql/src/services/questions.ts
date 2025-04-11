@@ -409,60 +409,66 @@ export async function deleteQuestion(
   ctx: ContextWithUser
 ) {
   // soft delete question and disconnect linked answer collection and sample solutions
-  const question = await ctx.prisma.$transaction(async (prisma) => {
-    const updatedQuestion = await prisma.element.update({
-      where: {
-        id: id,
-        ownerId: ctx.user.sub,
-      },
-      data: {
-        isDeleted: true,
-        answerCollection: {
-          disconnect: true,
+  const { deletedElement, originalElement } = await ctx.prisma.$transaction(
+    async (prisma) => {
+      const originalElement = await prisma.element.findUnique({
+        where: {
+          id,
         },
-        answerCollectionItems: {
-          set: [],
+      })
+
+      if (!originalElement) {
+        throw new Error('Element not found')
+      }
+
+      // TODO: evaluate if soft deletion of elements is still required (assuming that there are no derived permissions on them anymore)
+      // ! Once elements are hard deleted, the propagation to dependent resources (e.g. answer collections) need to be handled manually in this mutation
+      // ! --> for comparison, check the hard and soft-deletion logic for all activity types (live quiz / practice quiz / microlearning / group activity)
+      const element = await prisma.element.update({
+        where: {
+          id: id,
+          ownerId: ctx.user.sub,
         },
-      },
-    })
+        data: {
+          isDeleted: true,
+          answerCollection: {
+            disconnect: true,
+          },
+          answerCollectionItems: {
+            set: [],
+          },
+        },
+      })
 
-    await recomputeDerivedPermissions(
-      {
-        elementId: updatedQuestion.id,
-      },
-      prisma
-    )
+      // update derived permissions for element
+      await recomputeDerivedPermissions({ elementId: id }, prisma)
 
-    return updatedQuestion
-  })
+      // update derived permissions on the linked answer collection (if defined) -> derived permissions
+      if (originalElement.answerCollectionId !== null) {
+        await recomputeDerivedPermissions(
+          { answerCollectionId: originalElement.answerCollectionId },
+          prisma
+        )
+      }
 
-  // TODO: Once migration deadline is over, rework approach and delete question for real
-  // const question = await ctx.prisma.element.delete({
-  //   where: {
-  //     id: id,
-  //     ownerId: ctx.user.sub,
-  //   },
-  // })
-
-  // ctx.emitter.emit('invalidate', {
-  //   typename: 'Element',
-  //   id: question.id,
-  // })
+      return { deletedElement: element, originalElement }
+    }
+  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
-    id: question.id,
+    id: deletedElement.id,
   })
 
   // if answer collection was connected, invalidate it
-  if (question.answerCollectionId) {
+  if (deletedElement.answerCollectionId) {
     ctx.emitter.emit('invalidate', {
       typename: 'AnswerCollection',
-      id: question.answerCollectionId,
+      id: originalElement.answerCollectionId,
     })
   }
 
-  return question
+  return deletedElement
 }
 
 export async function editTag(
