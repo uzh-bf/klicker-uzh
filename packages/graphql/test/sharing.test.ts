@@ -2,14 +2,16 @@ import {
   ElementType,
   ObjectAccess,
   PermissionLevel,
-  PermissionStatus,
   PrismaClient,
   PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
 import { ActivityType, CatalogObjectType } from '@klicker-uzh/types'
-import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import {
+  MISSING_CATALOG_COLLECTION_ID,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -184,7 +186,7 @@ describe('Unit tests for sharing service', () => {
     // create answer collections that can be added to the catalog to test sharing
     const answerCollections = await Promise.all(
       [answerCollection1, answerCollection2].map(async (collection) => {
-        return await prisma.answerCollection.upsert({
+        const newAnswerCollection = await prisma.answerCollection.upsert({
           where: {
             ownerId_name: {
               ownerId: userOne.id,
@@ -213,6 +215,13 @@ describe('Unit tests for sharing service', () => {
             entries: true,
           },
         })
+
+        await recomputeDerivedPermissions(
+          { answerCollectionId: newAnswerCollection.id, userId: userOne.id },
+          prisma
+        )
+
+        return newAnswerCollection
       })
     )
 
@@ -245,7 +254,7 @@ describe('Unit tests for sharing service', () => {
     )
 
     // seed the top-level catalog collection with fixed ID
-    const topLevelCatalogCollection = await prisma.catalogCollection.upsert({
+    await prisma.catalogCollection.upsert({
       where: { id: MISSING_CATALOG_COLLECTION_ID },
       create: {
         id: MISSING_CATALOG_COLLECTION_ID,
@@ -421,7 +430,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(permission1).toBeTruthy()
     expect(permission1!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(permission1!.permissionStatus).toBe(PermissionStatus.GRANTED)
 
     const permission2 = await prisma.permission.findUnique({
       where: {
@@ -433,7 +441,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(permission2).toBeTruthy()
     expect(permission2!.permissionLevel).toBe(PermissionLevel.WRITE)
-    expect(permission2!.permissionStatus).toBe(PermissionStatus.GRANTED)
 
     const permission3 = await prisma.permission.findUnique({
       where: {
@@ -445,7 +452,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(permission3).toBeTruthy()
     expect(permission3!.permissionLevel).toBe(PermissionLevel.READ)
-    expect(permission3!.permissionStatus).toBe(PermissionStatus.GRANTED)
 
     const permission4 = await prisma.permission.findUnique({
       where: {
@@ -457,7 +463,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(permission4).toBeTruthy()
     expect(permission4!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(permission4!.permissionStatus).toBe(PermissionStatus.GRANTED)
 
     const permission5 = await prisma.permission.findUnique({
       where: {
@@ -469,7 +474,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(permission5).toBeTruthy()
     expect(permission5!.permissionLevel).toBe(PermissionLevel.WRITE)
-    expect(permission5!.permissionStatus).toBe(PermissionStatus.GRANTED)
 
     const permission6 = await prisma.permission.findUnique({
       where: {
@@ -481,7 +485,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(permission6).toBeTruthy()
     expect(permission6!.permissionLevel).toBe(PermissionLevel.READ)
-    expect(permission6!.permissionStatus).toBe(PermissionStatus.GRANTED)
   })
 
   it('Verify that all users with access to the answer collection can at view its content and use it in corresonding elements', async () => {
@@ -1006,8 +1009,8 @@ describe('Unit tests for sharing service', () => {
     expect(updatedPermission3!.permissionLevel).toBe(PermissionLevel.READ)
   })
 
-  it("Verify that permissions to an answer collection can only be revoked as long as they are unused and only by the object's ADMIN or OWNER", async () => {
-    // create a new READ permission for user 5 on AC1
+  it("Verify that direct permissions to an answer collection can be revoked (only by the object's ADMIN or OWNER), but might be replaced with derived permissions", async () => {
+    // create a new direct READ permission for user 5 on AC1
     const permission1 = await prisma.permission.upsert({
       where: {
         answerCollectionId_userId: {
@@ -1017,7 +1020,6 @@ describe('Unit tests for sharing service', () => {
       },
       create: {
         permissionLevel: PermissionLevel.READ,
-        permissionStatus: PermissionStatus.GRANTED,
         answerCollection: {
           connect: {
             id: AC1Id,
@@ -1026,11 +1028,6 @@ describe('Unit tests for sharing service', () => {
         user: {
           connect: {
             id: userFive.id,
-          },
-        },
-        objectOwner: {
-          connect: {
-            id: userOne.id,
           },
         },
       },
@@ -1057,7 +1054,7 @@ describe('Unit tests for sharing service', () => {
     })
     expect(dbPermission1).toBeNull()
 
-    // create a new WRITE permission for user 5 on AC1
+    // create a new direct WRITE permission for user 5 on AC1
     const permission2 = await prisma.permission.upsert({
       where: {
         answerCollectionId_userId: {
@@ -1067,7 +1064,6 @@ describe('Unit tests for sharing service', () => {
       },
       create: {
         permissionLevel: PermissionLevel.WRITE,
-        permissionStatus: PermissionStatus.GRANTED,
         answerCollection: {
           connect: {
             id: AC1Id,
@@ -1076,11 +1072,6 @@ describe('Unit tests for sharing service', () => {
         user: {
           connect: {
             id: userFive.id,
-          },
-        },
-        objectOwner: {
-          connect: {
-            id: userOne.id,
           },
         },
       },
@@ -1107,7 +1098,7 @@ describe('Unit tests for sharing service', () => {
     })
     expect(dbPermission2).toBeNull()
 
-    // create a new ADMIN permission for user 5 on AC1
+    // create a new direct ADMIN permission for user 5 on AC1
     const permission3 = await prisma.permission.upsert({
       where: {
         answerCollectionId_userId: {
@@ -1117,7 +1108,6 @@ describe('Unit tests for sharing service', () => {
       },
       create: {
         permissionLevel: PermissionLevel.ADMIN,
-        permissionStatus: PermissionStatus.GRANTED,
         answerCollection: {
           connect: {
             id: AC1Id,
@@ -1126,11 +1116,6 @@ describe('Unit tests for sharing service', () => {
         user: {
           connect: {
             id: userFive.id,
-          },
-        },
-        objectOwner: {
-          connect: {
-            id: userOne.id,
           },
         },
       },
@@ -1175,25 +1160,117 @@ describe('Unit tests for sharing service', () => {
         },
       },
     })
-
-    // verify that the permission cannot be revoked any longer
-    const removalSuccess1 = await revokeAnswerCollectionAccess(
+    await recomputeDerivedPermissions(
       {
-        permissionId: permission3.id,
-        collectionId: AC1Id,
+        elementId: selectionQuestion.id,
+        userId: userFive.id,
       },
-      userOneCtx
+      prisma
     )
-    expect(removalSuccess1).toBeNull()
 
-    const removalSuccess2 = await revokeAnswerCollectionAccess(
+    // verify that a dervied permission entry has been created based on the direct permission
+    const derivedPermission = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(derivedPermission).toBeTruthy()
+    expect(derivedPermission!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(derivedPermission!.directPermissionId).toBe(permission3.id)
+    expect(derivedPermission!.derived).toBe(false)
+
+    // verify that the permission can be revoked by an owner / admin, but will be replaced with a derived READ permission
+    const removalSuccess1 = await revokeAnswerCollectionAccess(
       {
         permissionId: permission3.id,
         collectionId: AC1Id,
       },
       userTwoCtx
     )
-    expect(removalSuccess2).toBeNull()
+    expect(removalSuccess1).toBeTruthy()
+
+    // direct permission has been removed
+    const dbPermission3 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(dbPermission3).toBeNull()
+
+    // a new derived permission has been created
+    const derivedPermission2 = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(derivedPermission2).toBeTruthy()
+    expect(derivedPermission2!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermission2!.derived).toBe(true)
+
+    // grant direct access again to user 5
+    const permission4 = await prisma.permission.upsert({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.ADMIN,
+        answerCollection: {
+          connect: {
+            id: AC1Id,
+          },
+        },
+        user: {
+          connect: {
+            id: userFive.id,
+          },
+        },
+      },
+      update: {},
+    })
+    await recomputeDerivedPermissions(
+      {
+        answerCollectionId: AC1Id,
+        userId: userFive.id,
+      },
+      prisma
+    )
+
+    // verify that permission has been created correctly and a corresponding derived permission has been added
+    const dbPermission4 = await prisma.permission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(dbPermission4).toBeTruthy()
+    expect(dbPermission4!.id).toBe(permission4.id)
+    expect(dbPermission4!.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    const derivedPermission3 = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(derivedPermission3).toBeTruthy()
+    expect(derivedPermission3!.permissionLevel).toBe(PermissionLevel.ADMIN)
+    expect(derivedPermission3!.derived).toBe(false)
 
     // delete the question and verify that user 5 can revoke own access using admin permissions
     await prisma.element.delete({
@@ -1204,14 +1281,15 @@ describe('Unit tests for sharing service', () => {
 
     const permissionSelfRemoval = await revokeAnswerCollectionAccess(
       {
-        permissionId: permission3.id,
+        permissionId: permission4.id,
         collectionId: AC1Id,
       },
       userFiveCtx
     )
-    expect(permissionSelfRemoval).toBe(permission3.id)
+    expect(permissionSelfRemoval).toBe(permission4.id)
 
-    const dbPermission3 = await prisma.permission.findUnique({
+    // verify that both the direct permission and the derived permission have been removed
+    const dbPermission5 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
           answerCollectionId: AC1Id,
@@ -1219,7 +1297,17 @@ describe('Unit tests for sharing service', () => {
         },
       },
     })
-    expect(dbPermission3).toBeNull()
+    expect(dbPermission5).toBeNull()
+
+    const derivedPermission4 = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: AC1Id,
+          userId: userFive.id,
+        },
+      },
+    })
+    expect(derivedPermission4).toBeNull()
   })
 
   it('Verify that only an answer collection OWNER can transfer the corresponding rights', async () => {
@@ -1270,7 +1358,8 @@ describe('Unit tests for sharing service', () => {
     )
     expect(failure5).toBeNull()
 
-    // transfer ownership from user 1 to user 2, verify that admin permissions are awarded to user 1, permissions for user 2 are removed
+    // transfer ownership from user 1 to user 2, verify that direct ADMIN permissions are awarded to user 1,
+    // direct permissions for user 2 are removed (only derived owner access persists)
     const dbPermissionUserTwoOld = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
@@ -1363,7 +1452,7 @@ describe('Unit tests for sharing service', () => {
       { ...answerCollection1, name: name1 },
       { ...answerCollection2, name: name2 },
     ]) {
-      await prisma.answerCollection.upsert({
+      const newCollection = await prisma.answerCollection.upsert({
         where: {
           ownerId_name: {
             ownerId: userOne.id,
@@ -1387,11 +1476,24 @@ describe('Unit tests for sharing service', () => {
         update: {
           name: collection.name,
           description: collection.description,
+          permissions: {
+            deleteMany: {},
+          },
+          directPermissions: {
+            deleteMany: {},
+          },
         },
         include: {
           entries: true,
         },
       })
+
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId: newCollection.id,
+        },
+        prisma
+      )
     }
 
     const newAC1Id = (await prisma.answerCollection.findUnique({
@@ -1411,7 +1513,7 @@ describe('Unit tests for sharing service', () => {
       },
     }))!.id
 
-    // seed permissions for users 2, 3, 4 (ADMIN, WRITE, READ)
+    // seed direct permissions for users 2, 3, 4 (ADMIN, WRITE, READ)
     for (const { user, permissionLevel } of [
       { user: userTwo, permissionLevel: PermissionLevel.ADMIN },
       { user: userThree, permissionLevel: PermissionLevel.WRITE },
@@ -1420,7 +1522,6 @@ describe('Unit tests for sharing service', () => {
       await prisma.permission.create({
         data: {
           permissionLevel,
-          permissionStatus: PermissionStatus.GRANTED,
           answerCollection: {
             connect: {
               id: newAC1Id,
@@ -1431,17 +1532,11 @@ describe('Unit tests for sharing service', () => {
               id: user.id,
             },
           },
-          objectOwner: {
-            connect: {
-              id: userOne.id,
-            },
-          },
         },
       })
       await prisma.permission.create({
         data: {
           permissionLevel,
-          permissionStatus: PermissionStatus.GRANTED,
           answerCollection: {
             connect: {
               id: newAC2Id,
@@ -1452,13 +1547,23 @@ describe('Unit tests for sharing service', () => {
               id: user.id,
             },
           },
-          objectOwner: {
-            connect: {
-              id: userOne.id,
-            },
-          },
         },
       })
+
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId: newAC1Id,
+          userId: user.id,
+        },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId: newAC2Id,
+          userId: user.id,
+        },
+        prisma
+      )
     }
 
     // try to delete answer collection with insufficient permissions
@@ -1494,7 +1599,7 @@ describe('Unit tests for sharing service', () => {
     )
     expect(deletedACId2).toBe(newAC2Id)
 
-    // make sure that all permissions have been automatically been revoked (since unused)
+    // make sure that all direct permissions have been automatically been revoked (since unused)
     for (const user of [userTwo, userThree, userFour]) {
       const dbPermission1 = await prisma.permission.findUnique({
         where: {
@@ -2010,17 +2115,12 @@ describe('Unit tests for sharing service', () => {
     )
     expect(failure2).toBeFalsy()
 
-    const pendingPermissions1 = await prisma.permission.count({
-      where: {
-        permissionStatus: PermissionStatus.REQUESTED,
-        userId: userFive.id,
-      },
+    const pendingAccessRequest1 = await prisma.accessRequest.count({
+      where: { userId: userFive.id },
     })
-    expect(pendingPermissions1).toBe(0)
+    expect(pendingAccessRequest1).toBe(0)
     const importedACs = await prisma.answerCollection.count({
-      where: {
-        ownerId: userFive.id,
-      },
+      where: { ownerId: userFive.id },
     })
     expect(importedACs).toBe(0)
 
@@ -2043,15 +2143,12 @@ describe('Unit tests for sharing service', () => {
     )
     expect(success2).toBeTruthy()
 
-    const pendingPermissions2 = await prisma.permission.findMany({
-      where: {
-        permissionStatus: PermissionStatus.REQUESTED,
-        userId: userFive.id,
-      },
+    const pendingAccessRequest2 = await prisma.accessRequest.findMany({
+      where: { userId: userFive.id },
     })
-    expect(pendingPermissions2.length).toBe(2)
+    expect(pendingAccessRequest2.length).toBe(4) // 2 access requests, one entry in table each for 1 ADMIN and 1 OWNER
     expect(
-      pendingPermissions2.map((permission) => permission.answerCollectionId)
+      pendingAccessRequest2.map((permission) => permission.answerCollectionId)
     ).toEqual(expect.arrayContaining([AC1Id, AC1Id]))
 
     // import public AC and verify that importing restricted AC does not work
@@ -2074,9 +2171,7 @@ describe('Unit tests for sharing service', () => {
     expect(success3).toBeTruthy()
 
     const importedACs2 = await prisma.answerCollection.findMany({
-      where: {
-        ownerId: userFive.id,
-      },
+      where: { ownerId: userFive.id },
     })
     expect(importedACs2.length).toBe(1)
     expect(importedACs2[0]!.originalId).toBe(AC1Id)
@@ -2092,13 +2187,10 @@ describe('Unit tests for sharing service', () => {
     )
     expect(failure4).toBeFalsy()
 
-    const pendingPermissions3 = await prisma.permission.findMany({
-      where: {
-        permissionStatus: PermissionStatus.REQUESTED,
-        userId: userFive.id,
-      },
+    const accessRequests3 = await prisma.accessRequest.findMany({
+      where: { userId: userFive.id },
     })
-    expect(pendingPermissions3.length).toBe(2)
+    expect(accessRequests3.length).toBe(4) // 2 access requests, one entry in table each for 1 ADMIN and 1 OWNER
 
     const success4 = await importAnswerCollection(
       {
@@ -2110,9 +2202,7 @@ describe('Unit tests for sharing service', () => {
     expect(success4).toBeTruthy()
 
     const importedACs3 = await prisma.answerCollection.findMany({
-      where: {
-        ownerId: userFive.id,
-      },
+      where: { ownerId: userFive.id },
     })
     expect(importedACs3.length).toBe(2)
     expect(importedACs3[0]!.originalId).toBe(AC1Id)
@@ -2122,16 +2212,9 @@ describe('Unit tests for sharing service', () => {
 
     // delete the imported answer collections (2) and the two pending permission requests
     await prisma.answerCollection.deleteMany({
-      where: {
-        ownerId: userFive.id,
-      },
+      where: { ownerId: userFive.id },
     })
-    await prisma.permission.deleteMany({
-      where: {
-        permissionStatus: PermissionStatus.REQUESTED,
-        userId: userFive.id,
-      },
-    })
+    await prisma.accessRequest.deleteMany({ where: { userId: userFive.id } })
   })
 
   it('Request and approve / deny requests to restricted catalog collection', async () => {
@@ -2144,26 +2227,23 @@ describe('Unit tests for sharing service', () => {
     )
     expect(success1).toBeTruthy()
 
-    const pendingAccessRequest1 = await prisma.permission.findUnique({
+    const pendingAccessRequest1 = await prisma.accessRequest.findFirst({
       where: {
-        catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
-          userId: userFive.id,
-        },
+        catalogCollectionId: restrictedCatalogId,
+        userId: userFive.id,
       },
     })
     expect(pendingAccessRequest1).toBeTruthy()
-    expect(pendingAccessRequest1!.permissionStatus).toBe(
-      PermissionStatus.REQUESTED
-    )
+    expect(pendingAccessRequest1!.permissionLevel).toBe(PermissionLevel.READ)
 
     // deny the access request (only owner is allowed for this operation)
     const failure1 = await resolveObjectSharingRequest(
       {
-        permissionId: pendingAccessRequest1!.id,
+        requestId: pendingAccessRequest1!.id,
         userId: userFive.id,
         permissionLevel: PermissionLevel.READ,
         approved: false,
+        propagation: false,
       },
       userTwoCtx
     )
@@ -2171,10 +2251,11 @@ describe('Unit tests for sharing service', () => {
 
     const failure2 = await resolveObjectSharingRequest(
       {
-        permissionId: pendingAccessRequest1!.id,
+        requestId: pendingAccessRequest1!.id,
         userId: userFive.id,
         permissionLevel: PermissionLevel.READ,
         approved: false,
+        propagation: false,
       },
       userThreeCtx
     )
@@ -2182,10 +2263,11 @@ describe('Unit tests for sharing service', () => {
 
     const failure3 = await resolveObjectSharingRequest(
       {
-        permissionId: pendingAccessRequest1!.id,
+        requestId: pendingAccessRequest1!.id,
         userId: userFive.id,
         permissionLevel: PermissionLevel.READ,
         approved: false,
+        propagation: false,
       },
       userFourCtx
     )
@@ -2193,40 +2275,38 @@ describe('Unit tests for sharing service', () => {
 
     const failure4 = await resolveObjectSharingRequest(
       {
-        permissionId: pendingAccessRequest1!.id,
+        requestId: pendingAccessRequest1!.id,
         userId: userFive.id,
         permissionLevel: PermissionLevel.READ,
         approved: false,
+        propagation: false,
       },
       userFiveCtx
     )
     expect(failure4).toBeFalsy()
 
-    const pendingAccessRequest2 = await prisma.permission.findUnique({
+    const pendingAccessRequest2 = await prisma.accessRequest.findFirst({
       where: {
-        catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
-          userId: userFive.id,
-        },
+        catalogCollectionId: restrictedCatalogId,
+        userId: userFive.id,
       },
     })
     expect(pendingAccessRequest2).toBeTruthy()
-    expect(pendingAccessRequest2!.permissionStatus).toBe(
-      PermissionStatus.REQUESTED
-    )
+    expect(pendingAccessRequest2!.permissionLevel).toBe(PermissionLevel.READ)
 
     const success2 = await resolveObjectSharingRequest(
       {
-        permissionId: pendingAccessRequest2!.id,
+        requestId: pendingAccessRequest2!.id,
         userId: userFive.id,
-        permissionLevel: PermissionLevel.READ,
+        permissionLevel: PermissionLevel.READ, // dummy value
         approved: false,
+        propagation: false, // dummy value
       },
       userOneCtx
     )
     expect(success2).toBeTruthy()
 
-    const deniedAccessRequest = await prisma.permission.findUnique({
+    const deniedPermission = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
           catalogCollectionId: restrictedCatalogId,
@@ -2234,37 +2314,32 @@ describe('Unit tests for sharing service', () => {
         },
       },
     })
-    expect(deniedAccessRequest).toBeNull()
+    expect(deniedPermission).toBeNull()
 
     // request access to the restricted catalog collection for user 5 again
     const success3 = await requestCatalogCollection(
-      {
-        catalogCollectionId: restrictedCatalogId,
-      },
+      { catalogCollectionId: restrictedCatalogId },
       userFiveCtx
     )
     expect(success3).toBeTruthy()
 
-    const pendingAccessRequest3 = await prisma.permission.findUnique({
+    const pendingAccessRequest3 = await prisma.accessRequest.findFirst({
       where: {
-        catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
-          userId: userFive.id,
-        },
+        catalogCollectionId: restrictedCatalogId,
+        userId: userFive.id,
       },
     })
     expect(pendingAccessRequest3).toBeTruthy()
-    expect(pendingAccessRequest3!.permissionStatus).toBe(
-      PermissionStatus.REQUESTED
-    )
+    expect(pendingAccessRequest3!.permissionLevel).toBe(PermissionLevel.READ)
 
     // approve the access request
     const success4 = await resolveObjectSharingRequest(
       {
-        permissionId: pendingAccessRequest3!.id,
+        requestId: pendingAccessRequest3!.id,
         userId: userFive.id,
         permissionLevel: PermissionLevel.READ,
         approved: true,
+        propagation: false,
       },
       userOneCtx
     )
@@ -2279,9 +2354,7 @@ describe('Unit tests for sharing service', () => {
       },
     })
     expect(approvedAccessRequest).toBeTruthy()
-    expect(approvedAccessRequest!.permissionStatus).toBe(
-      PermissionStatus.GRANTED
-    )
+    expect(approvedAccessRequest!.permissionLevel).toBe(PermissionLevel.READ)
   })
 
   it('After being granted access, verify that user 5 can now request / import answer collections from restricted catalog collection (incl. clean up)', async () => {
@@ -2295,18 +2368,14 @@ describe('Unit tests for sharing service', () => {
     )
     expect(success1).toBeTruthy()
 
-    const pendingPermissionRequest = await prisma.permission.findUnique({
+    const pendingAccessRequest = await prisma.accessRequest.findFirst({
       where: {
-        answerCollectionId_userId: {
-          answerCollectionId: AC2Id,
-          userId: userFive.id,
-        },
+        answerCollectionId: AC2Id,
+        userId: userFive.id,
       },
     })
-    expect(pendingPermissionRequest).toBeTruthy()
-    expect(pendingPermissionRequest!.permissionStatus).toBe(
-      PermissionStatus.REQUESTED
-    )
+    expect(pendingAccessRequest).toBeTruthy()
+    expect(pendingAccessRequest!.permissionLevel).toBe(PermissionLevel.READ)
 
     // import public answer collection
     const success2 = await importAnswerCollection(
@@ -2336,10 +2405,8 @@ describe('Unit tests for sharing service', () => {
         },
       },
     })
-    await prisma.permission.delete({
-      where: {
-        id: pendingPermissionRequest!.id,
-      },
+    await prisma.accessRequest.delete({
+      where: { id: pendingAccessRequest!.id },
     })
   })
 
@@ -2353,7 +2420,6 @@ describe('Unit tests for sharing service', () => {
       },
     })
     expect(permissionUser2).toBeTruthy()
-    expect(permissionUser2!.permissionStatus).toBe(PermissionStatus.GRANTED)
     expect(permissionUser2!.permissionLevel).toBe(PermissionLevel.READ)
 
     // verify that READ and WRITE permission are insufficient for permission level change
@@ -2395,9 +2461,6 @@ describe('Unit tests for sharing service', () => {
       },
     })
     expect(permissionVerification1).toBeTruthy()
-    expect(permissionVerification1!.permissionStatus).toBe(
-      PermissionStatus.GRANTED
-    )
     expect(permissionVerification1!.permissionLevel).toBe(PermissionLevel.READ)
 
     // change the permission level through catalog collection owner and verify the change
@@ -2420,9 +2483,6 @@ describe('Unit tests for sharing service', () => {
       },
     })
     expect(permissionVerification2).toBeTruthy()
-    expect(permissionVerification2!.permissionStatus).toBe(
-      PermissionStatus.GRANTED
-    )
     expect(permissionVerification2!.permissionLevel).toBe(PermissionLevel.ADMIN)
 
     // change the permission level back to READ through ADMIN user and verify the change
@@ -2445,14 +2505,11 @@ describe('Unit tests for sharing service', () => {
       },
     })
     expect(permissionVerification3).toBeTruthy()
-    expect(permissionVerification3!.permissionStatus).toBe(
-      PermissionStatus.GRANTED
-    )
     expect(permissionVerification3!.permissionLevel).toBe(PermissionLevel.READ)
   })
 
   it('Verify that only users with ADMIN permissions on catalog collection can revoke access', async () => {
-    // add READ permission to restricted catalog collection for user 5
+    // grant direct READ permission to restricted catalog collection for user 5
     const permission1 = await prisma.permission.upsert({
       where: {
         catalogCollectionId_userId: {
@@ -2462,7 +2519,6 @@ describe('Unit tests for sharing service', () => {
       },
       create: {
         permissionLevel: PermissionLevel.READ,
-        permissionStatus: PermissionStatus.GRANTED,
         catalogCollection: {
           connect: {
             id: restrictedCatalogId,
@@ -2471,11 +2527,6 @@ describe('Unit tests for sharing service', () => {
         user: {
           connect: {
             id: userFive.id,
-          },
-        },
-        objectOwner: {
-          connect: {
-            id: userOne.id,
           },
         },
       },
@@ -2522,9 +2573,6 @@ describe('Unit tests for sharing service', () => {
       },
     })
     expect(permissionVerification1).toBeTruthy()
-    expect(permissionVerification1!.permissionStatus).toBe(
-      PermissionStatus.GRANTED
-    )
     expect(permissionVerification1!.permissionLevel).toBe(PermissionLevel.READ)
 
     // revoke permission with owner permissions on restricted catalog collection
@@ -2547,7 +2595,7 @@ describe('Unit tests for sharing service', () => {
     })
     expect(permissionVerification2).toBeNull()
 
-    // re-add WRITE permission to restricted catalog collection for user 5
+    // re-grant direct WRITE permission to restricted catalog collection for user 5
     const permission2 = await prisma.permission.upsert({
       where: {
         catalogCollectionId_userId: {
@@ -2557,7 +2605,6 @@ describe('Unit tests for sharing service', () => {
       },
       create: {
         permissionLevel: PermissionLevel.WRITE,
-        permissionStatus: PermissionStatus.GRANTED,
         catalogCollection: {
           connect: {
             id: restrictedCatalogId,
@@ -2566,11 +2613,6 @@ describe('Unit tests for sharing service', () => {
         user: {
           connect: {
             id: userFive.id,
-          },
-        },
-        objectOwner: {
-          connect: {
-            id: userOne.id,
           },
         },
       },
@@ -2649,7 +2691,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(dbPermission).toBeTruthy()
     expect(dbPermission!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(dbPermission!.permissionStatus).toBe(PermissionStatus.GRANTED)
 
     const newPermission1 = await transferCatalogCollectionOwnership(
       {
@@ -2675,7 +2716,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(dbPermission2).toBeTruthy()
     expect(dbPermission2!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(dbPermission2!.permissionStatus).toBe(PermissionStatus.GRANTED)
 
     const dbPermission3 = await prisma.permission.findUnique({
       where: {
@@ -2708,7 +2748,6 @@ describe('Unit tests for sharing service', () => {
     expect(newPermission2!.username).toBe(userFour.shortname)
     expect(newPermission2!.userEmail).toBe(userFour.email)
     expect(newPermission2!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(newPermission2!.isRevokable).toBe(true)
     expect(newPermission2!.isOwn).toBe(true)
 
     const dbPermission4 = await prisma.permission.findUnique({
@@ -2721,7 +2760,6 @@ describe('Unit tests for sharing service', () => {
     })
     expect(dbPermission4).toBeTruthy()
     expect(dbPermission4!.permissionLevel).toBe(PermissionLevel.ADMIN)
-    expect(dbPermission4!.permissionStatus).toBe(PermissionStatus.GRANTED)
 
     const dbPermission5 = await prisma.permission.findUnique({
       where: {
@@ -2746,8 +2784,8 @@ describe('Unit tests for sharing service', () => {
       { id: LQAT3Id, name: 'LQAT3' },
     ]
     const ATs = await Promise.all(
-      templateData.map(({ id, name }) =>
-        prisma.activityTemplate.create({
+      templateData.map(async ({ id, name }) => {
+        const newTemplate = await prisma.activityTemplate.create({
           data: {
             description: `${name} Description`,
             instructions: `${name} Instructions`,
@@ -2766,7 +2804,14 @@ describe('Unit tests for sharing service', () => {
             },
           },
         })
-      )
+
+        await recomputeDerivedPermissions(
+          { liveQuizId: id, userId: userOne.id },
+          prisma
+        )
+
+        return newTemplate
+      })
     )
     const templateId1 = ATs.find((AT) => AT.liveQuizId === LQAT1Id)!.id
     const templateId2 = ATs.find((AT) => AT.liveQuizId === LQAT2Id)!.id
@@ -3090,6 +3135,13 @@ describe('Unit tests for sharing service', () => {
     await prisma.catalogCollectionAssignment.deleteMany({})
     const dbAssignments2 = await prisma.catalogCollectionAssignment.count()
     expect(dbAssignments2).toBe(0)
+
+    // remove the top level catalog collection for test suite independence
+    await prisma.catalogCollection.delete({
+      where: { id: MISSING_CATALOG_COLLECTION_ID },
+    })
+    const dbCatalogs2 = await prisma.catalogCollection.count()
+    expect(dbCatalogs2).toBe(0)
 
     // verify that no elements are left in the permission table
     const dbPermissions = await prisma.element.count()

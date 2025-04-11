@@ -2823,7 +2823,9 @@ export async function getCatalogObjects(
             permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
             permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isRequested: answerCollection.accessRequests.length > 0,
-          isShared: typeof permission !== 'undefined',
+          isShared:
+            typeof permission !== 'undefined' &&
+            permission.permissionLevel !== DB.PermissionLevel.OWNER,
         }
       } else if (assignment.liveQuiz) {
         const liveQuiz = assignment.liveQuiz
@@ -2846,7 +2848,9 @@ export async function getCatalogObjects(
             permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
             permission?.permissionLevel === DB.PermissionLevel.OWNER,
           isRequested: liveQuiz.accessRequests.length > 0,
-          isShared: typeof permission !== 'undefined',
+          isShared:
+            typeof permission !== 'undefined' &&
+            permission.permissionLevel !== DB.PermissionLevel.OWNER,
         }
       }
 
@@ -3007,13 +3011,21 @@ export async function addObjectToCatalog(
             shortname: true,
           },
         },
-        _count: {
-          select: { permissions: { where: { userId: ctx.user.sub } } },
+        permissions: {
+          where: {
+            userId: ctx.user.sub,
+          },
         },
       },
     })
 
     if (!answerCollection) {
+      return null
+    }
+
+    // get (unique) derived permission of this user on the answer collection
+    const permission = answerCollection.permissions[0]
+    if (!permission) {
       return null
     }
 
@@ -3025,7 +3037,7 @@ export async function addObjectToCatalog(
       objectName: answerCollection.name,
       ownerShortname: answerCollection.owner?.shortname,
       ownerId: answerCollection.ownerId,
-      isShared: answerCollection._count.permissions > 0,
+      isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
     }
   } else if (typeof liveQuizId !== 'undefined') {
     const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
@@ -3051,13 +3063,21 @@ export async function addObjectToCatalog(
             id: true,
           },
         },
-        _count: {
-          select: { permissions: { where: { userId: ctx.user.sub } } },
+        permissions: {
+          where: {
+            userId: ctx.user.sub,
+          },
         },
       },
     })
 
     if (!liveQuiz) {
+      return null
+    }
+
+    // get (unique) derived permission of this user on the live quiz
+    const permission = liveQuiz.permissions[0]
+    if (!permission) {
       return null
     }
 
@@ -3073,7 +3093,7 @@ export async function addObjectToCatalog(
       ownerShortname: liveQuiz.owner?.shortname,
       ownerId: liveQuiz.ownerId,
       templateId: liveQuiz.templateInfo?.id,
-      isShared: liveQuiz._count.permissions > 0,
+      isShared: permission.permissionLevel !== DB.PermissionLevel.OWNER,
     }
   }
   // TODO: ... implement more supported object types
