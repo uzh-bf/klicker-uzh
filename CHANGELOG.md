@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.48...v3.3.0-alpha.49) (2025-04-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that autosaved element content is correctly reset on element save ([#4611](https://github.com/uzh-bf/klicker-uzh/issues/4611)) ([d2e6038](https://github.com/uzh-bf/klicker-uzh/commit/d2e60385191f1a783defb6e99654b01ca08e5b1c))
+* **cypress:** resolve flakiness in cypress template workflow ([#4613](https://github.com/uzh-bf/klicker-uzh/issues/4613)) ([0ad28b6](https://github.com/uzh-bf/klicker-uzh/commit/0ad28b6350f5cc7df5b6e1e386f895a7b0e96b9d))
+
 ## [3.3.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.47...v3.3.0-alpha.48) (2025-04-07)
 
 
