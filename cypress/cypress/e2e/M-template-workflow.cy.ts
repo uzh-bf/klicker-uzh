@@ -702,6 +702,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Add the live quiz template to the top level catalog collection', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -733,6 +734,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it("Add the second template to a restricted catalog collection and share access to it with user 'pro1'", function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -1041,6 +1043,8 @@ describe('Test all functionalities related to the creation, management, sharing 
         // check possibility to create a new element
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
         cy.get('[data-cy="insert-question-text"]').contains(content)
+        cy.wait(1000) // wait for form to be fully populated to avoid overlapping inputs
+
         cy.get('[data-cy="insert-question-text"]')
           .click()
           .clear()
@@ -1231,30 +1235,41 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.wrap([
       {
         identifier: '2-0',
+        oldTitle: this.data.SCMLAF.title,
         newTitle: this.data.activity1.newElements.SC.title,
         newContent: this.data.activity1.newElements.SC.content,
       },
       {
         identifier: '2-1',
+        oldTitle: this.data.MCMLAF.title,
         newTitle: this.data.activity1.newElements.MC.title,
         newContent: this.data.activity1.newElements.MC.content,
       },
       {
         identifier: '2-2',
+        oldTitle: this.data.KPMLAF.title,
         newTitle: this.data.activity1.newElements.KP.title,
         newContent: this.data.activity1.newElements.KP.content,
       },
     ]).each(
       ({
         identifier,
+        oldTitle,
         newTitle,
         newContent,
       }: {
         identifier: string
+        oldTitle: string
         newTitle: string
         newContent: string
       }) => {
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
+        cy.get('[data-cy="insert-question-title"]').should(
+          'have.value',
+          oldTitle
+        )
+        cy.wait(1000) // wait for form to be fully populated to avoid overlapping inputs
+
         cy.get('[data-cy="insert-question-title"]')
           .click()
           .clear()
@@ -1554,6 +1569,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it("Open the template in the restricted catalog collection through user 'pro1', test all functionalities and create an activity from it", function () {
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
@@ -1719,6 +1735,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-0',
         content: this.data.SCML.content,
+        title: this.data.SCML.title,
         newTitle: this.data.activity2.newElements.SC.title,
         newContent: this.data.activity2.newElements.SC.content,
         availableElements: [this.data.SCML3.title],
@@ -1738,6 +1755,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-1',
         content: this.data.MCML.content,
+        title: this.data.MCML.title,
         newTitle: this.data.activity2.newElements.MC.title,
         newContent: this.data.activity2.newElements.MC.content,
         availableElements: [this.data.MCML3.title],
@@ -1757,6 +1775,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-2',
         content: this.data.KPML.content,
+        title: this.data.KPML.title,
         newTitle: this.data.activity2.newElements.KP.title,
         newContent: this.data.activity2.newElements.KP.content,
         availableElements: [this.data.KPML3.title],
@@ -1776,6 +1795,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-3',
         content: this.data.NRML.content,
+        title: this.data.NRML.title,
         newTitle: this.data.activity2.newElements.NR.title,
         newContent: this.data.activity2.newElements.NR.content,
         availableElements: [this.data.NRML3.title],
@@ -1791,6 +1811,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-4',
         content: this.data.FTML.content,
+        title: this.data.FTML.title,
         newTitle: this.data.activity2.newElements.FT.title,
         newContent: this.data.activity2.newElements.FT.content,
         availableElements: [this.data.FTML3.title],
@@ -1806,6 +1827,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-5',
         content: this.data.SEML.content,
+        title: this.data.SEML.title,
         newTitle: this.data.activity2.newElements.SE.title,
         newContent: this.data.activity2.newElements.SE.content,
         availableElements: [this.data.SEML3.title],
@@ -1821,6 +1843,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-6',
         content: this.data.CSML.content,
+        title: this.data.CSML.title,
         newTitle: this.data.activity2.newElements.CS.title,
         newContent: this.data.activity2.newElements.CS.content,
         availableElements: [this.data.CSML3.title],
@@ -1837,6 +1860,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       ({
         identifier,
         content,
+        title,
         newTitle,
         newContent,
         availableElements,
@@ -1846,6 +1870,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       }: {
         identifier: string
         content: string
+        title: string
         newTitle: string
         newContent: string
         availableElements: string[]
@@ -1876,6 +1901,9 @@ describe('Test all functionalities related to the creation, management, sharing 
 
         // verify that certain settings are disabled / hidden and enter new title & content
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
+        cy.get('[data-cy="insert-question-title"]').should('have.value', title)
+        cy.wait(1000) // wait for form to be fully populated to avoid overlapping inputs
+
         cy.get('[data-cy="configure-sample-solution"]').should('not.exist')
         if (hasAnswerFeedbacksDisabled) {
           cy.get('[data-cy="configure-answer-feedbacks"]').should('be.disabled')
@@ -2517,12 +2545,14 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Delete all created resources', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
     cy.deleteAnswerCollection({ collectionName: this.data.collection2.name })
 
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection3.name })
@@ -2530,6 +2560,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Delete all created catalog collections', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(
