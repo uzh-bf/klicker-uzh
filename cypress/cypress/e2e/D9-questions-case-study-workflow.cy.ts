@@ -19,10 +19,13 @@ type CriterionDataType = {
 
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
   beforeEach('Login the lecturer and load data fixture', function () {
-    cy.loginLecturer()
     cy.fixture('D-questions.json').then((data) => {
       this.data = data
     })
+
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').should('exist')
+    cy.get('[data-cy="analytics"]').should('exist')
   })
 
   // ! DEV: if a test case fails, stop the test run

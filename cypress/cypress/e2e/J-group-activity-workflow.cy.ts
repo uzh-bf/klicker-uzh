@@ -1455,6 +1455,7 @@ describe('Create and solve a group activity', function () {
 
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({

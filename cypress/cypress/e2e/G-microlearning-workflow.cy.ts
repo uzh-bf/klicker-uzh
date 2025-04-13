@@ -1360,6 +1360,7 @@ describe('Different microlearning workflows', function () {
     cy.loginLecturer()
 
     // create answer collection and selection question
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get('[data-cy="answer-collection-list"]').should('exist')
@@ -1823,6 +1824,7 @@ describe('Different microlearning workflows', function () {
 
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({
