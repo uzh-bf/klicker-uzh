@@ -238,6 +238,7 @@ export async function manipulateMicroLearning(
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
   let stacksToDelete: number[] = []
   if (id) {
     const instances = await ctx.prisma.elementInstance.findMany({
@@ -256,6 +257,7 @@ export async function manipulateMicroLearning(
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
     stacksToDelete = stacks.map((stack) => stack.id)
   }
 
@@ -355,10 +357,15 @@ export async function manipulateMicroLearning(
       },
     })
 
+    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+    if (unlinkedElementIds.length > 0) {
+      for (const elementId of unlinkedElementIds) {
+        await recomputeDerivedPermissions({ elementId }, prisma)
+      }
+    }
+
     await recomputeDerivedPermissions(
-      {
-        microLearningId: upsertedMicrolearning.id,
-      },
+      { microLearningId: upsertedMicrolearning.id },
       prisma
     )
 

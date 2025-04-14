@@ -996,6 +996,7 @@ export async function manipulateGroupActivity(
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
   let stacksToDelete: number[] = []
   if (id) {
     const instances = await ctx.prisma.elementInstance.findMany({
@@ -1014,6 +1015,7 @@ export async function manipulateGroupActivity(
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
     stacksToDelete = stacks.map((stack) => stack.id)
   }
 
@@ -1124,6 +1126,13 @@ export async function manipulateGroupActivity(
       create: createOrUpdateJSON,
       update: createOrUpdateJSON,
     })
+
+    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+    if (unlinkedElementIds.length > 0) {
+      for (const elementId of unlinkedElementIds) {
+        await recomputeDerivedPermissions({ elementId }, prisma)
+      }
+    }
 
     // update all permissions linked to this group activity (since course might have changed on edit as well --> new derived permissions)
     await recomputeDerivedPermissions(
