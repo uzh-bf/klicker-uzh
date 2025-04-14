@@ -286,6 +286,7 @@ async function recomputeCatalogCollectionPermissionsObject(
   // determine the maximum access level for each user with individual permissions or inside a user group
   const userAccess = getMaxAccessLevelCombined({
     directPermissions: catalogCollection.directPermissions,
+    objectDeleted: false, // soft-deletion not supported for catalog collections
     ownerId: catalogCollection.ownerId,
   })
 
@@ -306,13 +307,7 @@ async function recomputeCatalogCollectionPermissionsObject(
 // ! Derived permission recomputation for answer collections
 // #region
 async function recomputeAnswerCollectionPermissions(
-  {
-    id,
-    userId,
-  }: {
-    id: number
-    userId?: string
-  },
+  { id, userId }: { id: number; userId?: string },
   prisma: PrismaTransactionClient
 ) {
   // if a user is defined, only recompute derived permissions for this user
@@ -403,7 +398,7 @@ async function recomputeAnswerCollectionPermissionsUser(
   let derived = false
 
   // if user is answer collection owner, set the corresponding permission
-  if (answerCollection.ownerId === userId) {
+  if (answerCollection.ownerId === userId && !answerCollection.isDeleted) {
     maxAccessLevel = DB.PermissionLevel.OWNER
   }
   // if the user has a direct permission or a derived access, use this case
@@ -563,6 +558,7 @@ async function recomputeAnswerCollectionPermissionsObject(
   // determine the access map based on ownership and direct permissions
   const directUserAccess = getMaxAccessLevelCombined({
     directPermissions: answerCollection.directPermissions,
+    objectDeleted: answerCollection.isDeleted,
     ownerId: answerCollection.ownerId,
   })
 
@@ -862,7 +858,7 @@ async function recomputeElementPermissionsUser(
   let parentPermissionId: number | undefined = undefined
   let derived = false
 
-  if (element.ownerId === userId) {
+  if (element.ownerId === userId && !element.isDeleted) {
     maxAccessLevel = DB.PermissionLevel.OWNER
   } else {
     // determine the highest available direct permission level (groups and individual direct permissions)
@@ -1031,6 +1027,7 @@ async function recomputeElementPermissionsObject(
   // determine the access map based on ownership and direct permissions
   const directUserAccess = getMaxAccessLevelCombined({
     directPermissions: element.directPermissions,
+    objectDeleted: element.isDeleted,
     ownerId: element.ownerId,
   })
 
@@ -1298,6 +1295,7 @@ async function recomputeLiveQuizPermissionsObject(
   // compute a map between all users with direct or direct access to the considered activity
   const userAccess = getActivityPermissionsObject({
     activityOwnerId: liveQuiz.ownerId,
+    activityDeleted: liveQuiz.isDeleted,
     directPermissions: liveQuiz.directPermissions,
     coursePermissions: liveQuiz.course?.permissions ?? [],
   })
@@ -1520,6 +1518,7 @@ async function recomputePracticeQuizPermissionsObject(
   // compute a map between all users with direct or direct access to the considered activity
   const userAccess = getActivityPermissionsObject({
     activityOwnerId: practiceQuiz.ownerId,
+    activityDeleted: practiceQuiz.isDeleted,
     directPermissions: practiceQuiz.directPermissions,
     coursePermissions: practiceQuiz.course?.permissions ?? [],
   })
@@ -1742,6 +1741,7 @@ async function recomputeMicroLearningPermissionsObject(
   // compute a map between all users with direct or direct access to the considered activity
   const userAccess = getActivityPermissionsObject({
     activityOwnerId: microLearning.ownerId,
+    activityDeleted: microLearning.isDeleted,
     directPermissions: microLearning.directPermissions,
     coursePermissions: microLearning.course?.permissions ?? [],
   })
@@ -1964,6 +1964,7 @@ async function recomputeGroupActivityPermissionsObject(
   // compute a map between all users with direct or direct access to the considered activity
   const userAccess = getActivityPermissionsObject({
     activityOwnerId: groupActivity.ownerId,
+    activityDeleted: groupActivity.isDeleted,
     directPermissions: groupActivity.directPermissions,
     coursePermissions: groupActivity.course?.permissions ?? [],
   })
@@ -2164,6 +2165,7 @@ async function recomputeCoursePermissionsObject(
   // determine the access map based on ownership and direct permissions (no derived access on courses is possible)
   const userAccess = getMaxAccessLevelCombined({
     directPermissions: course.directPermissions,
+    objectDeleted: false, // soft-deletion is not possible for courses
     ownerId: course.ownerId,
   })
 
@@ -2241,11 +2243,13 @@ function getMaxAccessLevelIndividual({
 // maximum access level determination based on direct permissions (individual and group) for all users with access to the object
 function getMaxAccessLevelCombined({
   directPermissions,
+  objectDeleted,
   ownerId,
 }: {
   directPermissions: (DB.Permission & {
     userGroup?: (DB.UserGroup & { members: DB.User[] }) | null
   })[]
+  objectDeleted: boolean
   ownerId?: string | null
 }) {
   const userAccess = directPermissions.reduce<UserAccessMap>(
@@ -2298,7 +2302,7 @@ function getMaxAccessLevelCombined({
 
       return acc
     },
-    ownerId
+    ownerId && !objectDeleted
       ? {
           [ownerId]: {
             maxAccessLevel: DB.PermissionLevel.OWNER,
@@ -2380,7 +2384,7 @@ function getActivityPermissionsUser({
   let derived = false
 
   // if user is answer collection owner, set the corresponding permission
-  if (activityOwnerId === userId) {
+  if (activityOwnerId === userId && !activityDeleted) {
     maxAccessLevel = DB.PermissionLevel.OWNER
   }
   // if the user has a direct permission or a derived access, use this case
@@ -2465,10 +2469,12 @@ async function propagateActivityToElementsUser(
 
 function getActivityPermissionsObject({
   activityOwnerId,
+  activityDeleted,
   directPermissions,
   coursePermissions,
 }: {
   activityOwnerId: string
+  activityDeleted: boolean
   directPermissions: DB.Permission[]
   coursePermissions: (DB.DerivedPermission & {
     directPermission?: DB.Permission | null
@@ -2477,6 +2483,7 @@ function getActivityPermissionsObject({
   // determine the access map based on ownership and direct permissions
   const directUserAccess = getMaxAccessLevelCombined({
     directPermissions: directPermissions,
+    objectDeleted: activityDeleted,
     ownerId: activityOwnerId,
   })
 

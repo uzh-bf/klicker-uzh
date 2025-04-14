@@ -687,6 +687,8 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template.name}"]`
     ).click() // open template
+    cy.get(`[data-cy="live-quiz-template-submit"]`).should('exist') // check that template was loaded
+
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click() // navigate back to catalog collection
