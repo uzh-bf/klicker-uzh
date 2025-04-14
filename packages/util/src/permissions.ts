@@ -2403,11 +2403,9 @@ function getActivityPermissionsUser({
       maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
       parentPermissionId = directPermissionId
     }
-    // if the user does not have direct access to the quiz, but has access to the course this quiz is inside of
-    // depending on the propagation setting, the user will receive different permissions
-    // since permissions on courses cannot be derived, derived permission entries should always be linked to direct permission
-    else if (
-      typeof maxAccessLevel === 'undefined' &&
+
+    // is the user is also granted access to the course the object is contained in, we need to check it for higher derived permission levels
+    if (
       (coursePermissions.length ?? -1) > 0 &&
       !!coursePermissions[0]?.directPermission
     ) {
@@ -2430,9 +2428,18 @@ function getActivityPermissionsUser({
         coursePermissionLevel: permission.permissionLevel,
         directCoursePermission: permission.directPermission!,
       })
-      maxAccessLevel = courseMaxAccessLevel
-      parentPermissionId = courseParentPermissionId
-      derived = courseDerived
+
+      // check if the derived access level is higher than the currently known maximum one
+      if (
+        typeof maxAccessLevel === 'undefined' ||
+        (typeof courseMaxAccessLevel !== 'undefined' &&
+          permissionLevelMap[courseMaxAccessLevel] >
+            permissionLevelMap[maxAccessLevel])
+      ) {
+        maxAccessLevel = courseMaxAccessLevel
+        parentPermissionId = courseParentPermissionId
+        derived = courseDerived
+      }
     }
   } else {
     return null
@@ -2499,28 +2506,30 @@ function getActivityPermissionsObject({
               return acc
             }
 
-            // check if the user does not have a permission on the activity yet or if the new permission is higher
+            // depending on the permission level and the propagation setting on the direct course permission, choose the derived permission level
+            const {
+              maxAccessLevel: courseMaxAccessLevel,
+              parentPermissionId: courseParentPermissionId,
+              derived: courseDerived,
+            } = getActivityAccessFromCourse({
+              coursePermissionLevel: coursePermission.permissionLevel,
+              directCoursePermission: coursePermission.directPermission!,
+            })
+
+            // if the user is granted derived access through the course permission and this access level is higher than the current one, update it
             if (
-              typeof acc[coursePermission.userId] === 'undefined' ||
-              permissionLevelMap[coursePermission.permissionLevel] >
-                permissionLevelMap[acc[coursePermission.userId]!.maxAccessLevel]
+              typeof courseMaxAccessLevel !== 'undefined' &&
+              (typeof acc[coursePermission.userId] === 'undefined' ||
+                permissionLevelMap[courseMaxAccessLevel] >
+                  permissionLevelMap[
+                    acc[coursePermission.userId]!.maxAccessLevel
+                  ])
             ) {
-              // depending on the permission level and the propagation setting on the direct course permission, choose the derived permission level
-              const {
+              acc[coursePermission.userId] = {
                 maxAccessLevel: courseMaxAccessLevel,
                 parentPermissionId: courseParentPermissionId,
                 derived: courseDerived,
-              } = getActivityAccessFromCourse({
-                coursePermissionLevel: coursePermission.permissionLevel,
-                directCoursePermission: coursePermission.directPermission!,
-              })
-
-              if (typeof courseMaxAccessLevel !== 'undefined')
-                acc[coursePermission.userId] = {
-                  maxAccessLevel: courseMaxAccessLevel,
-                  parentPermissionId: courseParentPermissionId,
-                  derived: courseDerived,
-                }
+              }
             }
 
             return acc
