@@ -3163,4 +3163,10 @@ describe('Unit tests for sharing service', () => {
     const dbUsers = await prisma.user.count()
     expect(dbUsers).toBe(0)
   })
+
+  // TODO: make sure to extend tests once element and activity sharing is available with modifications and impact on derived permissions when executing the following actions
+  // - switch of answer collection linked to an element - derived access to previous collection should be removed, access to new one automatically added
+  // - switch of an element in an activity - if ADMIN permissions on activity (propagation required), derived admin access should be modified
+  // - element instance updates of templates that cause a modification of the answer collection --> corresponding derived permissions for users with shared access to template need to be updated
+  // - validate that when changing the course assignment of some activity, that the corresponding permissions of users on the course are adapted accordingly
 })
