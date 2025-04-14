@@ -1630,7 +1630,10 @@ describe('Unit tests covering the creation of derived permissions for resources 
     expect(derivedPermissionsCount).toBe(0)
   })
 
-  it('Verify that individual permissions have precendence over user group permissions if higher', async () => {
+  async function precedenceIndividualGroupPermissions(
+    prisma,
+    individualRecompute
+  ) {
     // create an answer collection
     const answerCollection = await prisma.answerCollection.create({
       data: {
@@ -1674,10 +1677,25 @@ describe('Unit tests covering the creation of derived permissions for resources 
     })
 
     // recompute derived permissions for the answer collection
-    await recomputeDerivedPermissions(
-      { answerCollectionId: answerCollection.id },
-      prisma
-    )
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id, userId: userThree.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id },
+        prisma
+      )
+    }
 
     // verify that the derived permissions have been created correctly: user 1 (OWNER), user 2 (WRITE), user 3 (ADMIN)
     const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
@@ -1743,9 +1761,20 @@ describe('Unit tests covering the creation of derived permissions for resources 
     expect(directPermissionsCount).toBe(0)
     const derivedPermissionsCount = await prisma.derivedPermission.count()
     expect(derivedPermissionsCount).toBe(0)
+  }
+
+  it('Verify that individual permissions have precendence over user group permissions if higher (individual derived permission recomputation)', async () => {
+    await precedenceIndividualGroupPermissions(prisma, true)
   })
 
-  it('Verify that group permissions have precedence over individual permissions if higher', async () => {
+  it('Verify that individual permissions have precendence over user group permissions if higher (object-level derived permission recomputation)', async () => {
+    await precedenceIndividualGroupPermissions(prisma, false)
+  })
+
+  async function precedenceIndividualGroupPermissionsAlt(
+    prisma,
+    individualRecompute
+  ) {
     // create an answer collection
     const answerCollection = await prisma.answerCollection.create({
       data: {
@@ -1789,10 +1818,25 @@ describe('Unit tests covering the creation of derived permissions for resources 
     })
 
     // recompute derived permissions for the answer collection
-    await recomputeDerivedPermissions(
-      { answerCollectionId: answerCollection.id },
-      prisma
-    )
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id, userId: userThree.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id },
+        prisma
+      )
+    }
 
     // verify that the derived permissions have been created correctly: user 1 (OWNER), user 2 (ADMIN), user 3 (ADMIN)
     const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
@@ -1858,6 +1902,14 @@ describe('Unit tests covering the creation of derived permissions for resources 
     expect(directPermissionsCount).toBe(0)
     const derivedPermissionsCount = await prisma.derivedPermission.count()
     expect(derivedPermissionsCount).toBe(0)
+  }
+
+  it('Verify that group permissions have precedence over individual permissions if higher (individual derived permission recomputation)', async () => {
+    await precedenceIndividualGroupPermissionsAlt(prisma, true)
+  })
+
+  it('Verify that group permissions have precedence over individual permissions if higher (object-level derived permission recomputation)', async () => {
+    await precedenceIndividualGroupPermissionsAlt(prisma, false)
   })
 
   it('Verify that removal of direct permissions for user group results in removal of derived permissions for individual users', async () => {

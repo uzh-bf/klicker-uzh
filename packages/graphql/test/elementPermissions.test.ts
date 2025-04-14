@@ -33,7 +33,7 @@ const getDatabaseUrl = () => {
   return 'postgresql://klicker:klicker@localhost:5432/klicker'
 }
 
-describe('Unit tests covering the creation of derived permissions', () => {
+describe('Unit tests covering the creation of derived permissions for elements', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
@@ -572,7 +572,10 @@ describe('Unit tests covering the creation of derived permissions', () => {
     expect(derivedPermissionsCount).toBe(0)
   })
 
-  it('Verify that individual permissions have precedence over user group permissions if higher (and vice-versa)', async () => {
+  async function precedenceIndividualGroupPermissions(
+    prisma,
+    individualRecompute
+  ) {
     // create an element
     const element = await prisma.element.create({
       data: {
@@ -656,7 +659,30 @@ describe('Unit tests covering the creation of derived permissions', () => {
     })
 
     // trigger recomputation of derived permissions for the element
-    await recomputeDerivedPermissions({ elementId: element.id }, prisma)
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { elementId: element.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { elementId: element.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { elementId: element.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { elementId: element.id, userId: userFour.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { elementId: element.id, userId: userFive.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ elementId: element.id }, prisma)
+    }
 
     // verify that the correct derived permission entries have been created
     // user 1 (OWNER), user 2 (WRITE - individual), user 3 (WRITE - group 2), user 4 (ADMIN - individual), user 5 (WRITE - group 2)
@@ -763,6 +789,14 @@ describe('Unit tests covering the creation of derived permissions', () => {
     expect(directPermissionsCount).toBe(0)
     const derivedPermissionsCount = await prisma.derivedPermission.count()
     expect(derivedPermissionsCount).toBe(0)
+  }
+
+  it('Verify that individual permissions have precedence over user group permissions if higher (and vice-versa) (individual derived permission recomputation)', async () => {
+    await precedenceIndividualGroupPermissions(prisma, true)
+  })
+
+  it('Verify that individual permissions have precedence over user group permissions if higher (and vice-versa) (object-level derived permission recomputation)', async () => {
+    await precedenceIndividualGroupPermissions(prisma, false)
   })
 
   // ? Activity -> Element
@@ -1156,7 +1190,10 @@ describe('Unit tests covering the creation of derived permissions', () => {
     expect(derivedPermissionsCount).toBe(0)
   })
 
-  it('Verify that derived permissions from activity take precedence over direct permissions if higher and vice-versa', async () => {
+  async function activityElementPermissionsPrecedenceIndividual(
+    prisma,
+    individualRecompute
+  ) {
     const { element, activity } = await createActivityWithElement(prisma)
 
     // grant READ permissions to user 2, WRITE permissions to user 3, ADMIN permissions to users 4 and 5 on activity
@@ -1213,7 +1250,30 @@ describe('Unit tests covering the creation of derived permissions', () => {
     })
 
     // trigger recomputation of derived permissions for the activity
-    await recomputeDerivedPermissions({ liveQuizId: activity.id }, prisma)
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userFour.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userFive.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ liveQuizId: activity.id }, prisma)
+    }
 
     // verify that the correct derived permission entries on the element have been created
     // user 1 (OWNER - ADMIN would be min. required = propagated), user 2 (WRITE - individual), user 3 (ADMIN - individual), user 4 (ADMIN - derived), user 5 (ADMIN - derived)
@@ -1320,9 +1380,20 @@ describe('Unit tests covering the creation of derived permissions', () => {
     expect(directPermissionsCount).toBe(0)
     const derivedPermissionsCount = await prisma.derivedPermission.count()
     expect(derivedPermissionsCount).toBe(0)
+  }
+
+  it('Verify that derived permissions from activity take precedence over direct permissions if higher and vice-versa (individual derived permission recomputation)', async () => {
+    await activityElementPermissionsPrecedenceIndividual(prisma, true)
   })
 
-  it('Verify that derived group permissions from activity take precedence over direct (group) permissions if higher and vice-versa', async () => {
+  it('Verify that derived permissions from activity take precedence over direct permissions if higher and vice-versa (object-level derived permission recomputation)', async () => {
+    await activityElementPermissionsPrecedenceIndividual(prisma, false)
+  })
+
+  async function activityElementPermissionPrecedenceGroups(
+    prisma,
+    individualRecompute
+  ) {
     const { element, activity } = await createActivityWithElement(prisma)
 
     // create a user group with users 1 and 2, which gets READ permissions on the activity
@@ -1398,7 +1469,30 @@ describe('Unit tests covering the creation of derived permissions', () => {
     })
 
     // trigger recomputation of derived permissions for the activity
-    await recomputeDerivedPermissions({ liveQuizId: activity.id }, prisma)
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userFour.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userFive.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ liveQuizId: activity.id }, prisma)
+    }
 
     // verify that the correct derived permission entries on the element have been created
     // user 1 (OWNER - ADMIN would be min. required = propagated), user 2 (WRITE - group direct),
@@ -1511,6 +1605,14 @@ describe('Unit tests covering the creation of derived permissions', () => {
     expect(directPermissionsCount).toBe(0)
     const derivedPermissionsCount = await prisma.derivedPermission.count()
     expect(derivedPermissionsCount).toBe(0)
+  }
+
+  it('Verify that derived group permissions from activity take precedence over direct (group) permissions if higher and vice-versa (individual derived permission recomputation)', async () => {
+    await activityElementPermissionPrecedenceGroups(prisma, true)
+  })
+
+  it('Verify that derived group permissions from activity take precedence over direct (group) permissions if higher and vice-versa (object-level derived permission recomputation)', async () => {
+    await activityElementPermissionPrecedenceGroups(prisma, false)
   })
 
   it('Verify that individual permissions are correctly updated in the presence of direct group permissions when passing userId parameter', async () => {

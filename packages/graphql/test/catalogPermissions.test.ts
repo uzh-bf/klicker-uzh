@@ -30,7 +30,7 @@ const getDatabaseUrl = () => {
   return 'postgresql://klicker:klicker@localhost:5432/klicker'
 }
 
-describe('Unit tests covering the creation of derived permissions', () => {
+describe('Unit tests covering the creation of derived permissions for catalog collections', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
@@ -602,7 +602,10 @@ describe('Unit tests covering the creation of derived permissions', () => {
     expect(derivedPermissionsCount).toBe(0)
   })
 
-  it('Verify that individual permissions have precedence over user group permissions if higher (and vice-versa)', async () => {
+  async function permissionPrecendenceIndividualGroup(
+    prisma,
+    individualRecompute
+  ) {
     // create a catalog collection
     const catalogCollection = await prisma.catalogCollection.create({
       data: {
@@ -663,10 +666,29 @@ describe('Unit tests covering the creation of derived permissions', () => {
     })
 
     // trigger recomputation of derived permissions for the catalog collection
-    await recomputeDerivedPermissions(
-      { catalogCollectionId: catalogCollection.id },
-      prisma
-    )
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { catalogCollectionId: catalogCollection.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { catalogCollectionId: catalogCollection.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { catalogCollectionId: catalogCollection.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { catalogCollectionId: catalogCollection.id, userId: userFour.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions(
+        { catalogCollectionId: catalogCollection.id },
+        prisma
+      )
+    }
 
     // verify that the correct derived permission entries have been created
     // user 1 (OWNER), user 2 (WRITE - group), user 3 (WRITE - individual), user 4 (ADMIN - individual)
@@ -755,6 +777,14 @@ describe('Unit tests covering the creation of derived permissions', () => {
     expect(directPermissionsCount).toBe(0)
     const derivedPermissionsCount = await prisma.derivedPermission.count()
     expect(derivedPermissionsCount).toBe(0)
+  }
+
+  it('Verify that individual permissions have precedence over user group permissions if higher (and vice-versa) (individual derived permission recomputation with userId)', async () => {
+    await permissionPrecendenceIndividualGroup(prisma, true)
+  })
+
+  it('Verify that individual permissions have precedence over user group permissions if higher (and vice-versa) (object-level derived permission recomputation without userId)', async () => {
+    await permissionPrecendenceIndividualGroup(prisma, false)
   })
 
   it('Verify that on removal of direct group permissions, individual derived permissions are also removed', async () => {

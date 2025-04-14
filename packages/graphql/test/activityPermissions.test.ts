@@ -30,7 +30,7 @@ const getDatabaseUrl = () => {
   return 'postgresql://klicker:klicker@localhost:5432/klicker'
 }
 
-describe('Unit tests covering the creation of derived permissions', () => {
+describe('Unit tests covering the creation of derived permissions for activities', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
