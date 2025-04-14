@@ -371,6 +371,18 @@ export async function manipulateQuestion(
     ctx.prisma
   )
 
+  // if the answer collection linked to the question has changed, recompute the derived permissions for the removed answer collection
+  if (
+    questionPrev?.answerCollectionId !== null &&
+    typeof questionPrev?.answerCollectionId !== 'undefined' &&
+    question.answerCollectionId !== questionPrev.answerCollectionId
+  ) {
+    await recomputeDerivedPermissions(
+      { answerCollectionId: questionPrev.answerCollectionId },
+      ctx.prisma
+    )
+  }
+
   ctx.emitter.emit('invalidate', {
     typename: 'Element',
     id: question.id,
@@ -984,6 +996,11 @@ export async function updateElementInstances(
     return acc
   }, [])
 
+  // keep track of answer collections for which the assignment / link to a template was modified
+  // --> update of derived permissions is required
+  let touchedAnswerCollectionIds: number[] = []
+
+  // execute the instance updates
   const updatedInstances = (
     await Promise.allSettled(
       Object.values(instanceData).map(
@@ -1099,6 +1116,12 @@ export async function updateElementInstances(
               (id) => !templateCollectionIds.includes(id)
             )
 
+            // add all answer collections that were added or removed to the touched ones for a derived permissions update
+            touchedAnswerCollectionIds = touchedAnswerCollectionIds.concat([
+              ...collectionsToDisconnect,
+              ...collectionsToConnect,
+            ])
+
             // check if the list of answer collection ids in the template and the ones used in the instance coincide, otherwise update these links
             if (
               collectionsToConnect.length > 0 ||
@@ -1165,6 +1188,18 @@ export async function updateElementInstances(
     if (result.status !== 'fulfilled' || !result.value) return []
     return result.value
   })
+
+  if (includeTemplates) {
+    // reduce the list of touched answer collections to unique values
+    const uniqueTouchedAnswerCollectionIds = [
+      ...new Set(touchedAnswerCollectionIds),
+    ]
+
+    // recompute the derived permissions for all touched answer collections
+    for (const id of uniqueTouchedAnswerCollectionIds) {
+      await recomputeDerivedPermissions({ answerCollectionId: id }, ctx.prisma)
+    }
+  }
 
   return updatedInstances
 }

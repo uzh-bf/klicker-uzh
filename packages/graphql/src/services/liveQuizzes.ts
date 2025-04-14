@@ -547,6 +547,7 @@ export async function manipulateLiveQuiz(
 
   // in EDIT mode - check which instances and blocks should be removed
   let instancesToDelete: number[] = []
+  let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
   let blocksToDelete: number[] = []
   if (id) {
     const instances = await ctx.prisma.elementInstance.findMany({
@@ -565,6 +566,7 @@ export async function manipulateLiveQuiz(
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
+    unlinkedElementIds = instances.map((instance) => instance.elementId)
     blocksToDelete = blocks.map((block) => block.id)
   }
 
@@ -682,13 +684,14 @@ export async function manipulateLiveQuiz(
       },
     })
 
-    await recomputeDerivedPermissions(
-      {
-        liveQuizId: upsertedQuiz.id,
-      },
-      prisma
-    )
+    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+    if (unlinkedElementIds.length > 0) {
+      for (const elementId of unlinkedElementIds) {
+        await recomputeDerivedPermissions({ elementId }, prisma)
+      }
+    }
 
+    await recomputeDerivedPermissions({ liveQuizId: upsertedQuiz.id }, prisma)
     return upsertedQuiz
   })
 
