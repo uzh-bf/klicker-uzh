@@ -1,10 +1,18 @@
 import {
+  ElementInstanceType,
+  ElementStackType,
+  ElementType,
   ObjectAccess,
+  PermissionLevel,
   PrismaClient,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
+import {
+  MISSING_CATALOG_COLLECTION_ID,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -129,44 +137,2576 @@ describe('Unit tests covering the creation of derived permissions for courses', 
 
   // ! Course permissions tests
   // #region
-  // TODO: Verify that owner and direct permissions are correctly copied into the derived permissions table
-  // TODO: Verify that group permissions are correctly expanded into individual derived permissions
-  // TODO: Verify that the higher direct permission (individual or group) takes precedence
-  // TODO: Verify that when deleting direct permissions the corresponding derived permissions are removed
-  // TODO: Verify that when using the recomputation function with a userId, only the corresponding derived permissions are updated
-  // -> test adding permissions, updating permissions, removing permissions, deduplication with group permissions, removal & adding of group permissions
+  async function createCourse(prisma) {
+    return await prisma.course.create({
+      data: {
+        name: 'Test Course',
+        displayName: 'Test Course',
+        pinCode: 1000,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+  }
 
-  // ? Course -> Activity
-  // TODO: Verify that minimum required permissions are correctly granted on activities for individual users
-  // --> according to table in DOCX
-  // TODO: Verify that propagated permissions are correctly granted on activities for individual users
-  // --> according to table in DOCX
-  // TODO: Verify that minimum required permissions are correctly granted on activities for user groups
-  // --> according to table in DOCX
-  // TODO: Verify that propagated permissions are correctly granted on activities for user groups
-  // --> according to table in DOCX
-  // TODO: Verify that revoking access to the course also revokes access to the activity (assuming no direct access)
-  // TODO: Verify that revoking group access to the course also revokes access to the activity (assuming no direct access)
-  // TODO: Verify that revoking group access to the course does not revoke access to the activity if individual access exists
-  // TODO: Verify that direct access to the activity takes precedence over course access (if higher; individual recomputation with userId)
-  // TODO: Verify that direct group access to the activity takes precedence over course access (if higher; individual recomputation with userId)
-  // TODO: Verify that derived access from the course takes precedence over direct access to the activity (if higher; individual recomputation with userId)
-  // TODO: Verify that derived access from the course takes precedence over direct group access to the activity (if higher; individual recomputation with userId)
-  // TODO: Verify that direct access to the activity takes precedence over course access (if higher; object recomputation without userId)
-  // TODO: Verify that direct group access to the activity takes precedence over course access (if higher; object recomputation without userId)
-  // TODO: Verify that derived access from the course takes precedence over direct access to the activity (if higher; object recomputation without userId)
-  // TODO: Verify that derived access from the course takes precedence over direct group access to the activity (if higher; object recomputation without userId)
+  it('Verify that owner and direct permissions are correctly copied into the derived permissions table', async () => {
+    // create a course
+    const course = await createCourse(prisma)
+
+    // create direct permissions on the course for users 2, 3, 4, and 5 with permission levels READ, WRITE, ADMIN, and EXECUTE
+    const directReadPermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const directWritePermission = await prisma.permission.create({
+      data: {
+        userId: userThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const directAdminPermission = await prisma.permission.create({
+      data: {
+        userId: userFour.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const directExecutePermission = await prisma.permission.create({
+      data: {
+        userId: userFive.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the correct derived permissions have been created
+    // user 1 (OWNER), user 2 (READ), user 3 (WRITE), user 4 (ADMIN), user 5 (EXECUTE)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      directReadPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserThree!.directPermissionId).toBe(
+      directWritePermission.id
+    )
+    expect(derivedPermissionUserThree!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFour).toBeTruthy()
+    expect(derivedPermissionUserFour!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFour!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionUserFour!.derived).toBeFalsy()
+
+    const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFive.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.EXECUTE
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      directExecutePermission.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeFalsy()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.course.delete({ where: { id: course.id } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  })
+
+  it('Verify that group permissions are correctly expanded into individual derived permissions', async () => {
+    // create a course
+    const course = await createCourse(prisma)
+
+    // create four user groups with users 2 and 3, 3 and 4, 4 and 5 and 5 only respectively
+    const userGroup2 = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 2',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userTwo.id }, { id: userThree.id }],
+        },
+      },
+    })
+    const userGroup3 = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 3',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userThree.id }, { id: userFour.id }],
+        },
+      },
+    })
+    const userGroup4 = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 4',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userFour.id }, { id: userFive.id }],
+        },
+      },
+    })
+    const userGroup5 = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 5',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userFive.id }],
+        },
+      },
+    })
+
+    // create group permissions on the course for user groups 2, 3, 4, and 5 with permission levels READ, WRITE, ADMIN, and EXECUTE
+    const activityReadPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup2.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const activityWritePermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup3.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const activityAdminPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup4.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const activityExecutePermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup5.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the correct derived permissions have been created
+    // user 1 (OWNER), user 2 (READ), user 3 (WRITE), user 4 (ADMIN), user 5 (ADMIN)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      activityReadPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserThree!.directPermissionId).toBe(
+      activityWritePermission.id
+    )
+    expect(derivedPermissionUserThree!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFour).toBeTruthy()
+    expect(derivedPermissionUserFour!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFour!.directPermissionId).toBe(
+      activityAdminPermission.id
+    )
+    expect(derivedPermissionUserFour!.derived).toBeFalsy()
+
+    const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFive.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      activityAdminPermission.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeFalsy()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.userGroup.deleteMany({
+      where: {
+        id: {
+          in: [userGroup2.id, userGroup3.id, userGroup4.id, userGroup5.id],
+        },
+      },
+    })
+    await prisma.course.delete({ where: { id: course.id } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  })
+
+  async function testCoursePermissionsPrecedence(prisma, recomputeIndividual) {
+    // create a course
+    const course = await createCourse(prisma)
+
+    // create a user group with users 2, 3, 4, and 5
+    const userGroup = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 2',
+        ownerId: userOne.id,
+        members: {
+          connect: [
+            { id: userTwo.id },
+            { id: userThree.id },
+            { id: userFour.id },
+            { id: userFive.id },
+          ],
+        },
+      },
+    })
+
+    // grant WRITE permissions to the user group
+    const groupPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
+    // grant individual READ, WRITE, ADMIN and EXECUTE permissions to users 2, 3, 4, and 5
+    const individualReadPermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const individualWritePermission = await prisma.permission.create({
+      data: {
+        userId: userThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const individualAdminPermission = await prisma.permission.create({
+      data: {
+        userId: userFour.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const individualExecutePermission = await prisma.permission.create({
+      data: {
+        userId: userFive.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    if (recomputeIndividual) {
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFour.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFive.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    }
+
+    // verify that the correct derived permissions have been created
+    // user 1 (OWNER), user 2 (WRITE - group), user 3 (WRITE - group / individual), user 4 (ADMIN - individual), user 5 (WRITE - group)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      groupPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect([individualWritePermission.id, groupPermission.id]).toContain(
+      derivedPermissionUserThree!.directPermissionId
+    )
+    expect(derivedPermissionUserThree!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFour).toBeTruthy()
+    expect(derivedPermissionUserFour!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFour!.directPermissionId).toBe(
+      individualAdminPermission.id
+    )
+    expect(derivedPermissionUserFour!.derived).toBeFalsy()
+
+    const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFive.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      groupPermission.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeFalsy()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.userGroup.delete({
+      where: { id: userGroup.id },
+    })
+    const dbUserGroups = await prisma.userGroup.count()
+    expect(dbUserGroups).toBe(0)
+    await prisma.course.delete({ where: { id: course.id } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  }
+
+  it('Verify that the higher direct permission (individual or group) takes precedence (individual derived permission computation)', async () => {
+    await testCoursePermissionsPrecedence(prisma, true)
+  })
+
+  it('Verify that the higher direct permission (individual or group) takes precedence (object-level derived permission computation)', async () => {
+    await testCoursePermissionsPrecedence(prisma, false)
+  })
+
+  it('Verify that when deleting direct permissions the corresponding derived permissions are removed', async () => {
+    // create a course
+    const course = await createCourse(prisma)
+
+    // grant individual WRITE permission to user 2
+    const individualWritePermission = await prisma.permission.create({
+      data: {
+        userId: userThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the correct derived permissions have been created
+    // user 2 (WRITE - individual)
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userThree.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      individualWritePermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    // delete the individual WRITE permission
+    await prisma.permission.delete({
+      where: { id: individualWritePermission.id },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the derived permission has been removed
+    const derivedPermissionUserTwoAfterDeletion =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserTwoAfterDeletion).toBeNull()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.course.delete({ where: { id: course.id } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  })
+
+  it('Verify that when using the recomputation function with a userId, only the corresponding derived permissions are updated', async () => {
+    // create a course
+    const course = await createCourse(prisma)
+
+    // grant individual READ and WRITE permissions to users 2 and 3
+    const courseReadPermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const courseWritePermission = await prisma.permission.create({
+      data: {
+        userId: userThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
+    // trigger recomputation of derived permissions for user 2
+    await recomputeDerivedPermissions(
+      { courseId: course.id, userId: userTwo.id },
+      prisma
+    )
+
+    // verify that the derived permission for user 2 has been created, the one for user 3 not yet
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      courseReadPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeNull()
+
+    // update the direct permission for user 2 to WRITE
+    await prisma.permission.update({
+      where: { id: courseReadPermission.id },
+      data: { permissionLevel: PermissionLevel.WRITE },
+    })
+
+    // trigger recomputation of derived permissions for user 2
+    await recomputeDerivedPermissions(
+      { courseId: course.id, userId: userTwo.id },
+      prisma
+    )
+
+    // verify that the derived permission for user 2 has been updated
+    const updatedDerivedPermissionUserTwo =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(updatedDerivedPermissionUserTwo).toBeTruthy()
+    expect(updatedDerivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(updatedDerivedPermissionUserTwo!.directPermissionId).toBe(
+      courseReadPermission.id
+    )
+    expect(updatedDerivedPermissionUserTwo!.derived).toBeFalsy()
+
+    // delete the individual permission for user 2
+    await prisma.permission.delete({
+      where: { id: courseReadPermission.id },
+    })
+
+    // trigger recomputation of derived permissions for user 2
+    await recomputeDerivedPermissions(
+      { courseId: course.id, userId: userTwo.id },
+      prisma
+    )
+
+    // verify that the derived permission for user 2 has been removed
+    const derivedPermissionUserTwoAfterDeletion =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserTwoAfterDeletion).toBeNull()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.course.delete({ where: { id: course.id } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  })
+
+  // ? Course -> Activity (propagation of permissions already covered in activity permissions test suite)
+  async function createPracticeQuiz(prisma) {
+    // create a course
+    const course = await prisma.course.create({
+      data: {
+        name: 'Course',
+        displayName: 'Course',
+        pinCode: 1000,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // create an element
+    const element = await prisma.element.create({
+      data: {
+        type: ElementType.SC,
+        name: 'Element',
+        content: 'Content',
+        options: {},
+        ownerId: userOne.id,
+      },
+    })
+
+    // create a practice quiz that contains an instance of the element
+    const activity = await prisma.practiceQuiz.create({
+      data: {
+        name: 'Activity',
+        displayName: 'Activity',
+        description: 'Description',
+        ownerId: userOne.id,
+        courseId: course.id,
+        stacks: {
+          create: [
+            {
+              type: ElementStackType.PRACTICE_QUIZ,
+              order: 0,
+              elements: {
+                create: [
+                  {
+                    order: 0,
+                    elementId: element.id,
+                    migrationId: '',
+                    type: ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: ElementType.SC,
+                    options: {},
+                    elementData: {} as ChoicesElementData,
+                    results: {} as ElementInstanceResults,
+                    anonymousResults: {} as ElementInstanceResults,
+                    ownerId: userOne.id,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    return { element, activity, course }
+  }
+
+  async function deleteActivityCourse(prisma, elementId, activityId, courseId) {
+    await prisma.element.delete({ where: { id: elementId } })
+    const dbElements = await prisma.element.count()
+    expect(dbElements).toBe(0)
+    await prisma.practiceQuiz.delete({ where: { id: activityId } })
+    const dbActivities = await prisma.practiceQuiz.count()
+    expect(dbActivities).toBe(0)
+    await prisma.course.delete({ where: { id: courseId } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  }
+
+  it('Verify that revoking access to the course also revokes access to the activity (assuming no direct access)', async () => {
+    const { element, activity, course } = await createPracticeQuiz(prisma)
+
+    // grant individual WRITE permission to user 2
+    const individualWritePermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation: false,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the correct derived permissions have been created
+    // user 2 (READ - individual)
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        practiceQuizId_userId: {
+          practiceQuizId: activity.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      individualWritePermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeTruthy()
+
+    // delete the direct permission on the course
+    await prisma.permission.delete({
+      where: { id: individualWritePermission.id },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the derived permission on the activity for user 2 was removed
+    const derivedPermissionUserTwoAfterDeletion =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserTwoAfterDeletion).toBeNull()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await deleteActivityCourse(prisma, element.id, activity.id, course.id)
+  })
+
+  it('Verify that revoking group access to the course also revokes access to the activity (assuming no direct access)', async () => {
+    const { element, activity, course } = await createPracticeQuiz(prisma)
+
+    // create a user group with users 2 and 3
+    const userGroup = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 2',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userTwo.id }, { id: userThree.id }],
+        },
+      },
+    })
+
+    // grant direct WRITE access with propagation on the course to the user group
+    const groupPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation: true,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the users were granted derived WRITE access to the activity
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserThree!.directPermissionId).toBe(
+      groupPermission.id
+    )
+    expect(derivedPermissionUserThree!.derived).toBeTruthy()
+
+    // delete the group permission on the course
+    await prisma.permission.delete({
+      where: { id: groupPermission.id },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the derived permission on the activity for user 3 was removed
+    const derivedPermissionUserThreeAfterDeletion =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThreeAfterDeletion).toBeNull()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.userGroup.delete({
+      where: { id: userGroup.id },
+    })
+    const dbUserGroups = await prisma.userGroup.count()
+    expect(dbUserGroups).toBe(0)
+    await deleteActivityCourse(prisma, element.id, activity.id, course.id)
+  })
+
+  it('Verify that revoking group access to the course does not revoke access to the activity if individual access exists', async () => {
+    const { element, activity, course } = await createPracticeQuiz(prisma)
+
+    // create a user group with users 2 and 3
+    const userGroup = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 2',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userTwo.id }, { id: userThree.id }],
+        },
+      },
+    })
+
+    // grant direct WRITE access with propagation on the course to the user group
+    const groupPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroup.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation: true,
+      },
+    })
+
+    // grant direct READ access on the activity to user 2
+    const individualReadPermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.READ,
+        propagation: false,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the users were granted derived WRITE access to the activity
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        practiceQuizId_userId: {
+          practiceQuizId: activity.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      groupPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeTruthy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserThree!.directPermissionId).toBe(
+      groupPermission.id
+    )
+    expect(derivedPermissionUserThree!.derived).toBeTruthy()
+
+    // revoke the group permission on the course
+    await prisma.permission.delete({
+      where: { id: groupPermission.id },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that user 2 retains READ access on the activity, while the access for user 3 has been revoked completely
+    const derivedPermissionUserTwoAfterDeletion =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserTwoAfterDeletion).toBeTruthy()
+    expect(derivedPermissionUserTwoAfterDeletion!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(derivedPermissionUserTwoAfterDeletion!.directPermissionId).toBe(
+      individualReadPermission.id
+    )
+    expect(derivedPermissionUserTwoAfterDeletion!.derived).toBeFalsy()
+
+    const derivedPermissionUserThreeAfterDeletion =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThreeAfterDeletion).toBeNull()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.userGroup.delete({
+      where: { id: userGroup.id },
+    })
+    const dbUserGroups = await prisma.userGroup.count()
+    expect(dbUserGroups).toBe(0)
+    await deleteActivityCourse(prisma, element.id, activity.id, course.id)
+  })
+
+  async function individualPermissionsCourseActivityPrecedence(
+    prisma,
+    individualRecompute,
+    propagation
+  ) {
+    const { element, activity, course } = await createPracticeQuiz(prisma)
+
+    // grant individual READ, EXECUTE, WRITE, and ADMIN access on course to users 2, 3, 4, and 5
+    const directReadPermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+        propagation,
+      },
+    })
+    const directExecutePermission = await prisma.permission.create({
+      data: {
+        userId: userThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+        propagation,
+      },
+    })
+    const directWritePermission = await prisma.permission.create({
+      data: {
+        userId: userFour.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation,
+      },
+    })
+    const directAdminPermission = await prisma.permission.create({
+      data: {
+        userId: userFive.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        propagation,
+      },
+    })
+
+    // grant individual ADMIN, WRITE, EXECUTE, and READ access directly on activity to users 2, 3, 4, and
+    // propagation parameter is not set here - does not affect granted permissions on dependent objects
+    const activityAdminPermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const activityWritePermission = await prisma.permission.create({
+      data: {
+        userId: userThree.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const activityExecutePermission = await prisma.permission.create({
+      data: {
+        userId: userFour.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+      },
+    })
+    const activityReadPermission = await prisma.permission.create({
+      data: {
+        userId: userFive.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFour.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFive.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    }
+
+    // verify that the correct derived permissions have been created
+    // (propagation disabled) user 1 (OWNER), user 2 (ADMIN - activity), user 3 (WRITE - activity), user 4 (EXECUTE - activity), user 5 (ADMIN - course)
+    // (propagation enabled)user 1 (OWNER), user 2 (ADMIN - activity), user 3 (WRITE - activity), user 4 (WRITE - course), user 5 (ADMIN - course)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        practiceQuizId_userId: {
+          practiceQuizId: activity.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      activityAdminPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserThree!.directPermissionId).toBe(
+      activityWritePermission.id
+    )
+    expect(derivedPermissionUserThree!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFour).toBeTruthy()
+    if (propagation) {
+      expect(derivedPermissionUserFour!.permissionLevel).toBe(
+        PermissionLevel.WRITE
+      )
+      expect(derivedPermissionUserFour!.directPermissionId).toBe(
+        directWritePermission.id
+      )
+      expect(derivedPermissionUserFour!.derived).toBeTruthy()
+    } else {
+      expect(derivedPermissionUserFour!.permissionLevel).toBe(
+        PermissionLevel.EXECUTE
+      )
+      expect(derivedPermissionUserFour!.directPermissionId).toBe(
+        activityExecutePermission.id
+      )
+      expect(derivedPermissionUserFour!.derived).toBeFalsy()
+    }
+
+    const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userFive.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeTruthy()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await deleteActivityCourse(prisma, element.id, activity.id, course.id)
+  }
+
+  it('Verify that direct access to the activity takes precedence over course access if higher and vice-versa (without propagation, individual recomputation with userId)', async () => {
+    await individualPermissionsCourseActivityPrecedence(prisma, true, false)
+  })
+
+  it('Verify that direct access to the activity takes precedence over course access if higher and vice-versa (without propagation, object recomputation without userId)', async () => {
+    await individualPermissionsCourseActivityPrecedence(prisma, false, false)
+  })
+
+  it('Verify that direct access to the activity takes precedence over course access if higher and vice-versa (with propagation, individual recomputation with userId)', async () => {
+    await individualPermissionsCourseActivityPrecedence(prisma, true, true)
+  })
+
+  it('Verify that direct access to the activity takes precedence over course access if higher and vice-versa (with propagation, object recomputation without userId)', async () => {
+    await individualPermissionsCourseActivityPrecedence(prisma, false, true)
+  })
+
+  async function GroupPermissionsCourseActivityPrecedence(
+    prisma,
+    individualRecompute,
+    propagation
+  ) {
+    const { element, activity, course } = await createPracticeQuiz(prisma)
+
+    // create single pariticipant user groups with users 2, 3, 4, and 5
+    const userGroupTwo = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 2',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userTwo.id }],
+        },
+      },
+    })
+    const userGroupThree = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 3',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userThree.id }],
+        },
+      },
+    })
+    const userGroupFour = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 4',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userFour.id }],
+        },
+      },
+    })
+    const userGroupFive = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 5',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userFive.id }],
+        },
+      },
+    })
+
+    // grant group READ, EXECUTE, WRITE, and ADMIN access on course to users 2, 3, 4, and 5
+    const directReadPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+        propagation,
+      },
+    })
+    const directExecutePermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+        propagation,
+      },
+    })
+    const directWritePermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupFour.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation,
+      },
+    })
+    const directAdminPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupFive.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        propagation,
+      },
+    })
+
+    // grant individual ADMIN, WRITE, EXECUTE, and READ access directly on activity to users 2, 3, 4, and
+    // propagation parameter is not set here - does not affect granted permissions on dependent objects
+    const activityAdminPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupTwo.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const activityWritePermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupThree.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const activityExecutePermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupFour.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+      },
+    })
+    const activityReadPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupFive.id,
+        practiceQuizId: activity.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFour.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFive.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    }
+
+    // verify that the correct derived permissions have been created
+    // (propagation disabled) user 1 (OWNER), user 2 (ADMIN - activity), user 3 (WRITE - activity), user 4 (EXECUTE - activity), user 5 (ADMIN - course)
+    // (propagation enabled)user 1 (OWNER), user 2 (ADMIN - activity), user 3 (WRITE - activity), user 4 (WRITE - course), user 5 (ADMIN - course)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        practiceQuizId_userId: {
+          practiceQuizId: activity.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      activityAdminPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserThree!.directPermissionId).toBe(
+      activityWritePermission.id
+    )
+    expect(derivedPermissionUserThree!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFour).toBeTruthy()
+    if (propagation) {
+      expect(derivedPermissionUserFour!.permissionLevel).toBe(
+        PermissionLevel.WRITE
+      )
+      expect(derivedPermissionUserFour!.directPermissionId).toBe(
+        directWritePermission.id
+      )
+      expect(derivedPermissionUserFour!.derived).toBeTruthy()
+    } else {
+      expect(derivedPermissionUserFour!.permissionLevel).toBe(
+        PermissionLevel.EXECUTE
+      )
+      expect(derivedPermissionUserFour!.directPermissionId).toBe(
+        activityExecutePermission.id
+      )
+      expect(derivedPermissionUserFour!.derived).toBeFalsy()
+    }
+
+    const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userFive.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeTruthy()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.userGroup.deleteMany({
+      where: {
+        id: {
+          in: [
+            userGroupTwo.id,
+            userGroupThree.id,
+            userGroupFour.id,
+            userGroupFive.id,
+          ],
+        },
+      },
+    })
+    const dbUserGroups = await prisma.userGroup.count()
+    expect(dbUserGroups).toBe(0)
+    await deleteActivityCourse(prisma, element.id, activity.id, course.id)
+  }
+
+  it('Verify that direct group access to the activity takes precedence over course access if higher and vice-versa (without propagation, individual recomputation with userId)', async () => {
+    await GroupPermissionsCourseActivityPrecedence(prisma, true, false)
+  })
+
+  it('Verify that direct group access to the activity takes precedence over course access if higher and vice-versa (without propagation, object recomputation without userId)', async () => {
+    await GroupPermissionsCourseActivityPrecedence(prisma, false, false)
+  })
+
+  it('Verify that direct group access to the activity takes precedence over course access if higher and vice-versa (with propagation, individual recomputation with userId)', async () => {
+    await GroupPermissionsCourseActivityPrecedence(prisma, true, true)
+  })
+
+  it('Verify that direct group access to the activity takes precedence over course access if higher and vice-versa (with propagation, object recomputation without userId)', async () => {
+    await GroupPermissionsCourseActivityPrecedence(prisma, false, true)
+  })
 
   // ? Course -> Activity -> Element -> Answer Collection
-  // TODO: Verify that minimum required permissions are correctly passed down from course all the way down to answer collection
-  // --> according to table in DOCX (test different levels on course)
-  // TODO: Verify that propagated permissions are correctly passed down from course all the way down to answer collection
-  // --> according to table in DOCX (test different levels on course)
-  // TODO: Verify that minimum required permissions from direct group permission on course are correctly passed down to answer collection
-  // --> according to table in DOCX (test different levels on course)
-  // TODO: Verify that propagated permissions from direct group permission on course are correctly passed down to answer collection
-  // --> according to table in DOCX (test different levels on course)
-  // TODO: Verify that revoking access to the course also revokes access to the elements and answer collection (assuming no direct access)
+  async function createCourseWithActivityElementResource(prisma) {
+    // create an answer collection
+    const answerCollection = await prisma.answerCollection.create({
+      data: {
+        name: 'Answer Collection',
+        description: 'Description',
+        ownerId: userTwo.id,
+      },
+    })
+
+    // create an element that contains an instance of the answer collection
+    const element = await prisma.element.create({
+      data: {
+        type: ElementType.SC,
+        name: 'Element',
+        content: 'Content',
+        options: {},
+        ownerId: userOne.id,
+        answerCollectionId: answerCollection.id,
+      },
+    })
+
+    // create a course
+    const course = await prisma.course.create({
+      data: {
+        name: 'Course',
+        displayName: 'Course',
+        pinCode: 1000,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // create an activity that contains an instance of the element
+    const activity = await prisma.practiceQuiz.create({
+      data: {
+        name: 'Activity',
+        displayName: 'Activity',
+        description: 'Description',
+        ownerId: userOne.id,
+        courseId: course.id,
+        stacks: {
+          create: [
+            {
+              type: ElementStackType.PRACTICE_QUIZ,
+              order: 0,
+              elements: {
+                create: [
+                  {
+                    order: 0,
+                    elementId: element.id,
+                    migrationId: '',
+                    type: ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: ElementType.SC,
+                    options: {},
+                    elementData: {} as ChoicesElementData,
+                    results: {} as ElementInstanceResults,
+                    anonymousResults: {} as ElementInstanceResults,
+                    ownerId: userOne.id,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    return { answerCollection, element, activity, course }
+  }
+
+  async function deleteFullCourse(
+    prisma,
+    courseId,
+    elementId,
+    answerCollectionId
+  ) {
+    await prisma.course.delete({ where: { id: courseId } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    await prisma.element.delete({ where: { id: elementId } })
+    const dbElements = await prisma.element.count()
+    expect(dbElements).toBe(0)
+    await prisma.answerCollection.delete({
+      where: { id: answerCollectionId },
+    })
+    const dbAnswerCollections = await prisma.answerCollection.count()
+    expect(dbAnswerCollections).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  }
+
+  async function testFullCoursePropagationIndividual(
+    prisma,
+    individualRecompute,
+    propagation
+  ) {
+    // answer collection owned by user 2, element, activity and course all owned by user 1
+    const { answerCollection, element, activity, course } =
+      await createCourseWithActivityElementResource(prisma)
+
+    // grant individual permissions on the course with READ, EXECUTE, WRITE, and ADMIN level to users 2, 3, 4, and 5
+    const directReadPermission = await prisma.permission.create({
+      data: {
+        userId: userTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+        propagation,
+      },
+    })
+    const directExecutePermission = await prisma.permission.create({
+      data: {
+        userId: userThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+        propagation,
+      },
+    })
+    const directWritePermission = await prisma.permission.create({
+      data: {
+        userId: userFour.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation,
+      },
+    })
+    const directAdminPermission = await prisma.permission.create({
+      data: {
+        userId: userFive.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        propagation,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFour.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFive.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    }
+
+    // verify that the correct derived permissions on the course have been created
+    // user 1 (OWNER), user 2 (READ), user 3 (EXECUTE), user 4 (WRITE), user 5 (ADMIN)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      directReadPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.EXECUTE
+    )
+    expect(derivedPermissionUserThree!.directPermissionId).toBe(
+      directExecutePermission.id
+    )
+    expect(derivedPermissionUserThree!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFour).toBeTruthy()
+    expect(derivedPermissionUserFour!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserFour!.directPermissionId).toBe(
+      directWritePermission.id
+    )
+    expect(derivedPermissionUserFour!.derived).toBeFalsy()
+
+    const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFive.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeFalsy()
+
+    // verify that the correct derived permissions on the practice quiz (activity) have been created
+    // (propagation disabled) user 1 (OWNER), user 2 (READ), user 3 (EXECUTE), user 4 (READ), user 5 (ADMIN)
+    // (propagation enabled) user 1 (OWNER), user 2 (READ), user 3 (EXECUTE), user 4 (WRITE), user 5 (ADMIN)
+    const derivedPermissionActivityUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserOne).toBeTruthy()
+    expect(derivedPermissionActivityUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionActivityUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionActivityUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionActivityUserTwo =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserTwo).toBeTruthy()
+    expect(derivedPermissionActivityUserTwo!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(derivedPermissionActivityUserTwo!.directPermissionId).toBe(
+      directReadPermission.id
+    )
+    expect(derivedPermissionActivityUserTwo!.derived).toBeTruthy()
+
+    const derivedPermissionActivityUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserThree).toBeTruthy()
+    expect(derivedPermissionActivityUserThree!.permissionLevel).toBe(
+      PermissionLevel.EXECUTE
+    )
+    expect(derivedPermissionActivityUserThree!.directPermissionId).toBe(
+      directExecutePermission.id
+    )
+    expect(derivedPermissionActivityUserThree!.derived).toBeTruthy()
+
+    const derivedPermissionActivityUserFour =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userFour.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserFour).toBeTruthy()
+    expect(derivedPermissionActivityUserFour!.permissionLevel).toBe(
+      propagation ? PermissionLevel.WRITE : PermissionLevel.READ
+    )
+    expect(derivedPermissionActivityUserFour!.directPermissionId).toBe(
+      directWritePermission.id
+    )
+    expect(derivedPermissionActivityUserFour!.derived).toBeTruthy()
+
+    const derivedPermissionActivityUserFive =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userFive.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserFive).toBeTruthy()
+    expect(derivedPermissionActivityUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionActivityUserFive!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionActivityUserFive!.derived).toBeTruthy()
+
+    // verify that the correct derived permissions on the element have been created
+    // user 1 (OWNER), user 2 (no access), user 3 (no access), user 4 (no access), user 5 (ADMIN)
+    const derivedPermissionElementUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserOne).toBeTruthy()
+    expect(derivedPermissionElementUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionElementUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionElementUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionElementUserTwo =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserTwo).toBeNull()
+
+    const derivedPermissionElementUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserThree).toBeNull()
+
+    const derivedPermissionElementUserFour =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userFour.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserFour).toBeNull()
+
+    const derivedPermissionElementUserFive =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userFive.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserFive).toBeTruthy()
+    expect(derivedPermissionElementUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionElementUserFive!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionElementUserFive!.derived).toBeTruthy()
+
+    // verify that the correct derived permissions on the answer collection have been created
+    // user 1 (READ), user 2 (OWNER), user 3 (no access), user 4 (no access), user 5 (READ)
+    const derivedPermissionAnswerCollectionUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserOne).toBeTruthy()
+    expect(derivedPermissionAnswerCollectionUserOne!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(
+      derivedPermissionAnswerCollectionUserOne!.directPermissionId
+    ).toBeNull()
+    expect(derivedPermissionAnswerCollectionUserOne!.derived).toBeTruthy()
+
+    const derivedPermissionAnswerCollectionUserTwo =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserTwo).toBeTruthy()
+    expect(derivedPermissionAnswerCollectionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(
+      derivedPermissionAnswerCollectionUserTwo!.directPermissionId
+    ).toBeNull()
+    expect(derivedPermissionAnswerCollectionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionAnswerCollectionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserThree).toBeNull()
+
+    const derivedPermissionAnswerCollectionUserFour =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userFour.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserFour).toBeNull()
+
+    const derivedPermissionAnswerCollectionUserFive =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userFive.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserFive).toBeTruthy()
+    expect(derivedPermissionAnswerCollectionUserFive!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(derivedPermissionAnswerCollectionUserFive?.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionAnswerCollectionUserFive!.derived).toBeTruthy()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await deleteFullCourse(prisma, course.id, element.id, answerCollection.id)
+  }
+
+  it('Verify that minimum required permissions are correctly passed down from course all the way down to answer collection (individual derived permission recomputation)', async () => {
+    await testFullCoursePropagationIndividual(prisma, true, false)
+  })
+
+  it('Verify that minimum required permissions are correctly passed down from course all the way down to answer collection (object-level derived permission recomputation)', async () => {
+    await testFullCoursePropagationIndividual(prisma, false, false)
+  })
+
+  it('Verify that propagated permissions are correctly passed down from course all the way down to answer collection (individual derived permission recomputation)', async () => {
+    await testFullCoursePropagationIndividual(prisma, true, true)
+  })
+
+  it('Verify that propagated permissions are correctly passed down from course all the way down to answer collection (object-level derived permission recomputation)', async () => {
+    await testFullCoursePropagationIndividual(prisma, false, true)
+  })
+
+  async function testFullCoursePropagationGroups(
+    prisma,
+    individualRecompute,
+    propagation
+  ) {
+    // answer collection owned by user 2, element, activity and course all owned by user 1
+    const { answerCollection, element, activity, course } =
+      await createCourseWithActivityElementResource(prisma)
+
+    // create single pariticipant user groups with users 2, 3, 4, and 5
+    const userGroupTwo = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 2',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userTwo.id }],
+        },
+      },
+    })
+    const userGroupThree = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 3',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userThree.id }],
+        },
+      },
+    })
+    const userGroupFour = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 4',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userFour.id }],
+        },
+      },
+    })
+    const userGroupFive = await prisma.userGroup.create({
+      data: {
+        name: 'User Group 5',
+        ownerId: userOne.id,
+        members: {
+          connect: [{ id: userFive.id }],
+        },
+      },
+    })
+
+    // grant group permissions on the course with READ, EXECUTE, WRITE, and ADMIN level to users 2, 3, 4, and 5
+    const directReadPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupTwo.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.READ,
+        propagation,
+      },
+    })
+    const directExecutePermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.EXECUTE,
+        propagation,
+      },
+    })
+    const directWritePermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupFour.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation,
+      },
+    })
+    const directAdminPermission = await prisma.permission.create({
+      data: {
+        userGroupId: userGroupFive.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        propagation,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userTwo.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userThree.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFour.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userFive.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    }
+
+    // verify that the correct derived permissions on the course have been created
+    // user 1 (OWNER), user 2 (READ), user 3 (EXECUTE), user 4 (WRITE), user 5 (ADMIN)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        courseId_userId: {
+          courseId: course.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermissionUserTwo!.directPermissionId).toBe(
+      directReadPermission.id
+    )
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionUserThree).toBeTruthy()
+    expect(derivedPermissionUserThree!.permissionLevel).toBe(
+      PermissionLevel.EXECUTE
+    )
+    expect(derivedPermissionUserThree!.directPermissionId).toBe(
+      directExecutePermission.id
+    )
+    expect(derivedPermissionUserThree!.derived).toBeFalsy()
+
+    const derivedPermissionUserFour = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFour.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFour).toBeTruthy()
+    expect(derivedPermissionUserFour!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+    expect(derivedPermissionUserFour!.directPermissionId).toBe(
+      directWritePermission.id
+    )
+    expect(derivedPermissionUserFour!.derived).toBeFalsy()
+
+    const derivedPermissionUserFive = await prisma.derivedPermission.findUnique(
+      {
+        where: {
+          courseId_userId: {
+            courseId: course.id,
+            userId: userFive.id,
+          },
+        },
+      }
+    )
+    expect(derivedPermissionUserFive).toBeTruthy()
+    expect(derivedPermissionUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserFive!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionUserFive!.derived).toBeFalsy()
+
+    // verify that the correct derived permissions on the practice quiz (activity) have been created
+    // (propagation disabled) user 1 (OWNER), user 2 (READ), user 3 (EXECUTE), user 4 (READ), user 5 (ADMIN)
+    // (propagation enabled) user 1 (OWNER), user 2 (READ), user 3 (EXECUTE), user 4 (WRITE), user 5 (ADMIN)
+    const derivedPermissionActivityUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserOne).toBeTruthy()
+    expect(derivedPermissionActivityUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionActivityUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionActivityUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionActivityUserTwo =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserTwo).toBeTruthy()
+    expect(derivedPermissionActivityUserTwo!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(derivedPermissionActivityUserTwo!.directPermissionId).toBe(
+      directReadPermission.id
+    )
+    expect(derivedPermissionActivityUserTwo!.derived).toBeTruthy()
+
+    const derivedPermissionActivityUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserThree).toBeTruthy()
+    expect(derivedPermissionActivityUserThree!.permissionLevel).toBe(
+      PermissionLevel.EXECUTE
+    )
+    expect(derivedPermissionActivityUserThree!.directPermissionId).toBe(
+      directExecutePermission.id
+    )
+    expect(derivedPermissionActivityUserThree!.derived).toBeTruthy()
+
+    const derivedPermissionActivityUserFour =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userFour.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserFour).toBeTruthy()
+    expect(derivedPermissionActivityUserFour!.permissionLevel).toBe(
+      propagation ? PermissionLevel.WRITE : PermissionLevel.READ
+    )
+    expect(derivedPermissionActivityUserFour!.directPermissionId).toBe(
+      directWritePermission.id
+    )
+    expect(derivedPermissionActivityUserFour!.derived).toBeTruthy()
+
+    const derivedPermissionActivityUserFive =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: activity.id,
+            userId: userFive.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserFive).toBeTruthy()
+    expect(derivedPermissionActivityUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionActivityUserFive!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionActivityUserFive!.derived).toBeTruthy()
+
+    // verify that the correct derived permissions on the element have been created
+    // user 1 (OWNER), user 2 (no access), user 3 (no access), user 4 (no access), user 5 (ADMIN)
+    const derivedPermissionElementUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserOne).toBeTruthy()
+    expect(derivedPermissionElementUserOne!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionElementUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionElementUserOne!.derived).toBeFalsy()
+
+    const derivedPermissionElementUserTwo =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserTwo).toBeNull()
+
+    const derivedPermissionElementUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserThree).toBeNull()
+
+    const derivedPermissionElementUserFour =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userFour.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserFour).toBeNull()
+
+    const derivedPermissionElementUserFive =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: element.id,
+            userId: userFive.id,
+          },
+        },
+      })
+    expect(derivedPermissionElementUserFive).toBeTruthy()
+    expect(derivedPermissionElementUserFive!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionElementUserFive!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionElementUserFive!.derived).toBeTruthy()
+
+    // verify that the correct derived permissions on the answer collection have been created
+    // user 1 (READ), user 2 (OWNER), user 3 (no access), user 4 (no access), user 5 (READ)
+    const derivedPermissionAnswerCollectionUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserOne).toBeTruthy()
+    expect(derivedPermissionAnswerCollectionUserOne!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(
+      derivedPermissionAnswerCollectionUserOne!.directPermissionId
+    ).toBeNull()
+    expect(derivedPermissionAnswerCollectionUserOne!.derived).toBeTruthy()
+
+    const derivedPermissionAnswerCollectionUserTwo =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserTwo).toBeTruthy()
+    expect(derivedPermissionAnswerCollectionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(
+      derivedPermissionAnswerCollectionUserTwo!.directPermissionId
+    ).toBeNull()
+    expect(derivedPermissionAnswerCollectionUserTwo!.derived).toBeFalsy()
+
+    const derivedPermissionAnswerCollectionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserThree).toBeNull()
+
+    const derivedPermissionAnswerCollectionUserFour =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userFour.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserFour).toBeNull()
+
+    const derivedPermissionAnswerCollectionUserFive =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userFive.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserFive).toBeTruthy()
+    expect(derivedPermissionAnswerCollectionUserFive!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(derivedPermissionAnswerCollectionUserFive?.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionAnswerCollectionUserFive!.derived).toBeTruthy()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.userGroup.deleteMany({
+      where: {
+        id: {
+          in: [
+            userGroupTwo.id,
+            userGroupThree.id,
+            userGroupFour.id,
+            userGroupFive.id,
+          ],
+        },
+      },
+    })
+    const dbUserGroups = await prisma.userGroup.count()
+    expect(dbUserGroups).toBe(0)
+    await deleteFullCourse(prisma, course.id, element.id, answerCollection.id)
+  }
+
+  it('Verify that minimum required permissions from direct group permission on course are correctly passed down to answer collection (individual derived permission recomputation)', async () => {
+    await testFullCoursePropagationGroups(prisma, true, false)
+  })
+
+  it('Verify that minimum required permissions from direct group permission on course are correctly passed down to answer collection (object-level derived permission recomputation)', async () => {
+    await testFullCoursePropagationGroups(prisma, false, false)
+  })
+
+  it('Verify that propagated permissions from direct group permission on course are correctly passed down to answer collection (individual derived permission recomputation)', async () => {
+    await testFullCoursePropagationGroups(prisma, true, true)
+  })
+
+  it('Verify that propagated permissions from direct group permission on course are correctly passed down to answer collection (object-level derived permission recomputation)', async () => {
+    await testFullCoursePropagationGroups(prisma, false, true)
+  })
+
+  it('Verify that revoking access to the course also revokes access to the elements and answer collection (assuming no direct access)', async () => {
+    const { answerCollection, element, activity, course } =
+      await createCourseWithActivityElementResource(prisma)
+
+    // grant individual admin access to the course to user 3
+    const directAdminPermission = await prisma.permission.create({
+      data: {
+        userId: userThree.id,
+        courseId: course.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        propagation: true,
+      },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that a derived READ permission on the answer collection has been created for user 3
+    const derivedPermissionAnswerCollectionUserThree =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserThree).toBeTruthy()
+    expect(derivedPermissionAnswerCollectionUserThree!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+    expect(derivedPermissionAnswerCollectionUserThree!.directPermissionId).toBe(
+      directAdminPermission.id
+    )
+    expect(derivedPermissionAnswerCollectionUserThree!.derived).toBeTruthy()
+
+    // revoke the direct access to the course
+    await prisma.permission.delete({
+      where: { id: directAdminPermission.id },
+    })
+
+    // trigger recomputation of derived permissions
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    // verify that the derived permission on the answer collection has been removed
+    const derivedPermissionAnswerCollectionUserThree2 =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: answerCollection.id,
+            userId: userThree.id,
+          },
+        },
+      })
+    expect(derivedPermissionAnswerCollectionUserThree2).toBeNull()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await deleteFullCourse(prisma, course.id, element.id, answerCollection.id)
+  })
+
   // #endregion
 
   it('Remove all created data and users & verify their deletion', async () => {
