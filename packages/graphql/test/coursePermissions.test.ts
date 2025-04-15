@@ -2707,6 +2707,99 @@ describe('Unit tests covering the creation of derived permissions for courses', 
     await deleteFullCourse(prisma, course.id, element.id, answerCollection.id)
   })
 
+  async function testOwnerPropagationToActivity(prisma, individualRecompute) {
+    // create a course with user 1 as the owner
+    const course = await prisma.course.create({
+      data: {
+        name: 'Course',
+        displayName: 'Course',
+        pinCode: 2000,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // create an activity with user 2 as the owner
+    const activity = await prisma.liveQuiz.create({
+      data: {
+        name: 'Activity',
+        displayName: 'Activity',
+        description: 'Description',
+        ownerId: userTwo.id,
+        courseId: course.id,
+      },
+    })
+
+    // trigger recomputation of the derived permissions on the course
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userTwo.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    }
+
+    // verify that the correct derived permissions have been created on the activity
+    // user 1 (ADMIN - derived from course ownership), user 2 (OWNER)
+    const derivedPermissionActivityUserOne =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          liveQuizId_userId: {
+            liveQuizId: activity.id,
+            userId: userOne.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserOne).toBeTruthy()
+    expect(derivedPermissionActivityUserOne!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionActivityUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionActivityUserOne!.derived).toBeTruthy()
+
+    const derivedPermissionActivityUserTwo =
+      await prisma.derivedPermission.findUnique({
+        where: {
+          liveQuizId_userId: {
+            liveQuizId: activity.id,
+            userId: userTwo.id,
+          },
+        },
+      })
+    expect(derivedPermissionActivityUserTwo).toBeTruthy()
+    expect(derivedPermissionActivityUserTwo!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionActivityUserTwo!.directPermissionId).toBeNull()
+    expect(derivedPermissionActivityUserTwo!.derived).toBeFalsy()
+
+    // cleanup: remove all created objects and verify the deletion of all corresponding permissions
+    await prisma.liveQuiz.delete({ where: { id: activity.id } })
+    const dbActivities = await prisma.liveQuiz.count()
+    expect(dbActivities).toBe(0)
+    await prisma.course.delete({ where: { id: course.id } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    const dbPermissions = await prisma.derivedPermission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDirectPermissions = await prisma.permission.count()
+    expect(dbDirectPermissions).toBe(0)
+  }
+
+  it('Verify that owner permissions are correctly propagated to required activities (user-specific derived permissions recomputation)', async () => {
+    await testOwnerPropagationToActivity(prisma, true)
+  })
+
+  it('Verify that owner permissions are correctly propagated to required activities (object-level derived permissions recomputation)', async () => {
+    await testOwnerPropagationToActivity(prisma, false)
+  })
   // #endregion
 
   it('Remove all created data and users & verify their deletion', async () => {

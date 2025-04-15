@@ -699,7 +699,7 @@ async function recomputeElementPermissionsUser(
           ],
         },
       },
-      // fetch all instances that are included in acitvities where the user has admin permissions -> derived admin permissions
+      // fetch all instances that are included in acitvities where the user has admin / owner permissions -> derived admin permissions
       elementInstances: {
         take: 1, // a single instance in the corresponding activity is sufficient for admin permissions
         where: {
@@ -2322,40 +2322,41 @@ function getActivityAccessFromCourse({
   directCoursePermission,
 }: {
   coursePermissionLevel: DB.PermissionLevel
-  directCoursePermission: DB.Permission
+  directCoursePermission?: DB.Permission | null
 }) {
   let maxAccessLevel: DB.PermissionLevel | undefined = undefined
   let parentPermissionId: number | undefined = undefined
   let derived = false
 
   switch (coursePermissionLevel) {
-    // if the user has ADMIN permissions on the course, these rights need to be propagated for sharing functionalities to work properly
+    // if the user has ADMIN (or OWNER) permissions on the course, these rights need to be propagated for sharing functionalities to work properly
+    case DB.PermissionLevel.OWNER:
     case DB.PermissionLevel.ADMIN:
       maxAccessLevel = DB.PermissionLevel.ADMIN
-      parentPermissionId = directCoursePermission.id!
+      parentPermissionId = directCoursePermission?.id
       derived = true
       break
 
     // if the user has WRITE permissions on the course, READ or WRITE access is derived (depending on propagation setting)
     case DB.PermissionLevel.WRITE:
-      maxAccessLevel = directCoursePermission.propagation
+      maxAccessLevel = directCoursePermission?.propagation
         ? DB.PermissionLevel.WRITE
         : DB.PermissionLevel.READ
-      parentPermissionId = directCoursePermission.id!
+      parentPermissionId = directCoursePermission?.id
       derived = true
       break
 
     // if the user has EXECUTION permissions on the course, propagate these rights
     case DB.PermissionLevel.EXECUTE:
       maxAccessLevel = DB.PermissionLevel.EXECUTE
-      parentPermissionId = directCoursePermission.id!
+      parentPermissionId = directCoursePermission?.id
       derived = true
       break
 
     // if the user has READ permissions on the course, automatically also add READ permissions on the quiz
     case DB.PermissionLevel.READ:
       maxAccessLevel = DB.PermissionLevel.READ
-      parentPermissionId = directCoursePermission.id!
+      parentPermissionId = directCoursePermission?.id
       derived = true
       break
   }
@@ -2405,10 +2406,7 @@ function getActivityPermissionsUser({
     }
 
     // is the user is also granted access to the course the object is contained in, we need to check it for higher derived permission levels
-    if (
-      (coursePermissions.length ?? -1) > 0 &&
-      !!coursePermissions[0]?.directPermission
-    ) {
+    if ((coursePermissions.length ?? -1) > 0) {
       // if the user has more than one derived permission on the linked element, something went wrong
       if (coursePermissions.length !== 1) {
         throw new Error(
@@ -2426,7 +2424,7 @@ function getActivityPermissionsUser({
         derived: courseDerived,
       } = getActivityAccessFromCourse({
         coursePermissionLevel: permission.permissionLevel,
-        directCoursePermission: permission.directPermission!,
+        directCoursePermission: permission.directPermission,
       })
 
       // check if the derived access level is higher than the currently known maximum one
@@ -2502,7 +2500,10 @@ function getActivityPermissionsObject({
             // get the corresponding direct permission
             const directCoursePermission = coursePermission.directPermission
 
-            if (!directCoursePermission) {
+            if (
+              !directCoursePermission &&
+              coursePermission.permissionLevel !== DB.PermissionLevel.OWNER
+            ) {
               return acc
             }
 
@@ -2513,7 +2514,7 @@ function getActivityPermissionsObject({
               derived: courseDerived,
             } = getActivityAccessFromCourse({
               coursePermissionLevel: coursePermission.permissionLevel,
-              directCoursePermission: coursePermission.directPermission!,
+              directCoursePermission: coursePermission.directPermission,
             })
 
             // if the user is granted derived access through the course permission and this access level is higher than the current one, update it

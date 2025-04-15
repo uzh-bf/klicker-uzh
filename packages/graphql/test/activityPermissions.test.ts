@@ -3111,6 +3111,220 @@ describe('Unit tests covering the creation of derived permissions for activities
   it('LQ: Verify that when sufficient direct group permission exists on live quiz for derived permissions on elements, derived permissions are extended to answer collections', async () => {
     await testActivityAnswerCollectionPropagation(prisma, true)
   })
+
+  async function testOwnerPropagationToElement(prisma, individualRecompute) {
+    // create an element with user 2 as the owner
+    const element = await prisma.element.create({
+      data: {
+        type: ElementType.SC,
+        name: 'Element',
+        content: 'Content',
+        options: {},
+        ownerId: userTwo.id,
+      },
+    })
+
+    // create an activity that contains an instance of the element with user 1 as the owner
+    const activity = await prisma.liveQuiz.create({
+      data: {
+        name: 'Activity',
+        displayName: 'Activity',
+        description: 'Description',
+        ownerId: userOne.id,
+        blocks: {
+          create: [
+            {
+              order: 0,
+              elements: {
+                create: [
+                  {
+                    order: 0,
+                    elementId: element.id,
+                    migrationId: '',
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    elementType: ElementType.SC,
+                    options: {},
+                    elementData: {} as ChoicesElementData,
+                    results: {} as ElementInstanceResults,
+                    anonymousResults: {} as ElementInstanceResults,
+                    ownerId: userOne.id,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    // trigger recomputation of the derived permissions on the activity
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { elementId: element.id, userId: userTwo.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ liveQuizId: activity.id }, prisma)
+    }
+
+    // verify that the correct derived permission entries have been created on the element
+    // user 1 (ADMIN - derived from activity), user 2 (OWNER)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        elementId_userId: {
+          elementId: element.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeTruthy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        elementId_userId: {
+          elementId: element.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserTwo!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
+    await prisma.liveQuiz.delete({ where: { id: activity.id } })
+    const dbActivityCount = await prisma.liveQuiz.count()
+    expect(dbActivityCount).toBe(0)
+    await prisma.element.delete({ where: { id: element.id } })
+    const dbElements = await prisma.element.count()
+    expect(dbElements).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  }
+
+  it('Verify that owner permissions are correctly propagated to required elements (user-specific derived permissions recomputation)', async () => {
+    await testOwnerPropagationToElement(prisma, true)
+  })
+
+  it('Verify that owner permissions are correctly propagated to required elements (object-level derived permissions recomputation)', async () => {
+    await testOwnerPropagationToElement(prisma, false)
+  })
+
+  async function testOwnerPropagationFromCourse(prisma, individualRecompute) {
+    // create a course with user 1 as the owner
+    const course = await prisma.course.create({
+      data: {
+        name: 'Course',
+        displayName: 'Course',
+        pinCode: 2000,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // trigger recomputation of the derived permissions on the course
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { courseId: course.id, userId: userOne.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+    }
+
+    // create an activity that is linked to the course with user 2 as the owner
+    const activity = await prisma.liveQuiz.create({
+      data: {
+        name: 'Activity',
+        displayName: 'Activity',
+        description: 'Description',
+        ownerId: userTwo.id,
+        courseId: course.id,
+      },
+    })
+
+    // trigger recomputation of the derived permissions on the activity
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { liveQuizId: activity.id, userId: userTwo.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ liveQuizId: activity.id }, prisma)
+    }
+
+    // verify that the correct derived permission entries have been created on the activity
+    // user 1 (ADMIN - derived from course), user 2 (OWNER)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        liveQuizId_userId: {
+          liveQuizId: activity.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserOne!.derived).toBeTruthy()
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        liveQuizId_userId: {
+          liveQuizId: activity.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserTwo!.directPermissionId).toBeNull()
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy()
+
+    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
+    await prisma.liveQuiz.delete({ where: { id: activity.id } })
+    const dbActivityCount = await prisma.liveQuiz.count()
+    expect(dbActivityCount).toBe(0)
+    await prisma.course.delete({ where: { id: course.id } })
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  }
+
+  it('Verify that owner permissions are correctly propagated from dependent courses (user-specific derived permissions recomputation)', async () => {
+    await testOwnerPropagationFromCourse(prisma, true)
+  })
+
+  it('Verify that owner permissions are correctly propagated from dependent courses (object-level derived permissions recomputation)', async () => {
+    await testOwnerPropagationFromCourse(prisma, false)
+  })
   // #endregion
 
   // ! Practice quiz permissions tests (reduced due to shared logic with live quiz)

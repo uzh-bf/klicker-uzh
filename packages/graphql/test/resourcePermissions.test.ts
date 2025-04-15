@@ -3042,6 +3042,113 @@ describe('Unit tests covering the creation of derived permissions for resources 
     const derivedPermissionsCount = await prisma.derivedPermission.count()
     expect(derivedPermissionsCount).toBe(0)
   })
+
+  async function testOwnerPermissionPropagation(prisma, individualRecompute) {
+    // create an answer collection (user 2 as owner)
+    const answerCollection = await prisma.answerCollection.create({
+      data: {
+        name: 'Answer Collection',
+        description: 'Description',
+        ownerId: userTwo.id,
+      },
+    })
+
+    // create an element (user 1 as owner)
+    const element = await prisma.element.create({
+      data: {
+        type: ElementType.SELECTION,
+        name: 'Element',
+        content: 'Content',
+        options: {},
+        ownerId: userOne.id,
+      },
+    })
+
+    // trigger recomputation of derived permissions for the element
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { elementId: element.id, userId: userOne.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions({ elementId: element.id }, prisma)
+    }
+
+    // connect the element to the answer collection
+    await prisma.element.update({
+      where: { id: element.id },
+      data: {
+        answerCollectionId: answerCollection.id,
+      },
+    })
+
+    // trigger the recomputation of derived permissions for the answer collection
+    if (individualRecompute) {
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id, userId: userOne.id },
+        prisma
+      )
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id, userId: userTwo.id },
+        prisma
+      )
+    } else {
+      await recomputeDerivedPermissions(
+        { answerCollectionId: answerCollection.id },
+        prisma
+      )
+    }
+
+    // verify that the derived permissions for the answer collection are correct
+    // user 1 (READ - derived from element ownership), user 2 (OWNER)
+    const derivedPermissionUserOne = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: answerCollection.id,
+          userId: userOne.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserOne).toBeTruthy()
+    expect(derivedPermissionUserOne!.permissionLevel).toBe(PermissionLevel.READ)
+    expect(derivedPermissionUserOne!.directPermissionId).toBeNull() // no direct permission
+    expect(derivedPermissionUserOne!.derived).toBeTruthy() // permission is derived from another object permission
+
+    const derivedPermissionUserTwo = await prisma.derivedPermission.findUnique({
+      where: {
+        answerCollectionId_userId: {
+          answerCollectionId: answerCollection.id,
+          userId: userTwo.id,
+        },
+      },
+    })
+    expect(derivedPermissionUserTwo).toBeTruthy()
+    expect(derivedPermissionUserTwo!.permissionLevel).toBe(
+      PermissionLevel.OWNER
+    )
+    expect(derivedPermissionUserTwo!.directPermissionId).toBeNull() // no direct permission
+    expect(derivedPermissionUserTwo!.derived).toBeFalsy() // permission is not derived from another object permission
+
+    // cleanup: delete all created objects and user groups
+    await prisma.element.delete({ where: { id: element.id } })
+    const elementCount = await prisma.element.count()
+    expect(elementCount).toBe(0)
+    await prisma.answerCollection.delete({ where: { id: answerCollection.id } })
+    const answerCollectionCount = await prisma.answerCollection.count()
+    expect(answerCollectionCount).toBe(0)
+    const directPermissionsCount = await prisma.permission.count()
+    expect(directPermissionsCount).toBe(0)
+    const derivedPermissionsCount = await prisma.derivedPermission.count()
+    expect(derivedPermissionsCount).toBe(0)
+  }
+
+  it('Verify that owner permissions are correctly propagated from dependent elements (user-specific derived permissions recomputation)', async () => {
+    await testOwnerPermissionPropagation(prisma, true)
+  })
+
+  it('Verify that owner permissions are correctly propagated from dependent elements (object-level derived permissions recomputation)', async () => {
+    await testOwnerPermissionPropagation(prisma, false)
+  })
   // #endregion
 
   it('Remove all created data and users & verify their deletion', async () => {
