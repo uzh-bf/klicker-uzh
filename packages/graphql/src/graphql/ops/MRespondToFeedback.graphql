@@ -1,5 +1,13 @@
-mutation RespondToFeedback($id: Int!, $responseContent: String!) {
-  respondToFeedback(id: $id, responseContent: $responseContent) {
+mutation RespondToFeedback(
+  $id: Int!
+  $responseContent: String!
+  $liveQuizId: String!
+) {
+  respondToFeedback(
+    id: $id
+    responseContent: $responseContent
+    liveQuizId: $liveQuizId
+  ) {
     id
     isPublished
     isPinned

@@ -1382,8 +1382,8 @@ type Mutation {
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
   deleteCourse(id: String!): Course
-  deleteFeedback(id: Int!): Feedback
-  deleteFeedbackResponse(id: Int!): Feedback
+  deleteFeedback(id: Int!, liveQuizId: String!): Feedback
+  deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
   deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
@@ -1437,8 +1437,8 @@ type Mutation {
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
-  pinFeedback(id: Int!, isPinned: Boolean!): Feedback
-  publishFeedback(id: Int!, isPublished: Boolean!): Feedback
+  pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
+  publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
@@ -1449,9 +1449,9 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
-  resolveFeedback(id: Int!, isResolved: Boolean!): Feedback
+  resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
-  respondToFeedback(id: Int!, responseContent: String!): Feedback
+  respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
   revokeObjectAccess(objectId: String!, objectType: CatalogObjectType!, permissionId: Int!): Int
   runningRandomGroupAssignments: Boolean!
   sendMagicLink(usernameOrEmail: String!): Boolean

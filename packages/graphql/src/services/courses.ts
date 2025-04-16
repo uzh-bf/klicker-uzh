@@ -1,7 +1,6 @@
 import {
   ElementOrderType,
   LeaderboardType,
-  PermissionLevel,
   PublicationStatus,
   TimelineEntryType,
   UserRole,
@@ -945,46 +944,12 @@ export async function deleteCourse(
   // live quizzes, which are only disconnected from the course need to be handled separately
   // elements that are contained in asynchronous activities (cascading delete) need to be updated manually
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [PermissionLevel.ADMIN, PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
+    where: { id },
     include: {
       liveQuizzes: true,
-      practiceQuizzes: {
-        include: {
-          stacks: {
-            include: {
-              elements: true,
-            },
-          },
-        },
-      },
-      microLearnings: {
-        include: {
-          stacks: {
-            include: {
-              elements: true,
-            },
-          },
-        },
-      },
-      groupActivities: {
-        include: {
-          stacks: {
-            include: {
-              elements: true,
-            },
-          },
-        },
-      },
+      practiceQuizzes: { include: { stacks: { include: { elements: true } } } },
+      microLearnings: { include: { stacks: { include: { elements: true } } } },
+      groupActivities: { include: { stacks: { include: { elements: true } } } },
     },
   })
 
@@ -995,12 +960,7 @@ export async function deleteCourse(
   const deletedCourse = await ctx.prisma.$transaction(async (prisma) => {
     // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
     // live quizzes are disconnected from the course on deletion
-    const deleted = await prisma.course.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-    })
+    const deleted = await prisma.course.delete({ where: { id } })
 
     // trigger a recomputation of all permissions related to the live quizzes of the course
     // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
@@ -1029,6 +989,7 @@ export async function deleteCourse(
         ),
       ]),
     ]
+
     for (const elementId of elementIds) {
       await recomputeDerivedPermissions({ elementId }, prisma)
     }
@@ -1036,11 +997,7 @@ export async function deleteCourse(
     return deleted
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'Course',
-    id,
-  })
-
+  ctx.emitter.emit('invalidate', { typename: 'Course', id })
   return deletedCourse
 }
 
@@ -1602,13 +1559,8 @@ export async function enableGamification(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      isGamificationEnabled: true,
-    },
+    where: { id: courseId },
+    data: { isGamificationEnabled: true },
   })
 
   return course

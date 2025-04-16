@@ -85,19 +85,9 @@ import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
 export const Query = builder.queryType({
   fields(t) {
-    const asAuthenticated = t.withAuth({
-      authenticated: true,
-    })
-
-    const asParticipant = t.withAuth({
-      authenticated: true,
-      role: DB.UserRole.PARTICIPANT,
-    })
-
-    const asUser = t.withAuth({
-      authenticated: true,
-      role: DB.UserRole.USER,
-    })
+    const asAuthenticated = { authenticated: true }
+    const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
+    const asUser = { authenticated: true, role: DB.UserRole.USER }
 
     return {
       self: t.field({
@@ -111,7 +101,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      selfWithAchievements: asParticipant.field({
+      selfWithAchievements: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantWithAchievements,
         async resolve(_, __, ctx) {
@@ -120,7 +110,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      publicParticipantProfile: asParticipant.field({
+      publicParticipantProfile: t.withAuth(asParticipant).field({
         nullable: true,
         type: Participant,
         args: {
@@ -131,7 +121,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      controlCourse: asUser.field({
+      // TODO: potentially update access control
+      controlCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         args: {
@@ -153,7 +144,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getLoginToken: asUser.field({
+      // TODO: potentially update access control
+      getLoginToken: t.withAuth(asUser).field({
         nullable: true,
         type: User,
         resolve(_, ___, ctx) {
@@ -161,7 +153,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userTags: asUser.field({
+      // TODO: potentially update access control
+      userTags: t.withAuth(asUser).field({
         nullable: true,
         type: [Tag],
         async resolve(_, __, ctx) {
@@ -176,7 +169,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userMediaFiles: asUser.field({
+      // TODO: potentially update access control
+      userMediaFiles: t.withAuth(asUser).field({
         nullable: true,
         type: [MediaFile],
         async resolve(_, __, ctx) {
@@ -202,7 +196,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userProfile: asUser.field({
+      // TODO: potentially update access control
+      userProfile: t.withAuth(asUser).field({
         nullable: true,
         type: User,
         async resolve(_, __, ctx) {
@@ -216,7 +211,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userScope: asUser.field({
+      // TODO: potentially update access control
+      userScope: t.withAuth(asUser).field({
         nullable: true,
         type: UserLoginScope,
         resolve(_, __, ctx) {
@@ -224,7 +220,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userQuestions: asUser.field({
+      // TODO: potentially update access control
+      userQuestions: t.withAuth(asUser).field({
         nullable: true,
         type: [Element],
         resolve(_, __, ctx) {
@@ -232,7 +229,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userCourses: asUser.field({
+      // TODO: potentially update access control
+      userCourses: t.withAuth(asUser).field({
         nullable: true,
         type: [Course],
         resolve(_, __, ctx) {
@@ -240,7 +238,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getActiveUserCourses: asUser.field({
+      // TODO: potentially update access control
+      getActiveUserCourses: t.withAuth(asUser).field({
         nullable: true,
         type: [Course],
         resolve(_, __, ctx) {
@@ -248,7 +247,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseSummary: asUser.field({
+      // TODO: potentially update access control
+      getCourseSummary: t.withAuth(asUser).field({
         nullable: true,
         type: CourseSummary,
         args: {
@@ -259,7 +259,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      participantCourses: asParticipant.field({
+      participantCourses: t.withAuth(asParticipant).field({
         nullable: true,
         type: [Course],
         resolve(_, __, ctx) {
@@ -267,7 +267,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      unassignedLiveQuizzes: asUser.field({
+      // TODO: potentially update access control
+      unassignedLiveQuizzes: t.withAuth(asUser).field({
         nullable: true,
         type: [LiveQuiz],
         resolve(_, __, ctx) {
@@ -286,7 +287,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getLiveQuizSummary: asUser.field({
+      // TODO: potentially update access control
+      getLiveQuizSummary: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuizSummary,
         args: {
@@ -336,7 +338,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userRunningLiveQuizzes: asUser.field({
+      // TODO: potentially update access control
+      userRunningLiveQuizzes: t.withAuth(asUser).field({
         nullable: true,
         type: [LiveQuizInfo],
         resolve(_, __, ctx) {
@@ -344,7 +347,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      controlCourses: asUser.field({
+      // TODO: potentially update access control
+      controlCourses: t.withAuth(asUser).field({
         nullable: true,
         type: [Course],
         resolve(_, __, ctx) {
@@ -352,7 +356,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userLiveQuizzes: asUser.field({
+      // TODO: potentially update access control
+      userLiveQuizzes: t.withAuth(asUser).field({
         nullable: true,
         type: [LiveQuiz],
         resolve(_, __, ctx) {
@@ -360,7 +365,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      cockpitQuiz: asUser.field({
+      // TODO: potentially update access control
+      cockpitQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
         args: {
@@ -371,7 +377,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      controlLiveQuiz: asUser.field({
+      // TODO: potentially update access control
+      controlLiveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
         args: {
@@ -404,7 +411,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getPracticeQuizEvaluation: asUser.field({
+      // TODO: potentially update access control
+      getPracticeQuizEvaluation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityEvaluation,
         args: {
@@ -426,7 +434,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getMicroLearningEvaluation: asUser.field({
+      // TODO: potentially update access control
+      getMicroLearningEvaluation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityEvaluation,
         args: {
@@ -437,7 +446,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getSinglePracticeQuiz: asUser.field({
+      // TODO: potentially update access control
+      getSinglePracticeQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: PracticeQuiz,
         args: {
@@ -448,7 +458,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getSingleMicroLearning: asUser.field({
+      // TODO: potentially update access control
+      getSingleMicroLearning: t.withAuth(asUser).field({
         nullable: true,
         type: MicroLearning,
         args: {
@@ -482,7 +493,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      participantGroups: asAuthenticated.field({
+      participantGroups: t.withAuth(asAuthenticated).field({
         nullable: true,
         type: [ParticipantGroup],
         args: {
@@ -493,7 +504,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseGroups: asUser.field({
+      // TODO: potentially update access control
+      getCourseGroups: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         args: {
@@ -504,7 +516,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      liveQuizHMAC: asUser.field({
+      // TODO: potentially update access control
+      liveQuizHMAC: t.withAuth(asUser).field({
         nullable: true,
         type: 'String',
         args: {
@@ -515,7 +528,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getLecturerViewLiveQuiz: asUser.field({
+      // TODO: potentially update access control
+      getLecturerViewLiveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
         args: {
@@ -526,7 +540,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      course: asUser.field({
+      // TODO: potentially update access control
+      course: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         args: {
@@ -537,7 +552,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseLeaderboard: asUser.field({
+      // TODO: potentially update access control
+      getCourseLeaderboard: t.withAuth(asUser).field({
         nullable: true,
         type: CourseLeaderboard,
         args: {
@@ -555,7 +571,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      liveQuiz: asUser.field({
+      // TODO: potentially update access control
+      liveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
         args: {
@@ -566,7 +583,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      question: asUser.field({
+      // TODO: potentially update access control
+      question: t.withAuth(asUser).field({
         nullable: true,
         type: Element,
         args: {
@@ -577,7 +595,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getInstanceUpdateActivities: asUser.field({
+      // TODO: potentially update access control
+      getInstanceUpdateActivities: t.withAuth(asUser).field({
         nullable: true,
         type: [InstanceUpdateActivityInfo],
         args: {
@@ -590,7 +609,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      artificialInstance: asUser.field({
+      // TODO: potentially update access control
+      artificialInstance: t.withAuth(asUser).field({
         nullable: true,
         type: ElementInstance,
         args: {
@@ -601,7 +621,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getSingleElementInstance: asUser.field({
+      // TODO: potentially update access control
+      getSingleElementInstance: t.withAuth(asUser).field({
         nullable: true,
         type: ElementInstance,
         args: {
@@ -623,7 +644,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      participations: asParticipant.field({
+      participations: t.withAuth(asParticipant).field({
         nullable: true,
         type: [Participation],
         args: {
@@ -634,7 +655,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getPracticeCourses: asParticipant.field({
+      getPracticeCourses: t.withAuth(asParticipant).field({
         nullable: true,
         type: [Course],
         resolve(_, __, ctx) {
@@ -653,7 +674,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseOverviewData: asParticipant.field({
+      getCourseOverviewData: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,
         args: {
@@ -664,7 +685,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getStudentCourseLeaderboard: asParticipant.field({
+      getStudentCourseLeaderboard: t.withAuth(asParticipant).field({
         nullable: true,
         type: StudentCourseLeaderboard,
         args: {
@@ -676,7 +697,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      groupActivities: asParticipant.field({
+      groupActivities: t.withAuth(asParticipant).field({
         nullable: true,
         type: [GroupActivity],
         args: {
@@ -687,7 +708,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      groupActivityInstances: asParticipant.field({
+      groupActivityInstances: t.withAuth(asParticipant).field({
         nullable: true,
         type: [GroupActivityInstance],
         args: {
@@ -699,7 +720,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      groupActivityDetails: asParticipant.field({
+      groupActivityDetails: t.withAuth(asParticipant).field({
         nullable: true,
         type: GroupActivityDetails,
         args: {
@@ -711,7 +732,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getBookmarkedElementStacks: asParticipant.field({
+      getBookmarkedElementStacks: t.withAuth(asParticipant).field({
         nullable: true,
         type: [ElementStack],
         args: {
@@ -722,7 +743,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getStackElementFeedbacks: asParticipant.field({
+      getStackElementFeedbacks: t.withAuth(asParticipant).field({
         nullable: true,
         type: [ElementFeedback],
         args: {
@@ -733,7 +754,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getPracticeQuizList: asParticipant.field({
+      getPracticeQuizList: t.withAuth(asParticipant).field({
         nullable: true,
         type: [Course],
         resolve(_, __, ctx) {
@@ -741,7 +762,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseStudentTimelines: asParticipant.field({
+      getCourseStudentTimelines: t.withAuth(asParticipant).field({
         nullable: true,
         type: [CourseStudentTimeline],
         resolve(_, __, ctx) {
@@ -749,7 +770,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getPracticeQuizSummary: asUser.field({
+      // TODO: potentially update access control
+      getPracticeQuizSummary: t.withAuth(asUser).field({
         nullable: true,
         type: ActivitySummary,
         args: {
@@ -760,7 +782,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getMicroLearningSummary: asUser.field({
+      // TODO: potentially update access control
+      getMicroLearningSummary: t.withAuth(asUser).field({
         nullable: true,
         type: ActivitySummary,
         args: {
@@ -771,7 +794,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getGroupActivitySummary: asUser.field({
+      // TODO: potentially update access control
+      getGroupActivitySummary: t.withAuth(asUser).field({
         nullable: true,
         type: GroupActivitySummary,
         args: {
@@ -782,7 +806,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      userLogins: asUser.field({
+      // TODO: potentially update access control
+      userLogins: t.withAuth(asUser).field({
         nullable: true,
         type: [UserLogin],
         resolve(_, __, ctx) {
@@ -790,7 +815,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      groupActivity: asUser.field({
+      // TODO: potentially update access control
+      groupActivity: t.withAuth(asUser).field({
         nullable: true,
         type: GroupActivity,
         args: {
@@ -801,7 +827,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getGradingGroupActivity: asUser.field({
+      // TODO: potentially update access control
+      getGradingGroupActivity: t.withAuth(asUser).field({
         nullable: true,
         type: GroupActivity,
         args: {
@@ -859,7 +886,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      coursePracticeQuiz: asParticipant.field({
+      coursePracticeQuiz: t.withAuth(asParticipant).field({
         nullable: true,
         type: PracticeQuiz,
         args: {
@@ -870,7 +897,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getBookmarksPracticeQuiz: asParticipant.field({
+      getBookmarksPracticeQuiz: t.withAuth(asParticipant).field({
         nullable: true,
         type: ['Int'],
         args: {
@@ -882,7 +909,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseActivityAnalytics: asUser.field({
+      // TODO: potentially update access control
+      getCourseActivityAnalytics: t.withAuth(asUser).field({
         nullable: true,
         type: CourseActivityAnalytics,
         args: {
@@ -893,7 +921,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseWeeklyActivity: asUser.field({
+      // TODO: potentially update access control
+      getCourseWeeklyActivity: t.withAuth(asUser).field({
         nullable: true,
         type: WeeklyCourseActivities,
         args: {
@@ -904,7 +933,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCoursePerformanceAnalytics: asUser.field({
+      // TODO: potentially update access control
+      getCoursePerformanceAnalytics: t.withAuth(asUser).field({
         nullable: true,
         type: CoursePerformanceAnalytics,
         args: {
@@ -915,7 +945,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseActivities: asUser.field({
+      // TODO: potentially update access control
+      getCourseActivities: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         args: {
@@ -926,7 +957,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getActivityAnalytics: asUser.field({
+      // TODO: potentially update access control
+      getActivityAnalytics: t.withAuth(asUser).field({
         nullable: true,
         type: QuizAnalytics,
         args: {
@@ -937,7 +969,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getAnswerCollectionsElements: asUser.field({
+      // TODO: potentially update access control
+      getAnswerCollectionsElements: t.withAuth(asUser).field({
         nullable: true,
         type: [AnswerCollection],
         args: {
@@ -948,7 +981,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getAnswerCollectionsInfo: asUser.field({
+      // TODO: potentially update access control
+      getAnswerCollectionsInfo: t.withAuth(asUser).field({
         nullable: true,
         type: [AnswerCollection],
         resolve(_, __, ctx) {
@@ -956,7 +990,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getSingleAnswerCollection: asUser.field({
+      // TODO: potentially update access control
+      getSingleAnswerCollection: t.withAuth(asUser).field({
         nullable: true,
         type: AnswerCollection,
         args: {
@@ -967,7 +1002,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkTemplateInfoAvailable: asUser.field({
+      // TODO: potentially update access control
+      checkTemplateInfoAvailable: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityTemplateInfo,
         args: {
@@ -979,7 +1015,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getTemplateInformation: asUser.field({
+      // TODO: potentially update access control
+      getTemplateInformation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityTemplateMetadata,
         args: {
@@ -991,7 +1028,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getActivityTemplate: asUser.field({
+      // TODO: potentially update access control
+      getActivityTemplate: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityTemplate,
         args: {
@@ -1002,7 +1040,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getMatchingUserElementsTemplate: asUser.field({
+      // TODO: potentially update access control
+      getMatchingUserElementsTemplate: t.withAuth(asUser).field({
         nullable: true,
         type: [TemplateElementInformation],
         args: {
@@ -1015,7 +1054,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      checkTemplateElementExists: asUser.boolean({
+      // TODO: potentially update access control
+      checkTemplateElementExists: t.withAuth(asUser).boolean({
         nullable: false,
         args: {
           name: t.arg.string({ required: true }),
@@ -1025,7 +1065,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getTemplatePreviewAnswerCollectionEntries: asUser.field({
+      // TODO: potentially update access control
+      getTemplatePreviewAnswerCollectionEntries: t.withAuth(asUser).field({
         nullable: true,
         type: [AnswerCollectionPreviewEntry],
         args: {
@@ -1040,7 +1081,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getObjectPermissions: asUser.field({
+      // TODO: potentially update access control
+      getObjectPermissions: t.withAuth(asUser).field({
         nullable: true,
         type: [PermissionInfo],
         args: {
@@ -1070,7 +1112,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCatalogCollectionsList: asUser.field({
+      // TODO: potentially update access control
+      getCatalogCollectionsList: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogCollection],
         resolve(_, __, ctx) {
@@ -1078,7 +1121,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCatalogCollectionInfo: asUser.field({
+      // TODO: potentially update access control
+      getCatalogCollectionInfo: t.withAuth(asUser).field({
         nullable: true,
         type: CatalogCollection,
         args: {
@@ -1089,14 +1133,16 @@ export const Query = builder.queryType({
         },
       }),
 
-      countCatalogSharingRequests: asUser.int({
+      // TODO: potentially update access control
+      countCatalogSharingRequests: t.withAuth(asUser).int({
         nullable: false,
         resolve(_, __, ctx) {
           return SharingService.countCatalogSharingRequests(ctx)
         },
       }),
 
-      getCatalogSharingRequests: asUser.field({
+      // TODO: potentially update access control
+      getCatalogSharingRequests: t.withAuth(asUser).field({
         nullable: true,
         type: [ObjectSharingRequest],
         resolve(_, __, ctx) {
@@ -1104,7 +1150,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCatalogObjects: asUser.field({
+      // TODO: potentially update access control
+      getCatalogObjects: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogObject],
         args: {
@@ -1115,7 +1162,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCatalogAnswerCollections: asUser.field({
+      // TODO: potentially update access control
+      getCatalogAnswerCollections: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogSelectionObject],
         resolve(_, __, ctx) {
@@ -1123,7 +1171,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCatalogLiveQuizTemplates: asUser.field({
+      // TODO: potentially update access control
+      getCatalogLiveQuizTemplates: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogSelectionObject],
         resolve(_, __, ctx) {
@@ -1131,7 +1180,8 @@ export const Query = builder.queryType({
         },
       }),
 
-      getAnswerCollectionCatalogInfo: asUser.field({
+      // TODO: potentially update access control
+      getAnswerCollectionCatalogInfo: t.withAuth(asUser).field({
         nullable: true,
         type: AnswerCollection,
         args: {

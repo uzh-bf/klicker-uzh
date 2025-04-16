@@ -1,5 +1,5 @@
-mutation DeleteFeedbackResponse($id: Int!) {
-  deleteFeedbackResponse(id: $id) {
+mutation DeleteFeedbackResponse($id: Int!, $liveQuizId: String!) {
+  deleteFeedbackResponse(id: $id, liveQuizId: $liveQuizId) {
     id
     isPublished
     isPinned

@@ -175,7 +175,7 @@ function AudienceInteraction({
                   feedbacks={feedbacks}
                   handleDeleteFeedback={(feedbackId: number): void => {
                     deleteFeedback({
-                      variables: { id: feedbackId },
+                      variables: { id: feedbackId, liveQuizId: quizId },
                       optimisticResponse: {
                         deleteFeedback: {
                           id: feedbackId,
@@ -215,7 +215,7 @@ function AudienceInteraction({
                   }}
                   handleDeleteFeedbackResponse={(responseId: number) => {
                     deleteFeedbackResponse({
-                      variables: { id: responseId },
+                      variables: { id: responseId, liveQuizId: quizId },
                       update(cache, res) {
                         const updatedFeedback = res.data?.deleteFeedbackResponse
                         const data = cache.readQuery({
@@ -256,7 +256,11 @@ function AudienceInteraction({
                     isPinned: boolean
                   ) => {
                     pinFeedback({
-                      variables: { id: feedbackId, isPinned },
+                      variables: {
+                        id: feedbackId,
+                        isPinned,
+                        liveQuizId: quizId,
+                      },
                     })
                     push([
                       'trackEvent',
@@ -270,7 +274,11 @@ function AudienceInteraction({
                     isPublished: boolean
                   ) => {
                     publishFeedback({
-                      variables: { id: feedbackId, isPublished },
+                      variables: {
+                        id: feedbackId,
+                        isPublished,
+                        liveQuizId: quizId,
+                      },
                     })
                     push([
                       'trackEvent',
@@ -284,7 +292,11 @@ function AudienceInteraction({
                     isResolved: boolean
                   ) => {
                     resolveFeedback({
-                      variables: { id: feedbackId, isResolved },
+                      variables: {
+                        id: feedbackId,
+                        isResolved,
+                        liveQuizId: quizId,
+                      },
                     })
                     push([
                       'trackEvent',
@@ -301,6 +313,7 @@ function AudienceInteraction({
                       variables: {
                         id: feedbackId,
                         responseContent: response,
+                        liveQuizId: quizId,
                       },
                     })
                     push([

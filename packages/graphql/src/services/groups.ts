@@ -531,20 +531,9 @@ export async function manualRandomGroupAssignments(
       isGroupCreationEnabled: true,
     },
     include: {
-      groupAssignmentPoolEntries: {
-        orderBy: {
-          createdAt: 'asc',
-        },
-      },
+      groupAssignmentPoolEntries: { orderBy: { createdAt: 'asc' } },
       participantGroups: {
-        select: {
-          id: true,
-          participants: {
-            select: {
-              id: true,
-            },
-          },
-        },
+        select: { id: true, participants: { select: { id: true } } },
       },
     },
   })
@@ -571,9 +560,7 @@ export async function manualRandomGroupAssignments(
     if (courseExtendedPool.groupAssignmentPoolEntries.length === 0) {
       const courseUpdated = await ctx.prisma.course.update({
         where: { id: courseId },
-        data: {
-          randomAssignmentFinalized: true,
-        },
+        data: { randomAssignmentFinalized: true },
       })
 
       return courseUpdated
@@ -602,9 +589,7 @@ export async function manualRandomGroupAssignments(
           style: 'capital',
         }) + 's',
       code: 100000 + Math.floor(Math.random() * 900000),
-      participants: {
-        connect: group.map((id) => ({ id })),
-      },
+      participants: { connect: group.map((id) => ({ id })) },
     }))
 
     // update the course
@@ -613,23 +598,14 @@ export async function manualRandomGroupAssignments(
       data: {
         groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
         randomAssignmentFinalized: true,
-        participantGroups: {
-          create: newGroups,
-        },
-        groupAssignmentPoolEntries: {
-          deleteMany: {},
-        },
+        participantGroups: { create: newGroups },
+        groupAssignmentPoolEntries: { deleteMany: {} },
       },
-      include: {
-        participantGroups: true,
-      },
+      include: { participantGroups: true },
     })
 
     // invalidate the cache of the course and the group assignment pool entries
-    ctx.emitter.emit('invalidate', {
-      typename: 'Course',
-      id: courseId,
-    })
+    ctx.emitter.emit('invalidate', { typename: 'Course', id: courseId })
     courseExtendedPool.groupAssignmentPoolEntries.forEach((entry) => {
       ctx.emitter.emit('invalidate', {
         typename: 'GroupAssignmentPoolEntry',

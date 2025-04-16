@@ -82,6 +82,10 @@ import {
   UserLoginScope,
 } from './user.js'
 
+// shorthand for frequently accessed functions
+const checkAccess = SharingService.checkAccess
+const checkCatalogAssignment = SharingService.checkCatalogAssignment
+
 export const Mutation = builder.mutationType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
@@ -388,6 +392,21 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on course required
+          if (
+            !checkAccess(
+              [
+                {
+                  courseId: args.courseId,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return GroupService.manualRandomGroupAssignments(args, ctx)
         },
       }),
@@ -629,6 +648,21 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.cancelLiveQuiz(args, ctx)
         },
       }),
@@ -640,6 +674,21 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on course required
+          if (
+            !checkAccess(
+              [
+                {
+                  courseId: args.courseId,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return CourseService.enableGamification(args, ctx)
         },
       }),
@@ -651,6 +700,21 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= ADMIN permissions on course required
+          if (
+            !checkAccess(
+              [
+                {
+                  courseId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return CourseService.deleteCourse(args, ctx)
         },
       }),
@@ -666,28 +730,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      deleteFeedback: t.withAuth(asUserSessionExec).field({
-        nullable: true,
-        type: Feedback,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedback(args, ctx)
-        },
-      }),
-
-      deleteFeedbackResponse: t.withAuth(asUserSessionExec).field({
-        nullable: true,
-        type: Feedback,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedbackResponse(args, ctx)
-        },
-      }),
-
       deleteQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -695,6 +737,21 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= ADMIN permissions on eleemnt required
+          if (
+            !checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return QuestionService.deleteQuestion(args, ctx)
         },
       }),
@@ -718,6 +775,21 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.endLiveQuiz(args, ctx)
         },
       }),
@@ -729,7 +801,76 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.startLiveQuiz(args, ctx)
+        },
+      }),
+
+      deleteFeedback: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: Feedback,
+        args: {
+          id: t.arg.int({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.liveQuizId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
+          return FeedbackService.deleteFeedback(args, ctx)
+        },
+      }),
+
+      deleteFeedbackResponse: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: Feedback,
+        args: {
+          id: t.arg.int({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.liveQuizId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
+          return FeedbackService.deleteFeedbackResponse(args, ctx)
         },
       }),
 
@@ -739,8 +880,24 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           isPinned: t.arg.boolean({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.liveQuizId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return FeedbackService.pinFeedback(args, ctx)
         },
       }),
@@ -751,8 +908,24 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           isPublished: t.arg.boolean({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.liveQuizId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return FeedbackService.publishFeedback(args, ctx)
         },
       }),
@@ -763,8 +936,24 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           isResolved: t.arg.boolean({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.liveQuizId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return FeedbackService.resolveFeedback(args, ctx)
         },
       }),
@@ -775,8 +964,24 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           responseContent: t.arg.string({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.liveQuizId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return FeedbackService.respondToFeedback(args, ctx)
         },
       }),
@@ -804,6 +1009,21 @@ export const Mutation = builder.mutationType({
           blockId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.quizId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.deactivateLiveQuizBlock(args, ctx)
         },
       }),
@@ -819,6 +1039,21 @@ export const Mutation = builder.mutationType({
           isGamificationEnabled: t.arg.boolean({ required: false }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.changeLiveQuizSettings(args, ctx)
         },
       }),
@@ -831,10 +1066,26 @@ export const Mutation = builder.mutationType({
           blockId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= EXECUTE permission on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.quizId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.activateLiveQuizBlock(args, ctx)
         },
       }),
 
+      // TODO: potentially update access control
       createLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -863,6 +1114,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       editLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -892,6 +1144,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       manipulateContentElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -912,6 +1165,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       manipulateFlashcardElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -933,6 +1187,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       manipulateChoicesQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -955,6 +1210,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       manipulateNumericalQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -979,6 +1235,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1003,6 +1260,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       manipulateSelectionQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1027,6 +1285,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       manipulateCaseStudyQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1051,6 +1310,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       updateElementInstances: t.withAuth(asUserFullAccess).field({
         type: [ElementInstance],
         args: {
@@ -1062,6 +1322,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       createCourse: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
@@ -1087,6 +1348,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       updateCourseSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
@@ -1111,6 +1373,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       updateWeeklyTimelineEntriesCourse: t.withAuth(asUserFullAccess).boolean({
         args: {
           courseId: t.arg.string({ required: true }),
@@ -1133,6 +1396,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       toggleArchiveCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
@@ -1145,6 +1409,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [ArchivedElement],
@@ -1157,6 +1422,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       updateTagOrdering: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Tag],
@@ -1169,6 +1435,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -1180,6 +1447,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       changeLiveQuizName: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -1193,6 +1461,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       getFileUploadSas: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: FileUploadSAS,
@@ -1205,6 +1474,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       changeShortname: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
@@ -1216,6 +1486,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       changeEmailSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
@@ -1227,6 +1498,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       changeInitialSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
@@ -1240,6 +1512,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       createAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,
@@ -1253,6 +1526,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       modifyAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,
@@ -1266,6 +1540,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       editAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollectionEntry,
@@ -1279,6 +1554,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       deleteAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: 'Int',
@@ -1291,6 +1567,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       addAnswerCollectionOption: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollectionEntry,
@@ -1303,6 +1580,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,
@@ -1337,6 +1615,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       importCatalogObject: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1359,6 +1638,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       requestCatalogObject: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1391,6 +1671,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       cancelObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1418,6 +1699,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       removeAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: 'Int',
@@ -1429,6 +1711,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       deleteAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: 'Int',
@@ -1440,6 +1723,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       createCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogCollection,
@@ -1452,6 +1736,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       changeCatalogObjectAccess: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1463,6 +1748,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       changeCatalogCollectionObjectAccess: t
         .withAuth(asUserFullAccess)
         .boolean({
@@ -1476,6 +1762,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       changeCatalogCollectionName: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: {
@@ -1487,6 +1774,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       requestCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogCollection,
@@ -1502,6 +1790,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       deleteCatalogCollection: t.withAuth(asUserFullAccess).string({
         nullable: true,
         args: {
@@ -1512,6 +1801,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       createActivityTemplate: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: {
@@ -1527,6 +1817,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       editActivityTemplate: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1542,6 +1833,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       deleteActivityTemplate: t.withAuth(asUserFullAccess).string({
         nullable: true,
         args: {
@@ -1553,6 +1845,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       createLiveQuizFromTemplate: t.withAuth(asUserFullAccess).string({
         nullable: true,
         args: {
@@ -1572,6 +1865,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       shareObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
@@ -1616,6 +1910,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       revokeObjectAccess: t.withAuth(asUserFullAccess).int({
         nullable: true,
         args: {
@@ -1648,6 +1943,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       changePermissionLevel: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1688,6 +1984,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       transferObjectOwnership: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
@@ -1721,6 +2018,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       removeCatalogObjectAssignment: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1731,6 +2029,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       approveObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1747,6 +2046,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       declineObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1769,6 +2069,7 @@ export const Mutation = builder.mutationType({
 
       // ----- USER WITH CATALYST -----
       // #region
+      // TODO: potentially update access control
       createPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1795,6 +2096,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       editPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1822,6 +2124,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       createMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1842,6 +2145,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       editMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1863,6 +2167,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       extendMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1877,6 +2182,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       endMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1890,6 +2196,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       createGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1911,6 +2218,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       editGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1933,6 +2241,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       extendGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1947,6 +2256,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       publishPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1961,6 +2271,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       publishMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1974,6 +2285,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       unpublishPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -1987,6 +2299,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       unpublishMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2000,7 +2313,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
-      // TODO: delete operations only as owner?
+      // TODO: potentially update access control
       deletePracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2013,6 +2326,8 @@ export const Mutation = builder.mutationType({
             return PracticeQuizService.deletePracticeQuiz(args, ctx)
           },
         }),
+
+      // TODO: potentially update access control
       deleteMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2026,6 +2341,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       publishGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2039,6 +2355,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       unpublishGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2052,6 +2369,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       openGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2065,6 +2383,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       endGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2078,6 +2397,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       deleteGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2091,6 +2411,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       gradeGroupActivitySubmission: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2108,6 +2429,7 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      // TODO: potentially update access control
       finalizeGroupActivityGrading: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2125,6 +2447,7 @@ export const Mutation = builder.mutationType({
 
       // ----- USER OWNER OPERATIONS -----
       // #region
+      // TODO: potentially update access control
       createUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,
@@ -2138,6 +2461,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // TODO: potentially update access control
       deleteUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,

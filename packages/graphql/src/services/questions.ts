@@ -423,11 +423,7 @@ export async function deleteQuestion(
   // soft delete question and disconnect linked answer collection and sample solutions
   const { deletedElement, originalElement } = await ctx.prisma.$transaction(
     async (prisma) => {
-      const originalElement = await prisma.element.findUnique({
-        where: {
-          id,
-        },
-      })
+      const originalElement = await prisma.element.findUnique({ where: { id } })
 
       if (!originalElement) {
         throw new Error('Element not found')
@@ -437,18 +433,11 @@ export async function deleteQuestion(
       // ! Once elements are hard deleted, the propagation to dependent resources (e.g. answer collections) need to be handled manually in this mutation
       // ! --> for comparison, check the hard and soft-deletion logic for all activity types (live quiz / practice quiz / microlearning / group activity)
       const element = await prisma.element.update({
-        where: {
-          id: id,
-          ownerId: ctx.user.sub,
-        },
+        where: { id: id },
         data: {
           isDeleted: true,
-          answerCollection: {
-            disconnect: true,
-          },
-          answerCollectionItems: {
-            set: [],
-          },
+          answerCollection: { disconnect: true },
+          answerCollectionItems: { set: [] },
         },
       })
 
