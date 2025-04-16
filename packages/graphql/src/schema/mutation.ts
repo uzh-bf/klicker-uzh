@@ -1157,7 +1157,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       manipulateContentElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1171,6 +1170,23 @@ export const Mutation = builder.mutationType({
           tags: t.arg.stringList({ required: false }),
         },
         resolve(_, args, ctx) {
+          // if element is edited, >= WRITE permissions on element required
+          if (
+            typeof args.id !== 'undefined' &&
+            args.id !== null &&
+            !checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.CONTENT },
             ctx
@@ -1178,7 +1194,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       manipulateFlashcardElement: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1193,6 +1208,23 @@ export const Mutation = builder.mutationType({
           tags: t.arg.stringList({ required: false }),
         },
         resolve(_, args, ctx) {
+          // if element is edited, >= WRITE permissions on element required
+          if (
+            typeof args.id !== 'undefined' &&
+            args.id !== null &&
+            !checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.FLASHCARD },
             ctx
@@ -1200,7 +1232,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       manipulateChoicesQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1219,11 +1250,27 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
+          // if element is edited, >= WRITE permissions on element required
+          if (
+            typeof args.id !== 'undefined' &&
+            args.id !== null &&
+            !checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return QuestionService.manipulateQuestion(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       manipulateNumericalQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1241,6 +1288,23 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
+          // if element is edited, >= WRITE permissions on element required
+          if (
+            typeof args.id !== 'undefined' &&
+            args.id !== null &&
+            !checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.NUMERICAL },
             ctx
@@ -1248,7 +1312,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       manipulateFreeTextQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1266,6 +1329,23 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
+          // if element is edited, >= WRITE permissions on element required
+          if (
+            typeof args.id !== 'undefined' &&
+            args.id !== null &&
+            !checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.FREE_TEXT },
             ctx
@@ -1273,7 +1353,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       manipulateSelectionQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1291,6 +1370,23 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
+          // if element is edited, >= WRITE permissions on element required
+          if (
+            typeof args.id !== 'undefined' &&
+            args.id !== null &&
+            !checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.SELECTION },
             ctx
@@ -1298,7 +1394,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       manipulateCaseStudyQuestion: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Element,
@@ -1316,6 +1411,23 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
+          // if element is edited, >= WRITE permissions on element required
+          if (
+            typeof args.id !== 'undefined' &&
+            args.id !== null &&
+            !checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.CASE_STUDY },
             ctx

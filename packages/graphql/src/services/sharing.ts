@@ -9,7 +9,10 @@ import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import type { ContextWithUser } from '../lib/context.js'
+import type {
+  ContextWithUser,
+  PrismaTransactionContextWithUser,
+} from '../lib/context.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
 import { validateActivityPermissions } from './templates.js'
 
@@ -3294,7 +3297,7 @@ export async function checkAccess(
     | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
     | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
   )[],
-  ctx: ContextWithUser
+  ctx: PrismaTransactionContextWithUser
 ) {
   for (const check of checks) {
     if (
@@ -3489,7 +3492,7 @@ export async function checkCatalogAssignment(
         catalogCollectionId?: string
         access?: DB.ObjectAccess
       },
-  ctx: ContextWithUser
+  ctx: PrismaTransactionContextWithUser
 ) {
   // verify that the user has access to the catalog collection (if not top-level collection)
   if (

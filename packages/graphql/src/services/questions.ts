@@ -20,6 +20,7 @@ import type {
 } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
@@ -194,17 +195,9 @@ export async function manipulateQuestion(
   const questionPrev =
     typeof id !== 'undefined' && id !== null
       ? await ctx.prisma.element.findUnique({
-          where: {
-            id: id,
-            isDeleted: false,
-            ownerId: ctx.user.sub,
-          },
+          where: { id: id, isDeleted: false },
           include: {
-            tags: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
+            tags: { orderBy: { order: 'asc' } },
             answerCollectionItems: true,
           },
         })
@@ -215,6 +208,27 @@ export async function manipulateQuestion(
     tagsToDisconnect = questionPrev.tags
       .filter((tag) => !tags?.includes(tag.name))
       .map((tag) => tag.name)
+  }
+
+  // (SE & CS only) validate that the user has access to the answer collection that should be used
+  if (
+    (type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY) &&
+    options &&
+    options.answerCollection
+  ) {
+    const validAccess = checkAccess(
+      [
+        {
+          answerCollectionId: options.answerCollection,
+          minimumPermissionLevel: DB.PermissionLevel.READ,
+        },
+      ],
+      ctx
+    )
+
+    if (!validAccess) {
+      return null
+    }
   }
 
   // (SE only) determine which answer options are no longer considered to be correct
@@ -245,9 +259,7 @@ export async function manipulateQuestion(
   }
 
   const question = await ctx.prisma.element.upsert({
-    where: {
-      id: typeof id !== 'undefined' && id !== null ? id : -1,
-    },
+    where: { id: typeof id !== 'undefined' && id !== null ? id : -1 },
     create: {
       status: status!,
       type,
@@ -257,21 +269,12 @@ export async function manipulateQuestion(
       basePoints: basePoints!,
       pointsMultiplier: pointsMultiplier!,
       options: processedOptions,
-      owner: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      owner: { connect: { id: ctx.user.sub } },
       // connect to the tags which already exist by name and otherwise create a new tag with the given name
       tags: {
         connectOrCreate: tags?.map((tag: string) => {
           return {
-            where: {
-              ownerId_name: {
-                ownerId: ctx.user.sub,
-                name: tag,
-              },
-            },
+            where: { ownerId_name: { ownerId: ctx.user.sub, name: tag } },
             create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
           }
         }),
@@ -279,22 +282,14 @@ export async function manipulateQuestion(
       // connect the selection question to the corresponding answer collection
       answerCollection:
         type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? {
-              connect: {
-                id: options!.answerCollection!,
-              },
-            }
+          ? { connect: { id: options!.answerCollection! } }
           : undefined,
       // connect the answer collection options to the selection question if sample solution is enabled
       answerCollectionItems:
         type === DB.ElementType.SELECTION && options!.hasSampleSolution
-          ? {
-              connect: options!.correctAnswers!.map((id) => ({ id })),
-            }
+          ? { connect: options!.correctAnswers!.map((id) => ({ id })) }
           : type === DB.ElementType.CASE_STUDY
-            ? {
-                connect: options!.collectionItemIds!.map((id) => ({ id })),
-              }
+            ? { connect: options!.collectionItemIds!.map((id) => ({ id })) }
             : undefined,
     },
     update: {
@@ -314,32 +309,20 @@ export async function manipulateQuestion(
           ?.filter((tag: string) => tag !== '')
           .map((tag: string) => {
             return {
-              where: {
-                ownerId_name: {
-                  ownerId: ctx.user.sub,
-                  name: tag,
-                },
-              },
+              where: { ownerId_name: { ownerId: ctx.user.sub, name: tag } },
               create: { name: tag, owner: { connect: { id: ctx.user.sub } } },
             }
           }),
         disconnect: tagsToDisconnect.map((tag) => {
           return {
-            ownerId_name: {
-              ownerId: ctx.user.sub,
-              name: tag,
-            },
+            ownerId_name: { ownerId: ctx.user.sub, name: tag },
           }
         }),
       },
       // connect new answer collection and disconnect previous one if they are not the same
       answerCollection:
         type === DB.ElementType.SELECTION || type === DB.ElementType.CASE_STUDY
-          ? {
-              connect: {
-                id: options!.answerCollection!,
-              },
-            }
+          ? { connect: { id: options!.answerCollection! } }
           : undefined,
       // connect or disconnect the answer collection options if sample solution is enabled
       answerCollectionItems:
