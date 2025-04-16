@@ -174,13 +174,7 @@ async function verifyCatalogObjectEditPermissions(
 // ! Catalog Collection Operations
 // #region
 export async function createCatalogCollection(
-  {
-    name,
-    access,
-  }: {
-    name: string
-    access: DB.ObjectAccess
-  },
+  { name, access }: { name: string; access: DB.ObjectAccess },
   ctx: ContextWithUser
 ) {
   const collection = await ctx.prisma.$transaction(async (prisma) => {
@@ -3458,5 +3452,144 @@ export async function checkAccess(
   return true
 }
 
-// TODO: add function to check catalog assignment of a certain object
+export async function checkCatalogAssignment(
+  info:
+    | {
+        answerCollectionId: number
+        catalogCollectionId?: string
+        access?: DB.ObjectAccess
+      }
+    | {
+        elementId: number
+        catalogCollectionId?: string
+        access?: DB.ObjectAccess
+      }
+    | {
+        liveQuizId: string
+        catalogCollectionId?: string
+        access?: DB.ObjectAccess
+      }
+    | {
+        practiceQuizId: string
+        catalogCollectionId?: string
+        access?: DB.ObjectAccess
+      }
+    | {
+        microLearningId: string
+        catalogCollectionId?: string
+        access?: DB.ObjectAccess
+      }
+    | {
+        groupActivityId: string
+        catalogCollectionId?: string
+        access?: DB.ObjectAccess
+      }
+    | {
+        courseId: string
+        catalogCollectionId?: string
+        access?: DB.ObjectAccess
+      },
+  ctx: ContextWithUser
+) {
+  // verify that the user has access to the catalog collection (if not top-level collection)
+  if (
+    typeof info.catalogCollectionId !== 'undefined' &&
+    info.catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID
+  ) {
+    // get catalog collection
+    const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
+      where: {
+        id: info.catalogCollectionId,
+      },
+    })
+
+    // if the catalog collection does not exist, return false
+    if (!catalogCollection) {
+      return false
+    }
+
+    // if the catalog collection has restricted access, verify that a valid permission is given
+    if (catalogCollection.access === DB.ObjectAccess.RESTRICTED) {
+      const validAccess = await checkAccess(
+        [
+          {
+            catalogCollectionId: info.catalogCollectionId,
+            minimumPermissionLevel: DB.PermissionLevel.READ,
+          },
+        ],
+        ctx
+      )
+
+      if (!validAccess) {
+        return false
+      }
+    }
+  }
+
+  // check if an assignment of the object to the catalog collection exists
+  const assignment = await ctx.prisma.catalogCollectionAssignment.findUnique({
+    where: {
+      access: info.access,
+      answerCollectionId_catalogCollectionId:
+        'answerCollectionId' in info &&
+        typeof info.answerCollectionId !== 'undefined'
+          ? {
+              answerCollectionId: info.answerCollectionId,
+              catalogCollectionId:
+                info.catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      elementId_catalogCollectionId:
+        'elementId' in info && typeof info.elementId !== 'undefined'
+          ? {
+              elementId: info.elementId,
+              catalogCollectionId:
+                info.catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      liveQuizId_catalogCollectionId:
+        'liveQuizId' in info && typeof info.liveQuizId !== 'undefined'
+          ? {
+              liveQuizId: info.liveQuizId,
+              catalogCollectionId:
+                info.catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      practiceQuizId_catalogCollectionId:
+        'practiceQuizId' in info && typeof info.practiceQuizId !== 'undefined'
+          ? {
+              practiceQuizId: info.practiceQuizId,
+              catalogCollectionId:
+                info.catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      microLearningId_catalogCollectionId:
+        'microLearningId' in info && typeof info.microLearningId !== 'undefined'
+          ? {
+              microLearningId: info.microLearningId,
+              catalogCollectionId:
+                info.catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      groupActivityId_catalogCollectionId:
+        'groupActivityId' in info && typeof info.groupActivityId !== 'undefined'
+          ? {
+              groupActivityId: info.groupActivityId,
+              catalogCollectionId:
+                info.catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+      courseId_catalogCollectionId:
+        'courseId' in info && typeof info.courseId !== 'undefined'
+          ? {
+              courseId: info.courseId,
+              catalogCollectionId:
+                info.catalogCollectionId ?? MISSING_CATALOG_COLLECTION_ID,
+            }
+          : undefined,
+    },
+  })
+
+  return assignment !== null
+}
 // #endregion
