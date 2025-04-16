@@ -668,7 +668,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
     // create a course
     const course = await createCourse(prisma)
 
-    // grant individual WRITE permission to user 2
+    // grant individual WRITE permission to user 3
     const individualWritePermission = await prisma.permission.create({
       data: {
         userId: userThree.id,

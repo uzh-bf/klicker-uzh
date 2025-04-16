@@ -3252,3 +3252,209 @@ export async function addObjectToCatalog(
   }
 }
 // #endregion
+
+// ! Permissions Checking / Access Validation
+// #region
+const acceptedPermissionLevels: {
+  [minimumPermissionLevel: string]: DB.PermissionLevel[]
+} = {
+  [DB.PermissionLevel.OWNER]: [
+    DB.PermissionLevel.OWNER,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.EXECUTE,
+    DB.PermissionLevel.READ,
+  ],
+  [DB.PermissionLevel.ADMIN]: [
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.EXECUTE,
+    DB.PermissionLevel.READ,
+  ],
+  [DB.PermissionLevel.WRITE]: [
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.EXECUTE,
+    DB.PermissionLevel.READ,
+  ],
+  [DB.PermissionLevel.EXECUTE]: [
+    DB.PermissionLevel.EXECUTE,
+    DB.PermissionLevel.READ,
+  ],
+  [DB.PermissionLevel.READ]: [DB.PermissionLevel.READ],
+}
+
+export async function checkAccess(
+  checks: (
+    | {
+        catalogCollectionId: string
+        minimumPermissionLevel: DB.PermissionLevel
+      }
+    | {
+        answerCollectionId: number
+        minimumPermissionLevel: DB.PermissionLevel
+      }
+    | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
+    | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+    | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+    | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
+    | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
+    | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
+  )[],
+  ctx: ContextWithUser
+) {
+  for (const check of checks) {
+    if (
+      'catalogCollectionId' in check &&
+      typeof check.catalogCollectionId !== 'undefined'
+    ) {
+      const permission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: check.catalogCollectionId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!permission) {
+        return false
+      }
+    } else if (
+      'answerCollectionId' in check &&
+      typeof check.answerCollectionId !== 'undefined'
+    ) {
+      const permission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          answerCollectionId_userId: {
+            answerCollectionId: check.answerCollectionId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!permission) {
+        return false
+      }
+    } else if ('elementId' in check && typeof check.elementId !== 'undefined') {
+      const permission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          elementId_userId: {
+            elementId: check.elementId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!permission) {
+        return false
+      }
+    } else if (
+      'liveQuizId' in check &&
+      typeof check.liveQuizId !== 'undefined'
+    ) {
+      const permission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          liveQuizId_userId: {
+            liveQuizId: check.liveQuizId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!permission) {
+        return false
+      }
+    } else if (
+      'practiceQuizId' in check &&
+      typeof check.practiceQuizId !== 'undefined'
+    ) {
+      const permission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          practiceQuizId_userId: {
+            practiceQuizId: check.practiceQuizId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!permission) {
+        return false
+      }
+    } else if (
+      'microLearningId' in check &&
+      typeof check.microLearningId !== 'undefined'
+    ) {
+      const permission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          microLearningId_userId: {
+            microLearningId: check.microLearningId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!permission) {
+        return false
+      }
+    } else if (
+      'groupActivityId' in check &&
+      typeof check.groupActivityId !== 'undefined'
+    ) {
+      const permission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          groupActivityId_userId: {
+            groupActivityId: check.groupActivityId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!permission) {
+        return false
+      }
+    } else if ('courseId' in check && typeof check.courseId !== 'undefined') {
+      const coursePermission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: check.courseId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!coursePermission) {
+        return false
+      }
+    } else {
+      // ? encountered unsupported element type
+      return false
+    }
+  }
+
+  return true
+}
+// #endregion
