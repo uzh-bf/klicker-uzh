@@ -156,35 +156,45 @@ describe('Unit tests for sharing service', () => {
     }
   })
 
+  afterEach(async () => {
+    // delete all answer collections, all catalog collections (except from default one), all elements and verify removal of all objects
+    await prisma.answerCollection.deleteMany({})
+    await prisma.catalogCollection.deleteMany({
+      where: {
+        id: { not: MISSING_CATALOG_COLLECTION_ID },
+      },
+    })
+    await prisma.element.deleteMany({})
+    await prisma.liveQuiz.deleteMany({})
+
+    const answerCollections = await prisma.answerCollection.findMany()
+    expect(answerCollections).toHaveLength(0)
+    const catalogCollections = await prisma.catalogCollection.findMany({
+      where: {
+        id: { not: MISSING_CATALOG_COLLECTION_ID },
+      },
+    })
+    expect(catalogCollections).toHaveLength(0)
+    const elements = await prisma.element.findMany()
+    expect(elements).toHaveLength(0)
+    const liveQuizzes = await prisma.liveQuiz.findMany()
+    expect(liveQuizzes).toHaveLength(0)
+    const permissions = await prisma.permission.findMany()
+    expect(permissions).toHaveLength(0)
+    const derivedPermissions = await prisma.derivedPermission.findMany()
+    expect(derivedPermissions).toHaveLength(0)
+    const requests = await prisma.accessRequest.findMany()
+    expect(requests).toHaveLength(0)
+  })
+
   // disconnect from the database
   afterAll(async () => {
     await prisma.$disconnect()
   })
 
-  // keep track of objects that are re-used across unit test cases
-  let AC1Id: number
-  let AC2Id: number
-  let publicCatalogId: string
-  let restrictedCatalogId: string
-
-  it('Data preparation', async () => {
-    // verify that users have been created correctly in the database
-    const users = await prisma.user.findMany()
-    expect(users).toHaveLength(5)
-    const actualEmails = users.map((user) => user.email)
-    expect(actualEmails).toEqual(
-      expect.arrayContaining([
-        userOne.email,
-        userTwo.email,
-        userThree.email,
-        userFour.email,
-        userFive.email,
-      ])
-    )
-    expect(actualEmails).toHaveLength(5)
-
+  async function createAnswerCollections(prisma) {
     // create answer collections that can be added to the catalog to test sharing
-    const answerCollections = await Promise.all(
+    const [AC1, AC2] = await Promise.all(
       [answerCollection1, answerCollection2].map(async (collection) => {
         const newAnswerCollection = await prisma.answerCollection.upsert({
           where: {
@@ -226,32 +236,243 @@ describe('Unit tests for sharing service', () => {
     )
 
     // verify that answer collections have been created correctly in the database (including entries)
-    expect(answerCollections).toHaveLength(2)
-    expect(answerCollections).toHaveLength(2)
-    expect(answerCollections.map((collection) => collection.name)).toEqual(
+    expect([AC1, AC2].map((collection) => collection.name)).toEqual(
       expect.arrayContaining([answerCollection1.name, answerCollection2.name])
     )
 
     // identify the collections by name and compare the entries
-    const collection1 = answerCollections.find(
-      (c) => c.name === answerCollection1.name
-    )
-    const collection2 = answerCollections.find(
-      (c) => c.name === answerCollection2.name
-    )
-    expect(collection1).toBeTruthy()
-    expect(collection2).toBeTruthy()
-    AC1Id = collection1!.id
-    AC2Id = collection2!.id
-
-    expect(collection1!.entries).toHaveLength(4)
-    expect(collection2!.entries).toHaveLength(4)
-    expect(collection1!.entries.map((entry) => entry.value)).toEqual(
+    expect(AC1).toBeTruthy()
+    expect(AC2).toBeTruthy()
+    expect(AC1!.entries).toHaveLength(4)
+    expect(AC2!.entries).toHaveLength(4)
+    expect(AC1!.entries.map((entry) => entry.value)).toEqual(
       expect.arrayContaining(answerCollection1.entries)
     )
-    expect(collection2!.entries.map((entry) => entry.value)).toEqual(
+    expect(AC2!.entries.map((entry) => entry.value)).toEqual(
       expect.arrayContaining(answerCollection2.entries)
     )
+
+    return { AC1, AC2 }
+  }
+
+  async function createCatalogCollections(prisma) {
+    const [publicCatalog, restrictedCatalog] = await Promise.all([
+      createCatalogCollection(
+        {
+          name: catalogCollection1.name,
+          access: catalogCollection1.access,
+        },
+        userOneCtx
+      ),
+      createCatalogCollection(
+        {
+          name: catalogCollection2.name,
+          access: catalogCollection2.access,
+        },
+        userOneCtx
+      ),
+    ])
+
+    return { publicCatalog, restrictedCatalog }
+  }
+
+  async function createLiveQuizTemplates(prisma) {
+    // create activity templates (without content, simply for access validation)
+    const LQ1Id = 'ca9f1fc4-0daf-4cdb-92b3-e55557b24831'
+    const LQ2Id = '86ff081d-07cd-4bea-91b7-fc633ed7a092'
+    const LQ3Id = '3be3228c-4a64-4a84-8743-46c4ba0ed333'
+    const templateData = [
+      { id: LQ1Id, name: 'LQ1' },
+      { id: LQ2Id, name: 'LQ2' },
+      { id: LQ3Id, name: 'LQ3' },
+    ]
+    const ATs = await Promise.all(
+      templateData.map(async ({ id, name }) => {
+        const newTemplate = await prisma.activityTemplate.create({
+          data: {
+            description: `${name} Description`,
+            instructions: `${name} Instructions`,
+            liveQuiz: {
+              create: {
+                id, // activity id is relevant (connected to assignments, etc. - templateId mainly for routing)
+                name,
+                displayName: name,
+                status: PublicationStatus.TEMPLATE,
+                owner: {
+                  connect: {
+                    id: userOne.id,
+                  },
+                },
+              },
+            },
+          },
+        })
+
+        await recomputeDerivedPermissions(
+          { liveQuizId: id, userId: userOne.id },
+          prisma
+        )
+
+        return newTemplate
+      })
+    )
+    const templateId1 = ATs.find((AT) => AT.liveQuizId === LQ1Id)!.id
+    const templateId2 = ATs.find((AT) => AT.liveQuizId === LQ2Id)!.id
+    const templateId3 = ATs.find((AT) => AT.liveQuizId === LQ3Id)!.id
+
+    return { templateId1, templateId2, templateId3, LQ1Id, LQ2Id, LQ3Id }
+  }
+
+  async function seedAnswerCollectionPermissions(prisma, AC1Id, AC2Id) {
+    // create permissions for users 2, 3, and 4 (ADMIN, WRITE, READ in descending order)
+    await prisma.permission.createMany({
+      data: [
+        {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: userTwo.id,
+          answerCollectionId: AC1Id,
+        },
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          userId: userThree.id,
+          answerCollectionId: AC1Id,
+        },
+        {
+          permissionLevel: PermissionLevel.READ,
+          userId: userFour.id,
+          answerCollectionId: AC1Id,
+        },
+        {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: userTwo.id,
+          answerCollectionId: AC2Id,
+        },
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          userId: userThree.id,
+          answerCollectionId: AC2Id,
+        },
+        {
+          permissionLevel: PermissionLevel.READ,
+          userId: userFour.id,
+          answerCollectionId: AC2Id,
+        },
+      ],
+    })
+
+    // recompute derived permissions that are checked in backend service functions
+    await recomputeDerivedPermissions({ answerCollectionId: AC1Id }, prisma)
+    await recomputeDerivedPermissions({ answerCollectionId: AC2Id }, prisma)
+  }
+
+  async function seedCatalogCollectionPermissions(
+    prisma,
+    publicId,
+    restrictedId
+  ) {
+    // create permissions for users 2, 3, and 4 (READ, WRITE, ADMIN in ascending order)
+    await prisma.permission.createMany({
+      data: [
+        {
+          permissionLevel: PermissionLevel.READ,
+          userId: userTwo.id,
+          catalogCollectionId: publicId,
+        },
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          userId: userThree.id,
+          catalogCollectionId: publicId,
+        },
+        {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: userFour.id,
+          catalogCollectionId: publicId,
+        },
+        {
+          permissionLevel: PermissionLevel.READ,
+          userId: userTwo.id,
+          catalogCollectionId: restrictedId,
+        },
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          userId: userThree.id,
+          catalogCollectionId: restrictedId,
+        },
+        {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: userFour.id,
+          catalogCollectionId: restrictedId,
+        },
+      ],
+    })
+
+    // recompute derived permissions that are checked in backend service functions
+    await recomputeDerivedPermissions({ catalogCollectionId: publicId }, prisma)
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: restrictedId },
+      prisma
+    )
+  }
+
+  async function seedAnswerCollectionCatalogAssignments(
+    prisma,
+    AC1Id,
+    AC2Id,
+    publicId,
+    restrictedId
+  ) {
+    // add all catalog collection assignments we need
+    await prisma.catalogCollectionAssignment.createMany({
+      data: [
+        {
+          access: ObjectAccess.PUBLIC,
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          answerCollectionId: AC1Id,
+        },
+        {
+          access: ObjectAccess.RESTRICTED,
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          answerCollectionId: AC2Id,
+        },
+        {
+          access: ObjectAccess.PUBLIC,
+          catalogCollectionId: publicId,
+          answerCollectionId: AC1Id,
+        },
+        {
+          access: ObjectAccess.RESTRICTED,
+          catalogCollectionId: publicId,
+          answerCollectionId: AC2Id,
+        },
+        {
+          access: ObjectAccess.PUBLIC,
+          catalogCollectionId: restrictedId,
+          answerCollectionId: AC1Id,
+        },
+        {
+          access: ObjectAccess.RESTRICTED,
+          catalogCollectionId: restrictedId,
+          answerCollectionId: AC2Id,
+        },
+      ],
+    })
+  }
+
+  it('Seed all required users and the top-level catalog collection', async () => {
+    // verify that users have been created correctly in the database
+    const users = await prisma.user.findMany()
+    expect(users).toHaveLength(5)
+    const actualEmails = users.map((user) => user.email)
+    expect(actualEmails).toEqual(
+      expect.arrayContaining([
+        userOne.email,
+        userTwo.email,
+        userThree.email,
+        userFour.email,
+        userFive.email,
+      ])
+    )
+    expect(actualEmails).toHaveLength(5)
 
     // seed the top-level catalog collection with fixed ID
     await prisma.catalogCollection.upsert({
@@ -266,30 +487,35 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Share the answer collections directly with users 2, 3, and 4 with ADMIN, WRITE, and READ permissions, respectively', async () => {
+    // create answer collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+
     // users 2, 3, 4 have insufficient permissions to share an answer collection
     const res1 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.email,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userTwoCtx
     )
     expect(res1).toBeNull()
+
     const res2 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.email,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userThreeCtx
     )
     expect(res2).toBeNull()
+
     const res3 = await shareCatalogObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.email,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userFourCtx
     )
@@ -300,7 +526,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: 'missing_user_name',
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userTwoCtx
     )
@@ -311,7 +537,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.ADMIN,
         shortnameOrEmail: userTwo.email,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userOneCtx
     )
@@ -326,7 +552,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.WRITE,
         shortnameOrEmail: userThree.shortname,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userOneCtx
     )
@@ -341,7 +567,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFour.email,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userOneCtx
     )
@@ -357,7 +583,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.ADMIN,
         shortnameOrEmail: userTwo.shortname,
-        answerCollectionId: AC2Id,
+        answerCollectionId: AC2.id,
       },
       userOneCtx
     )
@@ -373,7 +599,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.WRITE,
         shortnameOrEmail: userThree.email,
-        answerCollectionId: AC2Id,
+        answerCollectionId: AC2.id,
       },
       userTwoCtx
     )
@@ -388,7 +614,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFour.shortname,
-        answerCollectionId: AC2Id,
+        answerCollectionId: AC2.id,
       },
       userTwoCtx
     )
@@ -404,7 +630,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.email,
-        answerCollectionId: AC2Id,
+        answerCollectionId: AC2.id,
       },
       userThreeCtx
     )
@@ -413,7 +639,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.shortname,
-        answerCollectionId: AC2Id,
+        answerCollectionId: AC2.id,
       },
       userFourCtx
     )
@@ -423,7 +649,7 @@ describe('Unit tests for sharing service', () => {
     const permission1 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userTwo.id,
         },
       },
@@ -434,7 +660,7 @@ describe('Unit tests for sharing service', () => {
     const permission2 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userThree.id,
         },
       },
@@ -445,7 +671,7 @@ describe('Unit tests for sharing service', () => {
     const permission3 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFour.id,
         },
       },
@@ -456,7 +682,7 @@ describe('Unit tests for sharing service', () => {
     const permission4 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC2Id,
+          answerCollectionId: AC2.id,
           userId: userTwo.id,
         },
       },
@@ -467,7 +693,7 @@ describe('Unit tests for sharing service', () => {
     const permission5 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC2Id,
+          answerCollectionId: AC2.id,
           userId: userThree.id,
         },
       },
@@ -478,7 +704,7 @@ describe('Unit tests for sharing service', () => {
     const permission6 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC2Id,
+          answerCollectionId: AC2.id,
           userId: userFour.id,
         },
       },
@@ -488,6 +714,10 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that all users with access to the answer collection can at view its content and use it in corresonding elements', async () => {
+    // create answer collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+
     // check availability of answer collection during element creation
     const collectionsUserOne = await getAnswerCollectionsElements(
       { templateId: undefined },
@@ -533,13 +763,13 @@ describe('Unit tests for sharing service', () => {
 
     // check availability for viewing and/or editing modal
     for (const ctx of [userOneCtx, userTwoCtx, userThreeCtx, userFourCtx]) {
-      const collection1 = await getSingleAnswerCollection({ id: AC1Id }, ctx)
+      const collection1 = await getSingleAnswerCollection({ id: AC1.id }, ctx)
       expect(collection1).toBeTruthy()
       expect(collection1!.name).toBe(answerCollection1.name)
       expect(collection1!.description).toBe(answerCollection1.description)
       expect(collection1!.entries).toHaveLength(4)
 
-      const collection2 = await getSingleAnswerCollection({ id: AC2Id }, ctx)
+      const collection2 = await getSingleAnswerCollection({ id: AC2.id }, ctx)
       expect(collection2).toBeTruthy()
       expect(collection2!.name).toBe(answerCollection2.name)
       expect(collection2!.description).toBe(answerCollection2.description)
@@ -547,23 +777,27 @@ describe('Unit tests for sharing service', () => {
     }
 
     const collection1UserOne = await getSingleAnswerCollection(
-      { id: AC1Id },
+      { id: AC1.id },
       userFiveCtx
     )
     expect(collection1UserOne).toBeNull()
 
     const collection2UserOne = await getSingleAnswerCollection(
-      { id: AC2Id },
+      { id: AC2.id },
       userFiveCtx
     )
     expect(collection2UserOne).toBeNull()
   })
 
   it("Verify that only users with WRITE / ADMIN / OWNER permissions are allowed to modify the answer collection's content", async () => {
+    // create answer collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+
     // test the modification of the answer collection's name and description with OWNER AND ADMIN permissions
     const updatedCollection1 = await modifyAnswerCollection(
       {
-        id: AC1Id,
+        id: AC1.id,
         name: `${answerCollection1.name} (Updated)`,
         description: `${answerCollection1.description} (Updated)`,
       },
@@ -577,7 +811,7 @@ describe('Unit tests for sharing service', () => {
 
     const updatedCollection2 = await modifyAnswerCollection(
       {
-        id: AC2Id,
+        id: AC2.id,
         name: `${answerCollection2.name} (Updated)`,
         description: `${answerCollection2.description} (Updated)`,
       },
@@ -592,7 +826,7 @@ describe('Unit tests for sharing service', () => {
     // undo changes with WRITE permissions
     const updatedCollection3 = await modifyAnswerCollection(
       {
-        id: AC1Id,
+        id: AC1.id,
         name: answerCollection1.name,
         description: answerCollection1.description,
       },
@@ -604,7 +838,7 @@ describe('Unit tests for sharing service', () => {
 
     const updatedCollection4 = await modifyAnswerCollection(
       {
-        id: AC2Id,
+        id: AC2.id,
         name: answerCollection2.name,
         description: answerCollection2.description,
       },
@@ -617,7 +851,7 @@ describe('Unit tests for sharing service', () => {
     // verify that WRITE permissions are correctly verified
     const updatedCollection5 = await modifyAnswerCollection(
       {
-        id: AC1Id,
+        id: AC1.id,
         name: `${answerCollection1.name} (Updated)`,
         description: `${answerCollection1.description} (Updated)`,
       },
@@ -627,7 +861,7 @@ describe('Unit tests for sharing service', () => {
 
     const updatedCollection6 = await modifyAnswerCollection(
       {
-        id: AC2Id,
+        id: AC2.id,
         name: `${answerCollection2.name} (Updated)`,
         description: `${answerCollection2.description} (Updated)`,
       },
@@ -637,7 +871,7 @@ describe('Unit tests for sharing service', () => {
 
     // verify that changing and answer collection entry value required WRITE permissions (at least)
     const dbAC1 = await prisma.answerCollection.findUnique({
-      where: { id: AC1Id },
+      where: { id: AC1.id },
       include: { entries: true },
     })
     expect(dbAC1).toBeTruthy()
@@ -648,7 +882,7 @@ describe('Unit tests for sharing service', () => {
       {
         id: entry1!.id,
         value: `${entry1!.value} (Updated)`,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userOneCtx
     )
@@ -659,7 +893,7 @@ describe('Unit tests for sharing service', () => {
       {
         id: entry1!.id,
         value: `${entry1!.value} (Updated 2)`,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userTwoCtx
     )
@@ -670,7 +904,7 @@ describe('Unit tests for sharing service', () => {
       {
         id: entry1!.id,
         value: entry1!.value,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userThreeCtx
     )
@@ -681,7 +915,7 @@ describe('Unit tests for sharing service', () => {
       {
         id: entry1!.id,
         value: `${entry1!.value} (Updated 4)`,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userFourCtx
     )
@@ -691,7 +925,7 @@ describe('Unit tests for sharing service', () => {
       {
         id: entry1!.id,
         value: `${entry1!.value} (Updated 5)`,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -703,7 +937,7 @@ describe('Unit tests for sharing service', () => {
       const newEntryValue = `New Entry ${ctx.user.sub}`
       const newEntry = await addAnswerCollectionOption(
         {
-          collectionId: AC1Id,
+          collectionId: AC1.id,
           value: newEntryValue,
         },
         ctx
@@ -713,7 +947,7 @@ describe('Unit tests for sharing service', () => {
 
       // verify that new entry has been added to answer collection
       const dbAC1Updated = await prisma.answerCollection.findUnique({
-        where: { id: AC1Id },
+        where: { id: AC1.id },
         include: { entries: true },
       })
       expect(dbAC1Updated).toBeTruthy()
@@ -726,7 +960,7 @@ describe('Unit tests for sharing service', () => {
       const removedEntry = await deleteAnswerCollectionEntry(
         {
           id: newEntry!.id,
-          collectionId: AC1Id,
+          collectionId: AC1.id,
         },
         ctx
       )
@@ -735,7 +969,7 @@ describe('Unit tests for sharing service', () => {
 
       // verify that the entry has been removed from the answer collection
       const dbAC1Removed = await prisma.answerCollection.findUnique({
-        where: { id: AC1Id },
+        where: { id: AC1.id },
         include: { entries: true },
       })
       expect(dbAC1Removed).toBeTruthy()
@@ -749,7 +983,7 @@ describe('Unit tests for sharing service', () => {
     for (const ctx of [userFourCtx, userFiveCtx]) {
       const newEntry = await addAnswerCollectionOption(
         {
-          collectionId: AC1Id,
+          collectionId: AC1.id,
           value: 'Dummy Content',
         },
         ctx
@@ -758,7 +992,7 @@ describe('Unit tests for sharing service', () => {
 
       // verify that answer colleciton has not been modified
       const dbAC1AfterAddition = await prisma.answerCollection.findUnique({
-        where: { id: AC1Id },
+        where: { id: AC1.id },
         include: { entries: true },
       })
       expect(dbAC1AfterAddition).toBeTruthy()
@@ -767,7 +1001,7 @@ describe('Unit tests for sharing service', () => {
       const removedEntry = await deleteAnswerCollectionEntry(
         {
           id: 0,
-          collectionId: AC1Id,
+          collectionId: AC1.id,
         },
         ctx
       )
@@ -775,7 +1009,7 @@ describe('Unit tests for sharing service', () => {
 
       // verify that answer colleciton has not been modified
       const dbAC1AfterRemoval = await prisma.answerCollection.findUnique({
-        where: { id: AC1Id },
+        where: { id: AC1.id },
         include: { entries: true },
       })
       expect(dbAC1AfterRemoval).toBeTruthy()
@@ -784,6 +1018,10 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that only users with ADMIN and OWNER permissions on an answer collection can add it to a catalog', async () => {
+    // create answer collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+
     // verify that the query for the catalog addition only returns the collections that can be added
     const availableCollectionsUserOne =
       await getCatalogAnswerCollections(userOneCtx)
@@ -820,12 +1058,12 @@ describe('Unit tests for sharing service', () => {
       {
         access: ObjectAccess.PUBLIC,
         catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userOneCtx
     )
     expect(res1).toBeTruthy()
-    expect(res1!.id).toBe(AC1Id)
+    expect(res1!.id).toBe(AC1.id)
     expect(res1!.objectType).toBe(CatalogObjectType.ANSWER_COLLECTION)
     expect(res1!.access).toBe(ObjectAccess.PUBLIC)
     expect(res1!.ownerShortname).toBe(userOne.shortname)
@@ -837,12 +1075,12 @@ describe('Unit tests for sharing service', () => {
     const res2 = await addObjectToCatalog(
       {
         access: ObjectAccess.RESTRICTED,
-        answerCollectionId: AC2Id,
+        answerCollectionId: AC2.id,
       },
       userTwoCtx
     )
     expect(res2).toBeTruthy()
-    expect(res2!.id).toBe(AC2Id)
+    expect(res2!.id).toBe(AC2.id)
     expect(res2!.objectType).toBe(CatalogObjectType.ANSWER_COLLECTION)
     expect(res2!.access).toBe(ObjectAccess.RESTRICTED)
     expect(res2!.ownerShortname).toBe(userOne.shortname)
@@ -856,7 +1094,7 @@ describe('Unit tests for sharing service', () => {
       {
         access: ObjectAccess.RESTRICTED,
         catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userThreeCtx
     )
@@ -866,7 +1104,7 @@ describe('Unit tests for sharing service', () => {
       {
         access: ObjectAccess.RESTRICTED,
         catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userFourCtx
     )
@@ -876,7 +1114,7 @@ describe('Unit tests for sharing service', () => {
       {
         access: ObjectAccess.RESTRICTED,
         catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -886,7 +1124,7 @@ describe('Unit tests for sharing service', () => {
     const AC1Assignment = await prisma.catalogCollectionAssignment.findUnique({
       where: {
         answerCollectionId_catalogCollectionId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
         },
       },
@@ -897,7 +1135,7 @@ describe('Unit tests for sharing service', () => {
     const AC2Assignment = await prisma.catalogCollectionAssignment.findUnique({
       where: {
         answerCollectionId_catalogCollectionId: {
-          answerCollectionId: AC2Id,
+          answerCollectionId: AC2.id,
           catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
         },
       },
@@ -907,11 +1145,15 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that only object ADMIN / OWNER can modify the individual permission levels', async () => {
+    // create answer collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+
     // fetch the permission that should be modified and verify its initial value
     const permission = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFour.id,
         },
       },
@@ -924,7 +1166,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: permission!.id,
         permissionLevel: PermissionLevel.WRITE,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userOneCtx
     )
@@ -934,7 +1176,7 @@ describe('Unit tests for sharing service', () => {
     const updatedPermission = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFour.id,
         },
       },
@@ -947,7 +1189,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: updatedPermission!.id,
         permissionLevel: PermissionLevel.READ,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userTwoCtx
     )
@@ -957,7 +1199,7 @@ describe('Unit tests for sharing service', () => {
     const updatedPermission2 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFour.id,
         },
       },
@@ -970,7 +1212,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: updatedPermission2!.id,
         permissionLevel: PermissionLevel.WRITE,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userThreeCtx
     )
@@ -980,7 +1222,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: updatedPermission2!.id,
         permissionLevel: PermissionLevel.WRITE,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userFourCtx
     )
@@ -990,7 +1232,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: updatedPermission2!.id,
         permissionLevel: PermissionLevel.WRITE,
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -1000,7 +1242,7 @@ describe('Unit tests for sharing service', () => {
     const updatedPermission3 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFour.id,
         },
       },
@@ -1010,11 +1252,14 @@ describe('Unit tests for sharing service', () => {
   })
 
   it("Verify that direct permissions to an answer collection can be revoked (only by the object's ADMIN or OWNER), but might be replaced with derived permissions", async () => {
-    // create a new direct READ permission for user 5 on AC1
+    // create answer collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+
     const permission1 = await prisma.permission.upsert({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1022,7 +1267,7 @@ describe('Unit tests for sharing service', () => {
         permissionLevel: PermissionLevel.READ,
         answerCollection: {
           connect: {
-            id: AC1Id,
+            id: AC1.id,
           },
         },
         user: {
@@ -1038,7 +1283,7 @@ describe('Unit tests for sharing service', () => {
     const deletedPermissionId1 = await revokeAnswerCollectionAccess(
       {
         permissionId: permission1.id,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userOneCtx
     )
@@ -1047,7 +1292,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission1 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1058,7 +1303,7 @@ describe('Unit tests for sharing service', () => {
     const permission2 = await prisma.permission.upsert({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1066,7 +1311,7 @@ describe('Unit tests for sharing service', () => {
         permissionLevel: PermissionLevel.WRITE,
         answerCollection: {
           connect: {
-            id: AC1Id,
+            id: AC1.id,
           },
         },
         user: {
@@ -1082,7 +1327,7 @@ describe('Unit tests for sharing service', () => {
     const deletedPermissionId2 = await revokeAnswerCollectionAccess(
       {
         permissionId: permission2.id,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userTwoCtx
     )
@@ -1091,7 +1336,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission2 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1102,7 +1347,7 @@ describe('Unit tests for sharing service', () => {
     const permission3 = await prisma.permission.upsert({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1110,7 +1355,7 @@ describe('Unit tests for sharing service', () => {
         permissionLevel: PermissionLevel.ADMIN,
         answerCollection: {
           connect: {
-            id: AC1Id,
+            id: AC1.id,
           },
         },
         user: {
@@ -1126,7 +1371,7 @@ describe('Unit tests for sharing service', () => {
     const deletedPermissionId3 = await revokeAnswerCollectionAccess(
       {
         permissionId: permission3.id,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userThreeCtx
     )
@@ -1135,7 +1380,7 @@ describe('Unit tests for sharing service', () => {
     const deletedPermissionId4 = await revokeAnswerCollectionAccess(
       {
         permissionId: permission3.id,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userFourCtx
     )
@@ -1150,7 +1395,7 @@ describe('Unit tests for sharing service', () => {
         options: {},
         answerCollection: {
           connect: {
-            id: AC1Id,
+            id: AC1.id,
           },
         },
         owner: {
@@ -1172,7 +1417,7 @@ describe('Unit tests for sharing service', () => {
     const derivedPermission = await prisma.derivedPermission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1186,7 +1431,7 @@ describe('Unit tests for sharing service', () => {
     const removalSuccess1 = await revokeAnswerCollectionAccess(
       {
         permissionId: permission3.id,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userTwoCtx
     )
@@ -1196,7 +1441,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission3 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1207,7 +1452,7 @@ describe('Unit tests for sharing service', () => {
     const derivedPermission2 = await prisma.derivedPermission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1220,7 +1465,7 @@ describe('Unit tests for sharing service', () => {
     const permission4 = await prisma.permission.upsert({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1228,7 +1473,7 @@ describe('Unit tests for sharing service', () => {
         permissionLevel: PermissionLevel.ADMIN,
         answerCollection: {
           connect: {
-            id: AC1Id,
+            id: AC1.id,
           },
         },
         user: {
@@ -1241,7 +1486,7 @@ describe('Unit tests for sharing service', () => {
     })
     await recomputeDerivedPermissions(
       {
-        answerCollectionId: AC1Id,
+        answerCollectionId: AC1.id,
         userId: userFive.id,
       },
       prisma
@@ -1251,7 +1496,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission4 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1263,7 +1508,7 @@ describe('Unit tests for sharing service', () => {
     const derivedPermission3 = await prisma.derivedPermission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1282,7 +1527,7 @@ describe('Unit tests for sharing service', () => {
     const permissionSelfRemoval = await revokeAnswerCollectionAccess(
       {
         permissionId: permission4.id,
-        collectionId: AC1Id,
+        collectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -1292,7 +1537,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission5 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1302,7 +1547,7 @@ describe('Unit tests for sharing service', () => {
     const derivedPermission4 = await prisma.derivedPermission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userFive.id,
         },
       },
@@ -1311,10 +1556,14 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that only an answer collection OWNER can transfer the corresponding rights', async () => {
+    // create answer collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+
     // verify that users without owner permissions cannot transfer ownership
     const failure1 = await transferAnswerCollectionOwnership(
       {
-        collectionId: AC1Id,
+        collectionId: AC1.id,
         shortnameOrEmail: userTwo.email,
       },
       userTwoCtx
@@ -1323,7 +1572,7 @@ describe('Unit tests for sharing service', () => {
 
     const failure2 = await transferAnswerCollectionOwnership(
       {
-        collectionId: AC1Id,
+        collectionId: AC1.id,
         shortnameOrEmail: userThree.shortname,
       },
       userThreeCtx
@@ -1332,7 +1581,7 @@ describe('Unit tests for sharing service', () => {
 
     const failure3 = await transferAnswerCollectionOwnership(
       {
-        collectionId: AC1Id,
+        collectionId: AC1.id,
         shortnameOrEmail: userFour.email,
       },
       userFourCtx
@@ -1341,7 +1590,7 @@ describe('Unit tests for sharing service', () => {
 
     const failure4 = await transferAnswerCollectionOwnership(
       {
-        collectionId: AC1Id,
+        collectionId: AC1.id,
         shortnameOrEmail: userFive.shortname,
       },
       userFiveCtx
@@ -1351,7 +1600,7 @@ describe('Unit tests for sharing service', () => {
     // verify that the function fails if the specified user does not exist
     const failure5 = await transferAnswerCollectionOwnership(
       {
-        collectionId: AC1Id,
+        collectionId: AC1.id,
         shortnameOrEmail: 'missing_user_name',
       },
       userOneCtx
@@ -1363,7 +1612,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermissionUserTwoOld = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userTwo.id,
         },
       },
@@ -1373,7 +1622,7 @@ describe('Unit tests for sharing service', () => {
 
     const successPermission1 = await transferAnswerCollectionOwnership(
       {
-        collectionId: AC1Id,
+        collectionId: AC1.id,
         shortnameOrEmail: userTwo.email,
       },
       userOneCtx
@@ -1388,7 +1637,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission1 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userOne.id,
         },
       },
@@ -1399,7 +1648,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission2 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userTwo.id,
         },
       },
@@ -1409,7 +1658,7 @@ describe('Unit tests for sharing service', () => {
     // transfer ownership back to user 1 and verify permission modifications
     const successfulPermission2 = await transferAnswerCollectionOwnership(
       {
-        collectionId: AC1Id,
+        collectionId: AC1.id,
         shortnameOrEmail: userOne.email,
       },
       userTwoCtx
@@ -1424,7 +1673,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission3 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userTwo.id,
         },
       },
@@ -1435,7 +1684,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission4 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
-          answerCollectionId: AC1Id,
+          answerCollectionId: AC1.id,
           userId: userOne.id,
         },
       },
@@ -1444,6 +1693,10 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that only users with ADMIN or OWNER permissions can delete an answer collection', async () => {
+    // create answer collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+
     // create two new answer collections
     const name1 = `${answerCollection1.name} (New)`
     const name2 = `${answerCollection2.name} (New)`
@@ -1623,35 +1876,11 @@ describe('Unit tests for sharing service', () => {
     }
   })
 
-  it('Create two catalog collections, one with PUBLIC access and one with RESTRICTED access', async () => {
-    for (const collection of [catalogCollection1, catalogCollection2]) {
-      const newCollection = await createCatalogCollection(
-        {
-          name: collection.name,
-          access: collection.access,
-        },
-        userOneCtx
-      )
-      expect(newCollection).toBeTruthy()
-      expect(newCollection!.name).toBe(collection.name)
-      expect(newCollection!.access).toBe(collection.access)
-      expect(newCollection!.ownerId).toBe(userOne.id)
-      expect(newCollection!.ownerShortname).toBe(userOne.shortname)
-      expect(newCollection!.isOwner).toBe(true)
-      expect(newCollection!.isManager).toBe(true)
-      expect(newCollection!.isEditor).toBe(true)
-      expect(newCollection!.isRequested).toBe(false)
-      expect(newCollection!.isShared).toBe(false)
-
-      if (collection.access === ObjectAccess.PUBLIC) {
-        publicCatalogId = newCollection!.id
-      } else {
-        restrictedCatalogId = newCollection!.id
-      }
-    }
-  })
-
   it('Share the catalog collection directly with users 2, 3, and 4 with READ, WRITE, ADMIN permissions, respectively', async () => {
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+
     for (const { user, permissionLevel } of [
       { user: userTwo, permissionLevel: PermissionLevel.READ },
       { user: userThree, permissionLevel: PermissionLevel.WRITE },
@@ -1659,7 +1888,7 @@ describe('Unit tests for sharing service', () => {
     ]) {
       const newPermission = await shareCatalogCollection(
         {
-          catalogCollectionId: publicCatalogId,
+          catalogCollectionId: publicCatalog.id,
           shortnameOrEmail: user.email,
           permissionLevel,
         },
@@ -1672,9 +1901,22 @@ describe('Unit tests for sharing service', () => {
       expect(newPermission!.permissionLevel).toBe(permissionLevel)
       expect(newPermission!.isOwn).toBe(false)
 
+      const dbPermission = await prisma.permission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: publicCatalog.id,
+            userId: user.id,
+          },
+        },
+      })
+      expect(dbPermission).toBeTruthy()
+      expect(dbPermission!.permissionLevel).toBe(permissionLevel)
+      expect(dbPermission!.catalogCollectionId).toBe(publicCatalog.id)
+      expect(dbPermission!.userId).toBe(user.id)
+
       const newPermission2 = await shareCatalogCollection(
         {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           shortnameOrEmail: user.shortname,
           permissionLevel,
         },
@@ -1686,10 +1928,32 @@ describe('Unit tests for sharing service', () => {
       expect(newPermission2!.userEmail).toBe(user.email)
       expect(newPermission2!.permissionLevel).toBe(permissionLevel)
       expect(newPermission2!.isOwn).toBe(false)
+
+      const dbPermission2 = await prisma.permission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId: restrictedCatalog.id,
+            userId: user.id,
+          },
+        },
+      })
+      expect(dbPermission2).toBeTruthy()
+      expect(dbPermission2!.permissionLevel).toBe(permissionLevel)
+      expect(dbPermission2!.catalogCollectionId).toBe(restrictedCatalog.id)
+      expect(dbPermission2!.userId).toBe(user.id)
     }
   })
 
   it('Verify that users with direct access can see all collections, other users can only see restricted catalog collection (empty public ones are hidden)', async () => {
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     for (const ctx of [userOneCtx, userTwoCtx, userThreeCtx, userFourCtx]) {
       const collections = await getCatalogCollectionsList(ctx)
       expect(collections).toHaveLength(2)
@@ -1707,14 +1971,25 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Add answer collections to the catalog and verify required permissions', async () => {
+    // create answer collections and catalog collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     // verify that user 2 has insufficient permissions on the catalog collections
     // verify that users 3, 4, and 5 have insufficient permissions either on the catalog collection or answer collections (or both)
     for (const ctx of [userTwoCtx, userThreeCtx, userFourCtx, userFiveCtx]) {
       const res1 = await addObjectToCatalog(
         {
           access: ObjectAccess.PUBLIC,
-          catalogCollectionId: publicCatalogId,
-          answerCollectionId: AC1Id,
+          catalogCollectionId: publicCatalog.id,
+          answerCollectionId: AC1.id,
         },
         ctx
       )
@@ -1723,8 +1998,8 @@ describe('Unit tests for sharing service', () => {
       const res2 = await addObjectToCatalog(
         {
           access: ObjectAccess.RESTRICTED,
-          catalogCollectionId: restrictedCatalogId,
-          answerCollectionId: AC2Id,
+          catalogCollectionId: restrictedCatalog.id,
+          answerCollectionId: AC2.id,
         },
         ctx
       )
@@ -1738,7 +2013,7 @@ describe('Unit tests for sharing service', () => {
           not: MISSING_CATALOG_COLLECTION_ID,
         },
         answerCollectionId: {
-          in: [AC1Id, AC2Id],
+          in: [AC1.id, AC2.id],
         },
       },
     })
@@ -1747,23 +2022,23 @@ describe('Unit tests for sharing service', () => {
     // assign the two answer collections to both the public and restricted catalog collections
     for (const { catalogId, collectionId, access } of [
       {
-        catalogId: publicCatalogId,
-        collectionId: AC1Id,
+        catalogId: publicCatalog.id,
+        collectionId: AC1.id,
         access: ObjectAccess.PUBLIC,
       },
       {
-        catalogId: publicCatalogId,
-        collectionId: AC2Id,
+        catalogId: publicCatalog.id,
+        collectionId: AC2.id,
         access: ObjectAccess.RESTRICTED,
       },
       {
-        catalogId: restrictedCatalogId,
-        collectionId: AC1Id,
+        catalogId: restrictedCatalog.id,
+        collectionId: AC1.id,
         access: ObjectAccess.PUBLIC,
       },
       {
-        catalogId: restrictedCatalogId,
-        collectionId: AC2Id,
+        catalogId: restrictedCatalog.id,
+        collectionId: AC2.id,
         access: ObjectAccess.RESTRICTED,
       },
     ]) {
@@ -1784,26 +2059,57 @@ describe('Unit tests for sharing service', () => {
       expect(res!.isManager).toBe(true)
       expect(res!.isRequested).toBe(false)
       expect(res!.isShared).toBe(false)
+
+      const dbAssignment = await prisma.catalogCollectionAssignment.findUnique({
+        where: {
+          answerCollectionId_catalogCollectionId: {
+            answerCollectionId: collectionId,
+            catalogCollectionId: catalogId,
+          },
+        },
+      })
+      expect(dbAssignment).toBeTruthy()
+      expect(dbAssignment!.access).toBe(access)
+      expect(dbAssignment!.catalogCollectionId).toBe(catalogId)
+      expect(dbAssignment!.answerCollectionId).toBe(collectionId)
     }
 
-    // verify that a total number of 6 catalog object assignments are stored in the database now (incl. 2 on top level)
+    // verify that a total number of 6 catalog object assignments are stored in the database now
     const dbAssignments2 = await prisma.catalogCollectionAssignment.count({
       where: {
         answerCollectionId: {
-          in: [AC1Id, AC2Id],
+          in: [AC1.id, AC2.id],
         },
       },
     })
-    expect(dbAssignments2).toBe(6)
+    expect(dbAssignments2).toBe(4)
   })
 
   it('Verify modification object access on catalog collections and their interplay with object permissions', async () => {
+    // create answer collections and catalog collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+    await seedAnswerCollectionCatalogAssignments(
+      prisma,
+      AC1.id,
+      AC2.id,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     // verify that object access permissions on top catalog collection are determined by object access (users 1 and 2 have sufficient permissions)
     const topAssignmentAC1 =
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
+            answerCollectionId: AC1.id,
             catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
           },
         },
@@ -1842,7 +2148,7 @@ describe('Unit tests for sharing service', () => {
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
+            answerCollectionId: AC1.id,
             catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
           },
         },
@@ -1863,7 +2169,7 @@ describe('Unit tests for sharing service', () => {
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
+            answerCollectionId: AC1.id,
             catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
           },
         },
@@ -1884,7 +2190,7 @@ describe('Unit tests for sharing service', () => {
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
+            answerCollectionId: AC1.id,
             catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
           },
         },
@@ -1898,8 +2204,8 @@ describe('Unit tests for sharing service', () => {
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
-            catalogCollectionId: publicCatalogId,
+            answerCollectionId: AC1.id,
+            catalogCollectionId: publicCatalog.id,
           },
         },
       })
@@ -1928,8 +2234,8 @@ describe('Unit tests for sharing service', () => {
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
-            catalogCollectionId: publicCatalogId,
+            answerCollectionId: AC1.id,
+            catalogCollectionId: publicCatalog.id,
           },
         },
       })
@@ -1949,8 +2255,8 @@ describe('Unit tests for sharing service', () => {
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
-            catalogCollectionId: publicCatalogId,
+            answerCollectionId: AC1.id,
+            catalogCollectionId: publicCatalog.id,
           },
         },
       })
@@ -1970,8 +2276,8 @@ describe('Unit tests for sharing service', () => {
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
-            catalogCollectionId: publicCatalogId,
+            answerCollectionId: AC1.id,
+            catalogCollectionId: publicCatalog.id,
           },
         },
       })
@@ -1991,8 +2297,8 @@ describe('Unit tests for sharing service', () => {
       await prisma.catalogCollectionAssignment.findUnique({
         where: {
           answerCollectionId_catalogCollectionId: {
-            answerCollectionId: AC1Id,
-            catalogCollectionId: publicCatalogId,
+            answerCollectionId: AC1.id,
+            catalogCollectionId: publicCatalog.id,
           },
         },
       })
@@ -2011,13 +2317,22 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that all users with WRITE permissions on a catalog collection can trigger name modifications', async () => {
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     const newName = `${catalogCollection1.name} (New)`
     const newName2 = `${catalogCollection2.name} (New)`
 
     // users 2 and 5 have insufficient permissions
     const failure1 = await changeCatalogCollectionName(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
         name: newName,
       },
       userTwoCtx
@@ -2026,7 +2341,7 @@ describe('Unit tests for sharing service', () => {
 
     const failure2 = await changeCatalogCollectionName(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
         name: newName,
       },
       userFiveCtx
@@ -2036,7 +2351,7 @@ describe('Unit tests for sharing service', () => {
     // verify that the name of the catalog collection has not been modified
     const dbCatalog1 = await prisma.catalogCollection.findUnique({
       where: {
-        id: publicCatalogId,
+        id: publicCatalog.id,
       },
     })
     expect(dbCatalog1).toBeTruthy()
@@ -2045,7 +2360,7 @@ describe('Unit tests for sharing service', () => {
     // modify the name of the catalog collection through users 1, 3, and 4
     const success1 = await changeCatalogCollectionName(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
         name: newName,
       },
       userOneCtx
@@ -2054,7 +2369,7 @@ describe('Unit tests for sharing service', () => {
 
     const dbCatalog2 = await prisma.catalogCollection.findUnique({
       where: {
-        id: publicCatalogId,
+        id: publicCatalog.id,
       },
     })
     expect(dbCatalog2).toBeTruthy()
@@ -2062,7 +2377,7 @@ describe('Unit tests for sharing service', () => {
 
     const success2 = await changeCatalogCollectionName(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
         name: newName2,
       },
       userThreeCtx
@@ -2071,7 +2386,7 @@ describe('Unit tests for sharing service', () => {
 
     const dbCatalog3 = await prisma.catalogCollection.findUnique({
       where: {
-        id: publicCatalogId,
+        id: publicCatalog.id,
       },
     })
     expect(dbCatalog3).toBeTruthy()
@@ -2079,7 +2394,7 @@ describe('Unit tests for sharing service', () => {
 
     const success3 = await changeCatalogCollectionName(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
         name: catalogCollection1.name,
       },
       userFourCtx
@@ -2088,7 +2403,7 @@ describe('Unit tests for sharing service', () => {
 
     const dbCatalog4 = await prisma.catalogCollection.findUnique({
       where: {
-        id: publicCatalogId,
+        id: publicCatalog.id,
       },
     })
     expect(dbCatalog4).toBeTruthy()
@@ -2096,11 +2411,29 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that user 5 can request access and import public answer collections in public catalog (incl. clean up)', async () => {
+    // create answer collections and catalog collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+    await seedAnswerCollectionCatalogAssignments(
+      prisma,
+      AC1.id,
+      AC2.id,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     // verify that requesting / importing answer collections through the restricted catalog collection does not work
     const failure1 = await requestCatalogObject(
       {
-        catalogCollectionId: restrictedCatalogId,
-        answerCollectionId: AC1Id,
+        catalogCollectionId: restrictedCatalog.id,
+        answerCollectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -2108,8 +2441,8 @@ describe('Unit tests for sharing service', () => {
 
     const failure2 = await importAnswerCollection(
       {
-        catalogCollectionId: restrictedCatalogId,
-        collectionId: AC1Id,
+        catalogCollectionId: restrictedCatalog.id,
+        collectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -2127,8 +2460,8 @@ describe('Unit tests for sharing service', () => {
     // request access to public and restricted AC
     const success1 = await requestCatalogObject(
       {
-        catalogCollectionId: publicCatalogId,
-        answerCollectionId: AC1Id,
+        catalogCollectionId: publicCatalog.id,
+        answerCollectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -2136,8 +2469,8 @@ describe('Unit tests for sharing service', () => {
 
     const success2 = await requestCatalogObject(
       {
-        catalogCollectionId: publicCatalogId,
-        answerCollectionId: AC2Id,
+        catalogCollectionId: publicCatalog.id,
+        answerCollectionId: AC2.id,
       },
       userFiveCtx
     )
@@ -2149,13 +2482,13 @@ describe('Unit tests for sharing service', () => {
     expect(pendingAccessRequest2.length).toBe(4) // 2 access requests, one entry in table each for 1 ADMIN and 1 OWNER
     expect(
       pendingAccessRequest2.map((permission) => permission.answerCollectionId)
-    ).toEqual(expect.arrayContaining([AC1Id, AC1Id]))
+    ).toEqual(expect.arrayContaining([AC1.id, AC1.id]))
 
     // import public AC and verify that importing restricted AC does not work
     const failure3 = await importAnswerCollection(
       {
-        catalogCollectionId: publicCatalogId,
-        collectionId: AC2Id, // restricted answer collection
+        catalogCollectionId: publicCatalog.id,
+        collectionId: AC2.id, // restricted answer collection
       },
       userFiveCtx
     )
@@ -2163,8 +2496,8 @@ describe('Unit tests for sharing service', () => {
 
     const success3 = await importAnswerCollection(
       {
-        catalogCollectionId: publicCatalogId,
-        collectionId: AC1Id, // public answer collection
+        catalogCollectionId: publicCatalog.id,
+        collectionId: AC1.id, // public answer collection
       },
       userFiveCtx
     )
@@ -2174,14 +2507,14 @@ describe('Unit tests for sharing service', () => {
       where: { ownerId: userFive.id },
     })
     expect(importedACs2.length).toBe(1)
-    expect(importedACs2[0]!.originalId).toBe(AC1Id)
+    expect(importedACs2[0]!.originalId).toBe(AC1.id)
     expect(importedACs2[0]!.name).toBe(answerCollection1.name)
 
     // verify that duplicate requests are not accepted, duplicate imports are not a problem
     const failure4 = await requestCatalogObject(
       {
-        catalogCollectionId: publicCatalogId,
-        answerCollectionId: AC1Id,
+        catalogCollectionId: publicCatalog.id,
+        answerCollectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -2194,8 +2527,8 @@ describe('Unit tests for sharing service', () => {
 
     const success4 = await importAnswerCollection(
       {
-        catalogCollectionId: publicCatalogId,
-        collectionId: AC1Id,
+        catalogCollectionId: publicCatalog.id,
+        collectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -2205,9 +2538,9 @@ describe('Unit tests for sharing service', () => {
       where: { ownerId: userFive.id },
     })
     expect(importedACs3.length).toBe(2)
-    expect(importedACs3[0]!.originalId).toBe(AC1Id)
+    expect(importedACs3[0]!.originalId).toBe(AC1.id)
     expect(importedACs3[0]!.name).toContain(answerCollection1.name)
-    expect(importedACs3[1]!.originalId).toBe(AC1Id)
+    expect(importedACs3[1]!.originalId).toBe(AC1.id)
     expect(importedACs3[1]!.name).toContain(answerCollection1.name)
 
     // delete the imported answer collections (2) and the two pending permission requests
@@ -2218,10 +2551,19 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Request and approve / deny requests to restricted catalog collection', async () => {
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     // request access to the restricted catalog collection for user 5
     const success1 = await requestCatalogCollection(
       {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userFiveCtx
     )
@@ -2229,7 +2571,7 @@ describe('Unit tests for sharing service', () => {
 
     const pendingAccessRequest1 = await prisma.accessRequest.findFirst({
       where: {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         userId: userFive.id,
       },
     })
@@ -2287,7 +2629,7 @@ describe('Unit tests for sharing service', () => {
 
     const pendingAccessRequest2 = await prisma.accessRequest.findFirst({
       where: {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         userId: userFive.id,
       },
     })
@@ -2309,7 +2651,7 @@ describe('Unit tests for sharing service', () => {
     const deniedPermission = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFive.id,
         },
       },
@@ -2318,14 +2660,14 @@ describe('Unit tests for sharing service', () => {
 
     // request access to the restricted catalog collection for user 5 again
     const success3 = await requestCatalogCollection(
-      { catalogCollectionId: restrictedCatalogId },
+      { catalogCollectionId: restrictedCatalog.id },
       userFiveCtx
     )
     expect(success3).toBeTruthy()
 
     const pendingAccessRequest3 = await prisma.accessRequest.findFirst({
       where: {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         userId: userFive.id,
       },
     })
@@ -2348,7 +2690,7 @@ describe('Unit tests for sharing service', () => {
     const approvedAccessRequest = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFive.id,
         },
       },
@@ -2358,11 +2700,42 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('After being granted access, verify that user 5 can now request / import answer collections from restricted catalog collection (incl. clean up)', async () => {
+    // create answer collections and catalog collections for testing
+    const { AC1, AC2 } = await createAnswerCollections(prisma)
+    await seedAnswerCollectionPermissions(prisma, AC1.id, AC2.id)
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+    await seedAnswerCollectionCatalogAssignments(
+      prisma,
+      AC1.id,
+      AC2.id,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
+    // seed required permission for user 5
+    await prisma.permission.create({
+      data: {
+        permissionLevel: PermissionLevel.READ,
+        catalogCollectionId: restrictedCatalog.id,
+        userId: userFive.id,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: restrictedCatalog.id, userId: userFive.id },
+      prisma
+    )
+
     // request access to restricted answer collection
     const success1 = await requestCatalogObject(
       {
-        catalogCollectionId: restrictedCatalogId,
-        answerCollectionId: AC2Id,
+        catalogCollectionId: restrictedCatalog.id,
+        answerCollectionId: AC2.id,
       },
       userFiveCtx
     )
@@ -2370,7 +2743,7 @@ describe('Unit tests for sharing service', () => {
 
     const pendingAccessRequest = await prisma.accessRequest.findFirst({
       where: {
-        answerCollectionId: AC2Id,
+        answerCollectionId: AC2.id,
         userId: userFive.id,
       },
     })
@@ -2380,8 +2753,8 @@ describe('Unit tests for sharing service', () => {
     // import public answer collection
     const success2 = await importAnswerCollection(
       {
-        catalogCollectionId: restrictedCatalogId,
-        collectionId: AC1Id,
+        catalogCollectionId: restrictedCatalog.id,
+        collectionId: AC1.id,
       },
       userFiveCtx
     )
@@ -2393,7 +2766,7 @@ describe('Unit tests for sharing service', () => {
       },
     })
     expect(importedACs.length).toBe(1)
-    expect(importedACs[0]!.originalId).toBe(AC1Id)
+    expect(importedACs[0]!.originalId).toBe(AC1.id)
     expect(importedACs[0]!.name).toBe(answerCollection1.name)
 
     // clean up - remove imported answer collection and pending permission request
@@ -2411,10 +2784,19 @@ describe('Unit tests for sharing service', () => {
   })
 
   it("Verify that only users with ADMIN permissions on catalog collection can change other user's permissions", async () => {
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     const permissionUser2 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userTwo.id,
         },
       },
@@ -2427,7 +2809,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: permissionUser2!.id,
         permissionLevel: PermissionLevel.ADMIN,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userTwoCtx
     )
@@ -2437,7 +2819,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: permissionUser2!.id,
         permissionLevel: PermissionLevel.ADMIN,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userThreeCtx
     )
@@ -2446,7 +2828,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: permissionUser2!.id,
         permissionLevel: PermissionLevel.ADMIN,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userFiveCtx
     )
@@ -2455,7 +2837,7 @@ describe('Unit tests for sharing service', () => {
     const permissionVerification1 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userTwo.id,
         },
       },
@@ -2468,7 +2850,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: permissionUser2!.id,
         permissionLevel: PermissionLevel.ADMIN,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userOneCtx
     )
@@ -2477,7 +2859,7 @@ describe('Unit tests for sharing service', () => {
     const permissionVerification2 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userTwo.id,
         },
       },
@@ -2490,7 +2872,7 @@ describe('Unit tests for sharing service', () => {
       {
         permissionId: permissionUser2!.id,
         permissionLevel: PermissionLevel.READ,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userOneCtx
     )
@@ -2499,7 +2881,7 @@ describe('Unit tests for sharing service', () => {
     const permissionVerification3 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userTwo.id,
         },
       },
@@ -2509,11 +2891,20 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that only users with ADMIN permissions on catalog collection can revoke access', async () => {
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     // grant direct READ permission to restricted catalog collection for user 5
     const permission1 = await prisma.permission.upsert({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFive.id,
         },
       },
@@ -2521,7 +2912,7 @@ describe('Unit tests for sharing service', () => {
         permissionLevel: PermissionLevel.READ,
         catalogCollection: {
           connect: {
-            id: restrictedCatalogId,
+            id: restrictedCatalog.id,
           },
         },
         user: {
@@ -2539,7 +2930,7 @@ describe('Unit tests for sharing service', () => {
     const failure1 = await revokeCatalogCollectionAccess(
       {
         permissionId: permission1.id,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userTwoCtx
     )
@@ -2548,7 +2939,7 @@ describe('Unit tests for sharing service', () => {
     const failure2 = await revokeCatalogCollectionAccess(
       {
         permissionId: permission1.id,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userThreeCtx
     )
@@ -2557,7 +2948,7 @@ describe('Unit tests for sharing service', () => {
     const failure3 = await revokeCatalogCollectionAccess(
       {
         permissionId: permission1.id,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userFiveCtx
     )
@@ -2567,7 +2958,7 @@ describe('Unit tests for sharing service', () => {
     const permissionVerification1 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFive.id,
         },
       },
@@ -2579,7 +2970,7 @@ describe('Unit tests for sharing service', () => {
     const revokedPermissionId1 = await revokeCatalogCollectionAccess(
       {
         permissionId: permission1.id,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userOneCtx
     )
@@ -2588,7 +2979,7 @@ describe('Unit tests for sharing service', () => {
     const permissionVerification2 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFive.id,
         },
       },
@@ -2599,7 +2990,7 @@ describe('Unit tests for sharing service', () => {
     const permission2 = await prisma.permission.upsert({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFive.id,
         },
       },
@@ -2607,7 +2998,7 @@ describe('Unit tests for sharing service', () => {
         permissionLevel: PermissionLevel.WRITE,
         catalogCollection: {
           connect: {
-            id: restrictedCatalogId,
+            id: restrictedCatalog.id,
           },
         },
         user: {
@@ -2625,7 +3016,7 @@ describe('Unit tests for sharing service', () => {
     const revokedPermissionId2 = await revokeCatalogCollectionAccess(
       {
         permissionId: permission2.id,
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userFourCtx
     )
@@ -2634,7 +3025,7 @@ describe('Unit tests for sharing service', () => {
     const permissionVerification3 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFive.id,
         },
       },
@@ -2643,10 +3034,19 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that only an catalog collection OWNER can transfer the corresponding rights', async () => {
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     // verify that transferring ownership fails for all users that have no owner privileges
     const failure1 = await transferCatalogCollectionOwnership(
       {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         shortnameOrEmail: userFour.email,
       },
       userTwoCtx
@@ -2655,7 +3055,7 @@ describe('Unit tests for sharing service', () => {
 
     const failure2 = await transferCatalogCollectionOwnership(
       {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         shortnameOrEmail: userFour.email,
       },
       userThreeCtx
@@ -2664,7 +3064,7 @@ describe('Unit tests for sharing service', () => {
 
     const failure3 = await transferCatalogCollectionOwnership(
       {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         shortnameOrEmail: userFour.email,
       },
       userFourCtx
@@ -2673,7 +3073,7 @@ describe('Unit tests for sharing service', () => {
 
     const failure4 = await transferCatalogCollectionOwnership(
       {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         shortnameOrEmail: userFour.email,
       },
       userFiveCtx
@@ -2684,7 +3084,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFour.id,
         },
       },
@@ -2694,7 +3094,7 @@ describe('Unit tests for sharing service', () => {
 
     const newPermission1 = await transferCatalogCollectionOwnership(
       {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         shortnameOrEmail: userFour.email,
       },
       userOneCtx
@@ -2709,7 +3109,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission2 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userOne.id,
         },
       },
@@ -2720,7 +3120,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission3 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFour.id,
         },
       },
@@ -2729,7 +3129,7 @@ describe('Unit tests for sharing service', () => {
 
     const updatedCatalogCollection = await prisma.catalogCollection.findUnique({
       where: {
-        id: restrictedCatalogId,
+        id: restrictedCatalog.id,
       },
     })
     expect(updatedCatalogCollection).toBeTruthy()
@@ -2738,7 +3138,7 @@ describe('Unit tests for sharing service', () => {
     // transfer ownership rights back to original owner (user 1) and validate that the admin permission has been removed
     const newPermission2 = await transferCatalogCollectionOwnership(
       {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
         shortnameOrEmail: userOne.shortname,
       },
       userFourCtx
@@ -2753,7 +3153,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission4 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userFour.id,
         },
       },
@@ -2764,7 +3164,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermission5 = await prisma.permission.findUnique({
       where: {
         catalogCollectionId_userId: {
-          catalogCollectionId: restrictedCatalogId,
+          catalogCollectionId: restrictedCatalog.id,
           userId: userOne.id,
         },
       },
@@ -2773,49 +3173,19 @@ describe('Unit tests for sharing service', () => {
   })
 
   // TODO: extend this test workflow as soon as direct sharing functionalities for activities / activity templates are available
-  const LQAT1Id = 'ca9f1fc4-0daf-4cdb-92b3-e55557b24831'
-  const LQAT2Id = '86ff081d-07cd-4bea-91b7-fc633ed7a092'
-  const LQAT3Id = '3be3228c-4a64-4a84-8743-46c4ba0ed333'
   it('Validate that access to activity templates is correctly checked', async () => {
-    // create activity templates (without content, simply for access validation)
-    const templateData = [
-      { id: LQAT1Id, name: 'LQAT1' },
-      { id: LQAT2Id, name: 'LQAT2' },
-      { id: LQAT3Id, name: 'LQAT3' },
-    ]
-    const ATs = await Promise.all(
-      templateData.map(async ({ id, name }) => {
-        const newTemplate = await prisma.activityTemplate.create({
-          data: {
-            description: `${name} Description`,
-            instructions: `${name} Instructions`,
-            liveQuiz: {
-              create: {
-                id, // activity id is relevant (connected to assignments, etc. - templateId mainly for routing)
-                name,
-                displayName: name,
-                status: PublicationStatus.TEMPLATE,
-                owner: {
-                  connect: {
-                    id: userOne.id,
-                  },
-                },
-              },
-            },
-          },
-        })
+    // create activity templates for testing
+    const { LQ1Id, LQ2Id, LQ3Id, templateId1, templateId2, templateId3 } =
+      await createLiveQuizTemplates(prisma)
 
-        await recomputeDerivedPermissions(
-          { liveQuizId: id, userId: userOne.id },
-          prisma
-        )
-
-        return newTemplate
-      })
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
     )
-    const templateId1 = ATs.find((AT) => AT.liveQuizId === LQAT1Id)!.id
-    const templateId2 = ATs.find((AT) => AT.liveQuizId === LQAT2Id)!.id
-    const templateId3 = ATs.find((AT) => AT.liveQuizId === LQAT3Id)!.id
 
     // verify that the creation was successful
     const templates = await prisma.liveQuiz.findMany({
@@ -2825,14 +3195,14 @@ describe('Unit tests for sharing service', () => {
     })
     expect(templates.length).toBe(3)
     expect(templates.map((template) => template.id)).toEqual(
-      expect.arrayContaining([LQAT1Id, LQAT2Id, LQAT3Id])
+      expect.arrayContaining([LQ1Id, LQ2Id, LQ3Id])
     )
 
-    // add LQAT1 to top level catlaog collection with public access -> should be accessible to everyone
+    // add LQ1 to top level catlaog collection with public access -> should be accessible to everyone
     const assignment1 = await prisma.catalogCollectionAssignment.upsert({
       where: {
         liveQuizId_catalogCollectionId: {
-          liveQuizId: LQAT1Id,
+          liveQuizId: LQ1Id,
           catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
         },
       },
@@ -2840,12 +3210,12 @@ describe('Unit tests for sharing service', () => {
         access: ObjectAccess.PUBLIC,
         liveQuiz: {
           connect: {
-            id: LQAT1Id,
+            id: LQ1Id,
           },
         },
         catalogCollection: {
           connect: {
-            id: publicCatalogId,
+            id: publicCatalog.id,
           },
         },
       },
@@ -2881,24 +3251,24 @@ describe('Unit tests for sharing service', () => {
     )
     expect(res5).toBeTruthy()
 
-    // add LQAT2 to public catalog collection with public access rights -> should be accessible to everyone
+    // add LQ2 to public catalog collection with public access rights -> should be accessible to everyone
     const assignment2 = await prisma.catalogCollectionAssignment.upsert({
       where: {
         liveQuizId_catalogCollectionId: {
-          liveQuizId: LQAT2Id,
-          catalogCollectionId: publicCatalogId,
+          liveQuizId: LQ2Id,
+          catalogCollectionId: publicCatalog.id,
         },
       },
       create: {
         access: ObjectAccess.PUBLIC,
         liveQuiz: {
           connect: {
-            id: LQAT2Id,
+            id: LQ2Id,
           },
         },
         catalogCollection: {
           connect: {
-            id: publicCatalogId,
+            id: publicCatalog.id,
           },
         },
       },
@@ -2934,24 +3304,24 @@ describe('Unit tests for sharing service', () => {
     )
     expect(res10).toBeTruthy()
 
-    // add LQAT3 to restricted catalog collection with public access rights -> should be accessible to users with access to the restricted catalog collection
+    // add LQ3 to restricted catalog collection with public access rights -> should be accessible to users with access to the restricted catalog collection
     const assignment3 = await prisma.catalogCollectionAssignment.upsert({
       where: {
         liveQuizId_catalogCollectionId: {
-          liveQuizId: LQAT3Id,
-          catalogCollectionId: restrictedCatalogId,
+          liveQuizId: LQ3Id,
+          catalogCollectionId: restrictedCatalog.id,
         },
       },
       create: {
         access: ObjectAccess.PUBLIC,
         liveQuiz: {
           connect: {
-            id: LQAT3Id,
+            id: LQ3Id,
           },
         },
         catalogCollection: {
           connect: {
-            id: restrictedCatalogId,
+            id: restrictedCatalog.id,
           },
         },
       },
@@ -2990,10 +3360,13 @@ describe('Unit tests for sharing service', () => {
 
   // TODO: extend this test to verify that also users with admin permissions on an activity / activity template can delete these
   it('Verify that only users with sufficient permissions can delete the created activity templates', async () => {
+    // create activity templates for testing
+    const { LQ1Id, LQ2Id, LQ3Id } = await createLiveQuizTemplates(prisma)
+
     // deleting activity template is only possible with sufficient permissions
     const res1 = await deleteActivityTemplate(
       {
-        activityId: LQAT1Id,
+        activityId: LQ1Id,
         activityType: ActivityType.LIVE_QUIZ,
       },
       userTwoCtx
@@ -3001,7 +3374,7 @@ describe('Unit tests for sharing service', () => {
     expect(res1).toBeNull()
     const res2 = await deleteActivityTemplate(
       {
-        activityId: LQAT1Id,
+        activityId: LQ1Id,
         activityType: ActivityType.LIVE_QUIZ,
       },
       userThreeCtx
@@ -3009,7 +3382,7 @@ describe('Unit tests for sharing service', () => {
     expect(res2).toBeNull()
     const res3 = await deleteActivityTemplate(
       {
-        activityId: LQAT1Id,
+        activityId: LQ1Id,
         activityType: ActivityType.LIVE_QUIZ,
       },
       userFourCtx
@@ -3017,7 +3390,7 @@ describe('Unit tests for sharing service', () => {
     expect(res3).toBeNull()
     const res4 = await deleteActivityTemplate(
       {
-        activityId: LQAT1Id,
+        activityId: LQ1Id,
         activityType: ActivityType.LIVE_QUIZ,
       },
       userFiveCtx
@@ -3027,7 +3400,7 @@ describe('Unit tests for sharing service', () => {
     // delete activity templates with owner / admin permissions
     const res5 = await deleteActivityTemplate(
       {
-        activityId: LQAT1Id,
+        activityId: LQ1Id,
         activityType: ActivityType.LIVE_QUIZ,
       },
       userOneCtx
@@ -3035,7 +3408,7 @@ describe('Unit tests for sharing service', () => {
     expect(res5).toBeTruthy()
     const res6 = await deleteActivityTemplate(
       {
-        activityId: LQAT2Id,
+        activityId: LQ2Id,
         activityType: ActivityType.LIVE_QUIZ,
       },
       userOneCtx
@@ -3043,7 +3416,7 @@ describe('Unit tests for sharing service', () => {
     expect(res6).toBeTruthy()
     const res7 = await deleteActivityTemplate(
       {
-        activityId: LQAT3Id,
+        activityId: LQ3Id,
         activityType: ActivityType.LIVE_QUIZ,
       },
       userOneCtx
@@ -3060,10 +3433,19 @@ describe('Unit tests for sharing service', () => {
   })
 
   it('Verify that only users with ADMIN or OWNER permissions can delete a catalog collection', async () => {
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await createCatalogCollections(prisma)
+    await seedCatalogCollectionPermissions(
+      prisma,
+      publicCatalog.id,
+      restrictedCatalog.id
+    )
+
     // verify that the deletion of a catalog collection by users without sufficient permissions fails
     const deletedCollectionId1 = await deleteCatalogCollection(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
       },
       userTwoCtx
     )
@@ -3071,7 +3453,7 @@ describe('Unit tests for sharing service', () => {
 
     const deletedCollectionId2 = await deleteCatalogCollection(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
       },
       userThreeCtx
     )
@@ -3079,7 +3461,7 @@ describe('Unit tests for sharing service', () => {
 
     const deletedCollectionId3 = await deleteCatalogCollection(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
       },
       userFiveCtx
     )
@@ -3088,16 +3470,16 @@ describe('Unit tests for sharing service', () => {
     // delete the public catalog collection through user 1 with owner permissions
     const deletedCollectionId4 = await deleteCatalogCollection(
       {
-        catalogCollectionId: publicCatalogId,
+        catalogCollectionId: publicCatalog.id,
       },
       userOneCtx
     )
     expect(deletedCollectionId4).toBeTruthy()
-    expect(deletedCollectionId4).toBe(publicCatalogId)
+    expect(deletedCollectionId4).toBe(publicCatalog.id)
 
     const dbCatalog1 = await prisma.catalogCollection.findUnique({
       where: {
-        id: publicCatalogId,
+        id: publicCatalog.id,
       },
     })
     expect(dbCatalog1).toBeNull()
@@ -3105,22 +3487,24 @@ describe('Unit tests for sharing service', () => {
     // delete the restricted catalog collection through user 4 with admin permissions
     const deletedCollectionId5 = await deleteCatalogCollection(
       {
-        catalogCollectionId: restrictedCatalogId,
+        catalogCollectionId: restrictedCatalog.id,
       },
       userFourCtx
     )
     expect(deletedCollectionId5).toBeTruthy()
-    expect(deletedCollectionId5).toBe(restrictedCatalogId)
+    expect(deletedCollectionId5).toBe(restrictedCatalog.id)
 
     const dbCatalog2 = await prisma.catalogCollection.findUnique({
       where: {
-        id: restrictedCatalogId,
+        id: restrictedCatalog.id,
       },
     })
     expect(dbCatalog2).toBeNull()
   })
 
-  it('Verify that all catalog assignments have been removed automatically, clean up created answer collections and users', async () => {
+  // ! Cleanup
+  // #region
+  it('Verify that objects and permissions have been removed correctly and delete users', async () => {
     // verify that only the default catalog collection is left in the database
     const dbCatalogs = await prisma.catalogCollection.count()
     expect(dbCatalogs).toBe(1)
@@ -3147,8 +3531,7 @@ describe('Unit tests for sharing service', () => {
     const dbPermissions = await prisma.element.count()
     expect(dbPermissions).toBe(0)
 
-    // delete all answer collections that are left in the database
-    await prisma.answerCollection.deleteMany({})
+    // ensure that no answer collections are left in the database
     const dbAnswerCollections = await prisma.answerCollection.count()
     expect(dbAnswerCollections).toBe(0)
 
@@ -3163,6 +3546,7 @@ describe('Unit tests for sharing service', () => {
     const dbUsers = await prisma.user.count()
     expect(dbUsers).toBe(0)
   })
+  // #endregion
 
   // TODO: make sure to extend tests once element and activity sharing is available with modifications and impact on derived permissions when executing the following actions
   // - switch of answer collection linked to an element - derived access to previous collection should be removed, access to new one automatically added
