@@ -1435,7 +1435,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       updateElementInstances: t.withAuth(asUserFullAccess).field({
         type: [ElementInstance],
         args: {
@@ -1443,6 +1442,21 @@ export const Mutation = builder.mutationType({
           includeTemplates: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on element required
+          if (
+            !checkAccess(
+              [
+                {
+                  elementId: args.elementId,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return []
+          }
+
           return QuestionService.updateElementInstances(args, ctx)
         },
       }),

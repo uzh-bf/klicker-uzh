@@ -793,11 +793,17 @@ export async function updateElementInstances(
       ]
     : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
 
+  // only activities where the user has at least WRITE permissions should be updated
+  const requiredActivityAccess: DB.PermissionLevel[] = [
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ]
+
   const element = await ctx.prisma.element.findUnique({
     where: {
       id: elementId,
       isDeleted: false,
-      ownerId: ctx.user.sub,
     },
     include: {
       elementInstances: {
@@ -809,6 +815,15 @@ export async function updateElementInstances(
                   status: {
                     in: acceptedStatusValues,
                   },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
+                  },
                 },
                 include: {
                   templateInfo: true,
@@ -819,6 +834,15 @@ export async function updateElementInstances(
                   status: {
                     in: acceptedStatusValues,
                   },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
+                  },
                 },
                 include: {
                   templateInfo: true,
@@ -828,6 +852,15 @@ export async function updateElementInstances(
                 where: {
                   status: {
                     in: acceptedStatusValues,
+                  },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
                   },
                 },
                 include: {
@@ -842,6 +875,7 @@ export async function updateElementInstances(
               liveQuiz: {
                 include: {
                   templateInfo: true,
+                  permissions: true,
                 },
               },
             },
@@ -883,12 +917,18 @@ export async function updateElementInstances(
     }[]
   >((acc, instance) => {
     if (
-      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
-      instance.elementBlock?.liveQuiz?.status ===
-        DB.PublicationStatus.SCHEDULED ||
-      (includeTemplates &&
+      (instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
         instance.elementBlock?.liveQuiz?.status ===
-          DB.PublicationStatus.TEMPLATE)
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplates &&
+          instance.elementBlock?.liveQuiz?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
+      // ensure that user has at least WRITE permissions on activity (cannot be checked with where clause above)
+      instance.elementBlock.liveQuiz.permissions
+        .filter((permission) => permission.userId === ctx.user.sub)
+        .some((permission) =>
+          requiredActivityAccess.includes(permission.permissionLevel)
+        )
     ) {
       acc.push({
         instanceId: instance.id,
@@ -902,13 +942,7 @@ export async function updateElementInstances(
 
       return acc
     } else if (
-      (instance.elementStack?.microLearning?.status ===
-        DB.PublicationStatus.DRAFT ||
-        instance.elementStack?.microLearning?.status ===
-          DB.PublicationStatus.SCHEDULED ||
-        (includeTemplates &&
-          instance.elementStack?.microLearning?.status ===
-            DB.PublicationStatus.TEMPLATE)) &&
+      instance.elementStack?.microLearning &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -923,13 +957,7 @@ export async function updateElementInstances(
 
       return acc
     } else if (
-      (instance.elementStack?.practiceQuiz?.status ===
-        DB.PublicationStatus.DRAFT ||
-        instance.elementStack?.practiceQuiz?.status ===
-          DB.PublicationStatus.SCHEDULED ||
-        (includeTemplates &&
-          instance.elementStack?.practiceQuiz?.status ===
-            DB.PublicationStatus.TEMPLATE)) &&
+      instance.elementStack?.practiceQuiz &&
       asynchronousActivityValid
     ) {
       acc.push({
@@ -943,15 +971,7 @@ export async function updateElementInstances(
       })
 
       return acc
-    } else if (
-      instance.elementStack?.groupActivity?.status ===
-        DB.PublicationStatus.DRAFT ||
-      instance.elementStack?.groupActivity?.status ===
-        DB.PublicationStatus.SCHEDULED ||
-      (includeTemplates &&
-        instance.elementStack?.groupActivity?.status ===
-          DB.PublicationStatus.TEMPLATE)
-    ) {
+    } else if (instance.elementStack?.groupActivity) {
       acc.push({
         instanceId: instance.id,
         multiplier: instance.elementStack.groupActivity.pointsMultiplier,
