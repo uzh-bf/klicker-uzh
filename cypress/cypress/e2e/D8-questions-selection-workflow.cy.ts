@@ -2,10 +2,13 @@ import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for selection elements', function () {
   beforeEach('Login the lecturer and load data fixture', function () {
-    cy.loginLecturer()
     cy.fixture('D-questions.json').then((data) => {
       this.data = data
     })
+
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').should('exist')
+    cy.get('[data-cy="analytics"]').should('exist')
   })
 
   // ! Selection questions
@@ -17,6 +20,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       name: this.data.SE.collection,
       description: this.data.SE.collectionDescription,
       entries: [...this.data.SE.solutions, ...this.data.SE.solutionsNotChosen],
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createAnswerCollection({
       name: this.data.SE.collectionEdited,
@@ -25,6 +29,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
         ...this.data.SE.solutionsEdited,
         ...this.data.SE.solutionsNotChosenEdited,
       ],
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -175,6 +180,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
 
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -233,8 +239,9 @@ describe('Test creation and editing functionalities, validation, etc. for select
       `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
-    cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
 
+    cy.get('[data-cy="open-answer-collection-options"]').click()
+    cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -349,6 +356,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
 
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -367,6 +375,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       `[data-cy="answer-collection-actions-${this.data.SE.collectionEdited}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -395,6 +404,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       `[data-cy="answer-collection-actions-${this.data.SE.collection}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutions).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -413,6 +423,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
       `[data-cy="answer-collection-actions-${this.data.SE.collectionEdited}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.SE.solutionsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'

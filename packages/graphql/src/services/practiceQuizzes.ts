@@ -169,6 +169,35 @@ export async function getSinglePracticeQuiz(
   return quiz
 }
 
+export async function getCoursePublishedPracticeQuizzes(
+  { courseId }: { courseId: string },
+  ctx: Context
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      practiceQuizzes: {
+        where: {
+          status: PublicationStatus.PUBLISHED,
+          isDeleted: false,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+    },
+  })
+
+  return course?.practiceQuizzes
+    ? (course.practiceQuizzes.map((quiz) => ({
+        ...quiz,
+        course,
+      })) ?? [])
+    : []
+}
+
 interface ManipulatePracticeQuizArgs {
   id?: string
   name: string

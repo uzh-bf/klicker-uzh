@@ -138,33 +138,27 @@ interface AnswerCollectionArgs {
   name: string
   description: string
   entries: string[]
+  userId: string
 }
 
 Cypress.Commands.add(
   'createAnswerCollection',
-  ({ name, description, entries }: AnswerCollectionArgs) => {
-    cy.get('[data-cy="create-answer-collection"]').click()
-    cy.get('[data-cy="answer-collection-name"]').type(name)
-    cy.get('[data-cy="answer-collection-name"]').should('have.value', name)
-
-    cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
-      .type(description)
-    cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
-      .contains(description)
-
-    cy.get('[data-cy="response-entry-0"]').type(entries[0])
-    cy.get('[data-cy="response-entry-0"]').should('have.value', entries[0])
-    cy.get('[data-cy="response-entry-1"]').type(entries[1])
-    cy.get('[data-cy="response-entry-1"]').should('have.value', entries[1])
-    entries.slice(2).forEach((value, ix) => {
-      cy.get('[data-cy="add-response-entry"]').click()
-      cy.get(`[data-cy="response-entry-${ix + 2}"]`).type(value)
-      cy.get(`[data-cy="response-entry-${ix + 2}"]`).should('have.value', value)
+  ({ name, description, entries, userId }: AnswerCollectionArgs) => {
+    // trigger answer collection creation directly through prisma action
+    cy.task('createAnswerCollection', {
+      name,
+      description,
+      entries,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error('Answer collection creation failed!')
+      }
     })
 
-    cy.get('[data-cy="submit-create-answer-collection"]').click()
+    // check if the created answer collection is visible
+    cy.reload()
     cy.get(`[data-cy="answer-collection-${name}"]`).should('exist')
   }
 )
@@ -219,533 +213,264 @@ Cypress.Commands.add(
 )
 
 interface CreateChoicesQuestionArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
-  choices: { content: string; feedback?: string; correct?: boolean }[]
-  multiplier?: string
+  choices: { value: string; correct?: boolean; feedback?: string }[]
+  multiplier?: number
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionSC',
   ({
-    title,
+    name,
     content,
     explanation,
     choices,
     multiplier,
+    userId,
   }: CreateChoicesQuestionArgs) => {
-    // throw an error if no choices were provided
-    if (choices.length < 2) {
-      throw new Error('SC questions require at least 2 choices')
-    }
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="insert-question-title"]').type(title)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .type(choices[0].content)
-
-    cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
-      cy.get('[data-cy="add-new-answer"]').click()
-      cy.wait(500)
-      cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-        .realClick()
-        .type(choice.content)
+    // trigger single choice question creation directly through prisma action
+    cy.task('createQuestionChoices', {
+      type: 'SC',
+      name,
+      content,
+      explanation,
+      multiplier,
+      choices,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Single choice question creation failed!')
+      }
     })
 
-    // set correctness values for SC question
-    const hasSampleSolution = choices.some(
-      (choice) => typeof choice.correct !== 'undefined'
-    )
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-
-      cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
-        if (choice.correct) {
-          cy.get(`[data-cy="set-correctness-${ix}"]`).click()
-        }
-      })
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    // set answer feedbacks for SC question
-    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
-      cy.get('[data-cy="configure-answer-feedbacks"]').click()
-
-      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
-          .realClick()
-          .type(choice.feedback)
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
-          choice.feedback
-        )
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 Cypress.Commands.add(
   'createQuestionMC',
   ({
-    title,
+    name,
     content,
     explanation,
     choices,
     multiplier,
+    userId,
   }: CreateChoicesQuestionArgs) => {
-    // throw an error if no choices were provided
-    if (choices.length < 2) {
-      throw new Error('MC questions require at least 2 choices')
-    }
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.MC.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.MC.typeLabel)
-
-    cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .type(choices[0].content)
-
-    cy.wrap(choices.slice(1)).each((choice: { content: string }, ix) => {
-      cy.get('[data-cy="add-new-answer"]').click()
-      cy.wait(500)
-      cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-        .realClick()
-        .type(choice.content)
+    // trigger multiple choice question creation directly through prisma action
+    cy.task('createQuestionChoices', {
+      type: 'MC',
+      name,
+      content,
+      explanation,
+      multiplier,
+      choices,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Multiple choice question creation failed!')
+      }
     })
 
-    // set correctness values for MC question
-    const hasSampleSolution = choices.some(
-      (choice) => typeof choice.correct !== 'undefined'
-    )
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-
-      cy.wrap(choices).each((choice: { correct?: boolean }, ix) => {
-        if (choice.correct) {
-          cy.get(`[data-cy="set-correctness-${ix}"]`).click()
-        }
-      })
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    // set answer feedbacks for MC question
-    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
-      cy.get('[data-cy="configure-answer-feedbacks"]').click()
-
-      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
-          .realClick()
-          .type(choice.feedback)
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
-          choice.feedback
-        )
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 Cypress.Commands.add(
   'createQuestionKPRIM',
   ({
-    title,
+    name,
     content,
     explanation,
     choices,
     multiplier,
+    userId,
   }: CreateChoicesQuestionArgs) => {
-    // throw an error if there are not 4 choices
-    if (choices.length !== 4) {
-      throw new Error('KPRIM questions require exactly 4 choices')
-    }
+    // trigger kprim question creation directly through prisma action
+    cy.task('createQuestionChoices', {
+      type: 'KPRIM',
+      name,
+      content,
+      explanation,
+      multiplier,
+      choices,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('KPRIM question creation failed!')
+      }
+    })
 
-    const choice1 = choices[0]
-    const choice2 = choices[1]
-    const choice3 = choices[2]
-    const choice4 = choices[3]
-
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.KPRIM.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.KPRIM.typeLabel)
-
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="select-question-status"]').click()
-    cy.get(
-      `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-    cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
-      .type(choice1.content)
-    cy.get('[data-cy="insert-answer-field-0"]').findByText(choice1.content)
-    cy.get('[data-cy="add-new-answer"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="insert-answer-field-1"]')
-      .realClick()
-      .type(choice2.content)
-    cy.get('[data-cy="insert-answer-field-1"]').findByText(choice2.content)
-    cy.get('[data-cy="add-new-answer"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="insert-answer-field-2"]')
-      .realClick()
-      .type(choice3.content)
-    cy.get('[data-cy="insert-answer-field-2"]').findByText(choice3.content)
-    cy.get('[data-cy="add-new-answer"]').click()
-    cy.wait(500)
-    cy.get('[data-cy="insert-answer-field-3"]')
-      .realClick()
-      .type(choice4.content)
-    cy.get('[data-cy="insert-answer-field-3"]').findByText(choice4.content)
-    cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
-
-    // set correctness values for KPRIM question
-    const hasSampleSolution = choices.some(
-      (choice) => typeof choice.correct !== 'undefined'
-    )
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.get('[data-cy="set-correctness-0"]').click().type(choice4.content)
-      cy.get('[data-cy="set-correctness-2"]').click().type(choice4.content)
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    // set answer feedbacks for KPRIM question
-    if (choices.every((choice) => typeof choice.feedback !== 'undefined')) {
-      cy.get('[data-cy="configure-answer-feedbacks"]').click()
-
-      cy.wrap(choices).each((choice: { feedback: string }, ix) => {
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
-          .realClick()
-          .type(choice.feedback)
-        cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(
-          choice.feedback
-        )
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 interface CreateQuestionNRArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
+  multiplier?: number
   min?: string
   max?: string
   unit?: string
   accuracy?: string
   solutionRanges?: { min: string; max: string }[] | null
   exactSolutions?: string[] | null
-  multiplier?: string
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionNR',
   ({
-    title,
+    name,
     content,
     explanation,
+    multiplier,
     min,
     max,
     unit,
     accuracy,
     solutionRanges,
     exactSolutions,
-    multiplier,
+    userId,
   }: CreateQuestionNRArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.NUMERICAL.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.NUMERICAL.typeLabel)
+    // trigger numerical question creation directly through prisma action
+    cy.task('createQuestionNumerical', {
+      name,
+      content,
+      explanation,
+      multiplier,
+      min,
+      max,
+      unit,
+      accuracy,
+      solutionRanges,
+      exactSolutions,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Numerical question creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    if (typeof min !== 'undefined') {
-      cy.get('[data-cy="set-numerical-minimum"]').click().type(min)
-    }
-    if (typeof max !== 'undefined') {
-      cy.get('[data-cy="set-numerical-maximum"]').click().type(max)
-    }
-    if (typeof unit !== 'undefined') {
-      cy.get('[data-cy="set-numerical-unit"]').click().type(unit)
-    }
-    if (typeof accuracy !== 'undefined') {
-      cy.get('[data-cy="set-numerical-accuracy"]').click().type(accuracy)
-    }
-
-    // set solution ranges
-    const hasSampleSolution =
-      typeof solutionRanges !== 'undefined' &&
-      solutionRanges !== null &&
-      solutionRanges.length > 0
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.get('[data-cy="set-solution-type-range"]').click()
-      cy.wrap(solutionRanges).each(
-        (range: { min: string; max: string }, ix) => {
-          cy.get('[data-cy="add-solution-range"]').click()
-          cy.get(`[data-cy="set-solution-range-min-${ix}"]`)
-            .click()
-            .type(range.min)
-          cy.get(`[data-cy="set-solution-range-max-${ix}"]`)
-            .click()
-            .type(range.max)
-        }
-      )
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    if (
-      typeof exactSolutions !== 'undefined' &&
-      exactSolutions !== null &&
-      exactSolutions.length > 0
-    ) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.get('[data-cy="set-solution-type-exact"]').click()
-      cy.wrap(exactSolutions).each((solution: string, ix) => {
-        cy.get(`[data-cy="add-exact-solution"]`).click()
-        cy.get(`[data-cy="set-exact-solution-${ix}"]`)
-          .click()
-          .type(String(solution))
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 interface CreateQuestionFTArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
+  multiplier?: number
   maxLength?: string
   solutions?: string[]
-  multiplier?: string
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionFT',
   ({
-    title,
+    name,
     content,
     explanation,
+    multiplier,
     maxLength,
     solutions,
-    multiplier,
+    userId,
   }: CreateQuestionFTArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.FREE_TEXT.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.FREE_TEXT.typeLabel)
+    // trigger free text question creation directly through prisma action
+    cy.task('createQuestionFreeText', {
+      name,
+      content,
+      explanation,
+      multiplier,
+      maxLength,
+      solutions,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Free Text question creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    if (typeof maxLength !== 'undefined') {
-      cy.get('[data-cy="set-free-text-length"]').click().type(maxLength)
-    }
-
-    // set solution values
-    const hasSampleSolution =
-      typeof solutions !== 'undefined' && solutions.length > 0
-    if (hasSampleSolution) {
-      cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
-      cy.wrap(solutions).each((solution: string, ix) => {
-        cy.get(`[data-cy="add-solution-value"]`).click()
-        cy.get(`[data-cy="set-solution-ix-${ix}"]`).click().type(solution)
-      })
-    }
-
-    // multiplier only takes effect with sample solution activated
-    if (hasSampleSolution && typeof multiplier !== 'undefined') {
-      cy.get('[data-cy="select-multiplier"]')
-        .should('exist')
-        .contains(messages.manage.activityWizard.multiplier1)
-      cy.get('[data-cy="select-multiplier"]').click()
-      cy.get(`[data-cy="select-multiplier-${multiplier}"]`).click()
-      cy.get('[data-cy="select-multiplier"]').contains(multiplier)
-    }
-
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 interface CreateSelectionArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
+  multiplier?: number
   collectionName: string
   numberOfInputs: number
   correctAnswers?: string[]
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionSE',
   ({
-    title,
+    name,
     content,
     explanation,
+    multiplier,
     collectionName,
     numberOfInputs,
     correctAnswers,
+    userId,
   }: CreateSelectionArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.SELECTION.typeLabel)
+    // trigger selection question creation directly through prisma action
+    cy.task('createQuestionSelection', {
+      name,
+      content,
+      explanation,
+      multiplier,
+      collectionName,
+      numberOfInputs,
+      correctAnswers,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Selection question creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    cy.get('[data-cy="select-answer-collection"]').contains(
-      messages.manage.questionForms.selectCollection
-    )
-    cy.get('[data-cy="select-answer-collection"]').click()
-    cy.get(`[data-cy="select-answer-collection-${collectionName}"]`).click()
-    cy.get('[data-cy="select-answer-collection"]').contains(collectionName)
-    cy.get('[data-cy="configure-number-of-inputs"]')
-      .click()
-      .type(String(numberOfInputs))
-
-    if (correctAnswers && correctAnswers.length > 0) {
-      cy.get('[data-cy="configure-sample-solution"]').click()
-      correctAnswers.forEach((solution) => {
-        cy.get('[data-cy="choose-correct-answer-options"]').click()
-        cy.findByText(solution).realClick()
-        cy.get('[data-cy="choose-correct-answer-options"]').contains(solution)
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click()
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 interface CreateCaseStudyArgs {
-  title: string
+  name: string
   content: string
   explanation?: string
+  multiplier?: number
   collectionName: string
   selectedItems: string[]
   criteria: {
     mode: 'range' | 'steps'
+    id: string
     name: string
     // range criterion attributes
     min?: number
@@ -761,6 +486,7 @@ interface CreateCaseStudyArgs {
     }
   }[]
   cases: {
+    id: string
     title: string
     description: string
   }[]
@@ -774,258 +500,101 @@ interface CreateCaseStudyArgs {
       }
     }
   }
+  userId: string
 }
 
 Cypress.Commands.add(
   'createQuestionCS',
   ({
-    title,
+    name,
     content,
     explanation,
+    multiplier,
     collectionName,
     selectedItems,
     criteria,
     cases,
     solutions,
+    userId,
   }: CreateCaseStudyArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.CASE_STUDY.typeLabel)
-
-    // enter title and content
-    cy.get('[data-cy="insert-question-title"]').click().type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-
-    // enter optional explanation
-    if (explanation) {
-      cy.get('[data-cy="insert-question-explanation"]')
-        .realClick()
-        .type(explanation)
-    }
-
-    // select an answer collection
-    cy.get('[data-cy="select-answer-collection"]').contains(
-      messages.manage.questionForms.selectCollection
-    )
-    cy.get('[data-cy="select-answer-collection"]').click()
-    cy.get(`[data-cy="select-answer-collection-${collectionName}"]`).click()
-    cy.get('[data-cy="select-answer-collection"]').contains(collectionName)
-
-    // select items for case study
-    cy.wrap(selectedItems).each((item: string) => {
-      cy.get('[data-cy="choose-case-study-items"]').click()
-      cy.findByText(item).realClick()
-      cy.get('[data-cy="choose-case-study-items"]').contains(item)
-    })
-
-    // add criteria
-    cy.wrap(criteria).each(
-      (criterion: CreateCaseStudyArgs['criteria'][0], ix) => {
-        cy.get(`[data-cy="add-${criterion.mode}-criterion"]`).click()
-        cy.get(`[data-cy="criterion-${ix}-name"]`)
-          .click()
-          .clear()
-          .type(criterion.name)
-
-        // for range criteria, enter min, max, and step - unit is optional
-        if (criterion.mode === 'range') {
-          cy.get(`[data-cy="criterion-${ix}-min"]`)
-            .click()
-            .clear()
-            .type(String(criterion.min))
-          cy.get(`[data-cy="criterion-${ix}-max"]`)
-            .click()
-            .clear()
-            .type(String(criterion.max))
-          cy.get(`[data-cy="criterion-${ix}-step"]`)
-            .click()
-            .clear()
-            .type(String(criterion.step))
-          if (criterion.unit) {
-            cy.get(`[data-cy="criterion-${ix}-unit"]`)
-              .click()
-              .type(criterion.unit)
-          }
-        } else if (criterion.mode === 'steps') {
-          cy.get(`[data-cy="criterion-${ix}-min-label"]`)
-            .click()
-            .clear()
-            .type(String(criterion.labels.min))
-          cy.get(`[data-cy="criterion-${ix}-max-label"]`)
-            .click()
-            .clear()
-            .type(String(criterion.labels.max))
-          cy.get(`[data-cy="criterion-${ix}-steps"]`)
-            .click()
-            .clear()
-            .type(String(criterion.steps))
-
-          if (criterion.labels.mid) {
-            cy.get(`[data-cy="criterion-${ix}-mid-label"]`)
-              .click()
-              .clear()
-              .type(String(criterion.labels.mid))
-          }
-        } else {
-          throw new Error('Invalid criterion mode')
-        }
-
-        // validate inputs for both range and steps / likert criteria
-        cy.get(`[data-cy="criterion-${ix}-name"]`).should(
-          'have.value',
-          criterion.name
-        )
-
-        if (criterion.mode === 'range') {
-          cy.get(`[data-cy="criterion-${ix}-min"]`).should(
-            'have.value',
-            String(criterion.min)
-          )
-          cy.get(`[data-cy="criterion-${ix}-max"]`).should(
-            'have.value',
-            String(criterion.max)
-          )
-          cy.get(`[data-cy="criterion-${ix}-step"]`).should(
-            'have.value',
-            String(criterion.step)
-          )
-          if (criterion.unit) {
-            cy.get(`[data-cy="criterion-${ix}-unit"]`).should(
-              'have.value',
-              criterion.unit
-            )
-          }
-        } else if (criterion.mode === 'steps') {
-          cy.get(`[data-cy="criterion-${ix}-min-label"]`).should(
-            'have.value',
-            criterion.labels.min
-          )
-          cy.get(`[data-cy="criterion-${ix}-max-label"]`).should(
-            'have.value',
-            criterion.labels.max
-          )
-          cy.get(`[data-cy="criterion-${ix}-steps"]`).should(
-            'have.value',
-            String(criterion.steps)
-          )
-          if (criterion.labels.mid) {
-            cy.get(`[data-cy="criterion-${ix}-mid-label"]`).should(
-              'have.value',
-              criterion.labels.mid
-            )
-          }
-        } else {
-          throw new Error('Invalid criterion mode')
-        }
+    // trigger case study question creation directly through prisma action
+    cy.task('createQuestionCaseStudy', {
+      name,
+      content,
+      explanation,
+      multiplier,
+      collectionName,
+      selectedItems,
+      criteria,
+      cases,
+      solutions,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Case study question creation failed!')
       }
-    )
-
-    // add cases
-    cy.wrap(cases).each((caseItem: CreateCaseStudyArgs['cases'][0], ix) => {
-      // add new case information
-      cy.get('[data-cy="add-new-case"]').click()
-      cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
-      cy.get(`[data-cy="case-description-${ix}"]`)
-        .realClick()
-        .type(caseItem.description)
-
-      // verify that all data has been entered correctly
-      cy.get(`[data-cy="case-title-${ix}"]`).should(
-        'have.value',
-        caseItem.title
-      )
-      cy.get(`[data-cy="case-description-${ix}"]`).contains(
-        caseItem.description
-      )
     })
 
-    // add solutions (if defined)
-    if (solutions) {
-      cy.get('[data-cy="configure-sample-solution"]').click()
-      Object.entries(solutions).forEach(([caseIx, caseValue]) => {
-        Object.entries(caseValue).forEach(([itemIx, itemValue]) => {
-          Object.entries(itemValue).forEach(([criterionIx, criterionValue]) => {
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-            )
-              .click()
-              .type(String(criterionValue.lower))
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-            )
-              .click()
-              .type(String(criterionValue.upper))
-
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-lower"]`
-            ).should('have.value', String(criterionValue.lower))
-            cy.get(
-              `[data-cy="case-solution-${caseIx}-${itemIx}-${criterionIx}-upper"]`
-            ).should('have.value', String(criterionValue.upper))
-          })
-        })
-      })
-    }
-
-    cy.get('[data-cy="save-new-question"]').click()
-    cy.wait(500)
+    // check if the created question is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 interface CreateFlashcardArgs {
-  title: string
+  name: string
   content: string
   explanation: string
+  userId: string
 }
 
 Cypress.Commands.add(
   'createFlashcard',
-  ({ title, content, explanation }: CreateFlashcardArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.FLASHCARD.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.FLASHCARD.typeLabel)
+  ({ name, content, explanation, userId }: CreateFlashcardArgs) => {
+    // trigger flashcard creation directly through prisma action
+    cy.task('createFlashcard', {
+      name,
+      content,
+      explanation,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Flashcard creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-    cy.get('[data-cy="insert-question-explanation"]')
-      .realClick()
-      .type(explanation)
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created flashcard is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
 interface CreateContentArgs {
-  title: string
+  name: string
   content: string
+  userId: string
 }
 
 Cypress.Commands.add(
   'createContent',
-  ({ title, content }: CreateContentArgs) => {
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
-    cy.get(
-      `[data-cy="select-question-type-${messages.shared.CONTENT.typeLabel}"]`
-    ).click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.CONTENT.typeLabel)
+  ({ name, content, userId }: CreateContentArgs) => {
+    // trigger flashcard creation directly through prisma action
+    cy.task('createContentElement', {
+      name,
+      content,
+      userId,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === null) {
+        throw new Error('Content element creation failed!')
+      }
+    })
 
-    cy.get('[data-cy="insert-question-title"]').type(title)
-    cy.get('[data-cy="insert-question-text"]').realClick().type(content)
-    cy.get('[data-cy="save-new-question"]').click({ force: true })
-    cy.wait(500)
+    // check if the created content element is visible
+    cy.reload()
+    cy.get(`[data-cy="element-item-${name}"]`).should('exist')
   }
 )
 
@@ -1562,6 +1131,7 @@ declare global {
         name,
         description,
         entries,
+        userId,
       }: AnswerCollectionArgs): Chainable<void>
       deleteAnswerCollection({
         collectionName,
@@ -1572,69 +1142,83 @@ declare global {
         permissionLevel,
       }: AddObjectToCatalogArgs): Chainable<void>
       createQuestionSC({
-        title,
+        name,
         content,
         explanation,
         choices,
         multiplier,
+        userId,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionMC({
-        title,
+        name,
         content,
         explanation,
         choices,
         multiplier,
+        userId,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionKPRIM({
-        title,
+        name,
         content,
         explanation,
         choices,
         multiplier,
+        userId,
       }: CreateChoicesQuestionArgs): Chainable<void>
       createQuestionNR({
-        title,
+        name,
         content,
         explanation,
+        multiplier,
         min,
         max,
         unit,
         accuracy,
         solutionRanges,
-        multiplier,
+        exactSolutions,
+        userId,
       }: CreateQuestionNRArgs): Chainable<void>
       createQuestionFT({
-        title,
+        name,
         content,
         explanation,
+        multiplier,
         maxLength,
         solutions,
-        multiplier,
+        userId,
       }: CreateQuestionFTArgs): Chainable<void>
       createQuestionSE({
-        title,
+        name,
         content,
         explanation,
         collectionName,
         numberOfInputs,
         correctAnswers,
+        userId,
       }: CreateSelectionArgs): Chainable<void>
       createQuestionCS({
-        title,
+        name,
         content,
         explanation,
+        multiplier,
         collectionName,
         selectedItems,
         criteria,
         cases,
         solutions,
+        userId,
       }: CreateCaseStudyArgs): Chainable<void>
       createFlashcard({
-        title,
+        name,
         content,
         explanation,
+        userId,
       }: CreateFlashcardArgs): Chainable<void>
-      createContent({ title, content }: CreateContentArgs): Chainable<void>
+      createContent({
+        name,
+        content,
+        userId,
+      }: CreateContentArgs): Chainable<void>
       deleteElement({ elementName }: DeleteElementArgs): Chainable<void>
       createLiveQuiz({
         name,

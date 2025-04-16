@@ -118,6 +118,7 @@ export default {
       points: 'Points',
       title: 'KlickerUZH',
       send: 'Send',
+      next: 'Next',
       submit: 'Submit',
       save: 'Save',
       start: 'Start',
@@ -166,6 +167,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Active Live Quizzes',
+      activePracticeQuizzes: 'Active Practice Quizzes',
+      activeMicroLearnings: 'Active Microlearnings',
       groupActivity: 'Group Activity',
       groupActivities: 'Group Activities',
       characters: 'characters',
@@ -437,9 +440,12 @@ export default {
       userNotLoggedIn:
         'You are currently not logged in. <login>Please log in</login> if you want to collect points and XP and see an overview of your learning progress.',
       noLiveQuizzesActive: 'No live quizzes active.',
-      activeLiveQuizzesBy: 'Active live quizzes by <i>{name}</i>',
-      activeLiveQuizzesInCourse: 'Active live quizzes in course <i>{name}</i>',
-      activeLiveQuizzes: 'Active live quizzes',
+      activeLiveQuizzesBy: 'Active live quizzes by {name}',
+      activeLiveQuizzesInCourse: 'Active live quizzes in {name}',
+      noPracticeQuizzesActive: 'No practice quizzes active.',
+      activePracticeQuizzesInCourse: 'Active practice quizzes in {name}',
+      noMicroLearningsActive: 'No microlearnings active.',
+      activeMicroLearningsInCourse: 'Active microlearnings in {name}',
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
@@ -1344,7 +1350,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
-        'Live quizzes can only contain single choice, multiple choice, kprim, numerical, free-text, and selection questions.',
+        'Live quizzes support all question types as well as content elements. Flashcards cannot be used in live quizzes.',
       liveQuizTimeRestriction: 'Please enter a valid time restriction.',
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
@@ -1635,6 +1641,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       acceptTemplateElement: 'Accept template element without modifications',
       replaceWithExistingElement: 'Replace with existing element from library',
       insertContentNewElement: 'Insert content for new element',
+      editContentNewElement: 'Continue editing content for new element',
       selectExistingElement: 'Select existing element',
       selectElementInstructions:
         'Select one of your existing elements to replace the template content. Please note that the element type must match the following requirements: {element}. The selection below has already been filtered according to these criteria.',
@@ -1663,6 +1670,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       expandAll: 'Expand all',
       collapseAll: 'Collapse all',
       basedOnObject: 'based on {object}',
+      recoveredTemplateData:
+        'The template contains auto-saved data from your previous inputs. If you want to reset the template, please use the corresponding button.',
+      resetTemplateData: 'Reset inputs',
+      resetConfirmation: 'Reset Template Confirmation',
+      resetWarning:
+        'Please confirm that you want to reset all inputs for this template. All entered data, including potential element content entered in the template, will be deleted and cannot be restored.',
+      confirmReset: 'Confirm reset',
     },
     formErrors: {
       resolveErrors:
@@ -1874,6 +1888,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
       showExplanation: 'Show explanation',
+      showSolutionInfo:
+        'This option allows you to pre-select whether or not the sample solution should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
+      showExplanationInfo:
+        'This option allows you to pre-select whether or not the explanation (if captured) should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
       correctSolutionRanges: 'Correct solution ranges',
@@ -1924,10 +1942,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microLearningEvaluation: 'Microlearning Evaluation',
       chartTypeNotSupported:
         'At the moment, the selected chart type is not supported for this element type.',
-      noFlashcardEvaluation:
-        'Currently, no evaluation view is available for flashcards in KlickerUZH activities.',
-      noContentEvaluation:
-        'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
       histogramNotSupported:
         'Histograms are not supported for this question type.',
       criterionXAxis: 'Criterion X-Axis',
@@ -1939,6 +1953,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You can either select multiple cases or multiple case study elements to compare the corresponding results. A combination of multiple cases and multiple case study elements cannot be displayed.',
       caseStudySelectCasesItemsCriteria:
         'Please select at least one case, one case study item and criteria to display the evaluation.',
+      answerNotRemembered: 'Answer not remembered',
+      answerPartiallyRemembered: 'Answer partially remembered',
+      answerRemembered: 'Answer remembered',
+      frontSide: 'Front Side',
+      backSide: 'Back Side',
     },
     lecturer: {
       noDataAvailable: 'No data available...',
@@ -2105,6 +2124,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Share this link or QR code with your course participants to allow them to join.',
       copyAccessLink: 'Copy access link',
       copyLTIAccessLink: 'Copy LTI link',
+      liveQuizList: 'Live Quiz List',
+      practiceQuizList: 'Practice Quiz List',
+      microLearningList: 'Microlearning List',
       linkAccessCopied:
         'The link for accessing the item has been copied to the clipboard.',
       linkLTICopied:
@@ -2112,6 +2134,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Practice Quizzes',
+      linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit microlearning',
       duplicateMicroLearning: 'Duplicate microlearning',
@@ -2284,6 +2308,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       byOwner: 'by {owner}',
       cancelRequest: 'Cancel Request',
       answerCollection: 'Answer Collection: {name}',
+      nameAndDescription: 'Name and Description',
+      saveBeforeClosing: 'Please save your changes before closing the section.',
+      searchAnswerOptions: 'Search answer option...',
+      noMatchingOptions: 'No matching answer options found.',
       saveChanges: 'Save changes',
       saveMetadata: 'Save Metadata',
       successfulCollectionEdit:

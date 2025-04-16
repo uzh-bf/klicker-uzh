@@ -2,6 +2,85 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.48...v3.3.0-alpha.49) (2025-04-13)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** make sure that autosaved element content is correctly reset on element save ([#4611](https://github.com/uzh-bf/klicker-uzh/issues/4611)) ([d2e6038](https://github.com/uzh-bf/klicker-uzh/commit/d2e60385191f1a783defb6e99654b01ca08e5b1c))
+* **cypress:** resolve flakiness in cypress template workflow ([#4613](https://github.com/uzh-bf/klicker-uzh/issues/4613)) ([0ad28b6](https://github.com/uzh-bf/klicker-uzh/commit/0ad28b6350f5cc7df5b6e1e386f895a7b0e96b9d))
+
+## [3.3.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.47...v3.3.0-alpha.48) (2025-04-07)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that question collapsible is correctly updated on instance switch ([a636a23](https://github.com/uzh-bf/klicker-uzh/commit/a636a23ac5f13cf1d1f16f77672744ffd6773ebc))
+
+## [3.3.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.46...v3.3.0-alpha.47) (2025-04-04)
+
+
+### Features
+
+* add content element support for live quizzes ([#4600](https://github.com/uzh-bf/klicker-uzh/issues/4600)) ([3b11f00](https://github.com/uzh-bf/klicker-uzh/commit/3b11f00cb6821c3076c1ce8a335f2bc00ed0a463))
+* **apps/frontend-manage:** add evaluation view for flashcard elements ([#4603](https://github.com/uzh-bf/klicker-uzh/issues/4603)) ([423dd85](https://github.com/uzh-bf/klicker-uzh/commit/423dd8503103b9de85eac495e1af07e366825c0e))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** add scrolling on case study evaluation sidebar on overflow ([86d24fb](https://github.com/uzh-bf/klicker-uzh/commit/86d24fb0337f5e1f1e4384ff09bc6ae7b63069e8))
+* **apps/frontend-manage:** resolve issues with height of question collapsible on activity evaluation ([#4604](https://github.com/uzh-bf/klicker-uzh/issues/4604)) ([1609804](https://github.com/uzh-bf/klicker-uzh/commit/16098048ba571d930f4eb63c818e67918c28e5b7))
+
+
+### Enhancements
+
+* allow lecturer to access activity preview for past microlearnings ([#4601](https://github.com/uzh-bf/klicker-uzh/issues/4601)) ([6554b72](https://github.com/uzh-bf/klicker-uzh/commit/6554b726a55f1091ca718f2d7011f710dd7e0239))
+* **apps/frontend-manage:** improve efficiency of live quiz embedding modal ([#4602](https://github.com/uzh-bf/klicker-uzh/issues/4602)) ([b099b78](https://github.com/uzh-bf/klicker-uzh/commit/b099b784071ebd845d6ecac35d58e1367441ffc8))
+
+## [3.3.0-alpha.46](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.45...v3.3.0-alpha.46) (2025-04-02)
+
+
+### Bug Fixes
+
+* ensure that KPRIM questions are also accepted with all-wrong answer options ([#4599](https://github.com/uzh-bf/klicker-uzh/issues/4599)) ([abe263c](https://github.com/uzh-bf/klicker-uzh/commit/abe263cbba04cd6b16490af244eb783f6ac5ce8c))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** automatically load template inputs and add option to reset inputs ([#4596](https://github.com/uzh-bf/klicker-uzh/issues/4596)) ([a2f23a3](https://github.com/uzh-bf/klicker-uzh/commit/a2f23a3e3baa838b26e5528b20cb6ef65fe391c5))
+* **cypress:** replace repetitive element creation in UI with direct database interations during e2e testing ([#4597](https://github.com/uzh-bf/klicker-uzh/issues/4597)) ([b82b75b](https://github.com/uzh-bf/klicker-uzh/commit/b82b75b7da0d7bbe5adf5e987e533224eb43f897))
+
+## [3.3.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.44...v3.3.0-alpha.45) (2025-03-31)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that links between templates and required resources are updated on element instance update ([#4594](https://github.com/uzh-bf/klicker-uzh/issues/4594)) ([19f5116](https://github.com/uzh-bf/klicker-uzh/commit/19f51167d0009975b8cf6530c971229eeef68439))
+
+## [3.3.0-alpha.44](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.43...v3.3.0-alpha.44) (2025-03-29)
+
+
+### Documentation
+
+* update grading logic docs to include option to modify base points on element ([822d216](https://github.com/uzh-bf/klicker-uzh/commit/822d216836a9d89f18ea546bfcbbd29bfcdd5d69))
+
+
+### Other
+
+* **apps/frontend-manage:** fix layout of live quiz qr code modal ([50546a7](https://github.com/uzh-bf/klicker-uzh/commit/50546a7dde1fb5223ecc20dbdc9c50f0776cea9b))
+
+
+### Enhancements
+
+* add course practice quiz and microlearning lists on student frontend (including LTI integration) ([#4588](https://github.com/uzh-bf/klicker-uzh/issues/4588)) ([72a374f](https://github.com/uzh-bf/klicker-uzh/commit/72a374fe5a7c1665f74cd23bff17e9ca5a9c24f4))
+* **apps/frontend-manage:** add option to trigger refetch of answer collections on element edit modal options ([#4592](https://github.com/uzh-bf/klicker-uzh/issues/4592)) ([b0589e0](https://github.com/uzh-bf/klicker-uzh/commit/b0589e051abb98bd19dd5c6076bbe8445a1da200))
+* **apps/frontend-manage:** add qr code popover for activity lists ([3cefb7b](https://github.com/uzh-bf/klicker-uzh/commit/3cefb7b879efabe53ae86e5f86759f785004a518))
+* **apps/frontend-manage:** extend answer collection viewing modal with accordion and search functionality ([#4591](https://github.com/uzh-bf/klicker-uzh/issues/4591)) ([f6138ce](https://github.com/uzh-bf/klicker-uzh/commit/f6138cee5d6b6aef3c0151b65df2f0e9ae51b47b))
+* **apps/frontend-manage:** extend evaluation view for case study elements with step criteria ([#4589](https://github.com/uzh-bf/klicker-uzh/issues/4589)) ([c588638](https://github.com/uzh-bf/klicker-uzh/commit/c5886387e3f23558a1c836e0ab6f19af021a4071))
+* **apps/frontend-manage:** improve UI components of for answer collection editing and add search functionality ([#4590](https://github.com/uzh-bf/klicker-uzh/issues/4590)) ([fcc5ff2](https://github.com/uzh-bf/klicker-uzh/commit/fcc5ff2baae0038c395376f152aec47513a5041e))
+* **apps/frontend-manage:** track solution and explanation toggle evaluation states in session storage ([531662b](https://github.com/uzh-bf/klicker-uzh/commit/531662b761a99fbe98b866cdd99f41f9cf0ca5f7))
+* improve display of content element, improve display of question content on library (raw text with max lines), foundations for content element in LQ ([#4593](https://github.com/uzh-bf/klicker-uzh/issues/4593)) ([d688918](https://github.com/uzh-bf/klicker-uzh/commit/d68891876d92bb041aabde7305bfb9f15d5cbd09))
+
 ## [3.3.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.42...v3.3.0-alpha.43) (2025-03-25)
 
 ## [3.3.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.41...v3.3.0-alpha.42) (2025-03-25)

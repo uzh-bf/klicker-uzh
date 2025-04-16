@@ -4,9 +4,10 @@ import React, { useMemo } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import katex from 'rehype-katex'
 // import rehypePrism from 'rehype-prism-plus'
-import { Prose } from '@uzh-bf/design-system'
 import rehype2react from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
+// import remarkDirective from 'remark-directive'
+// import remarkGfm from 'remark-gfm'
 import math from 'remark-math'
 import markdown from 'remark-parse'
 import remark2rehype from 'remark-rehype'
@@ -75,6 +76,8 @@ function Markdown({
         unified()
           .use(markdown)
           .use(math, { singleDollarTextMath: false })
+          // .use(remarkGfm)
+          // .use(remarkDirective)
           .use(remark2rehype, { allowDangerousHtml: false })
           .use(rehypeSanitize, {
             ...defaultSchema,
@@ -167,15 +170,18 @@ function Markdown({
   }, [content])
 
   if (withProse) {
+    // Sizes available: prose-sm, prose-base, prose-lg, prose-xl, prose-2xl
     return (
-      <Prose
-        className={{
-          root: twMerge('prose-p:mt-0 max-w-none', className?.root),
-        }}
-        data={data}
+      <div
+        data-cy={data?.cy}
+        data-test={data?.test}
+        className={twMerge(
+          'prose prose-p:mt-0 prose-heading:mt-0 hover:prose-a:text-primary-100 max-w-none',
+          className?.root
+        )}
       >
         {parsedContent}
-      </Prose>
+      </div>
     )
   }
 

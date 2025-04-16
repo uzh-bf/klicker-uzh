@@ -227,14 +227,17 @@ function CourseOverviewPage() {
           <Tabs.TabContent
             key="content-liveQuizzes"
             value="liveQuizzes"
-            className={{ root: 'overflow-y-auto px-0 py-2' }}
+            className={{ root: 'overflow-y-auto px-0 py-1' }}
           >
-            <LiveQuizList liveQuizzes={course.liveQuizzes ?? []} />
+            <LiveQuizList
+              courseId={course.id}
+              liveQuizzes={course.liveQuizzes ?? []}
+            />
           </Tabs.TabContent>
           <Tabs.TabContent
             key="content-practiceQuizzes"
             value="practiceQuizzes"
-            className={{ root: 'px-0 py-2' }}
+            className={{ root: 'px-0 py-1' }}
           >
             <PracticeQuizList
               practiceQuizzes={course.practiceQuizzes ?? []}
@@ -246,7 +249,7 @@ function CourseOverviewPage() {
           <Tabs.TabContent
             key="content-microlearnings"
             value="microLearnings"
-            className={{ root: 'px-0 py-2' }}
+            className={{ root: 'px-0 py-1' }}
           >
             <MicroLearningList
               microLearnings={course.microLearnings ?? []}

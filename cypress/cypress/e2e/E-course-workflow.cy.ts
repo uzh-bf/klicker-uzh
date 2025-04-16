@@ -394,10 +394,9 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // check out course join modal
-    cy.get('[data-cy="course-join-button"]').click()
-    cy.get('[data-cy="course-join-modal"]').should('exist')
-    cy.get('[data-cy="course-join-modal"]').should('contain', 'QR Code')
-    cy.get('[data-cy="course-join-modal-close"]').click()
+    cy.get('[data-cy="course-join-qr-code"]').click()
+    cy.findByText(messages.manage.course.courseQRDescription).should('exist')
+    cy.get('[data-cy="course-join-qr-code"]').click()
 
     // open the settings dialogue
     cy.get('[data-cy="course-settings-button"]').click()
@@ -622,9 +621,10 @@ describe('Test course creation and editing functionalities', function () {
     // create a question with sample solution
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSC({
-      title: this.data.deletion.qTitle,
+      name: this.data.deletion.qTitle,
       content: this.data.deletion.qContent,
-      choices: [{ content: '50%', correct: true }, { content: '100%' }],
+      choices: [{ value: '50%', correct: true }, { value: '100%' }],
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // create a live quiz in the course

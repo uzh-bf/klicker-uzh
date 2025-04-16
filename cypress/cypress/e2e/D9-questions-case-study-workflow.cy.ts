@@ -19,10 +19,13 @@ type CriterionDataType = {
 
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
   beforeEach('Login the lecturer and load data fixture', function () {
-    cy.loginLecturer()
     cy.fixture('D-questions.json').then((data) => {
       this.data = data
     })
+
+    cy.loginLecturer()
+    cy.get('[data-cy="resources"]').should('exist')
+    cy.get('[data-cy="analytics"]').should('exist')
   })
 
   // ! Case Study questions
@@ -34,6 +37,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       name: this.data.CS.collection,
       description: this.data.CS.collectionDescription,
       entries: [...this.data.CS.items, ...this.data.CS.unselectedItems],
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createAnswerCollection({
       name: this.data.CS.collectionEdited,
@@ -42,6 +46,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
         ...this.data.CS.itemsEdited,
         ...this.data.CS.unselectedItemsEdited,
       ],
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -426,6 +431,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
 
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -450,6 +456,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       'data-disabled'
     )
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.findByText(messages.manage.resources.answerOptionUsed).should('exist')
   })
 
@@ -1134,6 +1141,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       'data-disabled'
     )
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -1159,6 +1167,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       'data-disabled'
     )
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.itemsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should('be.disabled')
       cy.get(`[data-cy="edit-answer-option-${sol}"]`).should('not.be.disabled')
@@ -1188,6 +1197,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       `[data-cy="answer-collection-actions-${this.data.CS.collection}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.items).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'
@@ -1206,6 +1216,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       `[data-cy="answer-collection-actions-${this.data.CS.collectionEdited}"]`
     ).click()
     cy.get('[data-cy="edit-answer-collection"]').click()
+    cy.get('[data-cy="open-answer-collection-options"]').click()
     cy.wrap(this.data.CS.itemsEdited).each((sol: string) => {
       cy.get(`[data-cy="delete-answer-option-${sol}"]`).should(
         'not.be.disabled'

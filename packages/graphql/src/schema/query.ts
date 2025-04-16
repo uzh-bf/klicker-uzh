@@ -308,6 +308,34 @@ export const Query = builder.queryType({
         },
       }),
 
+      getCoursePublishedPracticeQuizzes: t.field({
+        nullable: true,
+        type: [PracticeQuiz],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return PracticeQuizService.getCoursePublishedPracticeQuizzes(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getCoursePublishedMicroLearnings: t.field({
+        nullable: true,
+        type: [MicroLearning],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve(_, args, ctx) {
+          return MicroLearningService.getCoursePublishedMicroLearnings(
+            args,
+            ctx
+          )
+        },
+      }),
+
       userRunningLiveQuizzes: asUser.field({
         nullable: true,
         type: [LiveQuizInfo],

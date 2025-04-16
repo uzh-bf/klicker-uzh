@@ -5,7 +5,7 @@ import {
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Progress, Toast } from '@uzh-bf/design-system'
+import { Progress, Toast, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -23,7 +23,7 @@ function MicrolearningInstance() {
   const id = router.query.id as string
   const [endedMicroLearning, setEndedMicroLearning] = useState(false)
 
-  const { loading, data, subscribeToMore } = useQuery(
+  const { loading, data, error, subscribeToMore } = useQuery(
     GetMicroLearningDocument,
     {
       variables: { id },
@@ -34,8 +34,23 @@ function MicrolearningInstance() {
     skip: data?.microLearning?.isOwner ?? false,
   })
 
-  if (loading || !data?.microLearning) {
+  if (loading) {
     return <Loader />
+  }
+
+  if (!data?.microLearning) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('pwa.microLearning.notFound')}
+        />
+      </Layout>
+    )
+  }
+
+  if (error) {
+    return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
   const microLearning = data.microLearning

@@ -4,6 +4,7 @@ import React from 'react'
 
 export interface LiveQuizProgressProps {
   activeIndex: number
+  contentInstance: boolean
   isSubmitDisabled?: boolean
   isSubmitHidden?: boolean
   numItems: number
@@ -15,6 +16,7 @@ export interface LiveQuizProgressProps {
 
 export function LiveQuizProgress({
   activeIndex,
+  contentInstance,
   isSubmitDisabled = false,
   isSubmitHidden = false,
   numItems,
@@ -65,7 +67,11 @@ export function LiveQuizProgress({
             onClick={onSubmit}
             data={{ cy: 'student-submit-answer' }}
           >
-            <Button.Label>{t('shared.generic.send')}</Button.Label>
+            <Button.Label>
+              {contentInstance
+                ? t('shared.generic.next')
+                : t('shared.generic.send')}
+            </Button.Label>
           </Button>
         </div>
       )}

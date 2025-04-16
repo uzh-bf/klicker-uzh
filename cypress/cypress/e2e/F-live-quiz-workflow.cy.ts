@@ -14,88 +14,110 @@ describe('Different live-quiz workflows', function () {
   // #region
   it('Create the questions required in the live quiz test workflows', function () {
     cy.loginLecturer()
+
+    // create single choice quesitons (with and without sample solution)
     cy.createQuestionSC({
-      title: this.data.SC.title,
+      name: this.data.SC.title,
       content: this.data.SC.content,
       choices: this.data.SC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML.title,
+      name: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
+    // create multiple choice questions (with and without sample solution)
     cy.createQuestionMC({
-      title: this.data.MC.title,
+      name: this.data.MC.title,
       content: this.data.MC.content,
       choices: this.data.MC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML.title,
+      name: this.data.MCML.title,
       content: this.data.MCML.content,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
+    // create KPRIM questions (with and without sample solution)
     cy.createQuestionKPRIM({
-      title: this.data.KP.title,
+      name: this.data.KP.title,
       content: this.data.KP.content,
       choices: this.data.KP.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML.title,
+      name: this.data.KPML.title,
       content: this.data.KPML.content,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
+    // create numerical questions (with and without sample solution)
     cy.createQuestionNR({
-      title: this.data.NR.title,
+      name: this.data.NR.title,
       content: this.data.NR.content,
       ...this.data.NR.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML.title,
+      name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
+    // create free text questions (with and without sample solution)
     cy.createQuestionFT({
-      title: this.data.FT.title,
+      name: this.data.FT.title,
       content: this.data.FT.content,
       ...this.data.FT.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML.title,
+      name: this.data.FTML.title,
       content: this.data.FTML.content,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
+    // create answer collections that are required for selection and case study questions
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.collection.name,
       description: this.data.collection.description,
       entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
+    // create selection and case study questions (with and without sample solution)
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE.title,
+      name: this.data.SE.title,
       content: this.data.SE.content,
       numberOfInputs: this.data.SE.inputs,
       collectionName: this.data.collection.name,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
+    // create case study questions (with and without sample solution)
     cy.createQuestionCS({
-      title: this.data.CS.title,
+      name: this.data.CS.title,
       content: this.data.CS.content,
       explanation: this.data.CS.explanation,
       collectionName: this.data.collection.name,
@@ -105,9 +127,10 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CS.criteria,
       cases: this.data.CS.cases,
       solutions: this.data.CS.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML.title,
+      name: this.data.CSML.title,
       content: this.data.CSML.content,
       explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
@@ -117,6 +140,19 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // create content elements for both blocks
+    cy.createContent({
+      name: this.data.CT.title,
+      content: this.data.CT.content,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createContent({
+      name: this.data.CT2.title,
+      content: this.data.CT2.content,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
   // #endregion
@@ -826,6 +862,7 @@ describe('Different live-quiz workflows', function () {
             this.data.FT.title,
             this.data.SE.title,
             this.data.CS.title,
+            this.data.CT.title,
           ],
         },
         {
@@ -837,6 +874,7 @@ describe('Different live-quiz workflows', function () {
             this.data.FTML.title,
             this.data.SEML.title,
             this.data.CSML.title,
+            this.data.CT2.title,
           ],
         },
       ],
@@ -948,6 +986,11 @@ describe('Different live-quiz workflows', function () {
     })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+    cy.get('[data-cy="student-submit-answer"]').click() // no answer required for content element
+    cy.wait(500)
+
+    // check that message is shown regarding all questions having been answered
+    cy.findByText(messages.pwa.liveQuiz.allQuestionsAnswered).should('exist')
 
     // provide feedback while moderation is enabled
     cy.get('[data-cy="mobile-menu-feedbacks"]').click()
@@ -1074,6 +1117,15 @@ describe('Different live-quiz workflows', function () {
     })
     cy.get('[data-cy="student-submit-answer"]').click()
     cy.wait(500)
+
+    // CT element - no answer required
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+
+    // verify that all questions have been answered (persists on reload)
+    cy.findByText(messages.pwa.liveQuiz.allQuestionsAnswered).should('exist')
+    cy.reload()
+    cy.findByText(messages.pwa.liveQuiz.allQuestionsAnswered).should('exist')
   })
 
   it('Verify that the feedbacks and the given feedback response are visible to the student', function () {
@@ -1125,10 +1177,15 @@ describe('Different live-quiz workflows', function () {
       .then((text) => {
         cy.wrap(text).as('publicLinkQuestion6')
       })
-    cy.get('[data-cy="open-embedding-link-question-8"]')
+    cy.get('[data-cy="open-embedding-link-question-7"]')
       .invoke('text')
       .then((text) => {
-        cy.wrap(text).as('publicLinkQuestion8')
+        cy.wrap(text).as('publicLinkQuestion7')
+      })
+    cy.get('[data-cy="open-embedding-link-question-9"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('publicLinkQuestion9')
       })
     cy.get('[data-cy="open-embedding-link-leaderboard"]')
       .invoke('text')
@@ -1164,7 +1221,11 @@ describe('Different live-quiz workflows', function () {
       cy.visit(String(link))
     })
     cy.findByText(this.data.CS.content).should('exist')
-    cy.get('@publicLinkQuestion8').then((link) => {
+    cy.get('@publicLinkQuestion7').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.CT.content).should('exist')
+    cy.get('@publicLinkQuestion9').then((link) => {
       cy.visit(String(link))
     })
     cy.findByText(this.data.MCML.content).should('exist')
@@ -1225,6 +1286,8 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.CS.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.CT.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.SCML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.MCML.content).should('exist')
@@ -1238,10 +1301,16 @@ describe('Different live-quiz workflows', function () {
     cy.findByText(this.data.SEML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.CSML.content).should('exist')
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.CT2.content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(this.data.CSML.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
     cy.findByText(this.data.NRML.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
     cy.findByText(this.data.SCML.content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(this.data.CT.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.CS.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
@@ -1310,9 +1379,10 @@ describe('Different live-quiz workflows', function () {
 
     // create single choice question and live quiz
     cy.createQuestionSC({
-      title: this.data.SC2.title,
+      name: this.data.SC2.title,
       content: this.data.SC2.content,
       choices: this.data.SC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createLiveQuiz({
       name: this.data.liveQuiz.name,
@@ -1375,9 +1445,10 @@ describe('Different live-quiz workflows', function () {
 
     // create single choice question and live quiz
     cy.createQuestionMC({
-      title: this.data.MC2.title,
+      name: this.data.MC2.title,
       content: this.data.MC2.content,
       choices: this.data.MC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     // edit the live quiz and add the modified SC and the new MC question
@@ -1803,6 +1874,8 @@ describe('Different live-quiz workflows', function () {
       this.data.FTML.title,
       this.data.SEML.title,
       this.data.CSML.title,
+      this.data.CT.title,
+      this.data.CT2.title,
     ]
     cy.wrap(questions).each((question: string) => {
       cy.deleteElement({ elementName: question })
@@ -1811,6 +1884,7 @@ describe('Different live-quiz workflows', function () {
 
   it('Cleanup: Delete the created answer collection', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection.name })

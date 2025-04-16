@@ -1,0 +1,13 @@
+query GetCoursePublishedMicroLearnings($courseId: String!) {
+  getCoursePublishedMicroLearnings(courseId: $courseId) {
+    id
+    name
+    displayName
+    scheduledStartAt
+    scheduledEndAt
+    course {
+      id
+      displayName
+    }
+  }
+}

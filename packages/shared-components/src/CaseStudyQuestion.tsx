@@ -90,6 +90,7 @@ function CaseStudyQuestion({
               ) : null}
             </div>
             <Markdown
+              withProse
               content={content}
               data={{ cy: `instance-question-content` }}
               className={{ root: 'text-base' }}

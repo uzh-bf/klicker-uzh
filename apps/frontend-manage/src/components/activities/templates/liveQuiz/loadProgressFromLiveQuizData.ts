@@ -13,7 +13,7 @@ function loadProgressFromLiveQuizData({
     },
   }
 
-  // Create the block and element states with numeric indices as keys
+  // create the block and element states with numeric indices as keys
   quizData.blocks.forEach((block, blockIx) => {
     progress[blockIx] = {}
 

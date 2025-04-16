@@ -1,7 +1,9 @@
 import { useQuery } from '@apollo/client'
+import { faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 import { GetAnswerCollectionsElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
+  Button,
   FormikNumberField,
   FormikSelectField,
   FormLabel,
@@ -12,6 +14,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Dispatch, SetStateAction } from 'react'
 import Select from 'react-select'
+import { twMerge } from 'tailwind-merge'
 import { ElementFormTypesSelection } from '../types'
 import useAnswerCollectionChangeEffect from './useAnswerCollectionChangeEffect'
 import useSelectAnswerCollectionOptions from './useSelectAnswerCollectionOptions'
@@ -34,10 +37,13 @@ function SelectionOptions({
 }: SelectionOptionsProps) {
   const t = useTranslations()
   const [field, _, helpers] = useField<number[]>('options.correctAnswers')
-  const { data, loading } = useQuery(GetAnswerCollectionsElementsDocument, {
-    variables: { templateId },
-    fetchPolicy: 'network-only',
-  })
+  const { data, loading, refetch } = useQuery(
+    GetAnswerCollectionsElementsDocument,
+    {
+      variables: { templateId },
+      fetchPolicy: 'network-only',
+    }
+  )
   const collections = data?.getAnswerCollectionsElements ?? []
 
   // get all answer options from the selected collections
@@ -83,27 +89,41 @@ function SelectionOptions({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1 lg:flex-row lg:items-start lg:gap-3">
-        <FormikSelectField
-          required
-          name="options.answerCollection"
-          label={t('manage.questionForms.answerCollection')}
-          labelType="small"
-          tooltip={t('manage.questionForms.SELECTIONOptionsTooltip')}
-          placeholder={t('manage.questionForms.selectCollection')}
-          items={collections.map((collection) => ({
-            label: `${collection.name} (${collection.entries?.length ?? 0} ${t('shared.generic.entries')})`,
-            value: String(collection.id),
-            data: {
-              cy: `select-answer-collection-${collection.name}`,
-            },
-          }))}
-          data={{ cy: 'select-answer-collection' }}
-          className={{
-            select: { trigger: 'h-9 w-80' },
-            root: 'order-2 lg:order-1',
-          }}
-        />
+      <div className="flex flex-col gap-1 lg:flex-row lg:items-start lg:gap-4">
+        <div className="flex flex-row items-end gap-1">
+          <FormikSelectField
+            required
+            name="options.answerCollection"
+            label={t('manage.questionForms.answerCollection')}
+            labelType="small"
+            tooltip={t('manage.questionForms.SELECTIONOptionsTooltip')}
+            placeholder={t('manage.questionForms.selectCollection')}
+            items={collections.map((collection) => ({
+              label: `${collection.name} (${collection.entries?.length ?? 0} ${t('shared.generic.entries')})`,
+              value: String(collection.id),
+              data: {
+                cy: `select-answer-collection-${collection.name}`,
+              },
+            }))}
+            data={{ cy: 'select-answer-collection' }}
+            className={{
+              select: { trigger: 'h-9 w-80' },
+            }}
+          />
+          <Button
+            disabled={loading}
+            onClick={async () => await refetch()}
+            className={{ root: 'h-9 w-9' }}
+            data={{ cy: 'refresh-answer-collections' }}
+          >
+            <Button.Icon
+              withoutLabel
+              icon={faArrowsRotate}
+              className={{ root: twMerge(loading ? 'animate-spin' : '') }}
+            />
+          </Button>
+        </div>
+
         <FormikNumberField
           required
           min={1}
@@ -113,7 +133,6 @@ function SelectionOptions({
           data={{ cy: 'configure-number-of-inputs' }}
           className={{
             field: 'w-40',
-            root: 'order-3 lg:order-2',
           }}
         />
       </div>

@@ -1,26 +1,57 @@
 import { useQuery } from '@apollo/client'
+import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { GetSingleAnswerCollectionDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, TextField, UserNotification } from '@uzh-bf/design-system'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@uzh-bf/design-system/dist/future'
+import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
+import { useMemo, useState } from 'react'
 
 function AnswerCollectionViewingModal({
   collectionId,
   open,
   onClose,
-  onRemove,
 }: {
   collectionId: number
   open: boolean
   onClose: () => void
-  onRemove: () => void
 }) {
   const t = useTranslations()
   const { data, loading } = useQuery(GetSingleAnswerCollectionDocument, {
     variables: { id: collectionId },
   })
-
   const collection = data?.getSingleAnswerCollection
+
+  // initialize search
+  const [searchQuery, setSearchQuery] = useState('')
+  const search = useMemo(() => {
+    if (!collection?.entries) {
+      return null
+    }
+
+    const search = new JsSearch.Search('id')
+    search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
+    search.searchIndex = new JsSearch.UnorderedSearchIndex()
+    search.addIndex('value')
+    search.addDocuments(collection.entries)
+    return search
+  }, [collection?.entries])
+
+  // filter entries
+  const filteredEntries = useMemo(() => {
+    if (!collection?.entries || search === null || searchQuery.trim() === '') {
+      return collection?.entries || []
+    }
+
+    return search.search(searchQuery) as typeof collection.entries
+  }, [collection?.entries, searchQuery, search])
+
   if (loading || !collection) {
     return null
   }
@@ -43,36 +74,73 @@ function AnswerCollectionViewingModal({
         </div>
       }
       dataCloseButton={{ cy: 'close-viewing-collection-modal' }}
-      className={{ content: 'max-w-2xl' }}
+      className={{
+        content: 'max-h-[calc(100vh-1.5rem)] max-w-2xl overflow-y-auto',
+      }}
     >
-      <div className="space-y-4">
-        <div
-          data-cy="viewing-collection-description"
-          className="rounded-md bg-gray-100 p-3"
-        >
-          <div className="mb-1 font-bold">
-            {t('shared.generic.description')}:
-          </div>
-          <Markdown content={collection.description} />
-        </div>
+      <Accordion
+        collapsible
+        type="single"
+        defaultValue="description"
+        className="w-full"
+      >
+        <AccordionItem value="description">
+          <AccordionTrigger
+            className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+            data-cy="open-collection-description"
+          >
+            {t('shared.generic.description')}
+          </AccordionTrigger>
+          <AccordionContent className="px-1">
+            <div
+              data-cy="viewing-collection-description"
+              className="rounded-md bg-gray-100 p-4"
+            >
+              <Markdown content={collection.description} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
-        <div>
-          <div className="mb-2 font-bold">
-            {t('manage.resources.answerOptions')}
-          </div>
-          <div className="rounded-md border border-gray-200 pr-2">
-            {collection.entries?.map((entry, ix) => (
-              <div
-                key={entry.id}
-                data-cy={`viewing-collection-answer-${ix}`}
-                className="break-words border-b border-gray-200 p-2 last:border-b-0 hover:bg-gray-50"
-              >
-                {entry.value}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        <AccordionItem value="options">
+          <AccordionTrigger
+            className="hover:bg-accent px-1 py-2 font-semibold hover:no-underline"
+            data-cy="open-collection-options"
+          >
+            {t('manage.resources.answerOptions')} (
+            {collection.entries?.length || 0})
+          </AccordionTrigger>
+          <AccordionContent className="px-1 pb-2 pt-0.5">
+            <TextField
+              value={searchQuery}
+              onChange={(searchString) => setSearchQuery(searchString)}
+              icon={faSearch}
+              placeholder={t('manage.resources.searchAnswerOptions')}
+              data={{ cy: 'search-viewing-answer-options' }}
+              className={{ field: 'mb-2 w-full', input: 'h-8 text-sm' }}
+            />
+
+            <div className="max-h-[calc(100vh-18rem)] overflow-y-auto rounded-md border border-gray-200">
+              {filteredEntries.length === 0 ? (
+                <div className="p-4 text-center">
+                  <UserNotification type="info">
+                    {t('manage.resources.noMatchingOptions')}
+                  </UserNotification>
+                </div>
+              ) : (
+                filteredEntries.map((entry, ix) => (
+                  <div
+                    key={entry.id}
+                    data-cy={`viewing-collection-answer-${ix}`}
+                    className="break-words border-b border-gray-200 p-3 last:border-b-0 hover:bg-gray-50"
+                  >
+                    {entry.value}
+                  </div>
+                ))
+              )}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </Modal>
   )
 }

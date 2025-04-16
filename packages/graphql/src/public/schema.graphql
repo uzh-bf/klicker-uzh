@@ -332,6 +332,7 @@ type CaseStudyElementResultCriterion {
 
 type CaseStudyElementResultCriterionInfo {
   id: String!
+  labels: CaseStudyCriterionLabels
   name: String!
 }
 
@@ -1868,6 +1869,8 @@ type Query {
   getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, days: Int, endDate: String, rollingSelection: Boolean!, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
+  getCoursePublishedMicroLearnings(courseId: String!): [MicroLearning!]
+  getCoursePublishedPracticeQuizzes(courseId: String!): [PracticeQuiz!]
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]
   getCourseStudentTimelines: [CourseStudentTimeline!]
   getCourseSummary(courseId: String!): CourseSummary

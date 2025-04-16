@@ -17,15 +17,17 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
   it('Creates the questions that should be bookmarked and/or flagged', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.question1.title,
+      name: this.data.question1.title,
       content: this.data.question1.content,
       choices: this.data.question1.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.question2.title,
+      name: this.data.question2.title,
       content: this.data.question2.content,
       choices: this.data.question2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
   // #endregion

@@ -109,6 +109,7 @@
     "unselectedItems": ["USA", "UK", "Japan", "China"],
     "criteria": [
       {
+        "id": "oYTzF78iey",
         "mode": "range",
         "name": "Population",
         "min": 1000000,
@@ -116,6 +117,7 @@
         "step": 1000
       },
       {
+        "id": "YQoyvwFJIr",
         "mode": "range",
         "name": "Area",
         "min": 100,
@@ -125,6 +127,7 @@
       }
     ],
     "removedCriterion": {
+      "id": "gWG1frjdTF",
       "mode": "steps",
       "name": "Closeness to Europe",
       "steps": 5,
@@ -136,10 +139,12 @@
     },
     "cases": [
       {
+        "id": "8tgJNRi9o1",
         "title": "Case 1",
         "description": "Case 1 Description - Data from 1800"
       },
       {
+        "id": "Ovzf8gzSpZ",
         "title": "Case 2",
         "description": "Case 2 Description - Data from 2000"
       }
@@ -447,10 +452,10 @@
     "title": "Auto Save question title",
     "content": "Auto Save question content",
     "choices": [
-      { "content": "Choice 1" },
-      { "content": "Choice 2" },
-      { "content": "Choice 3", "correct": true },
-      { "content": "Choice 4" }
+      { "value": "Choice 1" },
+      { "value": "Choice 2" },
+      { "value": "Choice 3", "correct": true },
+      { "value": "Choice 4" }
     ],
     "titleEdited": "Auto Save question title new",
     "contentEdited": "Auto Save question content new",
@@ -465,26 +470,26 @@
     "content2": "Single Choice Question Content 2",
     "content3": "Single Choice Question Content 3",
     "choices1": [
-      { "content": "Choice 1", "feedback": "Feedback 1" },
-      { "content": "Choice 2", "feedback": "Feedback 2" },
-      { "content": "Choice 3", "feedback": "Feedback 3", "correct": true },
-      { "content": "Choice 4", "feedback": "Feedback 4" }
+      { "value": "Choice 1", "feedback": "Feedback 1" },
+      { "value": "Choice 2", "feedback": "Feedback 2" },
+      { "value": "Choice 3", "feedback": "Feedback 3", "correct": true },
+      { "value": "Choice 4", "feedback": "Feedback 4" }
     ],
     "choices2": [
-      { "content": "Choice NEW 1", "feedback": "Feedback NEW 1" },
-      { "content": "Choice NEW 2", "feedback": "Feedback NEW 2" },
+      { "value": "Choice NEW 1", "feedback": "Feedback NEW 1" },
+      { "value": "Choice NEW 2", "feedback": "Feedback NEW 2" },
       {
-        "content": "Choice NEW 3",
+        "value": "Choice NEW 3",
         "feedback": "Feedback NEW 3",
         "correct": true
       },
-      { "content": "Choice NEW 4", "feedback": "Feedback NEW 4" }
+      { "value": "Choice NEW 4", "feedback": "Feedback NEW 4" }
     ],
     "choices3": [
-      { "content": "Choice Very NEW 1" },
-      { "content": "Choice Very NEW 2" },
-      { "content": "Choice Very NEW 3" },
-      { "content": "Choice Very NEW 4" }
+      { "value": "Choice Very NEW 1" },
+      { "value": "Choice Very NEW 2" },
+      { "value": "Choice Very NEW 3" },
+      { "value": "Choice Very NEW 4" }
     ],
     "course": "Testkurs",
     "liveQuiz1": "Live Quiz 1",

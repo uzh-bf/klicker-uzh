@@ -119,6 +119,7 @@ export default {
       points: 'Punkte',
       title: 'KlickerUZH',
       send: 'Absenden',
+      next: 'Weiter',
       submit: 'Absenden',
       save: 'Speichern',
       start: 'Starten',
@@ -167,6 +168,8 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Aktive Live Quizzes',
+      activePracticeQuizzes: 'Aktive Übungs-Quizzes',
+      activeMicroLearnings: 'Aktive Microlearnings',
       groupActivity: 'Gruppenaktivität',
       groupActivities: 'Gruppenaktivitäten',
       characters: 'Zeichen',
@@ -438,9 +441,12 @@ export default {
       userNotLoggedIn:
         'Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten.',
       noLiveQuizzesActive: 'Keine Live Quizzes aktiv.',
-      activeLiveQuizzesBy: 'Aktive Live Quizzes von <i>{name}</i>',
-      activeLiveQuizzesInCourse: 'Aktive Live Quizzes in Kurs <i>{name}</i>',
-      activeLiveQuizzes: 'Aktive Live Quizzes',
+      activeLiveQuizzesBy: 'Aktive Live Quizzes von {name}',
+      activeLiveQuizzesInCourse: 'Aktive Live Quizzes in {name}',
+      noPracticeQuizzesActive: 'Keine Übungs-Quizzes aktiv.',
+      activePracticeQuizzesInCourse: 'Aktive Übungs-Quizzes in {name}',
+      noMicroLearningsActive: 'Keine Microlearnings aktiv.',
+      activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
       joinLeaderboardNotice: `
 🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
 
@@ -1351,7 +1357,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizGamified:
         'Bitte spezifizieren Sie, ob das Quiz gamifiziert sein soll. Dies ist nur möglich, wenn das Quiz Teil eines Kurses ist.',
       liveQuizTypes:
-        'Live Quizzes können nur Single-Choice, Multiple-Choice, Kprim, Numerische, Freitext, und Auswahl-Fragen enthalten.',
+        'Live Quizzes unterstützen alle Fragetypen, sowie Inhaltelemente. Lernkarten können nicht in Live Quizzes genutzt werden.',
       liveQuizTimeRestriction:
         'Bitte geben Sie eine gültige Zeitbegrenzung ein.',
       liveQuizMinQuestions:
@@ -1655,6 +1661,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       replaceWithExistingElement:
         'Mit bestehendem Element aus Bibliothek ersetzen',
       insertContentNewElement: 'Inhalt für neues Element erfassen',
+      editContentNewElement: 'Inhalt für neues Element weiter bearbeiten',
       selectExistingElement: 'Bestehendes Element auswählen',
       selectElementInstructions:
         'Wählen Sie eines Ihrer bestehenden Elemente aus, um es in die Vorlage zu übernehmnen. Bitte beachten Sie, dass es sich hierbei um den folgenden Typ Element handeln muss: {element}. Die untenstehende Auswahl wurde bereits nach diesen Kriterien gefiltert.',
@@ -1683,6 +1690,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       expandAll: 'Alle ausklappen',
       collapseAll: 'Alle einklappen',
       basedOnObject: 'basierend auf {object}',
+      recoveredTemplateData:
+        'Für diese Vorlage wurden Ihre Eingaben automatisch zwischengespeichert und geladen. Möchten Sie das Template zurücksetzen, nutzen Sie bitte den hierfür vorgesehenen Knopf.',
+      resetTemplateData: 'Eingaben zurücksetzen',
+      resetConfirmation: 'Bestätigung Zurücksetzung des Templates',
+      resetWarning:
+        'Bitte bestätigen Sie, dass Sie alle Eingaben für dieses Template zurücksetzen möchten. Alle eingegebenen Daten, inkl. potentiell im Template erstellte Elemente werden gelöscht und können nicht wiederhergestellt werden.',
+      confirmReset: 'Zurücksetzen bestätigen',
     },
     formErrors: {
       resolveErrors:
@@ -1905,6 +1919,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Total Teilnehmende: {number} ({anonymous} anonym)',
       showSolution: 'Lösung anzeigen',
       showExplanation: 'Erklärung anzeigen',
+      showSolutionInfo:
+        'Diese Option ermöglicht es Ihnen, vorab auszuwählen, ob die Musterlösung auf der eingebetteten Auswertungsansicht angezeigt werden soll, sobald Sie die entsprechende Seite oder Folie öffnen. Diese Einstellung kann geändert werden, sobald die entsprechende Ansicht geöffnet wurde.',
+      showExplanationInfo:
+        'Diese Option ermöglicht es Ihnen, vorab auszuwählen, ob die Erklärung (falls erfasst) auf der eingebetteten Auswertungsansicht angezeigt werden soll, sobald Sie die entsprechende Seite oder Folie öffnen. Diese Einstellung kann geändert werden, sobald die entsprechende Ansicht geöffnet wurde.',
       fontSize: 'Schriftgrösse',
       validSolutionRange: 'Erlaubter Antwortbereich',
       correctSolutionRanges: 'Korrekte Lösungsbereiche',
@@ -1955,10 +1973,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       microLearningEvaluation: 'Microlearning Evaluation',
       chartTypeNotSupported:
         'Derzeit wird der ausgewählte Diagrammtyp für diesen Elementtyp nicht unterstützt.',
-      noFlashcardEvaluation:
-        'Derzeit ist keine Auswertungsansicht für Flashcards in KlickerUZH-Aktivitäten verfügbar.',
-      noContentEvaluation:
-        'Derzeit ist keine Auswertungsansicht für Inhaltselemente in KlickerUZH-Aktivitäten verfügbar.',
       histogramNotSupported:
         'Histogramme werden für diesen Fragetyp nicht unterstützt.',
       criterionXAxis: 'Kriterium X-Achse',
@@ -1970,6 +1984,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie können entweder mehrere Fälle oder mehrere Fallstudien-Elemente auswählen, um die entsprechenden Resultate zu vergleichen. Eine Kombination von mehreren Fällen und mehreren Fallstudien-Elementen kann nicht dargestellt werden.',
       caseStudySelectCasesItemsCriteria:
         'Bitte wählen Sie mindestens einen Fall, ein Fallstudien-Element und Kriterien aus, um eine Auswertung anzuzeigen.',
+      answerNotRemembered: 'Antwort nicht bekannt',
+      answerPartiallyRemembered: 'Antwort teilweise bekannt',
+      answerRemembered: 'Antwort bekannt',
+      frontSide: 'Vorderseite',
+      backSide: 'Rückseite',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
@@ -2143,6 +2162,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Teilen Sie diesen Link oder den QR-Code mit Ihren Teilnehmenden, damit sie dem Kurs beitreten können.',
       copyAccessLink: 'Zugriffslink kopieren',
       copyLTIAccessLink: 'LTI Link kopieren',
+      liveQuizList: 'Live Quiz Liste',
+      practiceQuizList: 'Übungs-Quiz Liste',
+      microLearningList: 'Microlearning Liste',
       linkAccessCopied:
         'Der Link für den Zugriff wurde in die Zwischenablage kopiert.',
       linkLTICopied:
@@ -2150,6 +2172,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Dokumentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Übungs-Quizzes',
+      linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Microlearning bearbeiten',
       duplicateMicroLearning: 'Microlearning duplizieren',
@@ -2314,6 +2338,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       byOwner: 'von {owner}',
       cancelRequest: 'Anfrage zurückziehen',
       answerCollection: 'Antwort-Sammlung: {name}',
+      nameAndDescription: 'Name und Beschreibung',
+      saveBeforeClosing:
+        'Bitte speichern Sie Ihre Änderungen, bevor Sie die Sektion schliessen.',
+      searchAnswerOptions: 'Antwort-Option suchen...',
+      noMatchingOptions: 'Keine passenden Optionen gefunden.',
       saveChanges: 'Änderungen speichern',
       saveMetadata: 'Metadaten speichern',
       successfulCollectionEdit:

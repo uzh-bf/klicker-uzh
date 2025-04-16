@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
+  faDeleteLeft,
   faDownLeftAndUpRightToCenter,
   faUpRightAndDownLeftFromCenter,
 } from '@fortawesome/free-solid-svg-icons'
@@ -14,7 +15,6 @@ import { Button, H3, Toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import ActivityRecoveryPrompt from './ActivityRecoveryPrompt'
 import goToNextTemplateElement from './goToNextTemplateElement'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
 import LiveQuizTemplateSubmissionButton from './liveQuiz/LiveQuizTemplateSubmissionButton'
@@ -30,6 +30,7 @@ import SectionCollapsible, {
 import SettingsNotSavedToast from './SettingsNotSavedToast'
 import TemplateElementContent from './TemplateElementContent'
 import TemplateInfo from './TemplateInfo'
+import TemplateResetConfirmationPrompt from './TemplateResetConfirmationPrompt'
 import { LiveQuizTemplateFormValues } from './types'
 
 function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
@@ -41,8 +42,9 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
   const [createLiveQuizFromTemplate, { loading: creatingLiveQuiz }] =
     useMutation(CreateLiveQuizFromTemplateDocument)
 
-  // recovery prompt state in case a previous template state is still available for this activity
-  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
+  // reset modal and information toast if previous information was loaded into the template
+  const [recoveredToast, setRecoveredToast] = useState(false)
+  const [resetTemplatePrompt, setResetTemplatePrompt] = useState(false)
 
   // closing the settings step should be blocked unless the modified settings have been saved
   const [closingSettingsDisabled, setClosingSettingsDisabled] = useState(false)
@@ -102,9 +104,14 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
       return
     }
 
-    // check if the data is already defined in local storage
+    // check if the data is already defined in local storage -> load data & set information toast
     if (quizData) {
-      setShowRecoveryPrompt(true)
+      // set collapsible states based on the loaded data
+      const progress = loadProgressFromLiveQuizData({ quizData })
+      setCollapsibles(progress)
+
+      // the saved data has already been loaded -> set toast
+      setRecoveredToast(true)
     }
     // initialize live quiz template form data based on the loaded live quiz data
     else {
@@ -126,24 +133,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
 
   return (
     <div>
-      <ActivityRecoveryPrompt
-        open={showRecoveryPrompt}
-        onDiscard={() => {
-          if (initialTemplateFormData) {
-            setQuizData(initialTemplateFormData)
-          }
-          setShowRecoveryPrompt(false)
-        }}
-        onRecovery={() => {
-          // set collapsible states based on the loaded data
-          const progress = loadProgressFromLiveQuizData({ quizData })
-          setCollapsibles(progress)
-
-          // the saved data has already been loaded -> close modal
-          setShowRecoveryPrompt(false)
-        }}
-      />
-
       <TemplateInfo
         activityType={template.activityType}
         name={liveQuiz.name}
@@ -466,70 +455,117 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
               <Button.Label>{t('manage.template.collapseAll')}</Button.Label>
             </Button>
           </div>
-          <LiveQuizTemplateSubmissionButton
-            quizData={quizData}
-            loading={creatingLiveQuiz}
-            onSubmit={async () => {
-              const inputsInvalid =
-                !quizData?.settingsProcessed ||
-                !quizData?.blocks?.every(
-                  (block) =>
-                    block.elements?.every((element) => element.processed) ??
-                    false
-                )
-
-              if (inputsInvalid) {
-                console.log(
-                  'Template inputs were invalid, but submission was triggered'
-                )
-                setSubmissionError(true)
-                return
-              }
-
-              try {
-                const processedBlocks = processLiveQuizTemplateBlocksData({
-                  data: quizData,
-                })
-
-                const { data: res } = await createLiveQuizFromTemplate({
-                  variables: {
-                    templateId: template.id,
-                    name: quizData.name,
-                    displayName: quizData.displayName,
-                    description: quizData.description,
-                    courseId: quizData.courseId,
-                    isGamificationEnabled: quizData.isGamificationEnabled,
-                    blocks: processedBlocks,
-                  },
-                  refetchQueries: [GetUserLiveQuizzesDocument],
-                })
-
-                const quizId = res?.createLiveQuizFromTemplate
-                if (quizId) {
-                  // remove local storage entry
-                  localStorage.removeItem(
-                    `live-quiz-template-inputs-${template.id}`
+          <div className="flex flex-row gap-2">
+            <Button
+              destructive
+              disabled={creatingLiveQuiz || !initialTemplateFormData}
+              onClick={() => {
+                setResetTemplatePrompt(true)
+              }}
+              data={{ cy: 'reset-template-data' }}
+            >
+              <Button.Icon icon={faDeleteLeft} />
+              <Button.Label>
+                {t('manage.template.resetTemplateData')}
+              </Button.Label>
+            </Button>
+            <LiveQuizTemplateSubmissionButton
+              quizData={quizData}
+              loading={creatingLiveQuiz}
+              onSubmit={async () => {
+                const inputsInvalid =
+                  !quizData?.settingsProcessed ||
+                  !quizData?.blocks?.every(
+                    (block) =>
+                      block.elements?.every((element) => element.processed) ??
+                      false
                   )
 
-                  // redirect to live quiz overview and highlight newly created element
-                  router.push({
-                    pathname: '/quizzes',
-                    query: { highlight: quizId },
-                  })
-                } else {
+                if (inputsInvalid) {
                   console.log(
-                    'An error occurred while creating the live quiz from the template'
+                    'Template inputs were invalid, but submission was triggered'
                   )
                   setSubmissionError(true)
+                  return
                 }
-              } catch (error) {
-                console.log(error)
-                setSubmissionError(true)
-              }
-            }}
-          />
+
+                try {
+                  const processedBlocks = processLiveQuizTemplateBlocksData({
+                    data: quizData,
+                  })
+
+                  const { data: res } = await createLiveQuizFromTemplate({
+                    variables: {
+                      templateId: template.id,
+                      name: quizData.name,
+                      displayName: quizData.displayName,
+                      description: quizData.description,
+                      courseId: quizData.courseId,
+                      isGamificationEnabled: quizData.isGamificationEnabled,
+                      blocks: processedBlocks,
+                    },
+                    refetchQueries: [GetUserLiveQuizzesDocument],
+                  })
+
+                  const quizId = res?.createLiveQuizFromTemplate
+                  if (quizId) {
+                    // remove local storage entry
+                    localStorage.removeItem(
+                      `live-quiz-template-inputs-${template.id}`
+                    )
+
+                    // redirect to live quiz overview and highlight newly created element
+                    router.push({
+                      pathname: '/quizzes',
+                      query: { highlight: quizId },
+                    })
+                  } else {
+                    console.log(
+                      'An error occurred while creating the live quiz from the template'
+                    )
+                    setSubmissionError(true)
+                  }
+                } catch (error) {
+                  console.log(error)
+                  setSubmissionError(true)
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
+      <TemplateResetConfirmationPrompt
+        open={resetTemplatePrompt}
+        onClose={() => setResetTemplatePrompt(false)}
+        onConfirm={() => {
+          if (initialTemplateFormData) {
+            // reset the form inputs
+            setQuizData(initialTemplateFormData)
+
+            // reset the progress parameters
+            const progress = loadProgressFromLiveQuizData({
+              quizData: initialTemplateFormData,
+            })
+            setCollapsibles(progress)
+
+            // unset touched state for settings collapsible
+            setClosingSettingsDisabled(false)
+
+            // close the modal
+            setResetTemplatePrompt(false)
+          }
+        }}
+      />
+      <Toast
+        dismissible
+        type="success"
+        duration={10000}
+        openExternal={recoveredToast}
+        onCloseExternal={() => setRecoveredToast(false)}
+        className={{ root: 'max-w-[30rem]' }}
+      >
+        {t('manage.template.recoveredTemplateData')}
+      </Toast>
       <Toast
         dismissible
         type="error"

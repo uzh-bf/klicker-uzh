@@ -88,12 +88,14 @@ describe('Test all functionalities of catalog collections and objects contained 
   // #region
   it('Create a new answer collection AC1 in lecturer account', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.AC1.name,
       description: this.data.AC1.description,
       entries: this.data.AC1.items,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.get(`[data-cy="answer-collection-${this.data.AC1.name}"]`).should(
       'exist'
@@ -102,12 +104,14 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Create a new answer collection AC2 in pro1 account', function () {
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.createAnswerCollection({
       name: this.data.AC2.name,
       description: this.data.AC2.description,
       entries: this.data.AC2.items,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.get(`[data-cy="answer-collection-${this.data.AC2.name}"]`).should(
       'exist'
@@ -117,14 +121,16 @@ describe('Test all functionalities of catalog collections and objects contained 
   it('Create the questions that will be required for this test workflow', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.SC.title,
+      name: this.data.SC.title,
       content: this.data.SC.content,
       choices: this.data.SC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML.title,
+      name: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
@@ -151,6 +157,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Share the answer collection AC1 with other users', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(
@@ -205,6 +212,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Create public and private catalog collections CCPublic and CCPrivate', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -240,6 +248,7 @@ describe('Test all functionalities of catalog collections and objects contained 
   it('Verify correct visibility of catalog collections to users', function () {
     // lecturer should be able to see both catalog collections
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).should('exist')
@@ -250,6 +259,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // other users should not see empty public collection (restricted for access requests)
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).should(
@@ -262,11 +272,13 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Add AC1 to both catalog collections', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
     // add AC1 as public object to public catalog collection
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -293,6 +305,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     // add AC1 as public object to restricted catalog collection
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -320,6 +333,7 @@ describe('Test all functionalities of catalog collections and objects contained 
   it('Verify that both catalog collecitons are visible to all users', function () {
     // lecturer should be able to see both catalog collections
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).should('exist')
@@ -330,6 +344,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // other users should also see both catalog collections and content of public one
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).should('exist')
@@ -352,6 +367,7 @@ describe('Test all functionalities of catalog collections and objects contained 
   // #region
   it('Request access to CCRestricted from pro1', function () {
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
@@ -363,6 +379,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Share CCRestricted with all other users and different permission levels (request approval & direct sharing)', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -422,6 +439,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Share CCPublic with user pro1 and ADMIN permissions', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(
@@ -444,11 +462,13 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Add AC2 to both catalog collections with restricted visibility using WRITE / ADMIN permissions respectively', function () {
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
     // add AC2 as restricted object to public catalog collection
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -474,6 +494,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     // add AC2 as restricted object to restricted catalog collection
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -499,11 +520,13 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Add the live quiz template to the top level of the catalog and both collections', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
     // add live quiz template to public catalog collection (public object)
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -530,6 +553,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     // add live quiz template to the restricted catalog collection (public object)
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
+    cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
     cy.get('[data-cy="object-type-selection"]').click()
     cy.get(
@@ -556,6 +580,7 @@ describe('Test all functionalities of catalog collections and objects contained 
   it('Verify that the permissions on the catalog collections are correctly set for lecturer', function () {
     // test owner privileges on public catalog collection (share, transfer ownership, delete, edit)
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     verifyAdminOwnerPermissionsCCPublic({ data: this.data, ownership: true })
@@ -579,6 +604,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Verify that the permissions on the catalog collections are correctly set for pro1', function () {
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -624,6 +650,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Verify that user pro2 without permissions on the public catalog collection can see and request / import content', function () {
     cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -658,6 +685,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Verify that user pro3 can see and request access to objects in restricted answer collection with READ permissions', function () {
     cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -685,6 +713,7 @@ describe('Test all functionalities of catalog collections and objects contained 
   it('Verify that the permissions on the objects themselves (sharing, etc.) are determined by object access', function () {
     // main lecturer - OWNER of AC1 and no access to AC2 with corresponding sharing permissions
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
@@ -711,6 +740,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // pro1 - ADMIN of AC1 and OWNER of AC2 with corresponding sharing permissions
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
@@ -737,6 +767,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // pro2 - ADMIN of catalog collection CC2 but without permissions on answer collections should not be able to access sharing dialogs
     cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
@@ -769,6 +800,7 @@ describe('Test all functionalities of catalog collections and objects contained 
   it('Cleanup: Remove the shared answer collection from all accounts and delete it', function () {
     // remove the shared answer collections from pro1
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(
@@ -780,6 +812,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // remove the shared answer collections from pro2
     cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(
@@ -791,6 +824,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // remove the shared answer collections from pro3
     cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.get(
@@ -802,6 +836,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // delete answer collection AC1
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.AC1.name })
@@ -809,6 +844,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // delete answer collection AC2
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.AC2.name })
@@ -835,6 +871,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
   it('Cleanup: Remove the two catalog collections through the lecturer account (owner)', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 

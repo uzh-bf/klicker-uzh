@@ -1,28 +1,26 @@
 import { useQuery } from '@apollo/client'
-import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
+import { faChalkboardUser } from '@fortawesome/free-solid-svg-icons'
 import { GetShortnameQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import Layout from '../../components/Layout'
-
-interface Props {
-  isInactive: boolean
-  shortname: string
-  participantToken?: string
-  cookiesAvailable?: boolean
-}
+import LinkButton from '../../components/common/LinkButton'
 
 function Join({
   isInactive,
   shortname,
   participantToken,
   cookiesAvailable,
-}: Props) {
+}: {
+  isInactive: boolean
+  shortname: string
+  participantToken?: string
+  cookiesAvailable?: boolean
+}) {
   const t = useTranslations()
 
   useParticipantToken({
@@ -43,16 +41,18 @@ function Join({
   ) {
     return (
       <Layout>
-        <div className="mx-auto mt-4 w-full max-w-md rounded border p-4">
-          <div className="font-bold">
-            {t.rich('pwa.general.activeLiveQuizzes')}
-          </div>
-          <div className="mt-2 space-y-1">
-            <UserNotification
-              type="warning"
-              message={t('pwa.general.noLiveQuizzesActive')}
-            />
-          </div>
+        <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+          <H2>
+            {t.rich('pwa.general.activeLiveQuizzesBy', {
+              i: (text) => <span className="italic">{text}</span>,
+              name: shortname,
+            })}
+          </H2>
+          <UserNotification
+            type="warning"
+            message={t('pwa.general.noLiveQuizzesActive')}
+            className={{ root: 'text-base' }}
+          />
         </div>
       </Layout>
     )
@@ -60,30 +60,24 @@ function Join({
 
   return (
     <Layout>
-      <div className="mx-auto mt-4 w-full max-w-md rounded border p-4">
-        <div className="font-bold">
-          {t.rich('pwa.general.activeLiveQuizzesBy', {
-            i: (text) => <span className="italic">{text}</span>,
+      <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+        <H2>
+          {t('pwa.general.activeLiveQuizzesBy', {
             name: shortname,
           })}
-        </div>
-        <div className="mt-2 space-y-1.5">
+        </H2>
+        <div className="flex flex-col gap-1.5">
           {data.shortnameQuizzes.map((quiz) => (
-            <div key={quiz.id}>
-              <Link href={`/session/${quiz.id}`}>
-                <Button
-                  fluid
-                  className={{ root: 'justify-start' }}
-                  data={{ cy: `join-live-quiz-${quiz.name}` }}
-                >
-                  <Button.Icon icon={faExternalLink} />
-                  <Button.Label>
-                    {quiz.displayName}{' '}
-                    {quiz.course && `in ${quiz.course?.displayName}`}
-                  </Button.Label>
-                </Button>
-              </Link>
-            </div>
+            <LinkButton
+              key={quiz.id}
+              icon={faChalkboardUser}
+              href={`/session/${quiz.id}`}
+              data={{ cy: `join-live-quiz-${quiz.name}` }}
+              className={{ root: 'gap-1 text-lg', icon: 'h-5 w-5' }}
+            >
+              {quiz.displayName}{' '}
+              {quiz.course && `in ${quiz.course?.displayName}`}
+            </LinkButton>
           ))}
         </div>
       </div>

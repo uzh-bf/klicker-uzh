@@ -42,7 +42,7 @@ function CSEvaluationHistogramSidebar({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-2">
+    <div className="flex h-full flex-col gap-6 overflow-y-auto px-4 py-2">
       <CSCaseSelection
         cases={cases}
         selectedCases={selectedCases}

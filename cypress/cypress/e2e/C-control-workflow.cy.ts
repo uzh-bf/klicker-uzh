@@ -10,9 +10,10 @@ describe('Test functionalities of frontend-control application', function () {
 
     // create single choice question for use in test live quiz
     cy.createQuestionSC({
-      title: this.data.questionTitle,
+      name: this.data.questionTitle,
       content: this.data.questionContent,
-      choices: [{ content: '50%' }, { content: '100%' }],
+      choices: [{ value: '50%' }, { value: '100%' }],
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 

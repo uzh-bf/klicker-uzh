@@ -4,18 +4,18 @@
     "title": "Question 1 Title",
     "content": "Question Content 1",
     "choices": [
-      { "content": "50%", "correct": true },
-      { "content": "100%" },
-      { "content": "75%" }
+      { "value": "50%", "correct": true },
+      { "value": "100%" },
+      { "value": "75%" }
     ]
   },
   "question2": {
     "title": "Question 2 Title",
     "content": "Question Content 2",
     "choices": [
-      { "content": "30%", "correct": true },
-      { "content": "60%" },
-      { "content": "90%", "correct": true }
+      { "value": "30%", "correct": true },
+      { "value": "60%" },
+      { "value": "90%", "correct": true }
     ]
   },
   "PQ": {

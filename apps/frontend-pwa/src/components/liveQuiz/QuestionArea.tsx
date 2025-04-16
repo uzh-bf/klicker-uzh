@@ -153,6 +153,9 @@ function QuestionArea({
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
       handleNewResponse(type, instanceId, input.response)
+    } else if (type === ElementType.Content) {
+      // for content elements, only the number of reads / next clicks are counted
+      handleNewResponse(type, instanceId, true)
     }
   }
 
@@ -209,6 +212,9 @@ function QuestionArea({
         <div className="flex w-full flex-col gap-2">
           <LiveQuizProgress
             activeIndex={instances.length - remainingQuestions.length}
+            contentInstance={
+              currentInstance.elementType === ElementType.Content
+            }
             numItems={instances.length}
             expiresAt={expiresAt}
             timeLimit={timeLimit}

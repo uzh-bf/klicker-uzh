@@ -3,12 +3,20 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import Markdown from './Markdown.js'
 
+// Helper function to decode HTML entities
+function decodeHtmlEntities(text: string): string {
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = text
+  return textarea.value
+}
+
 export interface EllipsisBaseProps {
   children: string
   maxLength?: number
   maxLines?: 1 | 2 | 3
   withoutPopup?: boolean
   withMarkdown?: boolean
+  withMarkdownTooltip?: boolean
   className?: {
     root?: string
     tooltip?: string
@@ -34,6 +42,7 @@ function Ellipsis({
   maxLines,
   withoutPopup = false,
   withMarkdown = true,
+  withMarkdownTooltip = true,
   className,
 }: EllipsisProps): React.ReactElement {
   if (maxLines) {
@@ -41,7 +50,7 @@ function Ellipsis({
       <Tooltip
         delay={1000}
         tooltip={
-          withMarkdown ? (
+          withMarkdownTooltip ? (
             <Prose
               className={{
                 root: 'prose-p:m-0 prose-img:m-0 max-w-full flex-initial leading-6',
@@ -61,7 +70,7 @@ function Ellipsis({
         }
         className={{
           tooltip: twMerge(
-            'max-w-md border bg-white text-sm shadow',
+            'max-w-md border bg-white text-sm text-black shadow',
             className?.tooltip
           ),
         }}
@@ -95,7 +104,18 @@ function Ellipsis({
               className?.content
             )}
           >
-            {children}
+            {typeof children === 'string'
+              ? decodeHtmlEntities(children)
+                  .split('\n')
+                  .filter((line) => line.trim() !== '')
+                  .slice(0, maxLines) // only include the first maxLines lines
+                  .map((line, i, arr) => (
+                    <React.Fragment key={i}>
+                      {line}
+                      {i < arr.length - 1 && <br />}
+                    </React.Fragment>
+                  ))
+              : children}
           </div>
         )}
       </Tooltip>
@@ -147,7 +167,17 @@ function Ellipsis({
     </Prose>
   ) : (
     <div className={className?.content}>
-      {children.toString().substr(0, endIndex || maxLength)}
+      {decodeHtmlEntities(children.toString())
+        .substr(0, endIndex || maxLength)
+        .split('\n')
+        .filter((line) => line.trim() !== '')
+        .slice(0, 3) // Limit to 3 lines for shortened content
+        .map((line, i, arr) => (
+          <React.Fragment key={i}>
+            {line}
+            {i < arr.length - 1 && <br />}
+          </React.Fragment>
+        ))}
     </div>
   )
 
@@ -164,7 +194,20 @@ function Ellipsis({
         className={{ root: className?.markdown, img: 'max-h-36' }}
       />
     ) : (
-      <div className={className?.content}>{children}</div>
+      <div className={className?.content}>
+        {typeof children === 'string'
+          ? decodeHtmlEntities(children)
+              .split('\n')
+              .filter((line) => line.trim() !== '')
+              .slice(0, maxLines || 3) // Use maxLines if available, otherwise default to 3
+              .map((line, i, arr) => (
+                <React.Fragment key={i}>
+                  {line}
+                  {i < arr.length - 1 && <br />}
+                </React.Fragment>
+              ))
+          : children}
+      </div>
     )
   }
 
@@ -177,7 +220,7 @@ function Ellipsis({
         <Tooltip
           delay={1000}
           tooltip={
-            withMarkdown ? (
+            withMarkdownTooltip ? (
               <Markdown
                 withModal={false}
                 content={children
@@ -185,6 +228,24 @@ function Ellipsis({
                   .replace(/^(- |[0-9]+\. |\* |\+ )/g, '')}
                 className={{ root: className?.markdown }}
               />
+            ) : typeof children === 'string' ? (
+              <div>
+                {decodeHtmlEntities(children)
+                  .split('\n')
+                  .filter((line) => line.trim() !== '')
+                  .slice(
+                    0,
+                    maxLines || maxLength
+                      ? Math.min(3, Math.ceil(maxLength / 50))
+                      : 3
+                  ) // limit lines based on context
+                  .map((line, i, arr) => (
+                    <React.Fragment key={i}>
+                      {line}
+                      {i < arr.length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
+              </div>
             ) : (
               children
             )

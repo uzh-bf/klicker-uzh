@@ -564,6 +564,11 @@ const serviceBusTrigger = async function (
 
         break
       }
+      case 'CONTENT': {
+        // increase number of participants on element (do not award points / ... for content elements)
+        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        break
+      }
     }
   } catch (e) {
     context.error('Error processing response', e, queueItem)

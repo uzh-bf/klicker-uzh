@@ -58,7 +58,7 @@ export function gradeQuestionKPRIM({
   response,
   solution,
 }: GradeQuestionChoicesArgs): number | null {
-  if (!solution) return null
+  if (solution === null || typeof solution === 'undefined') return null
 
   const distance = hammingDistance({
     responseCount,

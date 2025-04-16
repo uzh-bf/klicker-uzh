@@ -32,7 +32,11 @@ function CaseStudyOptions({
   const [selectedItems, setSelectedItems] = useState<
     { id: number; name: string }[]
   >([])
-  const { data, loading } = useQuery(GetAnswerCollectionsElementsDocument, {
+  const {
+    data,
+    loading,
+    refetch: refetchAnswerCollections,
+  } = useQuery(GetAnswerCollectionsElementsDocument, {
     variables: { templateId },
     fetchPolicy: 'network-only',
   })
@@ -62,11 +66,15 @@ function CaseStudyOptions({
   return (
     <div className="flex flex-col gap-4">
       <CaseStudyCollectionSelection
+        loading={loading}
         isTemplate={isTemplate}
         collections={collections}
         setSelectedItems={setSelectedItems}
         hasSampleSolution={hasSampleSolution}
         setAnswerCollectionEntries={setAnswerCollectionEntries}
+        refetchAnswerCollections={async () =>
+          await refetchAnswerCollections({ templateId })
+        }
       />
       <hr className="border-uzh-grey-40 my-2 w-full border-2" />
       <CaseStudyCriteriaFields />

@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetPracticeQuizListDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
@@ -40,12 +40,10 @@ function Repetition() {
   return (
     <Layout
       course={{ displayName: 'KlickerUZH' }}
-      displayName={t('pwa.practiceQuiz.repetitionTitle')}
+      displayName={t('shared.generic.practiceQuizzes')}
     >
-      <div className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
-        <H1 className={{ root: 'text-xl' }}>
-          {t('shared.generic.repetition')}
-        </H1>
+      <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
+        <H2>{t('shared.generic.practiceQuizzes')}</H2>
         {courses?.length
           ? courses.map((course) => (
               <CourseCollapsible

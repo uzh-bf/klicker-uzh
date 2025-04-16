@@ -7,16 +7,22 @@ import {
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, H1, Toast } from '@uzh-bf/design-system'
+import {
+  Button,
+  Dropdown,
+  H1,
+  Toast,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import CourseQRModal from '../liveQuiz/cockpit/CourseQRModal'
-import { getLTIAccessLink } from './PracticeQuizElement'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
+import { getLTIAccessLink } from './PracticeQuizElement'
+import QRCodePopover from './QRCodePopover'
 
 interface CourseOverviewHeaderProps {
   course: Omit<
@@ -74,13 +80,17 @@ function CourseOverviewHeader({
           <Button.Icon icon={faPencil} />
           <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
         </Button>
-        <CourseQRModal
-          relativeLink={`/course/${course.id}/join?pin=${pinCode}`}
+        <QRCodePopover
+          triggerStyle="button"
           triggerText={t('manage.course.joinCourse')}
-          className={{ modal: 'w-[40rem]' }}
-          dataTrigger={{ cy: 'course-join-button' }}
-          dataModal={{ cy: 'course-join-modal' }}
-          dataCloseButton={{ cy: 'course-join-modal-close' }}
+          infoComponent={
+            <UserNotification
+              message={t('manage.course.courseQRDescription')}
+              className={{ root: 'mb-3 w-80' }}
+            />
+          }
+          relHref={`/course/${course.id}/join?pin=${pinCode}`}
+          data={{ cy: `course-join-qr-code` }}
         />
         {user?.publicPreview ? (
           <Button
@@ -127,6 +137,20 @@ function CourseOverviewHeader({
                       t,
                       name,
                       label: t('manage.course.linkLTILiveQuizzesLabel'),
+                    }),
+                    getLTIAccessLink({
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes`,
+                      setCopyToast,
+                      t,
+                      name,
+                      label: t('manage.course.linkLTIPracticeQuizzesLabel'),
+                    }),
+                    getLTIAccessLink({
+                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings`,
+                      setCopyToast,
+                      t,
+                      name,
+                      label: t('manage.course.linkLTIMicroLearningsLabel'),
                     }),
                     getLTIAccessLink({
                       href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,

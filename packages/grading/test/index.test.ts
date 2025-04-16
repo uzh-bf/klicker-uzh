@@ -62,7 +62,6 @@ describe('@klicker-uzh/grading', () => {
       response: [0, 1, 2, 3, 4, 5],
       solution: [0, 1, 3],
     })
-
     expect(points).toEqual(0)
 
     const points2 = gradeQuestionKPRIM({
@@ -70,7 +69,6 @@ describe('@klicker-uzh/grading', () => {
       response: [0, 1, 3],
       solution: [0, 1, 3],
     })
-
     expect(points2).toEqual(1)
 
     const points3 = gradeQuestionKPRIM({
@@ -78,8 +76,35 @@ describe('@klicker-uzh/grading', () => {
       response: [0, 1, 3],
       solution: [0, 1],
     })
-
     expect(points3).toEqual(0.5)
+
+    const points4 = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [],
+      solution: [],
+    })
+    expect(points4).toEqual(1)
+
+    const points5 = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [2],
+      solution: [],
+    })
+    expect(points5).toEqual(0.5)
+
+    const points6 = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [1, 3],
+      solution: [],
+    })
+    expect(points6).toEqual(0)
+
+    const points7 = gradeQuestionKPRIM({
+      responseCount: 4,
+      response: [1, 2, 3, 4],
+      solution: [],
+    })
+    expect(points7).toEqual(0)
   })
 
   it('should grade NUMERICAL questions correctly', () => {

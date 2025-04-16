@@ -24,6 +24,8 @@ function AnswerCollectionOption({
   deletionDisabled,
   editDisabled,
   setEditDisabled,
+  onTouched,
+  onSuccess,
 }: {
   entry: AnswerCollectionEntry
   otherEntries: string[]
@@ -32,6 +34,8 @@ function AnswerCollectionOption({
   deletionDisabled?: boolean
   editDisabled: boolean
   setEditDisabled: Dispatch<SetStateAction<boolean>>
+  onTouched: () => void
+  onSuccess: () => void
 }) {
   const t = useTranslations()
   const [editMode, setEditMode] = useState(false)
@@ -87,6 +91,8 @@ function AnswerCollectionOption({
             },
             refetchQueries: [GetAnswerCollectionsInfoDocument],
           })
+
+          onSuccess()
         }}
       >
         <Button.Icon withoutLabel icon={faTrashCan} />
@@ -99,6 +105,7 @@ function AnswerCollectionOption({
           onClick={() => {
             setEditMode(true)
             setEditDisabled(true)
+            onTouched()
           }}
           disabled={editDisabled}
           data={{ cy: `edit-answer-option-${entry.value}` }}
@@ -166,6 +173,7 @@ function AnswerCollectionOption({
               setSubmitting(false)
               setEditMode(false)
               setEditDisabled(false)
+              onSuccess()
             }}
           >
             {({ isSubmitting, isValid }) => (

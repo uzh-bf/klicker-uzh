@@ -16,73 +16,86 @@ describe('Test all functionalities related to the creation, management, sharing 
   it('Create a set of questions in the lecturer account for the template test suite', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.SC.title,
+      name: this.data.SC.title,
       content: this.data.SC.content,
       choices: this.data.SC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML.title,
+      name: this.data.SCML.title,
       content: this.data.SCML.content,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCMLAF.title,
+      name: this.data.SCMLAF.title,
       content: this.data.SCMLAF.content,
       choices: this.data.SCMLAF.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.MC.title,
+      name: this.data.MC.title,
       content: this.data.MC.content,
       choices: this.data.MC.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML.title,
+      name: this.data.MCML.title,
       content: this.data.MCML.content,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCMLAF.title,
+      name: this.data.MCMLAF.title,
       content: this.data.MCMLAF.content,
       choices: this.data.MCMLAF.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP.title,
+      name: this.data.KP.title,
       content: this.data.KP.content,
       choices: this.data.KP.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML.title,
+      name: this.data.KPML.title,
       content: this.data.KPML.content,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPMLAF.title,
+      name: this.data.KPMLAF.title,
       content: this.data.KPMLAF.content,
       choices: this.data.KPMLAF.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionNR({
-      title: this.data.NR.title,
+      name: this.data.NR.title,
       content: this.data.NR.content,
       ...this.data.NR.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML.title,
+      name: this.data.NRML.title,
       content: this.data.NRML.content,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionFT({
-      title: this.data.FT.title,
+      name: this.data.FT.title,
       content: this.data.FT.content,
       ...this.data.FT.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML.title,
+      name: this.data.FTML.title,
       content: this.data.FTML.content,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="resources"]').click()
@@ -91,27 +104,30 @@ describe('Test all functionalities related to the creation, management, sharing 
       name: this.data.collection.name,
       description: this.data.collection.description,
       entries: this.data.collection.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE.title,
+      name: this.data.SE.title,
       content: this.data.SE.content,
       numberOfInputs: this.data.SE.inputs,
       collectionName: this.data.collection.name,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML.title,
+      name: this.data.SEML.title,
       content: this.data.SEML.content,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionCS({
-      title: this.data.CS.title,
+      name: this.data.CS.title,
       content: this.data.CS.content,
       explanation: this.data.CS.explanation,
       collectionName: this.data.collection.name,
@@ -121,9 +137,10 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CS.criteria,
       cases: this.data.CS.cases,
       solutions: this.data.CS.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML.title,
+      name: this.data.CSML.title,
       content: this.data.CSML.content,
       explanation: this.data.CSML.explanation,
       collectionName: this.data.collection.name,
@@ -133,79 +150,93 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
   it('Create a second set of questions in the lecturer user account for the use in the template test suite', function () {
     cy.loginLecturer()
     cy.createQuestionSC({
-      title: this.data.SC2.title,
+      name: this.data.SC2.title,
       content: this.data.SC2.content,
       choices: this.data.SC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML2.title,
+      name: this.data.SCML2.title,
       content: this.data.SCML2.content,
       choices: this.data.SCML2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCMLAF2.title,
+      name: this.data.SCMLAF2.title,
       content: this.data.SCMLAF2.content,
       choices: this.data.SCMLAF2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.MC2.title,
+      name: this.data.MC2.title,
       content: this.data.MC2.content,
       choices: this.data.MC2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML2.title,
+      name: this.data.MCML2.title,
       content: this.data.MCML2.content,
       choices: this.data.MCML2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCMLAF2.title,
+      name: this.data.MCMLAF2.title,
       content: this.data.MCMLAF2.content,
       choices: this.data.MCMLAF2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP2.title,
+      name: this.data.KP2.title,
       content: this.data.KP2.content,
       choices: this.data.KP2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML2.title,
+      name: this.data.KPML2.title,
       content: this.data.KPML2.content,
       choices: this.data.KPML2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPMLAF2.title,
+      name: this.data.KPMLAF2.title,
       content: this.data.KPMLAF2.content,
       choices: this.data.KPMLAF2.choices,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionNR({
-      title: this.data.NR2.title,
+      name: this.data.NR2.title,
       content: this.data.NR2.content,
       ...this.data.NR2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML2.title,
+      name: this.data.NRML2.title,
       content: this.data.NRML2.content,
       ...this.data.NRML2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionFT({
-      title: this.data.FT2.title,
+      name: this.data.FT2.title,
       content: this.data.FT2.content,
       ...this.data.FT2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML2.title,
+      name: this.data.FTML2.title,
       content: this.data.FTML2.content,
       ...this.data.FTML2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="resources"]').click()
@@ -214,27 +245,30 @@ describe('Test all functionalities related to the creation, management, sharing 
       name: this.data.collection2.name,
       description: this.data.collection2.description,
       entries: this.data.collection2.options,
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE2.title,
+      name: this.data.SE2.title,
       content: this.data.SE2.content,
       numberOfInputs: this.data.SE2.inputs,
       collectionName: this.data.collection2.name,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML2.title,
+      name: this.data.SEML2.title,
       content: this.data.SEML2.content,
       numberOfInputs: this.data.SEML2.inputs,
       collectionName: this.data.collection2.name,
       correctAnswers: this.data.collection2.options.filter((_, i) =>
         this.data.SEML2.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_ID'),
     })
 
     cy.createQuestionCS({
-      title: this.data.CS2.title,
+      name: this.data.CS2.title,
       content: this.data.CS2.content,
       explanation: this.data.CS2.explanation,
       collectionName: this.data.collection2.name,
@@ -244,9 +278,10 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CS2.criteria,
       cases: this.data.CS2.cases,
       solutions: this.data.CS2.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML2.title,
+      name: this.data.CSML2.title,
       content: this.data.CSML2.content,
       explanation: this.data.CSML2.explanation,
       collectionName: this.data.collection2.name,
@@ -256,79 +291,93 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CSML2.criteria,
       cases: this.data.CSML2.cases,
       solutions: this.data.CSML2.solutions,
+      userId: Cypress.env('LECTURER_ID'),
     })
   })
 
   it("Create another set of questions in the account of user 'pro1' for the use in template", function () {
     cy.loginIndividualCatalyst()
     cy.createQuestionSC({
-      title: this.data.SC3.title,
+      name: this.data.SC3.title,
       content: this.data.SC3.content,
       choices: this.data.SC3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCML3.title,
+      name: this.data.SCML3.title,
       content: this.data.SCML3.content,
       choices: this.data.SCML3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionSC({
-      title: this.data.SCMLAF3.title,
+      name: this.data.SCMLAF3.title,
       content: this.data.SCMLAF3.content,
       choices: this.data.SCMLAF3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionMC({
-      title: this.data.MC3.title,
+      name: this.data.MC3.title,
       content: this.data.MC3.content,
       choices: this.data.MC3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCML3.title,
+      name: this.data.MCML3.title,
       content: this.data.MCML3.content,
       choices: this.data.MCML3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionMC({
-      title: this.data.MCMLAF3.title,
+      name: this.data.MCMLAF3.title,
       content: this.data.MCMLAF3.content,
       choices: this.data.MCMLAF3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionKPRIM({
-      title: this.data.KP3.title,
+      name: this.data.KP3.title,
       content: this.data.KP3.content,
       choices: this.data.KP3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPML3.title,
+      name: this.data.KPML3.title,
       content: this.data.KPML3.content,
       choices: this.data.KPML3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionKPRIM({
-      title: this.data.KPMLAF3.title,
+      name: this.data.KPMLAF3.title,
       content: this.data.KPMLAF3.content,
       choices: this.data.KPMLAF3.choices,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionNR({
-      title: this.data.NR3.title,
+      name: this.data.NR3.title,
       content: this.data.NR3.content,
       ...this.data.NR3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionNR({
-      title: this.data.NRML3.title,
+      name: this.data.NRML3.title,
       content: this.data.NRML3.content,
       ...this.data.NRML3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionFT({
-      title: this.data.FT3.title,
+      name: this.data.FT3.title,
       content: this.data.FT3.content,
       ...this.data.FT3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionFT({
-      title: this.data.FTML3.title,
+      name: this.data.FTML3.title,
       content: this.data.FTML3.content,
       ...this.data.FTML3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.get('[data-cy="resources"]').click()
@@ -337,27 +386,30 @@ describe('Test all functionalities related to the creation, management, sharing 
       name: this.data.collection3.name,
       description: this.data.collection3.description,
       entries: this.data.collection3.options,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.get('[data-cy="library"]').click()
     cy.createQuestionSE({
-      title: this.data.SE3.title,
+      name: this.data.SE3.title,
       content: this.data.SE3.content,
       numberOfInputs: this.data.SE3.inputs,
       collectionName: this.data.collection3.name,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionSE({
-      title: this.data.SEML3.title,
+      name: this.data.SEML3.title,
       content: this.data.SEML3.content,
       numberOfInputs: this.data.SEML3.inputs,
       collectionName: this.data.collection3.name,
       correctAnswers: this.data.collection3.options.filter((_, i) =>
         this.data.SEML3.solutions.includes(i)
       ),
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
 
     cy.createQuestionCS({
-      title: this.data.CS3.title,
+      name: this.data.CS3.title,
       content: this.data.CS3.content,
       explanation: this.data.CS3.explanation,
       collectionName: this.data.collection3.name,
@@ -367,9 +419,10 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CS3.criteria,
       cases: this.data.CS3.cases,
       solutions: this.data.CS3.solutions,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
     cy.createQuestionCS({
-      title: this.data.CSML3.title,
+      name: this.data.CSML3.title,
       content: this.data.CSML3.content,
       explanation: this.data.CSML3.explanation,
       collectionName: this.data.collection3.name,
@@ -379,6 +432,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       criteria: this.data.CSML3.criteria,
       cases: this.data.CSML3.cases,
       solutions: this.data.CSML3.solutions,
+      userId: Cypress.env('LECTURER_IND_ID'),
     })
   })
   // #endregion
@@ -648,6 +702,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Add the live quiz template to the top level catalog collection', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -679,6 +734,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it("Add the second template to a restricted catalog collection and share access to it with user 'pro1'", function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
 
@@ -987,6 +1043,8 @@ describe('Test all functionalities related to the creation, management, sharing 
         // check possibility to create a new element
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
         cy.get('[data-cy="insert-question-text"]').contains(content)
+        cy.wait(1000) // wait for form to be fully populated to avoid overlapping inputs
+
         cy.get('[data-cy="insert-question-text"]')
           .click()
           .clear()
@@ -1072,7 +1130,10 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // reload and reset progress
     cy.reload()
-    cy.get('[data-cy="discard-recovered-activity-data"]').click()
+    cy.get('[data-cy="reset-template-data"]').click()
+    cy.get('[data-cy="cancel-template-reset"]').click()
+    cy.get('[data-cy="reset-template-data"]').click()
+    cy.get('[data-cy="confirm-template-reset"]').click()
 
     // re-do settings section and the first block
     cy.get('[data-cy="live-quiz-template-settings"]').click()
@@ -1174,30 +1235,41 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.wrap([
       {
         identifier: '2-0',
+        oldTitle: this.data.SCMLAF.title,
         newTitle: this.data.activity1.newElements.SC.title,
         newContent: this.data.activity1.newElements.SC.content,
       },
       {
         identifier: '2-1',
+        oldTitle: this.data.MCMLAF.title,
         newTitle: this.data.activity1.newElements.MC.title,
         newContent: this.data.activity1.newElements.MC.content,
       },
       {
         identifier: '2-2',
+        oldTitle: this.data.KPMLAF.title,
         newTitle: this.data.activity1.newElements.KP.title,
         newContent: this.data.activity1.newElements.KP.content,
       },
     ]).each(
       ({
         identifier,
+        oldTitle,
         newTitle,
         newContent,
       }: {
         identifier: string
+        oldTitle: string
         newTitle: string
         newContent: string
       }) => {
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
+        cy.get('[data-cy="insert-question-title"]').should(
+          'have.value',
+          oldTitle
+        )
+        cy.wait(1000) // wait for form to be fully populated to avoid overlapping inputs
+
         cy.get('[data-cy="insert-question-title"]')
           .click()
           .clear()
@@ -1214,7 +1286,6 @@ describe('Test all functionalities related to the creation, management, sharing 
 
     // reload and restore progress, make sure that all inputs persisted
     cy.reload()
-    cy.get('[data-cy="load-recovered-activity-data"]').click()
     cy.wrap([
       { identifier: '0-0', content: this.data.SC.content },
       { identifier: '0-1', content: this.data.MC.content },
@@ -1498,6 +1569,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it("Open the template in the restricted catalog collection through user 'pro1', test all functionalities and create an activity from it", function () {
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
@@ -1663,6 +1735,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-0',
         content: this.data.SCML.content,
+        title: this.data.SCML.title,
         newTitle: this.data.activity2.newElements.SC.title,
         newContent: this.data.activity2.newElements.SC.content,
         availableElements: [this.data.SCML3.title],
@@ -1682,6 +1755,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-1',
         content: this.data.MCML.content,
+        title: this.data.MCML.title,
         newTitle: this.data.activity2.newElements.MC.title,
         newContent: this.data.activity2.newElements.MC.content,
         availableElements: [this.data.MCML3.title],
@@ -1701,6 +1775,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-2',
         content: this.data.KPML.content,
+        title: this.data.KPML.title,
         newTitle: this.data.activity2.newElements.KP.title,
         newContent: this.data.activity2.newElements.KP.content,
         availableElements: [this.data.KPML3.title],
@@ -1720,6 +1795,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-3',
         content: this.data.NRML.content,
+        title: this.data.NRML.title,
         newTitle: this.data.activity2.newElements.NR.title,
         newContent: this.data.activity2.newElements.NR.content,
         availableElements: [this.data.NRML3.title],
@@ -1735,6 +1811,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-4',
         content: this.data.FTML.content,
+        title: this.data.FTML.title,
         newTitle: this.data.activity2.newElements.FT.title,
         newContent: this.data.activity2.newElements.FT.content,
         availableElements: [this.data.FTML3.title],
@@ -1750,6 +1827,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-5',
         content: this.data.SEML.content,
+        title: this.data.SEML.title,
         newTitle: this.data.activity2.newElements.SE.title,
         newContent: this.data.activity2.newElements.SE.content,
         availableElements: [this.data.SEML3.title],
@@ -1765,6 +1843,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       {
         identifier: '1-6',
         content: this.data.CSML.content,
+        title: this.data.CSML.title,
         newTitle: this.data.activity2.newElements.CS.title,
         newContent: this.data.activity2.newElements.CS.content,
         availableElements: [this.data.CSML3.title],
@@ -1781,6 +1860,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       ({
         identifier,
         content,
+        title,
         newTitle,
         newContent,
         availableElements,
@@ -1790,6 +1870,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       }: {
         identifier: string
         content: string
+        title: string
         newTitle: string
         newContent: string
         availableElements: string[]
@@ -1820,6 +1901,9 @@ describe('Test all functionalities related to the creation, management, sharing 
 
         // verify that certain settings are disabled / hidden and enter new title & content
         cy.get(`[data-cy="create-new-element-template-${identifier}"]`).click()
+        cy.get('[data-cy="insert-question-title"]').should('have.value', title)
+        cy.wait(1000) // wait for form to be fully populated to avoid overlapping inputs
+
         cy.get('[data-cy="configure-sample-solution"]').should('not.exist')
         if (hasAnswerFeedbacksDisabled) {
           cy.get('[data-cy="configure-answer-feedbacks"]').should('be.disabled')
@@ -2461,12 +2545,14 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Delete all created resources', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection.name })
     cy.deleteAnswerCollection({ collectionName: this.data.collection2.name })
 
     cy.loginIndividualCatalyst()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
     cy.deleteAnswerCollection({ collectionName: this.data.collection3.name })
@@ -2474,6 +2560,7 @@ describe('Test all functionalities related to the creation, management, sharing 
 
   it('Delete all created catalog collections', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(
