@@ -1085,7 +1085,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       createLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -1114,7 +1113,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       editLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -1140,6 +1138,21 @@ export const Mutation = builder.mutationType({
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),

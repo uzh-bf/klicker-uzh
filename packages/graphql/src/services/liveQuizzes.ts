@@ -12,6 +12,7 @@ import {
   ElementInstanceType,
   ElementType,
   LeaderboardType,
+  PermissionLevel,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
 import type {
@@ -449,14 +450,18 @@ export async function splitActivityInstances(
     where: {
       id: { in: requiredElementsIds },
       isDeleted: false,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          entries: true,
+      // only admins and owners are allowed to re-use elements
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [PermissionLevel.OWNER, PermissionLevel.ADMIN],
+          },
         },
       },
+    },
+    include: {
+      answerCollection: { include: { entries: true } },
       answerCollectionItems: true,
     },
   })
@@ -521,11 +526,7 @@ export async function manipulateLiveQuiz(
   // in EDIT mode - validate that the live quiz exists and is not published
   if (id) {
     const existingActivity = await ctx.prisma.liveQuiz.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        isDeleted: false,
-      },
+      where: { id, isDeleted: false },
     })
 
     if (!existingActivity) {
@@ -553,16 +554,12 @@ export async function manipulateLiveQuiz(
     const instances = await ctx.prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
-        elementBlock: {
-          liveQuizId: id,
-        },
+        elementBlock: { liveQuizId: id },
       },
     })
 
     const blocks = await ctx.prisma.elementBlock.findMany({
-      where: {
-        liveQuizId: id,
-      },
+      where: { liveQuizId: id },
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
@@ -603,17 +600,13 @@ export async function manipulateLiveQuiz(
         },
       })),
     },
-    owner: {
-      connect: { id: ctx.user.sub },
-    },
+    owner: { connect: { id: ctx.user.sub } },
   }
 
   const activity = await ctx.prisma.$transaction(async (prisma) => {
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: instancesToDelete },
-      },
+      where: { id: { in: instancesToDelete } },
     })
 
     // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
@@ -624,9 +617,7 @@ export async function manipulateLiveQuiz(
           : 1
 
       await prisma.elementInstance.update({
-        where: {
-          id: instance.id,
-        },
+        where: { id: instance.id },
         data: {
           elementBlockId: null,
           order: persistentInstanceOrderMap[instance.id],
@@ -649,37 +640,20 @@ export async function manipulateLiveQuiz(
       where: { id: id ?? uuidv4() },
       create: {
         ...createOrUpdateJSON,
-        course:
-          courseId !== null
-            ? {
-                connect: { id: courseId },
-              }
-            : undefined,
+        course: courseId !== null ? { connect: { id: courseId } } : undefined,
       },
       update: {
         ...createOrUpdateJSON,
         course:
           courseId !== null
-            ? {
-                connect: { id: courseId },
-              }
-            : {
-                disconnect: true,
-              },
+            ? { connect: { id: courseId } }
+            : { disconnect: true },
       },
       include: {
         course: true,
         blocks: {
-          include: {
-            elements: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-          orderBy: {
-            order: 'asc',
-          },
+          include: { elements: { orderBy: { order: 'asc' } } },
+          orderBy: { order: 'asc' },
         },
       },
     })
