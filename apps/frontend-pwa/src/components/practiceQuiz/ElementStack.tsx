@@ -423,7 +423,7 @@ function ElementStack({
           primary
           loading={submittingResponse}
           disabled={
-            activityExpired ||
+            (!previewOnly && activityExpired) ||
             Object.values(studentResponse).some((response) => !response.valid)
           }
           className={{ root: 'float-right mt-4' }}

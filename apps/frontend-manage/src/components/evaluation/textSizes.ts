@@ -7,6 +7,7 @@ export interface TextSizeType {
   text2Xl: string
   text3Xl: string
   legend: string
+  legendMd: string
   min: number
   max: number
 }
@@ -21,6 +22,7 @@ export const TextSizes = {
     text2Xl: 'text-4xl',
     text3Xl: 'text-5xl',
     legend: '3rem',
+    legendMd: '2rem',
     min: 60,
     max: 80,
   },
@@ -33,6 +35,7 @@ export const TextSizes = {
     text2Xl: 'text-3xl',
     text3Xl: 'text-4xl',
     legend: '2.5rem',
+    legendMd: '1.5rem',
     min: 50,
     max: 70,
   },
@@ -45,6 +48,7 @@ export const TextSizes = {
     text2Xl: 'text-2xl',
     text3Xl: 'text-3xl',
     legend: '2rem',
+    legendMd: '1.25rem',
     min: 40,
     max: 60,
   },
@@ -57,6 +61,7 @@ export const TextSizes = {
     text2Xl: 'text-xl',
     text3Xl: 'text-2xl',
     legend: '1.5rem',
+    legendMd: '1rem',
     min: 30,
     max: 40,
   },

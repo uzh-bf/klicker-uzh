@@ -33,15 +33,14 @@ import LiveQuizQuestionsStep from './LiveQuizQuestionsStep'
 import LiveQuizSettingsStep from './LiveQuizSettingsStep'
 import submitLiveQuizForm from './submitLiveQuizForm'
 
-// TODO: update accepted types in live quiz to include flashcards and content elements
+// flashcards are not accepted in live quizzes -> only makes sense in combination with spaced repetition / async learning
 const acceptedTypes = [
   ElementType.Sc,
   ElementType.Mc,
   ElementType.Kprim,
   ElementType.Numerical,
   ElementType.FreeText,
-  // ElementType.Flashcard,
-  // ElementType.Content,
+  ElementType.Content,
   ElementType.Selection,
   ElementType.CaseStudy,
 ]

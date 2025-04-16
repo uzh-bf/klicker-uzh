@@ -1,6 +1,9 @@
 import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementInstanceEvaluation,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   ACTIVE_CHART_TYPES,
@@ -107,24 +110,25 @@ function EvaluationFooter({
                   }}
                 />
               )}
-              {hasExplanation && (
-                <Switch
-                  size={hasSolutionAndExplanation ? 'sm' : undefined}
-                  checked={showExplanation}
-                  label={t('manage.evaluation.showExplanation')}
-                  onCheckedChange={(newValue) => setShowExplanation(newValue)}
-                  className={{
-                    label: twMerge(hasSolutionAndExplanation && 'text-sm'),
-                  }}
-                />
-              )}
+              {hasExplanation &&
+                currentInstance.type !== ElementType.Flashcard && (
+                  <Switch
+                    size={hasSolutionAndExplanation ? 'sm' : undefined}
+                    checked={showExplanation}
+                    label={t('manage.evaluation.showExplanation')}
+                    onCheckedChange={(newValue) => setShowExplanation(newValue)}
+                    className={{
+                      label: twMerge(hasSolutionAndExplanation && 'text-sm'),
+                    }}
+                  />
+                )}
             </div>
             {currentInstance?.type &&
             ACTIVE_CHART_TYPES[currentInstance.type].length > 1 ? (
               <Select
                 contentPosition="popper"
                 className={{
-                  trigger: 'w-36 border-slate-400',
+                  trigger: 'w-44 border-slate-400',
                 }}
                 items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => {
                   return {

@@ -394,10 +394,9 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // check out course join modal
-    cy.get('[data-cy="course-join-button"]').click()
-    cy.get('[data-cy="course-join-modal"]').should('exist')
-    cy.get('[data-cy="course-join-modal"]').should('contain', 'QR Code')
-    cy.get('[data-cy="course-join-modal-close"]').click()
+    cy.get('[data-cy="course-join-qr-code"]').click()
+    cy.findByText(messages.manage.course.courseQRDescription).should('exist')
+    cy.get('[data-cy="course-join-qr-code"]').click()
 
     // open the settings dialogue
     cy.get('[data-cy="course-settings-button"]').click()

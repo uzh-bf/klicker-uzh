@@ -118,6 +118,7 @@ export default {
       points: 'Points',
       title: 'KlickerUZH',
       send: 'Send',
+      next: 'Next',
       submit: 'Submit',
       save: 'Save',
       start: 'Start',
@@ -1349,7 +1350,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizGamified:
         'Please specify if the live quiz should be gamified. This is only possible if the quiz is part of a course.',
       liveQuizTypes:
-        'Live quizzes can only contain single choice, multiple choice, kprim, numerical, free-text, and selection questions.',
+        'Live quizzes support all question types as well as content elements. Flashcards cannot be used in live quizzes.',
       liveQuizTimeRestriction: 'Please enter a valid time restriction.',
       liveQuizMinQuestions: 'Block must contain at least one question.',
       liveQuizCreated: 'Live quiz <b>{name}</b> successfully created.',
@@ -1887,6 +1888,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Total participants: {number} ({anonymous} anonymous)',
       showSolution: 'Show solution',
       showExplanation: 'Show explanation',
+      showSolutionInfo:
+        'This option allows you to pre-select whether or not the sample solution should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
+      showExplanationInfo:
+        'This option allows you to pre-select whether or not the explanation (if captured) should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
       correctSolutionRanges: 'Correct solution ranges',
@@ -1937,10 +1942,6 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       microLearningEvaluation: 'Microlearning Evaluation',
       chartTypeNotSupported:
         'At the moment, the selected chart type is not supported for this element type.',
-      noFlashcardEvaluation:
-        'Currently, no evaluation view is available for flashcards in KlickerUZH activities.',
-      noContentEvaluation:
-        'Currently, no evaluation view is available for content elements in KlickerUZH activities.',
       histogramNotSupported:
         'Histograms are not supported for this question type.',
       criterionXAxis: 'Criterion X-Axis',
@@ -1952,6 +1953,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You can either select multiple cases or multiple case study elements to compare the corresponding results. A combination of multiple cases and multiple case study elements cannot be displayed.',
       caseStudySelectCasesItemsCriteria:
         'Please select at least one case, one case study item and criteria to display the evaluation.',
+      answerNotRemembered: 'Answer not remembered',
+      answerPartiallyRemembered: 'Answer partially remembered',
+      answerRemembered: 'Answer remembered',
+      frontSide: 'Front Side',
+      backSide: 'Back Side',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

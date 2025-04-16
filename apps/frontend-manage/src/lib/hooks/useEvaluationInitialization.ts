@@ -4,10 +4,8 @@ import { ActivityEvaluationType } from '../../components/evaluation/ActivityEval
 function useEvaluationInitialization({
   setActiveInstance,
   setActiveStack,
-  setShowSolution,
   questionIx,
   showLeaderboard,
-  showSolution,
   missingInstanceResults,
   type,
 }: {
@@ -15,14 +13,13 @@ function useEvaluationInitialization({
   setActiveStack: Dispatch<
     SetStateAction<number | 'feedbacks' | 'confusion' | 'leaderboard'>
   >
-  setShowSolution: Dispatch<SetStateAction<boolean>>
   questionIx?: string | null
   showLeaderboard?: boolean
-  showSolution?: boolean
   missingInstanceResults?: boolean
   type: ActivityEvaluationType
 }) {
   useEffect(() => {
+    // initialize evaluation with correct element / leaderboard / confusion for live quiz
     if (type === 'LiveQuiz') {
       if (typeof questionIx === 'string' && questionIx !== null) {
         setActiveInstance(parseInt(questionIx))
@@ -31,11 +28,9 @@ function useEvaluationInitialization({
       } else if (missingInstanceResults) {
         setActiveStack('feedbacks')
       }
-      if (showSolution) {
-        setShowSolution(true)
-      }
     }
-  }, [type, questionIx, showLeaderboard, showSolution])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, questionIx, showLeaderboard, missingInstanceResults])
 
   return null
 }

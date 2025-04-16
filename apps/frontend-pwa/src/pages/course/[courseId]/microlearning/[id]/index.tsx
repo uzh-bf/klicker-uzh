@@ -78,6 +78,7 @@ function MicrolearningIntroduction({
       </Layout>
     )
   }
+
   if (error) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
@@ -195,7 +196,7 @@ function MicrolearningIntroduction({
         >
           <Button
             primary
-            disabled={microLearningPast}
+            disabled={!microLearning.isOwner && microLearningPast}
             className={{
               root: 'w-full text-lg md:w-auto md:self-end',
             }}

@@ -131,7 +131,8 @@ export const ACTIVE_CHART_TYPES: Record<
     },
   ],
   [ElementType.Flashcard]: [
-    { label: 'manage.evaluation.unset', value: ChartType.UNSET },
+    { label: 'manage.evaluation.barChart', value: ChartType.BAR_CHART },
+    { label: 'manage.evaluation.table', value: ChartType.TABLE },
   ],
   [ElementType.Content]: [
     { label: 'manage.evaluation.unset', value: ChartType.UNSET },

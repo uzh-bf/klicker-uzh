@@ -405,19 +405,11 @@ function MicroLearningElement({
                 }}
                 trigger={t('manage.course.otherActions')}
                 items={[
-                  user?.catalyst
-                    ? getLTIAccessLink({
-                        href,
-                        setCopyToast,
-                        t,
-                        name: microLearning.name,
-                      })
-                    : [],
                   {
                     label: (
-                      <MicroLearningEvaluationLink
-                        quizName={microLearning.name}
-                        evaluationHref={evaluationHref}
+                      <MicroLearningPreviewLink
+                        microLearning={microLearning}
+                        href={href}
                       />
                     ),
                     onClick: () => null,

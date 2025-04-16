@@ -46,7 +46,6 @@ export function QR({
         <Link
           passHref
           legacyBehavior
-          target="_blank"
           href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
         >
           <a
@@ -54,6 +53,8 @@ export function QR({
               'text-primary-100 mt-4 text-6xl',
               className?.title
             )}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             {process.env.NEXT_PUBLIC_PWA_URL}
             {path}

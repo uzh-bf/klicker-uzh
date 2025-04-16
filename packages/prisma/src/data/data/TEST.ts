@@ -163,7 +163,29 @@ export const QUESTIONS = [
   {
     originalId: '1',
     name: 'Testfrage MC',
-    content: 'Wähle 2 und 3, denn sonst ist es vorbei.',
+    content: `## Understanding Financial Goals and Conflicts
+
+In financial management, understanding the relationships between different financial goals is crucial for effective decision-making.
+
+### The Financial Target Triangle
+The classic financial target triangle consists of:
+* **Profitability** - Generating returns on investments
+* **Liquidity** - Ensuring sufficient cash flow
+* **Security** - Minimizing financial risks
+
+These goals often create conflicts that require careful balancing:
+
+1. Higher profitability typically requires taking on more risk (reducing security)
+2. Maintaining high liquidity usually reduces potential profitability
+3. Increased security often comes at the cost of lower returns
+
+The relationship between profitability and risk can be expressed as:
+
+$$E(R_i) = R_f + \\beta_i [E(R_m) - R_f]$$
+
+Where $E(R_i)$ represents the expected return, $R_f$ is the risk-free rate, and $\\beta_i$ is the asset's beta coefficient.
+
+**Please select the correct statements about the financial target triangle below:**`,
     explanation: 'MC generische Erklärung, warum diese Frage richtig ist.',
     type: ElementType.MC,
     options: {
@@ -238,7 +260,31 @@ export const QUESTIONS = [
   {
     originalId: '3',
     name: 'Multi-Faktor-Modell',
-    content: 'Welche Aussagen zum Multi-Faktor-Modell sind korrekt?',
+    content: `# Multi-Factor Models in Asset Pricing
+
+## Background
+Traditional asset pricing models like CAPM suggest that an asset's return can be explained by its correlation with the market. However, empirical evidence shows this is often insufficient.
+
+### Evolution of Asset Pricing Models
+Multi-factor models emerged to better explain asset returns by incorporating additional risk factors beyond market risk.
+
+The most notable examples include:
+
+1. **Fama-French Three-Factor Model**
+   * Market risk premium
+   * Size factor (SMB - Small Minus Big)
+   * Value factor (HML - High Minus Low book-to-market ratio)
+
+2. **Carhart Four-Factor Model**
+   * Adds momentum factor to Fama-French model
+
+The mathematical representation of the Fama-French model is:
+
+$$R_i - R_f = \\alpha_i + \\beta_{i,m}(R_m - R_f) + \\beta_{i,s}SMB + \\beta_{i,h}HML + \\epsilon_i$$
+
+Where $R_i$ is the return of asset i, $R_f$ is the risk-free rate, and the betas represent sensitivities to each factor.
+
+**Select all correct statements about multi-factor models:**`,
     type: ElementType.KPRIM,
     options: {
       hasSampleSolution: true,
@@ -314,8 +360,29 @@ export const QUESTIONS = [
   {
     originalId: '5',
     name: 'Testfrage NUMERICAL (Exact Solution)',
-    content:
-      'Wie viel würdest du in Aktien anlegen? Beni mag 0%, 20% oder 100%.',
+    content: `## Asset Allocation Strategy Decision
+
+### Context
+You are advising a client on their investment portfolio allocation. Based on their risk profile, time horizon, and financial goals, you need to recommend what percentage of their portfolio should be allocated to equities.
+
+Consider the following factors:
+
+* **Risk tolerance**: Your client is moderately risk-averse
+* **Age**: The client is 45 years old
+* **Investment horizon**: 20 years until retirement
+* **Financial goals**: Growth with some stability
+
+The traditional rule of thumb suggests:
+$$ Equity\\_Percentage = 100 - Age $$
+
+However, more sophisticated models consider additional factors and suggest specific allocation points.
+
+According to research by our financial advisor Beni, the optimal allocation for this profile would be either:
+* 0% (extremely conservative)
+* 20% (moderately conservative)
+* 100% (aggressive growth)
+
+**What percentage would you recommend investing in equities?**`,
     explanation: 'Die korrekten Antworten sind 0%, 20% oder 100%.',
     type: ElementType.NUMERICAL,
     options: {
@@ -394,8 +461,27 @@ export const QUESTIONS = [
   {
     originalId: '8',
     name: 'Testfrage CASE STUDY (with sample solution)',
-    content:
-      'Which fruits best mix into a fruit salad? You will be asked to assess different items based on tastiness and cost. The corresponding scenario, which should be considered during the assessment will be described in the separate cases',
+    content: `# Fruit Salad Optimization Problem
+
+## Introduction
+Creating the perfect fruit salad requires balancing multiple factors including taste, cost, and compatibility between ingredients. Your task is to assess different fruits based on their properties to create an optimal fruit salad.
+
+### Key Considerations
+* **Tastiness** - How delicious is the fruit on its own?
+* **Cost** - What is the price per unit?
+* **Seasonal availability** - Is the fruit currently in season?
+* **Texture combinations** - Do the textures complement each other?
+
+## Assessment Criteria
+For this exercise, you will focus on two primary metrics:
+1. **Tastiness** - Rated on a scale from 1-10
+2. **Cost** - Price in CHF, ranging from 1-100
+
+The optimal combination will balance these factors differently depending on the specific case scenario.
+
+$$Optimization = \\max\\left(\\frac{Tastiness}{Cost}\\right)$$
+
+**Please assess each fruit according to the criteria for each scenario:**`,
     explanation:
       'All sample solutions should only be considered as subjective opinions, every taste is different.',
     type: ElementType.CASE_STUDY,
@@ -436,8 +522,25 @@ export const QUESTIONS = [
               ],
             },
           ],
-          description:
-            'In this case, you are asked to create the tastiest combination of available fruits. You do not have to consider any specific requirements.\n',
+          description: `## Standard Fruit Salad Context
+
+### Background
+You are preparing a fruit salad for a casual family gathering. The fruit salad should appeal to a wide range of tastes while being cost-effective.
+
+### Considerations
+* **Audience**: General family members of all ages
+* **Budget**: Moderate, keeping costs reasonable
+* **Preparation time**: Limited, simpler fruits are advantageous
+
+The primary goal is to maximize enjoyment while maintaining reasonable costs. The tastiness-to-cost ratio can be modeled by:
+
+$$Value = \\frac{Tastiness}{Cost}$$
+
+For a typical family setting, a balanced approach is recommended where:
+* Fruits with tastiness ratings of 5-7 are generally sufficient
+* Cost should be kept below 50 CHF total
+
+Please rate each fruit considering these everyday circumstances.`,
         },
         {
           id: 'FCnD8rvbi_CjEkEfMM2FP',
@@ -473,8 +576,29 @@ export const QUESTIONS = [
               ],
             },
           ],
-          description:
-            'In addition to the previously described scenario, you are now asked to not only rate the elements, but also keep in mind how these assessments might be affected by being considered in a gourmet restaurant context.\n',
+          description: `# Gourmet Restaurant Context
+
+## Culinary Excellence Requirements
+In a high-end restaurant setting, fruit selection criteria shift dramatically toward exceptional quality and presentation. The ordinary becomes extraordinary through:
+
+* **Visual appeal** - Color contrast and aesthetic arrangement
+* **Textural harmony** - Complementary mouthfeel combinations
+* **Flavor complexity** - Subtle notes and flavor development
+
+### Restaurant Economics
+Premium dining establishments operate under different economic constraints:
+1. Higher price points allow for more expensive ingredients
+2. Quality consistency is paramount
+3. Uniqueness provides competitive advantage
+
+The value equation in this context shifts to:
+
+$$GourmetValue = Tastiness^2 \\times \\sqrt{Presentation} \\times (1+Uniqueness)$$
+
+> "In fine dining, we don't merely serve food; we craft experiences that engage all senses."
+> — *Chef Jean-Pierre Blanc*
+
+**Your task**: Evaluate each fruit as if preparing a signature dessert for a Michelin-starred restaurant, where cost is less important than delivering an exceptional culinary experience.`,
         },
       ],
       criteria: [
