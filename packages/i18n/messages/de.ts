@@ -2183,11 +2183,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       newEndDate: 'Neues Enddatum',
       futureEndDateRequired: 'Bitte geben Sie ein Enddatum in der Zukunft ein.',
       publishMicrolearning: 'Microlearning veröffentlichen',
-      unpublishMicrolearning: 'Veröffentlichung aufheben',
+      unpublishMicroLearning: 'Veröffentlichung aufheben',
       convertMicroLearningToPracticeQuiz: 'In Übungs-Quiz umwandeln',
       deleteMicroLearning: 'Microlearning löschen',
       deleteMicroLearningMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Microlearning verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf das Microlearning, dessen Inhalte und alle Resultate verlieren.',
+      unpublishMicroLearningMessage:
+        'Bitte bestätigen Sie, dass Sie die Veröffentlichung dieses Microlearnings aufheben möchten. Beachten Sie, dass hierdurch alle Studierenden den Zugriff auf das Microlearning verlieren und alle Resultate gelöscht werden.',
       publishItemPRACTICE_QUIZ: 'Übungs-Quiz veröffentlichen',
       publishItemMICROLEARNING: 'Microlearning veröffentlichen',
       publishItemGROUP_ACTIVITY: 'Gruppenaktivität veröffentlichen',
@@ -2205,6 +2207,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deletePracticeQuiz: 'Übungs-Quiz löschen',
       deletePracticeQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Übungs-Quiz verbundenen Resultate. Beachten Sie, dass alle Studierenden den Zugriff auf die Aktivität, deren Inhalte und alle Resultate verlieren.',
+      unpublishPracticeQuizMessage:
+        'Bitte bestätigen Sie, dass Sie die Veröffentlichung dieses Übungs-Quiz aufheben möchten. Beachten Sie, dass hierdurch alle Studierenden den Zugriff auf das Übungs-Quiz verlieren und alle Resultate gelöscht werden.',
       noResponsesToDelete:
         'Für diese Aktivität wurden noch keine Antworten von angemeldeten Teilnehmenden gespeichert.',
       deleteResponses:

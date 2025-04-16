@@ -36,7 +36,7 @@ import PracticeQuizEvaluationLink from './actions/PracticeQuizEvaluationLink'
 import PracticeQuizPreviewLink from './actions/PracticeQuizPreviewLink'
 import PublishPracticeQuizButton from './actions/PublishPracticeQuizButton'
 import getActivityDuplicationAction from './actions/getActivityDuplicationAction'
-import PracticeQuizDeletionModal from './modals/PracticeQuizDeletionModal'
+import PracticeQuizUnpublishDeletionModal from './modals/PracticeQuizUnpublishDeletionModal'
 
 interface AccessLinkArgs {
   name: string
@@ -125,6 +125,7 @@ function PracticeQuizElement({
   const router = useRouter()
   const [copyToast, setCopyToast] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+  const [unpublishModal, setUnpublishModal] = useState(false)
 
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -132,7 +133,7 @@ function PracticeQuizElement({
   const user = dataUser?.userProfile
 
   const [unpublishPracticeQuiz] = useMutation(UnpublishPracticeQuizDocument, {
-    variables: { id: practiceQuiz.id! },
+    variables: { id: practiceQuiz.id!, deleteResponses: false },
     // TODO: add optimistic response and update cache
     refetchQueries: [
       { query: GetSingleCourseDocument, variables: { courseId: courseId } },
@@ -333,7 +334,6 @@ function PracticeQuizElement({
                     label: (
                       <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
                         <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
-
                         <div>{t('manage.course.unpublishPracticeQuiz')}</div>
                       </div>
                     ),
@@ -406,6 +406,18 @@ function PracticeQuizElement({
                         onClick: () => null,
                       }
                     : [],
+                  {
+                    label: (
+                      <div className="flex cursor-pointer flex-row items-center gap-1 text-red-600">
+                        <FontAwesomeIcon icon={faLock} className="w-[1.2rem]" />
+                        <div>{t('manage.course.unpublishPracticeQuiz')}</div>
+                      </div>
+                    ),
+                    onClick: async () => setUnpublishModal(true),
+                    data: {
+                      cy: `unpublish-practiceQuiz-${practiceQuiz.name}`,
+                    },
+                  },
                   deletionItem,
                 ].flat()}
                 triggerIcon={faHandPointer}
@@ -418,11 +430,15 @@ function PracticeQuizElement({
         </div>
       </div>
       <CopyConfirmationToast open={copyToast} setOpen={setCopyToast} />
-      <PracticeQuizDeletionModal
-        open={deletionModal}
-        setOpen={setDeletionModal}
+      <PracticeQuizUnpublishDeletionModal
+        open={deletionModal || unpublishModal}
+        setOpen={(newOpen: boolean) => {
+          setUnpublishModal(newOpen)
+          setDeletionModal(newOpen)
+        }}
         activityId={practiceQuiz.id}
         courseId={courseId}
+        unpublishingMode={unpublishModal}
       />
     </div>
   )

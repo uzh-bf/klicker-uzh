@@ -18,7 +18,7 @@ function UnpublishMicroLearningButton({
   const [unpublishMicrolearning, { loading: unpublishing }] = useMutation(
     UnpublishMicroLearningDocument,
     {
-      variables: { id: microLearning.id },
+      variables: { id: microLearning.id, deleteResponses: false },
     }
   )
 
@@ -31,7 +31,7 @@ function UnpublishMicroLearningButton({
       data={{ cy: `unpublish-microlearning-${microLearning.name}` }}
     >
       <Button.Icon icon={faLock} loading={unpublishing} />
-      <Button.Label>{t('manage.course.unpublishMicrolearning')}</Button.Label>
+      <Button.Label>{t('manage.course.unpublishMicroLearning')}</Button.Label>
     </Button>
   )
 }

@@ -3,31 +3,35 @@ import {
   DeleteMicroLearningDocument,
   GetMicroLearningSummaryDocument,
   GetSingleCourseDocument,
+  UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ActivityConfirmationModal from './ActivityConfirmationModal'
 
-interface MicroLearningDeletionModalProps {
+interface MicroLearningUnpublishDeletionModalProps {
   open: boolean
   setOpen: (open: boolean) => void
   activityId: string
   courseId: string
+  unpublishingMode: boolean
 }
 
-function MicroLearningDeletionModal({
+function MicroLearningUnpublishDeletionModal({
   open,
   setOpen,
   activityId,
   courseId,
-}: MicroLearningDeletionModalProps) {
+  unpublishingMode,
+}: MicroLearningUnpublishDeletionModalProps) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetMicroLearningSummaryDocument,
     {
       variables: { id: activityId },
       skip: !open,
+      fetchPolicy: 'network-only',
     }
   )
 
@@ -47,6 +51,12 @@ function MicroLearningDeletionModal({
       ],
     }
   )
+
+  const [unpublishMicroLearning, { loading: unpublishingMicroLearning }] =
+    useMutation(UnpublishMicroLearningDocument, {
+      variables: { id: activityId, deleteResponses: true },
+      // TODO: add optimistic response and update cache
+    })
 
   const [confirmations, setConfirmations] = useState({
     deleteResponses: false,
@@ -72,10 +82,24 @@ function MicroLearningDeletionModal({
     <ActivityConfirmationModal
       open={open}
       setOpen={setOpen}
-      title={t('manage.course.deleteMicroLearning')}
-      message={t('manage.course.deleteMicroLearningMessage')}
-      onSubmit={async () => await deleteMicroLearning()}
-      submitting={deletingMicroLearning}
+      title={
+        unpublishingMode
+          ? t('manage.course.unpublishMicroLearning')
+          : t('manage.course.deleteMicroLearning')
+      }
+      message={
+        unpublishingMode
+          ? t('manage.course.unpublishMicroLearningMessage')
+          : t('manage.course.deleteMicroLearningMessage')
+      }
+      onSubmit={async () => {
+        if (unpublishingMode) {
+          await unpublishMicroLearning()
+        } else {
+          await deleteMicroLearning()
+        }
+      }}
+      submitting={deletingMicroLearning || unpublishingMicroLearning}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}
       confirmationType="delete"
@@ -124,4 +148,4 @@ function MicroLearningDeletionModal({
   )
 }
 
-export default MicroLearningDeletionModal
+export default MicroLearningUnpublishDeletionModal

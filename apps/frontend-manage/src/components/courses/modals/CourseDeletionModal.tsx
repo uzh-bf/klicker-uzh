@@ -52,6 +52,7 @@ function CourseDeletionModal({
   const { data, loading: queryLoading } = useQuery(GetCourseSummaryDocument, {
     variables: { courseId: courseId ?? '' },
     skip: !courseId,
+    fetchPolicy: 'network-only',
   })
 
   const [deleteCourse, { loading: courseDeleting }] = useMutation(

@@ -1,5 +1,5 @@
-mutation UnpublishMicroLearning($id: String!) {
-  unpublishMicroLearning(id: $id) {
+mutation UnpublishMicroLearning($id: String!, $deleteResponses: Boolean!) {
+  unpublishMicroLearning(id: $id, deleteResponses: $deleteResponses) {
     id
     name
     displayName

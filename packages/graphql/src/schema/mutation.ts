@@ -1966,6 +1966,7 @@ export const Mutation = builder.mutationType({
           type: PracticeQuiz,
           args: {
             id: t.arg.string({ required: true }),
+            deleteResponses: t.arg.boolean({ required: true }),
           },
           resolve(_, args, ctx) {
             return PracticeQuizService.unpublishPracticeQuiz(args, ctx)
@@ -1979,6 +1980,7 @@ export const Mutation = builder.mutationType({
           type: MicroLearning,
           args: {
             id: t.arg.string({ required: true }),
+            deleteResponses: t.arg.boolean({ required: true }),
           },
           resolve(_, args, ctx) {
             return MicroLearningService.unpublishMicroLearning(args, ctx)
