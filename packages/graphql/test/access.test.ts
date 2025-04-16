@@ -7,10 +7,13 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import {
+  MISSING_CATALOG_COLLECTION_ID,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { checkAccess } from '../src/services/sharing.js'
+import { checkAccess, checkCatalogAssignment } from '../src/services/sharing.js'
 import {
   userFive,
   userFour,
@@ -1639,6 +1642,778 @@ describe('Unit tests for object access validation', () => {
     expect(dbPermissions).toBe(0)
   })
   // #endregion
+
+  // ! Catalog Collection Assignment Validation
+  async function createCatalogCollections(prisma) {
+    // create a public catalog collection
+    const publicCollection = await prisma.catalogCollection.create({
+      data: {
+        name: 'Catalog Collection',
+        description: 'Test Description',
+        ownerId: userOne.id,
+        access: ObjectAccess.PUBLIC,
+      },
+    })
+
+    // create a restricted catalog collection
+    const restrictedCollection = await prisma.catalogCollection.create({
+      data: {
+        name: 'Restricted Catalog Collection',
+        description: 'Test Description',
+        ownerId: userOne.id,
+        access: ObjectAccess.RESTRICTED,
+      },
+    })
+
+    // grant READ permissions to user 2 on the restricted catalog collection
+    await prisma.permission.create({
+      data: {
+        catalogCollectionId: restrictedCollection.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: restrictedCollection.id },
+      prisma
+    )
+
+    return { publicCollection, restrictedCollection }
+  }
+
+  async function deleteGeneratedObjects(prisma) {
+    // delete all catalog collections, except from the top-level one
+    await prisma.catalogCollection.deleteMany({
+      where: {
+        id: {
+          not: MISSING_CATALOG_COLLECTION_ID,
+        },
+      },
+    })
+    const dbCatalogCollections = await prisma.catalogCollection.count()
+    expect(dbCatalogCollections).toBe(1) // only the top-level one should remain
+
+    // delete all answer collections
+    await prisma.answerCollection.deleteMany()
+    const dbAnswerCollections = await prisma.answerCollection.count()
+    expect(dbAnswerCollections).toBe(0)
+
+    // delete all elements
+    await prisma.element.deleteMany()
+    const dbElements = await prisma.element.count()
+    expect(dbElements).toBe(0)
+
+    // delete all live quizzes
+    await prisma.liveQuiz.deleteMany()
+    const dbLiveQuizzes = await prisma.liveQuiz.count()
+    expect(dbLiveQuizzes).toBe(0)
+
+    // delete all practice quizzes
+    await prisma.practiceQuiz.deleteMany()
+    const dbPracticeQuizzes = await prisma.practiceQuiz.count()
+    expect(dbPracticeQuizzes).toBe(0)
+
+    // delete all microlearnings
+    await prisma.microLearning.deleteMany()
+    const dbMicrolearnings = await prisma.microLearning.count()
+    expect(dbMicrolearnings).toBe(0)
+
+    // delete all group activities
+    await prisma.groupActivity.deleteMany()
+    const dbGroupActivities = await prisma.groupActivity.count()
+    expect(dbGroupActivities).toBe(0)
+
+    // delete all courses
+    await prisma.course.deleteMany()
+    const dbCourses = await prisma.course.count()
+    expect(dbCourses).toBe(0)
+
+    // verify that all direct and derived permissions have been removed automatically
+    const dbPermissions = await prisma.permission.count()
+    expect(dbPermissions).toBe(0)
+    const dbDerivedPermissions = await prisma.derivedPermission.count()
+    expect(dbDerivedPermissions).toBe(0)
+  }
+
+  async function testObjectAssignment(args: {
+    publicCollectionId: string
+    restrictedCollectionId: string
+    publicAnswerCollectionId?: number
+    restrictedAnswerCollectionId?: number
+    publicElementId?: number
+    restrictedElementId?: number
+    publicLiveQuizId?: string
+    restrictedLiveQuizId?: string
+    publicPracticeQuizId?: string
+    restrictedPracticeQuizId?: string
+    publicMicrolearningId?: string
+    restrictedMicrolearningId?: string
+    publicGroupActivityId?: string
+    restrictedGroupActivityId?: string
+    publicCourseId?: string
+    restrictedCourseId?: string
+  }) {
+    // assign the object with public or restricted access, respectively, to the catalog collections
+    await prisma.catalogCollectionAssignment.createMany({
+      data: [
+        {
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          answerCollectionId: args.publicAnswerCollectionId,
+          elementId: args.publicElementId,
+          liveQuizId: args.publicLiveQuizId,
+          practiceQuizId: args.publicPracticeQuizId,
+          microLearningId: args.publicMicrolearningId,
+          groupActivityId: args.publicGroupActivityId,
+          courseId: args.publicCourseId,
+          access: ObjectAccess.PUBLIC,
+        },
+        {
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          answerCollectionId: args.restrictedAnswerCollectionId,
+          elementId: args.restrictedElementId,
+          liveQuizId: args.restrictedLiveQuizId,
+          practiceQuizId: args.restrictedPracticeQuizId,
+          microLearningId: args.restrictedMicrolearningId,
+          groupActivityId: args.restrictedGroupActivityId,
+          courseId: args.restrictedCourseId,
+          access: ObjectAccess.RESTRICTED,
+        },
+        {
+          catalogCollectionId: args.publicCollectionId,
+          answerCollectionId: args.publicAnswerCollectionId,
+          elementId: args.publicElementId,
+          liveQuizId: args.publicLiveQuizId,
+          practiceQuizId: args.publicPracticeQuizId,
+          microLearningId: args.publicMicrolearningId,
+          groupActivityId: args.publicGroupActivityId,
+          courseId: args.publicCourseId,
+          access: ObjectAccess.PUBLIC,
+        },
+        {
+          catalogCollectionId: args.publicCollectionId,
+          answerCollectionId: args.restrictedAnswerCollectionId,
+          elementId: args.restrictedElementId,
+          liveQuizId: args.restrictedLiveQuizId,
+          practiceQuizId: args.restrictedPracticeQuizId,
+          microLearningId: args.restrictedMicrolearningId,
+          groupActivityId: args.restrictedGroupActivityId,
+          courseId: args.restrictedCourseId,
+          access: ObjectAccess.RESTRICTED,
+        },
+        {
+          catalogCollectionId: args.restrictedCollectionId,
+          answerCollectionId: args.publicAnswerCollectionId,
+          elementId: args.publicElementId,
+          liveQuizId: args.publicLiveQuizId,
+          practiceQuizId: args.publicPracticeQuizId,
+          microLearningId: args.publicMicrolearningId,
+          groupActivityId: args.publicGroupActivityId,
+          courseId: args.publicCourseId,
+          access: ObjectAccess.PUBLIC,
+        },
+        {
+          catalogCollectionId: args.restrictedCollectionId,
+          answerCollectionId: args.restrictedAnswerCollectionId,
+          elementId: args.restrictedElementId,
+          liveQuizId: args.restrictedLiveQuizId,
+          practiceQuizId: args.restrictedPracticeQuizId,
+          microLearningId: args.restrictedMicrolearningId,
+          groupActivityId: args.restrictedGroupActivityId,
+          courseId: args.restrictedCourseId,
+          access: ObjectAccess.RESTRICTED,
+        },
+      ],
+    })
+
+    // type the public and restricted object clauses correctly for compatibility with checkCatalogAssignment function
+    let publicObjectClause:
+      | { answerCollectionId: number }
+      | { elementId: number }
+      | { liveQuizId: string }
+      | { practiceQuizId: string }
+      | { microLearningId: string }
+      | { groupActivityId: string }
+      | { courseId: string }
+    let restrictedObjectClause:
+      | { answerCollectionId: number }
+      | { elementId: number }
+      | { liveQuizId: string }
+      | { practiceQuizId: string }
+      | { microLearningId: string }
+      | { groupActivityId: string }
+      | { courseId: string }
+
+    if (
+      typeof args.publicAnswerCollectionId !== 'undefined' &&
+      typeof args.restrictedAnswerCollectionId !== 'undefined'
+    ) {
+      publicObjectClause = { answerCollectionId: args.publicAnswerCollectionId }
+      restrictedObjectClause = {
+        answerCollectionId: args.restrictedAnswerCollectionId,
+      }
+    } else if (
+      typeof args.publicElementId !== 'undefined' &&
+      typeof args.restrictedElementId !== 'undefined'
+    ) {
+      publicObjectClause = { elementId: args.publicElementId }
+      restrictedObjectClause = { elementId: args.restrictedElementId }
+    } else if (
+      typeof args.publicLiveQuizId !== 'undefined' &&
+      typeof args.restrictedLiveQuizId !== 'undefined'
+    ) {
+      publicObjectClause = { liveQuizId: args.publicLiveQuizId }
+      restrictedObjectClause = { liveQuizId: args.restrictedLiveQuizId }
+    } else if (
+      typeof args.publicPracticeQuizId !== 'undefined' &&
+      typeof args.restrictedPracticeQuizId !== 'undefined'
+    ) {
+      publicObjectClause = { practiceQuizId: args.publicPracticeQuizId }
+      restrictedObjectClause = {
+        practiceQuizId: args.restrictedPracticeQuizId,
+      }
+    } else if (
+      typeof args.publicMicrolearningId !== 'undefined' &&
+      typeof args.restrictedMicrolearningId !== 'undefined'
+    ) {
+      publicObjectClause = { microLearningId: args.publicMicrolearningId }
+      restrictedObjectClause = {
+        microLearningId: args.restrictedMicrolearningId,
+      }
+    } else if (
+      typeof args.publicGroupActivityId !== 'undefined' &&
+      typeof args.restrictedGroupActivityId !== 'undefined'
+    ) {
+      publicObjectClause = { groupActivityId: args.publicGroupActivityId }
+      restrictedObjectClause = {
+        groupActivityId: args.restrictedGroupActivityId,
+      }
+    } else if (
+      typeof args.publicCourseId !== 'undefined' &&
+      typeof args.restrictedCourseId !== 'undefined'
+    ) {
+      publicObjectClause = { courseId: args.publicCourseId }
+      restrictedObjectClause = { courseId: args.restrictedCourseId }
+    } else {
+      throw new Error('No valid object clause found.')
+    }
+
+    // public object in top-level catalog collection -> true if no access arg, true if access public, false if access restricted
+    const access1 = await checkCatalogAssignment(
+      { ...publicObjectClause },
+      userThreeCtx
+    )
+    expect(access1).toBeTruthy()
+
+    const access2 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        access: ObjectAccess.PUBLIC,
+      },
+      userThreeCtx
+    )
+    expect(access2).toBeTruthy()
+
+    const access3 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        access: ObjectAccess.RESTRICTED,
+      },
+      userThreeCtx
+    )
+    expect(access3).toBeFalsy()
+
+    // public object in public catalog collection -> true if no access arg, true if access public, false if access restricted
+    const access4 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        catalogCollectionId: args.publicCollectionId,
+      },
+      userThreeCtx
+    )
+    expect(access4).toBeTruthy()
+
+    const access5 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        catalogCollectionId: args.publicCollectionId,
+        access: ObjectAccess.PUBLIC,
+      },
+      userThreeCtx
+    )
+    expect(access5).toBeTruthy()
+
+    const access6 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        catalogCollectionId: args.publicCollectionId,
+        access: ObjectAccess.RESTRICTED,
+      },
+      userThreeCtx
+    )
+    expect(access6).toBeFalsy()
+
+    // public object in restricted catalog collection -> false if no access to catalog collection, true if no access arg / access public, false if access restricted
+    const access7 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        catalogCollectionId: args.restrictedCollectionId,
+      },
+      userThreeCtx
+    )
+    expect(access7).toBeFalsy()
+
+    const access8 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        catalogCollectionId: args.restrictedCollectionId,
+      },
+      userTwoCtx
+    )
+    expect(access8).toBeTruthy()
+
+    const access9 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        catalogCollectionId: args.restrictedCollectionId,
+        access: ObjectAccess.PUBLIC,
+      },
+      userTwoCtx
+    )
+    expect(access9).toBeTruthy()
+
+    const access10 = await checkCatalogAssignment(
+      {
+        ...publicObjectClause,
+        catalogCollectionId: args.restrictedCollectionId,
+        access: ObjectAccess.RESTRICTED,
+      },
+      userTwoCtx
+    )
+    expect(access10).toBeFalsy()
+
+    // restricted object in top-level catalog collection -> true if no access arg, false if access public, true if access restricted
+    const access11 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+      },
+      userThreeCtx
+    )
+    expect(access11).toBeTruthy()
+
+    const access12 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        access: ObjectAccess.PUBLIC,
+      },
+      userThreeCtx
+    )
+    expect(access12).toBeFalsy()
+
+    const access13 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        access: ObjectAccess.RESTRICTED,
+      },
+      userThreeCtx
+    )
+    expect(access13).toBeTruthy()
+
+    // restricted object in public catalog collection -> true if no access arg, false if access public, true if access restricted
+    const access14 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: args.publicCollectionId,
+      },
+      userThreeCtx
+    )
+    expect(access14).toBeTruthy()
+
+    const access15 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: args.publicCollectionId,
+        access: ObjectAccess.PUBLIC,
+      },
+      userThreeCtx
+    )
+    expect(access15).toBeFalsy()
+
+    const access16 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: args.publicCollectionId,
+        access: ObjectAccess.RESTRICTED,
+      },
+      userThreeCtx
+    )
+    expect(access16).toBeTruthy()
+
+    // restricted object in restricted catalog collection -> false if no access to catalog collection, false if access public, true if no access arg / accessrestricted
+    const access17 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: args.restrictedCollectionId,
+      },
+      userThreeCtx
+    )
+    expect(access17).toBeFalsy()
+
+    const access18 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: args.restrictedCollectionId,
+      },
+      userTwoCtx
+    )
+    expect(access18).toBeTruthy()
+
+    const access19 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: args.restrictedCollectionId,
+        access: ObjectAccess.PUBLIC,
+      },
+      userTwoCtx
+    )
+    expect(access19).toBeFalsy()
+
+    const access20 = await checkCatalogAssignment(
+      {
+        ...restrictedObjectClause,
+        catalogCollectionId: args.restrictedCollectionId,
+        access: ObjectAccess.RESTRICTED,
+      },
+      userTwoCtx
+    )
+    expect(access20).toBeTruthy()
+  }
+
+  it('Verify that the access to an answer collection in the catalog is checked correctly', async () => {
+    const { publicCollection, restrictedCollection } =
+      await createCatalogCollections(prisma)
+
+    // create an answer collection
+    const publicAnswerCollection = await prisma.answerCollection.create({
+      data: {
+        name: 'Answer Collection',
+        description: 'Test Description',
+        ownerId: userOne.id,
+      },
+    })
+
+    // create a second answer collection
+    const restrictedAnswerCollection = await prisma.answerCollection.create({
+      data: {
+        name: 'Answer Collection 2',
+        description: 'Test Description',
+        ownerId: userOne.id,
+      },
+    })
+
+    // validate the correctness of the catalog collection assignment validation logic
+    await testObjectAssignment({
+      publicCollectionId: publicCollection.id,
+      restrictedCollectionId: restrictedCollection.id,
+      publicAnswerCollectionId: publicAnswerCollection.id,
+      restrictedAnswerCollectionId: restrictedAnswerCollection.id,
+    })
+
+    // cleanup: delete all created objects
+    await deleteGeneratedObjects(prisma)
+  })
+
+  it('Verify that the access to an element in the catalog is checked correctly', async () => {
+    const { publicCollection, restrictedCollection } =
+      await createCatalogCollections(prisma)
+
+    // create an element
+    const publicElement = await prisma.element.create({
+      data: {
+        type: ElementType.SC,
+        name: 'Element',
+        content: 'Content',
+        options: {},
+        ownerId: userOne.id,
+      },
+    })
+
+    // create a second element
+    const restrictedElement = await prisma.element.create({
+      data: {
+        type: ElementType.SC,
+        name: 'Element 2',
+        content: 'Content 2',
+        options: {},
+        ownerId: userOne.id,
+      },
+    })
+
+    // validate the correctness of the catalog collection assignment validation logic
+    await testObjectAssignment({
+      publicCollectionId: publicCollection.id,
+      restrictedCollectionId: restrictedCollection.id,
+      publicElementId: publicElement.id,
+      restrictedElementId: restrictedElement.id,
+    })
+
+    // cleanup: delete all created objects
+    await deleteGeneratedObjects(prisma)
+  })
+
+  it('Verify that the access to a live quiz in the catalog is checked correctly', async () => {
+    const { publicCollection, restrictedCollection } =
+      await createCatalogCollections(prisma)
+
+    // create a live quiz
+    const publicLiveQuiz = await prisma.liveQuiz.create({
+      data: {
+        name: 'Live Quiz',
+        displayName: 'Live Quiz',
+        description: 'Test Description',
+        ownerId: userOne.id,
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    // create a second live quiz
+    const restrictedLiveQuiz = await prisma.liveQuiz.create({
+      data: {
+        name: 'Live Quiz 2',
+        displayName: 'Live Quiz 2',
+        description: 'Test Description',
+        ownerId: userOne.id,
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    // validate the correctness of the catalog collection assignment validation logic
+    await testObjectAssignment({
+      publicCollectionId: publicCollection.id,
+      restrictedCollectionId: restrictedCollection.id,
+      publicLiveQuizId: publicLiveQuiz.id,
+      restrictedLiveQuizId: restrictedLiveQuiz.id,
+    })
+
+    // cleanup: delete all created objects
+    await deleteGeneratedObjects(prisma)
+  })
+
+  it('Verify that the access to a practice quiz in the catalog is checked correctly', async () => {
+    const { publicCollection, restrictedCollection } =
+      await createCatalogCollections(prisma)
+
+    // create a course
+    const course = await prisma.course.create({
+      data: {
+        name: 'Course Test',
+        displayName: 'Course Test',
+        description: 'Test Description',
+        pinCode: 8888,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // create a practice quiz
+    const publicPracticeQuiz = await prisma.practiceQuiz.create({
+      data: {
+        name: 'Practice Quiz',
+        displayName: 'Practice Quiz',
+        description: 'Test Description',
+        ownerId: userOne.id,
+        courseId: course.id,
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    // create a second practice quiz
+    const restrictedPracticeQuiz = await prisma.practiceQuiz.create({
+      data: {
+        name: 'Practice Quiz 2',
+        displayName: 'Practice Quiz 2',
+        description: 'Test Description',
+        ownerId: userOne.id,
+        courseId: course.id,
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    // validate the correctness of the catalog collection assignment validation logic
+    await testObjectAssignment({
+      publicCollectionId: publicCollection.id,
+      restrictedCollectionId: restrictedCollection.id,
+      publicPracticeQuizId: publicPracticeQuiz.id,
+      restrictedPracticeQuizId: restrictedPracticeQuiz.id,
+    })
+
+    // cleanup: delete all created objects
+    await deleteGeneratedObjects(prisma)
+  })
+
+  it('Verify that the access to a microlearning in the catalog is checked correctly', async () => {
+    const { publicCollection, restrictedCollection } =
+      await createCatalogCollections(prisma)
+
+    // create a course
+    const course = await prisma.course.create({
+      data: {
+        name: 'Course Test',
+        displayName: 'Course Test',
+        description: 'Test Description',
+        pinCode: 8888,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // create a microlearning
+    const publicMicrolearning = await prisma.microLearning.create({
+      data: {
+        name: 'Microlearning',
+        displayName: 'Microlearning',
+        description: 'Test Description',
+        scheduledStartAt: new Date(),
+        scheduledEndAt: new Date(),
+        ownerId: userOne.id,
+        courseId: course.id,
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    // create a second microlearning
+    const restrictedMicrolearning = await prisma.microLearning.create({
+      data: {
+        name: 'Microlearning 2',
+        displayName: 'Microlearning 2',
+        description: 'Test Description',
+        scheduledStartAt: new Date(),
+        scheduledEndAt: new Date(),
+        ownerId: userOne.id,
+        courseId: course.id,
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    // validate the correctness of the catalog collection assignment validation logic
+    await testObjectAssignment({
+      publicCollectionId: publicCollection.id,
+      restrictedCollectionId: restrictedCollection.id,
+      publicMicrolearningId: publicMicrolearning.id,
+      restrictedMicrolearningId: restrictedMicrolearning.id,
+    })
+
+    // cleanup: delete all created objects
+    await deleteGeneratedObjects(prisma)
+  })
+
+  it('Verify that the access to a group activity in the catalog is checked correctly', async () => {
+    const { publicCollection, restrictedCollection } =
+      await createCatalogCollections(prisma)
+
+    // create a course
+    const course = await prisma.course.create({
+      data: {
+        name: 'Course Test',
+        displayName: 'Course Test',
+        description: 'Test Description',
+        pinCode: 8888,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // create a group activity
+    const publicGroupActivity = await prisma.groupActivity.create({
+      data: {
+        name: 'Group Activity',
+        displayName: 'Group Activity',
+        description: 'Test Description',
+        scheduledStartAt: new Date(),
+        scheduledEndAt: new Date(),
+        ownerId: userOne.id,
+        courseId: course.id,
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    // create a second group activity
+    const restrictedGroupActivity = await prisma.groupActivity.create({
+      data: {
+        name: 'Group Activity 2',
+        displayName: 'Group Activity 2',
+        description: 'Test Description',
+        scheduledStartAt: new Date(),
+        scheduledEndAt: new Date(),
+        ownerId: userOne.id,
+        courseId: course.id,
+        status: PublicationStatus.PUBLISHED,
+      },
+    })
+
+    // validate the correctness of the catalog collection assignment validation logic
+    await testObjectAssignment({
+      publicCollectionId: publicCollection.id,
+      restrictedCollectionId: restrictedCollection.id,
+      publicGroupActivityId: publicGroupActivity.id,
+      restrictedGroupActivityId: restrictedGroupActivity.id,
+    })
+
+    // cleanup: delete all created objects
+    await deleteGeneratedObjects(prisma)
+  })
+
+  it('Verify that the access to a course in the catalog is checked correctly', async () => {
+    const { publicCollection, restrictedCollection } =
+      await createCatalogCollections(prisma)
+
+    // create a course
+    const publicCourse = await prisma.course.create({
+      data: {
+        name: 'Course Test',
+        displayName: 'Course Test',
+        description: 'Test Description',
+        pinCode: 8888,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // create a second course
+    const restrictedCourse = await prisma.course.create({
+      data: {
+        name: 'Course Test 2',
+        displayName: 'Course Test 2',
+        description: 'Test Description',
+        pinCode: 9999,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        ownerId: userOne.id,
+      },
+    })
+
+    // validate the correctness of the catalog collection assignment validation logic
+    await testObjectAssignment({
+      publicCollectionId: publicCollection.id,
+      restrictedCollectionId: restrictedCollection.id,
+      publicCourseId: publicCourse.id,
+      restrictedCourseId: restrictedCourse.id,
+    })
+
+    // cleanup: delete all created objects
+    await deleteGeneratedObjects(prisma)
+  })
 
   // ! Cleanup
   // #region
