@@ -3258,29 +3258,29 @@ export async function addObjectToCatalog(
 const acceptedPermissionLevels: {
   [minimumPermissionLevel: string]: DB.PermissionLevel[]
 } = {
-  [DB.PermissionLevel.OWNER]: [
+  [DB.PermissionLevel.OWNER]: [DB.PermissionLevel.OWNER],
+  [DB.PermissionLevel.ADMIN]: [
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ],
+  [DB.PermissionLevel.WRITE]: [
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ],
+  [DB.PermissionLevel.EXECUTE]: [
+    DB.PermissionLevel.EXECUTE,
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ],
+  [DB.PermissionLevel.READ]: [
     DB.PermissionLevel.OWNER,
     DB.PermissionLevel.ADMIN,
     DB.PermissionLevel.WRITE,
     DB.PermissionLevel.EXECUTE,
     DB.PermissionLevel.READ,
   ],
-  [DB.PermissionLevel.ADMIN]: [
-    DB.PermissionLevel.ADMIN,
-    DB.PermissionLevel.WRITE,
-    DB.PermissionLevel.EXECUTE,
-    DB.PermissionLevel.READ,
-  ],
-  [DB.PermissionLevel.WRITE]: [
-    DB.PermissionLevel.WRITE,
-    DB.PermissionLevel.EXECUTE,
-    DB.PermissionLevel.READ,
-  ],
-  [DB.PermissionLevel.EXECUTE]: [
-    DB.PermissionLevel.EXECUTE,
-    DB.PermissionLevel.READ,
-  ],
-  [DB.PermissionLevel.READ]: [DB.PermissionLevel.READ],
 }
 
 export async function checkAccess(
@@ -3457,4 +3457,6 @@ export async function checkAccess(
 
   return true
 }
+
+// TODO: add function to check catalog assignment of a certain object
 // #endregion
