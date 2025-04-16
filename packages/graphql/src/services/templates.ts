@@ -27,6 +27,7 @@ import {
 
 // ! Helper functions
 // #region
+// TODO: remove this function if it is not used anymore
 export async function validateActivityPermissions(
   {
     activityId,
@@ -325,11 +326,6 @@ export async function getActivityAnswerCollectionIds(
     const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
       where: {
         id: activityId,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-          },
-        },
       },
       include: {
         blocks: {
@@ -355,11 +351,6 @@ export async function getActivityAnswerCollectionIds(
     const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id: activityId,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-          },
-        },
       },
       include: {
         stacks: {
@@ -385,11 +376,6 @@ export async function getActivityAnswerCollectionIds(
     const microLearning = await ctx.prisma.microLearning.findUnique({
       where: {
         id: activityId,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-          },
-        },
       },
       include: {
         stacks: {
@@ -415,11 +401,6 @@ export async function getActivityAnswerCollectionIds(
     const groupActivity = await ctx.prisma.groupActivity.findUnique({
       where: {
         id: activityId,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-          },
-        },
       },
       include: {
         stacks: {
@@ -1030,20 +1011,6 @@ export async function deleteActivityTemplate(
   },
   ctx: ContextWithUser
 ) {
-  // validate that the user has sufficient permissions on the activity template
-  const { valid } = await validateActivityPermissions(
-    {
-      activityId,
-      activityType,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // delete the activity linked to the template (automatically deleting the template through cascading delete)
   if (activityType === ActivityType.LIVE_QUIZ) {
     // fetch live quiz alongside all linked elements (for derived permissions update)
@@ -1342,22 +1309,6 @@ export async function editActivityTemplate(
   },
   ctx: ContextWithUser
 ) {
-  const { valid, activity } = await validateActivityPermissions(
-    {
-      activityId,
-      activityType,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.ADMIN,
-        DB.PermissionLevel.WRITE,
-      ],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return false
-  }
-
   try {
     // update the metadata of the template and activity name in a transaction
     const newTemplate = await ctx.prisma.$transaction(async (tx) => {

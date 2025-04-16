@@ -522,20 +522,20 @@ export async function toggleIsArchived(
 ) {
   await ctx.prisma.element.updateMany({
     where: {
-      id: {
-        in: questionIds,
+      id: { in: questionIds },
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+          },
+        },
       },
-      ownerId: ctx.user.sub,
     },
-    data: {
-      isArchived,
-    },
+    data: { isArchived },
   })
 
-  return questionIds.map((id) => ({
-    id,
-    isArchived,
-  }))
+  return questionIds.map((id) => ({ id, isArchived }))
 }
 
 // map mime types of images to file extensions

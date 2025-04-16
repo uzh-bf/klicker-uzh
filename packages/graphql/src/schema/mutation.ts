@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma'
-import { CatalogObjectType as CatalogObjectTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityType as ActivityTypeEnum,
+  CatalogObjectType as CatalogObjectTypeEnum,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
@@ -1461,7 +1464,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       createCourse: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
@@ -1487,7 +1489,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       updateCourseSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
@@ -1508,21 +1509,47 @@ export const Mutation = builder.mutationType({
           isGamificationEnabled: t.arg.boolean({ required: false }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on course required
+          if (
+            !checkAccess(
+              [
+                {
+                  courseId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return CourseService.updateCourseSettings(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       updateWeeklyTimelineEntriesCourse: t.withAuth(asUserFullAccess).boolean({
         args: {
           courseId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= READ permissions on course required
+          if (
+            !checkAccess(
+              [
+                {
+                  courseId: args.courseId,
+                  minimumPermissionLevel: DB.PermissionLevel.READ,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return false
+          }
+
           return ParticipantService.updateWeeklyTimelineEntriesCourse(
-            {
-              courseId: args.courseId,
-              cronjob: false,
-            },
+            { courseId: args.courseId },
             ctx
           )
         },
@@ -1535,7 +1562,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       toggleArchiveCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
@@ -1544,11 +1570,25 @@ export const Mutation = builder.mutationType({
           isArchived: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= ADMIN permissions on course required
+          if (
+            !checkAccess(
+              [
+                {
+                  courseId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return CourseService.toggleArchiveCourse(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [ArchivedElement],
@@ -1561,7 +1601,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       updateTagOrdering: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: [Tag],
@@ -1574,7 +1613,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       deleteLiveQuiz: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -1582,11 +1620,25 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= ADMIN permissions on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.deleteLiveQuiz(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       changeLiveQuizName: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: LiveQuiz,
@@ -1596,11 +1648,25 @@ export const Mutation = builder.mutationType({
           displayName: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on live quiz required
+          if (
+            !checkAccess(
+              [
+                {
+                  liveQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return LiveQuizService.changeLiveQuizName(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getFileUploadSas: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: FileUploadSAS,
@@ -1613,7 +1679,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       changeShortname: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
@@ -1625,7 +1690,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       changeEmailSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
@@ -1637,7 +1701,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       changeInitialSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: User,
@@ -1651,7 +1714,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       createAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,
@@ -1665,7 +1727,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       modifyAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,
@@ -1675,11 +1736,25 @@ export const Mutation = builder.mutationType({
           description: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on answer collection required
+          if (
+            !checkAccess(
+              [
+                {
+                  answerCollectionId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return ResourcesService.modifyAnswerCollection(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       editAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollectionEntry,
@@ -1689,11 +1764,25 @@ export const Mutation = builder.mutationType({
           collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on answer collection required
+          if (
+            !checkAccess(
+              [
+                {
+                  answerCollectionId: args.collectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return ResourcesService.editAnswerCollectionEntry(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       deleteAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: 'Int',
@@ -1702,11 +1791,25 @@ export const Mutation = builder.mutationType({
           collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on answer collection required
+          if (
+            !checkAccess(
+              [
+                {
+                  answerCollectionId: args.collectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return ResourcesService.deleteAnswerCollectionEntry(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       addAnswerCollectionOption: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollectionEntry,
@@ -1715,11 +1818,25 @@ export const Mutation = builder.mutationType({
           value: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on answer collection required
+          if (
+            !checkAccess(
+              [
+                {
+                  answerCollectionId: args.collectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return ResourcesService.addAnswerCollectionOption(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,
@@ -1730,6 +1847,22 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
+          // if defined, >= WRITE permissions on catalog collection required
+          if (
+            args.catalogCollectionId &&
+            !checkAccess(
+              [
+                {
+                  catalogCollectionId: args.catalogCollectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return SharingService.addObjectToCatalog(
             {
               access: args.access,
@@ -1810,7 +1943,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       cancelObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1838,7 +1970,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       removeAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: 'Int',
@@ -1850,7 +1981,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       deleteAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: 'Int',
@@ -1858,11 +1988,25 @@ export const Mutation = builder.mutationType({
           collectionId: t.arg.int({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= ADMIN permissions on answer collection required
+          if (
+            !checkAccess(
+              [
+                {
+                  answerCollectionId: args.collectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return ResourcesService.deleteAnswerCollection(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       createCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogCollection,
@@ -1887,7 +2031,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       changeCatalogCollectionObjectAccess: t
         .withAuth(asUserFullAccess)
         .boolean({
@@ -1897,11 +2040,25 @@ export const Mutation = builder.mutationType({
             access: t.arg({ type: ObjectAccess, required: true }),
           },
           resolve(_, args, ctx) {
+            // >= ADMIN permissions on catalog collection required
+            if (
+              !checkAccess(
+                [
+                  {
+                    catalogCollectionId: args.catalogCollectionId,
+                    minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return false
+            }
+
             return SharingService.changeCatalogCollectionObjectAccess(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       changeCatalogCollectionName: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: {
@@ -1909,11 +2066,25 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on catalog collection required
+          if (
+            !checkAccess(
+              [
+                {
+                  catalogCollectionId: args.catalogCollectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return false
+          }
+
           return SharingService.changeCatalogCollectionName(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       requestCatalogCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogCollection,
@@ -1929,18 +2100,31 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       deleteCatalogCollection: t.withAuth(asUserFullAccess).string({
         nullable: true,
         args: {
           catalogCollectionId: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= ADMIN permissions on catalog collection required
+          if (
+            !checkAccess(
+              [
+                {
+                  catalogCollectionId: args.catalogCollectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return SharingService.deleteCatalogCollection(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       createActivityTemplate: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: {
@@ -1952,11 +2136,53 @@ export const Mutation = builder.mutationType({
           copyBeforeConversion: t.arg.boolean({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= ADMIN permissions on the activity required (conversion = live quiz not available anymore)
+          if (
+            !checkAccess(
+              [
+                ...(args.activityType === ActivityTypeEnum.LIVE_QUIZ
+                  ? [
+                      {
+                        liveQuizId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.PRACTICE_QUIZ
+                  ? [
+                      {
+                        practiceQuizId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.MICRO_LEARNING
+                  ? [
+                      {
+                        microLearningId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.GROUP_ACTIVITY
+                  ? [
+                      {
+                        groupActivityId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return TemplateService.createActivityTemplate(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       editActivityTemplate: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1968,11 +2194,53 @@ export const Mutation = builder.mutationType({
           instructions: t.arg.string({ required: true }),
         },
         resolve(_, args, ctx) {
+          // >= WRITE permissions on the activity required
+          if (
+            !checkAccess(
+              [
+                ...(args.activityType === ActivityTypeEnum.LIVE_QUIZ
+                  ? [
+                      {
+                        liveQuizId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.PRACTICE_QUIZ
+                  ? [
+                      {
+                        practiceQuizId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.MICRO_LEARNING
+                  ? [
+                      {
+                        microLearningId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.GROUP_ACTIVITY
+                  ? [
+                      {
+                        groupActivityId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                      },
+                    ]
+                  : []),
+              ],
+              ctx
+            )
+          ) {
+            return false
+          }
+
           return TemplateService.editActivityTemplate(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       deleteActivityTemplate: t.withAuth(asUserFullAccess).string({
         nullable: true,
         args: {
@@ -1980,11 +2248,53 @@ export const Mutation = builder.mutationType({
           activityType: t.arg({ type: ActivityType, required: true }),
         },
         resolve(_, args, ctx) {
+          // >= ADMIN permissions on the activity required
+          if (
+            !checkAccess(
+              [
+                ...(args.activityType === ActivityTypeEnum.LIVE_QUIZ
+                  ? [
+                      {
+                        liveQuizId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.PRACTICE_QUIZ
+                  ? [
+                      {
+                        practiceQuizId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.MICRO_LEARNING
+                  ? [
+                      {
+                        microLearningId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+                ...(args.activityType === ActivityTypeEnum.GROUP_ACTIVITY
+                  ? [
+                      {
+                        groupActivityId: args.activityId,
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+              ],
+              ctx
+            )
+          ) {
+            return null
+          }
+
           return TemplateService.deleteActivityTemplate(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       createLiveQuizFromTemplate: t.withAuth(asUserFullAccess).string({
         nullable: true,
         args: {
@@ -2157,7 +2467,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       removeCatalogObjectAssignment: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -2168,7 +2477,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       approveObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -2185,7 +2493,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       declineObjectSharingRequest: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -2208,7 +2515,6 @@ export const Mutation = builder.mutationType({
 
       // ----- USER WITH CATALYST -----
       // #region
-      // TODO: potentially update access control
       createPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2235,7 +2541,6 @@ export const Mutation = builder.mutationType({
           },
         }),
 
-      // TODO: potentially update access control
       editPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2259,11 +2564,25 @@ export const Mutation = builder.mutationType({
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= WRITE permissions on practice quiz required
+            if (
+              !checkAccess(
+                [
+                  {
+                    practiceQuizId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return PracticeQuizService.manipulatePracticeQuiz(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       createMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2284,7 +2603,6 @@ export const Mutation = builder.mutationType({
           },
         }),
 
-      // TODO: potentially update access control
       editMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2302,11 +2620,25 @@ export const Mutation = builder.mutationType({
             endDate: t.arg({ type: 'Date', required: true }),
           },
           resolve(_, args, ctx) {
+            // >= WRITE permissions on microlearning required
+            if (
+              !checkAccess(
+                [
+                  {
+                    microLearningId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return MicroLearningService.manipulateMicroLearning(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       extendMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2317,11 +2649,25 @@ export const Mutation = builder.mutationType({
             endDate: t.arg({ type: 'Date', required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on microlearning required
+            if (
+              !checkAccess(
+                [
+                  {
+                    microLearningId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return MicroLearningService.extendMicroLearning(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       endMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2331,11 +2677,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on microlearning required
+            if (
+              !checkAccess(
+                [
+                  {
+                    microLearningId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return MicroLearningService.endMicroLearning(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       createGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2357,7 +2717,6 @@ export const Mutation = builder.mutationType({
           },
         }),
 
-      // TODO: potentially update access control
       editGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2376,11 +2735,25 @@ export const Mutation = builder.mutationType({
             stack: t.arg({ required: true, type: ElementStackInput }),
           },
           resolve(_, args, ctx) {
+            // >= WRITE permissions on group activity required
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.manipulateGroupActivity(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       extendGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2391,11 +2764,25 @@ export const Mutation = builder.mutationType({
             endDate: t.arg({ type: 'Date', required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on group activity required
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.extendGroupActivity(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       publishPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2406,11 +2793,25 @@ export const Mutation = builder.mutationType({
             availableFrom: t.arg({ type: 'Date', required: false }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on practice quiz required
+            if (
+              !checkAccess(
+                [
+                  {
+                    practiceQuizId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return PracticeQuizService.publishPracticeQuiz(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       publishMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2420,11 +2821,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on microlearning required
+            if (
+              !checkAccess(
+                [
+                  {
+                    microLearningId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return MicroLearningService.publishMicroLearning(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       unpublishPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2434,11 +2849,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on practice quiz required
+            if (
+              !checkAccess(
+                [
+                  {
+                    practiceQuizId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return PracticeQuizService.unpublishPracticeQuiz(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       unpublishMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2448,11 +2877,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on microlearning required
+            if (
+              !checkAccess(
+                [
+                  {
+                    microLearningId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return MicroLearningService.unpublishMicroLearning(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       deletePracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2462,11 +2905,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= ADMIN permissions on practice quiz required
+            if (
+              !checkAccess(
+                [
+                  {
+                    practiceQuizId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return PracticeQuizService.deletePracticeQuiz(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       deleteMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2476,11 +2933,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= ADMIN permissions on microlearning required
+            if (
+              !checkAccess(
+                [
+                  {
+                    microLearningId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return MicroLearningService.deleteMicroLearning(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       publishGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2490,11 +2961,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on group activity required
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.publishGroupActivity(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       unpublishGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2504,11 +2989,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on group activity required
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.unpublishGroupActivity(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       openGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2518,11 +3017,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on group activity required
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.openGroupActivity(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       endGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2532,11 +3045,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on group activity required
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.endGroupActivity(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       deleteGroupActivity: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2546,11 +3073,25 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= ADMIN permissions on group activity required
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.deleteGroupActivity(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       gradeGroupActivitySubmission: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2558,17 +3099,32 @@ export const Mutation = builder.mutationType({
           type: GroupActivityInstance,
           args: {
             id: t.arg.int({ required: true }),
+            groupActivityId: t.arg.string({ required: true }),
             gradingDecisions: t.arg({
               type: GroupActivityGradingInput,
               required: true,
             }),
           },
           resolve(_, args, ctx) {
+            // >= EXECUTE permissions on group activity required (same permission requirements as starting and ending a group activity)
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.groupActivityId,
+                    minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.gradeGroupActivitySubmission(args, ctx)
           },
         }),
 
-      // TODO: potentially update access control
       finalizeGroupActivityGrading: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2578,15 +3134,28 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
           },
           resolve(_, args, ctx) {
+            // >= WRITE permissions on group activity required (requires more than grading, since action is irreversible)
+            if (
+              !checkAccess(
+                [
+                  {
+                    groupActivityId: args.id,
+                    minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return GroupService.finalizeGroupActivityGrading(args, ctx)
           },
         }),
-
       // #endregion
 
       // ----- USER OWNER OPERATIONS -----
       // #region
-      // TODO: potentially update access control
       createUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,
@@ -2600,7 +3169,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       deleteUserLogin: t.withAuth(asUserOwner).field({
         nullable: true,
         type: UserLogin,

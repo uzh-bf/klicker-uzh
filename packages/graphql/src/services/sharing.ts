@@ -19,6 +19,7 @@ import { validateActivityPermissions } from './templates.js'
 // ! Helper functions
 // #region
 
+// TODO: remove this helper function once no longer used
 // helper function to check for a specific access level on the catalog collection
 async function validateCatalogCollectionPermissions(
   {
@@ -183,22 +184,8 @@ export async function createCatalogCollection(
   const collection = await ctx.prisma.$transaction(async (prisma) => {
     // create the new catalog collection
     const newCollection = await prisma.catalogCollection.create({
-      data: {
-        name,
-        access,
-        owner: {
-          connect: {
-            id: ctx.user.sub,
-          },
-        },
-      },
-      include: {
-        owner: {
-          select: {
-            shortname: true,
-          },
-        },
-      },
+      data: { name, access, owner: { connect: { id: ctx.user.sub } } },
+      include: { owner: { select: { shortname: true } } },
     })
 
     // trigger a recomputation of the corresponding derived permission for this new collection
@@ -312,27 +299,10 @@ export async function changeCatalogCollectionObjectAccess(
   },
   ctx: ContextWithUser
 ) {
-  // verify that user has sufficient access (ADMIN or OWNER) to change the catalog collection access level
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return false
-  }
-
   // update the access level of the catalog collection
   const updatedCollection = await ctx.prisma.catalogCollection.update({
-    where: {
-      id: catalogCollectionId,
-    },
-    data: {
-      access,
-    },
+    where: { id: catalogCollectionId },
+    data: { access },
   })
 
   if (!updatedCollection) {
@@ -353,30 +323,10 @@ export async function changeCatalogCollectionName(
   { catalogCollectionId, name }: { catalogCollectionId: string; name: string },
   ctx: ContextWithUser
 ) {
-  // verify that user has sufficient access (at least WRITE) to change the catalog collection access level
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.WRITE,
-        DB.PermissionLevel.ADMIN,
-      ],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return false
-  }
-
   // update the access level of the catalog collection
   const updatedCollection = await ctx.prisma.catalogCollection.update({
-    where: {
-      id: catalogCollectionId,
-    },
-    data: {
-      name,
-    },
+    where: { id: catalogCollectionId },
+    data: { name },
   })
 
   if (!updatedCollection) {
@@ -546,11 +496,7 @@ export async function requestCatalogCollection(
           permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
         },
       },
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
+      owner: { select: { shortname: true } },
     },
   })
 
@@ -650,19 +596,6 @@ export async function deleteCatalogCollection(
   },
   ctx: ContextWithUser
 ) {
-  // verify that the user has sufficient permissions (ADMIN or OWNER) to delete the catalog collection
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // delete the catalog collection
   const deletedCollection = await ctx.prisma.catalogCollection.delete({
     where: {
@@ -2958,24 +2891,6 @@ export async function addObjectToCatalog(
   },
   ctx: ContextWithUser
 ) {
-  // verify that the user has sufficient permissions on the catalog collection to add objects (if collection is defined)
-  if (catalogCollectionId) {
-    const { valid } = await validateCatalogCollectionPermissions(
-      {
-        catalogCollectionId,
-        acceptedPermissionLevels: [
-          DB.PermissionLevel.WRITE,
-          DB.PermissionLevel.ADMIN,
-        ],
-      },
-      ctx
-    )
-
-    if (!valid) {
-      return null
-    }
-  }
-
   // collect shared object information in corresponding object
   let objectInfo: {
     objectId?: number
@@ -3003,16 +2918,8 @@ export async function addObjectToCatalog(
         },
       },
       include: {
-        owner: {
-          select: {
-            shortname: true,
-          },
-        },
-        permissions: {
-          where: {
-            userId: ctx.user.sub,
-          },
-        },
+        owner: { select: { shortname: true } },
+        permissions: { where: { userId: ctx.user.sub } },
       },
     })
 
@@ -3050,21 +2957,9 @@ export async function addObjectToCatalog(
         },
       },
       include: {
-        owner: {
-          select: {
-            shortname: true,
-          },
-        },
-        templateInfo: {
-          select: {
-            id: true,
-          },
-        },
-        permissions: {
-          where: {
-            userId: ctx.user.sub,
-          },
-        },
+        owner: { select: { shortname: true } },
+        templateInfo: { select: { id: true } },
+        permissions: { where: { userId: ctx.user.sub } },
       },
     })
 

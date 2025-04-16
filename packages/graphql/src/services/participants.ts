@@ -888,10 +888,7 @@ export async function updateWeeklyTimelineEntries(ctx: Context) {
 
   // iterate over all courses and update weekly timeline entries
   for (const course of courses) {
-    await updateWeeklyTimelineEntriesCourse(
-      { courseId: course.id, cronjob: true },
-      ctx
-    )
+    await updateWeeklyTimelineEntriesCourse({ courseId: course.id }, ctx)
   }
 
   // remove all daily timeline entries older than 2 weeks
@@ -908,7 +905,7 @@ export async function updateWeeklyTimelineEntries(ctx: Context) {
 }
 
 export async function updateWeeklyTimelineEntriesCourse(
-  { courseId, cronjob }: { courseId: string; cronjob: boolean },
+  { courseId }: { courseId: string },
   ctx: Context
 ) {
   // get start date of current week (monday) in UTC
@@ -923,54 +920,37 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // fetch all timeline entries (weekly and daily) within the restrictions for the current course
   // if the function is not called from within a cronjob, make sure that the user is the owner of the course
-  const ownerId = ctx.user?.sub
   const courseTimelineLastWeek = await ctx.prisma.course.findUnique({
-    where: ownerId && !cronjob ? { id: courseId, ownerId } : { id: courseId },
+    where: { id: courseId },
     include: {
       timelineEntries: {
         where: {
           OR: [
             {
               type: TimelineEntryType.DAILY,
-              timestamp: {
-                gte: startDateLastWeek,
-                lt: startDateCurrentWeek,
-              },
+              timestamp: { gte: startDateLastWeek, lt: startDateCurrentWeek },
             },
-            {
-              type: TimelineEntryType.WEEKLY,
-              timestamp: startDateLastWeek,
-            },
+            { type: TimelineEntryType.WEEKLY, timestamp: startDateLastWeek },
           ],
         },
-        include: {
-          participation: true,
-        },
+        include: { participation: true },
       },
     },
   })
   const courseTimelineCurrentWeek = await ctx.prisma.course.findUnique({
-    where: ownerId && !cronjob ? { id: courseId, ownerId } : { id: courseId },
+    where: { id: courseId },
     include: {
       timelineEntries: {
         where: {
           OR: [
             {
               type: TimelineEntryType.DAILY,
-              timestamp: {
-                gte: startDateCurrentWeek,
-                lte: new Date(),
-              },
+              timestamp: { gte: startDateCurrentWeek, lte: new Date() },
             },
-            {
-              type: TimelineEntryType.WEEKLY,
-              timestamp: startDateCurrentWeek,
-            },
+            { type: TimelineEntryType.WEEKLY, timestamp: startDateCurrentWeek },
           ],
         },
-        include: {
-          participation: true,
-        },
+        include: { participation: true },
       },
     },
   })

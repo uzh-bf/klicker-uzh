@@ -1745,21 +1745,11 @@ export async function changeLiveQuizName(
   ctx: ContextWithUser
 ) {
   const updatedQuiz = await ctx.prisma.liveQuiz.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      name,
-      displayName,
-    },
+    where: { id },
+    data: { name, displayName },
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'LiveQuiz',
-    id,
-  })
-
+  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
   return updatedQuiz
 }
 
@@ -2052,17 +2042,8 @@ export async function deleteLiveQuiz(
 ) {
   // fetch live quiz to check its status, remember the contained elements
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      blocks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
+    where: { id },
+    include: { blocks: { include: { elements: true } } },
   })
 
   if (!liveQuiz) return null
@@ -2073,14 +2054,8 @@ export async function deleteLiveQuiz(
   } else if (liveQuiz.status === PublicationStatus.ENDED) {
     const deletedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
       const quiz = await prisma.liveQuiz.update({
-        where: {
-          id,
-          ownerId: ctx.user.sub,
-          status: PublicationStatus.ENDED,
-        },
-        data: {
-          isDeleted: true,
-        },
+        where: { id, status: PublicationStatus.ENDED },
+        data: { isDeleted: true },
       })
 
       // update derived permissions for this live quiz (after soft deletion)
@@ -2101,7 +2076,6 @@ export async function deleteLiveQuiz(
       const quiz = await prisma.liveQuiz.delete({
         where: {
           id,
-          ownerId: ctx.user.sub,
           status: {
             in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
           },

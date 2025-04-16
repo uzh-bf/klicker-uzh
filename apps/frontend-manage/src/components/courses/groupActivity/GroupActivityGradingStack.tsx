@@ -224,6 +224,7 @@ function GroupActivityGradingStack({
         const result = await gradeGroupActivitySubmissions({
           variables: {
             id: submission.id,
+            groupActivityId: submission.groupActivityId,
             gradingDecisions: {
               passed: values.passed!,
               comment: values.comment,

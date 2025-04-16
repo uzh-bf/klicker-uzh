@@ -739,26 +739,12 @@ export async function createCourse(
 }
 
 export async function toggleArchiveCourse(
-  {
-    id,
-    isArchived,
-  }: {
-    id: string
-    isArchived: boolean
-  },
+  { id, isArchived }: { id: string; isArchived: boolean },
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      endDate: {
-        lte: new Date(),
-      },
-    },
-    data: {
-      isArchived,
-    },
+    where: { id, ownerId: ctx.user.sub, endDate: { lte: new Date() } },
+    data: { isArchived },
   })
 
   return course
@@ -795,11 +781,7 @@ export async function updateCourseSettings(
   ctx: ContextWithUser
 ) {
   // verify that no past dates are modified or enabled gamification / group creation settings are disabled
-  const course = await ctx.prisma.course.findUnique({
-    where: {
-      id,
-    },
-  })
+  const course = await ctx.prisma.course.findUnique({ where: { id } })
 
   if (!course) return null
 
