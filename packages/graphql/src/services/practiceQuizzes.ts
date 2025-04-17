@@ -224,11 +224,7 @@ export async function manipulatePracticeQuiz(
   // in EDIT mode - validate that the practice quiz exists and is not published
   if (id) {
     const existingActivity = await ctx.prisma.practiceQuiz.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        isDeleted: false,
-      },
+      where: { id, isDeleted: false },
     })
 
     if (!existingActivity) {
@@ -256,16 +252,12 @@ export async function manipulatePracticeQuiz(
     const instances = await ctx.prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
-        elementStack: {
-          practiceQuizId: id,
-        },
+        elementStack: { practiceQuizId: id },
       },
     })
 
     const stacks = await ctx.prisma.elementStack.findMany({
-      where: {
-        practiceQuizId: id,
-      },
+      where: { practiceQuizId: id },
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
@@ -302,20 +294,14 @@ export async function manipulatePracticeQuiz(
         },
       })),
     },
-    owner: {
-      connect: { id: ctx.user.sub },
-    },
-    course: {
-      connect: { id: courseId },
-    },
+    owner: { connect: { id: ctx.user.sub } },
+    course: { connect: { id: courseId } },
   }
 
   const activity = await ctx.prisma.$transaction(async (prisma) => {
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: instancesToDelete },
-      },
+      where: { id: { in: instancesToDelete } },
     })
 
     // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
@@ -326,9 +312,7 @@ export async function manipulatePracticeQuiz(
           : 1
 
       await prisma.elementInstance.update({
-        where: {
-          id: instance.id,
-        },
+        where: { id: instance.id },
         data: {
           elementStackId: null,
           order: persistentInstanceOrderMap[instance.id],
@@ -343,9 +327,7 @@ export async function manipulatePracticeQuiz(
 
     // delete all stacks
     await prisma.elementStack.deleteMany({
-      where: {
-        id: { in: stacksToDelete },
-      },
+      where: { id: { in: stacksToDelete } },
     })
 
     const upsertedQuiz = await prisma.practiceQuiz.upsert({
@@ -431,7 +413,6 @@ export async function unpublishPracticeQuiz(
   const practiceQuiz = await ctx.prisma.practiceQuiz.update({
     where: {
       id,
-      ownerId: ctx.user.sub,
       status: PublicationStatus.SCHEDULED,
     },
     data: {
@@ -501,18 +482,8 @@ export async function deletePracticeQuiz(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      responses: true,
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
+    where: { id },
+    include: { responses: true, stacks: { include: { elements: true } } },
   })
 
   if (!practiceQuiz) {
@@ -527,10 +498,7 @@ export async function deletePracticeQuiz(
     practiceQuiz.responses.length === 0
   ) {
     const deletedItem = await ctx.prisma.practiceQuiz.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
+      where: { id },
     })
 
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
@@ -548,29 +516,16 @@ export async function deletePracticeQuiz(
     const updatedPracticeQuiz = await ctx.prisma.$transaction(
       async (prisma) => {
         const quiz = await prisma.practiceQuiz.update({
-          where: {
-            id,
-            ownerId: ctx.user.sub,
-          },
-          data: {
-            isDeleted: true,
-          },
-          include: {
-            stacks: true,
-          },
+          where: { id },
+          data: { isDeleted: true },
+          include: { stacks: true },
         })
 
         // disconnect the stacks from the course they are linked to
         const stackIds = quiz.stacks.map((stack) => stack.id)
         await prisma.elementStack.updateMany({
-          where: {
-            id: {
-              in: stackIds,
-            },
-          },
-          data: {
-            courseId: null,
-          },
+          where: { id: { in: stackIds } },
+          data: { courseId: null },
         })
 
         // update derived permissions for this practice quiz (after soft deletion)
@@ -587,34 +542,16 @@ export async function deletePracticeQuiz(
 }
 
 export async function publishPracticeQuiz(
-  {
-    id,
-    availableFrom,
-  }: {
-    id: string
-    availableFrom?: Date | null
-  },
+  { id, availableFrom }: { id: string; availableFrom?: Date | null },
   ctx: ContextWithUser
 ) {
-  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      isDeleted: false,
-    },
-  })
-
-  if (!practiceQuiz) {
-    return null
-  }
-
   // if the practice quiz starts in the future, change its status to scheduled, otherwise publish it
   if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
     // change the status of the practice quiz to scheduled for the cronjob to identify it and publish it at the given time
     const updatedQuiz = await ctx.prisma.practiceQuiz.update({
       where: {
         id,
-        ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       data: {
         availableFrom,
@@ -633,7 +570,7 @@ export async function publishPracticeQuiz(
     const updatedQuiz = await ctx.prisma.practiceQuiz.update({
       where: {
         id,
-        ownerId: ctx.user.sub,
+        isDeleted: false,
       },
       data: {
         status: PublicationStatus.PUBLISHED,

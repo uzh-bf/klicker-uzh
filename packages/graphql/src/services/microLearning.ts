@@ -211,7 +211,6 @@ export async function manipulateMicroLearning(
     const existingActivity = await ctx.prisma.microLearning.findUnique({
       where: {
         id,
-        ownerId: ctx.user.sub,
         isDeleted: false,
       },
     })
@@ -387,7 +386,6 @@ export async function publishMicroLearning(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: {
       id,
-      ownerId: ctx.user.sub,
       status: PublicationStatus.DRAFT,
     },
   })
@@ -434,7 +432,6 @@ export async function unpublishMicroLearning(
   const microLearning = await ctx.prisma.microLearning.update({
     where: {
       id,
-      ownerId: ctx.user.sub,
       status: PublicationStatus.SCHEDULED,
     },
     data: {
@@ -465,7 +462,6 @@ export async function extendMicroLearning(
   return await ctx.prisma.microLearning.update({
     where: {
       id,
-      ownerId: ctx.user.sub,
       scheduledEndAt: { gt: new Date() },
       isDeleted: false,
     },
@@ -482,7 +478,6 @@ export async function endMicroLearning(
   const updatedMicroLearning = await ctx.prisma.microLearning.update({
     where: {
       id,
-      ownerId: ctx.user.sub,
       status: PublicationStatus.PUBLISHED,
       isDeleted: false,
     },
@@ -547,18 +542,8 @@ export async function deleteMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      responses: true,
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
+    where: { id },
+    include: { responses: true, stacks: { include: { elements: true } } },
   })
 
   if (!microLearning) {
@@ -572,12 +557,7 @@ export async function deleteMicroLearning(
     microLearning.status === PublicationStatus.SCHEDULED ||
     microLearning.responses.length === 0
   ) {
-    const deletedItem = await ctx.prisma.microLearning.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-    })
+    const deletedItem = await ctx.prisma.microLearning.delete({ where: { id } })
 
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
     // this case cannot be handled by the permissions module, since the microlearning is already hard deleted
@@ -594,13 +574,8 @@ export async function deleteMicroLearning(
     const updatedMicroLearning = await ctx.prisma.$transaction(
       async (prisma) => {
         const updated = await prisma.microLearning.update({
-          where: {
-            id,
-            ownerId: ctx.user.sub,
-          },
-          data: {
-            isDeleted: true,
-          },
+          where: { id },
+          data: { isDeleted: true },
         })
 
         // update derived permissions for this microlearning (after soft deletion)

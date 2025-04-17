@@ -9,13 +9,17 @@ import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import type { ContextWithUser } from '../lib/context.js'
+import type {
+  ContextWithUser,
+  PrismaTransactionContextWithUser,
+} from '../lib/context.js'
 import { validateAnswerCollectionPermissions } from './resources.js'
 import { validateActivityPermissions } from './templates.js'
 
 // ! Helper functions
 // #region
 
+// TODO: remove this helper function once no longer used
 // helper function to check for a specific access level on the catalog collection
 async function validateCatalogCollectionPermissions(
   {
@@ -180,22 +184,8 @@ export async function createCatalogCollection(
   const collection = await ctx.prisma.$transaction(async (prisma) => {
     // create the new catalog collection
     const newCollection = await prisma.catalogCollection.create({
-      data: {
-        name,
-        access,
-        owner: {
-          connect: {
-            id: ctx.user.sub,
-          },
-        },
-      },
-      include: {
-        owner: {
-          select: {
-            shortname: true,
-          },
-        },
-      },
+      data: { name, access, owner: { connect: { id: ctx.user.sub } } },
+      include: { owner: { select: { shortname: true } } },
     })
 
     // trigger a recomputation of the corresponding derived permission for this new collection
@@ -309,27 +299,10 @@ export async function changeCatalogCollectionObjectAccess(
   },
   ctx: ContextWithUser
 ) {
-  // verify that user has sufficient access (ADMIN or OWNER) to change the catalog collection access level
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return false
-  }
-
   // update the access level of the catalog collection
   const updatedCollection = await ctx.prisma.catalogCollection.update({
-    where: {
-      id: catalogCollectionId,
-    },
-    data: {
-      access,
-    },
+    where: { id: catalogCollectionId },
+    data: { access },
   })
 
   if (!updatedCollection) {
@@ -350,30 +323,10 @@ export async function changeCatalogCollectionName(
   { catalogCollectionId, name }: { catalogCollectionId: string; name: string },
   ctx: ContextWithUser
 ) {
-  // verify that user has sufficient access (at least WRITE) to change the catalog collection access level
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.WRITE,
-        DB.PermissionLevel.ADMIN,
-      ],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return false
-  }
-
   // update the access level of the catalog collection
   const updatedCollection = await ctx.prisma.catalogCollection.update({
-    where: {
-      id: catalogCollectionId,
-    },
-    data: {
-      name,
-    },
+    where: { id: catalogCollectionId },
+    data: { name },
   })
 
   if (!updatedCollection) {
@@ -543,11 +496,7 @@ export async function requestCatalogCollection(
           permissionLevel: requestedPermissionLevel ?? DB.PermissionLevel.READ,
         },
       },
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
+      owner: { select: { shortname: true } },
     },
   })
 
@@ -647,19 +596,6 @@ export async function deleteCatalogCollection(
   },
   ctx: ContextWithUser
 ) {
-  // verify that the user has sufficient permissions (ADMIN or OWNER) to delete the catalog collection
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // delete the catalog collection
   const deletedCollection = await ctx.prisma.catalogCollection.delete({
     where: {
@@ -1503,19 +1439,6 @@ export async function changeCatalogCollectionPermissionLevel(
   },
   ctx: ContextWithUser
 ) {
-  // verify that the requesting user has sufficient permissions to modify access level (ADMIN or OWNER)
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return false
-  }
-
   const permission = await ctx.prisma.$transaction(async (prisma) => {
     // update the permission level
     const updatedPermission = await prisma.permission.update({
@@ -1554,7 +1477,7 @@ export async function changeCatalogCollectionPermissionLevel(
   return true
 }
 
-export async function changeCatalogObjectPermissionLevel(
+export async function changeObjectPermissionLevel(
   {
     permissionId,
     permissionLevel,
@@ -1578,25 +1501,6 @@ export async function changeCatalogObjectPermissionLevel(
   },
   ctx: ContextWithUser
 ) {
-  // verify that the user has sufficient permissions on the object in question
-  if (typeof answerCollectionId !== 'undefined') {
-    const { valid } = await validateAnswerCollectionPermissions(
-      {
-        collectionId: answerCollectionId,
-        acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-      },
-      ctx
-    )
-
-    if (!valid) {
-      return false
-    }
-  }
-  // TODO: ... add more object types once they are supported for sharing
-  else {
-    return false
-  }
-
   // execute the update and recomputation in a single transaction
   const permission = await ctx.prisma.$transaction(async (prisma) => {
     // update the access level of the permission
@@ -1618,19 +1522,42 @@ export async function changeCatalogObjectPermissionLevel(
 
     // if the permission exists, trigger recomputation of derived permissions
     if (updatedPermission) {
-      await recomputeDerivedPermissions(
-        {
-          answerCollectionId,
-          elementId,
-          courseId,
-          liveQuizId,
-          practiceQuizId,
-          microLearningId,
-          groupActivityId,
-          userId: updatedPermission.userId ?? undefined,
-        },
-        prisma
-      )
+      if (typeof answerCollectionId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { answerCollectionId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof elementId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { elementId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof courseId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { courseId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof liveQuizId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { liveQuizId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof practiceQuizId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { practiceQuizId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof microLearningId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { microLearningId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      } else if (typeof groupActivityId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { groupActivityId, userId: updatedPermission.userId ?? undefined },
+          prisma
+        )
+      }
     }
 
     return updatedPermission
@@ -1657,32 +1584,10 @@ export async function revokeCatalogCollectionAccess(
   }: { permissionId: number; catalogCollectionId: string },
   ctx: ContextWithUser
 ) {
-  // verify that the requesting user has sufficient permissions to revoke access (ADMIN or OWNER)
-  const { valid } = await validateCatalogCollectionPermissions(
-    {
-      catalogCollectionId,
-      acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // verify that the direct permission belongs to the specified catalog collection
   const permission = await ctx.prisma.permission.findUnique({
-    where: {
-      id: permissionId,
-      catalogCollectionId,
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-        },
-      },
-    },
+    where: { id: permissionId, catalogCollectionId },
+    include: { user: { select: { id: true } } },
   })
 
   if (!permission) {
@@ -1692,17 +1597,12 @@ export async function revokeCatalogCollectionAccess(
   const deletedPermission = await ctx.prisma.$transaction(async (prisma) => {
     // delete the direct permission
     const deleted = await prisma.permission.delete({
-      where: {
-        id: permissionId,
-      },
+      where: { id: permissionId },
     })
 
     // trigger recomputation of derived permissions
     await recomputeDerivedPermissions(
-      {
-        catalogCollectionId,
-        userId: permission.userId ?? undefined,
-      },
+      { catalogCollectionId, userId: permission.userId ?? undefined },
       prisma
     )
 
@@ -1744,39 +1644,14 @@ export async function revokeAnswerCollectionAccess(
     return null
   }
 
-  // TODO: access control should be handled separately on level above
-  // verify that the requesting user has sufficient permissions to revoke access (ADMIN or OWNER)
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
-  })
-
-  if (!collection) {
-    return null
-  }
-
   // delete the direct permission and recompute derived permissions
   const deletedPermission = await ctx.prisma.$transaction(async (prisma) => {
     const deleted = await prisma.permission.delete({
-      where: {
-        id: permissionId,
-      },
+      where: { id: permissionId },
     })
 
     await recomputeDerivedPermissions(
-      {
-        answerCollectionId: collectionId,
-        userId: deleted.userId ?? undefined,
-      },
+      { answerCollectionId: collectionId, userId: deleted.userId ?? undefined },
       prisma
     )
 
@@ -1865,52 +1740,21 @@ export async function transferCatalogCollectionOwnership(
   // verify that the specified user exists
   const newOwner = await ctx.prisma.user.findFirst({
     where: {
-      OR: [
-        {
-          shortname: shortnameOrEmail,
-        },
-        {
-          email: shortnameOrEmail,
-        },
-      ],
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
     },
-    include: {
-      sharedObjects: {
-        where: {
-          catalogCollectionId,
-        },
-      },
-    },
+    include: { sharedObjects: { where: { catalogCollectionId } } },
   })
 
   if (!newOwner) {
     return null
   }
 
-  // verify that the current user has ownership of the collection
-  const collection = await ctx.prisma.catalogCollection.findUnique({
-    where: {
-      id: catalogCollectionId,
-      ownerId: ctx.user.sub,
-    },
-  })
-
-  if (!collection) {
-    return null
-  }
-
   const updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
     // update the owner of the collection and grant admin permissions to the current user
     const updated = await prisma.catalogCollection.update({
-      where: {
-        id: catalogCollectionId,
-      },
+      where: { id: catalogCollectionId },
       data: {
-        owner: {
-          connect: {
-            id: newOwner.id,
-          },
-        },
+        owner: { connect: { id: newOwner.id } },
         directPermissions: {
           upsert: {
             where: {
@@ -1921,31 +1765,17 @@ export async function transferCatalogCollectionOwnership(
             },
             create: {
               permissionLevel: DB.PermissionLevel.ADMIN,
-              user: {
-                connect: {
-                  id: ctx.user.sub,
-                },
-              },
+              user: { connect: { id: ctx.user.sub } },
             },
-            update: {
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
           },
         },
       },
       include: {
         directPermissions: {
-          where: {
-            userId: ctx.user.sub,
-          },
+          where: { userId: ctx.user.sub },
           include: {
-            user: {
-              select: {
-                id: true,
-                shortname: true,
-                email: true,
-              },
-            },
+            user: { select: { id: true, shortname: true, email: true } },
           },
         },
       },
@@ -2006,21 +1836,6 @@ export async function shareCatalogCollection(
   },
   ctx: ContextWithUser
 ) {
-  // TODO: move access validation out of the function itself (to pothos, if possible)
-  // verify that the requesting user has sufficient permissions to share object (ADMIN or OWNER)
-  const { valid, catalogCollection } =
-    await validateCatalogCollectionPermissions(
-      {
-        catalogCollectionId,
-        acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-      },
-      ctx
-    )
-
-  if (!valid) {
-    return null
-  }
-
   // create new permission with the defined access level
   if (shortnameOrEmail && shortnameOrEmail.length > 0) {
     // check if a user with the provided username or email exists and is not the owner of the catalog collection
@@ -2043,7 +1858,7 @@ export async function shareCatalogCollection(
     })
 
     const userId = user?.id
-    if (!userId || catalogCollection?.ownerId === userId) {
+    if (!userId) {
       return null
     }
 
@@ -2173,52 +1988,21 @@ export async function transferAnswerCollectionOwnership(
   // verify that the specified user exists
   const newOwner = await ctx.prisma.user.findFirst({
     where: {
-      OR: [
-        {
-          shortname: shortnameOrEmail,
-        },
-        {
-          email: shortnameOrEmail,
-        },
-      ],
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
     },
-    include: {
-      sharedObjects: {
-        where: {
-          answerCollectionId: collectionId,
-        },
-      },
-    },
+    include: { sharedObjects: { where: { answerCollectionId: collectionId } } },
   })
 
   if (!newOwner) {
     return null
   }
 
-  // verify that the current user has ownership of the collection
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      ownerId: ctx.user.sub,
-    },
-  })
-
-  if (!collection) {
-    return null
-  }
-
   const updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
     // update the owner of the collection and grant admin permissions to the current user
     const updated = await prisma.answerCollection.update({
-      where: {
-        id: collectionId,
-      },
+      where: { id: collectionId },
       data: {
-        owner: {
-          connect: {
-            id: newOwner.id,
-          },
-        },
+        owner: { connect: { id: newOwner.id } },
         directPermissions: {
           upsert: {
             where: {
@@ -2229,31 +2013,17 @@ export async function transferAnswerCollectionOwnership(
             },
             create: {
               permissionLevel: DB.PermissionLevel.ADMIN,
-              user: {
-                connect: {
-                  id: ctx.user.sub,
-                },
-              },
+              user: { connect: { id: ctx.user.sub } },
             },
-            update: {
-              permissionLevel: DB.PermissionLevel.ADMIN,
-            },
+            update: { permissionLevel: DB.PermissionLevel.ADMIN },
           },
         },
       },
       include: {
         directPermissions: {
-          where: {
-            userId: ctx.user.sub,
-          },
+          where: { userId: ctx.user.sub },
           include: {
-            user: {
-              select: {
-                id: true,
-                shortname: true,
-                email: true,
-              },
-            },
+            user: { select: { id: true, shortname: true, email: true } },
           },
         },
       },
@@ -2300,7 +2070,7 @@ export async function transferAnswerCollectionOwnership(
     : null
 }
 
-export async function shareCatalogObject(
+export async function shareObject(
   {
     permissionLevel,
     shortnameOrEmail,
@@ -2326,24 +2096,6 @@ export async function shareCatalogObject(
   },
   ctx: ContextWithUser
 ) {
-  // verify that user has either owner or admin access (sufficient permissions for sharing)
-  let objectOwner: string | undefined | null = null
-
-  if (typeof answerCollectionId !== 'undefined') {
-    const { valid, collection } = await validateAnswerCollectionPermissions(
-      {
-        collectionId: answerCollectionId,
-        acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-      },
-      ctx
-    )
-
-    objectOwner = collection?.ownerId
-    if (!valid) {
-      return null
-    }
-  }
-
   // create new permission with the defined access level
   if (shortnameOrEmail && shortnameOrEmail.length > 0) {
     // check if a user with the provided username or email exists and is not the owner of the collection
@@ -2366,7 +2118,7 @@ export async function shareCatalogObject(
     })
 
     const userId = user?.id
-    if (!userId || objectOwner === userId) {
+    if (!userId) {
       return null
     }
 
@@ -2955,24 +2707,6 @@ export async function addObjectToCatalog(
   },
   ctx: ContextWithUser
 ) {
-  // verify that the user has sufficient permissions on the catalog collection to add objects (if collection is defined)
-  if (catalogCollectionId) {
-    const { valid } = await validateCatalogCollectionPermissions(
-      {
-        catalogCollectionId,
-        acceptedPermissionLevels: [
-          DB.PermissionLevel.WRITE,
-          DB.PermissionLevel.ADMIN,
-        ],
-      },
-      ctx
-    )
-
-    if (!valid) {
-      return null
-    }
-  }
-
   // collect shared object information in corresponding object
   let objectInfo: {
     objectId?: number
@@ -3000,16 +2734,8 @@ export async function addObjectToCatalog(
         },
       },
       include: {
-        owner: {
-          select: {
-            shortname: true,
-          },
-        },
-        permissions: {
-          where: {
-            userId: ctx.user.sub,
-          },
-        },
+        owner: { select: { shortname: true } },
+        permissions: { where: { userId: ctx.user.sub } },
       },
     })
 
@@ -3047,21 +2773,9 @@ export async function addObjectToCatalog(
         },
       },
       include: {
-        owner: {
-          select: {
-            shortname: true,
-          },
-        },
-        templateInfo: {
-          select: {
-            id: true,
-          },
-        },
-        permissions: {
-          where: {
-            userId: ctx.user.sub,
-          },
-        },
+        owner: { select: { shortname: true } },
+        templateInfo: { select: { id: true } },
+        permissions: { where: { userId: ctx.user.sub } },
       },
     })
 
@@ -3294,7 +3008,7 @@ export async function checkAccess(
     | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
     | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
   )[],
-  ctx: ContextWithUser
+  ctx: PrismaTransactionContextWithUser
 ) {
   for (const check of checks) {
     if (
@@ -3489,7 +3203,7 @@ export async function checkCatalogAssignment(
         catalogCollectionId?: string
         access?: DB.ObjectAccess
       },
-  ctx: ContextWithUser
+  ctx: PrismaTransactionContextWithUser
 ) {
   // verify that the user has access to the catalog collection (if not top-level collection)
   if (

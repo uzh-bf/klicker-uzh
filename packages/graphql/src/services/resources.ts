@@ -436,37 +436,13 @@ export async function modifyAnswerCollection(
     id,
     name,
     description,
-  }: {
-    id: number
-    name?: string | null
-    description?: string | null
-  },
+  }: { id: number; name?: string | null; description?: string | null },
   ctx: ContextWithUser
 ) {
   // fetch the existing answer collection
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [
-              DB.PermissionLevel.WRITE,
-              DB.PermissionLevel.ADMIN,
-              DB.PermissionLevel.OWNER,
-            ],
-          },
-        },
-      },
-    },
-    include: {
-      _count: {
-        select: {
-          permissions: true,
-        },
-      },
-    },
+    where: { id },
+    include: { _count: { select: { permissions: true } } },
   })
 
   if (!collection) {
@@ -476,19 +452,13 @@ export async function modifyAnswerCollection(
   const updatedCollection = await ctx.prisma.$transaction(async (tx) => {
     // update changes in the database
     const updateResult = await tx.answerCollection.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         name: name ?? undefined,
         description: description ?? undefined,
-        version: {
-          increment: 1,
-        },
+        version: { increment: 1 },
       },
-      include: {
-        entries: true,
-      },
+      include: { entries: true },
     })
 
     // invalidate the answer collection
@@ -513,66 +483,32 @@ export async function deleteAnswerCollection(
 ) {
   // fetch answer collection as owner or admin
   const collectionUser = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
+    where: { id: collectionId },
     include: {
       _count: {
         select: {
           linkedElements: {
-            where: {
-              permissions: {
-                some: {
-                  userId: ctx.user.sub,
-                },
-              },
-            },
+            where: { permissions: { some: { userId: ctx.user.sub } } },
           },
           linkedTemplates: {
             where: {
               OR: [
                 {
-                  liveQuiz: {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                      },
-                    },
-                  },
+                  liveQuiz: { permissions: { some: { userId: ctx.user.sub } } },
                 },
                 {
                   practiceQuiz: {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                      },
-                    },
+                    permissions: { some: { userId: ctx.user.sub } },
                   },
                 },
                 {
                   microLearning: {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                      },
-                    },
+                    permissions: { some: { userId: ctx.user.sub } },
                   },
                 },
                 {
                   groupActivity: {
-                    permissions: {
-                      some: {
-                        userId: ctx.user.sub,
-                      },
-                    },
+                    permissions: { some: { userId: ctx.user.sub } },
                   },
                 },
               ],
@@ -595,16 +531,9 @@ export async function deleteAnswerCollection(
 
   // check if any elements or templates are still linked to the collection (--> soft delete)
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-    },
+    where: { id: collectionId },
     include: {
-      _count: {
-        select: {
-          linkedElements: true,
-          linkedTemplates: true,
-        },
-      },
+      _count: { select: { linkedElements: true, linkedTemplates: true } },
     },
   })
 
@@ -621,36 +550,24 @@ export async function deleteAnswerCollection(
     updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
       // ? Remove all access requests
       await prisma.accessRequest.deleteMany({
-        where: {
-          answerCollectionId: collectionId,
-        },
+        where: { answerCollectionId: collectionId },
       })
 
       // ? Revoke all direct permissions on the answer collection
       // only users with linked elements or templates should retain valid access --> stored in derived permissions
       await prisma.permission.deleteMany({
-        where: {
-          answerCollectionId: collectionId,
-        },
+        where: { answerCollectionId: collectionId },
       })
 
       // ? Remove all catalog assignments
       await prisma.catalogCollectionAssignment.deleteMany({
-        where: {
-          answerCollectionId: collectionId,
-        },
+        where: { answerCollectionId: collectionId },
       })
 
       // ? Disconnect the owner from the answer collection
       const updatedAnswerCollection = await prisma.answerCollection.update({
-        where: {
-          id: collectionId,
-        },
-        data: {
-          owner: {
-            disconnect: true,
-          },
-        },
+        where: { id: collectionId },
+        data: { owner: { disconnect: true } },
       })
 
       // trigger recomputation of all derived permissions for this answer collection object
@@ -665,9 +582,7 @@ export async function deleteAnswerCollection(
   } else {
     // otherwise delete the collection
     updatedCollection = await ctx.prisma.answerCollection.delete({
-      where: {
-        id: collectionId,
-      },
+      where: { id: collectionId },
     })
   }
 
@@ -680,11 +595,7 @@ export async function deleteAnswerCollection(
 }
 
 export async function removeAnswerCollection(
-  {
-    collectionId,
-  }: {
-    collectionId: number
-  },
+  { collectionId }: { collectionId: number },
   ctx: ContextWithUser
 ) {
   // fetch existing permission and collection
@@ -701,51 +612,29 @@ export async function removeAnswerCollection(
           _count: {
             select: {
               linkedElements: {
-                where: {
-                  permissions: {
-                    some: {
-                      userId: ctx.user.sub,
-                    },
-                  },
-                },
+                where: { permissions: { some: { userId: ctx.user.sub } } },
               },
               linkedTemplates: {
                 where: {
                   OR: [
                     {
                       liveQuiz: {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                          },
-                        },
+                        permissions: { some: { userId: ctx.user.sub } },
                       },
                     },
                     {
                       practiceQuiz: {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                          },
-                        },
+                        permissions: { some: { userId: ctx.user.sub } },
                       },
                     },
                     {
                       microLearning: {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                          },
-                        },
+                        permissions: { some: { userId: ctx.user.sub } },
                       },
                     },
                     {
                       groupActivity: {
-                        permissions: {
-                          some: {
-                            userId: ctx.user.sub,
-                          },
-                        },
+                        permissions: { some: { userId: ctx.user.sub } },
                       },
                     },
                   ],
@@ -775,19 +664,11 @@ export async function removeAnswerCollection(
 
   // if no other users have access to this collection and the owner is already disconnected, delete it
   if (collection._count.permissions === 1 && collection.ownerId === null) {
-    await ctx.prisma.answerCollection.delete({
-      where: {
-        id: collectionId,
-      },
-    })
+    await ctx.prisma.answerCollection.delete({ where: { id: collectionId } })
   } else {
     // otherwise, delete the sharing permission
     await ctx.prisma.$transaction(async (prisma) => {
-      await prisma.permission.delete({
-        where: {
-          id: permission.id,
-        },
-      })
+      await prisma.permission.delete({ where: { id: permission.id } })
 
       // trigger recomputation of derived permissions
       await recomputeDerivedPermissions(
@@ -810,37 +691,13 @@ export async function editAnswerCollectionEntry(
     id,
     value,
     collectionId,
-  }: {
-    id: number
-    value: string
-    collectionId: number
-  },
+  }: { id: number; value: string; collectionId: number },
   ctx: ContextWithUser
 ) {
-  // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateAnswerCollectionPermissions(
-    {
-      collectionId,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.WRITE,
-        DB.PermissionLevel.ADMIN,
-      ],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // update entry in the database
   const updatedEntry = await ctx.prisma.answerCollectionEntry.update({
-    where: {
-      id,
-    },
-    data: {
-      value,
-    },
+    where: { id, collectionId },
+    data: { value },
   })
 
   // increment version of the collection to keep track of changes
@@ -856,34 +713,10 @@ export async function deleteAnswerCollectionEntry(
   { id, collectionId }: { id: number; collectionId: number },
   ctx: ContextWithUser
 ) {
-  // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateAnswerCollectionPermissions(
-    {
-      collectionId,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.WRITE,
-        DB.PermissionLevel.ADMIN,
-      ],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // verify that the answer collection entry is not linked to any elements
   const entry = await ctx.prisma.answerCollectionEntry.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      _count: {
-        select: {
-          itemUsages: true,
-        },
-      },
-    },
+    where: { id, collectionId },
+    include: { _count: { select: { itemUsages: true } } },
   })
 
   if (!entry || entry._count.itemUsages > 0) {
@@ -892,9 +725,7 @@ export async function deleteAnswerCollectionEntry(
 
   // delete answer option from the database
   const updatedEntry = await ctx.prisma.answerCollectionEntry.delete({
-    where: {
-      id,
-    },
+    where: { id },
   })
 
   // increment version of the collection to keep track of changes
@@ -907,40 +738,14 @@ export async function deleteAnswerCollectionEntry(
 }
 
 export async function addAnswerCollectionOption(
-  {
-    collectionId,
-    value,
-  }: {
-    collectionId: number
-    value: string
-  },
+  { collectionId, value }: { collectionId: number; value: string },
   ctx: ContextWithUser
 ) {
-  // verify that the user has at least writer permissions for the collection
-  const { valid } = await validateAnswerCollectionPermissions(
-    {
-      collectionId,
-      acceptedPermissionLevels: [
-        DB.PermissionLevel.WRITE,
-        DB.PermissionLevel.ADMIN,
-      ],
-    },
-    ctx
-  )
-
-  if (!valid) {
-    return null
-  }
-
   // add new answer option to the database
   const newEntry = await ctx.prisma.answerCollectionEntry.create({
     data: {
       value,
-      collection: {
-        connect: {
-          id: collectionId,
-        },
-      },
+      collection: { connect: { id: collectionId } },
     },
   })
 

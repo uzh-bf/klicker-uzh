@@ -531,20 +531,9 @@ export async function manualRandomGroupAssignments(
       isGroupCreationEnabled: true,
     },
     include: {
-      groupAssignmentPoolEntries: {
-        orderBy: {
-          createdAt: 'asc',
-        },
-      },
+      groupAssignmentPoolEntries: { orderBy: { createdAt: 'asc' } },
       participantGroups: {
-        select: {
-          id: true,
-          participants: {
-            select: {
-              id: true,
-            },
-          },
-        },
+        select: { id: true, participants: { select: { id: true } } },
       },
     },
   })
@@ -571,9 +560,7 @@ export async function manualRandomGroupAssignments(
     if (courseExtendedPool.groupAssignmentPoolEntries.length === 0) {
       const courseUpdated = await ctx.prisma.course.update({
         where: { id: courseId },
-        data: {
-          randomAssignmentFinalized: true,
-        },
+        data: { randomAssignmentFinalized: true },
       })
 
       return courseUpdated
@@ -602,9 +589,7 @@ export async function manualRandomGroupAssignments(
           style: 'capital',
         }) + 's',
       code: 100000 + Math.floor(Math.random() * 900000),
-      participants: {
-        connect: group.map((id) => ({ id })),
-      },
+      participants: { connect: group.map((id) => ({ id })) },
     }))
 
     // update the course
@@ -613,23 +598,14 @@ export async function manualRandomGroupAssignments(
       data: {
         groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
         randomAssignmentFinalized: true,
-        participantGroups: {
-          create: newGroups,
-        },
-        groupAssignmentPoolEntries: {
-          deleteMany: {},
-        },
+        participantGroups: { create: newGroups },
+        groupAssignmentPoolEntries: { deleteMany: {} },
       },
-      include: {
-        participantGroups: true,
-      },
+      include: { participantGroups: true },
     })
 
     // invalidate the cache of the course and the group assignment pool entries
-    ctx.emitter.emit('invalidate', {
-      typename: 'Course',
-      id: courseId,
-    })
+    ctx.emitter.emit('invalidate', { typename: 'Course', id: courseId })
     courseExtendedPool.groupAssignmentPoolEntries.forEach((entry) => {
       ctx.emitter.emit('invalidate', {
         typename: 'GroupAssignmentPoolEntry',
@@ -956,11 +932,7 @@ export async function manipulateGroupActivity(
   // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
   if (id) {
     const existingActiity = await ctx.prisma.groupActivity.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        isDeleted: false,
-      },
+      where: { id, isDeleted: false },
     })
 
     if (!existingActiity) {
@@ -977,11 +949,7 @@ export async function manipulateGroupActivity(
     // remove old clues as they will be replaced through new values
     await ctx.prisma.groupActivity.update({
       where: { id },
-      data: {
-        clues: {
-          deleteMany: {},
-        },
-      },
+      data: { clues: { deleteMany: {} } },
     })
   }
 
@@ -1002,16 +970,12 @@ export async function manipulateGroupActivity(
     const instances = await ctx.prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
-        elementStack: {
-          groupActivityId: id,
-        },
+        elementStack: { groupActivityId: id },
       },
     })
 
     const stacks = await ctx.prisma.elementStack.findMany({
-      where: {
-        groupActivityId: id,
-      },
+      where: { groupActivityId: id },
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
@@ -1069,25 +1033,15 @@ export async function manipulateGroupActivity(
         },
       },
     },
-    owner: {
-      connect: {
-        id: ctx.user.sub,
-      },
-    },
-    course: {
-      connect: {
-        id: courseId,
-      },
-    },
+    owner: { connect: { id: ctx.user.sub } },
+    course: { connect: { id: courseId } },
   }
 
   // Use a transaction to ensure atomicity of all database operations
   const activity = await ctx.prisma.$transaction(async (prisma) => {
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: instancesToDelete },
-      },
+      where: { id: { in: instancesToDelete } },
     })
 
     // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
@@ -1114,15 +1068,11 @@ export async function manipulateGroupActivity(
 
     // delete all stacks
     await prisma.elementStack.deleteMany({
-      where: {
-        id: { in: stacksToDelete },
-      },
+      where: { id: { in: stacksToDelete } },
     })
 
     const upsertedActivity = await prisma.groupActivity.upsert({
-      where: {
-        id: id ?? newId,
-      },
+      where: { id: id ?? newId },
       create: createOrUpdateJSON,
       update: createOrUpdateJSON,
     })
@@ -1654,7 +1604,7 @@ export async function publishGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
   })
 
   if (!groupActivity) return null
@@ -1679,22 +1629,9 @@ export async function unpublishGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      status: PublicationStatus.SCHEDULED,
-      isDeleted: false,
-    },
-  })
-
-  if (!groupActivity) return null
-
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
-    data: {
-      status: PublicationStatus.DRAFT,
-    },
+    data: { status: PublicationStatus.DRAFT },
   })
 
   return updatedGroupActivity
@@ -1704,17 +1641,6 @@ export async function openGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      status: PublicationStatus.SCHEDULED,
-      isDeleted: false,
-    },
-  })
-
-  if (!groupActivity) return null
-
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
@@ -1733,17 +1659,6 @@ export async function endGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      status: PublicationStatus.PUBLISHED,
-      isDeleted: false,
-    },
-  })
-
-  if (!groupActivity) return null
-
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
@@ -1764,7 +1679,7 @@ export async function deleteGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
     include: {
       activityInstances: true,
       stacks: {
@@ -1786,12 +1701,7 @@ export async function deleteGroupActivity(
     groupActivity.status === PublicationStatus.SCHEDULED ||
     groupActivity.activityInstances.length === 0
   ) {
-    const deletedItem = await ctx.prisma.groupActivity.delete({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-    })
+    const deletedItem = await ctx.prisma.groupActivity.delete({ where: { id } })
 
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
     // this case cannot be handled by the permissions module, since the group activity is already hard deleted
@@ -1807,13 +1717,8 @@ export async function deleteGroupActivity(
     const updatedGroupActivity = await ctx.prisma.$transaction(
       async (prisma) => {
         const updatedActivity = await prisma.groupActivity.update({
-          where: {
-            id,
-            ownerId: ctx.user.sub,
-          },
-          data: {
-            isDeleted: true,
-          },
+          where: { id },
+          data: { isDeleted: true },
         })
 
         // update derived permissions for this group activity (after soft deletion)
@@ -1960,7 +1865,6 @@ export async function extendGroupActivity(
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: {
       id,
-      ownerId: ctx.user.sub,
       status: {
         in: [PublicationStatus.SCHEDULED, PublicationStatus.PUBLISHED],
       },
@@ -1995,10 +1899,7 @@ export async function gradeGroupActivitySubmission(
 
   // fetch all elementInstances
   const elementInstances = await ctx.prisma.elementInstance.findMany({
-    where: {
-      owner: { id: ctx.user.sub },
-      id: { in: instanceIds },
-    },
+    where: { id: { in: instanceIds } },
   })
   const elementInstanceMap = elementInstances.reduce<
     Record<number, ElementInstanceOptions>
@@ -2046,9 +1947,7 @@ export async function finalizeGroupActivityGrading(
   // find the group activity and all instances
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
-    include: {
-      activityInstances: true,
-    },
+    include: { activityInstances: true },
   })
 
   if (!groupActivity) return null
@@ -2137,14 +2036,8 @@ export async function finalizeGroupActivityGrading(
     // increment groupActivityScore on participantGroup
     for (const instance of gradedInstances) {
       await prisma.participantGroup.update({
-        where: {
-          id: instance.groupId,
-        },
-        data: {
-          groupActivityScore: {
-            increment: instance.results!.points,
-          },
-        },
+        where: { id: instance.groupId },
+        data: { groupActivityScore: { increment: instance.results!.points } },
       })
     }
 
@@ -2181,14 +2074,8 @@ export async function finalizeGroupActivityGrading(
         // participants with achievement id 9 should get 250 xp
         if (id === 9) {
           await prisma.participant.update({
-            where: {
-              id: participantId,
-            },
-            data: {
-              xp: {
-                increment: 250,
-              },
-            },
+            where: { id: participantId },
+            data: { xp: { increment: 250 } },
           })
 
           xpAwarded = (xpAwarded ?? 0) + 250
@@ -2197,14 +2084,8 @@ export async function finalizeGroupActivityGrading(
         // participants with achievement id 8 should get 1000 xp and 500 points in the leaderboard
         if (id === 8) {
           await prisma.participant.update({
-            where: {
-              id: participantId,
-            },
-            data: {
-              xp: {
-                increment: 1000,
-              },
-            },
+            where: { id: participantId },
+            data: { xp: { increment: 1000 } },
           })
 
           // update total number of XP awarded

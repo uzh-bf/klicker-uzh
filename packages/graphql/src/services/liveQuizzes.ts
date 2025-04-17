@@ -12,6 +12,7 @@ import {
   ElementInstanceType,
   ElementType,
   LeaderboardType,
+  PermissionLevel,
   PublicationStatus,
 } from '@klicker-uzh/prisma'
 import type {
@@ -449,14 +450,18 @@ export async function splitActivityInstances(
     where: {
       id: { in: requiredElementsIds },
       isDeleted: false,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      answerCollection: {
-        include: {
-          entries: true,
+      // only admins and owners are allowed to re-use elements
+      permissions: {
+        some: {
+          userId: ctx.user.sub,
+          permissionLevel: {
+            in: [PermissionLevel.OWNER, PermissionLevel.ADMIN],
+          },
         },
       },
+    },
+    include: {
+      answerCollection: { include: { entries: true } },
       answerCollectionItems: true,
     },
   })
@@ -521,11 +526,7 @@ export async function manipulateLiveQuiz(
   // in EDIT mode - validate that the live quiz exists and is not published
   if (id) {
     const existingActivity = await ctx.prisma.liveQuiz.findUnique({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-        isDeleted: false,
-      },
+      where: { id, isDeleted: false },
     })
 
     if (!existingActivity) {
@@ -553,16 +554,12 @@ export async function manipulateLiveQuiz(
     const instances = await ctx.prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
-        elementBlock: {
-          liveQuizId: id,
-        },
+        elementBlock: { liveQuizId: id },
       },
     })
 
     const blocks = await ctx.prisma.elementBlock.findMany({
-      where: {
-        liveQuizId: id,
-      },
+      where: { liveQuizId: id },
     })
 
     instancesToDelete = instances.map((instance) => instance.id)
@@ -603,17 +600,13 @@ export async function manipulateLiveQuiz(
         },
       })),
     },
-    owner: {
-      connect: { id: ctx.user.sub },
-    },
+    owner: { connect: { id: ctx.user.sub } },
   }
 
   const activity = await ctx.prisma.$transaction(async (prisma) => {
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
-      where: {
-        id: { in: instancesToDelete },
-      },
+      where: { id: { in: instancesToDelete } },
     })
 
     // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
@@ -624,9 +617,7 @@ export async function manipulateLiveQuiz(
           : 1
 
       await prisma.elementInstance.update({
-        where: {
-          id: instance.id,
-        },
+        where: { id: instance.id },
         data: {
           elementBlockId: null,
           order: persistentInstanceOrderMap[instance.id],
@@ -649,37 +640,20 @@ export async function manipulateLiveQuiz(
       where: { id: id ?? uuidv4() },
       create: {
         ...createOrUpdateJSON,
-        course:
-          courseId !== null
-            ? {
-                connect: { id: courseId },
-              }
-            : undefined,
+        course: courseId !== null ? { connect: { id: courseId } } : undefined,
       },
       update: {
         ...createOrUpdateJSON,
         course:
           courseId !== null
-            ? {
-                connect: { id: courseId },
-              }
-            : {
-                disconnect: true,
-              },
+            ? { connect: { id: courseId } }
+            : { disconnect: true },
       },
       include: {
         course: true,
         blocks: {
-          include: {
-            elements: {
-              orderBy: {
-                order: 'asc',
-              },
-            },
-          },
-          orderBy: {
-            order: 'asc',
-          },
+          include: { elements: { orderBy: { order: 'asc' } } },
+          orderBy: { order: 'asc' },
         },
       },
     })
@@ -938,7 +912,6 @@ export async function startLiveQuiz(
     const quiz = await ctx.prisma.liveQuiz.findFirst({
       where: {
         id,
-        ownerId: ctx.user.sub,
         status: {
           in: [
             PublicationStatus.DRAFT,
@@ -947,13 +920,7 @@ export async function startLiveQuiz(
           ],
         },
       },
-      include: {
-        blocks: {
-          orderBy: {
-            id: 'asc',
-          },
-        },
-      },
+      include: { blocks: { orderBy: { id: 'asc' } } },
     })
 
     // if there is no live quiz matching the current user and quiz id, exit early
@@ -1131,20 +1098,11 @@ export async function activateLiveQuizBlock(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id: quizId,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      blocks: {
-        orderBy: {
-          id: 'asc',
-        },
-      },
-    },
+    where: { id: quizId },
+    include: { blocks: { orderBy: { id: 'asc' } } },
   })
 
-  if (!quiz || quiz.ownerId !== ctx.user.sub) return null
+  if (!quiz) return null
 
   const newBlock = quiz.blocks.find((block) => block.id === blockId)
 
@@ -1155,9 +1113,7 @@ export async function activateLiveQuizBlock(
   const updatedQuiz = await ctx.prisma.liveQuiz.update({
     where: { id: quizId },
     data: {
-      activeBlock: {
-        connect: { id: blockId },
-      },
+      activeBlock: { connect: { id: blockId } },
       blocks: {
         update: {
           where: { id: blockId },
@@ -1171,20 +1127,8 @@ export async function activateLiveQuizBlock(
       },
     },
     include: {
-      activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      blocks: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
+      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      blocks: { orderBy: { order: 'asc' } },
     },
   })
 
@@ -1333,29 +1277,14 @@ export async function deactivateLiveQuizBlock(
   isScheduled?: boolean
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id: quizId,
-      ownerId: ctx.user.sub,
-    },
+    where: { id: quizId },
     include: {
-      activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
-      blocks: {
-        orderBy: {
-          id: 'asc',
-        },
-      },
+      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+      blocks: { orderBy: { id: 'asc' } },
     },
   })
 
-  if (!quiz || quiz.ownerId !== ctx.user.sub || !quiz.activeBlock) return null
+  if (!quiz || !quiz.activeBlock) return null
 
   // if the block is not the active one, return early
   if (quiz.activeBlockId !== blockId) return quiz
@@ -1389,18 +1318,12 @@ export async function deactivateLiveQuizBlock(
     })
 
     const updatedQuiz = await ctx.prisma.liveQuiz.update({
-      where: {
-        id: quizId,
-      },
+      where: { id: quizId },
       data: {
-        activeBlock: {
-          disconnect: true,
-        },
+        activeBlock: { disconnect: true },
         blocks: {
           update: {
-            where: {
-              id: blockId,
-            },
+            where: { id: blockId },
             data: {
               status: ElementBlockStatus.EXECUTED,
               elements: {
@@ -1427,9 +1350,7 @@ export async function deactivateLiveQuizBlock(
                   },
                   create: {
                     type: LeaderboardType.SESSION,
-                    participant: {
-                      connect: { id },
-                    },
+                    participant: { connect: { id } },
                     score: parseInt(score),
                     sessionParticipation: {
                       connectOrCreate: {
@@ -1440,35 +1361,19 @@ export async function deactivateLiveQuizBlock(
                           },
                         },
                         create: {
-                          course: {
-                            connect: {
-                              id: quiz.courseId!,
-                            },
-                          },
-                          participant: {
-                            connect: {
-                              id,
-                            },
-                          },
+                          course: { connect: { id: quiz.courseId! } },
+                          participant: { connect: { id } },
                         },
                       },
                     },
                   },
-                  update: {
-                    score: parseInt(score),
-                  },
+                  update: { score: parseInt(score) },
                 })
               ),
             }
           : undefined,
       },
-      include: {
-        blocks: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-      },
+      include: { blocks: { orderBy: { order: 'asc' } } },
     })
 
     ctx.pubSub.publish('runningLiveQuizUpdated', {
@@ -1511,22 +1416,11 @@ export async function endLiveQuiz(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findFirst({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
+    where: { id },
     include: {
       blocks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          id: 'asc',
-        },
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { id: 'asc' },
       },
     },
   })
@@ -1581,11 +1475,7 @@ export async function endLiveQuiz(
                 // if the live quiz is part of a course, include the corresponding participations
                 // if the participant is not part of the relevant course, the joined array will be empty
                 participations: quiz.courseId
-                  ? {
-                      where: {
-                        courseId: quiz.courseId,
-                      },
-                    }
+                  ? { where: { courseId: quiz.courseId } }
                   : undefined,
               },
             })
@@ -1687,11 +1577,7 @@ export async function endLiveQuiz(
           if (typeof participant.xp !== 'undefined') {
             await prisma.participant.update({
               where: { id: participant.id },
-              data: {
-                xp: {
-                  increment: Number(participant.xp),
-                },
-              },
+              data: { xp: { increment: Number(participant.xp) } },
             })
           }
         }
@@ -1843,10 +1729,7 @@ export async function changeLiveQuizSettings(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
+    where: { id },
     data: {
       isLiveQAEnabled: isLiveQAEnabled ?? undefined,
       isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
@@ -1862,21 +1745,11 @@ export async function changeLiveQuizName(
   ctx: ContextWithUser
 ) {
   const updatedQuiz = await ctx.prisma.liveQuiz.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      name,
-      displayName,
-    },
+    where: { id },
+    data: { name, displayName },
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'LiveQuiz',
-    id,
-  })
-
+  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
   return updatedQuiz
 }
 
@@ -1955,18 +1828,10 @@ export async function cancelLiveQuiz(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
+    where: { id },
     include: {
       activeBlock: true,
-      blocks: {
-        include: {
-          elements: true,
-          activeInLiveQuiz: true,
-        },
-      },
+      blocks: { include: { elements: true, activeInLiveQuiz: true } },
       leaderboard: true,
     },
   })
@@ -1987,18 +1852,10 @@ export async function cancelLiveQuiz(
           status: PublicationStatus.DRAFT,
           startedAt: null,
           pinCode: null,
-          activeBlock: {
-            disconnect: true,
-          },
-          leaderboard: {
-            deleteMany: {},
-          },
-          feedbacks: {
-            deleteMany: {},
-          },
-          confusionFeedbacks: {
-            deleteMany: {},
-          },
+          activeBlock: { disconnect: true },
+          leaderboard: { deleteMany: {} },
+          feedbacks: { deleteMany: {} },
+          confusionFeedbacks: { deleteMany: {} },
           blocks: {
             updateMany: {
               where: {
@@ -2009,21 +1866,14 @@ export async function cancelLiveQuiz(
               data: {
                 status: ElementBlockStatus.SCHEDULED,
                 expiresAt: null,
-                execution: {
-                  increment: 1,
-                },
+                execution: { increment: 1 },
               },
             },
           },
         },
         include: {
           activeBlock: true,
-          blocks: {
-            include: {
-              elements: true,
-              activeInLiveQuiz: true,
-            },
-          },
+          blocks: { include: { elements: true, activeInLiveQuiz: true } },
         },
       }),
 
@@ -2192,17 +2042,8 @@ export async function deleteLiveQuiz(
 ) {
   // fetch live quiz to check its status, remember the contained elements
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      blocks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
+    where: { id },
+    include: { blocks: { include: { elements: true } } },
   })
 
   if (!liveQuiz) return null
@@ -2213,14 +2054,8 @@ export async function deleteLiveQuiz(
   } else if (liveQuiz.status === PublicationStatus.ENDED) {
     const deletedLiveQuiz = await ctx.prisma.$transaction(async (prisma) => {
       const quiz = await prisma.liveQuiz.update({
-        where: {
-          id,
-          ownerId: ctx.user.sub,
-          status: PublicationStatus.ENDED,
-        },
-        data: {
-          isDeleted: true,
-        },
+        where: { id, status: PublicationStatus.ENDED },
+        data: { isDeleted: true },
       })
 
       // update derived permissions for this live quiz (after soft deletion)
@@ -2241,7 +2076,6 @@ export async function deleteLiveQuiz(
       const quiz = await prisma.liveQuiz.delete({
         where: {
           id,
-          ownerId: ctx.user.sub,
           status: {
             in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
           },

@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma'
-import { CatalogObjectType as CatalogObjectTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityType as ActivityTypeEnum,
+  CatalogObjectType as CatalogObjectTypeEnum,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
@@ -82,6 +85,10 @@ import {
   UserLoginScope,
 } from './user.js'
 
+// shorthand for frequently accessed functions
+const checkAccess = SharingService.checkAccess
+const checkCatalogAssignment = SharingService.checkCatalogAssignment
+
 export const Mutation = builder.mutationType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
@@ -105,8 +112,8 @@ export const Mutation = builder.mutationType({
           difficulty: t.arg.int({ required: true }),
           speed: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.addConfusionTimestep(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await FeedbackService.addConfusionTimestep(args, ctx)
         },
       }),
 
@@ -116,8 +123,8 @@ export const Mutation = builder.mutationType({
         args: {
           locale: t.arg({ type: LocaleType, required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.changeParticipantLocale(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.changeParticipantLocale(args, ctx)
         },
       }),
 
@@ -128,8 +135,8 @@ export const Mutation = builder.mutationType({
           quizId: t.arg.string({ required: true }),
           content: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.createFeedback(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await FeedbackService.createFeedback(args, ctx)
         },
       }),
 
@@ -141,8 +148,8 @@ export const Mutation = builder.mutationType({
           incrementUpvote: t.arg.int({ required: true }),
           incrementDownvote: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.voteFeedbackResponse(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await FeedbackService.voteFeedbackResponse(args, ctx)
         },
       }),
 
@@ -153,8 +160,8 @@ export const Mutation = builder.mutationType({
           feedbackId: t.arg.int({ required: true }),
           increment: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.upvoteFeedback(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await FeedbackService.upvoteFeedback(args, ctx)
         },
       }),
 
@@ -164,8 +171,8 @@ export const Mutation = builder.mutationType({
           shortname: t.arg.string({ required: true }),
           token: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.loginUserToken(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.loginUserToken(args, ctx)
         },
       }),
 
@@ -175,8 +182,8 @@ export const Mutation = builder.mutationType({
           usernameOrEmail: t.arg.string({ required: true }),
           password: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.loginParticipant(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.loginParticipant(args, ctx)
         },
       }),
 
@@ -185,8 +192,8 @@ export const Mutation = builder.mutationType({
         args: {
           token: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.loginParticipantMagicLink(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.loginParticipantMagicLink(args, ctx)
         },
       }),
 
@@ -195,8 +202,8 @@ export const Mutation = builder.mutationType({
         args: {
           token: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.activateParticipantAccount(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.activateParticipantAccount(args, ctx)
         },
       }),
 
@@ -205,8 +212,8 @@ export const Mutation = builder.mutationType({
         args: {
           usernameOrEmail: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          // TODO: at some point we should do rate limiting or similar things here (to prevent spamming)
+        resolve: async (_, args, ctx) => {
+          // TOD await O: at some point we should do rate limiting or similar things here (to prevent spamming)
           return AccountService.sendMagicLink(args, ctx)
         },
       }),
@@ -220,8 +227,8 @@ export const Mutation = builder.mutationType({
       //     courseId: t.arg.string({ required: true }),
       //     pin: t.arg.int({ required: true }),
       //   },
-      //   resolve(_, args, ctx) {
-      //     return ParticipantService.createParticipantAndJoinCourse(args, ctx)
+      //   resolve: async(_, args, ctx) => {
+      //     return await  ParticipantService.createParticipantAndJoinCourse(args, ctx)
       //   },
       // }),
 
@@ -233,8 +240,8 @@ export const Mutation = builder.mutationType({
       //     participantId: t.arg.string({ required: true }),
       //     email: t.arg.string({ required: true }),
       //   },
-      //   resolve(_, args, ctx) {
-      //     return ParticipantService.registerParticipantFromLTI(args, ctx)
+      //   resolve: async(_, args, ctx) => {
+      //     return await  ParticipantService.registerParticipantFromLTI(args, ctx)
       //   },
       // }),
 
@@ -251,36 +258,36 @@ export const Mutation = builder.mutationType({
           }),
           stackAnswerTime: t.arg.int({ required: true }),
         },
-        resolve: (_, args, ctx) => {
-          return StacksService.respondToElementStack(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await StacksService.respondToElementStack(args, ctx)
         },
       }),
 
       updateGroupAverageScores: t.boolean({
-        resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           checkCronToken(ctx)
-          return GroupService.updateGroupAverageScores(ctx)
+          return await GroupService.updateGroupAverageScores(ctx)
         },
       }),
 
       sendPushNotifications: t.boolean({
-        resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           checkCronToken(ctx)
-          return NotificationService.sendPushNotifications(ctx)
+          return await NotificationService.sendPushNotifications(ctx)
         },
       }),
 
       publishScheduledActivities: t.boolean({
-        resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           checkCronToken(ctx)
-          return CourseService.publishScheduledActivities(ctx)
+          return await CourseService.publishScheduledActivities(ctx)
         },
       }),
 
       endExpiredActivities: t.boolean({
-        resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           checkCronToken(ctx)
-          return CourseService.endExpiredActivities(ctx)
+          return await CourseService.endExpiredActivities(ctx)
         },
       }),
 
@@ -298,8 +305,8 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.createParticipantAccount(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.createParticipantAccount(args, ctx)
         },
       }),
 
@@ -310,8 +317,8 @@ export const Mutation = builder.mutationType({
           signedLtiData: t.arg.string({ required: true }),
           courseId: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.loginParticipantWithLti(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.loginParticipantWithLti(args, ctx)
         },
       }),
       // #endregion
@@ -325,8 +332,8 @@ export const Mutation = builder.mutationType({
           groupId: t.arg.string({ required: true }),
           content: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.addMessageToGroup(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.addMessageToGroup(args, ctx)
         },
       }),
 
@@ -336,8 +343,8 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.joinCourseLeaderboard(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await CourseService.joinCourseLeaderboard(args, ctx)
         },
       }),
 
@@ -348,8 +355,8 @@ export const Mutation = builder.mutationType({
           activityId: t.arg.string({ required: true }),
           groupId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.startGroupActivity(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.startGroupActivity(args, ctx)
         },
       }),
 
@@ -362,22 +369,22 @@ export const Mutation = builder.mutationType({
             validate: { min: 0, max: 999999999 },
           }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.joinCourseWithPin(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await CourseService.joinCourseWithPin(args, ctx)
         },
       }),
 
       runningRandomGroupAssignments: t.boolean({
-        resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           checkCronToken(ctx)
-          return GroupService.runningRandomGroupAssignments(ctx)
+          return await GroupService.runningRandomGroupAssignments(ctx)
         },
       }),
 
       finalRandomGroupAssignments: t.boolean({
-        resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           checkCronToken(ctx)
-          return GroupService.finalRandomGroupAssignments(ctx)
+          return await GroupService.finalRandomGroupAssignments(ctx)
         },
       }),
 
@@ -387,8 +394,22 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.manualRandomGroupAssignments(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await GroupService.manualRandomGroupAssignments(args, ctx)
         },
       }),
 
@@ -398,8 +419,8 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: true }),
           code: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.joinParticipantGroup(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.joinParticipantGroup(args, ctx)
         },
       }),
 
@@ -415,8 +436,8 @@ export const Mutation = builder.mutationType({
           }),
           password: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.updateParticipantProfile(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.updateParticipantProfile(args, ctx)
         },
       }),
 
@@ -430,8 +451,8 @@ export const Mutation = builder.mutationType({
             required: true,
           }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.updateParticipantAvatar(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.updateParticipantAvatar(args, ctx)
         },
       }),
 
@@ -442,8 +463,8 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: true }),
           groupId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.leaveParticipantGroup(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.leaveParticipantGroup(args, ctx)
         },
       }),
 
@@ -454,8 +475,8 @@ export const Mutation = builder.mutationType({
           groupId: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.renameParticipantGroup(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.renameParticipantGroup(args, ctx)
         },
       }),
 
@@ -469,8 +490,8 @@ export const Mutation = builder.mutationType({
           }),
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return NotificationService.subscribeToPush(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await NotificationService.subscribeToPush(args, ctx)
         },
       }),
 
@@ -480,8 +501,8 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: true }),
           endpoint: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return NotificationService.unsubscribeFromPush(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await NotificationService.unsubscribeFromPush(args, ctx)
         },
       }),
 
@@ -495,15 +516,15 @@ export const Mutation = builder.mutationType({
             required: true,
           }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.submitGroupActivityDecisions(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.submitGroupActivityDecisions(args, ctx)
         },
       }),
 
       logoutParticipant: t.withAuth(asParticipant).id({
         nullable: true,
-        resolve(_, args, ctx) {
-          return AccountService.logoutParticipant(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.logoutParticipant(args, ctx)
         },
       }),
 
@@ -513,8 +534,8 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.leaveCourseLeaderboard(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await CourseService.leaveCourseLeaderboard(args, ctx)
         },
       }),
 
@@ -525,8 +546,11 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return MicroLearningService.markMicroLearningCompleted(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await MicroLearningService.markMicroLearningCompleted(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -537,8 +561,8 @@ export const Mutation = builder.mutationType({
           courseId: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.createParticipantGroup(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.createParticipantGroup(args, ctx)
         },
       }),
 
@@ -547,8 +571,8 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.joinRandomCourseGroupPool(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.joinRandomCourseGroupPool(args, ctx)
         },
       }),
 
@@ -557,8 +581,8 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.leaveRandomCourseGroupPool(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.leaveRandomCourseGroupPool(args, ctx)
         },
       }),
 
@@ -570,8 +594,8 @@ export const Mutation = builder.mutationType({
           stackId: t.arg.int({ required: true }),
           bookmarked: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.bookmarkElementStack(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.bookmarkElementStack(args, ctx)
         },
       }),
 
@@ -583,8 +607,8 @@ export const Mutation = builder.mutationType({
           elementId: t.arg.int({ required: true }),
           content: t.arg.string({ required: true }),
         },
-        async resolve(_, args, ctx) {
-          return ParticipantService.flagElement(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.flagElement(args, ctx)
         },
       }),
 
@@ -596,15 +620,15 @@ export const Mutation = builder.mutationType({
           elementId: t.arg.int({ required: true }),
           rating: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.rateElement(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.rateElement(args, ctx)
         },
       }),
 
       deleteParticipantAccount: t.withAuth(asParticipant).boolean({
         nullable: true,
-        resolve(_, __, ctx) {
-          return AccountService.deleteParticipantAccount(ctx)
+        resolve: async (_, __, ctx) => {
+          return await AccountService.deleteParticipantAccount(ctx)
         },
       }),
       // #endregion
@@ -617,8 +641,8 @@ export const Mutation = builder.mutationType({
         args: {
           locale: t.arg({ type: LocaleType, required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.changeUserLocale(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.changeUserLocale(args, ctx)
         },
       }),
 
@@ -628,8 +652,22 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.cancelLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.cancelLiveQuiz(args, ctx)
         },
       }),
 
@@ -639,8 +677,22 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.enableGamification(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.enableGamification(args, ctx)
         },
       }),
 
@@ -650,8 +702,22 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.deleteCourse(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.deleteCourse(args, ctx)
         },
       }),
 
@@ -661,30 +727,8 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.deleteTag(args, ctx)
-        },
-      }),
-
-      deleteFeedback: t.withAuth(asUserSessionExec).field({
-        nullable: true,
-        type: Feedback,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedback(args, ctx)
-        },
-      }),
-
-      deleteFeedbackResponse: t.withAuth(asUserSessionExec).field({
-        nullable: true,
-        type: Feedback,
-        args: {
-          id: t.arg.int({ required: true }),
-        },
-        resolve(_, args, ctx) {
-          return FeedbackService.deleteFeedbackResponse(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.deleteTag(args, ctx)
         },
       }),
 
@@ -694,8 +738,22 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.deleteQuestion(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on eleemnt required
+          const validAccess = await checkAccess(
+            [
+              {
+                elementId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await QuestionService.deleteQuestion(args, ctx)
         },
       }),
 
@@ -706,8 +764,8 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
           name: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.editTag(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.editTag(args, ctx)
         },
       }),
 
@@ -717,8 +775,22 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.endLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.endLiveQuiz(args, ctx)
         },
       }),
 
@@ -728,8 +800,74 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.startLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.startLiveQuiz(args, ctx)
+        },
+      }),
+
+      deleteFeedback: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: Feedback,
+        args: {
+          id: t.arg.int({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.liveQuizId,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await FeedbackService.deleteFeedback(args, ctx)
+        },
+      }),
+
+      deleteFeedbackResponse: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: Feedback,
+        args: {
+          id: t.arg.int({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.liveQuizId,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await FeedbackService.deleteFeedbackResponse(args, ctx)
         },
       }),
 
@@ -739,9 +877,24 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           isPinned: t.arg.boolean({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.pinFeedback(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.liveQuizId,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await FeedbackService.pinFeedback(args, ctx)
         },
       }),
 
@@ -751,9 +904,24 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           isPublished: t.arg.boolean({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.publishFeedback(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.liveQuizId,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await FeedbackService.publishFeedback(args, ctx)
         },
       }),
 
@@ -763,9 +931,24 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           isResolved: t.arg.boolean({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.resolveFeedback(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.liveQuizId,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await FeedbackService.resolveFeedback(args, ctx)
         },
       }),
 
@@ -775,24 +958,39 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
           responseContent: t.arg.string({ required: true }),
+          liveQuizId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.respondToFeedback(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.liveQuizId,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await FeedbackService.respondToFeedback(args, ctx)
         },
       }),
 
       logoutUser: t.withAuth(asUser).id({
         nullable: true,
-        resolve(_, args, ctx) {
-          return AccountService.logoutUser(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.logoutUser(args, ctx)
         },
       }),
 
       generateLoginToken: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: User,
-        resolve(_, __, ctx) {
-          return AccountService.generateLoginToken(ctx)
+        resolve: async (_, __, ctx) => {
+          return await AccountService.generateLoginToken(ctx)
         },
       }),
 
@@ -803,8 +1001,22 @@ export const Mutation = builder.mutationType({
           quizId: t.arg.string({ required: true }),
           blockId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.deactivateLiveQuizBlock(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.quizId,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.deactivateLiveQuizBlock(args, ctx)
         },
       }),
 
@@ -818,8 +1030,22 @@ export const Mutation = builder.mutationType({
           isModerationEnabled: t.arg.boolean({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.changeLiveQuizSettings(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.changeLiveQuizSettings(args, ctx)
         },
       }),
 
@@ -830,8 +1056,22 @@ export const Mutation = builder.mutationType({
           quizId: t.arg.string({ required: true }),
           blockId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.activateLiveQuizBlock(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permission on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.quizId,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.activateLiveQuizBlock(args, ctx)
         },
       }),
 
@@ -858,8 +1098,8 @@ export const Mutation = builder.mutationType({
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.manipulateLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),
 
@@ -887,8 +1127,22 @@ export const Mutation = builder.mutationType({
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.manipulateLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),
 
@@ -904,8 +1158,24 @@ export const Mutation = builder.mutationType({
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(
+        resolve: async (_, args, ctx) => {
+          // if element is edited, >= WRITE permissions on element required
+          if (typeof args.id !== 'undefined' && args.id !== null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.CONTENT },
             ctx
           )
@@ -925,8 +1195,24 @@ export const Mutation = builder.mutationType({
           pointsMultiplier: t.arg.int({ required: false }),
           tags: t.arg.stringList({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(
+        resolve: async (_, args, ctx) => {
+          // if element is edited, >= WRITE permissions on element required
+          if (typeof args.id !== 'undefined' && args.id !== null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.FLASHCARD },
             ctx
           )
@@ -950,8 +1236,24 @@ export const Mutation = builder.mutationType({
             type: OptionsChoicesInput,
           }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // if element is edited, >= WRITE permissions on element required
+          if (typeof args.id !== 'undefined' && args.id !== null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await QuestionService.manipulateQuestion(args, ctx)
         },
       }),
 
@@ -971,8 +1273,24 @@ export const Mutation = builder.mutationType({
             type: OptionsNumericalInput,
           }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(
+        resolve: async (_, args, ctx) => {
+          // if element is edited, >= WRITE permissions on element required
+          if (typeof args.id !== 'undefined' && args.id !== null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.NUMERICAL },
             ctx
           )
@@ -995,8 +1313,24 @@ export const Mutation = builder.mutationType({
             type: OptionsFreeTextInput,
           }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(
+        resolve: async (_, args, ctx) => {
+          // if element is edited, >= WRITE permissions on element required
+          if (typeof args.id !== 'undefined' && args.id !== null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.FREE_TEXT },
             ctx
           )
@@ -1019,8 +1353,24 @@ export const Mutation = builder.mutationType({
             type: OptionsSelectionInput,
           }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(
+        resolve: async (_, args, ctx) => {
+          // if element is edited, >= WRITE permissions on element required
+          if (typeof args.id !== 'undefined' && args.id !== null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.SELECTION },
             ctx
           )
@@ -1043,8 +1393,24 @@ export const Mutation = builder.mutationType({
             type: OptionsCaseStudyInput,
           }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.manipulateQuestion(
+        resolve: async (_, args, ctx) => {
+          // if element is edited, >= WRITE permissions on element required
+          if (typeof args.id !== 'undefined' && args.id !== null) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  elementId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await QuestionService.manipulateQuestion(
             { ...args, type: DB.ElementType.CASE_STUDY },
             ctx
           )
@@ -1057,8 +1423,22 @@ export const Mutation = builder.mutationType({
           elementId: t.arg.int({ required: true }),
           includeTemplates: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.updateElementInstances(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on element required
+          const validAccess = await checkAccess(
+            [
+              {
+                elementId: args.elementId,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return []
+          }
+
+          return await QuestionService.updateElementInstances(args, ctx)
         },
       }),
 
@@ -1082,8 +1462,8 @@ export const Mutation = builder.mutationType({
           }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.createCourse(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await CourseService.createCourse(args, ctx)
         },
       }),
 
@@ -1106,8 +1486,22 @@ export const Mutation = builder.mutationType({
           }),
           isGamificationEnabled: t.arg.boolean({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.updateCourseSettings(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.updateCourseSettings(args, ctx)
         },
       }),
 
@@ -1115,21 +1509,32 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.updateWeeklyTimelineEntriesCourse(
-            {
-              courseId: args.courseId,
-              cronjob: false,
-            },
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return false
+          }
+
+          return await ParticipantService.updateWeeklyTimelineEntriesCourse(
+            { courseId: args.courseId },
             ctx
           )
         },
       }),
 
       updateWeeklyTimelineEntries: t.boolean({
-        resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           checkCronToken(ctx)
-          return ParticipantService.updateWeeklyTimelineEntries(ctx)
+          return await ParticipantService.updateWeeklyTimelineEntries(ctx)
         },
       }),
 
@@ -1140,8 +1545,22 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
           isArchived: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.toggleArchiveCourse(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.toggleArchiveCourse(args, ctx)
         },
       }),
 
@@ -1152,8 +1571,8 @@ export const Mutation = builder.mutationType({
           questionIds: t.arg.intList({ required: true }),
           isArchived: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.toggleIsArchived(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.toggleIsArchived(args, ctx)
         },
       }),
 
@@ -1164,8 +1583,8 @@ export const Mutation = builder.mutationType({
           originIx: t.arg.int({ required: true }),
           targetIx: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.updateTagOrdering(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.updateTagOrdering(args, ctx)
         },
       }),
 
@@ -1175,8 +1594,22 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.deleteLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.deleteLiveQuiz(args, ctx)
         },
       }),
 
@@ -1188,8 +1621,22 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.changeLiveQuizName(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.changeLiveQuizName(args, ctx)
         },
       }),
 
@@ -1200,8 +1647,8 @@ export const Mutation = builder.mutationType({
           fileName: t.arg.string({ required: true }),
           contentType: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.getFileUploadSas(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await QuestionService.getFileUploadSas(args, ctx)
         },
       }),
 
@@ -1211,8 +1658,8 @@ export const Mutation = builder.mutationType({
         args: {
           shortname: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.changeShortname(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.changeShortname(args, ctx)
         },
       }),
 
@@ -1222,8 +1669,8 @@ export const Mutation = builder.mutationType({
         args: {
           projectUpdates: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.changeEmailSettings(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.changeEmailSettings(args, ctx)
         },
       }),
 
@@ -1235,8 +1682,8 @@ export const Mutation = builder.mutationType({
           locale: t.arg({ type: LocaleType, required: true }),
           sendUpdates: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.changeInitialSettings(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.changeInitialSettings(args, ctx)
         },
       }),
 
@@ -1248,8 +1695,8 @@ export const Mutation = builder.mutationType({
           description: t.arg.string({ required: true }),
           answers: t.arg.stringList({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.createAnswerCollection(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ResourcesService.createAnswerCollection(args, ctx)
         },
       }),
 
@@ -1261,8 +1708,22 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           description: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.modifyAnswerCollection(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on answer collection required
+          const validAccess = await checkAccess(
+            [
+              {
+                answerCollectionId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await ResourcesService.modifyAnswerCollection(args, ctx)
         },
       }),
 
@@ -1274,8 +1735,22 @@ export const Mutation = builder.mutationType({
           value: t.arg.string({ required: true }),
           collectionId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.editAnswerCollectionEntry(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on answer collection required
+          const validAccess = await checkAccess(
+            [
+              {
+                answerCollectionId: args.collectionId,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await ResourcesService.editAnswerCollectionEntry(args, ctx)
         },
       }),
 
@@ -1286,8 +1761,22 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
           collectionId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.deleteAnswerCollectionEntry(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on answer collection required
+          const validAccess = await checkAccess(
+            [
+              {
+                answerCollectionId: args.collectionId,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await ResourcesService.deleteAnswerCollectionEntry(args, ctx)
         },
       }),
 
@@ -1298,8 +1787,22 @@ export const Mutation = builder.mutationType({
           collectionId: t.arg.int({ required: true }),
           value: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.addAnswerCollectionOption(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on answer collection required
+          const validAccess = await checkAccess(
+            [
+              {
+                answerCollectionId: args.collectionId,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await ResourcesService.addAnswerCollectionOption(args, ctx)
         },
       }),
 
@@ -1312,8 +1815,24 @@ export const Mutation = builder.mutationType({
           access: t.arg({ type: ObjectAccess, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.addObjectToCatalog(
+        resolve: async (_, args, ctx) => {
+          // if defined, >= WRITE permissions on catalog collection required
+          const validAccess = args.catalogCollectionId
+            ? await checkAccess(
+                [
+                  {
+                    catalogCollectionId: args.catalogCollectionId,
+                    minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                  },
+                ],
+                ctx
+              )
+            : true
+          if (!validAccess) {
+            return null
+          }
+
+          return await SharingService.addObjectToCatalog(
             {
               access: args.access,
               catalogCollectionId: args.catalogCollectionId,
@@ -1344,9 +1863,10 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: CatalogObjectType, required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
+        resolve: async (_, args, ctx) => {
+          // access control implemented inside service functions (does not fit default schema)
           if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
-            return SharingService.importAnswerCollection(
+            return await SharingService.importAnswerCollection(
               {
                 collectionId: parseInt(args.objectId),
                 catalogCollectionId: args.catalogCollectionId,
@@ -1370,8 +1890,9 @@ export const Mutation = builder.mutationType({
             required: false,
           }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.requestCatalogObject(
+        resolve: async (_, args, ctx) => {
+          // access control implemented inside service function (does not fit default schema)
+          return await SharingService.requestCatalogObject(
             {
               requestedPermissionLevel: args.requestedPermissionLevel,
               catalogCollectionId: args.catalogCollectionId,
@@ -1397,8 +1918,8 @@ export const Mutation = builder.mutationType({
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.cancelObjectSharingRequest(
+        resolve: async (_, args, ctx) => {
+          return await SharingService.cancelObjectSharingRequest(
             {
               answerCollectionId:
                 args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
@@ -1413,8 +1934,6 @@ export const Mutation = builder.mutationType({
             },
             ctx
           )
-
-          return false
         },
       }),
 
@@ -1424,8 +1943,8 @@ export const Mutation = builder.mutationType({
         args: {
           collectionId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.removeAnswerCollection(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ResourcesService.removeAnswerCollection(args, ctx)
         },
       }),
 
@@ -1435,8 +1954,22 @@ export const Mutation = builder.mutationType({
         args: {
           collectionId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.deleteAnswerCollection(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on answer collection required
+          const validAccess = await checkAccess(
+            [
+              {
+                answerCollectionId: args.collectionId,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await ResourcesService.deleteAnswerCollection(args, ctx)
         },
       }),
 
@@ -1447,8 +1980,8 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
           access: t.arg({ type: ObjectAccess, required: true }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.createCatalogCollection(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await SharingService.createCatalogCollection(args, ctx)
         },
       }),
 
@@ -1458,8 +1991,9 @@ export const Mutation = builder.mutationType({
           assignmentId: t.arg.int({ required: true }),
           access: t.arg({ type: ObjectAccess, required: true }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.changeCatalogObjectAccess(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // access control implemented inside service function (does not fit default schema)
+          return await SharingService.changeCatalogObjectAccess(args, ctx)
         },
       }),
 
@@ -1471,8 +2005,25 @@ export const Mutation = builder.mutationType({
             catalogCollectionId: t.arg.string({ required: true }),
             access: t.arg({ type: ObjectAccess, required: true }),
           },
-          resolve(_, args, ctx) {
-            return SharingService.changeCatalogCollectionObjectAccess(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= ADMIN permissions on catalog collection required
+            const validAccess = await checkAccess(
+              [
+                {
+                  catalogCollectionId: args.catalogCollectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return false
+            }
+
+            return await SharingService.changeCatalogCollectionObjectAccess(
+              args,
+              ctx
+            )
           },
         }),
 
@@ -1482,8 +2033,22 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.changeCatalogCollectionName(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on catalog collection required
+          const validAccess = await checkAccess(
+            [
+              {
+                catalogCollectionId: args.catalogCollectionId,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return false
+          }
+
+          return await SharingService.changeCatalogCollectionName(args, ctx)
         },
       }),
 
@@ -1497,8 +2062,8 @@ export const Mutation = builder.mutationType({
             required: false,
           }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.requestCatalogCollection(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await SharingService.requestCatalogCollection(args, ctx)
         },
       }),
 
@@ -1507,8 +2072,22 @@ export const Mutation = builder.mutationType({
         args: {
           catalogCollectionId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.deleteCatalogCollection(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on catalog collection required
+          const validAccess = await checkAccess(
+            [
+              {
+                catalogCollectionId: args.catalogCollectionId,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await SharingService.deleteCatalogCollection(args, ctx)
         },
       }),
 
@@ -1522,8 +2101,50 @@ export const Mutation = builder.mutationType({
           templateInstructions: t.arg.string({ required: true }),
           copyBeforeConversion: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.createActivityTemplate(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on the activity required (conversion = live quiz not available anymore)
+          const validAccess = await checkAccess(
+            [
+              ...(args.activityType === ActivityTypeEnum.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await TemplateService.createActivityTemplate(args, ctx)
         },
       }),
 
@@ -1537,8 +2158,50 @@ export const Mutation = builder.mutationType({
           description: t.arg.string({ required: true }),
           instructions: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.editActivityTemplate(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on the activity required
+          const validAccess = await checkAccess(
+            [
+              ...(args.activityType === ActivityTypeEnum.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return false
+          }
+
+          return await TemplateService.editActivityTemplate(args, ctx)
         },
       }),
 
@@ -1548,8 +2211,50 @@ export const Mutation = builder.mutationType({
           activityId: t.arg.string({ required: true }),
           activityType: t.arg({ type: ActivityType, required: true }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.deleteActivityTemplate(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on the activity required
+          const validAccess = await checkAccess(
+            [
+              ...(args.activityType === ActivityTypeEnum.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await TemplateService.deleteActivityTemplate(args, ctx)
         },
       }),
 
@@ -1567,8 +2272,8 @@ export const Mutation = builder.mutationType({
             required: true,
           }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.createLiveQuizFromTemplate(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await TemplateService.createLiveQuizFromTemplate(args, ctx)
         },
       }),
 
@@ -1582,9 +2287,23 @@ export const Mutation = builder.mutationType({
           shortnameOrEmail: t.arg.string({ required: false }),
           userGroupId: t.arg.int({ required: false }),
         },
-        resolve(_, args, ctx) {
+        resolve: async (_, args, ctx) => {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
-            return SharingService.shareCatalogCollection(
+            // >= ADMIN permissions on catalog collection required
+            const validAccess = await checkAccess(
+              [
+                {
+                  catalogCollectionId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.shareCatalogCollection(
               {
                 catalogCollectionId: args.objectId,
                 permissionLevel: args.permissionLevel,
@@ -1594,7 +2313,26 @@ export const Mutation = builder.mutationType({
               ctx
             )
           } else {
-            return SharingService.shareCatalogObject(
+            // >= ADMIN permissions on the object required
+            const validAccess = await checkAccess(
+              [
+                ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? [
+                      {
+                        answerCollectionId: parseInt(args.objectId),
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+                // TODO: add further object types, once they are supported by the sharing function
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.shareObject(
               {
                 permissionLevel: args.permissionLevel,
                 shortnameOrEmail: args.shortnameOrEmail,
@@ -1623,9 +2361,23 @@ export const Mutation = builder.mutationType({
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
-        resolve(_, args, ctx) {
+        resolve: async (_, args, ctx) => {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
-            return SharingService.revokeCatalogCollectionAccess(
+            // >= ADMIN permissions on catalog collection required
+            const validAccess = await checkAccess(
+              [
+                {
+                  catalogCollectionId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.revokeCatalogCollectionAccess(
               {
                 permissionId: args.permissionId,
                 catalogCollectionId: args.objectId,
@@ -1635,7 +2387,22 @@ export const Mutation = builder.mutationType({
           } else if (
             args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
           ) {
-            return SharingService.revokeAnswerCollectionAccess(
+            // TODO: potentially combine this function for answer collections and other object types into a single one (shared logic)
+            // >= ADMIN permissions on answer collection required
+            const validAccess = await checkAccess(
+              [
+                {
+                  answerCollectionId: parseInt(args.objectId),
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.revokeAnswerCollectionAccess(
               {
                 permissionId: args.permissionId,
                 collectionId: parseInt(args.objectId),
@@ -1656,9 +2423,23 @@ export const Mutation = builder.mutationType({
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
-        resolve(_, args, ctx) {
+        resolve: async (_, args, ctx) => {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
-            return SharingService.changeCatalogCollectionPermissionLevel(
+            // >= ADMIN permissions on catalog collection required
+            const validAccess = await checkAccess(
+              [
+                {
+                  catalogCollectionId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return false
+            }
+
+            return await SharingService.changeCatalogCollectionPermissionLevel(
               {
                 catalogCollectionId: args.objectId,
                 permissionId: args.permissionId,
@@ -1667,7 +2448,26 @@ export const Mutation = builder.mutationType({
               ctx
             )
           } else {
-            return SharingService.changeCatalogObjectPermissionLevel(
+            // >= ADMIN permissions on the object required
+            const validAccess = await checkAccess(
+              [
+                ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? [
+                      {
+                        answerCollectionId: parseInt(args.objectId),
+                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                      },
+                    ]
+                  : []),
+                // TODO: add further object types, once they are supported by the sharing function
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return false
+            }
+
+            return await SharingService.changeObjectPermissionLevel(
               {
                 permissionId: args.permissionId,
                 permissionLevel: args.permissionLevel,
@@ -1696,9 +2496,23 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: CatalogObjectType, required: true }),
           shortnameOrEmail: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
+        resolve: async (_, args, ctx) => {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
-            return SharingService.transferCatalogCollectionOwnership(
+            // == OWNER permissions on catalog collection required
+            const validAccess = await checkAccess(
+              [
+                {
+                  catalogCollectionId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.transferCatalogCollectionOwnership(
               {
                 catalogCollectionId: args.objectId,
                 shortnameOrEmail: args.shortnameOrEmail,
@@ -1708,7 +2522,22 @@ export const Mutation = builder.mutationType({
           } else if (
             args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
           ) {
-            return SharingService.transferAnswerCollectionOwnership(
+            // TODO: potentially combine this function for answer collections and other object types into a single one (shared logic)
+            // == OWNER permissions on answer collection required
+            const validAccess = await checkAccess(
+              [
+                {
+                  answerCollectionId: parseInt(args.objectId),
+                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.transferAnswerCollectionOwnership(
               {
                 collectionId: parseInt(args.objectId),
                 shortnameOrEmail: args.shortnameOrEmail,
@@ -1726,8 +2555,8 @@ export const Mutation = builder.mutationType({
         args: {
           assignmentId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.removeCatalogObjectAssignment(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await SharingService.removeCatalogObjectAssignment(args, ctx)
         },
       }),
 
@@ -1739,8 +2568,8 @@ export const Mutation = builder.mutationType({
           permissionLevel: t.arg({ type: PermissionLevel, required: true }),
           propagation: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.resolveObjectSharingRequest(
+        resolve: async (_, args, ctx) => {
+          return await SharingService.resolveObjectSharingRequest(
             { ...args, approved: true },
             ctx
           )
@@ -1753,8 +2582,8 @@ export const Mutation = builder.mutationType({
           requestId: t.arg.int({ required: true }),
           userId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.resolveObjectSharingRequest(
+        resolve: async (_, args, ctx) => {
+          return await SharingService.resolveObjectSharingRequest(
             {
               ...args,
               permissionLevel: DB.PermissionLevel.READ, // dummy value for interface typing
@@ -1790,8 +2619,8 @@ export const Mutation = builder.mutationType({
             }),
             resetTimeDays: t.arg.int({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return PracticeQuizService.manipulatePracticeQuiz(args, ctx)
+          resolve: async (_, args, ctx) => {
+            return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
           },
         }),
 
@@ -1817,8 +2646,22 @@ export const Mutation = builder.mutationType({
             }),
             resetTimeDays: t.arg.int({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return PracticeQuizService.manipulatePracticeQuiz(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= WRITE permissions on practice quiz required
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
           },
         }),
 
@@ -1837,8 +2680,8 @@ export const Mutation = builder.mutationType({
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
-          resolve(_, args, ctx) {
-            return MicroLearningService.manipulateMicroLearning(args, ctx)
+          resolve: async (_, args, ctx) => {
+            return await MicroLearningService.manipulateMicroLearning(args, ctx)
           },
         }),
 
@@ -1858,8 +2701,22 @@ export const Mutation = builder.mutationType({
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
-          resolve(_, args, ctx) {
-            return MicroLearningService.manipulateMicroLearning(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= WRITE permissions on microlearning required
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await MicroLearningService.manipulateMicroLearning(args, ctx)
           },
         }),
 
@@ -1872,8 +2729,22 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
-          resolve(_, args, ctx) {
-            return MicroLearningService.extendMicroLearning(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on microlearning required
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await MicroLearningService.extendMicroLearning(args, ctx)
           },
         }),
 
@@ -1885,8 +2756,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return MicroLearningService.endMicroLearning(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on microlearning required
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await MicroLearningService.endMicroLearning(args, ctx)
           },
         }),
 
@@ -1906,8 +2791,8 @@ export const Mutation = builder.mutationType({
             clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
             stack: t.arg({ required: true, type: ElementStackInput }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.manipulateGroupActivity(args, ctx)
+          resolve: async (_, args, ctx) => {
+            return await GroupService.manipulateGroupActivity(args, ctx)
           },
         }),
 
@@ -1928,8 +2813,22 @@ export const Mutation = builder.mutationType({
             clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
             stack: t.arg({ required: true, type: ElementStackInput }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.manipulateGroupActivity(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= WRITE permissions on group activity required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.manipulateGroupActivity(args, ctx)
           },
         }),
 
@@ -1942,8 +2841,22 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.extendGroupActivity(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on group activity required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.extendGroupActivity(args, ctx)
           },
         }),
 
@@ -1956,8 +2869,22 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
             availableFrom: t.arg({ type: 'Date', required: false }),
           },
-          resolve(_, args, ctx) {
-            return PracticeQuizService.publishPracticeQuiz(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on practice quiz required
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await PracticeQuizService.publishPracticeQuiz(args, ctx)
           },
         }),
 
@@ -1969,8 +2896,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return MicroLearningService.publishMicroLearning(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on microlearning required
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await MicroLearningService.publishMicroLearning(args, ctx)
           },
         }),
 
@@ -1982,8 +2923,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return PracticeQuizService.unpublishPracticeQuiz(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on practice quiz required
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await PracticeQuizService.unpublishPracticeQuiz(args, ctx)
           },
         }),
 
@@ -1995,12 +2950,25 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return MicroLearningService.unpublishMicroLearning(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on microlearning required
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await MicroLearningService.unpublishMicroLearning(args, ctx)
           },
         }),
 
-      // TODO: delete operations only as owner?
       deletePracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2009,10 +2977,25 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return PracticeQuizService.deletePracticeQuiz(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= ADMIN permissions on practice quiz required
+            const validAccess = await checkAccess(
+              [
+                {
+                  practiceQuizId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await PracticeQuizService.deletePracticeQuiz(args, ctx)
           },
         }),
+
       deleteMicroLearning: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
@@ -2021,8 +3004,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return MicroLearningService.deleteMicroLearning(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= ADMIN permissions on microlearning required
+            const validAccess = await checkAccess(
+              [
+                {
+                  microLearningId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await MicroLearningService.deleteMicroLearning(args, ctx)
           },
         }),
 
@@ -2034,8 +3031,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.publishGroupActivity(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on group activity required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.publishGroupActivity(args, ctx)
           },
         }),
 
@@ -2047,8 +3058,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.unpublishGroupActivity(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on group activity required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.unpublishGroupActivity(args, ctx)
           },
         }),
 
@@ -2060,8 +3085,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.openGroupActivity(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on group activity required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.openGroupActivity(args, ctx)
           },
         }),
 
@@ -2073,8 +3112,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.endGroupActivity(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on group activity required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.endGroupActivity(args, ctx)
           },
         }),
 
@@ -2086,8 +3139,22 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.deleteGroupActivity(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= ADMIN permissions on group activity required
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.deleteGroupActivity(args, ctx)
           },
         }),
 
@@ -2098,13 +3165,28 @@ export const Mutation = builder.mutationType({
           type: GroupActivityInstance,
           args: {
             id: t.arg.int({ required: true }),
+            groupActivityId: t.arg.string({ required: true }),
             gradingDecisions: t.arg({
               type: GroupActivityGradingInput,
               required: true,
             }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.gradeGroupActivitySubmission(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= EXECUTE permissions on group activity required (same permission requirements as starting and ending a group activity)
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.groupActivityId,
+                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.gradeGroupActivitySubmission(args, ctx)
           },
         }),
 
@@ -2116,11 +3198,24 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve(_, args, ctx) {
-            return GroupService.finalizeGroupActivityGrading(args, ctx)
+          resolve: async (_, args, ctx) => {
+            // >= WRITE permissions on group activity required (requires more than grading, since action is irreversible)
+            const validAccess = await checkAccess(
+              [
+                {
+                  groupActivityId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await GroupService.finalizeGroupActivityGrading(args, ctx)
           },
         }),
-
       // #endregion
 
       // ----- USER OWNER OPERATIONS -----
@@ -2133,8 +3228,8 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
           scope: t.arg({ type: UserLoginScope, required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.createUserLogin(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.createUserLogin(args, ctx)
         },
       }),
 
@@ -2144,8 +3239,8 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.deleteUserLogin(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.deleteUserLogin(args, ctx)
         },
       }),
 
