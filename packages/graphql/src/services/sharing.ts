@@ -209,10 +209,23 @@ export async function createCatalogCollection(
 }
 
 export async function getCatalogCollectionInfo(
-  { catalogCollectionId }: { catalogCollectionId: string },
+  { catalogCollectionId }: { catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
-  if (catalogCollectionId === MISSING_CATALOG_COLLECTION_ID) {
+  if (
+    catalogCollectionId === MISSING_CATALOG_COLLECTION_ID ||
+    !catalogCollectionId
+  ) {
+    return null
+  }
+
+  // verify that user has at least read permissions on the catalog collection
+  const valid = await verifyCatalogCollectionBrowsable(
+    { catalogCollectionId },
+    ctx
+  )
+
+  if (!valid) {
     return null
   }
 

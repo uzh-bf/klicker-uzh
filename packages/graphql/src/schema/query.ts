@@ -1648,32 +1648,7 @@ export const Query = builder.queryType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
-          // if no catalogCollectionId is provided, return early
-          if (
-            args.catalogCollectionId === null ||
-            typeof args.catalogCollectionId === 'undefined'
-          ) {
-            return null
-          }
-
-          // >= READ permissions on catalog collection
-          const validAccess = await checkAccess(
-            [
-              {
-                catalogCollectionId: args.catalogCollectionId,
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
-          }
-
-          return await SharingService.getCatalogCollectionInfo(
-            { catalogCollectionId: args.catalogCollectionId! },
-            ctx
-          )
+          return await SharingService.getCatalogCollectionInfo(args, ctx)
         },
       }),
 
