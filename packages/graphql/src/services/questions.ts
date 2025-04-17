@@ -216,7 +216,7 @@ export async function manipulateQuestion(
     options &&
     options.answerCollection
   ) {
-    const validAccess = checkAccess(
+    const validAccess = await checkAccess(
       [
         {
           answerCollectionId: options.answerCollection,

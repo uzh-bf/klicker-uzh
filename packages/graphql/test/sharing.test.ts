@@ -71,6 +71,7 @@ const getDatabaseUrl = () => {
   return 'postgresql://klicker:klicker@localhost:5432/klicker'
 }
 
+// TODO: UPDATE UNIT TESTS TO NOT CHECK PERMISSIONS - HANDLED ON MUTATION LEVEL FOR MOST CASES AND UNIT TESTED SEPARATELY
 describe('Unit tests for sharing service', () => {
   // shared resources used across tests
   let prisma: PrismaClient
@@ -490,37 +491,6 @@ describe('Unit tests for sharing service', () => {
     // create answer collections for testing
     const { AC1, AC2 } = await createAnswerCollections(prisma)
 
-    // users 2, 3, 4 have insufficient permissions to share an answer collection
-    const res1 = await shareObject(
-      {
-        permissionLevel: PermissionLevel.READ,
-        shortnameOrEmail: userFive.email,
-        answerCollectionId: AC1.id,
-      },
-      userTwoCtx
-    )
-    expect(res1).toBeNull()
-
-    const res2 = await shareObject(
-      {
-        permissionLevel: PermissionLevel.READ,
-        shortnameOrEmail: userFive.email,
-        answerCollectionId: AC1.id,
-      },
-      userThreeCtx
-    )
-    expect(res2).toBeNull()
-
-    const res3 = await shareObject(
-      {
-        permissionLevel: PermissionLevel.READ,
-        shortnameOrEmail: userFive.email,
-        answerCollectionId: AC1.id,
-      },
-      userFourCtx
-    )
-    expect(res3).toBeNull()
-
     // object can only be shared with users that exist (email or username)
     const res4 = await shareObject(
       {
@@ -624,26 +594,6 @@ describe('Unit tests for sharing service', () => {
     expect(res10!.userEmail).toBe(userFour.email)
     expect(res10!.permissionLevel).toBe(PermissionLevel.READ)
     expect(res10!.isOwn).toBe(false)
-
-    // verify that users 3 and 4 still have insufficient permissions to share the object further (with user 5)
-    const res11 = await shareObject(
-      {
-        permissionLevel: PermissionLevel.READ,
-        shortnameOrEmail: userFive.email,
-        answerCollectionId: AC2.id,
-      },
-      userThreeCtx
-    )
-    expect(res11).toBeNull()
-    const res12 = await shareObject(
-      {
-        permissionLevel: PermissionLevel.READ,
-        shortnameOrEmail: userFive.shortname,
-        answerCollectionId: AC2.id,
-      },
-      userFourCtx
-    )
-    expect(res12).toBeNull()
 
     // verify that all permissions have been created correctly in the database
     const permission1 = await prisma.permission.findUnique({
@@ -755,12 +705,6 @@ describe('Unit tests for sharing service', () => {
       expect.arrayContaining([answerCollection1.name, answerCollection2.name])
     )
 
-    const collectionsUserFive = await getAnswerCollectionsElements(
-      { templateId: undefined },
-      userFiveCtx
-    )
-    expect(collectionsUserFive).toHaveLength(0)
-
     // check availability for viewing and/or editing modal
     for (const ctx of [userOneCtx, userTwoCtx, userThreeCtx, userFourCtx]) {
       const collection1 = await getSingleAnswerCollection({ id: AC1.id }, ctx)
@@ -775,18 +719,6 @@ describe('Unit tests for sharing service', () => {
       expect(collection2!.description).toBe(answerCollection2.description)
       expect(collection2!.entries).toHaveLength(4)
     }
-
-    const collection1UserOne = await getSingleAnswerCollection(
-      { id: AC1.id },
-      userFiveCtx
-    )
-    expect(collection1UserOne).toBeNull()
-
-    const collection2UserOne = await getSingleAnswerCollection(
-      { id: AC2.id },
-      userFiveCtx
-    )
-    expect(collection2UserOne).toBeNull()
   })
 
   it("Verify that only users with WRITE / ADMIN / OWNER permissions are allowed to modify the answer collection's content", async () => {
