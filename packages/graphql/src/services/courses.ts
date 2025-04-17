@@ -741,7 +741,7 @@ export async function toggleArchiveCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id, ownerId: ctx.user.sub, endDate: { lte: new Date() } },
+    where: { id, endDate: { lte: new Date() } },
     data: { isArchived },
   })
 

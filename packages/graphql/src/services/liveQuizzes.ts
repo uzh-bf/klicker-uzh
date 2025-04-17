@@ -689,7 +689,7 @@ export async function getLiveQuizData(
   }
 
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
     include: {
       blocks: {
         include: {
@@ -787,7 +787,7 @@ export async function getLecturerViewLiveQuiz(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
     include: {
       confusionFeedbacks: true,
       feedbacks: { where: { isPinned: true } },

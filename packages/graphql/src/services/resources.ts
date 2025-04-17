@@ -587,7 +587,7 @@ export async function removeAnswerCollection(
     !collection ||
     collection._count.linkedElements > 0 ||
     collection._count.linkedTemplates > 0 ||
-    collection.ownerId === ctx.user.sub
+    collection.ownerId === ctx.user.sub // users cannot "remove" an answer collection from their account, but only delete it
   ) {
     return null
   }

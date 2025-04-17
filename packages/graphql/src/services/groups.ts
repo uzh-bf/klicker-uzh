@@ -1779,13 +1779,8 @@ export async function getGroupActivitySummary(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      activityInstances: true,
-    },
+    where: { id },
+    include: { activityInstances: true },
   })
 
   if (!groupActivity) {

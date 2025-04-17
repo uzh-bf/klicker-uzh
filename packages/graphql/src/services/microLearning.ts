@@ -2,6 +2,7 @@ import {
   ElementInstanceType,
   ElementStackType,
   PublicationStatus,
+  UserRole,
 } from '@klicker-uzh/prisma'
 import type { ElementStackInput } from '@klicker-uzh/types'
 import {
@@ -24,15 +25,9 @@ export async function getMicroLearningData(
     where: {
       id,
       OR: [
-        {
-          AND: {
-            status: PublicationStatus.PUBLISHED,
-            isDeleted: false,
-          },
-        },
-        {
-          ownerId: ctx.user?.sub,
-        },
+        { AND: { status: PublicationStatus.PUBLISHED, isDeleted: false } },
+        // if user has access to the microlearning, the query should be enabled for loading the preview
+        { permissions: { some: { userId: ctx.user?.sub } } },
       ],
     },
     include: {
@@ -53,7 +48,13 @@ export async function getMicroLearningData(
   })
 
   return microLearning
-    ? { ...microLearning, isOwner: ctx.user?.sub === microLearning.ownerId }
+    ? {
+        ...microLearning,
+        isOwner:
+          ctx.user?.sub && ctx.user.role === UserRole.USER
+            ? ctx.user.sub === microLearning.ownerId
+            : false,
+      }
     : null
 }
 
@@ -107,24 +108,12 @@ export async function getSingleMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-      isDeleted: false,
-    },
+    where: { id, isDeleted: false },
     include: {
       course: true,
       stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          order: 'asc',
-        },
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
       },
     },
   })
@@ -137,18 +126,11 @@ export async function getCoursePublishedMicroLearnings(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
+    where: { id: courseId },
     include: {
       microLearnings: {
-        where: {
-          status: PublicationStatus.PUBLISHED,
-          isDeleted: false,
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
+        where: { status: PublicationStatus.PUBLISHED, isDeleted: false },
+        orderBy: { createdAt: 'asc' },
       },
     },
   })
@@ -384,10 +366,7 @@ export async function publishMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: {
-      id,
-      status: PublicationStatus.DRAFT,
-    },
+    where: { id, status: PublicationStatus.DRAFT },
   })
 
   if (!microLearning) {
@@ -397,13 +376,8 @@ export async function publishMicroLearning(
   // if the microlearning only starts in the future, set its state to scheduled
   if (microLearning.scheduledStartAt > new Date()) {
     const updatedMicroLearning = await ctx.prisma.microLearning.update({
-      where: {
-        id,
-        ownerId: ctx.user.sub,
-      },
-      data: {
-        status: PublicationStatus.SCHEDULED,
-      },
+      where: { id },
+      data: { status: PublicationStatus.SCHEDULED },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
@@ -412,13 +386,8 @@ export async function publishMicroLearning(
 
   // if the start date is in the past, directly publish the microlearning
   const updatedMicroLearning = await ctx.prisma.microLearning.update({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    data: {
-      status: PublicationStatus.PUBLISHED,
-    },
+    where: { id },
+    data: { status: PublicationStatus.PUBLISHED },
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
@@ -430,20 +399,9 @@ export async function unpublishMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.update({
-    where: {
-      id,
-      status: PublicationStatus.SCHEDULED,
-    },
-    data: {
-      status: PublicationStatus.DRAFT,
-    },
-    include: {
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
+    where: { id, status: PublicationStatus.SCHEDULED },
+    data: { status: PublicationStatus.DRAFT },
+    include: { stacks: { include: { elements: true } } },
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
@@ -496,17 +454,8 @@ export async function getMicroLearningSummary(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
+    where: { id },
+    include: { stacks: { include: { elements: true } } },
   })
 
   if (!microLearning) {
