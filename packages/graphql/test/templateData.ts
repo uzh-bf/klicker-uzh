@@ -1,21 +1,5 @@
 import { ElementType } from '@klicker-uzh/prisma'
 
-// mock user 1
-export const userOne = {
-  id: '60068013-da49-4e47-988e-37fb44dabf9e',
-  sub: '60068013-da49-4e47-988e-37fb44dabf9e',
-  email: 'first@example.com',
-  shortname: 'firstuser',
-}
-
-// mock user 2
-export const userTwo = {
-  id: 'd850db64-eb83-4b84-b7e0-a870ca99d415',
-  sub: 'd850db64-eb83-4b84-b7e0-a870ca99d415',
-  email: 'second@example.com',
-  shortname: 'seconduser',
-}
-
 // questions with all possible combinations of sample solutions and answer feedbacks
 export const questionsSLAF = [
   {

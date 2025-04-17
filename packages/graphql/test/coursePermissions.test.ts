@@ -2,11 +2,8 @@ import {
   ElementInstanceType,
   ElementStackType,
   ElementType,
-  ObjectAccess,
   PermissionLevel,
   PrismaClient,
-  UserLoginScope,
-  UserRole,
 } from '@klicker-uzh/prisma'
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
@@ -15,24 +12,8 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import {
-  userFive,
-  userFour,
-  userOne,
-  userThree,
-  userTwo,
-} from './sharingData.js'
-
-// setup test database configuration
-// use the DATABASE_URL environment variable if available (for CI or local dev)
-const getDatabaseUrl = () => {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL
-  }
-
-  // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker:klicker@localhost:5432/klicker'
-}
+import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
 describe('Unit tests covering the creation of derived permissions for courses', () => {
   // shared resources used across tests
@@ -45,94 +26,34 @@ describe('Unit tests covering the creation of derived permissions for courses', 
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    // configure database
-    const databaseUrl = getDatabaseUrl()
-
-    try {
-      // initialize PrismaClient with the database URL
-      prisma = new PrismaClient({
-        datasources: {
-          db: { url: databaseUrl },
-        },
-        log: ['error', 'warn'],
-      })
-
-      // test database connection
-      await prisma.$connect()
-
-      // create EventEmitter for test context
-      emitter = new EventEmitter()
-
-      // upsert all users in the database
-      const users = await Promise.all(
-        [userOne, userTwo, userThree, userFour, userFive].map(
-          async (user) =>
-            await prisma.user.upsert({
-              where: { id: user.id },
-              update: {},
-              create: {
-                id: user.id,
-                email: user.email,
-                shortname: user.shortname,
-              },
-            })
-        )
-      )
-
-      // mock context with user including all required properties
-      userOneCtx = {
-        user: {
-          sub: userOne.sub,
-          role: UserRole.USER,
-          scope: UserLoginScope.ACCOUNT_OWNER,
-          catalystInstitutional: true,
-          catalystIndividual: true,
-        },
-        prisma,
-        emitter,
-        redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
-        pubSub: { publish: jest.fn(), subscribe: jest.fn() },
-        req: {} as any,
-        res: {} as any,
-      }
-
-      // mock remaining contexts
-      userTwoCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userTwo.sub },
-      }
-      userThreeCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userThree.sub },
-      }
-      userFourCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userFour.sub },
-      }
-      userFiveCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userFive.sub },
-      }
-
-      // seed the top-level catalog collection with fixed ID
-      await prisma.catalogCollection.upsert({
-        where: { id: MISSING_CATALOG_COLLECTION_ID },
-        create: {
-          id: MISSING_CATALOG_COLLECTION_ID,
-          name: '',
-          access: ObjectAccess.PUBLIC,
-        },
-        update: {},
-      })
-    } catch (error) {
-      console.error('Failed to initialize test environment:', error)
-      throw new Error(`Database connection failed: ${error}`)
-    }
+    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    prisma = newPrisma
+    emitter = newEmitter
   })
 
-  // disconnect from the database
   afterAll(async () => {
+    await testCleanup(prisma)
     await prisma.$disconnect()
+  })
+
+  beforeEach(async () => {
+    const {
+      userOneCtx: ctx1,
+      userTwoCtx: ctx2,
+      userThreeCtx: ctx3,
+      userFourCtx: ctx4,
+      userFiveCtx: ctx5,
+    } = await testInitialization(prisma, emitter)
+
+    userOneCtx = ctx1
+    userTwoCtx = ctx2
+    userThreeCtx = ctx3
+    userFourCtx = ctx4
+    userFiveCtx = ctx5
+  })
+
+  afterEach(async () => {
+    await testCleanup(prisma)
   })
 
   // ! Course permissions tests
