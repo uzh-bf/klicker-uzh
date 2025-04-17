@@ -29,7 +29,7 @@ export async function getCourseActivityAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on course are required
+    where: { id: courseId },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -87,15 +87,11 @@ export async function getCourseActivityAnalytics(
 }
 
 export async function getCourseWeeklyActivity(
-  { courseId }: { courseId?: string | null },
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  if (!courseId) {
-    return null
-  }
-
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on course are required
+    where: { id: courseId },
     include: {
       participations: true,
       aggregatedAnalytics: {
@@ -304,7 +300,8 @@ function computeActivityInstancePerformance({
     practiceQuizzes: (PracticeQuiz & {
       stacks: (ElementStack & {
         elements: (ElementInstance & {
-          instancePerformance: PrismaInstancePerformance
+          instancePerformance: PrismaInstancePerformance | null
+          feedbacks: ElementFeedback[]
         })[]
       })[]
       progress: ActivityProgress | null
@@ -316,7 +313,8 @@ function computeActivityInstancePerformance({
     microLearnings: (MicroLearning & {
       stacks: (ElementStack & {
         elements: (ElementInstance & {
-          instancePerformance: PrismaInstancePerformance
+          instancePerformance: PrismaInstancePerformance | null
+          feedbacks: ElementFeedback[]
         })[]
       })[]
       progress: ActivityProgress | null
@@ -448,7 +446,7 @@ function computeActivityInstancePerformance({
       }
     >
   >((acc, activity) => {
-    activity.participantPerformances.map((performance) => {
+    activity.participantPerformances.forEach((performance) => {
       // extract performance data that should be tracked (table cell value)
       const performanceEntry = {
         id: performance.id,
@@ -490,27 +488,18 @@ export async function getCoursePerformanceAnalytics(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId, permissions: { some: { userId: ctx.user.sub } } }, // assumption: READ permissions on course are required
+    where: { id: courseId },
     include: {
-      _count: {
-        select: { participations: true },
-      },
+      _count: { select: { participations: true } },
       practiceQuizzes: {
         include: {
           progress: true,
           performance: true,
-          participantPerformances: {
-            include: {
-              participant: true,
-            },
-          },
+          participantPerformances: { include: { participant: true } },
           stacks: {
             include: {
               elements: {
-                include: {
-                  instancePerformance: true,
-                  feedbacks: true,
-                },
+                include: { instancePerformance: true, feedbacks: true },
               },
             },
           },
@@ -521,18 +510,11 @@ export async function getCoursePerformanceAnalytics(
         include: {
           progress: true,
           performance: true,
-          participantPerformances: {
-            include: {
-              participant: true,
-            },
-          },
+          participantPerformances: { include: { participant: true } },
           stacks: {
             include: {
               elements: {
-                include: {
-                  instancePerformance: true,
-                  feedbacks: true,
-                },
+                include: { instancePerformance: true, feedbacks: true },
               },
             },
           },

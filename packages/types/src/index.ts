@@ -205,6 +205,8 @@ export type ElementManipulationInput = {
   basePoints?: boolean | null
   pointsMultiplier?: number | null
   tags?: string[] | null
+  // boolean to signal that the element is created in template mode (modified check for permissions on answer collections)
+  templateId?: string | null
 }
 
 export type TemplateBlockElementInput = {

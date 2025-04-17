@@ -27,16 +27,10 @@ export async function getPracticeQuizData(
     where: {
       id,
       OR: [
-        {
-          status: PublicationStatus.PUBLISHED,
-          isDeleted: false,
-        },
-        {
-          status: PublicationStatus.SCHEDULED,
-        },
-        {
-          ownerId: ctx.user?.sub,
-        },
+        { status: PublicationStatus.PUBLISHED, isDeleted: false },
+        { status: PublicationStatus.SCHEDULED },
+        // if user has access to the microlearning, the query should be enabled for loading the preview
+        { permissions: { some: { userId: ctx.user?.sub } } },
       ],
     },
     include: {
@@ -436,17 +430,8 @@ export async function getPracticeQuizSummary(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
+    where: { id },
+    include: { stacks: { include: { elements: true } } },
   })
 
   if (!practiceQuiz) {

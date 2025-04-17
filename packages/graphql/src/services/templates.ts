@@ -131,30 +131,18 @@ export async function validateActivityPermissions(
 
 export async function validateTemplateAccessible(
   { templateId }: { templateId: string },
-  ctx: ContextWithUser
+  ctx: PrismaTransactionContextWithUser
 ) {
   const template = await ctx.prisma.activityTemplate.findUnique({
-    where: {
-      id: templateId,
-    },
+    where: { id: templateId },
     include: {
       liveQuiz: {
         include: {
-          permissions: {
-            where: {
-              userId: ctx.user.sub,
-            },
-          },
+          permissions: { where: { userId: ctx.user.sub } },
           catalogAssignments: {
             include: {
               catalogCollection: {
-                include: {
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                    },
-                  },
-                },
+                include: { permissions: { where: { userId: ctx.user.sub } } },
               },
             },
           },
@@ -162,21 +150,11 @@ export async function validateTemplateAccessible(
       },
       practiceQuiz: {
         include: {
-          permissions: {
-            where: {
-              userId: ctx.user.sub,
-            },
-          },
+          permissions: { where: { userId: ctx.user.sub } },
           catalogAssignments: {
             include: {
               catalogCollection: {
-                include: {
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                    },
-                  },
-                },
+                include: { permissions: { where: { userId: ctx.user.sub } } },
               },
             },
           },
@@ -184,21 +162,11 @@ export async function validateTemplateAccessible(
       },
       microLearning: {
         include: {
-          permissions: {
-            where: {
-              userId: ctx.user.sub,
-            },
-          },
+          permissions: { where: { userId: ctx.user.sub } },
           catalogAssignments: {
             include: {
               catalogCollection: {
-                include: {
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                    },
-                  },
-                },
+                include: { permissions: { where: { userId: ctx.user.sub } } },
               },
             },
           },
@@ -206,31 +174,17 @@ export async function validateTemplateAccessible(
       },
       groupActivity: {
         include: {
-          permissions: {
-            where: {
-              userId: ctx.user.sub,
-            },
-          },
+          permissions: { where: { userId: ctx.user.sub } },
           catalogAssignments: {
             include: {
               catalogCollection: {
-                include: {
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                    },
-                  },
-                },
+                include: { permissions: { where: { userId: ctx.user.sub } } },
               },
             },
           },
         },
       },
-      answerCollections: {
-        select: {
-          id: true,
-        },
-      },
+      answerCollections: { select: { id: true } },
     },
   })
 
@@ -503,14 +457,8 @@ export async function checkTemplateInfoAvailable(
 
   // check if all answer collections are available to the user
   const answerCollections = await ctx.prisma.answerCollection.findMany({
-    where: {
-      id: {
-        in: answerCollectionIds,
-      },
-    },
-    select: {
-      id: true,
-    },
+    where: { id: { in: answerCollectionIds } },
+    select: { id: true },
   })
 
   // check if all required answer collections exist
@@ -1174,18 +1122,6 @@ export async function getTemplateInformation(
       where: {
         id: activityId,
         status: DB.PublicationStatus.TEMPLATE,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-            permissionLevel: {
-              in: [
-                DB.PermissionLevel.WRITE,
-                DB.PermissionLevel.ADMIN,
-                DB.PermissionLevel.OWNER,
-              ],
-            },
-          },
-        },
       },
       include: {
         templateInfo: true,
@@ -1203,18 +1139,7 @@ export async function getTemplateInformation(
     const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
       where: {
         id: activityId,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-            permissionLevel: {
-              in: [
-                DB.PermissionLevel.WRITE,
-                DB.PermissionLevel.ADMIN,
-                DB.PermissionLevel.OWNER,
-              ],
-            },
-          },
-        },
+        status: DB.PublicationStatus.TEMPLATE,
       },
       include: {
         templateInfo: true,
@@ -1232,18 +1157,7 @@ export async function getTemplateInformation(
     const microLearning = await ctx.prisma.microLearning.findUnique({
       where: {
         id: activityId,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-            permissionLevel: {
-              in: [
-                DB.PermissionLevel.WRITE,
-                DB.PermissionLevel.ADMIN,
-                DB.PermissionLevel.OWNER,
-              ],
-            },
-          },
-        },
+        status: DB.PublicationStatus.TEMPLATE,
       },
       include: {
         templateInfo: true,
@@ -1261,18 +1175,7 @@ export async function getTemplateInformation(
     const groupActivity = await ctx.prisma.groupActivity.findUnique({
       where: {
         id: activityId,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-            permissionLevel: {
-              in: [
-                DB.PermissionLevel.WRITE,
-                DB.PermissionLevel.ADMIN,
-                DB.PermissionLevel.OWNER,
-              ],
-            },
-          },
-        },
+        status: DB.PublicationStatus.TEMPLATE,
       },
       include: {
         templateInfo: true,
@@ -1589,14 +1492,7 @@ export async function checkTemplateElementExists(
 ) {
   // check if an element with the name already exists in the user's library
   const element = await ctx.prisma.element.findFirst({
-    where: {
-      name,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-        },
-      },
-    },
+    where: { name, permissions: { some: { userId: ctx.user.sub } } },
   })
 
   return element !== null
@@ -1876,7 +1772,7 @@ export async function createLiveQuizFromTemplate(
 
           // create a new element based on the provided data
           const createdElement = await manipulateQuestion(
-            { ...values, options },
+            { ...values, options, templateId },
             { ...ctx, prisma }
           )
 

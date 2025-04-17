@@ -339,7 +339,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
   })
 
-  it('Verify that both catalog collecitons are visible to all users', function () {
+  it('Verify that both catalog collections are visible to all users', function () {
     // lecturer should be able to see both catalog collections
     cy.loginLecturer()
     cy.get('[data-cy="analytics"]').should('exist')

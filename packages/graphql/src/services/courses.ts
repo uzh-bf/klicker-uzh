@@ -27,9 +27,7 @@ export async function getBasicCourseInformation(
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
-    include: {
-      owner: true,
-    },
+    include: { owner: true },
   })
 
   if (!course) {
@@ -743,7 +741,7 @@ export async function toggleArchiveCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.update({
-    where: { id, ownerId: ctx.user.sub, endDate: { lte: new Date() } },
+    where: { id, endDate: { lte: new Date() } },
     data: { isArchived },
   })
 
@@ -870,33 +868,14 @@ export async function getCourseSummary(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-      ownerId: ctx.user.sub,
-    },
+    where: { id: courseId },
     include: {
       _count: {
         select: {
-          liveQuizzes: {
-            where: {
-              isDeleted: false,
-            },
-          },
-          practiceQuizzes: {
-            where: {
-              isDeleted: false,
-            },
-          },
-          microLearnings: {
-            where: {
-              isDeleted: false,
-            },
-          },
-          groupActivities: {
-            where: {
-              isDeleted: false,
-            },
-          },
+          liveQuizzes: { where: { isDeleted: false } },
+          practiceQuizzes: { where: { isDeleted: false } },
+          microLearnings: { where: { isDeleted: false } },
+          groupActivities: { where: { isDeleted: false } },
           leaderboard: true,
           participantGroups: true,
           participations: true,
@@ -1002,16 +981,8 @@ export async function getParticipantCourses(ctx: ContextWithUser) {
 
 export async function getControlCourses(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      courses: {
-        orderBy: {
-          createdAt: 'desc',
-        },
-      },
-    },
+    where: { id: ctx.user.sub },
+    include: { courses: { orderBy: { createdAt: 'desc' } } },
   })
 
   return user?.courses ?? []
@@ -1022,85 +993,35 @@ export async function getCourseData(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
     include: {
-      _count: {
-        select: { participantGroups: true },
-      },
+      _count: { select: { participantGroups: true } },
       liveQuizzes: {
-        where: {
-          isDeleted: false,
-        },
+        where: { isDeleted: false },
         include: {
-          blocks: {
-            include: {
-              _count: {
-                select: { elements: true },
-              },
-            },
-          },
+          blocks: { include: { _count: { select: { elements: true } } } },
         },
-        orderBy: {
-          updatedAt: 'desc',
-        },
+        orderBy: { updatedAt: 'desc' },
       },
       practiceQuizzes: {
-        where: {
-          isDeleted: false,
-        },
-        include: {
-          _count: {
-            select: { stacks: true },
-          },
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
+        where: { isDeleted: false },
+        include: { _count: { select: { stacks: true } } },
+        orderBy: { updatedAt: 'desc' },
       },
       groupActivities: {
-        where: {
-          isDeleted: false,
-        },
-        include: {
-          stacks: {
-            include: {
-              elements: true,
-            },
-          },
-        },
-        orderBy: {
-          updatedAt: 'desc',
-        },
+        where: { isDeleted: false },
+        include: { stacks: { include: { elements: true } } },
+        orderBy: { updatedAt: 'desc' },
       },
       microLearnings: {
-        where: {
-          isDeleted: false,
-        },
-        include: {
-          _count: {
-            select: { stacks: true },
-          },
-        },
-        orderBy: {
-          scheduledStartAt: 'desc',
-        },
+        where: { isDeleted: false },
+        include: { _count: { select: { stacks: true } } },
+        orderBy: { scheduledStartAt: 'desc' },
       },
       leaderboard: {
-        include: {
-          participation: {
-            include: {
-              participant: true,
-            },
-          },
-        },
-        orderBy: {
-          score: 'desc',
-        },
-        where: {
-          participation: {
-            isActive: true,
-          },
-        },
+        include: { participation: { include: { participant: true } } },
+        orderBy: { score: 'desc' },
+        where: { participation: { isActive: true } },
       },
       participations: true,
     },
@@ -1177,24 +1098,12 @@ export async function getCourseLeaderboard(
 ) {
   if (courseSelection) {
     const course = await ctx.prisma.course.findUnique({
-      where: { id: courseId, ownerId: ctx.user.sub },
+      where: { id: courseId },
       include: {
         leaderboard: {
-          include: {
-            participation: {
-              include: {
-                participant: true,
-              },
-            },
-          },
-          orderBy: {
-            score: 'desc',
-          },
-          where: {
-            participation: {
-              isActive: true,
-            },
-          },
+          include: { participation: { include: { participant: true } } },
+          orderBy: { score: 'desc' },
+          where: { participation: { isActive: true } },
         },
       },
     })
@@ -1438,24 +1347,14 @@ export async function getControlCourse(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id },
     include: {
       liveQuizzes: {
-        where: {
-          isDeleted: false,
-        },
+        where: { isDeleted: false },
         include: {
-          blocks: {
-            include: {
-              _count: {
-                select: { elements: true },
-              },
-            },
-          },
+          blocks: { include: { _count: { select: { elements: true } } } },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: { createdAt: 'desc' },
       },
     },
   })
@@ -1770,32 +1669,14 @@ export async function getCourseActivities(
     where: { id: courseId },
     include: {
       practiceQuizzes: {
-        where: {
-          isDeleted: false,
-          status: PublicationStatus.PUBLISHED,
-        },
-        include: {
-          _count: {
-            select: { stacks: true },
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        where: { isDeleted: false, status: PublicationStatus.PUBLISHED },
+        include: { _count: { select: { stacks: true } } },
+        orderBy: { createdAt: 'desc' },
       },
       microLearnings: {
-        where: {
-          isDeleted: false,
-          status: PublicationStatus.PUBLISHED,
-        },
-        include: {
-          _count: {
-            select: { stacks: true },
-          },
-        },
-        orderBy: {
-          scheduledStartAt: 'desc',
-        },
+        where: { isDeleted: false, status: PublicationStatus.PUBLISHED },
+        include: { _count: { select: { stacks: true } } },
+        orderBy: { scheduledStartAt: 'desc' },
       },
     },
   })

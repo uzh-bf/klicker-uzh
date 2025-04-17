@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma'
-import { CatalogObjectType as CatalogObjectTypeEnum } from '@klicker-uzh/types'
+import {
+  ActivityType as ActivityTypeEnum,
+  CatalogObjectType as CatalogObjectTypeEnum,
+} from '@klicker-uzh/types'
+import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as AnalyticsService from '../services/analytics.js'
@@ -83,6 +87,9 @@ import {
 } from './template.js'
 import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
 
+// shortcut notations
+const checkAccess = SharingService.checkAccess
+
 export const Query = builder.queryType({
   fields(t) {
     const asAuthenticated = { authenticated: true }
@@ -93,9 +100,9 @@ export const Query = builder.queryType({
       self: t.field({
         nullable: true,
         type: Participant,
-        resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           if (!ctx.user?.sub) return null
-          return ctx.prisma.participant.findUnique({
+          return await ctx.prisma.participant.findUnique({
             where: { id: ctx.user.sub },
           })
         },
@@ -104,9 +111,9 @@ export const Query = builder.queryType({
       selfWithAchievements: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantWithAchievements,
-        async resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           if (!ctx.user?.sub) return null
-          return ParticipantService.getParticipantWithAchievements(ctx)
+          return await ParticipantService.getParticipantWithAchievements(ctx)
         },
       }),
 
@@ -116,20 +123,33 @@ export const Query = builder.queryType({
         args: {
           participantId: t.arg.string({ required: true }),
         },
-        async resolve(_, args, ctx) {
-          return ParticipantService.getPublicParticipantProfile(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getPublicParticipantProfile(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       controlCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(__, args, ctx) {
-          return CourseService.getControlCourse(args, ctx)
+        resolve: async (__, args, ctx) => {
+          // >= EXECUTE permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.getControlCourse(args, ctx)
         },
       }),
 
@@ -139,25 +159,23 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(__, args, ctx) {
-          return CourseService.getBasicCourseInformation(args, ctx)
+        resolve: async (__, args, ctx) => {
+          return await CourseService.getBasicCourseInformation(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getLoginToken: t.withAuth(asUser).field({
         nullable: true,
         type: User,
-        resolve(_, ___, ctx) {
-          return AccountService.getLoginToken(ctx)
+        resolve: async (_, ___, ctx) => {
+          return await AccountService.getLoginToken(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       userTags: t.withAuth(asUser).field({
         nullable: true,
         type: [Tag],
-        async resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           const user = await ctx.prisma.user.findUnique({
             where: { id: ctx.user.sub },
             include: { tags: { orderBy: { order: 'asc' } } },
@@ -169,11 +187,10 @@ export const Query = builder.queryType({
         },
       }),
 
-      // TODO: potentially update access control
       userMediaFiles: t.withAuth(asUser).field({
         nullable: true,
         type: [MediaFile],
-        async resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           const user = await ctx.prisma.user.findUnique({
             where: { id: ctx.user.sub },
             include: { mediaFiles: { orderBy: { createdAt: 'desc' } } },
@@ -191,16 +208,15 @@ export const Query = builder.queryType({
         args: {
           quizId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return FeedbackService.getFeedbacks(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await FeedbackService.getFeedbacks(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       userProfile: t.withAuth(asUser).field({
         nullable: true,
         type: User,
-        async resolve(_, __, ctx) {
+        resolve: async (_, __, ctx) => {
           const user = await ctx.prisma.user.findUnique({
             where: { id: ctx.user.sub },
           })
@@ -211,68 +227,76 @@ export const Query = builder.queryType({
         },
       }),
 
-      // TODO: potentially update access control
       userScope: t.withAuth(asUser).field({
         nullable: true,
         type: UserLoginScope,
-        resolve(_, __, ctx) {
+        resolve: (_, __, ctx) => {
           return ctx.user.scope
         },
       }),
 
-      // TODO: potentially update access control
       userQuestions: t.withAuth(asUser).field({
         nullable: true,
         type: [Element],
-        resolve(_, __, ctx) {
-          return QuestionService.getUserQuestions(ctx)
+        resolve: async (_, __, ctx) => {
+          return await QuestionService.getUserQuestions(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       userCourses: t.withAuth(asUser).field({
         nullable: true,
         type: [Course],
-        resolve(_, __, ctx) {
-          return CourseService.getUserCourses(ctx)
+        resolve: async (_, __, ctx) => {
+          return await CourseService.getUserCourses(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getActiveUserCourses: t.withAuth(asUser).field({
         nullable: true,
         type: [Course],
-        resolve(_, __, ctx) {
-          return CourseService.getActiveUserCourses(ctx)
+        resolve: async (_, __, ctx) => {
+          return await CourseService.getActiveUserCourses(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCourseSummary: t.withAuth(asUser).field({
         nullable: true,
         type: CourseSummary,
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.getCourseSummary(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.getCourseSummary(args, ctx)
         },
       }),
 
       participantCourses: t.withAuth(asParticipant).field({
         nullable: true,
         type: [Course],
-        resolve(_, __, ctx) {
-          return CourseService.getParticipantCourses(ctx)
+        resolve: async (_, __, ctx) => {
+          return await CourseService.getParticipantCourses(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       unassignedLiveQuizzes: t.withAuth(asUser).field({
         nullable: true,
         type: [LiveQuiz],
-        resolve(_, __, ctx) {
-          return LiveQuizService.getUnassignedLiveQuizzes(ctx)
+        resolve: async (_, __, ctx) => {
+          return await LiveQuizService.getUnassignedLiveQuizzes(ctx)
         },
       }),
 
@@ -282,20 +306,33 @@ export const Query = builder.queryType({
         args: {
           shortname: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getShortnameQuizzes(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.getShortnameQuizzes(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getLiveQuizSummary: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuizSummary,
         args: {
           quizId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getLiveQuizSummary(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.quizId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.getLiveQuizSummary(args, ctx)
         },
       }),
 
@@ -305,8 +342,8 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getCourseRunningLiveQuizzes(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.getCourseRunningLiveQuizzes(args, ctx)
         },
       }),
 
@@ -316,8 +353,8 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return PracticeQuizService.getCoursePublishedPracticeQuizzes(
+        resolve: async (_, args, ctx) => {
+          return await PracticeQuizService.getCoursePublishedPracticeQuizzes(
             args,
             ctx
           )
@@ -330,62 +367,85 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return MicroLearningService.getCoursePublishedMicroLearnings(
+        resolve: async (_, args, ctx) => {
+          return await MicroLearningService.getCoursePublishedMicroLearnings(
             args,
             ctx
           )
         },
       }),
 
-      // TODO: potentially update access control
       userRunningLiveQuizzes: t.withAuth(asUser).field({
         nullable: true,
         type: [LiveQuizInfo],
-        resolve(_, __, ctx) {
-          return LiveQuizService.getUserRunningLiveQuizzes(ctx)
+        resolve: async (_, __, ctx) => {
+          return await LiveQuizService.getUserRunningLiveQuizzes(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       controlCourses: t.withAuth(asUser).field({
         nullable: true,
         type: [Course],
-        resolve(_, __, ctx) {
-          return CourseService.getControlCourses(ctx)
+        resolve: async (_, __, ctx) => {
+          return await CourseService.getControlCourses(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       userLiveQuizzes: t.withAuth(asUser).field({
         nullable: true,
         type: [LiveQuiz],
-        resolve(_, __, ctx) {
-          return LiveQuizService.getUserLiveQuizzes(ctx)
+        resolve: async (_, __, ctx) => {
+          return await LiveQuizService.getUserLiveQuizzes(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       cockpitQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getCockpitQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.getCockpitQuiz(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       controlLiveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getControlLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.getControlLiveQuiz(args, ctx)
         },
       }),
 
@@ -395,8 +455,8 @@ export const Query = builder.queryType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return PracticeQuizService.getPracticeQuizData(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await PracticeQuizService.getPracticeQuizData(args, ctx)
         },
       }),
 
@@ -406,20 +466,33 @@ export const Query = builder.queryType({
         args: {
           stackId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return StacksService.getPreviousStackEvaluation(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await StacksService.getPreviousStackEvaluation(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getPracticeQuizEvaluation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityEvaluation,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return PracticeQuizService.getPracticeQuizEvaluation(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on practice quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                practiceQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await PracticeQuizService.getPracticeQuizEvaluation(args, ctx)
         },
       }),
 
@@ -429,44 +502,86 @@ export const Query = builder.queryType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return MicroLearningService.getMicroLearningData(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await MicroLearningService.getMicroLearningData(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getMicroLearningEvaluation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityEvaluation,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return MicroLearningService.getMicroLearningEvaluation(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on micro learning required
+          const validAccess = await checkAccess(
+            [
+              {
+                microLearningId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await MicroLearningService.getMicroLearningEvaluation(
+            args,
+            ctx
+          )
         },
       }),
 
-      // TODO: potentially update access control
       getSinglePracticeQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: PracticeQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return PracticeQuizService.getSinglePracticeQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on practice quiz required (actualy only used for edit operations currently)
+          const validAccess = await checkAccess(
+            [
+              {
+                practiceQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await PracticeQuizService.getSinglePracticeQuiz(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getSingleMicroLearning: t.withAuth(asUser).field({
         nullable: true,
         type: MicroLearning,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return MicroLearningService.getSingleMicroLearning(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on micro learning required (actualy only used for edit operations currently)
+          const validAccess = await checkAccess(
+            [
+              {
+                microLearningId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await MicroLearningService.getSingleMicroLearning(args, ctx)
         },
       }),
 
@@ -477,8 +592,27 @@ export const Query = builder.queryType({
           id: t.arg.string({ required: true }),
           hmac: t.arg.string(),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getLiveQuizEvaluation(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on live quiz required if hmac is not provided
+          if (!args.hmac) {
+            const validAccess = ctx.user?.sub
+              ? await checkAccess(
+                  [
+                    {
+                      liveQuizId: args.id,
+                      minimumPermissionLevel: DB.PermissionLevel.READ,
+                    },
+                  ],
+                  ctx as PrismaTransactionContextWithUser
+                )
+              : false
+
+            if (!validAccess) {
+              return null
+            }
+          }
+
+          return await LiveQuizService.getLiveQuizEvaluation(args, ctx)
         },
       }),
 
@@ -488,8 +622,8 @@ export const Query = builder.queryType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getRunningLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.getRunningLiveQuiz(args, ctx)
         },
       }),
 
@@ -499,60 +633,111 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.getParticipantGroups(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.getParticipantGroups(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCourseGroups: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.getCourseGroups(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await GroupService.getCourseGroups(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       liveQuizHMAC: t.withAuth(asUser).field({
         nullable: true,
         type: 'String',
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getLiveQuizHMAC(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.getLiveQuizHMAC(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getLecturerViewLiveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getLecturerViewLiveQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.getLecturerViewLiveQuiz(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       course: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.getCourseData(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.getCourseData(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCourseLeaderboard: t.withAuth(asUser).field({
         nullable: true,
         type: CourseLeaderboard,
@@ -566,36 +751,75 @@ export const Query = builder.queryType({
           endDate: t.arg.string({ required: false }),
           days: t.arg.int({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.getCourseLeaderboard(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.getCourseLeaderboard(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       liveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getLiveQuizData(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on live quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                liveQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await LiveQuizService.getLiveQuizData(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       question: t.withAuth(asUser).field({
         nullable: true,
         type: Element,
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.getSingleQuestion(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on element required (only needed for element editing at this time)
+          const validAccess = await checkAccess(
+            [
+              {
+                elementId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await QuestionService.getSingleQuestion(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getInstanceUpdateActivities: t.withAuth(asUser).field({
         nullable: true,
         type: [InstanceUpdateActivityInfo],
@@ -604,32 +828,61 @@ export const Query = builder.queryType({
           hasSampleSolution: t.arg.boolean({ required: false }),
           includeTemplateInstances: t.arg.boolean({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.getInstanceUpdateActivities(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on element required
+          const validAccess = await checkAccess(
+            [
+              {
+                elementId: args.elementId,
+                minimumPermissionLevel: DB.PermissionLevel.WRITE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await QuestionService.getInstanceUpdateActivities(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       artificialInstance: t.withAuth(asUser).field({
         nullable: true,
         type: ElementInstance,
         args: {
           elementId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.getArtificialElementInstance(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on element required
+          const validAccess = ctx.user?.sub
+            ? await checkAccess(
+                [
+                  {
+                    elementId: args.elementId,
+                    minimumPermissionLevel: DB.PermissionLevel.READ,
+                  },
+                ],
+                ctx
+              )
+            : false
+          if (!validAccess) {
+            return null
+          }
+
+          return await QuestionService.getArtificialElementInstance(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getSingleElementInstance: t.withAuth(asUser).field({
         nullable: true,
         type: ElementInstance,
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return QuestionService.getSingleElementInstance(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // access validation to the activity that contains this instance is performed inside the serive function
+          return await QuestionService.getSingleElementInstance(args, ctx)
         },
       }),
 
@@ -639,8 +892,8 @@ export const Query = builder.queryType({
         args: {
           quizId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return LiveQuizService.getLiveQuizLeaderboard(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.getLiveQuizLeaderboard(args, ctx)
         },
       }),
 
@@ -650,16 +903,16 @@ export const Query = builder.queryType({
         args: {
           endpoint: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.getParticipations(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getParticipations(args, ctx)
         },
       }),
 
       getPracticeCourses: t.withAuth(asParticipant).field({
         nullable: true,
         type: [Course],
-        resolve(_, __, ctx) {
-          return ParticipantService.getPracticeCourses(ctx)
+        resolve: async (_, __, ctx) => {
+          return await ParticipantService.getPracticeCourses(ctx)
         },
       }),
 
@@ -669,8 +922,8 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.getParticipation(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getParticipation(args, ctx)
         },
       }),
 
@@ -680,8 +933,8 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.getCourseOverviewData(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getCourseOverviewData(args, ctx)
         },
       }),
 
@@ -692,8 +945,8 @@ export const Query = builder.queryType({
           courseId: t.arg.string({ required: true }),
           mode: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.getStudentCourseLeaderboard(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getStudentCourseLeaderboard(args, ctx)
         },
       }),
 
@@ -703,8 +956,8 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.getCourseGroupActivities(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.getCourseGroupActivities(args, ctx)
         },
       }),
 
@@ -715,8 +968,8 @@ export const Query = builder.queryType({
           groupId: t.arg.string({ required: true }),
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.getGroupActivityInstances(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.getGroupActivityInstances(args, ctx)
         },
       }),
 
@@ -727,8 +980,8 @@ export const Query = builder.queryType({
           activityId: t.arg.string({ required: true }),
           groupId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.getGroupActivityDetails(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await GroupService.getGroupActivityDetails(args, ctx)
         },
       }),
 
@@ -738,8 +991,8 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.getBookmarkedElementStacks(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getBookmarkedElementStacks(args, ctx)
         },
       }),
 
@@ -749,93 +1002,157 @@ export const Query = builder.queryType({
         args: {
           elementInstanceIds: t.arg.intList({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ParticipantService.getStackElementFeedbacks(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getStackElementFeedbacks(args, ctx)
         },
       }),
 
       getPracticeQuizList: t.withAuth(asParticipant).field({
         nullable: true,
         type: [Course],
-        resolve(_, __, ctx) {
-          return ParticipantService.getPracticeQuizList(ctx)
+        resolve: async (_, __, ctx) => {
+          return await ParticipantService.getPracticeQuizList(ctx)
         },
       }),
 
       getCourseStudentTimelines: t.withAuth(asParticipant).field({
         nullable: true,
         type: [CourseStudentTimeline],
-        resolve(_, __, ctx) {
-          return ParticipantService.getCourseStudentTimelines(ctx)
+        resolve: async (_, __, ctx) => {
+          return await ParticipantService.getCourseStudentTimelines(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getPracticeQuizSummary: t.withAuth(asUser).field({
         nullable: true,
         type: ActivitySummary,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return PracticeQuizService.getPracticeQuizSummary(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on practice quiz required
+          const validAccess = await checkAccess(
+            [
+              {
+                practiceQuizId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await PracticeQuizService.getPracticeQuizSummary(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getMicroLearningSummary: t.withAuth(asUser).field({
         nullable: true,
         type: ActivitySummary,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return MicroLearningService.getMicroLearningSummary(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on microlearning required
+          const validAccess = await checkAccess(
+            [
+              {
+                microLearningId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await MicroLearningService.getMicroLearningSummary(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getGroupActivitySummary: t.withAuth(asUser).field({
         nullable: true,
         type: GroupActivitySummary,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.getGroupActivitySummary(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on group activity required
+          const validAccess = await checkAccess(
+            [
+              {
+                groupActivityId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await GroupService.getGroupActivitySummary(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       userLogins: t.withAuth(asUser).field({
         nullable: true,
         type: [UserLogin],
-        resolve(_, __, ctx) {
-          return AccountService.getUserLogins(ctx)
+        resolve: async (_, __, ctx) => {
+          return await AccountService.getUserLogins(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       groupActivity: t.withAuth(asUser).field({
         nullable: true,
         type: GroupActivity,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.getGroupActivity(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on group activity required (only required for editing at the moment however)
+          const validAccess = await checkAccess(
+            [
+              {
+                groupActivityId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await GroupService.getGroupActivity(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getGradingGroupActivity: t.withAuth(asUser).field({
         nullable: true,
         type: GroupActivity,
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return GroupService.getGradingGroupActivity(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= EXECUTE permissions on group activity required (for grading process)
+          const validAccess = await checkAccess(
+            [
+              {
+                groupActivityId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await GroupService.getGradingGroupActivity(args, ctx)
         },
       }),
 
@@ -845,8 +1162,8 @@ export const Query = builder.queryType({
         args: {
           username: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.checkParticipantNameAvailable(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.checkParticipantNameAvailable(args, ctx)
         },
       }),
 
@@ -856,22 +1173,22 @@ export const Query = builder.queryType({
         args: {
           shortname: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AccountService.checkShortnameAvailable(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await AccountService.checkShortnameAvailable(args, ctx)
         },
       }),
 
       checkPublicPreviewAvailable: t.boolean({
         nullable: false,
-        resolve(_, __, ctx) {
-          return AccountService.checkPublicPreviewAvailable(ctx)
+        resolve: async (_, __, ctx) => {
+          return await AccountService.checkPublicPreviewAvailable(ctx)
         },
       }),
 
       checkPrivatePreviewAvailable: t.boolean({
         nullable: false,
-        resolve(_, __, ctx) {
-          return AccountService.checkPrivatePreviewAvailable(ctx)
+        resolve: async (_, __, ctx) => {
+          return await AccountService.checkPrivatePreviewAvailable(ctx)
         },
       }),
 
@@ -881,8 +1198,8 @@ export const Query = builder.queryType({
         args: {
           pin: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.checkValidCoursePin(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await CourseService.checkValidCoursePin(args, ctx)
         },
       }),
 
@@ -892,8 +1209,8 @@ export const Query = builder.queryType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.getCoursePracticeQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getCoursePracticeQuiz(args, ctx)
         },
       }),
 
@@ -904,105 +1221,197 @@ export const Query = builder.queryType({
           quizId: t.arg.string({ required: false }),
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return PracticeQuizService.getBookmarksPracticeQuiz(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await PracticeQuizService.getBookmarksPracticeQuiz(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCourseActivityAnalytics: t.withAuth(asUser).field({
         nullable: true,
         type: CourseActivityAnalytics,
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AnalyticsService.getCourseActivityAnalytics(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await AnalyticsService.getCourseActivityAnalytics(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCourseWeeklyActivity: t.withAuth(asUser).field({
         nullable: true,
         type: WeeklyCourseActivities,
         args: {
           courseId: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return AnalyticsService.getCourseWeeklyActivity(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // if the courseId is not provided, return early
+          if (args.courseId === null || typeof args.courseId === 'undefined') {
+            return null
+          }
+
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId!,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await AnalyticsService.getCourseWeeklyActivity(
+            { courseId: args.courseId! },
+            ctx
+          )
         },
       }),
 
-      // TODO: potentially update access control
       getCoursePerformanceAnalytics: t.withAuth(asUser).field({
         nullable: true,
         type: CoursePerformanceAnalytics,
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AnalyticsService.getCoursePerformanceAnalytics(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await AnalyticsService.getCoursePerformanceAnalytics(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCourseActivities: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return CourseService.getCourseActivities(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on course required
+          const validAccess = await checkAccess(
+            [
+              {
+                courseId: args.courseId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await CourseService.getCourseActivities(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getActivityAnalytics: t.withAuth(asUser).field({
         nullable: true,
         type: QuizAnalytics,
         args: {
           activityId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return AnalyticsService.getActivityAnalytics(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on the corresponding practice quiz / microlearning
+          const validAccessPQ = await checkAccess(
+            [
+              {
+                practiceQuizId: args.activityId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          const validAccessML = await checkAccess(
+            [
+              {
+                microLearningId: args.activityId,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccessPQ && !validAccessML) {
+            return null
+          }
+
+          return await AnalyticsService.getActivityAnalytics(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getAnswerCollectionsElements: t.withAuth(asUser).field({
         nullable: true,
         type: [AnswerCollection],
         args: {
           templateId: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.getAnswerCollectionsElements(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await ResourcesService.getAnswerCollectionsElements(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getAnswerCollectionsInfo: t.withAuth(asUser).field({
         nullable: true,
         type: [AnswerCollection],
-        resolve(_, __, ctx) {
-          return ResourcesService.getAnswerCollectionsInfo(ctx)
+        resolve: async (_, __, ctx) => {
+          return await ResourcesService.getAnswerCollectionsInfo(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getSingleAnswerCollection: t.withAuth(asUser).field({
         nullable: true,
         type: AnswerCollection,
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return ResourcesService.getSingleAnswerCollection(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= READ permissions on answer collection required
+          const validAccess = await checkAccess(
+            [
+              {
+                answerCollectionId: args.id,
+                minimumPermissionLevel: DB.PermissionLevel.READ,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await ResourcesService.getSingleAnswerCollection(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       checkTemplateInfoAvailable: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityTemplateInfo,
@@ -1010,12 +1419,53 @@ export const Query = builder.queryType({
           activityId: t.arg.string({ required: true }),
           activityType: t.arg({ type: ActivityType, required: true }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.checkTemplateInfoAvailable(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= ADMIN permissions on activity (part of template conversion process)
+          const validAccess = await checkAccess(
+            [
+              ...(args.activityType === ActivityTypeEnum.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await TemplateService.checkTemplateInfoAvailable(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getTemplateInformation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityTemplateMetadata,
@@ -1023,24 +1473,65 @@ export const Query = builder.queryType({
           activityId: t.arg.string({ required: true }),
           activityType: t.arg({ type: ActivityType, required: true }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.getTemplateInformation(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // >= WRITE permissions on activity template
+          const validAccess = await checkAccess(
+            [
+              ...(args.activityType === ActivityTypeEnum.LIVE_QUIZ
+                ? [
+                    {
+                      liveQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.PRACTICE_QUIZ
+                ? [
+                    {
+                      practiceQuizId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.MICRO_LEARNING
+                ? [
+                    {
+                      microLearningId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ]
+                : []),
+              ...(args.activityType === ActivityTypeEnum.GROUP_ACTIVITY
+                ? [
+                    {
+                      groupActivityId: args.activityId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ]
+                : []),
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          return await TemplateService.getTemplateInformation(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getActivityTemplate: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityTemplate,
         args: {
           templateId: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.getActivityTemplate(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // access validation to linked activity is performed inside the service function
+          return await TemplateService.getActivityTemplate(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getMatchingUserElementsTemplate: t.withAuth(asUser).field({
         nullable: true,
         type: [TemplateElementInformation],
@@ -1049,23 +1540,26 @@ export const Query = builder.queryType({
           hasSampleSolution: t.arg.boolean({ required: false }),
           hasAnswerFeedbacks: t.arg.boolean({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.getMatchingUserElementsTemplate(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // all elements of a user with >= READ permissions and matching settings should be shown here
+          // the corresponding permission validation logic is implemented inside the service function
+          return await TemplateService.getMatchingUserElementsTemplate(
+            args,
+            ctx
+          )
         },
       }),
 
-      // TODO: potentially update access control
       checkTemplateElementExists: t.withAuth(asUser).boolean({
         nullable: false,
         args: {
           name: t.arg.string({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.checkTemplateElementExists(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await TemplateService.checkTemplateElementExists(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getTemplatePreviewAnswerCollectionEntries: t.withAuth(asUser).field({
         nullable: true,
         type: [AnswerCollectionPreviewEntry],
@@ -1073,15 +1567,14 @@ export const Query = builder.queryType({
           templateId: t.arg.string({ required: true }),
           answerCollectionId: t.arg.int({ required: true }),
         },
-        resolve(_, args, ctx) {
-          return TemplateService.getTemplatePreviewAnswerCollectionEntries(
+        resolve: async (_, args, ctx) => {
+          return await TemplateService.getTemplatePreviewAnswerCollectionEntries(
             args,
             ctx
           )
         },
       }),
 
-      // TODO: potentially update access control
       getObjectPermissions: t.withAuth(asUser).field({
         nullable: true,
         type: [PermissionInfo],
@@ -1089,9 +1582,23 @@ export const Query = builder.queryType({
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
-        resolve(_, args, ctx) {
+        resolve: async (_, args, ctx) => {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
-            return SharingService.getCatalogCollectionPermissions(
+            // >= ADMIN permissions on catalog collection
+            const validAccess = await checkAccess(
+              [
+                {
+                  catalogCollectionId: args.objectId,
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getCatalogCollectionPermissions(
               {
                 catalogCollectionId: args.objectId,
               },
@@ -1100,7 +1607,21 @@ export const Query = builder.queryType({
           } else if (
             args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
           ) {
-            return SharingService.getAnswerCollectionPermissions(
+            // >= ADMIN permissions on answer collection
+            const validAccess = await checkAccess(
+              [
+                {
+                  answerCollectionId: parseInt(args.objectId),
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getAnswerCollectionPermissions(
               {
                 collectionId: parseInt(args.objectId),
               },
@@ -1112,75 +1633,68 @@ export const Query = builder.queryType({
         },
       }),
 
-      // TODO: potentially update access control
       getCatalogCollectionsList: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogCollection],
-        resolve(_, __, ctx) {
-          return SharingService.getCatalogCollectionsList(ctx)
+        resolve: async (_, __, ctx) => {
+          return await SharingService.getCatalogCollectionsList(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCatalogCollectionInfo: t.withAuth(asUser).field({
         nullable: true,
         type: CatalogCollection,
         args: {
           catalogCollectionId: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.getCatalogCollectionInfo(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await SharingService.getCatalogCollectionInfo(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       countCatalogSharingRequests: t.withAuth(asUser).int({
         nullable: false,
-        resolve(_, __, ctx) {
-          return SharingService.countCatalogSharingRequests(ctx)
+        resolve: async (_, __, ctx) => {
+          return await SharingService.countCatalogSharingRequests(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCatalogSharingRequests: t.withAuth(asUser).field({
         nullable: true,
         type: [ObjectSharingRequest],
-        resolve(_, __, ctx) {
-          return SharingService.getCatalogSharingRequests(ctx)
+        resolve: async (_, __, ctx) => {
+          return await SharingService.getCatalogSharingRequests(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCatalogObjects: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogObject],
         args: {
           catalogCollectionId: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.getCatalogObjects(args, ctx)
+        resolve: async (_, args, ctx) => {
+          // access validation to the catalog collection is handled inside service function
+          return await SharingService.getCatalogObjects(args, ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCatalogAnswerCollections: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogSelectionObject],
-        resolve(_, __, ctx) {
-          return SharingService.getCatalogAnswerCollections(ctx)
+        resolve: async (_, __, ctx) => {
+          return await SharingService.getCatalogAnswerCollections(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getCatalogLiveQuizTemplates: t.withAuth(asUser).field({
         nullable: true,
         type: [CatalogSelectionObject],
-        resolve(_, __, ctx) {
-          return SharingService.getCatalogLiveQuizTemplates(ctx)
+        resolve: async (_, __, ctx) => {
+          return await SharingService.getCatalogLiveQuizTemplates(ctx)
         },
       }),
 
-      // TODO: potentially update access control
       getAnswerCollectionCatalogInfo: t.withAuth(asUser).field({
         nullable: true,
         type: AnswerCollection,
@@ -1188,8 +1702,8 @@ export const Query = builder.queryType({
           collectionId: t.arg.int({ required: true }),
           catalogCollectionId: t.arg.string({ required: false }),
         },
-        resolve(_, args, ctx) {
-          return SharingService.getAnswerCollectionCatalogInfo(args, ctx)
+        resolve: async (_, args, ctx) => {
+          return await SharingService.getAnswerCollectionCatalogInfo(args, ctx)
         },
       }),
     }

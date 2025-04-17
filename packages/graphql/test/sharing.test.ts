@@ -71,7 +71,6 @@ const getDatabaseUrl = () => {
   return 'postgresql://klicker:klicker@localhost:5432/klicker'
 }
 
-// TODO: UPDATE UNIT TESTS TO NOT CHECK PERMISSIONS - HANDLED ON MUTATION LEVEL FOR MOST CASES AND UNIT TESTED SEPARATELY
 describe('Unit tests for sharing service', () => {
   // shared resources used across tests
   let prisma: PrismaClient
