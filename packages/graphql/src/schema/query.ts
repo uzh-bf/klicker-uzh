@@ -332,7 +332,7 @@ export const Query = builder.queryType({
             return null
           }
 
-          return LiveQuizService.getLiveQuizSummary(args, ctx)
+          return await LiveQuizService.getLiveQuizSummary(args, ctx)
         },
       }),
 
