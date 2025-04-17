@@ -28,7 +28,7 @@ import {
   changeCatalogCollectionName,
   changeCatalogCollectionPermissionLevel,
   changeCatalogObjectAccess,
-  changeCatalogObjectPermissionLevel,
+  changeObjectPermissionLevel,
   createCatalogCollection,
   deleteCatalogCollection,
   getCatalogAnswerCollections,
@@ -40,7 +40,7 @@ import {
   revokeAnswerCollectionAccess,
   revokeCatalogCollectionAccess,
   shareCatalogCollection,
-  shareCatalogObject,
+  shareObject,
   transferAnswerCollectionOwnership,
   transferCatalogCollectionOwnership,
 } from '../src/services/sharing.js'
@@ -491,7 +491,7 @@ describe('Unit tests for sharing service', () => {
     const { AC1, AC2 } = await createAnswerCollections(prisma)
 
     // users 2, 3, 4 have insufficient permissions to share an answer collection
-    const res1 = await shareCatalogObject(
+    const res1 = await shareObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.email,
@@ -501,7 +501,7 @@ describe('Unit tests for sharing service', () => {
     )
     expect(res1).toBeNull()
 
-    const res2 = await shareCatalogObject(
+    const res2 = await shareObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.email,
@@ -511,7 +511,7 @@ describe('Unit tests for sharing service', () => {
     )
     expect(res2).toBeNull()
 
-    const res3 = await shareCatalogObject(
+    const res3 = await shareObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.email,
@@ -522,7 +522,7 @@ describe('Unit tests for sharing service', () => {
     expect(res3).toBeNull()
 
     // object can only be shared with users that exist (email or username)
-    const res4 = await shareCatalogObject(
+    const res4 = await shareObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: 'missing_user_name',
@@ -533,7 +533,7 @@ describe('Unit tests for sharing service', () => {
     expect(res4).toBeNull()
 
     // user 1 shares the answer collection 1 with users 2, 3, and 4 (via email or username)
-    const res5 = await shareCatalogObject(
+    const res5 = await shareObject(
       {
         permissionLevel: PermissionLevel.ADMIN,
         shortnameOrEmail: userTwo.email,
@@ -548,7 +548,7 @@ describe('Unit tests for sharing service', () => {
     expect(res5!.permissionLevel).toBe(PermissionLevel.ADMIN)
     expect(res5!.isOwn).toBe(false)
 
-    const res6 = await shareCatalogObject(
+    const res6 = await shareObject(
       {
         permissionLevel: PermissionLevel.WRITE,
         shortnameOrEmail: userThree.shortname,
@@ -563,7 +563,7 @@ describe('Unit tests for sharing service', () => {
     expect(res6!.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(res6!.isOwn).toBe(false)
 
-    const res7 = await shareCatalogObject(
+    const res7 = await shareObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFour.email,
@@ -579,7 +579,7 @@ describe('Unit tests for sharing service', () => {
     expect(res7!.isOwn).toBe(false)
 
     // user 1 shares the answer collection 2 with user 2
-    const res8 = await shareCatalogObject(
+    const res8 = await shareObject(
       {
         permissionLevel: PermissionLevel.ADMIN,
         shortnameOrEmail: userTwo.shortname,
@@ -595,7 +595,7 @@ describe('Unit tests for sharing service', () => {
     expect(res8!.isOwn).toBe(false)
 
     // user 2 uses admin permissions to share collection with users 3 and 4
-    const res9 = await shareCatalogObject(
+    const res9 = await shareObject(
       {
         permissionLevel: PermissionLevel.WRITE,
         shortnameOrEmail: userThree.email,
@@ -610,7 +610,7 @@ describe('Unit tests for sharing service', () => {
     expect(res9!.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(res9!.isOwn).toBe(false)
 
-    const res10 = await shareCatalogObject(
+    const res10 = await shareObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFour.shortname,
@@ -626,7 +626,7 @@ describe('Unit tests for sharing service', () => {
     expect(res10!.isOwn).toBe(false)
 
     // verify that users 3 and 4 still have insufficient permissions to share the object further (with user 5)
-    const res11 = await shareCatalogObject(
+    const res11 = await shareObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.email,
@@ -635,7 +635,7 @@ describe('Unit tests for sharing service', () => {
       userThreeCtx
     )
     expect(res11).toBeNull()
-    const res12 = await shareCatalogObject(
+    const res12 = await shareObject(
       {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userFive.shortname,
@@ -1162,7 +1162,7 @@ describe('Unit tests for sharing service', () => {
     expect(permission!.permissionLevel).toBe(PermissionLevel.READ)
 
     // change the permission READ -> WRITE
-    const success1 = await changeCatalogObjectPermissionLevel(
+    const success1 = await changeObjectPermissionLevel(
       {
         permissionId: permission!.id,
         permissionLevel: PermissionLevel.WRITE,
@@ -1185,7 +1185,7 @@ describe('Unit tests for sharing service', () => {
     expect(updatedPermission!.permissionLevel).toBe(PermissionLevel.WRITE)
 
     // use admin permissions to change the permission level back to READ
-    const success2 = await changeCatalogObjectPermissionLevel(
+    const success2 = await changeObjectPermissionLevel(
       {
         permissionId: updatedPermission!.id,
         permissionLevel: PermissionLevel.READ,
@@ -1208,7 +1208,7 @@ describe('Unit tests for sharing service', () => {
     expect(updatedPermission2!.permissionLevel).toBe(PermissionLevel.READ)
 
     // verify that all other users do not have sufficient permissions on the object for a permission level change
-    const success3 = await changeCatalogObjectPermissionLevel(
+    const success3 = await changeObjectPermissionLevel(
       {
         permissionId: updatedPermission2!.id,
         permissionLevel: PermissionLevel.WRITE,
@@ -1218,7 +1218,7 @@ describe('Unit tests for sharing service', () => {
     )
     expect(success3).toBeFalsy()
 
-    const success4 = await changeCatalogObjectPermissionLevel(
+    const success4 = await changeObjectPermissionLevel(
       {
         permissionId: updatedPermission2!.id,
         permissionLevel: PermissionLevel.WRITE,
@@ -1228,7 +1228,7 @@ describe('Unit tests for sharing service', () => {
     )
     expect(success4).toBeFalsy()
 
-    const success5 = await changeCatalogObjectPermissionLevel(
+    const success5 = await changeObjectPermissionLevel(
       {
         permissionId: updatedPermission2!.id,
         permissionLevel: PermissionLevel.WRITE,

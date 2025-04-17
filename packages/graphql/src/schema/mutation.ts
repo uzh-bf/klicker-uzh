@@ -1887,7 +1887,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       importCatalogObject: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1896,6 +1895,7 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: false }),
         },
         resolve(_, args, ctx) {
+          // access control implemented inside service functions (does not fit default schema)
           if (args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION) {
             return SharingService.importAnswerCollection(
               {
@@ -1910,7 +1910,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       requestCatalogObject: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -1923,6 +1922,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve(_, args, ctx) {
+          // access control implemented inside service function (does not fit default schema)
           return SharingService.requestCatalogObject(
             {
               requestedPermissionLevel: args.requestedPermissionLevel,
@@ -2019,7 +2019,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       changeCatalogObjectAccess: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -2027,6 +2026,7 @@ export const Mutation = builder.mutationType({
           access: t.arg({ type: ObjectAccess, required: true }),
         },
         resolve(_, args, ctx) {
+          // access control implemented inside service function (does not fit default schema)
           return SharingService.changeCatalogObjectAccess(args, ctx)
         },
       }),
@@ -2314,7 +2314,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       shareObject: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
@@ -2327,6 +2326,21 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            // >= ADMIN permissions on catalog collection required
+            if (
+              !checkAccess(
+                [
+                  {
+                    catalogCollectionId: args.objectId,
+                    minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return SharingService.shareCatalogCollection(
               {
                 catalogCollectionId: args.objectId,
@@ -2337,7 +2351,28 @@ export const Mutation = builder.mutationType({
               ctx
             )
           } else {
-            return SharingService.shareCatalogObject(
+            // >= ADMIN permissions on the object required
+            if (
+              !checkAccess(
+                [
+                  ...(args.objectType ===
+                  CatalogObjectTypeEnum.ANSWER_COLLECTION
+                    ? [
+                        {
+                          answerCollectionId: parseInt(args.objectId),
+                          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                        },
+                      ]
+                    : []),
+                  // TODO: add further object types, once they are supported by the sharing function
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
+            return SharingService.shareObject(
               {
                 permissionLevel: args.permissionLevel,
                 shortnameOrEmail: args.shortnameOrEmail,
@@ -2359,7 +2394,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       revokeObjectAccess: t.withAuth(asUserFullAccess).int({
         nullable: true,
         args: {
@@ -2369,6 +2403,21 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            // >= ADMIN permissions on catalog collection required
+            if (
+              !checkAccess(
+                [
+                  {
+                    catalogCollectionId: args.objectId,
+                    minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return SharingService.revokeCatalogCollectionAccess(
               {
                 permissionId: args.permissionId,
@@ -2379,6 +2428,22 @@ export const Mutation = builder.mutationType({
           } else if (
             args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
           ) {
+            // TODO: potentially combine this function for answer collections and other object types into a single one (shared logic)
+            // >= ADMIN permissions on answer collection required
+            if (
+              !checkAccess(
+                [
+                  {
+                    answerCollectionId: parseInt(args.objectId),
+                    minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return SharingService.revokeAnswerCollectionAccess(
               {
                 permissionId: args.permissionId,
@@ -2392,7 +2457,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       changePermissionLevel: t.withAuth(asUserFullAccess).boolean({
         nullable: false,
         args: {
@@ -2403,6 +2467,21 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            // >= ADMIN permissions on catalog collection required
+            if (
+              !checkAccess(
+                [
+                  {
+                    catalogCollectionId: args.objectId,
+                    minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return false
+            }
+
             return SharingService.changeCatalogCollectionPermissionLevel(
               {
                 catalogCollectionId: args.objectId,
@@ -2412,7 +2491,28 @@ export const Mutation = builder.mutationType({
               ctx
             )
           } else {
-            return SharingService.changeCatalogObjectPermissionLevel(
+            // >= ADMIN permissions on the object required
+            if (
+              !checkAccess(
+                [
+                  ...(args.objectType ===
+                  CatalogObjectTypeEnum.ANSWER_COLLECTION
+                    ? [
+                        {
+                          answerCollectionId: parseInt(args.objectId),
+                          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                        },
+                      ]
+                    : []),
+                  // TODO: add further object types, once they are supported by the sharing function
+                ],
+                ctx
+              )
+            ) {
+              return false
+            }
+
+            return SharingService.changeObjectPermissionLevel(
               {
                 permissionId: args.permissionId,
                 permissionLevel: args.permissionLevel,
@@ -2433,7 +2533,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      // TODO: potentially update access control
       transferObjectOwnership: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: PermissionInfo,
@@ -2444,6 +2543,21 @@ export const Mutation = builder.mutationType({
         },
         resolve(_, args, ctx) {
           if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            // == OWNER permissions on catalog collection required
+            if (
+              !checkAccess(
+                [
+                  {
+                    catalogCollectionId: args.objectId,
+                    minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return SharingService.transferCatalogCollectionOwnership(
               {
                 catalogCollectionId: args.objectId,
@@ -2454,6 +2568,22 @@ export const Mutation = builder.mutationType({
           } else if (
             args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
           ) {
+            // TODO: potentially combine this function for answer collections and other object types into a single one (shared logic)
+            // == OWNER permissions on answer collection required
+            if (
+              !checkAccess(
+                [
+                  {
+                    answerCollectionId: parseInt(args.objectId),
+                    minimumPermissionLevel: DB.PermissionLevel.OWNER,
+                  },
+                ],
+                ctx
+              )
+            ) {
+              return null
+            }
+
             return SharingService.transferAnswerCollectionOwnership(
               {
                 collectionId: parseInt(args.objectId),
