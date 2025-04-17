@@ -1,8 +1,5 @@
 import { ElementType, PermissionLevel, PrismaClient } from '@klicker-uzh/prisma'
-import {
-  MISSING_CATALOG_COLLECTION_ID,
-  recomputeDerivedPermissions,
-} from '@klicker-uzh/util'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
@@ -3067,58 +3064,4 @@ describe('Unit tests covering the creation of derived permissions for resources 
     await testOwnerPermissionPropagation(prisma, false)
   })
   // #endregion
-
-  // TODO: remove these cleanup calls everywhere - should be covered by afterAll hook
-  it('Remove all created data and users & verify their deletion', async () => {
-    // verify that only the default catalog collection is left in the database
-    const dbCatalogs = await prisma.catalogCollection.count()
-    expect(dbCatalogs).toBe(1)
-
-    // remove the answer collections from the top-level catalog collection
-    const dbAssignments = await prisma.catalogCollectionAssignment.count({
-      where: {
-        catalogCollectionId: { not: MISSING_CATALOG_COLLECTION_ID },
-      },
-    })
-    expect(dbAssignments).toBe(0)
-    await prisma.catalogCollectionAssignment.deleteMany({})
-    const dbAssignments2 = await prisma.catalogCollectionAssignment.count()
-    expect(dbAssignments2).toBe(0)
-
-    // remove the top level catalog collection for test suite independence
-    await prisma.catalogCollection.delete({
-      where: { id: MISSING_CATALOG_COLLECTION_ID },
-    })
-    const dbCatalogs2 = await prisma.catalogCollection.count()
-    expect(dbCatalogs2).toBe(0)
-
-    // delete all elements from the database
-    await prisma.element.deleteMany({})
-    const dbPermissions = await prisma.element.count()
-    expect(dbPermissions).toBe(0)
-
-    // delete all answer collections that are left in the database
-    await prisma.answerCollection.deleteMany({})
-    const dbAnswerCollections = await prisma.answerCollection.count()
-    expect(dbAnswerCollections).toBe(0)
-
-    // delete all activities that are left in the database
-    await prisma.liveQuiz.deleteMany({})
-    const liveQuizzes = await prisma.liveQuiz.count()
-    expect(liveQuizzes).toBe(0)
-    await prisma.practiceQuiz.deleteMany({})
-    const practiceQuizzes = await prisma.practiceQuiz.count()
-    expect(practiceQuizzes).toBe(0)
-    await prisma.microLearning.deleteMany({})
-    const microLearning = await prisma.microLearning.count()
-    expect(microLearning).toBe(0)
-    await prisma.groupActivity.deleteMany({})
-    const groupActivities = await prisma.groupActivity.count()
-    expect(groupActivities).toBe(0)
-
-    // delete all users that have been created for the test and validate that they have been removed
-    await prisma.user.deleteMany({})
-    const dbUsers = await prisma.user.count()
-    expect(dbUsers).toBe(0)
-  })
 })

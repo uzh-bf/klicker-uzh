@@ -2832,52 +2832,6 @@ describe('Unit tests for sharing service', () => {
     expect(dbCatalog2).toBeNull()
   })
 
-  // ! Cleanup
-  // #region
-  it('Verify that objects and permissions have been removed correctly and delete users', async () => {
-    // verify that only the default catalog collection is left in the database
-    const dbCatalogs = await prisma.catalogCollection.count()
-    expect(dbCatalogs).toBe(1)
-
-    // remove the answer collections from the top-level catalog collection
-    const dbAssignments = await prisma.catalogCollectionAssignment.count({
-      where: {
-        catalogCollectionId: { not: MISSING_CATALOG_COLLECTION_ID },
-      },
-    })
-    expect(dbAssignments).toBe(0)
-    await prisma.catalogCollectionAssignment.deleteMany({})
-    const dbAssignments2 = await prisma.catalogCollectionAssignment.count()
-    expect(dbAssignments2).toBe(0)
-
-    // remove the top level catalog collection for test suite independence
-    await prisma.catalogCollection.delete({
-      where: { id: MISSING_CATALOG_COLLECTION_ID },
-    })
-    const dbCatalogs2 = await prisma.catalogCollection.count()
-    expect(dbCatalogs2).toBe(0)
-
-    // verify that no elements are left in the permission table
-    const dbPermissions = await prisma.element.count()
-    expect(dbPermissions).toBe(0)
-
-    // ensure that no answer collections are left in the database
-    const dbAnswerCollections = await prisma.answerCollection.count()
-    expect(dbAnswerCollections).toBe(0)
-
-    // delete all users that have been created for the test and validate that they have been removed
-    await prisma.user.deleteMany({
-      where: {
-        id: {
-          in: [userOne.id, userTwo.id, userThree.id, userFour.id, userFive.id],
-        },
-      },
-    })
-    const dbUsers = await prisma.user.count()
-    expect(dbUsers).toBe(0)
-  })
-  // #endregion
-
   // TODO: make sure to extend tests once element and activity sharing is available with modifications and impact on derived permissions when executing the following actions
   // - switch of answer collection linked to an element - derived access to previous collection should be removed, access to new one automatically added
   // - switch of an element in an activity - if ADMIN permissions on activity (propagation required), derived admin access should be modified
