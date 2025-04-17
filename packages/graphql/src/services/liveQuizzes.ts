@@ -681,11 +681,7 @@ export async function manipulateLiveQuiz(
 // ------ LIVE QUIZ GETTER FUNCTIONS (LECTURER) ------
 // #region
 export async function getLiveQuizData(
-  {
-    id,
-  }: {
-    id: string
-  },
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   if (!id) {
@@ -774,17 +770,11 @@ export async function getUserLiveQuizzes(ctx: ContextWithUser) {
 
 export async function getUserRunningLiveQuizzes(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       liveQuizzes: {
-        where: {
-          status: PublicationStatus.PUBLISHED,
-        },
-        include: {
-          course: true,
-        },
+        where: { status: PublicationStatus.PUBLISHED },
+        include: { course: true },
       },
     },
   })
@@ -800,11 +790,7 @@ export async function getLecturerViewLiveQuiz(
     where: { id, ownerId: ctx.user.sub },
     include: {
       confusionFeedbacks: true,
-      feedbacks: {
-        where: {
-          isPinned: true,
-        },
-      },
+      feedbacks: { where: { isPinned: true } },
     },
   })
 
@@ -826,7 +812,7 @@ export async function getControlLiveQuiz(
   ctx: ContextWithUser
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id, status: PublicationStatus.PUBLISHED },
     include: {
       activeBlock: true,
       course: true,
@@ -845,7 +831,7 @@ export async function getControlLiveQuiz(
     },
   })
 
-  if (!quiz || quiz?.status !== PublicationStatus.PUBLISHED) {
+  if (!quiz) {
     return null
   }
 
@@ -981,40 +967,20 @@ export async function getCockpitQuiz(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, ownerId: ctx.user.sub },
+    where: { id, status: PublicationStatus.PUBLISHED },
     include: {
-      activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: {
-        orderBy: {
-          order: 'asc',
-        },
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
+        orderBy: { order: 'asc' },
+        include: { elements: { orderBy: { order: 'asc' } } },
       },
       course: true,
       confusionFeedbacks: true,
-      feedbacks: {
-        include: {
-          responses: true,
-        },
-      },
+      feedbacks: { include: { responses: true } },
     },
   })
 
-  if (!liveQuiz || liveQuiz?.status !== PublicationStatus.PUBLISHED) {
+  if (!liveQuiz) {
     return null
   }
 
@@ -1758,10 +1724,7 @@ export async function getLiveQuizSummary(
   ctx: ContextWithUser
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id: quizId,
-      ownerId: ctx.user.sub,
-    },
+    where: { id: quizId },
     include: {
       _count: {
         select: {
@@ -1770,16 +1733,8 @@ export async function getLiveQuizSummary(
           leaderboard: true,
         },
       },
-      blocks: {
-        include: {
-          elements: true,
-        },
-      },
-      activeBlock: {
-        include: {
-          elements: true,
-        },
-      },
+      blocks: { include: { elements: true } },
+      activeBlock: { include: { elements: true } },
     },
   })
 

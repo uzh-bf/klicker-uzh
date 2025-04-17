@@ -57,17 +57,9 @@ export async function getSingleQuestion(
   ctx: ContextWithUser
 ) {
   const question = await ctx.prisma.element.findUnique({
-    where: {
-      id,
-      isDeleted: false,
-      ownerId: ctx.user.sub,
-    },
+    where: { id, isDeleted: false },
     include: {
-      tags: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
+      tags: { orderBy: { order: 'asc' } },
       answerCollectionItems: true,
     },
   })
@@ -99,16 +91,9 @@ export async function getArtificialElementInstance(
   ctx: ContextWithUser
 ) {
   const element = await ctx.prisma.element.findUnique({
-    where: {
-      id: elementId,
-      ownerId: ctx.user.sub,
-    },
+    where: { id: elementId },
     include: {
-      answerCollection: {
-        include: {
-          entries: true,
-        },
-      },
+      answerCollection: { include: { entries: true } },
       answerCollectionItems: true,
     },
   })
@@ -145,10 +130,40 @@ export async function getSingleElementInstance(
   { id }: { id: number },
   ctx: ContextWithUser
 ) {
+  // fetch instance and check that the user has access to the activity the instance is included in (minimum READ access is sufficient)
   const instance = await ctx.prisma.elementInstance.findUnique({
     where: {
       id,
-      ownerId: ctx.user.sub,
+      OR: [
+        {
+          elementBlock: {
+            liveQuiz: {
+              permissions: { some: { userId: ctx.user.sub } },
+            },
+          },
+        },
+        {
+          elementStack: {
+            OR: [
+              {
+                practiceQuiz: {
+                  permissions: { some: { userId: ctx.user.sub } },
+                },
+              },
+              {
+                microLearning: {
+                  permissions: { some: { userId: ctx.user.sub } },
+                },
+              },
+              {
+                groupActivity: {
+                  permissions: { some: { userId: ctx.user.sub } },
+                },
+              },
+            ],
+          },
+        },
+      ],
     },
   })
 
@@ -631,10 +646,16 @@ export async function getInstanceUpdateActivities(
         DB.PublicationStatus.TEMPLATE,
       ]
     : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
+
+  // only activities where the user has at least WRITE permissions should be updated
+  const requiredActivityAccess: DB.PermissionLevel[] = [
+    DB.PermissionLevel.WRITE,
+    DB.PermissionLevel.ADMIN,
+    DB.PermissionLevel.OWNER,
+  ]
+
   const element = await ctx.prisma.element.findUnique({
-    where: {
-      id: elementId,
-    },
+    where: { id: elementId },
     include: {
       elementInstances: {
         include: {
@@ -642,32 +663,51 @@ export async function getInstanceUpdateActivities(
             include: {
               microLearning: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
+                  status: { in: acceptedStatusValues },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
                   },
                 },
               },
               practiceQuiz: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
+                  status: { in: acceptedStatusValues },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
                   },
                 },
               },
               groupActivity: {
                 where: {
-                  status: {
-                    in: acceptedStatusValues,
+                  status: { in: acceptedStatusValues },
+                  // only activities where the user has at least WRITE permissions should be updated
+                  permissions: {
+                    some: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: requiredActivityAccess,
+                      },
+                    },
                   },
                 },
               },
             },
           },
+          // ? where clause is not accepted by prisma for unknown reasons
           elementBlock: {
-            include: {
-              // ? where clause is not accepted by prisma for unknown reasons
-              liveQuiz: true,
-            },
+            include: { liveQuiz: { include: { permissions: true } } },
           },
         },
       },
@@ -695,12 +735,18 @@ export async function getInstanceUpdateActivities(
     }[]
   >((acc, instance) => {
     if (
-      instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
-      instance.elementBlock?.liveQuiz?.status ===
-        DB.PublicationStatus.SCHEDULED ||
-      (includeTemplateInstances &&
+      (instance.elementBlock?.liveQuiz?.status === DB.PublicationStatus.DRAFT ||
         instance.elementBlock?.liveQuiz?.status ===
-          DB.PublicationStatus.TEMPLATE)
+          DB.PublicationStatus.SCHEDULED ||
+        (includeTemplateInstances &&
+          instance.elementBlock?.liveQuiz?.status ===
+            DB.PublicationStatus.TEMPLATE)) &&
+      // ensure that user has at least WRITE permissions on activity (cannot be checked with where clause above)
+      instance.elementBlock.liveQuiz.permissions
+        .filter((permission) => permission.userId === ctx.user.sub)
+        .some((permission) =>
+          requiredActivityAccess.includes(permission.permissionLevel)
+        )
     ) {
       acc.push({
         activityName: instance.elementBlock.liveQuiz.name,

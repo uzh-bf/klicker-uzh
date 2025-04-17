@@ -145,29 +145,15 @@ export async function getAnswerCollectionsElements(
 ) {
   // fetch all answer collections, which are available to be included in elements
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: {
-          answerCollectionId: {
-            not: null,
-          },
-        },
+        where: { answerCollectionId: { not: null } },
         include: {
           answerCollection: {
             include: {
-              owner: {
-                select: {
-                  shortname: true,
-                },
-              },
-              entries: {
-                orderBy: {
-                  value: 'asc',
-                },
-              },
+              owner: { select: { shortname: true } },
+              entries: { orderBy: { value: 'asc' } },
             },
           },
         },
@@ -246,42 +232,15 @@ export async function getSingleAnswerCollection(
   ctx: ContextWithUser
 ) {
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-        },
-      },
-    },
+    where: { id },
     include: {
       entries: {
-        include: {
-          _count: {
-            select: {
-              itemUsages: true,
-            },
-          },
-        },
-        orderBy: {
-          value: 'asc',
-        },
+        include: { _count: { select: { itemUsages: true } } },
+        orderBy: { value: 'asc' },
       },
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-      },
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
-      _count: {
-        select: {
-          directPermissions: true,
-        },
-      },
+      permissions: { where: { userId: ctx.user.sub } },
+      owner: { select: { shortname: true } },
+      _count: { select: { directPermissions: true } },
     },
   })
 
@@ -314,16 +273,10 @@ export async function getSingleAnswerCollection(
 
 export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: {
-          answerCollectionId: {
-            not: null,
-          },
-        },
+        where: { answerCollectionId: { not: null } },
         include: {
           answerCollection: {
             include: {
@@ -331,51 +284,29 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
                 select: {
                   entries: true,
                   linkedElements: {
-                    where: {
-                      permissions: {
-                        some: {
-                          userId: ctx.user.sub,
-                        },
-                      },
-                    },
+                    where: { permissions: { some: { userId: ctx.user.sub } } },
                   },
                   linkedTemplates: {
                     where: {
                       OR: [
                         {
                           liveQuiz: {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                              },
-                            },
+                            permissions: { some: { userId: ctx.user.sub } },
                           },
                         },
                         {
                           practiceQuiz: {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                              },
-                            },
+                            permissions: { some: { userId: ctx.user.sub } },
                           },
                         },
                         {
                           microLearning: {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                              },
-                            },
+                            permissions: { some: { userId: ctx.user.sub } },
                           },
                         },
                         {
                           groupActivity: {
-                            permissions: {
-                              some: {
-                                userId: ctx.user.sub,
-                              },
-                            },
+                            permissions: { some: { userId: ctx.user.sub } },
                           },
                         },
                       ],
@@ -383,11 +314,7 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
                   },
                 },
               },
-              owner: {
-                select: {
-                  shortname: true,
-                },
-              },
+              owner: { select: { shortname: true } },
             },
           },
         },

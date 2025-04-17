@@ -436,17 +436,8 @@ export async function getPracticeQuizSummary(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: {
-      id,
-      ownerId: ctx.user.sub,
-    },
-    include: {
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
+    where: { id },
+    include: { stacks: { include: { elements: true } } },
   })
 
   if (!practiceQuiz) {

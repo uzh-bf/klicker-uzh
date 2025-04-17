@@ -1575,24 +1575,12 @@ export async function getGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, ownerId: ctx.user.sub, isDeleted: false },
+    where: { id, isDeleted: false },
     include: {
       course: true,
       clues: true,
-      activityInstances: {
-        include: {
-          group: true,
-        },
-      },
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      activityInstances: { include: { group: true } },
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
     },
   })
 
@@ -1823,22 +1811,10 @@ export async function getGradingGroupActivity(
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
     include: {
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       activityInstances: {
-        include: {
-          group: true,
-        },
-        orderBy: {
-          decisionsSubmittedAt: 'asc',
-        },
+        include: { group: true },
+        orderBy: { decisionsSubmittedAt: 'asc' },
       },
     },
   })

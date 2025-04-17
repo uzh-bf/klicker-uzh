@@ -209,23 +209,10 @@ export async function createCatalogCollection(
 }
 
 export async function getCatalogCollectionInfo(
-  { catalogCollectionId }: { catalogCollectionId?: string | null },
+  { catalogCollectionId }: { catalogCollectionId: string },
   ctx: ContextWithUser
 ) {
-  if (
-    catalogCollectionId === MISSING_CATALOG_COLLECTION_ID ||
-    !catalogCollectionId
-  ) {
-    return null
-  }
-
-  // verify that user has at least read permissions on the catalog collection
-  const valid = await verifyCatalogCollectionBrowsable(
-    { catalogCollectionId },
-    ctx
-  )
-
-  if (!valid) {
+  if (catalogCollectionId === MISSING_CATALOG_COLLECTION_ID) {
     return null
   }
 
@@ -258,25 +245,26 @@ export async function getCatalogCollectionInfo(
   }
 
   const isRequested = collection.accessRequests.length > 0
-  const isShared = collection.permissions.length > 0
-  const { isOwner, isManager, isEditor } = collection.permissions.reduce(
-    (acc, permission) => {
-      const level = permission.permissionLevel
-      return {
-        isOwner: acc.isOwner || level === DB.PermissionLevel.OWNER,
-        isManager:
-          acc.isManager ||
-          level === DB.PermissionLevel.OWNER ||
-          level === DB.PermissionLevel.ADMIN,
-        isEditor:
-          acc.isEditor ||
-          level === DB.PermissionLevel.OWNER ||
-          level === DB.PermissionLevel.ADMIN ||
-          level === DB.PermissionLevel.WRITE,
-      }
-    },
-    { isOwner: false, isManager: false, isEditor: false }
-  )
+  const { isOwner, isManager, isEditor, isShared } =
+    collection.permissions.reduce(
+      (acc, permission) => {
+        const level = permission.permissionLevel
+        return {
+          isOwner: acc.isOwner || level === DB.PermissionLevel.OWNER,
+          isManager:
+            acc.isManager ||
+            level === DB.PermissionLevel.OWNER ||
+            level === DB.PermissionLevel.ADMIN,
+          isEditor:
+            acc.isEditor ||
+            level === DB.PermissionLevel.OWNER ||
+            level === DB.PermissionLevel.ADMIN ||
+            level === DB.PermissionLevel.WRITE,
+          isShared: acc.isShared || level !== DB.PermissionLevel.OWNER,
+        }
+      },
+      { isOwner: false, isManager: false, isEditor: false, isShared: false }
+    )
 
   return {
     ...collection,
@@ -381,32 +369,12 @@ export async function changeCatalogObjectAccess(
 export async function getCatalogCollectionsList(ctx: ContextWithUser) {
   // function to retrieve all catalog collections except from public ones without any linked objects
   const collections = await ctx.prisma.catalogCollection.findMany({
-    where: {
-      id: {
-        not: MISSING_CATALOG_COLLECTION_ID,
-      },
-    },
+    where: { id: { not: MISSING_CATALOG_COLLECTION_ID } },
     include: {
-      _count: {
-        select: {
-          objectAssignments: true,
-        },
-      },
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-        },
-      },
-      accessRequests: {
-        where: {
-          userId: ctx.user.sub,
-        },
-      },
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
+      _count: { select: { objectAssignments: true } },
+      permissions: { where: { userId: ctx.user.sub } },
+      accessRequests: { where: { userId: ctx.user.sub } },
+      owner: { select: { shortname: true } },
     },
   })
 
@@ -617,12 +585,8 @@ export async function deleteCatalogCollection(
 // #region
 export async function countCatalogSharingRequests(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      pendingRequests: true,
-    },
+    where: { id: ctx.user.sub },
+    include: { pendingRequests: true },
   })
 
   if (!user) {
@@ -634,58 +598,19 @@ export async function countCatalogSharingRequests(ctx: ContextWithUser) {
 
 export async function getCatalogSharingRequests(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       pendingRequests: {
         include: {
-          user: {
-            select: {
-              shortname: true,
-              email: true,
-            },
-          },
-          catalogCollection: {
-            select: {
-              name: true,
-            },
-          },
-          answerCollection: {
-            select: {
-              name: true,
-            },
-          },
-          element: {
-            select: {
-              name: true,
-            },
-          },
-          course: {
-            select: {
-              name: true,
-            },
-          },
-          liveQuiz: {
-            select: {
-              name: true,
-            },
-          },
-          practiceQuiz: {
-            select: {
-              name: true,
-            },
-          },
-          microLearning: {
-            select: {
-              name: true,
-            },
-          },
-          groupActivity: {
-            select: {
-              name: true,
-            },
-          },
+          user: { select: { shortname: true, email: true } },
+          catalogCollection: { select: { name: true } },
+          answerCollection: { select: { name: true } },
+          element: { select: { name: true } },
+          course: { select: { name: true } },
+          liveQuiz: { select: { name: true } },
+          practiceQuiz: { select: { name: true } },
+          microLearning: { select: { name: true } },
+          groupActivity: { select: { name: true } },
         },
       },
     },
@@ -1674,30 +1599,12 @@ export async function getCatalogCollectionPermissions(
   { catalogCollectionId }: { catalogCollectionId: string },
   ctx: ContextWithUser
 ) {
-  // TODO: move access control with where and some permission checking to outside of this function (if possible)
-  // verify that sufficient permissions are given (ADMIN / OWNER for sharing) and load linked permissions
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
-    where: {
-      id: catalogCollectionId,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
+    where: { id: catalogCollectionId },
     include: {
       directPermissions: {
         include: {
-          user: {
-            select: {
-              id: true,
-              shortname: true,
-              email: true,
-            },
-          },
+          user: { select: { id: true, shortname: true, email: true } },
           // TODO: also include permissions awarded to user groups and set in return object
         },
       },
@@ -1922,30 +1829,12 @@ export async function getAnswerCollectionPermissions(
   { collectionId }: { collectionId: number },
   ctx: ContextWithUser
 ) {
-  // verify that the requesting user has sufficient permissions to view the permissions (sharing for ADMIN or OWNER)
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      // TODO: move access check out of this mutation (to pothos level, if possible)
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
+    where: { id: collectionId },
     include: {
       directPermissions: {
         include: {
-          user: {
-            select: {
-              id: true,
-              shortname: true,
-              email: true,
-            },
-          },
+          user: { select: { id: true, shortname: true, email: true } },
           // TODO: also include permissions awarded to user groups and set in return object
         },
       },
@@ -2408,27 +2297,12 @@ export async function getAnswerCollectionCatalogInfo(
   }: { collectionId: number; catalogCollectionId?: string | null },
   ctx: ContextWithUser
 ) {
-  // fetch answer collection and verify that the user has access to it
+  // fetch answer collection
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-        },
-      },
-    },
-    include: {
-      entries: true,
-      owner: {
-        select: {
-          shortname: true,
-        },
-      },
-    },
+    where: { id: collectionId },
+    include: { entries: true, owner: { select: { shortname: true } } },
   })
 
-  // check if the user exists and the user has access
   if (!collection) {
     return null
   }
@@ -2492,30 +2366,14 @@ export async function getCatalogObjects(
       objectAssignments: {
         include: {
           answerCollection: {
-            where: {
-              ownerId: {
-                not: null,
-              },
-            },
+            where: { ownerId: { not: null } },
             select: {
               id: true,
               name: true,
               ownerId: true,
-              owner: {
-                select: {
-                  shortname: true,
-                },
-              },
-              permissions: {
-                where: {
-                  userId: ctx.user.sub,
-                },
-              },
-              accessRequests: {
-                where: {
-                  userId: ctx.user.sub,
-                },
-              },
+              owner: { select: { shortname: true } },
+              permissions: { where: { userId: ctx.user.sub } },
+              accessRequests: { where: { userId: ctx.user.sub } },
             },
           },
           liveQuiz: {
@@ -2524,26 +2382,10 @@ export async function getCatalogObjects(
               name: true,
               status: true,
               ownerId: true,
-              owner: {
-                select: {
-                  shortname: true,
-                },
-              },
-              permissions: {
-                where: {
-                  userId: ctx.user.sub,
-                },
-              },
-              accessRequests: {
-                where: {
-                  userId: ctx.user.sub,
-                },
-              },
-              templateInfo: {
-                select: {
-                  id: true,
-                },
-              },
+              owner: { select: { shortname: true } },
+              permissions: { where: { userId: ctx.user.sub } },
+              accessRequests: { where: { userId: ctx.user.sub } },
+              templateInfo: { select: { id: true } },
             },
           },
         },
@@ -2633,9 +2475,7 @@ export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
   // fetch all answer collections, where the user is the owner or has been granted admin access
   const collections = await ctx.prisma.answerCollection.findMany({
     where: {
-      ownerId: {
-        not: null, // soft deleted answer collections cannot be added to the catalog
-      },
+      ownerId: { not: null }, // soft deleted answer collections cannot be added to the catalog
       permissions: {
         some: {
           userId: ctx.user.sub,
@@ -2645,9 +2485,7 @@ export async function getCatalogAnswerCollections(ctx: ContextWithUser) {
         },
       },
     },
-    orderBy: {
-      name: 'asc',
-    },
+    orderBy: { name: 'asc' },
   })
 
   return collections.map((collection) => ({
@@ -2670,9 +2508,7 @@ export async function getCatalogLiveQuizTemplates(ctx: ContextWithUser) {
         },
       },
     },
-    orderBy: {
-      name: 'asc',
-    },
+    orderBy: { name: 'asc' },
   })
 
   return liveQuizzes.map((liveQuiz) => ({
