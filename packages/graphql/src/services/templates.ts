@@ -131,7 +131,7 @@ export async function validateActivityPermissions(
 
 export async function validateTemplateAccessible(
   { templateId }: { templateId: string },
-  ctx: ContextWithUser
+  ctx: PrismaTransactionContextWithUser
 ) {
   const template = await ctx.prisma.activityTemplate.findUnique({
     where: { id: templateId },
@@ -1772,7 +1772,7 @@ export async function createLiveQuizFromTemplate(
 
           // create a new element based on the provided data
           const createdElement = await manipulateQuestion(
-            { ...values, options },
+            { ...values, options, templateId },
             { ...ctx, prisma }
           )
 

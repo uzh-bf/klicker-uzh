@@ -20,6 +20,7 @@ import type {
 } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
@@ -182,6 +183,7 @@ export async function manipulateQuestion(
     basePoints,
     pointsMultiplier,
     tags,
+    templateId,
   }: ElementManipulationInput,
   // type modification required for method to be usable inside transaction without type errors
   ctx: PrismaTransactionContextWithUser
@@ -231,18 +233,36 @@ export async function manipulateQuestion(
     options &&
     options.answerCollection
   ) {
-    const validAccess = await checkAccess(
-      [
-        {
-          answerCollectionId: options.answerCollection,
-          minimumPermissionLevel: DB.PermissionLevel.READ,
-        },
-      ],
-      ctx
-    )
+    if (templateId) {
+      // fetch all answer collections that are either available directly or through template
+      const availableAnswerCollections = await getAnswerCollectionsElements(
+        { templateId },
+        ctx
+      )
 
-    if (!validAccess) {
-      return null
+      // check if the answer collection that should be linked is available
+      const validAccess = availableAnswerCollections.some(
+        (collection) => collection.id === options.answerCollection
+      )
+
+      if (!validAccess) {
+        return null
+      }
+    } else {
+      // access check for answer collection
+      const validAccess = await checkAccess(
+        [
+          {
+            answerCollectionId: options.answerCollection,
+            minimumPermissionLevel: DB.PermissionLevel.READ,
+          },
+        ],
+        ctx
+      )
+
+      if (!validAccess) {
+        return null
+      }
     }
   }
 
