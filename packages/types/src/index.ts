@@ -339,7 +339,7 @@ export type AvatarSettings = {
 // ----- RESOURCES -----
 // #region
 export type ObjectSharingRequest = {
-  permissionId: number
+  requestId: number
   objectName: string
   objectType: CatalogObjectType
   userId: string

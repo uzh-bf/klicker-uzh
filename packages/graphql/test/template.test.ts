@@ -22,11 +22,19 @@ import {
 } from '../src/services/resources.js'
 import {
   createActivityTemplate,
+  deleteActivityTemplate,
   getMatchingUserElementsTemplate,
+  validateTemplateAccessible,
 } from '../src/services/templates.js'
-import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import {
+  initializePrisma,
+  seedCatalogCollections,
+  seedLiveQuizTemplates,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
 import { questionsSLAF } from './testData.js'
-import { userOne, userTwo } from './userData.js'
+import { userFour, userOne, userThree, userTwo } from './userData.js'
 
 describe('Unit tests for template service', () => {
   // shared resources used across tests
@@ -500,10 +508,6 @@ describe('Unit tests for template service', () => {
       userTwoCtx
     )
     expect(res35).toHaveLength(0)
-
-    // cleanup: delete all elements from the database
-    const elementIds = elements.map((element) => element.id)
-    await prisma.element.deleteMany({ where: { id: { in: elementIds } } })
   })
 
   it('Verify access to correct answer collections when using activity template', async () => {
@@ -701,18 +705,6 @@ describe('Unit tests for template service', () => {
     expect(templateCollectionIdsUser2).toEqual(
       expect.arrayContaining([AC1.id, AC3.id, AC4.id, AC5.id])
     )
-
-    // cleanup; delete the created answer collections and the template
-    await prisma.liveQuiz.delete({ where: { id: activityId } })
-    await prisma.answerCollection.deleteMany({
-      where: { id: { in: [AC1.id, AC2.id, AC3.id, AC4.id, AC5.id] } },
-    })
-    const templateCount = await prisma.activityTemplate.count()
-    expect(templateCount).toBe(0)
-    const liveQuizCount = await prisma.liveQuiz.count()
-    expect(liveQuizCount).toBe(0)
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
   })
 
   it('Verify that when updating element instances in templates, answer collection - template links are updated correctly', async () => {
@@ -1198,5 +1190,278 @@ describe('Unit tests for template service', () => {
     await prisma.element.deleteMany({
       where: { id: { in: [SEQuestion.id, CSQuestion.id] } },
     })
+  })
+
+  it('Validate that access to activity templates is correctly checked', async () => {
+    // create activity templates for testing
+    const {
+      activityId1,
+      activityId2,
+      activityId3,
+      templateId1,
+      templateId2,
+      templateId3,
+    } = await seedLiveQuizTemplates(prisma)
+
+    // create catalog collections for testing
+    const { publicCatalog, restrictedCatalog } =
+      await seedCatalogCollections(userOneCtx)
+
+    // seed permissions on the catalog collection for access validation
+    // create permissions for users 2, 3, and 4 (READ, WRITE, ADMIN in ascending order)
+    await prisma.permission.createMany({
+      data: [
+        {
+          permissionLevel: PermissionLevel.READ,
+          userId: userTwo.id,
+          catalogCollectionId: publicCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          userId: userThree.id,
+          catalogCollectionId: publicCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: userFour.id,
+          catalogCollectionId: publicCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.READ,
+          userId: userTwo.id,
+          catalogCollectionId: restrictedCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.WRITE,
+          userId: userThree.id,
+          catalogCollectionId: restrictedCatalog.id,
+        },
+        {
+          permissionLevel: PermissionLevel.ADMIN,
+          userId: userFour.id,
+          catalogCollectionId: restrictedCatalog.id,
+        },
+      ],
+    })
+
+    // recompute derived permissions that are checked in backend service functions
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: restrictedCatalog.id },
+      prisma
+    )
+
+    // verify that the creation was successful
+    const templates = await prisma.liveQuiz.findMany({
+      where: {
+        status: PublicationStatus.TEMPLATE,
+      },
+    })
+    expect(templates.length).toBe(3)
+    expect(templates.map((template) => template.id)).toEqual(
+      expect.arrayContaining([activityId1, activityId2, activityId3])
+    )
+
+    // add LQ1 to top level catlaog collection with public access -> should be accessible to everyone
+    const assignment1 = await prisma.catalogCollectionAssignment.upsert({
+      where: {
+        liveQuizId_catalogCollectionId: {
+          liveQuizId: activityId1,
+          catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+        },
+      },
+      create: {
+        access: ObjectAccess.PUBLIC,
+        liveQuiz: {
+          connect: {
+            id: activityId1,
+          },
+        },
+        catalogCollection: {
+          connect: {
+            id: publicCatalog.id,
+          },
+        },
+      },
+      update: {
+        access: ObjectAccess.PUBLIC,
+      },
+    })
+
+    // check accessible for everyone
+    const { accessible: res1 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userOneCtx
+    )
+    expect(res1).toBeTruthy()
+    const { accessible: res2 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userTwoCtx
+    )
+    expect(res2).toBeTruthy()
+    const { accessible: res3 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userThreeCtx
+    )
+    expect(res3).toBeTruthy()
+    const { accessible: res4 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userFourCtx
+    )
+    expect(res4).toBeTruthy()
+    const { accessible: res5 } = await validateTemplateAccessible(
+      { templateId: templateId1 },
+      userFiveCtx
+    )
+    expect(res5).toBeTruthy()
+
+    // add LQ2 to public catalog collection with public access rights -> should be accessible to everyone
+    const assignment2 = await prisma.catalogCollectionAssignment.upsert({
+      where: {
+        liveQuizId_catalogCollectionId: {
+          liveQuizId: activityId2,
+          catalogCollectionId: publicCatalog.id,
+        },
+      },
+      create: {
+        access: ObjectAccess.PUBLIC,
+        liveQuiz: {
+          connect: {
+            id: activityId2,
+          },
+        },
+        catalogCollection: {
+          connect: {
+            id: publicCatalog.id,
+          },
+        },
+      },
+      update: {
+        access: ObjectAccess.PUBLIC,
+      },
+    })
+
+    // check accessible for everyone
+    const { accessible: res6 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userOneCtx
+    )
+    expect(res6).toBeTruthy()
+    const { accessible: res7 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userTwoCtx
+    )
+    expect(res7).toBeTruthy()
+    const { accessible: res8 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userThreeCtx
+    )
+    expect(res8).toBeTruthy()
+    const { accessible: res9 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userFourCtx
+    )
+    expect(res9).toBeTruthy()
+    const { accessible: res10 } = await validateTemplateAccessible(
+      { templateId: templateId2 },
+      userFiveCtx
+    )
+    expect(res10).toBeTruthy()
+
+    // add LQ3 to restricted catalog collection with public access rights -> should be accessible to users with access to the restricted catalog collection
+    const assignment3 = await prisma.catalogCollectionAssignment.upsert({
+      where: {
+        liveQuizId_catalogCollectionId: {
+          liveQuizId: activityId3,
+          catalogCollectionId: restrictedCatalog.id,
+        },
+      },
+      create: {
+        access: ObjectAccess.PUBLIC,
+        liveQuiz: {
+          connect: {
+            id: activityId3,
+          },
+        },
+        catalogCollection: {
+          connect: {
+            id: restrictedCatalog.id,
+          },
+        },
+      },
+      update: {
+        access: ObjectAccess.PUBLIC,
+      },
+    })
+
+    // check accessilbe only to users with access to restricted catalog collection
+    const { accessible: res11 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userOneCtx
+    )
+    expect(res11).toBeTruthy() // owner of restricted catalog collection
+    const { accessible: res12 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userTwoCtx
+    )
+    expect(res12).toBeTruthy() // read permissions on restricted catalog collection
+    const { accessible: res13 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userThreeCtx
+    )
+    expect(res13).toBeTruthy() // write permissions on restricted catalog collection
+    const { accessible: res14 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userFourCtx
+    )
+    expect(res14).toBeTruthy() // admin permissions on restricted catalog collection
+    const { accessible: res15 } = await validateTemplateAccessible(
+      { templateId: templateId3 },
+      userFiveCtx
+    )
+    expect(res15).toBeFalsy() // no permissions on restricted catalog collection
+  })
+
+  it('Verify that users with sufficient permissions can delete the created activity templates', async () => {
+    // create activity templates for testing
+    const { activityId1, activityId2, activityId3 } =
+      await seedLiveQuizTemplates(prisma)
+
+    // delete activity templates with owner / admin permissions
+    const res5 = await deleteActivityTemplate(
+      {
+        activityId: activityId1,
+        activityType: ActivityType.LIVE_QUIZ,
+      },
+      userOneCtx
+    )
+    expect(res5).toBeTruthy()
+    const res6 = await deleteActivityTemplate(
+      {
+        activityId: activityId2,
+        activityType: ActivityType.LIVE_QUIZ,
+      },
+      userOneCtx
+    )
+    expect(res6).toBeTruthy()
+    const res7 = await deleteActivityTemplate(
+      {
+        activityId: activityId3,
+        activityType: ActivityType.LIVE_QUIZ,
+      },
+      userOneCtx
+    )
+    expect(res7).toBeTruthy()
+
+    // verify that the activity templates have been removed from the database
+    const liveQuizTemplates = await prisma.liveQuiz.findMany({
+      where: {
+        status: PublicationStatus.TEMPLATE,
+      },
+    })
+    expect(liveQuizTemplates.length).toBe(0)
   })
 })

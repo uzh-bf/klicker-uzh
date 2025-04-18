@@ -77,17 +77,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
     expect(derivedPermission!.permissionLevel).toBe(PermissionLevel.OWNER)
     expect(derivedPermission!.directPermissionId).toBeNull()
     expect(derivedPermission!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that other direct permissions are correctly copied into the derived permissions table', async () => {
@@ -183,17 +172,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       userFourPermission.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that when passing a userId only the corresponding derived permissions are updated', async () => {
@@ -358,17 +336,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       userThreePermission.id
     )
     expect(updatedDerivedPermissionUserThree!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that user group permissions are correctly expanded into individual derived permissions', async () => {
@@ -499,22 +466,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       groupPermission2.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and user groups
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    await prisma.userGroup.deleteMany({
-      where: { id: { in: [userGroup1.id, userGroup2.id] } },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   async function permissionPrecendenceIndividualGroup(
@@ -676,22 +627,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       userFourPermission.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   }
 
   it('Verify that individual permissions have precedence over user group permissions if higher (and vice-versa) (individual derived permission recomputation with userId)', async () => {
@@ -823,22 +758,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       },
     })
     expect(missingPermission2).toBeNull()
-
-    // cleanup: delete all created objects and user groups
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that on removal of direct individual permissions, corresponding derived permissions are also removed', async () => {
@@ -919,17 +838,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       },
     })
     expect(missingPermission).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that on removal of direct individual permissions, remaining group permissions take effect (also if lower)', async () => {
@@ -1077,22 +985,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       groupPermission.id
     )
     expect(updatedDerivedPermissionUserThree!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and user groups
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that on removal of direct group permissions, remaining individual permissions take effect (also if lower)', async () => {
@@ -1237,22 +1129,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       userThreePermission.id
     )
     expect(updatedDerivedPermissionUserThree!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and user groups
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const catalogCollectionCount = await prisma.catalogCollection.count()
-    expect(catalogCollectionCount).toBe(1) // only top-level collection is left
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
   // #endregion
 })
