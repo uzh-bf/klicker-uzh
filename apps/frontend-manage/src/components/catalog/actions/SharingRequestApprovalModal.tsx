@@ -81,7 +81,7 @@ function SharingRequestApprovalModal({
             e?.stopPropagation()
             const result = await approveObjectSharingRequest({
               variables: {
-                requestId: request.permissionId,
+                requestId: request.requestId,
                 userId: request.userId,
                 permissionLevel,
                 propagation: false, // TODO: update this parameter based on user input
@@ -111,7 +111,7 @@ function SharingRequestApprovalModal({
                       getCatalogSharingRequests: previousRequests.filter(
                         (r) =>
                           !(
-                            r.permissionId === request.permissionId &&
+                            r.requestId === request.requestId &&
                             r.userId === request.userId
                           )
                       ),

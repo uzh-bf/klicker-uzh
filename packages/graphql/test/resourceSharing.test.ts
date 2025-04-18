@@ -432,7 +432,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(pendingAccessRequest2.length).toBe(4) // 2 access requests, one entry in table each for 1 ADMIN and 1 OWNER
     expect(
       pendingAccessRequest2.map((permission) => permission.answerCollectionId)
-    ).toEqual(expect.arrayContaining([AC1!.id, AC1!.id]))
+    ).toEqual(expect.arrayContaining([AC1!.id, AC2!.id]))
 
     // import public AC and verify that importing restricted AC does not work
     const failure3 = await importAnswerCollection(

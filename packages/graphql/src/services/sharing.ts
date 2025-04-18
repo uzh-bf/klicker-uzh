@@ -120,14 +120,6 @@ export async function validateActivityPermissions(
   },
   ctx: ContextWithUser
 ) {
-  let valid = false
-  let activity:
-    | DB.LiveQuiz
-    | DB.PracticeQuiz
-    | DB.MicroLearning
-    | DB.GroupActivity
-    | null = null
-
   if (activityType === ActivityType.LIVE_QUIZ) {
     // check if the user has access to the live quiz
     const valid = await checkAccess(

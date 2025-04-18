@@ -33,7 +33,7 @@ function PendingSharingRequests() {
       <div className="border-t">
         {requests.map((request) => (
           <CatalogSharingRequest
-            key={`sharing-request-${request.permissionId}`}
+            key={`sharing-request-${request.requestId}`}
             request={request}
             setDeclineSuccessful={setDeclineSuccessful}
             setDeclineFailure={setDeclineFailure}

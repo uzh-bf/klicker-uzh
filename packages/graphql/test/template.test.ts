@@ -1266,7 +1266,7 @@ describe('Unit tests for template service', () => {
     )
 
     // add LQ1 to top level catlaog collection with public access -> should be accessible to everyone
-    const assignment1 = await prisma.catalogCollectionAssignment.upsert({
+    await prisma.catalogCollectionAssignment.upsert({
       where: {
         liveQuizId_catalogCollectionId: {
           liveQuizId: activityId1,
@@ -1282,7 +1282,7 @@ describe('Unit tests for template service', () => {
         },
         catalogCollection: {
           connect: {
-            id: publicCatalog.id,
+            id: MISSING_CATALOG_COLLECTION_ID,
           },
         },
       },

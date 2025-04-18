@@ -29,7 +29,7 @@ function CatalogSharingRequest({
 
   return (
     <div
-      key={`sharing-request-${request.permissionId}`}
+      key={`sharing-request-${request.requestId}`}
       className="flex flex-row items-center justify-between border-b py-1 text-sm"
       data-cy={`sharing-request-${request.objectName}-${request.userShortname}`}
     >
@@ -67,7 +67,7 @@ function CatalogSharingRequest({
             e?.stopPropagation()
             const result = await declineObjectSharingRequest({
               variables: {
-                requestId: request.permissionId,
+                requestId: request.requestId,
                 userId: request.userId,
               },
               optimisticResponse: {
@@ -95,7 +95,7 @@ function CatalogSharingRequest({
                       getCatalogSharingRequests: previousRequests.filter(
                         (r) =>
                           !(
-                            r.permissionId === request.permissionId &&
+                            r.requestId === request.requestId &&
                             r.userId === request.userId
                           )
                       ),
