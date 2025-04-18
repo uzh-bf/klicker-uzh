@@ -7,8 +7,18 @@ import {
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { createAnswerCollection } from '../src/services/resources.js'
+import { createCatalogCollection } from '../src/services/sharing.js'
+import {
+  answerCollection1,
+  answerCollection2,
+  catalogCollection1,
+  catalogCollection2,
+} from './testData.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
+// ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
+// #region
 export async function testInitialization(prisma, emitter) {
   // upsert all users in the database
   await Promise.all(
@@ -157,3 +167,49 @@ export async function initializePrisma() {
     throw new Error(`Database connection failed: ${error}`)
   }
 }
+// #endregion
+
+// ! Content helpers (object creation for testing)
+// #region
+export async function seedAnswerCollections(userContext) {
+  const collections = await Promise.all(
+    [answerCollection1, answerCollection2].map((collection) =>
+      createAnswerCollection(
+        {
+          name: collection.name,
+          description: collection.description,
+          answers: collection.entries,
+        },
+        userContext
+      )
+    )
+  )
+
+  if (!collections || collections.length !== 2) {
+    throw new Error('Failed to create answer collections')
+  }
+
+  return collections
+}
+
+export async function seedCatalogCollections(userContext) {
+  const [publicCatalog, restrictedCatalog] = await Promise.all([
+    createCatalogCollection(
+      {
+        name: catalogCollection1.name,
+        access: catalogCollection1.access,
+      },
+      userContext
+    ),
+    createCatalogCollection(
+      {
+        name: catalogCollection2.name,
+        access: catalogCollection2.access,
+      },
+      userContext
+    ),
+  ])
+
+  return { publicCatalog, restrictedCatalog }
+}
+// #endregion

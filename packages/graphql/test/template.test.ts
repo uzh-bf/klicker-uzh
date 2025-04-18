@@ -25,7 +25,7 @@ import {
   getMatchingUserElementsTemplate,
 } from '../src/services/templates.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
-import { questionsSLAF } from './templateData.js'
+import { questionsSLAF } from './testData.js'
 import { userOne, userTwo } from './userData.js'
 
 describe('Unit tests for template service', () => {

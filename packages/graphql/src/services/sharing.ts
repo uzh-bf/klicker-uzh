@@ -13,13 +13,11 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { validateAnswerCollectionPermissions } from './resources.js'
 import { validateActivityPermissions } from './templates.js'
 
 // ! Helper functions
 // #region
 
-// TODO: remove this helper function once no longer used
 // helper function to check for a specific access level on the catalog collection
 async function validateCatalogCollectionPermissions(
   {
@@ -147,11 +145,13 @@ async function verifyCatalogObjectEditPermissions(
   else {
     if (typeof assignment.answerCollection?.id !== 'undefined') {
       // verify that the user has access to the answer collection
-      const { valid } = await validateAnswerCollectionPermissions(
-        {
-          collectionId: assignment.answerCollection.id,
-          acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
-        },
+      const valid = await checkAccess(
+        [
+          {
+            answerCollectionId: assignment.answerCollection.id,
+            minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+          },
+        ],
         ctx
       )
       sufficientPermissions = valid
