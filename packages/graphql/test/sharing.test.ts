@@ -38,6 +38,7 @@ import {
 } from '../src/services/templates.js'
 import {
   initializePrisma,
+  seedAnswerCollectionPermissions,
   seedAnswerCollections,
   seedCatalogCollections,
   testCleanup,
@@ -51,7 +52,6 @@ import {
 } from './testData.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-// TODO: Split up and improve this test into a resources and multiple sharing test suites
 describe('Unit tests for sharing service', () => {
   // shared resources used across tests
   let prisma: PrismaClient
@@ -138,48 +138,6 @@ describe('Unit tests for sharing service', () => {
     const templateId3 = ATs.find((AT) => AT.liveQuizId === LQ3Id)!.id
 
     return { templateId1, templateId2, templateId3, LQ1Id, LQ2Id, LQ3Id }
-  }
-
-  async function seedAnswerCollectionPermissions(prisma, AC1Id, AC2Id) {
-    // create permissions for users 2, 3, and 4 (ADMIN, WRITE, READ in descending order)
-    await prisma.permission.createMany({
-      data: [
-        {
-          permissionLevel: PermissionLevel.ADMIN,
-          userId: userTwo.id,
-          answerCollectionId: AC1Id,
-        },
-        {
-          permissionLevel: PermissionLevel.WRITE,
-          userId: userThree.id,
-          answerCollectionId: AC1Id,
-        },
-        {
-          permissionLevel: PermissionLevel.READ,
-          userId: userFour.id,
-          answerCollectionId: AC1Id,
-        },
-        {
-          permissionLevel: PermissionLevel.ADMIN,
-          userId: userTwo.id,
-          answerCollectionId: AC2Id,
-        },
-        {
-          permissionLevel: PermissionLevel.WRITE,
-          userId: userThree.id,
-          answerCollectionId: AC2Id,
-        },
-        {
-          permissionLevel: PermissionLevel.READ,
-          userId: userFour.id,
-          answerCollectionId: AC2Id,
-        },
-      ],
-    })
-
-    // recompute derived permissions that are checked in backend service functions
-    await recomputeDerivedPermissions({ answerCollectionId: AC1Id }, prisma)
-    await recomputeDerivedPermissions({ answerCollectionId: AC2Id }, prisma)
   }
 
   async function seedCatalogCollectionPermissions(

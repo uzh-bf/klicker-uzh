@@ -24,6 +24,7 @@ import {
 } from '../src/services/resources.js'
 import {
   initializePrisma,
+  seedAnswerCollectionPermissions,
   seedAnswerCollections,
   testCleanup,
   testInitialization,
@@ -71,48 +72,6 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   afterEach(async () => {
     await testCleanup(prisma)
   })
-
-  async function seedAnswerCollectionPermissions(AC1Id, AC2Id) {
-    // create permissions for users 2, 3, and 4 (ADMIN, WRITE, READ in descending order)
-    await prisma.permission.createMany({
-      data: [
-        {
-          permissionLevel: PermissionLevel.ADMIN,
-          userId: userTwo.id,
-          answerCollectionId: AC1Id,
-        },
-        {
-          permissionLevel: PermissionLevel.WRITE,
-          userId: userThree.id,
-          answerCollectionId: AC1Id,
-        },
-        {
-          permissionLevel: PermissionLevel.READ,
-          userId: userFour.id,
-          answerCollectionId: AC1Id,
-        },
-        {
-          permissionLevel: PermissionLevel.ADMIN,
-          userId: userTwo.id,
-          answerCollectionId: AC2Id,
-        },
-        {
-          permissionLevel: PermissionLevel.WRITE,
-          userId: userThree.id,
-          answerCollectionId: AC2Id,
-        },
-        {
-          permissionLevel: PermissionLevel.READ,
-          userId: userFour.id,
-          answerCollectionId: AC2Id,
-        },
-      ],
-    })
-
-    // recompute derived permissions that are checked in backend service functions
-    await recomputeDerivedPermissions({ answerCollectionId: AC1Id }, prisma)
-    await recomputeDerivedPermissions({ answerCollectionId: AC2Id }, prisma)
-  }
 
   // ! Answer Collection Management
   // #region
@@ -187,7 +146,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   it('Verify that all users with access to the answer collection can use the query to include it in elements', async () => {
     // create answer collections for testing
     const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
-    await seedAnswerCollectionPermissions(AC1!.id, AC2!.id)
+    await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
 
     // check availability of answer collection during element creation
     for (const ctx of [userOneCtx, userTwoCtx, userThreeCtx, userFourCtx]) {
@@ -205,7 +164,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   it('Verify that all users with access to the answer collection can query its content', async () => {
     // create answer collections for testing
     const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
-    await seedAnswerCollectionPermissions(AC1!.id, AC2!.id)
+    await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
 
     // check availability of answer collection during element creation
     const collection1 = await getSingleAnswerCollection(
@@ -284,7 +243,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
   it('Verify that answer collection info is correctly loaded (including potential links to elements and templates impacting removability)', async () => {
     // create answer collections for testing
     const [AC1, AC2] = await seedAnswerCollections(userOneCtx)
-    await seedAnswerCollectionPermissions(AC1!.id, AC2!.id)
+    await seedAnswerCollectionPermissions(prisma, AC1!.id, AC2!.id)
 
     // seed an element, owned by user 1 and shared with user 3
     const element = await prisma.element.create({
@@ -1015,7 +974,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
       { id: firstEntry.id, collectionId: AC1!.id },
       userOneCtx
     )
-    expect(failure1).toBeNull()
+    expect(failure2).toBeNull()
 
     // delete the second element and verify that the answer collection entry can now be deleted
     await prisma.element.delete({

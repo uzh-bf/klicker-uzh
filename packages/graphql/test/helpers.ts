@@ -1,10 +1,16 @@
 import {
+  AnswerCollection,
+  CatalogCollection,
   ObjectAccess,
+  PermissionLevel,
   PrismaClient,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
-import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import {
+  MISSING_CATALOG_COLLECTION_ID,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
@@ -171,7 +177,15 @@ export async function initializePrisma() {
 
 // ! Content helpers (object creation for testing)
 // #region
-export async function seedAnswerCollections(userContext) {
+/**
+ * Seeds two answer collections with different access levels (public and restricted).
+ *
+ * @param userContext - The user context for the current operation
+ * @returns {Promise<AnswerCollection[]>}
+ */
+export async function seedAnswerCollections(
+  userContext
+): Promise<AnswerCollection[]> {
   const collections = await Promise.all(
     [answerCollection1, answerCollection2].map((collection) =>
       createAnswerCollection(
@@ -185,14 +199,27 @@ export async function seedAnswerCollections(userContext) {
     )
   )
 
-  if (!collections || collections.length !== 2) {
+  if (
+    !collections ||
+    collections.some((collection) => !collection) ||
+    collections.length !== 2
+  ) {
     throw new Error('Failed to create answer collections')
   }
 
-  return collections
+  return collections as AnswerCollection[]
 }
 
-export async function seedCatalogCollections(userContext) {
+/**
+ * Seeds two catalog collections with different access levels (public and restricted).
+ *
+ * @param userContext - The user context for the current operation
+ * @returns {Promise<{ publicCatalog: CatalogCollection, restrictedCatalog: CatalogCollection }>}
+ */
+export async function seedCatalogCollections(userContext): Promise<{
+  publicCatalog: CatalogCollection
+  restrictedCatalog: CatalogCollection
+}> {
   const [publicCatalog, restrictedCatalog] = await Promise.all([
     createCatalogCollection(
       {
@@ -211,5 +238,57 @@ export async function seedCatalogCollections(userContext) {
   ])
 
   return { publicCatalog, restrictedCatalog }
+}
+
+/**
+ * Seeds permission records for two answer collections, setting up a hierarchical access structure
+ * with different permission levels (ADMIN, WRITE, READ) for users 2, 3, and 4.
+ *
+ * @param prisma - The Prisma client instance for database operations
+ * @param AC1Id - The ID of the first answer collection to create permissions for
+ * @param AC2Id - The ID of the second answer collection to create permissions for
+ * @returns {Promise<void>}
+ *
+ */
+export async function seedAnswerCollectionPermissions(prisma, AC1Id, AC2Id) {
+  // create permissions for users 2, 3, and 4 (ADMIN, WRITE, READ in descending order)
+  await prisma.permission.createMany({
+    data: [
+      {
+        permissionLevel: PermissionLevel.ADMIN,
+        userId: userTwo.id,
+        answerCollectionId: AC1Id,
+      },
+      {
+        permissionLevel: PermissionLevel.WRITE,
+        userId: userThree.id,
+        answerCollectionId: AC1Id,
+      },
+      {
+        permissionLevel: PermissionLevel.READ,
+        userId: userFour.id,
+        answerCollectionId: AC1Id,
+      },
+      {
+        permissionLevel: PermissionLevel.ADMIN,
+        userId: userTwo.id,
+        answerCollectionId: AC2Id,
+      },
+      {
+        permissionLevel: PermissionLevel.WRITE,
+        userId: userThree.id,
+        answerCollectionId: AC2Id,
+      },
+      {
+        permissionLevel: PermissionLevel.READ,
+        userId: userFour.id,
+        answerCollectionId: AC2Id,
+      },
+    ],
+  })
+
+  // recompute derived permissions that are checked in backend service functions
+  await recomputeDerivedPermissions({ answerCollectionId: AC1Id }, prisma)
+  await recomputeDerivedPermissions({ answerCollectionId: AC2Id }, prisma)
 }
 // #endregion
