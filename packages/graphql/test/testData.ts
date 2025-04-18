@@ -1,20 +1,4 @@
-import { ElementType } from '@klicker-uzh/prisma'
-
-// mock user 1
-export const userOne = {
-  id: '60068013-da49-4e47-988e-37fb44dabf9e',
-  sub: '60068013-da49-4e47-988e-37fb44dabf9e',
-  email: 'first@example.com',
-  shortname: 'firstuser',
-}
-
-// mock user 2
-export const userTwo = {
-  id: 'd850db64-eb83-4b84-b7e0-a870ca99d415',
-  sub: 'd850db64-eb83-4b84-b7e0-a870ca99d415',
-  email: 'second@example.com',
-  shortname: 'seconduser',
-}
+import { ElementType, ObjectAccess } from '@klicker-uzh/prisma'
 
 // questions with all possible combinations of sample solutions and answer feedbacks
 export const questionsSLAF = [
@@ -106,3 +90,29 @@ export const questionsSLAF = [
   { name: 'FLASHCARD', type: ElementType.FLASHCARD, options: {} },
   { name: 'CONTENT', type: ElementType.CONTENT, options: {} },
 ]
+
+// answer collection 1
+export const answerCollection1 = {
+  name: 'Answer Collection 1',
+  description: 'This is the first answer collection',
+  entries: ['entry1', 'entry2', 'entry3', 'entry4'],
+}
+
+// answer collection 2
+export const answerCollection2 = {
+  name: 'Answer Collection 2',
+  description: 'This is the second answer collection',
+  entries: ['entry5', 'entry6', 'entry7', 'entry8'],
+}
+
+// catalog collection 1 (public)
+export const catalogCollection1 = {
+  name: 'Public Catalog Collection',
+  access: ObjectAccess.PUBLIC,
+}
+
+// catalog collection 2 (restricted)
+export const catalogCollection2 = {
+  name: 'Restricted Catalog Collection',
+  access: ObjectAccess.RESTRICTED,
+}

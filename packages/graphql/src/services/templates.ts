@@ -20,10 +20,8 @@ import type {
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
 import { manipulateQuestion } from './questions.js'
-import {
-  getAnswerCollectionsElements,
-  validateAnswerCollectionPermissions,
-} from './resources.js'
+import { getAnswerCollectionsElements } from './resources.js'
+import { checkAccess } from './sharing.js'
 
 // ! Helper functions
 // #region
@@ -1710,15 +1708,13 @@ export async function createLiveQuizFromTemplate(
             const answerCollectionId = values.options.answerCollection
 
             // check if the user already has access to the answer collection
-            const { valid } = await validateAnswerCollectionPermissions(
-              {
-                collectionId: answerCollectionId,
-                acceptedPermissionLevels: [
-                  DB.PermissionLevel.READ,
-                  DB.PermissionLevel.WRITE,
-                  DB.PermissionLevel.ADMIN,
-                ],
-              },
+            const valid = await checkAccess(
+              [
+                {
+                  answerCollectionId: answerCollectionId,
+                  minimumPermissionLevel: DB.PermissionLevel.READ,
+                },
+              ],
               { ...ctx, prisma }
             )
 

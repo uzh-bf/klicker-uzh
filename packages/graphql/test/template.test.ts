@@ -5,8 +5,6 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-  UserLoginScope,
-  UserRole,
 } from '@klicker-uzh/prisma'
 import { ActivityType } from '@klicker-uzh/types'
 import {
@@ -26,18 +24,9 @@ import {
   createActivityTemplate,
   getMatchingUserElementsTemplate,
 } from '../src/services/templates.js'
-import { questionsSLAF, userOne, userTwo } from './templateData.js'
-
-// setup test database configuration
-// use the DATABASE_URL environment variable if available (for CI or local dev)
-const getDatabaseUrl = () => {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL
-  }
-
-  // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker:klicker@localhost:5432/klicker'
-}
+import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import { questionsSLAF } from './testData.js'
+import { userOne, userTwo } from './userData.js'
 
 describe('Unit tests for template service', () => {
   // shared resources used across tests
@@ -45,84 +34,39 @@ describe('Unit tests for template service', () => {
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
+  let userThreeCtx: ContextWithUser
+  let userFourCtx: ContextWithUser
+  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    // configure database
-    const databaseUrl = getDatabaseUrl()
-
-    try {
-      // initialize PrismaClient with the database URL
-      prisma = new PrismaClient({
-        datasources: {
-          db: { url: databaseUrl },
-        },
-        log: ['error', 'warn'],
-      })
-
-      // test database connection
-      await prisma.$connect()
-
-      // create EventEmitter for test context
-      emitter = new EventEmitter()
-
-      // upsert all users in the database
-      const users = await Promise.all(
-        [userOne, userTwo].map(
-          async (user) =>
-            await prisma.user.upsert({
-              where: { id: user.id },
-              update: {},
-              create: {
-                id: user.id,
-                email: user.email,
-                shortname: user.shortname,
-              },
-            })
-        )
-      )
-
-      // mock context with user including all required properties
-      userOneCtx = {
-        user: {
-          sub: userOne.sub,
-          role: UserRole.USER,
-          scope: UserLoginScope.ACCOUNT_OWNER,
-          catalystInstitutional: true,
-          catalystIndividual: true,
-        },
-        prisma,
-        emitter,
-        redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
-        pubSub: { publish: jest.fn(), subscribe: jest.fn() },
-        req: {} as any,
-        res: {} as any,
-      }
-
-      // mock remaining contexts
-      userTwoCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userTwo.sub },
-      }
-
-      // seed the top-level catalog collection with fixed ID
-      await prisma.catalogCollection.upsert({
-        where: { id: MISSING_CATALOG_COLLECTION_ID },
-        create: {
-          id: MISSING_CATALOG_COLLECTION_ID,
-          name: '',
-          access: ObjectAccess.PUBLIC,
-        },
-        update: {},
-      })
-    } catch (error) {
-      console.error('Failed to initialize test environment:', error)
-      throw new Error(`Database connection failed: ${error}`)
-    }
+    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    prisma = newPrisma
+    emitter = newEmitter
   })
 
-  // disconnect from the database
   afterAll(async () => {
+    await testCleanup(prisma)
     await prisma.$disconnect()
+  })
+
+  beforeEach(async () => {
+    const {
+      userOneCtx: ctx1,
+      userTwoCtx: ctx2,
+      userThreeCtx: ctx3,
+      userFourCtx: ctx4,
+      userFiveCtx: ctx5,
+    } = await testInitialization(prisma, emitter)
+
+    userOneCtx = ctx1
+    userTwoCtx = ctx2
+    userThreeCtx = ctx3
+    userFourCtx = ctx4
+    userFiveCtx = ctx5
+  })
+
+  afterEach(async () => {
+    await testCleanup(prisma)
   })
 
   it('Verify that matching questions are correctly filtered when loaded from the database', async () => {
@@ -1254,29 +1198,5 @@ describe('Unit tests for template service', () => {
     await prisma.element.deleteMany({
       where: { id: { in: [SEQuestion.id, CSQuestion.id] } },
     })
-  })
-
-  it('Cleanup: delete all created data used in this unit test', async () => {
-    // verify that all elements have been deleted already
-    const dbElements = await prisma.element.count()
-    expect(dbElements).toBe(0)
-
-    // verify that only the top level catalog collection is still around and remove it
-    const catalogCount = await prisma.catalogCollection.count()
-    expect(catalogCount).toBe(1)
-    await prisma.catalogCollection.delete({
-      where: { id: MISSING_CATALOG_COLLECTION_ID },
-    })
-    const catalogCount2 = await prisma.catalogCollection.count()
-    expect(catalogCount2).toBe(0)
-
-    // delete all users that have been created for the test and validate that they have been removed
-    await prisma.user.deleteMany({
-      where: {
-        id: { in: [userOne.id, userTwo.id] },
-      },
-    })
-    const dbUsers = await prisma.user.count()
-    expect(dbUsers).toBe(0)
   })
 })

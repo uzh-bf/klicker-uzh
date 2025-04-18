@@ -4,8 +4,6 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-  UserLoginScope,
-  UserRole,
 } from '@klicker-uzh/prisma'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -14,24 +12,8 @@ import {
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { checkAccess, checkCatalogAssignment } from '../src/services/sharing.js'
-import {
-  userFive,
-  userFour,
-  userOne,
-  userThree,
-  userTwo,
-} from './sharingData.js'
-
-// setup test database configuration
-// use the DATABASE_URL environment variable if available (for CI or local dev)
-const getDatabaseUrl = () => {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL
-  }
-
-  // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker:klicker@localhost:5432/klicker'
-}
+import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
 describe('Unit tests for object access validation', () => {
   // shared resources used across tests
@@ -44,111 +26,34 @@ describe('Unit tests for object access validation', () => {
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    // configure database
-    const databaseUrl = getDatabaseUrl()
-
-    try {
-      // initialize PrismaClient with the database URL
-      prisma = new PrismaClient({
-        datasources: {
-          db: { url: databaseUrl },
-        },
-        log: ['error', 'warn'],
-      })
-
-      // test database connection
-      await prisma.$connect()
-
-      // create EventEmitter for test context
-      emitter = new EventEmitter()
-
-      // upsert all users in the database
-      const users = await Promise.all(
-        [userOne, userTwo, userThree, userFour, userFive].map(
-          async (user) =>
-            await prisma.user.upsert({
-              where: { id: user.id },
-              update: {},
-              create: {
-                id: user.id,
-                email: user.email,
-                shortname: user.shortname,
-              },
-            })
-        )
-      )
-
-      // mock context with user including all required properties
-      userOneCtx = {
-        user: {
-          sub: userOne.sub,
-          role: UserRole.USER,
-          scope: UserLoginScope.ACCOUNT_OWNER,
-          catalystInstitutional: true,
-          catalystIndividual: true,
-        },
-        prisma,
-        emitter,
-        redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
-        pubSub: { publish: jest.fn(), subscribe: jest.fn() },
-        req: {} as any,
-        res: {} as any,
-      }
-
-      // mock remaining contexts
-      userTwoCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userTwo.sub },
-      }
-      userThreeCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userThree.sub },
-      }
-      userFourCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userFour.sub },
-      }
-      userFiveCtx = {
-        ...userOneCtx,
-        user: { ...userOneCtx.user, sub: userFive.sub },
-      }
-    } catch (error) {
-      console.error('Failed to initialize test environment:', error)
-      throw new Error(`Database connection failed: ${error}`)
-    }
+    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    prisma = newPrisma
+    emitter = newEmitter
   })
 
-  // disconnect from the database
   afterAll(async () => {
+    await testCleanup(prisma)
     await prisma.$disconnect()
   })
 
-  it('Seed required users and top-level catalog collection', async () => {
-    // verify that users have been created correctly in the database
-    const users = await prisma.user.findMany()
-    expect(users).toHaveLength(5)
-    const actualEmails = users.map((user) => user.email)
-    expect(actualEmails).toEqual(
-      expect.arrayContaining([
-        userOne.email,
-        userTwo.email,
-        userThree.email,
-        userFour.email,
-        userFive.email,
-      ])
-    )
-    expect(actualEmails).toHaveLength(5)
+  beforeEach(async () => {
+    const {
+      userOneCtx: ctx1,
+      userTwoCtx: ctx2,
+      userThreeCtx: ctx3,
+      userFourCtx: ctx4,
+      userFiveCtx: ctx5,
+    } = await testInitialization(prisma, emitter)
 
-    // seed the top-level catalog collection with fixed ID
-    await prisma.catalogCollection.upsert({
-      where: { id: MISSING_CATALOG_COLLECTION_ID },
-      create: {
-        id: MISSING_CATALOG_COLLECTION_ID,
-        name: '',
-        access: ObjectAccess.PUBLIC,
-      },
-      update: {},
-    })
+    userOneCtx = ctx1
+    userTwoCtx = ctx2
+    userThreeCtx = ctx3
+    userFourCtx = ctx4
+    userFiveCtx = ctx5
+  })
+
+  afterEach(async () => {
+    await testCleanup(prisma)
   })
 
   // ! Access Validation
@@ -2414,50 +2319,4 @@ describe('Unit tests for object access validation', () => {
     // cleanup: delete all created objects
     await deleteGeneratedObjects(prisma)
   })
-
-  // ! Cleanup
-  // #region
-  it('Verify that objects and permissions have been removed correctly and delete users', async () => {
-    // verify that only the default catalog collection is left in the database
-    const dbCatalogs = await prisma.catalogCollection.count()
-    expect(dbCatalogs).toBe(1)
-
-    // remove the answer collections from the top-level catalog collection
-    const dbAssignments = await prisma.catalogCollectionAssignment.count({
-      where: {
-        catalogCollectionId: { not: MISSING_CATALOG_COLLECTION_ID },
-      },
-    })
-    expect(dbAssignments).toBe(0)
-    await prisma.catalogCollectionAssignment.deleteMany({})
-    const dbAssignments2 = await prisma.catalogCollectionAssignment.count()
-    expect(dbAssignments2).toBe(0)
-
-    // remove the top level catalog collection for test suite independence
-    await prisma.catalogCollection.delete({
-      where: { id: MISSING_CATALOG_COLLECTION_ID },
-    })
-    const dbCatalogs2 = await prisma.catalogCollection.count()
-    expect(dbCatalogs2).toBe(0)
-
-    // verify that no elements are left in the permission table
-    const dbPermissions = await prisma.element.count()
-    expect(dbPermissions).toBe(0)
-
-    // ensure that no answer collections are left in the database
-    const dbAnswerCollections = await prisma.answerCollection.count()
-    expect(dbAnswerCollections).toBe(0)
-
-    // delete all users that have been created for the test and validate that they have been removed
-    await prisma.user.deleteMany({
-      where: {
-        id: {
-          in: [userOne.id, userTwo.id, userThree.id, userFour.id, userFive.id],
-        },
-      },
-    })
-    const dbUsers = await prisma.user.count()
-    expect(dbUsers).toBe(0)
-  })
-  // #endregion
 })

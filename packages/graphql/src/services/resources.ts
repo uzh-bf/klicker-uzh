@@ -32,43 +32,6 @@ async function incrementCollectionVersion(
   return collection
 }
 
-export async function validateAnswerCollectionPermissions(
-  {
-    collectionId,
-    acceptedPermissionLevels,
-  }: {
-    collectionId: number
-    acceptedPermissionLevels: DB.PermissionLevel[]
-  },
-  // type modification required for method to be usable inside transaction without type errors
-  ctx: Omit<ContextWithUser, 'prisma'> & {
-    prisma: Omit<
-      DB.PrismaClient<DB.Prisma.PrismaClientOptions, never>,
-      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-    >
-  }
-) {
-  const collection = await ctx.prisma.answerCollection.findUnique({
-    where: {
-      id: collectionId,
-      permissions: {
-        some: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [...acceptedPermissionLevels, DB.PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
-  })
-
-  if (!collection) {
-    return { valid: false, collection: null }
-  }
-
-  return { valid: true, collection }
-}
-
 export async function createAnswerCollection(
   {
     name,
@@ -247,29 +210,34 @@ export async function getSingleAnswerCollection(
     },
   })
 
-  if (!collection) {
+  if (!collection || collection.permissions.length === 0) {
     return null
   }
 
   // return owned collection (editable, etc. if the ownerId is the user's id)
   const permissionLevel = collection.permissions[0]?.permissionLevel
+  const isOwner = permissionLevel === DB.PermissionLevel.OWNER
+  const isManager =
+    permissionLevel === DB.PermissionLevel.ADMIN ||
+    permissionLevel === DB.PermissionLevel.OWNER
+  const isEditor =
+    permissionLevel === DB.PermissionLevel.WRITE ||
+    permissionLevel === DB.PermissionLevel.ADMIN ||
+    permissionLevel === DB.PermissionLevel.OWNER
   return {
     ...collection,
     entries: collection.entries.map((entry) => ({
       ...entry,
       numSolutionUsages: entry._count?.itemUsages,
     })),
-    numSharedUsers: collection._count?.directPermissions,
+    numSharedUsers: isManager
+      ? collection._count?.directPermissions
+      : undefined,
     permissionLevel: permissionLevel ?? DB.PermissionLevel.READ,
     ownerShortname: collection.owner?.shortname,
-    isOwner: permissionLevel === DB.PermissionLevel.OWNER,
-    isManager:
-      permissionLevel === DB.PermissionLevel.ADMIN ||
-      permissionLevel === DB.PermissionLevel.OWNER,
-    isEditor:
-      permissionLevel === DB.PermissionLevel.WRITE ||
-      permissionLevel === DB.PermissionLevel.ADMIN ||
-      permissionLevel === DB.PermissionLevel.OWNER,
+    isOwner,
+    isManager,
+    isEditor,
     isShared: permissionLevel !== DB.PermissionLevel.OWNER,
   }
 }
@@ -400,7 +368,6 @@ export async function modifyAnswerCollection(
     return {
       ...updateResult,
       numSharedUsers: collection._count.permissions,
-      isShared: false,
     }
   })
 
@@ -494,10 +461,10 @@ export async function deleteAnswerCollection(
         where: { answerCollectionId: collectionId },
       })
 
-      // ? Disconnect the owner from the answer collection
+      // ? Soft-delete the answer collection
       const updatedAnswerCollection = await prisma.answerCollection.update({
         where: { id: collectionId },
-        data: { owner: { disconnect: true } },
+        data: { isDeleted: true },
       })
 
       // trigger recomputation of all derived permissions for this answer collection object
@@ -592,8 +559,8 @@ export async function removeAnswerCollection(
     return null
   }
 
-  // if no other users have access to this collection and the owner is already disconnected, delete it
-  if (collection._count.permissions === 1 && collection.ownerId === null) {
+  // if no other users have access to this collection and the owner is already soft-deleted, fully delete it
+  if (collection._count.permissions === 1 && collection.isDeleted === true) {
     await ctx.prisma.answerCollection.delete({ where: { id: collectionId } })
   } else {
     // otherwise, delete the sharing permission
