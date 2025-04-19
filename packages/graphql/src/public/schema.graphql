@@ -1598,7 +1598,7 @@ enum ObjectAccess {
 type ObjectSharingRequest {
   objectName: String!
   objectType: CatalogObjectType!
-  permissionId: Int!
+  requestId: Int!
   userEmail: String!
   userId: String!
   userShortname: String!

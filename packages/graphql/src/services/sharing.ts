@@ -13,19 +13,33 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { validateActivityPermissions } from './templates.js'
 
 // ! Helper functions
 // #region
 
-// helper function to check for a specific access level on the catalog collection
-async function validateCatalogCollectionPermissions(
+/**
+ * Validates if the user has the required permissions to access a catalog collection.
+ *
+ * @param options - The validation options
+ * @param options.catalogCollectionId - The ID of the catalog collection to check permissions for
+ * @param options.minimumPermissionLevel - The minimum permission level required to access the collection
+ * @param ctx - The context containing user information and database access
+ *
+ * @returns An object containing:
+ *   - valid: Boolean indicating if the user has sufficient permissions
+ *   - catalogCollection: The catalog collection object if found, otherwise null
+ *
+ * @remarks
+ * If the catalogCollectionId is the MISSING_CATALOG_COLLECTION_ID, the function
+ * automatically grants access and returns the default collection.
+ */
+export async function validateCatalogCollectionPermissions(
   {
     catalogCollectionId,
-    acceptedPermissionLevels,
+    minimumPermissionLevel,
   }: {
     catalogCollectionId: string
-    acceptedPermissionLevels: DB.PermissionLevel[]
+    minimumPermissionLevel: DB.PermissionLevel
   },
   ctx: ContextWithUser
 ) {
@@ -39,33 +53,29 @@ async function validateCatalogCollectionPermissions(
     return { valid: true, catalogCollection: defaultCollection }
   }
 
+  // use the checkAccess function to validate sufficient permissions on the catalog collection
+  const valid = await checkAccess(
+    [{ catalogCollectionId, minimumPermissionLevel }],
+    ctx
+  )
+
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
     where: {
       id: catalogCollectionId,
     },
-    include: {
-      permissions: {
-        where: {
-          userId: ctx.user.sub,
-          permissionLevel: {
-            in: [...acceptedPermissionLevels, DB.PermissionLevel.OWNER],
-          },
-        },
-      },
-    },
   })
 
-  if (!catalogCollection) {
-    return { valid: false, catalogCollection: null }
-  }
-
-  const validAccess = catalogCollection.permissions.length > 0
-  return { valid: validAccess, catalogCollection }
+  return { valid, catalogCollection: catalogCollection }
 }
 
-// verify that a user has access to a specific catalog collection (= can browse its content)
-// this is fullfiled if the the catalog collection is either public or the user has been granted access
-async function verifyCatalogCollectionBrowsable(
+/**
+ * Verify if a catalog collection is browsable for the current user
+ *
+ * @param params.catalogCollectionId - The ID of the catalog collection to verify
+ * @param ctx - The context containing the authenticated user information
+ * @returns A boolean indicating whether the catalog collection is browsable
+ */
+export async function verifyCatalogCollectionBrowsable(
   { catalogCollectionId }: { catalogCollectionId: string },
   ctx: ContextWithUser
 ) {
@@ -77,11 +87,7 @@ async function verifyCatalogCollectionBrowsable(
     await validateCatalogCollectionPermissions(
       {
         catalogCollectionId,
-        acceptedPermissionLevels: [
-          DB.PermissionLevel.READ,
-          DB.PermissionLevel.WRITE,
-          DB.PermissionLevel.ADMIN,
-        ],
+        minimumPermissionLevel: DB.PermissionLevel.READ,
       },
       ctx
     )
@@ -92,10 +98,97 @@ async function verifyCatalogCollectionBrowsable(
   )
 }
 
-// function that verifies that a user has sufficient permissions to edit an object in the catalog
-// - for items in the default collection, the permissions on the object are checked
-// - for items in a catalog collection, the permissions on the catalog collection are checked
-async function verifyCatalogObjectEditPermissions(
+/**
+ * Validates if the user has the required permission level for a specific activity.
+ *
+ * @param params.activityId - The ID of the activity to check permissions for
+ * @param params.activityType - The type of the activity (LIVE_QUIZ, PRACTICE_QUIZ, MICRO_LEARNING, GROUP_ACTIVITY)
+ * @param params.minimumPermissionLevel - The minimum permission level required to access the activity
+ * @param ctx - The context containing the authenticated user information
+ *
+ * @returns A boolean indicating whether the user has valid permissions for the activity
+ */
+export async function validateActivityPermissions(
+  {
+    activityId,
+    activityType,
+    minimumPermissionLevel,
+  }: {
+    activityId: string
+    activityType: ActivityType
+    minimumPermissionLevel: DB.PermissionLevel
+  },
+  ctx: ContextWithUser
+) {
+  if (activityType === ActivityType.LIVE_QUIZ) {
+    // check if the user has access to the live quiz
+    const valid = await checkAccess(
+      [
+        {
+          liveQuizId: activityId,
+          minimumPermissionLevel,
+        },
+      ],
+      ctx
+    )
+
+    return valid
+  } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+    // check if the user has access to the practice quiz
+    const valid = await checkAccess(
+      [
+        {
+          practiceQuizId: activityId,
+          minimumPermissionLevel,
+        },
+      ],
+      ctx
+    )
+
+    return valid
+  } else if (activityType === ActivityType.MICRO_LEARNING) {
+    // check if the user has access to the micro learning
+    const valid = await checkAccess(
+      [
+        {
+          microLearningId: activityId,
+          minimumPermissionLevel,
+        },
+      ],
+      ctx
+    )
+
+    return valid
+  } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+    // check if the user has access to the group activity
+    const valid = await checkAccess(
+      [
+        {
+          groupActivityId: activityId,
+          minimumPermissionLevel,
+        },
+      ],
+      ctx
+    )
+
+    return valid
+  }
+
+  return false
+}
+
+/**
+ * Verifies if the current user has edit permissions for a catalog object based on assignment ID.
+ *
+ * This function performs permission checks in two scenarios:
+ * 1. When the object is in a catalog collection - write permissions on the collection are required
+ * 2. When the object is in a top-level collection - admin permissions on the specific object are required
+ *
+ * @param params.assignmentId - The ID of the catalog collection assignment to verify permissions for
+ * @param ctx - The context containing user information and Prisma client
+ * @returns A boolean indicating whether the user has edit permissions
+ */
+export async function verifyCatalogObjectEditPermissions(
   { assignmentId }: { assignmentId: number },
   ctx: ContextWithUser
 ) {
@@ -123,23 +216,17 @@ async function verifyCatalogObjectEditPermissions(
     return false
   }
 
-  // boolean to check for sufficient permissions
-  let sufficientPermissions = false
-
   // ! Case 1: Object in Catalog Collection -> access level on catalog collection decides permissions
   // write permissions are required for content management of catalog collection
   if (assignment.catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID) {
     const { valid } = await validateCatalogCollectionPermissions(
       {
         catalogCollectionId: assignment.catalogCollectionId,
-        acceptedPermissionLevels: [
-          DB.PermissionLevel.WRITE,
-          DB.PermissionLevel.ADMIN,
-        ],
+        minimumPermissionLevel: DB.PermissionLevel.WRITE,
       },
       ctx
     )
-    sufficientPermissions = valid
+    return valid
   }
   // ! Case 2: Object in top-level collection -> access level on object decides permissions
   else {
@@ -154,25 +241,25 @@ async function verifyCatalogObjectEditPermissions(
         ],
         ctx
       )
-      sufficientPermissions = valid
+
+      return valid
     } else if (typeof assignment.liveQuiz?.id !== 'undefined') {
       // verify that the user has access to the live quiz / live quiz template
-      const { valid } = await validateActivityPermissions(
+      const valid = await validateActivityPermissions(
         {
           activityId: assignment.liveQuiz.id,
           activityType: ActivityType.LIVE_QUIZ,
-          acceptedPermissionLevels: [DB.PermissionLevel.ADMIN],
+          minimumPermissionLevel: DB.PermissionLevel.ADMIN,
         },
         ctx
       )
-      sufficientPermissions = valid
+      return valid
     }
     // ... add more object types once they are supported for sharing
   }
 
-  return sufficientPermissions
+  return false
 }
-
 // #endregion
 
 // ! Catalog Collection Operations
@@ -359,12 +446,8 @@ export async function changeCatalogObjectAccess(
   // change the access level of the assignment
   const updatedAssignment = await ctx.prisma.catalogCollectionAssignment.update(
     {
-      where: {
-        id: assignmentId,
-      },
-      data: {
-        access,
-      },
+      where: { id: assignmentId },
+      data: { access },
     }
   )
 
@@ -401,25 +484,19 @@ export async function getCatalogCollectionsList(ctx: ContextWithUser) {
     )
     .map((collection) => {
       const isRequested = collection.accessRequests.length > 0
-      const isShared = collection.permissions.length > 0
-      const { isOwner, isManager, isEditor } = collection.permissions.reduce(
-        (acc, permission) => {
-          const level = permission.permissionLevel
-          return {
-            isOwner: acc.isOwner || level === DB.PermissionLevel.OWNER,
-            isManager:
-              acc.isManager ||
-              level === DB.PermissionLevel.OWNER ||
-              level === DB.PermissionLevel.ADMIN,
-            isEditor:
-              acc.isEditor ||
-              level === DB.PermissionLevel.OWNER ||
-              level === DB.PermissionLevel.ADMIN ||
-              level === DB.PermissionLevel.WRITE,
-          }
-        },
-        { isOwner: false, isManager: false, isEditor: false }
-      )
+      const permission = collection.permissions[0] // permission for this user on the catalog collection is unique (if it exists)
+      const isOwner = permission?.permissionLevel === DB.PermissionLevel.OWNER
+      const isManager =
+        permission?.permissionLevel === DB.PermissionLevel.OWNER ||
+        permission?.permissionLevel === DB.PermissionLevel.ADMIN
+      const isEditor =
+        permission?.permissionLevel === DB.PermissionLevel.OWNER ||
+        permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+        permission?.permissionLevel === DB.PermissionLevel.WRITE
+      const isShared =
+        (permission &&
+          permission?.permissionLevel !== DB.PermissionLevel.OWNER) ??
+        false
 
       return {
         ...collection,
@@ -570,11 +647,7 @@ export async function requestCatalogCollection(
 }
 
 export async function deleteCatalogCollection(
-  {
-    catalogCollectionId,
-  }: {
-    catalogCollectionId: string
-  },
+  { catalogCollectionId }: { catalogCollectionId: string },
   ctx: ContextWithUser
 ) {
   // delete the catalog collection
@@ -636,7 +709,7 @@ export async function getCatalogSharingRequests(ctx: ContextWithUser) {
   const sharingRequests = user.pendingRequests.reduce<ObjectSharingRequest[]>(
     (acc, request) => {
       const sharedRequestAttributes = {
-        permissionId: request.id,
+        requestId: request.id,
         userId: request.userId,
         userShortname: request.user.shortname,
         userEmail: request.user.email,
@@ -1618,7 +1691,7 @@ export async function getCatalogCollectionPermissions(
       directPermissions: {
         include: {
           user: { select: { id: true, shortname: true, email: true } },
-          // TODO: also include permissions awarded to user groups and set in return object
+          userGroup: { select: { id: true, name: true } },
         },
       },
     },
@@ -1634,8 +1707,8 @@ export async function getCatalogCollectionPermissions(
       userId: permission.user?.id,
       username: permission.user?.shortname,
       userEmail: permission.user?.email,
-      userGroupId: undefined,
-      userGroupName: undefined,
+      userGroupId: permission.userGroup?.id,
+      userGroupName: permission.userGroup?.name,
       permissionLevel: permission.permissionLevel,
       isOwn: permission.userId === ctx.user.sub,
     }))
@@ -1761,14 +1834,7 @@ export async function shareCatalogCollection(
     // check if a user with the provided username or email exists and is not the owner of the catalog collection
     const user = await ctx.prisma.user.findFirst({
       where: {
-        OR: [
-          {
-            shortname: shortnameOrEmail,
-          },
-          {
-            email: shortnameOrEmail,
-          },
-        ],
+        OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
       },
       select: {
         id: true,
@@ -1848,7 +1914,7 @@ export async function getAnswerCollectionPermissions(
       directPermissions: {
         include: {
           user: { select: { id: true, shortname: true, email: true } },
-          // TODO: also include permissions awarded to user groups and set in return object
+          userGroup: { select: { id: true, name: true } },
         },
       },
     },
@@ -1864,8 +1930,8 @@ export async function getAnswerCollectionPermissions(
       userId: permission.user?.id,
       username: permission.user?.shortname,
       userEmail: permission.user?.email,
-      userGroupId: undefined,
-      userGroupName: undefined,
+      userGroupId: permission.userGroup?.id,
+      userGroupName: permission.userGroup?.name,
       permissionLevel: permission.permissionLevel,
       isOwn: permission.user?.id === ctx.user.sub,
     }))

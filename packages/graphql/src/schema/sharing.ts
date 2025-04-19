@@ -80,7 +80,7 @@ export const ObjectSharingRequestRef =
   builder.objectRef<ObjectSharingRequestType>('ObjectSharingRequest')
 export const ObjectSharingRequest = ObjectSharingRequestRef.implement({
   fields: (t) => ({
-    permissionId: t.exposeInt('permissionId'),
+    requestId: t.exposeInt('requestId'),
     objectName: t.exposeString('objectName'),
     objectType: t.expose('objectType', { type: CatalogObjectType }),
     userId: t.exposeString('userId'),

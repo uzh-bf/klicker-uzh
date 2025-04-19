@@ -80,13 +80,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
     expect(derivedPermission!.permissionLevel).toBe(PermissionLevel.OWNER)
     expect(derivedPermission!.directPermissionId).toBeNull()
     expect(derivedPermission!.derived).toBeFalsy()
-
-    // delete the created answer collection
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
   })
 
   it('Verify that other direct permissions are correctly copied into the derived permissions table', async () => {
@@ -175,19 +168,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       directAdminPermission.id
     )
     expect(derivedAdminPermission!.derived).toBeFalsy() // permission is not derived from another object permission
-
-    // delete the answer collection and verify the deletion of all linked permissions and derived permissions
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directReadPermissionCount = await prisma.permission.count({
-      where: { id: directReadPermission.id },
-    })
-    expect(directReadPermissionCount).toBe(0)
-    const derivedReadPermissionCount = await prisma.derivedPermission.count()
-    expect(derivedReadPermissionCount).toBe(0)
   })
 
   it('Verify that when using answer collection in an element, the direct permission has precedence (if higher - should always be the case)', async () => {
@@ -304,18 +284,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       directPermissionOnAnswerCollection.id
     )
     expect(derivedAnswerCollectionPermission2!.derived).toBeFalsy() // permission is not derived from a permission on another object
-
-    // delete the created element and answer collection and verify full removal of permissions
-    await prisma.element.delete({ where: { id: element.id } })
-    const elementCount = await prisma.element.count()
-    expect(elementCount).toBe(0)
-    await prisma.answerCollection.delete({ where: { id: answerCollection.id } })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that users with access to an element containing an answer collection automatically get derived access (permission level on element does not matter)', async () => {
@@ -420,18 +388,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       directAdminPermission.id
     )
     expect(derivedCollectionPermission3!.derived).toBeTruthy() // permission is derived from another object permission (element)
-
-    // delete the created element and answer collection and verify full removal of permissions
-    await prisma.element.delete({ where: { id: element.id } })
-    const elementCount = await prisma.element.count()
-    expect(elementCount).toBe(0)
-    await prisma.answerCollection.delete({ where: { id: answerCollection.id } })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that on deletion of a direct permission, the derived permissions from direct permissions are removed', async () => {
@@ -561,17 +517,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
         },
       })
     expect(derivedAdminPermissionAfterDeletion).toBeNull()
-
-    // delete the answer collection and verify the deletion of all linked permissions and derived permissions
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that modifications of the direct permissions result in corresponding changes in the derived permissions', async () => {
@@ -701,17 +646,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       directAdminPermission.id
     )
     expect(derivedAdminPermission!.derived).toBeFalsy() // permission is not derived from another object permission
-
-    // delete the answer collection and verify the deletion of all linked permissions and derived permissions
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that when passing a userId only the corresponding derived permissions are updated', async () => {
@@ -958,17 +892,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
         },
       })
     expect(remainingDerivedPermissionUserThree).toBeNull()
-
-    // delete the created answer collection and verify the deletion of all linked permissions and derived permissions
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that having access to an element containing the collection and removing the direct permission, a derived permission persists', async () => {
@@ -1081,18 +1004,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       directPermissionOnElement.id
     )
     expect(updatedDerivedAnswerCollectionPermission!.derived).toBeTruthy() // permission is derived from another object permission (element)
-
-    // delete the created element and answer collection and verify full removal of permissions
-    await prisma.element.delete({ where: { id: element.id } })
-    const elementCount = await prisma.element.count()
-    expect(elementCount).toBe(0)
-    await prisma.answerCollection.delete({ where: { id: answerCollection.id } })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that when deleting a used answer collection as an owner (soft-deletion), only the own permissions are removed (derived access for other users persists)', async () => {
@@ -1147,17 +1058,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       },
     })
     expect(removedDerivedPermission).toBeNull()
-
-    // delete the created answer collection and verify the deletion of all linked permissions and derived permissions
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that when deleting a used answer collection as an owner (soft-deletion), all direct permissions by other users are removed, derived permissions persist', async () => {
@@ -1279,20 +1179,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
         },
       })
     expect(derivedPermissionUserThreeDeletion).toBeNull()
-
-    // delete the created element and verify the deletion of all linked permissions and derived permissions
-    await prisma.element.delete({ where: { id: element.id } })
-    const elementCount = await prisma.element.count()
-    expect(elementCount).toBe(0)
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that direct permissions for user groups result in derived permissions for individual users', async () => {
@@ -1418,22 +1304,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       group2Permission.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy() // permission is not derived from another object permission
-
-    // cleanup: delete all created objects and user groups
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.deleteMany({
-      where: { id: { in: [userGroup1.id, userGroup2.id] } },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that direct permission for user group on element results in derived permissions for individual users', async () => {
@@ -1525,23 +1395,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       groupPermission.id
     )
     expect(derivedPermissionUserThree!.derived).toBeTruthy() // permission is derived from another object permission (element)
-
-    // cleanup: delete all created objects and user groups
-    await prisma.element.delete({ where: { id: element.id } })
-    const elementCount = await prisma.element.count()
-    expect(elementCount).toBe(0)
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.delete({ where: { id: userGroup.id } })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   async function precedenceIndividualGroupPermissions(
@@ -1661,20 +1514,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       individualPermission.id
     )
     expect(derivedPermissionUserThree!.derived).toBeFalsy() // permission is not derived from another object permission
-
-    // cleanup: delete all created objects and user groups
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.delete({ where: { id: userGroup.id } })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   }
 
   it('Verify that individual permissions have precendence over user group permissions if higher (individual derived permission recomputation)', async () => {
@@ -1802,20 +1641,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       groupPermission.id
     )
     expect(derivedPermissionUserThree!.derived).toBeFalsy() // permission is not derived from another object permission
-
-    // cleanup: delete all created objects and user groups
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.delete({ where: { id: userGroup.id } })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   }
 
   it('Verify that group permissions have precedence over individual permissions if higher (individual derived permission recomputation)', async () => {
@@ -1932,20 +1757,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
     expect(retainedDerivedPermissionUserOne!.permissionLevel).toBe(
       PermissionLevel.OWNER
     )
-
-    // cleanup: delete all created objects and user groups
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.delete({ where: { id: userGroup.id } })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that removal of direct permissions for user group on element results in removal of derived collections permissions for individual users', async () => {
@@ -2063,23 +1874,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
         },
       })
     expect(removedDerivedPermissionUserThree).toBeNull()
-
-    // cleanup: delete all created objects and user groups
-    await prisma.element.delete({ where: { id: element.id } })
-    const elementCount = await prisma.element.count()
-    expect(elementCount).toBe(0)
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.delete({ where: { id: userGroup.id } })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that direct / derived access for individual users persists after group access removal (if user has direct / derived access through element)', async () => {
@@ -2288,23 +2082,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
         },
       })
     expect(updatedDerivedPermissionUserFour).toBeNull() // permission has been removed
-
-    // cleanup: delete all created objects and user groups
-    await prisma.element.delete({ where: { id: element.id } })
-    const elementCount = await prisma.element.count()
-    expect(elementCount).toBe(0)
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.delete({ where: { id: userGroup.id } })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it("Verify that a user's permission are updated with individual derived permission updating function if the group permission changes", async () => {
@@ -2435,20 +2212,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       individualPermission.id
     )
     expect(finalDerivedPermissionUserTwo!.derived).toBeFalsy() // permission is not derived from another object permission
-
-    // cleanup: delete all created objects and user groups
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.delete({ where: { id: userGroup.id } })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that access to an activity template also results in the creation of derived access', async () => {
@@ -2775,40 +2538,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       templatePermission.id
     )
     expect(derivedPermission2UserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and user groups
-    await prisma.liveQuiz.delete({
-      where: { id: liveQuizTemplate.id },
-    })
-    const liveQuizCount = await prisma.liveQuiz.count()
-    expect(liveQuizCount).toBe(0)
-    await prisma.practiceQuiz.delete({
-      where: { id: practiceQuizTemplate.id },
-    })
-    const practiceQuizCount = await prisma.practiceQuiz.count()
-    expect(practiceQuizCount).toBe(0)
-    await prisma.microLearning.delete({
-      where: { id: microlearningTemplate.id },
-    })
-    const microLearningCount = await prisma.microLearning.count()
-    expect(microLearningCount).toBe(0)
-    await prisma.groupActivity.delete({
-      where: { id: groupTemplate.id },
-    })
-    const groupActivityCount = await prisma.groupActivity.count()
-    expect(groupActivityCount).toBe(0)
-    await prisma.answerCollection.deleteMany()
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.course.delete({
-      where: { id: course.id },
-    })
-    const courseCount = await prisma.course.count()
-    expect(courseCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('Verify that access of a user group to an activity template also results in corresponding derived access for individual users', async () => {
@@ -2936,25 +2665,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
       groupPermission.id
     )
     expect(derivedPermissionUserThree!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and user groups
-    await prisma.liveQuiz.delete({
-      where: { id: liveQuizTemplate.id },
-    })
-    const liveQuizCount = await prisma.liveQuiz.count()
-    expect(liveQuizCount).toBe(0)
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    await prisma.userGroup.delete({ where: { id: userGroup.id } })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   async function testOwnerPermissionPropagation(prisma, individualRecompute) {
@@ -3042,18 +2752,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
     )
     expect(derivedPermissionUserTwo!.directPermissionId).toBeNull() // no direct permission
     expect(derivedPermissionUserTwo!.derived).toBeFalsy() // permission is not derived from another object permission
-
-    // cleanup: delete all created objects and user groups
-    await prisma.element.delete({ where: { id: element.id } })
-    const elementCount = await prisma.element.count()
-    expect(elementCount).toBe(0)
-    await prisma.answerCollection.delete({ where: { id: answerCollection.id } })
-    const answerCollectionCount = await prisma.answerCollection.count()
-    expect(answerCollectionCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   }
 
   it('Verify that owner permissions are correctly propagated from dependent elements (user-specific derived permissions recomputation)', async () => {

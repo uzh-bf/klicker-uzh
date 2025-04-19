@@ -86,17 +86,6 @@ describe('Unit tests covering the creation of derived permissions for activities
     )
     expect(derivedPermissionUserOne!.directPermissionId).toBeNull()
     expect(derivedPermissionUserOne!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.liveQuiz.delete({
-      where: { id: activity.id },
-    })
-    const activityCount = await prisma.liveQuiz.count()
-    expect(activityCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('LQ: Verify that other direct permissions are correctly copied into the derived permissions table', async () => {
@@ -189,17 +178,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       activityADMINPermissions.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.liveQuiz.delete({
-      where: { id: activity.id },
-    })
-    const activityCount = await prisma.liveQuiz.count()
-    expect(activityCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('LQ: Verify that when passing a userId only the corresponding derived permissions are updated', async () => {
@@ -359,22 +337,6 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       })
     expect(missingPermissionUserFour2).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.liveQuiz.delete({
-      where: { id: activity.id },
-    })
-    const activityCount = await prisma.liveQuiz.count()
-    expect(activityCount).toBe(0)
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('LQ: Verify that user group permissions are correctly expanded into individual derived permissions', async () => {
@@ -495,22 +457,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       groupPermission2.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.liveQuiz.delete({
-      where: { id: activity.id },
-    })
-    const activityCount = await prisma.liveQuiz.count()
-    expect(activityCount).toBe(0)
-    await prisma.userGroup.deleteMany({
-      where: { id: { in: [userGroup.id, userGroup2.id] } },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('LQ: Verify that on deletion of the direct permission, the derived permissions from direct permissions are removed', async () => {
@@ -627,22 +573,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       }
     )
     expect(missingPermissionUserFour).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.liveQuiz.delete({
-      where: { id: activity.id },
-    })
-    const activityCount = await prisma.liveQuiz.count()
-    expect(activityCount).toBe(0)
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   it('LQ: Verify that individual permissions have precedence over user group permissions if higher and vice-versa', async () => {
@@ -759,42 +689,9 @@ describe('Unit tests covering the creation of derived permissions for activities
       individualPermissionUserFour.id
     )
     expect(derivedPermissionUserFour!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.liveQuiz.delete({
-      where: { id: activity.id },
-    })
-    const activityCount = await prisma.liveQuiz.count()
-    expect(activityCount).toBe(0)
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
   })
 
   // ? Course -> Activity
-  async function cleanupCourseLiveQuiz(prisma, courseId, activityId) {
-    await prisma.liveQuiz.delete({
-      where: { id: activityId },
-    })
-    const activityCount = await prisma.liveQuiz.count()
-    expect(activityCount).toBe(0)
-    await prisma.course.delete({
-      where: { id: courseId },
-    })
-    const courseCount = await prisma.course.count()
-    expect(courseCount).toBe(0)
-    const directPermissionsCount = await prisma.permission.count()
-    expect(directPermissionsCount).toBe(0)
-    const derivedPermissionsCount = await prisma.derivedPermission.count()
-    expect(derivedPermissionsCount).toBe(0)
-  }
-
   async function prepareCourseActivitiesIndividual(prisma, propagation) {
     // create a course
     const course = await prisma.course.create({
@@ -953,9 +850,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       courseEXECUTEPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   })
 
   it('LQ: Verify that propagated permissions are correctly granted on activities for individual users', async () => {
@@ -1040,9 +934,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       courseEXECUTEPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   })
 
   async function prepareCourseActivitiesGroups(prisma, propagation) {
@@ -1249,18 +1140,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       groupEXECUTEPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.deleteMany({
-      where: {
-        id: {
-          in: [userGroup2.id, userGroup3.id, userGroup4.id, userGroup5.id],
-        },
-      },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   })
 
   it('LQ: Verify that propagated permissions are correctly granted on activities for user groups', async () => {
@@ -1349,18 +1228,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       groupEXECUTEPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.deleteMany({
-      where: {
-        id: {
-          in: [userGroup2.id, userGroup3.id, userGroup4.id, userGroup5.id],
-        },
-      },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   })
 
   it('LQ: Verify that revoking access to the course also revokes access to the activity (assuming no direct access)', async () => {
@@ -1439,9 +1306,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       },
     })
     expect(missingPermissionUserTwo).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   })
 
   it('LQ: Verify that revoking group access to the course also revokes access to the activity (assuming no direct access)', async () => {
@@ -1531,14 +1395,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       },
     })
     expect(missingPermissionUserTwo).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   })
 
   it('LQ: Verify that revoking group access to the course does not revoke access to the activity if individual access exists', async () => {
@@ -1675,14 +1531,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       individualPermissionUserThree.id
     )
     expect(derivedPermissionUserThree2!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.delete({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   })
 
   async function courseActivityPermissionPrecedenceIndividual(
@@ -1881,9 +1729,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       courseEXECUTEPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   }
 
   it('LQ: Verify that direct access to the activity takes precedence over course access if higher - and vice-versa (individual recomputation with userId)', async () => {
@@ -2124,18 +1969,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       courseEXECUTEPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.deleteMany({
-      where: {
-        id: {
-          in: [userGroup2.id, userGroup3.id, userGroup4.id, userGroup5.id],
-        },
-      },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await cleanupCourseLiveQuiz(prisma, course.id, activity.id)
   }
 
   it('LQ: Verify that direct group access to the activity takes precedence over course access if higher - and vice-versa (individual recomputation with userId)', async () => {
@@ -2197,19 +2030,6 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
 
     return { element, activity }
-  }
-
-  async function deleteActivityElement(prisma, activityId, elementId) {
-    await prisma.liveQuiz.delete({ where: { id: activityId } })
-    await prisma.element.delete({ where: { id: elementId } })
-    const dbElements = await prisma.element.count()
-    expect(dbElements).toBe(0)
-    const dbActivities = await prisma.liveQuiz.count()
-    expect(dbActivities).toBe(0)
-    const dbPermissions = await prisma.permission.count()
-    expect(dbPermissions).toBe(0)
-    const dbDerivedPermissions = await prisma.derivedPermission.count()
-    expect(dbDerivedPermissions).toBe(0)
   }
 
   async function testActivityElementPropagationIndividual(prisma, propagation) {
@@ -2305,9 +2125,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       }
     )
     expect(derivedPermissionUserFive).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await deleteActivityElement(prisma, activity.id, element.id)
   }
 
   it('LQ: Verify that minimum required permissions are correctly granted on elements for individual users', async () => {
@@ -2456,18 +2273,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       }
     )
     expect(derivedPermissionUserFive).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.deleteMany({
-      where: {
-        id: {
-          in: [userGroup2.id, userGroup3.id, userGroup4.id, userGroup5.id],
-        },
-      },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await deleteActivityElement(prisma, activity.id, element.id)
   }
 
   it('LQ: Verify that minimum required permissions are correctly granted on elements for user groups', async () => {
@@ -2533,9 +2338,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       },
     })
     expect(missingPermissionUserTwo).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await deleteActivityElement(prisma, activity.id, element.id)
   })
 
   it('LQ: Verify that derived permissions on elements from activity are revoked when removing group access to the activity (assuming no direct access)', async () => {
@@ -2633,14 +2435,6 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       })
     expect(missingPermissionUserThree).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.deleteMany({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await deleteActivityElement(prisma, activity.id, element.id)
   })
 
   it('LQ: Verify that derived permissions on elements from activity are not revoked if group access to activity is revoked, but individual activity access exists', async () => {
@@ -2753,14 +2547,6 @@ describe('Unit tests covering the creation of derived permissions for activities
         },
       })
     expect(missingPermissionUserThree).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.deleteMany({
-      where: { id: userGroup.id },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await deleteActivityElement(prisma, activity.id, element.id)
   })
 
   async function testActivityAnswerCollectionPropagation(
@@ -2984,42 +2770,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       }
     )
     expect(derivedPermissionUserFive).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    if (groupPermissions) {
-      await prisma.userGroup.deleteMany({
-        where: {
-          id: {
-            in: [
-              userGroup2?.id,
-              userGroup3?.id,
-              userGroup4?.id,
-              userGroup5?.id,
-            ],
-          },
-        },
-      })
-    }
-
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const dbAnswerCollections = await prisma.answerCollection.count()
-    expect(dbAnswerCollections).toBe(0)
-    await prisma.element.delete({
-      where: { id: element.id },
-    })
-    const dbElements = await prisma.element.count()
-    expect(dbElements).toBe(0)
-    await prisma.liveQuiz.delete({
-      where: { id: activity.id },
-    })
-    const dbActivities = await prisma.liveQuiz.count()
-    expect(dbActivities).toBe(0)
-    const dbPermissions = await prisma.permission.count()
-    expect(dbPermissions).toBe(0)
-    const dbDerivedPermissions = await prisma.derivedPermission.count()
-    expect(dbDerivedPermissions).toBe(0)
   }
 
   it('LQ: Verify that when sufficient direct permission exists on live quiz for derived permissions on elements, derived permissions are extended to answer collections', async () => {
@@ -3120,18 +2870,6 @@ describe('Unit tests covering the creation of derived permissions for activities
     )
     expect(derivedPermissionUserTwo!.directPermissionId).toBeNull()
     expect(derivedPermissionUserTwo!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.liveQuiz.delete({ where: { id: activity.id } })
-    const dbActivityCount = await prisma.liveQuiz.count()
-    expect(dbActivityCount).toBe(0)
-    await prisma.element.delete({ where: { id: element.id } })
-    const dbElements = await prisma.element.count()
-    expect(dbElements).toBe(0)
-    const dbPermissions = await prisma.permission.count()
-    expect(dbPermissions).toBe(0)
-    const dbDerivedPermissions = await prisma.derivedPermission.count()
-    expect(dbDerivedPermissions).toBe(0)
   }
 
   it('Verify that owner permissions are correctly propagated to required elements (user-specific derived permissions recomputation)', async () => {
@@ -3222,18 +2960,6 @@ describe('Unit tests covering the creation of derived permissions for activities
     )
     expect(derivedPermissionUserTwo!.directPermissionId).toBeNull()
     expect(derivedPermissionUserTwo!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.liveQuiz.delete({ where: { id: activity.id } })
-    const dbActivityCount = await prisma.liveQuiz.count()
-    expect(dbActivityCount).toBe(0)
-    await prisma.course.delete({ where: { id: course.id } })
-    const dbCourses = await prisma.course.count()
-    expect(dbCourses).toBe(0)
-    const dbPermissions = await prisma.permission.count()
-    expect(dbPermissions).toBe(0)
-    const dbDerivedPermissions = await prisma.derivedPermission.count()
-    expect(dbDerivedPermissions).toBe(0)
   }
 
   it('Verify that owner permissions are correctly propagated from dependent courses (user-specific derived permissions recomputation)', async () => {
@@ -3308,26 +3034,6 @@ describe('Unit tests covering the creation of derived permissions for activities
     })
 
     return { element, activity, course }
-  }
-
-  async function cleanupCourseActivity(prisma, courseId, elementId) {
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.course.delete({ where: { id: courseId } })
-    const dbCourses = await prisma.course.count()
-    expect(dbCourses).toBe(0)
-    const dbPracticeQuizzes = await prisma.practiceQuiz.count()
-    expect(dbPracticeQuizzes).toBe(0)
-    const dbMicrolearnings = await prisma.microLearning.count()
-    expect(dbMicrolearnings).toBe(0)
-    const dbGroupActivities = await prisma.groupActivity.count()
-    expect(dbGroupActivities).toBe(0)
-    await prisma.element.delete({ where: { id: elementId } })
-    const dbElements = await prisma.element.count()
-    expect(dbElements).toBe(0)
-    const dbPermissions = await prisma.permission.count()
-    expect(dbPermissions).toBe(0)
-    const dbDerivedPermissions = await prisma.derivedPermission.count()
-    expect(dbDerivedPermissions).toBe(0)
   }
 
   async function individualPermissionsCopyToDerived({
@@ -3532,9 +3238,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       activityEXECUTEPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await cleanupCourseActivity(prisma, courseId, elementId)
   }
 
   it('PQ: Verify that owner and direct permissions are correctly copied into the derived permissions table', async () => {
@@ -3788,18 +3491,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       activityADMINPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeFalsy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.deleteMany({
-      where: {
-        id: {
-          in: [userGroup2.id, userGroup3.id, userGroup4.id, userGroup5.id],
-        },
-      },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await cleanupCourseActivity(prisma, courseId, elementId)
   }
 
   it('PQ: Verify that group permissions are correctly expanded into individual derived permissions', async () => {
@@ -4008,9 +3699,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       courseEXECUTEPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await cleanupCourseActivity(prisma, courseId, elementId)
   }
 
   it('PQ: Verify that minimum required permissions from course are granted on practice quiz', async () => {
@@ -4152,9 +3840,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       }
     )
     expect(derivedPermissionUserFive).toBeNull()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await cleanupCourseActivity(prisma, courseId, elementId)
   }
 
   it('PQ: Verify that derived access to elements is granted for users with sufficient access on practice quiz', async () => {
@@ -4328,18 +4013,6 @@ describe('Unit tests covering the creation of derived permissions for activities
       activityADMINPermissions.id
     )
     expect(derivedPermissionUserFive!.derived).toBeTruthy()
-
-    // cleanup: delete all created objects and verify the deletion of all direct / derived permissions
-    await prisma.userGroup.deleteMany({
-      where: {
-        id: {
-          in: [userGroup2.id, userGroup3.id, userGroup4.id, userGroup5.id],
-        },
-      },
-    })
-    const userGroupCount = await prisma.userGroup.count()
-    expect(userGroupCount).toBe(0)
-    await cleanupCourseActivity(prisma, courseId, elementId)
   }
 
   it('PQ: Verify that derived access to elements is granted for user groups with sufficient access on practice quiz', async () => {

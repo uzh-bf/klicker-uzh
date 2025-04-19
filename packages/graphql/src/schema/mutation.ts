@@ -3,6 +3,7 @@ import {
   ActivityType as ActivityTypeEnum,
   CatalogObjectType as CatalogObjectTypeEnum,
 } from '@klicker-uzh/types'
+import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
@@ -1817,17 +1818,19 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           // if defined, >= WRITE permissions on catalog collection required
-          const validAccess = args.catalogCollectionId
-            ? await checkAccess(
-                [
-                  {
-                    catalogCollectionId: args.catalogCollectionId,
-                    minimumPermissionLevel: DB.PermissionLevel.WRITE,
-                  },
-                ],
-                ctx
-              )
-            : true
+          const validAccess =
+            args.catalogCollectionId &&
+            args.catalogCollectionId !== MISSING_CATALOG_COLLECTION_ID
+              ? await checkAccess(
+                  [
+                    {
+                      catalogCollectionId: args.catalogCollectionId,
+                      minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                    },
+                  ],
+                  ctx
+                )
+              : true
           if (!validAccess) {
             return null
           }

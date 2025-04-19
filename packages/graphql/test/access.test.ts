@@ -273,15 +273,6 @@ describe('Unit tests for object access validation', () => {
       userFiveCtx
     )
     expect(check16).toBeTruthy()
-
-    // cleanup: delete the created catalog collection and verify the deletion of the permissions
-    await prisma.catalogCollection.delete({
-      where: { id: catalogCollection.id },
-    })
-    const dbCatalogCollection = await prisma.catalogCollection.count()
-    expect(dbCatalogCollection).toBe(1) // default catalog collection should remain
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
 
   it('Verify that the access for answer collections is checked correctly', async () => {
@@ -416,15 +407,6 @@ describe('Unit tests for object access validation', () => {
       userFourCtx
     )
     expect(check9).toBeTruthy()
-
-    // cleanup: delete the created answer collection and verify the deletion of the permissions
-    await prisma.answerCollection.delete({
-      where: { id: answerCollection.id },
-    })
-    const dbAnswerCollection = await prisma.answerCollection.count()
-    expect(dbAnswerCollection).toBe(0)
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
 
   it('Verify that the access for elements is checked correctly', async () => {
@@ -561,15 +543,6 @@ describe('Unit tests for object access validation', () => {
       userFourCtx
     )
     expect(check9).toBeTruthy()
-
-    // cleanup: delete the created element and verify the deletion of the permissions
-    await prisma.element.delete({
-      where: { id: element.id },
-    })
-    const dbElement = await prisma.element.count()
-    expect(dbElement).toBe(0)
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
 
   it('Verify that the access for live quizzes is checked correctly', async () => {
@@ -706,15 +679,6 @@ describe('Unit tests for object access validation', () => {
       userFourCtx
     )
     expect(check9).toBeTruthy()
-
-    // cleanup: delete the created live quiz and verify the deletion of the permissions
-    await prisma.liveQuiz.delete({
-      where: { id: liveQuiz.id },
-    })
-    const dbLiveQuiz = await prisma.liveQuiz.count()
-    expect(dbLiveQuiz).toBe(0)
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
 
   it('Verify that the access for practice quizzes is checked correctly', async () => {
@@ -866,20 +830,6 @@ describe('Unit tests for object access validation', () => {
       userFourCtx
     )
     expect(check9).toBeTruthy()
-
-    // cleanup: delete the created practice quiz and verify the deletion of the permissions
-    await prisma.practiceQuiz.delete({
-      where: { id: practiceQuiz.id },
-    })
-    const dbPracticeQuiz = await prisma.practiceQuiz.count()
-    expect(dbPracticeQuiz).toBe(0)
-    await prisma.course.delete({
-      where: { id: course.id },
-    })
-    const dbCourse = await prisma.course.count()
-    expect(dbCourse).toBe(0)
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
 
   it('Verify that the access for microlearnings is checked correctly', async () => {
@@ -1033,20 +983,6 @@ describe('Unit tests for object access validation', () => {
       userFourCtx
     )
     expect(check9).toBeTruthy()
-
-    // cleanup: delete the created microlearning and verify the deletion of the permissions
-    await prisma.microLearning.delete({
-      where: { id: microlearning.id },
-    })
-    const dbMicrolearning = await prisma.microLearning.count()
-    expect(dbMicrolearning).toBe(0)
-    await prisma.course.delete({
-      where: { id: course.id },
-    })
-    const dbCourse = await prisma.course.count()
-    expect(dbCourse).toBe(0)
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
 
   it('Verify that the access for group activities is checked correctly', async () => {
@@ -1200,20 +1136,6 @@ describe('Unit tests for object access validation', () => {
       userFourCtx
     )
     expect(check9).toBeTruthy()
-
-    // cleanup: delete the created group activity and verify the deletion of the permissions
-    await prisma.groupActivity.delete({
-      where: { id: groupActivity.id },
-    })
-    const dbGroupActivity = await prisma.groupActivity.count()
-    expect(dbGroupActivity).toBe(0)
-    await prisma.course.delete({
-      where: { id: course.id },
-    })
-    const dbCourse = await prisma.course.count()
-    expect(dbCourse).toBe(0)
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
 
   it('Verify that the access for courses is checked correctly', async () => {
@@ -1353,15 +1275,6 @@ describe('Unit tests for object access validation', () => {
       userFourCtx
     )
     expect(check9).toBeTruthy()
-
-    // cleanup: delete the created course and verify the deletion of the permissions
-    await prisma.course.delete({
-      where: { id: course.id },
-    })
-    const dbCourse = await prisma.course.count()
-    expect(dbCourse).toBe(0)
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
 
   it('Verify multiple combined access checks work correctly', async () => {
@@ -1524,27 +1437,6 @@ describe('Unit tests for object access validation', () => {
       userFiveCtx
     )
     expect(check5).toBeFalsy()
-
-    // cleanup: delete all created objects
-    await prisma.practiceQuiz.delete({
-      where: { id: practiceQuiz.id },
-    })
-    await prisma.microLearning.delete({
-      where: { id: microlearning.id },
-    })
-    await prisma.course.delete({
-      where: { id: course.id },
-    })
-
-    // verify objects and permissions are gone
-    const dbPracticeQuiz = await prisma.practiceQuiz.count()
-    expect(dbPracticeQuiz).toBe(0)
-    const dbMicrolearning = await prisma.microLearning.count()
-    expect(dbMicrolearning).toBe(0)
-    const dbCourse = await prisma.course.count()
-    expect(dbCourse).toBe(0)
-    const dbPermissions = await prisma.derivedPermission.count()
-    expect(dbPermissions).toBe(0)
   })
   // #endregion
 
@@ -1584,60 +1476,6 @@ describe('Unit tests for object access validation', () => {
     )
 
     return { publicCollection, restrictedCollection }
-  }
-
-  async function deleteGeneratedObjects(prisma) {
-    // delete all catalog collections, except from the top-level one
-    await prisma.catalogCollection.deleteMany({
-      where: {
-        id: {
-          not: MISSING_CATALOG_COLLECTION_ID,
-        },
-      },
-    })
-    const dbCatalogCollections = await prisma.catalogCollection.count()
-    expect(dbCatalogCollections).toBe(1) // only the top-level one should remain
-
-    // delete all answer collections
-    await prisma.answerCollection.deleteMany()
-    const dbAnswerCollections = await prisma.answerCollection.count()
-    expect(dbAnswerCollections).toBe(0)
-
-    // delete all elements
-    await prisma.element.deleteMany()
-    const dbElements = await prisma.element.count()
-    expect(dbElements).toBe(0)
-
-    // delete all live quizzes
-    await prisma.liveQuiz.deleteMany()
-    const dbLiveQuizzes = await prisma.liveQuiz.count()
-    expect(dbLiveQuizzes).toBe(0)
-
-    // delete all practice quizzes
-    await prisma.practiceQuiz.deleteMany()
-    const dbPracticeQuizzes = await prisma.practiceQuiz.count()
-    expect(dbPracticeQuizzes).toBe(0)
-
-    // delete all microlearnings
-    await prisma.microLearning.deleteMany()
-    const dbMicrolearnings = await prisma.microLearning.count()
-    expect(dbMicrolearnings).toBe(0)
-
-    // delete all group activities
-    await prisma.groupActivity.deleteMany()
-    const dbGroupActivities = await prisma.groupActivity.count()
-    expect(dbGroupActivities).toBe(0)
-
-    // delete all courses
-    await prisma.course.deleteMany()
-    const dbCourses = await prisma.course.count()
-    expect(dbCourses).toBe(0)
-
-    // verify that all direct and derived permissions have been removed automatically
-    const dbPermissions = await prisma.permission.count()
-    expect(dbPermissions).toBe(0)
-    const dbDerivedPermissions = await prisma.derivedPermission.count()
-    expect(dbDerivedPermissions).toBe(0)
   }
 
   async function testObjectAssignment(args: {
@@ -2025,9 +1863,6 @@ describe('Unit tests for object access validation', () => {
       publicAnswerCollectionId: publicAnswerCollection.id,
       restrictedAnswerCollectionId: restrictedAnswerCollection.id,
     })
-
-    // cleanup: delete all created objects
-    await deleteGeneratedObjects(prisma)
   })
 
   it('Verify that the access to an element in the catalog is checked correctly', async () => {
@@ -2063,9 +1898,6 @@ describe('Unit tests for object access validation', () => {
       publicElementId: publicElement.id,
       restrictedElementId: restrictedElement.id,
     })
-
-    // cleanup: delete all created objects
-    await deleteGeneratedObjects(prisma)
   })
 
   it('Verify that the access to a live quiz in the catalog is checked correctly', async () => {
@@ -2101,9 +1933,6 @@ describe('Unit tests for object access validation', () => {
       publicLiveQuizId: publicLiveQuiz.id,
       restrictedLiveQuizId: restrictedLiveQuiz.id,
     })
-
-    // cleanup: delete all created objects
-    await deleteGeneratedObjects(prisma)
   })
 
   it('Verify that the access to a practice quiz in the catalog is checked correctly', async () => {
@@ -2155,9 +1984,6 @@ describe('Unit tests for object access validation', () => {
       publicPracticeQuizId: publicPracticeQuiz.id,
       restrictedPracticeQuizId: restrictedPracticeQuiz.id,
     })
-
-    // cleanup: delete all created objects
-    await deleteGeneratedObjects(prisma)
   })
 
   it('Verify that the access to a microlearning in the catalog is checked correctly', async () => {
@@ -2213,9 +2039,6 @@ describe('Unit tests for object access validation', () => {
       publicMicrolearningId: publicMicrolearning.id,
       restrictedMicrolearningId: restrictedMicrolearning.id,
     })
-
-    // cleanup: delete all created objects
-    await deleteGeneratedObjects(prisma)
   })
 
   it('Verify that the access to a group activity in the catalog is checked correctly', async () => {
@@ -2271,9 +2094,6 @@ describe('Unit tests for object access validation', () => {
       publicGroupActivityId: publicGroupActivity.id,
       restrictedGroupActivityId: restrictedGroupActivity.id,
     })
-
-    // cleanup: delete all created objects
-    await deleteGeneratedObjects(prisma)
   })
 
   it('Verify that the access to a course in the catalog is checked correctly', async () => {
@@ -2315,8 +2135,5 @@ describe('Unit tests for object access validation', () => {
       publicCourseId: publicCourse.id,
       restrictedCourseId: restrictedCourse.id,
     })
-
-    // cleanup: delete all created objects
-    await deleteGeneratedObjects(prisma)
   })
 })

@@ -4,6 +4,7 @@ import {
   ObjectAccess,
   PermissionLevel,
   PrismaClient,
+  PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma'
@@ -25,7 +26,7 @@ import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
-export async function testInitialization(prisma, emitter) {
+export async function testInitialization(prisma: PrismaClient, emitter) {
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive].map(
@@ -113,7 +114,7 @@ export async function testInitialization(prisma, emitter) {
 }
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
-export async function testCleanup(prisma) {
+export async function testCleanup(prisma: PrismaClient) {
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
@@ -250,7 +251,11 @@ export async function seedCatalogCollections(userContext): Promise<{
  * @returns {Promise<void>}
  *
  */
-export async function seedAnswerCollectionPermissions(prisma, AC1Id, AC2Id) {
+export async function seedAnswerCollectionPermissions(
+  prisma: PrismaClient,
+  AC1Id: number,
+  AC2Id: number
+) {
   // create permissions for users 2, 3, and 4 (ADMIN, WRITE, READ in descending order)
   await prisma.permission.createMany({
     data: [
@@ -290,5 +295,71 @@ export async function seedAnswerCollectionPermissions(prisma, AC1Id, AC2Id) {
   // recompute derived permissions that are checked in backend service functions
   await recomputeDerivedPermissions({ answerCollectionId: AC1Id }, prisma)
   await recomputeDerivedPermissions({ answerCollectionId: AC2Id }, prisma)
+}
+
+/**
+ * Creates live quiz template activities directly in the database.
+ *
+ * @param prisma - The Prisma client instance for database operations
+ * @returns Object containing the IDs of the created activities and templates
+ *   - activityId1: ID of the first live quiz activity
+ *   - activityId2: ID of the second live quiz activity
+ *   - activityId3: ID of the third live quiz activity
+ *   - templateId1: ID of the first activity template
+ *   - templateId2: ID of the second activity template
+ *   - templateId3: ID of the third activity template
+ */
+export async function seedLiveQuizTemplates(prisma: PrismaClient) {
+  // create activity templates (without content, simply for access validation)
+  const activityId1 = 'ca9f1fc4-0daf-4cdb-92b3-e55557b24831'
+  const activityId2 = '86ff081d-07cd-4bea-91b7-fc633ed7a092'
+  const activityId3 = '3be3228c-4a64-4a84-8743-46c4ba0ed333'
+  const templateData = [
+    { id: activityId1, name: 'LQ1' },
+    { id: activityId2, name: 'LQ2' },
+    { id: activityId3, name: 'LQ3' },
+  ]
+  const templates = await Promise.all(
+    templateData.map(async ({ id, name }) => {
+      const newTemplate = await prisma.activityTemplate.create({
+        data: {
+          description: `${name} Description`,
+          instructions: `${name} Instructions`,
+          liveQuiz: {
+            create: {
+              id, // activity id is relevant (connected to assignments, etc. - templateId mainly for routing)
+              name,
+              displayName: name,
+              status: PublicationStatus.TEMPLATE,
+              owner: {
+                connect: {
+                  id: userOne.id,
+                },
+              },
+            },
+          },
+        },
+      })
+
+      await recomputeDerivedPermissions(
+        { liveQuizId: id, userId: userOne.id },
+        prisma
+      )
+
+      return newTemplate
+    })
+  )
+  const templateId1 = templates.find((AT) => AT.liveQuizId === activityId1)!.id
+  const templateId2 = templates.find((AT) => AT.liveQuizId === activityId2)!.id
+  const templateId3 = templates.find((AT) => AT.liveQuizId === activityId3)!.id
+
+  return {
+    activityId1,
+    activityId2,
+    activityId3,
+    templateId1,
+    templateId2,
+    templateId3,
+  }
 }
 // #endregion
