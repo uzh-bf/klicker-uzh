@@ -1288,7 +1288,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           .realClick()
           .clear()
           .type(newContent)
-        cy.wait(200) // wait for state to be updated for sure
+        cy.wait(500) // wait for state to be updated for sure
         cy.get('[data-cy="save-new-question"]').click()
         cy.wait(500) // wait for element to be properly saved and UI to update
 
