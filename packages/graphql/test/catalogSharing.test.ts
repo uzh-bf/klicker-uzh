@@ -13,8 +13,8 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import {
   changeCatalogCollectionName,
   changeCatalogCollectionObjectAccess,
-  changeCatalogCollectionPermissionLevel,
   changeCatalogObjectAccess,
+  changeObjectPermissionLevel,
   countCatalogSharingRequests,
   createCatalogCollection,
   deleteCatalogCollection,
@@ -25,8 +25,8 @@ import {
   getCatalogSharingRequests,
   requestCatalogCollection,
   resolveObjectSharingRequest,
-  revokeCatalogCollectionAccess,
-  shareCatalogCollection,
+  revokeObjectAccess,
+  shareObject,
   transferCatalogCollectionOwnership,
   validateCatalogCollectionPermissions,
   verifyCatalogCollectionBrowsable,
@@ -1271,7 +1271,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     )
 
     // change the permission level to WRITE
-    const success = await changeCatalogCollectionPermissionLevel(
+    const success = await changeObjectPermissionLevel(
       {
         catalogCollectionId: publicCatalog.id,
         permissionId: readPermission.id,
@@ -1311,7 +1311,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     )
 
     // revoke the permission
-    const permissionDeletionFailure = await revokeCatalogCollectionAccess(
+    const permissionDeletionFailure = await revokeObjectAccess(
       {
         catalogCollectionId: restrictedCatalog.id,
         permissionId: readPermission.id,
@@ -1320,7 +1320,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     )
     expect(permissionDeletionFailure).toBeNull()
 
-    const deletedPermissionId = await revokeCatalogCollectionAccess(
+    const deletedPermissionId = await revokeObjectAccess(
       {
         catalogCollectionId: publicCatalog.id,
         permissionId: readPermission.id,
@@ -1438,7 +1438,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
     const newPermission1 = await transferCatalogCollectionOwnership(
       {
-        catalogCollectionId: restrictedCatalog.id,
+        id: restrictedCatalog.id,
         shortnameOrEmail: userFour.email,
       },
       userOneCtx
@@ -1517,7 +1517,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       await seedCatalogCollections(userOneCtx)
 
     // verify that the function fails, if the provided user does not exist
-    const failure1 = await shareCatalogCollection(
+    const failure1 = await shareObject(
       {
         catalogCollectionId: publicCatalog.id,
         shortnameOrEmail: 'non-existing-user',
@@ -1528,7 +1528,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(failure1).toBeNull()
 
     // grant direct READ, WRITE and ADMIN permissions on the public catalog collection for users 2, 3, and 4 respectively
-    const readPermission = await shareCatalogCollection(
+    const readPermission = await shareObject(
       {
         catalogCollectionId: publicCatalog.id,
         shortnameOrEmail: userTwo.email,
@@ -1543,7 +1543,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(readPermission!.permissionLevel).toBe(PermissionLevel.READ)
     expect(readPermission!.isOwn).toBe(false)
 
-    const writePermission = await shareCatalogCollection(
+    const writePermission = await shareObject(
       {
         catalogCollectionId: publicCatalog.id,
         shortnameOrEmail: userThree.shortname,
@@ -1558,7 +1558,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(writePermission!.permissionLevel).toBe(PermissionLevel.WRITE)
     expect(writePermission!.isOwn).toBe(false)
 
-    const adminPermission = await shareCatalogCollection(
+    const adminPermission = await shareObject(
       {
         catalogCollectionId: publicCatalog.id,
         shortnameOrEmail: userFour.shortname,

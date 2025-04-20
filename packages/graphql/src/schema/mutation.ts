@@ -2291,69 +2291,55 @@ export const Mutation = builder.mutationType({
           userGroupId: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
-            // >= ADMIN permissions on catalog collection required
-            const validAccess = await checkAccess(
-              [
-                {
-                  catalogCollectionId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.shareCatalogCollection(
-              {
-                catalogCollectionId: args.objectId,
-                permissionLevel: args.permissionLevel,
-                shortnameOrEmail: args.shortnameOrEmail,
-                userGroupId: args.userGroupId,
-              },
-              ctx
-            )
-          } else {
-            // >= ADMIN permissions on the object required
-            const validAccess = await checkAccess(
-              [
-                ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-                  ? [
-                      {
-                        answerCollectionId: parseInt(args.objectId),
-                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                      },
-                    ]
-                  : []),
-                // TODO: add further object types, once they are supported by the sharing function
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.shareObject(
-              {
-                permissionLevel: args.permissionLevel,
-                shortnameOrEmail: args.shortnameOrEmail,
-                userGroupId: args.userGroupId,
-                answerCollectionId:
-                  args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-                    ? parseInt(args.objectId)
-                    : undefined,
-                elementId: undefined,
-                courseId: undefined,
-                liveQuizId: undefined,
-                practiceQuizId: undefined,
-                microLearningId: undefined,
-                groupActivityId: undefined,
-              },
-              ctx
-            )
+          // >= ADMIN permissions on the object required
+          const validAccess = await checkAccess(
+            [
+              ...(args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                ? [
+                    {
+                      catalogCollectionId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                ? [
+                    {
+                      answerCollectionId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              // TODO: add further object types, once they are supported by the sharing function
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
           }
+
+          return await SharingService.shareObject(
+            {
+              permissionLevel: args.permissionLevel,
+              shortnameOrEmail: args.shortnameOrEmail,
+              userGroupId: args.userGroupId,
+              catalogCollectionId:
+                args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                  ? args.objectId
+                  : undefined,
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
         },
       }),
 
@@ -2365,56 +2351,52 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
-            // >= ADMIN permissions on catalog collection required
-            const validAccess = await checkAccess(
-              [
-                {
-                  catalogCollectionId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.revokeCatalogCollectionAccess(
-              {
-                permissionId: args.permissionId,
-                catalogCollectionId: args.objectId,
-              },
-              ctx
-            )
-          } else if (
-            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-          ) {
-            // TODO: potentially combine this function for answer collections and other object types into a single one (shared logic)
-            // >= ADMIN permissions on answer collection required
-            const validAccess = await checkAccess(
-              [
-                {
-                  answerCollectionId: parseInt(args.objectId),
-                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.revokeAnswerCollectionAccess(
-              {
-                permissionId: args.permissionId,
-                collectionId: parseInt(args.objectId),
-              },
-              ctx
-            )
+          const validAccess = await checkAccess(
+            [
+              ...(args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                ? [
+                    {
+                      catalogCollectionId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                ? [
+                    {
+                      answerCollectionId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              // TODO: add further object types, once they are supported by the sharing function
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
           }
 
-          return null
+          return await SharingService.revokeObjectAccess(
+            {
+              permissionId: args.permissionId,
+              catalogCollectionId:
+                args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                  ? args.objectId
+                  : undefined,
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
         },
       }),
 
@@ -2427,67 +2409,54 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: CatalogObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
-            // >= ADMIN permissions on catalog collection required
-            const validAccess = await checkAccess(
-              [
-                {
-                  catalogCollectionId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return false
-            }
-
-            return await SharingService.changeCatalogCollectionPermissionLevel(
-              {
-                catalogCollectionId: args.objectId,
-                permissionId: args.permissionId,
-                permissionLevel: args.permissionLevel,
-              },
-              ctx
-            )
-          } else {
-            // >= ADMIN permissions on the object required
-            const validAccess = await checkAccess(
-              [
-                ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-                  ? [
-                      {
-                        answerCollectionId: parseInt(args.objectId),
-                        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                      },
-                    ]
-                  : []),
-                // TODO: add further object types, once they are supported by the sharing function
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return false
-            }
-
-            return await SharingService.changeObjectPermissionLevel(
-              {
-                permissionId: args.permissionId,
-                permissionLevel: args.permissionLevel,
-                answerCollectionId:
-                  args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
-                    ? parseInt(args.objectId)
-                    : undefined,
-                elementId: undefined,
-                courseId: undefined,
-                liveQuizId: undefined,
-                practiceQuizId: undefined,
-                microLearningId: undefined,
-                groupActivityId: undefined,
-              },
-              ctx
-            )
+          // >= ADMIN permissions on the object required
+          const validAccess = await checkAccess(
+            [
+              ...(args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                ? [
+                    {
+                      catalogCollectionId: args.objectId,
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              ...(args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                ? [
+                    {
+                      answerCollectionId: parseInt(args.objectId),
+                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                    },
+                  ]
+                : []),
+              // TODO: add further object types, once they are supported by the sharing function
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return false
           }
+
+          return await SharingService.changeObjectPermissionLevel(
+            {
+              permissionId: args.permissionId,
+              permissionLevel: args.permissionLevel,
+              catalogCollectionId:
+                args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION
+                  ? args.objectId
+                  : undefined,
+              answerCollectionId:
+                args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+                  ? parseInt(args.objectId)
+                  : undefined,
+              elementId: undefined,
+              courseId: undefined,
+              liveQuizId: undefined,
+              practiceQuizId: undefined,
+              microLearningId: undefined,
+              groupActivityId: undefined,
+            },
+            ctx
+          )
         },
       }),
 
@@ -2517,7 +2486,7 @@ export const Mutation = builder.mutationType({
 
             return await SharingService.transferCatalogCollectionOwnership(
               {
-                catalogCollectionId: args.objectId,
+                id: args.objectId,
                 shortnameOrEmail: args.shortnameOrEmail,
               },
               ctx
@@ -2542,7 +2511,7 @@ export const Mutation = builder.mutationType({
 
             return await SharingService.transferAnswerCollectionOwnership(
               {
-                collectionId: parseInt(args.objectId),
+                id: parseInt(args.objectId),
                 shortnameOrEmail: args.shortnameOrEmail,
               },
               ctx

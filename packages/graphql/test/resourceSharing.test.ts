@@ -21,7 +21,7 @@ import {
   getCatalogSharingRequests,
   importAnswerCollection,
   requestCatalogObject,
-  revokeAnswerCollectionAccess,
+  revokeObjectAccess,
   shareObject,
   transferAnswerCollectionOwnership,
   verifyCatalogObjectEditPermissions,
@@ -836,10 +836,10 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     })
 
     // delete the permission through the corresponding mutation by owner
-    const deletedPermissionId1 = await revokeAnswerCollectionAccess(
+    const deletedPermissionId1 = await revokeObjectAccess(
       {
         permissionId: permission1.id,
-        collectionId: AC1!.id,
+        answerCollectionId: AC1!.id,
       },
       userOneCtx
     )
@@ -880,10 +880,10 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     })
 
     // delete the permission through the corresponding mutation by admin
-    const deletedPermissionId2 = await revokeAnswerCollectionAccess(
+    const deletedPermissionId2 = await revokeObjectAccess(
       {
         permissionId: permission2.id,
-        collectionId: AC1!.id,
+        answerCollectionId: AC1!.id,
       },
       userTwoCtx
     )
@@ -965,10 +965,10 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(derivedPermission!.derived).toBe(false)
 
     // verify that the permission can be revoked by an owner / admin, but will be replaced with a derived READ permission
-    const removalSuccess1 = await revokeAnswerCollectionAccess(
+    const removalSuccess1 = await revokeObjectAccess(
       {
         permissionId: permission3.id,
-        collectionId: AC1!.id,
+        answerCollectionId: AC1!.id,
       },
       userTwoCtx
     )
@@ -1061,10 +1061,10 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       },
     })
 
-    const permissionSelfRemoval = await revokeAnswerCollectionAccess(
+    const permissionSelfRemoval = await revokeObjectAccess(
       {
         permissionId: permission4.id,
-        collectionId: AC1!.id,
+        answerCollectionId: AC1!.id,
       },
       userFiveCtx
     )
@@ -1174,7 +1174,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
     const newPermission1 = await transferAnswerCollectionOwnership(
       {
-        collectionId: AC1!.id,
+        id: AC1!.id,
         shortnameOrEmail: userFour.email,
       },
       userOneCtx
