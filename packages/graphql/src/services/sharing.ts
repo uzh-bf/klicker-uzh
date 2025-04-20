@@ -7,6 +7,7 @@ import {
 } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
+  PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import type {
@@ -305,7 +306,7 @@ export async function createAccessRequestInstancesNewAdmin(
     microLearningId?: string
     groupActivityId?: string
   },
-  ctx: PrismaTransactionContextWithUser
+  prisma: PrismaTransactionClient
 ) {
   // if none of the object ids are defined, return early
   if (
@@ -322,7 +323,7 @@ export async function createAccessRequestInstancesNewAdmin(
   }
 
   // fetch all access requests for any existing admin / user on the object
-  const pendingRequests = await ctx.prisma.accessRequest.findMany({
+  const pendingRequests = await prisma.accessRequest.findMany({
     where: {
       // only filter for one of the existing owners / admins to make sure to get all requests
       objectAdminOrOwnerId: existingAdminOwnerId,
@@ -339,156 +340,155 @@ export async function createAccessRequestInstancesNewAdmin(
   })
 
   // upsert new access requests for the new admin / owner
-  await Promise.all(
-    pendingRequests.map(async (request) => {
-      await ctx.prisma.accessRequest.upsert({
-        where: {
-          catalogCollectionId_userId_objectAdminOrOwnerId:
-            request.catalogCollectionId !== null
-              ? {
-                  catalogCollectionId: request.catalogCollectionId,
-                  userId: request.userId,
-                  objectAdminOrOwnerId: newAdminId,
-                }
-              : undefined,
-          answerCollectionId_userId_objectAdminOrOwnerId:
-            request.answerCollectionId !== null
-              ? {
-                  answerCollectionId: request.answerCollectionId,
-                  userId: request.userId,
-                  objectAdminOrOwnerId: newAdminId,
-                }
-              : undefined,
-          elementId_userId_objectAdminOrOwnerId:
-            request.elementId !== null
-              ? {
-                  elementId: request.elementId,
-                  userId: request.userId,
-                  objectAdminOrOwnerId: newAdminId,
-                }
-              : undefined,
-          courseId_userId_objectAdminOrOwnerId:
-            request.courseId !== null
-              ? {
-                  courseId: request.courseId,
-                  userId: request.userId,
-                  objectAdminOrOwnerId: newAdminId,
-                }
-              : undefined,
-          liveQuizId_userId_objectAdminOrOwnerId:
-            request.liveQuizId !== null
-              ? {
-                  liveQuizId: request.liveQuizId,
-                  userId: request.userId,
-                  objectAdminOrOwnerId: newAdminId,
-                }
-              : undefined,
-          practiceQuizId_userId_objectAdminOrOwnerId:
-            request.practiceQuizId !== null
-              ? {
-                  practiceQuizId: request.practiceQuizId,
-                  userId: request.userId,
-                  objectAdminOrOwnerId: newAdminId,
-                }
-              : undefined,
-          microLearningId_userId_objectAdminOrOwnerId:
-            request.microLearningId !== null
-              ? {
-                  microLearningId: request.microLearningId,
-                  userId: request.userId,
-                  objectAdminOrOwnerId: newAdminId,
-                }
-              : undefined,
-          groupActivityId_userId_objectAdminOrOwnerId:
-            request.groupActivityId !== null
-              ? {
-                  groupActivityId: request.groupActivityId,
-                  userId: request.userId,
-                  objectAdminOrOwnerId: newAdminId,
-                }
-              : undefined,
-        },
-        create: {
-          permissionLevel: request.permissionLevel,
-          user: {
-            connect: {
-              id: request.userId,
-            },
+  // (no Promise.all to avoid parallelization inside transaction -> could result in issue due to closure of transaction connection)
+  for (const request of pendingRequests) {
+    await prisma.accessRequest.upsert({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId:
+          request.catalogCollectionId !== null
+            ? {
+                catalogCollectionId: request.catalogCollectionId,
+                userId: request.userId,
+                objectAdminOrOwnerId: newAdminId,
+              }
+            : undefined,
+        answerCollectionId_userId_objectAdminOrOwnerId:
+          request.answerCollectionId !== null
+            ? {
+                answerCollectionId: request.answerCollectionId,
+                userId: request.userId,
+                objectAdminOrOwnerId: newAdminId,
+              }
+            : undefined,
+        elementId_userId_objectAdminOrOwnerId:
+          request.elementId !== null
+            ? {
+                elementId: request.elementId,
+                userId: request.userId,
+                objectAdminOrOwnerId: newAdminId,
+              }
+            : undefined,
+        courseId_userId_objectAdminOrOwnerId:
+          request.courseId !== null
+            ? {
+                courseId: request.courseId,
+                userId: request.userId,
+                objectAdminOrOwnerId: newAdminId,
+              }
+            : undefined,
+        liveQuizId_userId_objectAdminOrOwnerId:
+          request.liveQuizId !== null
+            ? {
+                liveQuizId: request.liveQuizId,
+                userId: request.userId,
+                objectAdminOrOwnerId: newAdminId,
+              }
+            : undefined,
+        practiceQuizId_userId_objectAdminOrOwnerId:
+          request.practiceQuizId !== null
+            ? {
+                practiceQuizId: request.practiceQuizId,
+                userId: request.userId,
+                objectAdminOrOwnerId: newAdminId,
+              }
+            : undefined,
+        microLearningId_userId_objectAdminOrOwnerId:
+          request.microLearningId !== null
+            ? {
+                microLearningId: request.microLearningId,
+                userId: request.userId,
+                objectAdminOrOwnerId: newAdminId,
+              }
+            : undefined,
+        groupActivityId_userId_objectAdminOrOwnerId:
+          request.groupActivityId !== null
+            ? {
+                groupActivityId: request.groupActivityId,
+                userId: request.userId,
+                objectAdminOrOwnerId: newAdminId,
+              }
+            : undefined,
+      },
+      create: {
+        permissionLevel: request.permissionLevel,
+        user: {
+          connect: {
+            id: request.userId,
           },
-          objectAdminOrOwner: {
-            connect: {
-              id: newAdminId,
-            },
-          },
-          catalogCollection:
-            request.catalogCollectionId !== null
-              ? {
-                  connect: {
-                    id: request.catalogCollectionId,
-                  },
-                }
-              : undefined,
-          answerCollection:
-            request.answerCollectionId !== null
-              ? {
-                  connect: {
-                    id: request.answerCollectionId,
-                  },
-                }
-              : undefined,
-          element:
-            request.elementId !== null
-              ? {
-                  connect: {
-                    id: request.elementId,
-                  },
-                }
-              : undefined,
-          course:
-            request.courseId !== null
-              ? {
-                  connect: {
-                    id: request.courseId,
-                  },
-                }
-              : undefined,
-          liveQuiz:
-            request.liveQuizId !== null
-              ? {
-                  connect: {
-                    id: request.liveQuizId,
-                  },
-                }
-              : undefined,
-          practiceQuiz:
-            request.practiceQuizId !== null
-              ? {
-                  connect: {
-                    id: request.practiceQuizId,
-                  },
-                }
-              : undefined,
-          microLearning:
-            request.microLearningId !== null
-              ? {
-                  connect: {
-                    id: request.microLearningId,
-                  },
-                }
-              : undefined,
-          groupActivity:
-            request.groupActivityId !== null
-              ? {
-                  connect: {
-                    id: request.groupActivityId,
-                  },
-                }
-              : undefined,
         },
-        update: {},
-      })
+        objectAdminOrOwner: {
+          connect: {
+            id: newAdminId,
+          },
+        },
+        catalogCollection:
+          request.catalogCollectionId !== null
+            ? {
+                connect: {
+                  id: request.catalogCollectionId,
+                },
+              }
+            : undefined,
+        answerCollection:
+          request.answerCollectionId !== null
+            ? {
+                connect: {
+                  id: request.answerCollectionId,
+                },
+              }
+            : undefined,
+        element:
+          request.elementId !== null
+            ? {
+                connect: {
+                  id: request.elementId,
+                },
+              }
+            : undefined,
+        course:
+          request.courseId !== null
+            ? {
+                connect: {
+                  id: request.courseId,
+                },
+              }
+            : undefined,
+        liveQuiz:
+          request.liveQuizId !== null
+            ? {
+                connect: {
+                  id: request.liveQuizId,
+                },
+              }
+            : undefined,
+        practiceQuiz:
+          request.practiceQuizId !== null
+            ? {
+                connect: {
+                  id: request.practiceQuizId,
+                },
+              }
+            : undefined,
+        microLearning:
+          request.microLearningId !== null
+            ? {
+                connect: {
+                  id: request.microLearningId,
+                },
+              }
+            : undefined,
+        groupActivity:
+          request.groupActivityId !== null
+            ? {
+                connect: {
+                  id: request.groupActivityId,
+                },
+              }
+            : undefined,
+      },
+      update: {},
     })
-  )
+  }
 }
 // #endregion
 
@@ -1566,7 +1566,7 @@ export async function resolveObjectSharingRequest(
           microLearningId: pendingRequest.microLearningId ?? undefined,
           groupActivityId: pendingRequest.groupActivityId ?? undefined,
         },
-        ctx
+        prisma
       )
     }
 
@@ -1833,7 +1833,7 @@ export async function changeObjectPermissionLevel(
             microLearningId,
             groupActivityId,
           },
-          ctx
+          prisma
         )
       }
       // if ADMIN permissions were revoked, make sure that the user does not have any access request instances assigned anymore
@@ -1841,7 +1841,7 @@ export async function changeObjectPermissionLevel(
         previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
         permissionLevel !== DB.PermissionLevel.ADMIN
       ) {
-        await ctx.prisma.accessRequest.deleteMany({
+        await prisma.accessRequest.deleteMany({
           where: {
             objectAdminOrOwnerId: updatedPermission.userId,
             catalogCollectionId,
@@ -1877,7 +1877,7 @@ export async function changeObjectPermissionLevel(
                 microLearningId,
                 groupActivityId,
               },
-              ctx
+              prisma
             )
           })
         )
@@ -1887,7 +1887,7 @@ export async function changeObjectPermissionLevel(
         previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
         permissionLevel !== DB.PermissionLevel.ADMIN
       ) {
-        await ctx.prisma.accessRequest.deleteMany({
+        await prisma.accessRequest.deleteMany({
           where: {
             objectAdminOrOwnerId: {
               in: userGroup.members.map((member) => member.id),
@@ -2182,7 +2182,7 @@ export async function transferCatalogCollectionOwnership(
         existingAdminOwnerId: ctx.user.sub,
         catalogCollectionId: id,
       },
-      ctx
+      prisma
     )
 
     return updated
@@ -2320,7 +2320,7 @@ export async function transferAnswerCollectionOwnership(
         existingAdminOwnerId: ctx.user.sub,
         answerCollectionId: id,
       },
-      ctx
+      prisma
     )
 
     return updated
@@ -2567,7 +2567,7 @@ export async function shareObject(
             microLearningId,
             groupActivityId,
           },
-          ctx
+          prisma
         )
       }
 
