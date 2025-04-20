@@ -552,6 +552,101 @@ describe('Create, edit and share answer collections', function () {
     ).should('exist')
   })
 
+  it('Temporarily award ADMIN permissions to user pro3 and verify that the access requests are visible as well', function () {
+    // grant ADMIN permissions to user pro3 through direct sharing
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get('[data-cy="new-permission-username-or-email"]').type(
+      Cypress.env('LECTURER_INST2_SHORTNAME')
+    )
+    cy.get('[data-cy="new-permission-access-level"]').click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
+    cy.get('[data-cy="new-permission-access-level"]').contains(
+      messages.manage.sharing.permissionsADMIN
+    )
+    cy.get('[data-cy="new-permission-submit"]').click()
+    cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsADMIN)
+    cy.logoutLecturer()
+
+    // verify that access requests are visible to user pro3
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(
+      `[data-cy="sharing-request-${this.data.restricted.name}-pro1"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.restricted.name}-pro1"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.restricted.name}-pro1"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="sharing-request-${this.data.restricted.name}-pro2"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.restricted.name}-pro2"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.restricted.name}-pro2"]`
+    ).should('exist')
+    cy.logoutLecturer()
+
+    // revoke direct ADMIN permissions again
+    cy.loginLecturer()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="answer-collections"]').click()
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.restricted.name}"]`
+    ).click()
+    cy.get('[data-cy="share-answer-collection"]').click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).click()
+    cy.get(
+      `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.logoutLecturer()
+
+    // verify that the access requests are not visible anymore to user pro3
+    cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="analytics"]').should('exist')
+    cy.get('[data-cy="resources"]').click()
+    cy.get('[data-cy="catalog"]').click()
+    cy.get(
+      `[data-cy="sharing-request-${this.data.restricted.name}-pro1"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.restricted.name}-pro1"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.restricted.name}-pro1"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="sharing-request-${this.data.restricted.name}-pro2"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="approve-sharing-request-${this.data.restricted.name}-pro2"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="deny-sharing-request-${this.data.restricted.name}-pro2"]`
+    ).should('not.exist')
+  })
+
   it('Verify that answer collection cannot be integrated into question by user pro1', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="library"]').click()
