@@ -1992,10 +1992,10 @@ export async function revokeObjectAccess(
         : []
 
     for (const affectedUserId of affectedUserIds) {
-      // if the new revoked permission level had ADMIN level, remove any access requests
+      // if the new revoked permission level had ADMIN level, remove any access requests linked to this user as an object owner or admin
       await prisma.accessRequest.deleteMany({
         where: {
-          userId: affectedUserId,
+          objectAdminOrOwnerId: affectedUserId,
           catalogCollectionId,
           answerCollectionId,
           elementId,

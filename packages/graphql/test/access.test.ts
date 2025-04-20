@@ -11,8 +11,24 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { checkAccess, checkCatalogAssignment } from '../src/services/sharing.js'
-import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import {
+  changeObjectPermissionLevel,
+  checkAccess,
+  checkCatalogAssignment,
+  createAccessRequestInstancesNewAdmin,
+  resolveObjectSharingRequest,
+  revokeObjectAccess,
+  shareObject,
+  transferAnswerCollectionOwnership,
+  transferCatalogCollectionOwnership,
+} from '../src/services/sharing.js'
+import {
+  initializePrisma,
+  seedAnswerCollections,
+  seedCatalogCollections,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
 describe('Unit tests for object access validation', () => {
@@ -1440,7 +1456,1581 @@ describe('Unit tests for object access validation', () => {
   })
   // #endregion
 
+  // ! Duplication of Pending Access Requests
+  // #region
+  it('Verify that the helper function for duplicating existing access requests for new admins works correctly', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // create two access requests for users 2 and 3 on the public catalog
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+
+    // trigger the duplication computation for the access requests for a new admin user 4
+    await createAccessRequestInstancesNewAdmin(
+      {
+        newAdminId: userFour.id,
+        existingAdminOwnerId: userOne.id,
+        catalogCollectionId: publicCatalog.id,
+      },
+      prisma
+    )
+
+    // verify that the access requests have been duplicated correctly
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(4)
+
+    const AR1 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userTwo.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(AR1).toBeTruthy()
+    expect(AR1!.permissionLevel).toBe(PermissionLevel.READ)
+
+    const AR2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(AR2).toBeTruthy()
+    expect(AR2!.permissionLevel).toBe(PermissionLevel.WRITE)
+  })
+
+  it('Test that resolving an access request with ADMIN permissions triggers a duplication of pending access requests', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+    const [AC1] = await seedAnswerCollections(userOneCtx)
+
+    // create two access requests for the public catalog collection (user 2 and 3)
+    const catalogRequest2 = await prisma.accessRequest.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userTwo.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const catalogRequest3 = await prisma.accessRequest.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userThree.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
+    // create two access requests for the answer collection (user 2 and 3)
+    const collectionRequest2 = await prisma.accessRequest.create({
+      data: {
+        answerCollectionId: AC1!.id,
+        userId: userTwo.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const collectionRequest3 = await prisma.accessRequest.create({
+      data: {
+        answerCollectionId: AC1!.id,
+        userId: userThree.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // resolve the access requests for user two and grant ADMIN permissions
+    await resolveObjectSharingRequest(
+      {
+        requestId: catalogRequest2.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        approved: true,
+        userId: userTwo.id,
+        propagation: false,
+      },
+      userOneCtx
+    )
+    await resolveObjectSharingRequest(
+      {
+        requestId: collectionRequest2.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        approved: true,
+        userId: userTwo.id,
+        propagation: false,
+      },
+      userOneCtx
+    )
+
+    // verify that the access requests for user 3 have been duplicated and assigned to user 2 as well
+    const catalogRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest3Persistent).toBeTruthy()
+    expect(catalogRequest3Persistent!.id).toBe(catalogRequest3.id)
+    expect(catalogRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const catalogRequest3Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest3Duplicated).toBeTruthy()
+    expect(catalogRequest3Duplicated!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const collectionRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest3Persistent).toBeTruthy()
+    expect(collectionRequest3Persistent!.id).toBe(collectionRequest3.id)
+    expect(collectionRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+
+    const collectionRequest3Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest3Duplicated).toBeTruthy()
+    expect(collectionRequest3Duplicated!.permissionLevel).toBe(
+      PermissionLevel.ADMIN
+    )
+  })
+
+  it('Test that increasing the level of an existing individual permission to ADMIN level results in a duplication of all pending access requests', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+    const [AC1] = await seedAnswerCollections(userOneCtx)
+
+    // grant READ permissions to user 2 on the public catalog collection and the answer collection
+    const catalogPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const answerCollectionPermission = await prisma.permission.create({
+      data: {
+        answerCollectionId: AC1!.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+    await recomputeDerivedPermissions({ answerCollectionId: AC1!.id }, prisma)
+
+    // create two access requests on the two objects for user 3
+    const catalogRequest3 = await prisma.accessRequest.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userThree.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const collectionRequest3 = await prisma.accessRequest.create({
+      data: {
+        answerCollectionId: AC1!.id,
+        userId: userThree.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(2)
+
+    // increase the permission level of user 2 to ADMIN (both objects)
+    await changeObjectPermissionLevel(
+      {
+        permissionId: catalogPermission.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    await changeObjectPermissionLevel(
+      {
+        permissionId: answerCollectionPermission.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        answerCollectionId: AC1!.id,
+      },
+      userOneCtx
+    )
+
+    // verify that the access requests have been duplicated for the new ADMIN
+    const accessRequestCount2 = await prisma.accessRequest.count()
+    expect(accessRequestCount2).toBe(4)
+
+    const catalogRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest3Persistent).toBeTruthy()
+    expect(catalogRequest3Persistent!.id).toBe(catalogRequest3.id)
+    expect(catalogRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest3Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest3Duplicated).toBeTruthy()
+    expect(catalogRequest3Duplicated!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const collectionRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest3Persistent).toBeTruthy()
+    expect(collectionRequest3Persistent!.id).toBe(collectionRequest3.id)
+    expect(collectionRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const collectionRequest3Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest3Duplicated).toBeTruthy()
+    expect(collectionRequest3Duplicated!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+  })
+
+  it('Test that increasing the level of an existing group permission to ADMIN level results in a duplication of all pending access requests', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // create a user group with users 2 and 3
+    const userGroup = await prisma.userGroup.create({
+      data: {
+        name: 'Test User Group',
+        members: {
+          connect: [{ id: userTwo.id }, { id: userThree.id }],
+        },
+        ownerId: userOne.id,
+      },
+    })
+
+    // grant READ permissions to the user group on the public catalog collection
+    const groupPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: userGroup.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+
+    // create access requests for users 4 and 5 on the public catalog collection
+    const catalogRequest4 = await prisma.accessRequest.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userFour.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+    })
+    const catalogRequest5 = await prisma.accessRequest.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userFive.id,
+        objectAdminOrOwnerId: userOne.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+
+    // increase the permission level of the user group to ADMIN
+    await changeObjectPermissionLevel(
+      {
+        permissionId: groupPermission.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+
+    // verify that the access request for user 4 has been duplicated for users 2 and 3
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(6)
+
+    const catalogRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest4Persistent).toBeTruthy()
+    expect(catalogRequest4Persistent!.id).toBe(catalogRequest4.id)
+    expect(catalogRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest4Duplicated1 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest4Duplicated1).toBeTruthy()
+    expect(catalogRequest4Duplicated1!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest4Duplicated2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(catalogRequest4Duplicated2).toBeTruthy()
+    expect(catalogRequest4Duplicated2!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest5Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest5Persistent).toBeTruthy()
+    expect(catalogRequest5Persistent!.id).toBe(catalogRequest5.id)
+    expect(catalogRequest5Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const catalogRequest5Duplicated1 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest5Duplicated1).toBeTruthy()
+    expect(catalogRequest5Duplicated1!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const catalogRequest5Duplicated2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(catalogRequest5Duplicated2).toBeTruthy()
+    expect(catalogRequest5Duplicated2!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+  })
+
+  it('Test that reduction the level of an existing individual permission from ADMIN level results in a duplication of all pending access requests', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+    const [AC1] = await seedAnswerCollections(userOneCtx)
+
+    // grant ADMIN permissions to user 2 on the public catalog collection and the answer collection
+    const catalogPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const answerCollectionPermission = await prisma.permission.create({
+      data: {
+        answerCollectionId: AC1!.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+    await recomputeDerivedPermissions({ answerCollectionId: AC1!.id }, prisma)
+
+    // create access requests for user 3 for the owner and the ADMIN user
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+
+    // reduce the permission level of user 2 to WRITE and READ (both objects)
+    await changeObjectPermissionLevel(
+      {
+        permissionId: catalogPermission.id,
+        permissionLevel: PermissionLevel.WRITE,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    await changeObjectPermissionLevel(
+      {
+        permissionId: answerCollectionPermission.id,
+        permissionLevel: PermissionLevel.READ,
+        answerCollectionId: AC1!.id,
+      },
+      userOneCtx
+    )
+
+    // verify that the access requests for the previous ADMIN user have been removed
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(2)
+
+    const catalogRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest3Persistent).toBeTruthy()
+    expect(catalogRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest3Removed = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest3Removed).toBeNull()
+
+    const collectionRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest3Persistent).toBeTruthy()
+    expect(collectionRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const collectionRequest3Removed = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest3Removed).toBeNull()
+  })
+
+  it('Test that reduction the level of an existing group permission from ADMIN level results in a duplication of all pending access requests', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // create a user group with users 2 and 3
+    const userGroup = await prisma.userGroup.create({
+      data: {
+        name: 'Test User Group',
+        members: {
+          connect: [{ id: userTwo.id }, { id: userThree.id }],
+        },
+        ownerId: userOne.id,
+      },
+    })
+
+    // grant ADMIN permissions to the user group on the public catalog collection
+    const groupPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: userGroup.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+
+    // create access requests for users 4 and 5 on the public catalog collection
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+
+    // reduce the permission level of the user group to WRITE
+    await changeObjectPermissionLevel(
+      {
+        permissionId: groupPermission.id,
+        permissionLevel: PermissionLevel.WRITE,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+
+    // verify that the access request instances for users 4 and 5 have been removed for previous ADMINS 2 and 3
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(2)
+
+    const catalogRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest4Persistent).toBeTruthy()
+    expect(catalogRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest4Removed = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest4Removed).toBeNull()
+
+    const catalogRequest4Removed2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(catalogRequest4Removed2).toBeNull()
+
+    const catalogRequest5Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest5Persistent).toBeTruthy()
+    expect(catalogRequest5Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const catalogRequest5Removed = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest5Removed).toBeNull()
+
+    const catalogRequest5Removed2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(catalogRequest5Removed2).toBeNull()
+  })
+
+  it('Verify that on revocation of individual ADMIN object permissions, access request instances are removed for the previous ADMIN', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+    const [AC1] = await seedAnswerCollections(userOneCtx)
+
+    // grant ADMIN permissions to user 2 on the public catalog collection and the answer collection
+    const catalogPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const answerCollectionPermission = await prisma.permission.create({
+      data: {
+        answerCollectionId: AC1!.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+    await recomputeDerivedPermissions({ answerCollectionId: AC1!.id }, prisma)
+
+    // create access requests for users 3 and 4 on both objects
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+
+    // revoke the permissions of user 2 from both objects
+    await revokeObjectAccess(
+      {
+        permissionId: catalogPermission.id,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    await revokeObjectAccess(
+      {
+        permissionId: answerCollectionPermission.id,
+        answerCollectionId: AC1!.id,
+      },
+      userOneCtx
+    )
+
+    // verify that the access requests for user 3 and 4 have been removed for the previous ADMIN
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(4)
+
+    const catalogRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest3Persistent).toBeTruthy()
+    expect(catalogRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest3Removed = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest3Removed).toBeNull()
+
+    const catalogRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest4Persistent).toBeTruthy()
+    expect(catalogRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const catalogRequest4Removed = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest4Removed).toBeNull()
+
+    const collectionRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest3Persistent).toBeTruthy()
+    expect(collectionRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const collectionRequest3Removed = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest3Removed).toBeNull()
+
+    const collectionRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest4Persistent).toBeTruthy()
+    expect(collectionRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const collectionRequest4Removed = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest4Removed).toBeNull()
+  })
+
+  it('Verify that on revocation of group ADMIN object permissions, access request instances are removed for the previous ADMIN', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // create a user group with users 2 and 3
+    const userGroup = await prisma.userGroup.create({
+      data: {
+        name: 'Test User Group',
+        members: {
+          connect: [{ id: userTwo.id }, { id: userThree.id }],
+        },
+        ownerId: userOne.id,
+      },
+    })
+
+    // grant ADMIN permissions to the user group on the public catalog collection
+    const groupPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: userGroup.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+
+    // create access requests for users 4 and 5 on the public catalog collection
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+
+    // revoke the permissions of user group from the public catalog collection
+    await revokeObjectAccess(
+      {
+        permissionId: groupPermission.id,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+
+    // verify that the access requests for user 4 and 5 have been removed for the previous ADMIN
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(2)
+
+    const catalogRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest4Persistent).toBeTruthy()
+    expect(catalogRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest4Removed = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest4Removed).toBeNull()
+
+    const catalogRequest4Removed2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(catalogRequest4Removed2).toBeNull()
+
+    const catalogRequest5Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest5Persistent).toBeTruthy()
+    expect(catalogRequest5Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const catalogRequest5Removed = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest5Removed).toBeNull()
+
+    const catalogRequest5Removed2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFive.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(catalogRequest5Removed2).toBeNull()
+  })
+
+  it('Verify that any pending access requests are also assigned to new owner on catalog collection ownership transfer', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // create access requests for users 3 and 4
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(2)
+
+    // transfer ownership of the catalog collection to user 2
+    await transferCatalogCollectionOwnership(
+      {
+        id: publicCatalog.id,
+        shortnameOrEmail: userTwo.shortname,
+      },
+      userOneCtx
+    )
+
+    // verify that the access requests have been duplicated for the new owner
+    const accessRequestCount2 = await prisma.accessRequest.count()
+    expect(accessRequestCount2).toBe(4)
+
+    const catalogRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest3Persistent).toBeTruthy()
+    expect(catalogRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest3Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest3Duplicated).toBeTruthy()
+    expect(catalogRequest3Duplicated!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest4Persistent).toBeTruthy()
+    expect(catalogRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const catalogRequest4Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest4Duplicated).toBeTruthy()
+    expect(catalogRequest4Duplicated!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+  })
+
+  it('Verify that any pending access requests are also assigned to new owner on answer collection ownership transfer', async () => {
+    const [AC1] = await seedAnswerCollections(userOneCtx)
+
+    // create access requests for users 3 and 4
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(2)
+
+    // transfer ownership of the answer collection to user 2
+    await transferAnswerCollectionOwnership(
+      {
+        id: AC1!.id,
+        shortnameOrEmail: userTwo.shortname,
+      },
+      userOneCtx
+    )
+
+    // verify that the access requests have been duplicated for the new owner
+    const accessRequestCount2 = await prisma.accessRequest.count()
+    expect(accessRequestCount2).toBe(4)
+
+    const collectionRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest3Persistent).toBeTruthy()
+    expect(collectionRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const collectionRequest3Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest3Duplicated).toBeTruthy()
+    expect(collectionRequest3Duplicated!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const collectionRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest4Persistent).toBeTruthy()
+    expect(collectionRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const collectionRequest4Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest4Duplicated).toBeTruthy()
+    expect(collectionRequest4Duplicated!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+  })
+
+  it('Verify that any pending access requests to an object are duplicated when granting ADMIN permissions to a new user', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+    const [AC1] = await seedAnswerCollections(userOneCtx)
+
+    // create access requests for users 3 and 4
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+
+    // grant ADMIN permissions to user 2 on the public catalog collection and the answer collection
+    await shareObject(
+      {
+        permissionLevel: PermissionLevel.ADMIN,
+        shortnameOrEmail: userTwo.shortname,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    await shareObject(
+      {
+        permissionLevel: PermissionLevel.ADMIN,
+        shortnameOrEmail: userTwo.shortname,
+        answerCollectionId: AC1!.id,
+      },
+      userOneCtx
+    )
+
+    // verify that the access requests have been duplicated for the new ADMIN
+    const accessRequestCount = await prisma.accessRequest.count()
+    expect(accessRequestCount).toBe(8)
+
+    const catalogRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest3Persistent).toBeTruthy()
+    expect(catalogRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest3Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest3Duplicated).toBeTruthy()
+    expect(catalogRequest3Duplicated!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const catalogRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(catalogRequest4Persistent).toBeTruthy()
+    expect(catalogRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const catalogRequest4Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(catalogRequest4Duplicated).toBeTruthy()
+    expect(catalogRequest4Duplicated!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const collectionRequest3Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest3Persistent).toBeTruthy()
+    expect(collectionRequest3Persistent!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const collectionRequest3Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userThree.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest3Duplicated).toBeTruthy()
+    expect(collectionRequest3Duplicated!.permissionLevel).toBe(
+      PermissionLevel.READ
+    )
+
+    const collectionRequest4Persistent = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userOne.id,
+        },
+      },
+    })
+    expect(collectionRequest4Persistent).toBeTruthy()
+    expect(collectionRequest4Persistent!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+
+    const collectionRequest4Duplicated = await prisma.accessRequest.findUnique({
+      where: {
+        answerCollectionId_userId_objectAdminOrOwnerId: {
+          answerCollectionId: AC1!.id,
+          userId: userFour.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(collectionRequest4Duplicated).toBeTruthy()
+    expect(collectionRequest4Duplicated!.permissionLevel).toBe(
+      PermissionLevel.WRITE
+    )
+  })
+
+  it('Verify that any pending access requests to an object are duplicated when granting ADMIN permissions to a new user group', async () => {
+    // TODO: introduce this test case, once user groups are supported in direct object sharing
+    // const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+    // // create a user group with users 2 and 3
+    // const userGroup = await prisma.userGroup.create({
+    //   data: {
+    //     name: 'Test User Group',
+    //     members: {
+    //       connect: [{ id: userTwo.id }, { id: userThree.id }],
+    //     },
+    //     ownerId: userOne.id,
+    //   },
+    // })
+    // // create access requests for users 4 and 5
+    // await prisma.accessRequest.createMany({
+    //   data: [
+    //     {
+    //       catalogCollectionId: publicCatalog.id,
+    //       userId: userFour.id,
+    //       objectAdminOrOwnerId: userOne.id,
+    //       permissionLevel: PermissionLevel.READ,
+    //     },
+    //     {
+    //       catalogCollectionId: publicCatalog.id,
+    //       userId: userFive.id,
+    //       objectAdminOrOwnerId: userOne.id,
+    //       permissionLevel: PermissionLevel.WRITE,
+    //     },
+    //   ],
+    // })
+    // // grant ADMIN permissions to user group on the public catalog collection
+    // await shareObject(
+    //   {
+    //     userGroupId: userGroup.id,
+    //     permissionLevel: PermissionLevel.ADMIN,
+    //     catalogCollectionId: publicCatalog.id,
+    //   },
+    //   userOneCtx
+    // )
+    // // verify that the access requests have been duplicated for the new ADMIN
+    // const accessRequestCount = await prisma.accessRequest.count()
+    // expect(accessRequestCount).toBe(6)
+    // const catalogRequest4Persistent = await prisma.accessRequest.findUnique({
+    //   where: {
+    //     catalogCollectionId_userId_objectAdminOrOwnerId: {
+    //       catalogCollectionId: publicCatalog.id,
+    //       userId: userFour.id,
+    //       objectAdminOrOwnerId: userOne.id,
+    //     },
+    //   },
+    // })
+    // expect(catalogRequest4Persistent).toBeTruthy()
+    // expect(catalogRequest4Persistent!.permissionLevel).toBe(
+    //   PermissionLevel.READ
+    // )
+    // const catalogRequest4Duplicated1 = await prisma.accessRequest.findUnique({
+    //   where: {
+    //     catalogCollectionId_userId_objectAdminOrOwnerId: {
+    //       catalogCollectionId: publicCatalog.id,
+    //       userId: userFour.id,
+    //       objectAdminOrOwnerId: userTwo.id,
+    //     },
+    //   },
+    // })
+    // expect(catalogRequest4Duplicated1).toBeTruthy()
+    // expect(catalogRequest4Duplicated1!.permissionLevel).toBe(
+    //   PermissionLevel.READ
+    // )
+    // const catalogRequest4Duplicated2 = await prisma.accessRequest.findUnique({
+    //   where: {
+    //     catalogCollectionId_userId_objectAdminOrOwnerId: {
+    //       catalogCollectionId: publicCatalog.id,
+    //       userId: userFour.id,
+    //       objectAdminOrOwnerId: userThree.id,
+    //     },
+    //   },
+    // })
+    // expect(catalogRequest4Duplicated2).toBeTruthy()
+    // expect(catalogRequest4Duplicated2!.permissionLevel).toBe(
+    //   PermissionLevel.READ
+    // )
+    // const catalogRequest5Persistent = await prisma.accessRequest.findUnique({
+    //   where: {
+    //     catalogCollectionId_userId_objectAdminOrOwnerId: {
+    //       catalogCollectionId: publicCatalog.id,
+    //       userId: userFive.id,
+    //       objectAdminOrOwnerId: userOne.id,
+    //     },
+    //   },
+    // })
+    // expect(catalogRequest5Persistent).toBeTruthy()
+    // expect(catalogRequest5Persistent!.permissionLevel).toBe(
+    //   PermissionLevel.WRITE
+    // )
+    // const catalogRequest5Duplicated1 = await prisma.accessRequest.findUnique({
+    //   where: {
+    //     catalogCollectionId_userId_objectAdminOrOwnerId: {
+    //       catalogCollectionId: publicCatalog.id,
+    //       userId: userFive.id,
+    //       objectAdminOrOwnerId: userTwo.id,
+    //     },
+    //   },
+    // })
+    // expect(catalogRequest5Duplicated1).toBeTruthy()
+    // expect(catalogRequest5Duplicated1!.permissionLevel).toBe(
+    //   PermissionLevel.WRITE
+    // )
+    // const catalogRequest5Duplicated2 = await prisma.accessRequest.findUnique({
+    //   where: {
+    //     catalogCollectionId_userId_objectAdminOrOwnerId: {
+    //       catalogCollectionId: publicCatalog.id,
+    //       userId: userFive.id,
+    //       objectAdminOrOwnerId: userThree.id,
+    //     },
+    //   },
+    // })
+    // expect(catalogRequest5Duplicated2).toBeTruthy()
+    // expect(catalogRequest5Duplicated2!.permissionLevel).toBe(
+    //   PermissionLevel.WRITE
+    // )
+  })
+  // #endregion
+
   // ! Catalog Collection Assignment Validation
+  // #region
   async function createCatalogCollections(prisma) {
     // create a public catalog collection
     const publicCollection = await prisma.catalogCollection.create({
@@ -2136,4 +3726,5 @@ describe('Unit tests for object access validation', () => {
       restrictedCourseId: restrictedCourse.id,
     })
   })
+  // #endregion
 })

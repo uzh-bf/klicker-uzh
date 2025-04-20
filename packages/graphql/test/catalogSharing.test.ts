@@ -1045,7 +1045,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     expect(adminCount).toBe(1)
   })
 
-  it('Verify that access requests are correctly removed when being resolved', async () => {
+  it('Verify that access requests are correctly removed and new permissions created when being resolved', async () => {
     const [AC1] = await seedAnswerCollections(userOneCtx)
 
     // add two access requests for users 2 and 3 on the answer collection
