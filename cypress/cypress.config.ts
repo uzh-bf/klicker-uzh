@@ -41,7 +41,6 @@ export default defineConfig({
   projectId: 'y436dx',
   trashAssetsBeforeRuns: true,
   video: true,
-  videoCompression: 10,
   env: {
     URL_STUDENT: 'http://127.0.0.1:3001',
     URL_STUDENT_LOGIN: 'http://127.0.0.1:3001/login',

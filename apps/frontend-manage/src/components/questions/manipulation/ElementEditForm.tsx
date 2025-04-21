@@ -85,7 +85,7 @@ function ElementEditForm({
   return (
     <Formik
       validateOnMount
-      enableReinitialize
+      enableReinitialize={!isTemplate}
       initialValues={initialValues}
       validationSchema={questionManipulationSchema}
       onSubmit={async (values, { setSubmitting }) => {
