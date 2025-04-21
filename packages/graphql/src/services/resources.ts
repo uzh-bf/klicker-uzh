@@ -567,6 +567,17 @@ export async function removeAnswerCollection(
     await ctx.prisma.$transaction(async (prisma) => {
       await prisma.permission.delete({ where: { id: permission.id } })
 
+      // create an audit log entry for the removal
+      await prisma.auditLogEntry.create({
+        data: {
+          type: DB.AuditLogType.PERMISSION_REMOVED,
+          objectId: String(collectionId),
+          objectType: DB.ObjectType.ANSWER_COLLECTION,
+          sourceUserId: ctx.user.sub,
+          message: `User ${ctx.user.sub} removed own permission on ${DB.ObjectType.ANSWER_COLLECTION} (ID: ${collectionId})`,
+        },
+      })
+
       // trigger recomputation of derived permissions
       await recomputeDerivedPermissions(
         { answerCollectionId: collectionId, userId: ctx.user.sub },

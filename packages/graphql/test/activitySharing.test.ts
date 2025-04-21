@@ -1,5 +1,7 @@
 import {
+  AuditLogType,
   ObjectAccess,
+  ObjectType,
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
@@ -102,34 +104,39 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     })
 
     // verify that only users 1 and 4 have sufficient permissions to modify this assignment
-    const res1 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userOneCtx
-    )
+    const { sufficientPermissions: res1 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userOneCtx
+      )
     expect(res1).toBe(true)
 
-    const res2 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userTwoCtx
-    )
+    const { sufficientPermissions: res2 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userTwoCtx
+      )
     expect(res2).toBe(false)
 
-    const res3 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userThreeCtx
-    )
+    const { sufficientPermissions: res3 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userThreeCtx
+      )
     expect(res3).toBe(false)
 
-    const res4 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userFourCtx
-    )
+    const { sufficientPermissions: res4 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userFourCtx
+      )
     expect(res4).toBe(true)
 
-    const res5 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userFiveCtx
-    )
+    const { sufficientPermissions: res5 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userFiveCtx
+      )
     expect(res5).toBe(false)
   })
 
@@ -252,6 +259,33 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     expect(res2!.isRequested).toBe(false)
     expect(res2!.isShared).toBe(false)
 
+    // verify that a proper catalog assignment was created
+    const catalogAssignment1 =
+      await prisma.catalogCollectionAssignment.findUnique({
+        where: {
+          liveQuizId_catalogCollectionId: {
+            liveQuizId: activityId1,
+            catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          },
+        },
+      })
+    expect(catalogAssignment1).toBeTruthy()
+    expect(catalogAssignment1!.access).toEqual(ObjectAccess.PUBLIC)
+
+    // verify that an audit log entry was created
+    const auditLogEntry1 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_CREATED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: activityId1,
+        sourceUserId: userOne.id,
+      },
+    })
+    expect(auditLogEntry1).toBeTruthy()
+    expect(auditLogEntry1!.message).toBe(
+      `${ObjectType.LIVE_QUIZ} (ID ${activityId1}) added to catalog collection (ID ${MISSING_CATALOG_COLLECTION_ID}) by user ${userOne.id}.`
+    )
+
     // verify that user 3 has sufficient permissions to add the second activity to the top-level catalog collection
     const res3 = await addObjectToCatalog(
       {
@@ -271,6 +305,33 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     expect(res3!.isManager).toBe(true)
     expect(res3!.isRequested).toBe(false)
     expect(res3!.isShared).toBe(true)
+
+    // verify that a proper catalog assignment was created
+    const catalogAssignment2 =
+      await prisma.catalogCollectionAssignment.findUnique({
+        where: {
+          liveQuizId_catalogCollectionId: {
+            liveQuizId: activityId2,
+            catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          },
+        },
+      })
+    expect(catalogAssignment2).toBeTruthy()
+    expect(catalogAssignment2!.access).toEqual(ObjectAccess.RESTRICTED)
+
+    // verify that an audit log entry was created
+    const auditLogEntry2 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_CREATED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: activityId2,
+        sourceUserId: userThree.id,
+      },
+    })
+    expect(auditLogEntry2).toBeTruthy()
+    expect(auditLogEntry2!.message).toBe(
+      `${ObjectType.LIVE_QUIZ} (ID ${activityId2}) added to catalog collection (ID ${MISSING_CATALOG_COLLECTION_ID}) by user ${userThree.id}.`
+    )
 
     // verify that user 4 has sufficient permissions to add the second activity to the restricted catalog collection
     // -> >= WRITE permissions are required and satisfied
@@ -292,6 +353,33 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     expect(res5!.isManager).toBe(true)
     expect(res5!.isRequested).toBe(false)
     expect(res5!.isShared).toBe(true)
+
+    // verify that a proper catalog assignment was created
+    const catalogAssignment3 =
+      await prisma.catalogCollectionAssignment.findUnique({
+        where: {
+          liveQuizId_catalogCollectionId: {
+            liveQuizId: activityId2,
+            catalogCollectionId: restrictedCatalog.id,
+          },
+        },
+      })
+    expect(catalogAssignment3).toBeTruthy()
+    expect(catalogAssignment3!.access).toEqual(ObjectAccess.RESTRICTED)
+
+    // verify that an audit log entry was created
+    const auditLogEntry3 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_CREATED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: activityId2,
+        sourceUserId: userFour.id,
+      },
+    })
+    expect(auditLogEntry3).toBeTruthy()
+    expect(auditLogEntry3!.message).toBe(
+      `${ObjectType.LIVE_QUIZ} (ID ${activityId2}) added to catalog collection (ID ${restrictedCatalog.id}) by user ${userFour.id}.`
+    )
   })
 
   it('Test that objects can be removed from the catalog collections with appropriate permissions', async () => {
@@ -416,6 +504,20 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
       })
     expect(assignment1Removed).toBeNull()
 
+    // verify that an audit log entry was created for the removal of the object from the catalog collection
+    const auditLogEntry1 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_DELETED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: activityId1,
+        sourceUserId: userThree.id,
+      },
+    })
+    expect(auditLogEntry1).toBeTruthy()
+    expect(auditLogEntry1!.message).toBe(
+      `${ObjectType.LIVE_QUIZ} (ID ${activityId1}) removed from catalog collection (ID ${MISSING_CATALOG_COLLECTION_ID}) by user ${userThree.id}.`
+    )
+
     // verify that user 1 can remove the second activity from the top-level catalog collection (OWNER)
     const res3 = await removeCatalogObjectAssignment(
       { assignmentId: assignment2.id },
@@ -431,6 +533,20 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
       })
     expect(assignment2Removed).toBeNull()
 
+    // verify that an audit log entry was created for the removal of the object from the catalog collection
+    const auditLogEntry2 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_DELETED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: activityId2,
+        sourceUserId: userOne.id,
+      },
+    })
+    expect(auditLogEntry2).toBeTruthy()
+    expect(auditLogEntry2!.message).toBe(
+      `${ObjectType.LIVE_QUIZ} (ID ${activityId2}) removed from catalog collection (ID ${MISSING_CATALOG_COLLECTION_ID}) by user ${userOne.id}.`
+    )
+
     // verify that user 1 can remove the first activity from the restricted catalog collection (OWNER on both)
     const res4 = await removeCatalogObjectAssignment(
       { assignmentId: assignment4.id },
@@ -445,6 +561,20 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         },
       })
     expect(assignment4Removed).toBeNull()
+
+    // verify that an audit log entry was created for the removal of the object from the catalog collection
+    const auditLogEntry3 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_DELETED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: activityId1,
+        sourceUserId: userOne.id,
+      },
+    })
+    expect(auditLogEntry3).toBeTruthy()
+    expect(auditLogEntry3!.message).toBe(
+      `${ObjectType.LIVE_QUIZ} (ID ${activityId1}) removed from catalog collection (ID ${restrictedCatalog.id}) by user ${userOne.id}.`
+    )
 
     // verify that user 4 cannot remove the second activity from the restricted catalog collection (ADMIN object permissions)
     const res5 = await removeCatalogObjectAssignment(
@@ -475,6 +605,20 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         },
       })
     expect(assignment5Removed).toBeNull()
+
+    // verify that an audit log entry was created for the removal of the object from the catalog collection
+    const auditLogEntry4 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_DELETED,
+        objectType: ObjectType.LIVE_QUIZ,
+        objectId: activityId2,
+        sourceUserId: userFive.id,
+      },
+    })
+    expect(auditLogEntry4).toBeTruthy()
+    expect(auditLogEntry4!.message).toBe(
+      `${ObjectType.LIVE_QUIZ} (ID ${activityId2}) removed from catalog collection (ID ${restrictedCatalog.id}) by user ${userFive.id}.`
+    )
   })
   // #endregion
 

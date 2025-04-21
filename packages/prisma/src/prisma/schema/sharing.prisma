@@ -334,6 +334,7 @@ model CatalogCollection {
     // link to the join-table containing all associated objects
     objectAssignments CatalogCollectionAssignment[]
 
+    // owner connection needs to remain optional for the top-level catalog collection to work as expected
     owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     ownerId String? @db.Uuid
 
@@ -347,10 +348,16 @@ model CatalogCollection {
 // #region
 enum AuditLogType {
     PERMISSION_GRANTED // granted direct permission
-    PERMISSION_REVOKED // revoked direct permission
-    PERMISSION_REQUESTED // requested direct permission
-    PERMISSION_DENIED // denied direct permission
-    PERMISSION_CONVERTED // converted derived permission to direct permission (through re-use of a corresponding object)
+    PERMISSION_REVOKED // revoked direct permission (by owner / admin)
+    PERMISSION_REMOVED // removed direct permission (by user himself)
+    PERMISSION_MODIFIED // modified direct permission
+    OWNER_TRANSFERRED // ownership of an object was transferred
+    REQUEST_CREATED // created object access request
+    REQUEST_CANCELLED // cancelled object access request
+    REQUEST_RESOLVED // resolved object access request
+    CATALOG_ASSIGNMENT_CREATED // created catalog assignment
+    CATALOG_ASSIGNMENT_DELETED // deleted catalog assignment
+    CATALOG_ASSIGNMENT_MODIFIED // created catalog collection
 }
 
 enum ObjectType {

@@ -1,6 +1,8 @@
 import {
+  AuditLogType,
   ElementType,
   ObjectAccess,
+  ObjectType,
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
@@ -1819,6 +1821,21 @@ describe('Unit tests for object access validation', () => {
         catalogCollectionId: publicCatalog.id,
       },
       userOneCtx
+    )
+
+    // verify that a correct audit log entry has been created
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_MODIFIED,
+        objectId: publicCatalog.id,
+        objectType: ObjectType.CATALOG_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserGroupId: userGroup.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `Permission level changed from ${PermissionLevel.READ} to ${PermissionLevel.ADMIN} for ${ObjectType.CATALOG_COLLECTION} (ID ${publicCatalog.id}) through owner / admin ${userOne.id} for user group ${userGroup.id}.`
     )
 
     // verify that the access request for user 4 has been duplicated for users 2 and 3

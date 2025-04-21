@@ -1,6 +1,8 @@
 import {
+  AuditLogType,
   ElementType,
   ObjectAccess,
+  ObjectType,
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
@@ -214,34 +216,39 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     })
 
     // verify that only users 1 and 4 have sufficient permissions to modify this assignment
-    const res1 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userOneCtx
-    )
+    const { sufficientPermissions: res1 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userOneCtx
+      )
     expect(res1).toBe(true)
 
-    const res2 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userTwoCtx
-    )
+    const { sufficientPermissions: res2 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userTwoCtx
+      )
     expect(res2).toBe(false)
 
-    const res3 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userThreeCtx
-    )
+    const { sufficientPermissions: res3 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userThreeCtx
+      )
     expect(res3).toBe(false)
 
-    const res4 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userFourCtx
-    )
+    const { sufficientPermissions: res4 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userFourCtx
+      )
     expect(res4).toBe(true)
 
-    const res5 = await verifyCatalogObjectEditPermissions(
-      { assignmentId: assignment.id },
-      userFiveCtx
-    )
+    const { sufficientPermissions: res5 } =
+      await verifyCatalogObjectEditPermissions(
+        { assignmentId: assignment.id },
+        userFiveCtx
+      )
     expect(res5).toBe(false)
   })
 
@@ -426,11 +433,13 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       {
         catalogCollectionId: publicCatalog.id,
         answerCollectionId: AC2!.id,
+        requestedPermissionLevel: PermissionLevel.WRITE,
       },
       userFiveCtx
     )
     expect(success2).toBeTruthy()
 
+    // verify that the access requests have been created correctly
     const pendingAccessRequest2 = await prisma.accessRequest.findMany({
       where: { userId: userFive.id },
     })
@@ -438,6 +447,63 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(
       pendingAccessRequest2.map((permission) => permission.answerCollectionId)
     ).toEqual(expect.arrayContaining([AC1!.id, AC2!.id]))
+
+    // verify that proper audit log entries have been created for both access requests
+    const auditLogEntry1 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.REQUEST_CREATED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+        sourceUserId: userFive.id,
+        targetUserId: userOne.id, // owner
+      },
+    })
+    expect(auditLogEntry1).toBeTruthy()
+    expect(auditLogEntry1!.message).toBe(
+      `Access request (permission level ${PermissionLevel.READ}) created for ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) by user ${userFive.id} for owner / admin ${userOne.id}.`
+    )
+
+    const auditLogEntry2 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.REQUEST_CREATED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+        sourceUserId: userFive.id,
+        targetUserId: userTwo.id, // admin
+      },
+    })
+    expect(auditLogEntry2).toBeTruthy()
+    expect(auditLogEntry2!.message).toBe(
+      `Access request (permission level ${PermissionLevel.READ}) created for ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) by user ${userFive.id} for owner / admin ${userTwo.id}.`
+    )
+
+    const auditLogEntry3 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.REQUEST_CREATED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC2!.id),
+        sourceUserId: userFive.id,
+        targetUserId: userOne.id, // owner
+      },
+    })
+    expect(auditLogEntry3).toBeTruthy()
+    expect(auditLogEntry3!.message).toBe(
+      `Access request (permission level ${PermissionLevel.WRITE}) created for ${ObjectType.ANSWER_COLLECTION} (ID ${AC2!.id}) by user ${userFive.id} for owner / admin ${userOne.id}.`
+    )
+
+    const auditLogEntry4 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.REQUEST_CREATED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC2!.id),
+        sourceUserId: userFive.id,
+        targetUserId: userTwo.id, // admin
+      },
+    })
+    expect(auditLogEntry4).toBeTruthy()
+    expect(auditLogEntry4!.message).toBe(
+      `Access request (permission level ${PermissionLevel.WRITE}) created for ${ObjectType.ANSWER_COLLECTION} (ID ${AC2!.id}) by user ${userFive.id} for owner / admin ${userTwo.id}.`
+    )
 
     // import public AC and verify that importing restricted AC does not work
     const failure3 = await importAnswerCollection(
@@ -535,6 +601,20 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       where: { id: request.id },
     })
     expect(cancelledRequest).toBeNull()
+
+    // verify that a corresponding audit log entry has been created
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.REQUEST_CANCELLED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+        sourceUserId: userTwo.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `Access request cancelled for ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) by user ${userTwo.id}.`
+    )
   })
 
   it('Test that answer collections can be added to a catalog collection by users with sufficient permissions', async () => {
@@ -611,6 +691,33 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(res2!.isRequested).toBe(false)
     expect(res2!.isShared).toBe(false)
 
+    // verify that a proper catalog assignment was created
+    const catalogAssignment2 =
+      await prisma.catalogCollectionAssignment.findUnique({
+        where: {
+          answerCollectionId_catalogCollectionId: {
+            answerCollectionId: AC1!.id,
+            catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          },
+        },
+      })
+    expect(catalogAssignment2).toBeTruthy()
+    expect(catalogAssignment2!.access).toEqual(ObjectAccess.PUBLIC)
+
+    // verify that an audit log entry was created
+    const auditLogEntry2 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_CREATED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+        sourceUserId: userOne.id,
+      },
+    })
+    expect(auditLogEntry2).toBeTruthy()
+    expect(auditLogEntry2!.message).toBe(
+      `${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) added to catalog collection (ID ${MISSING_CATALOG_COLLECTION_ID}) by user ${userOne.id}.`
+    )
+
     // verify that user 3 has sufficient permissions to add the second answer collection to the top-level catalog collection
     const res3 = await addObjectToCatalog(
       {
@@ -630,9 +737,36 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     expect(res3!.isRequested).toBe(false)
     expect(res3!.isShared).toBe(true)
 
+    // verify that a proper catalog assignment was created
+    const catalogAssignment3 =
+      await prisma.catalogCollectionAssignment.findUnique({
+        where: {
+          answerCollectionId_catalogCollectionId: {
+            answerCollectionId: AC2!.id,
+            catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
+          },
+        },
+      })
+    expect(catalogAssignment3).toBeTruthy()
+    expect(catalogAssignment3!.access).toEqual(ObjectAccess.RESTRICTED)
+
+    // verify that an audit log entry was created
+    const auditLogEntry3 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_CREATED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC2!.id),
+        sourceUserId: userThree.id,
+      },
+    })
+    expect(auditLogEntry3).toBeTruthy()
+    expect(auditLogEntry3!.message).toBe(
+      `${ObjectType.ANSWER_COLLECTION} (ID ${AC2!.id}) added to catalog collection (ID ${MISSING_CATALOG_COLLECTION_ID}) by user ${userThree.id}.`
+    )
+
     // verify that user 4 has sufficient permissions to add the second answer collection to the restricted catalog collection
     // -> >= WRITE permissions are required and satisfied
-    const res5 = await addObjectToCatalog(
+    const res4 = await addObjectToCatalog(
       {
         catalogCollectionId: restrictedCatalog.id,
         answerCollectionId: AC2!.id,
@@ -640,15 +774,42 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       },
       userFourCtx
     )
-    expect(res5).toBeTruthy()
-    expect(res5!.id).toEqual(AC2!.id)
-    expect(res5!.objectType).toEqual(CatalogObjectType.ANSWER_COLLECTION)
-    expect(res5!.access).toEqual(ObjectAccess.RESTRICTED)
-    expect(res5!.ownerShortname).toEqual(userOne.shortname)
-    expect(res5!.isOwner).toBe(false)
-    expect(res5!.isManager).toBe(true)
-    expect(res5!.isRequested).toBe(false)
-    expect(res5!.isShared).toBe(true)
+    expect(res4).toBeTruthy()
+    expect(res4!.id).toEqual(AC2!.id)
+    expect(res4!.objectType).toEqual(CatalogObjectType.ANSWER_COLLECTION)
+    expect(res4!.access).toEqual(ObjectAccess.RESTRICTED)
+    expect(res4!.ownerShortname).toEqual(userOne.shortname)
+    expect(res4!.isOwner).toBe(false)
+    expect(res4!.isManager).toBe(true)
+    expect(res4!.isRequested).toBe(false)
+    expect(res4!.isShared).toBe(true)
+
+    // verify that a proper catalog assignment was created
+    const catalogAssignment4 =
+      await prisma.catalogCollectionAssignment.findUnique({
+        where: {
+          answerCollectionId_catalogCollectionId: {
+            answerCollectionId: AC2!.id,
+            catalogCollectionId: restrictedCatalog.id,
+          },
+        },
+      })
+    expect(catalogAssignment4).toBeTruthy()
+    expect(catalogAssignment4!.access).toEqual(ObjectAccess.RESTRICTED)
+
+    // verify that an audit log entry was created
+    const auditLogEntry4 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.CATALOG_ASSIGNMENT_CREATED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC2!.id),
+        sourceUserId: userFour.id,
+      },
+    })
+    expect(auditLogEntry4).toBeTruthy()
+    expect(auditLogEntry4!.message).toBe(
+      `${ObjectType.ANSWER_COLLECTION} (ID ${AC2!.id}) added to catalog collection (ID ${restrictedCatalog.id}) by user ${userFour.id}.`
+    )
   })
 
   it('Verify that the correct information is extracted for public / restricted answer collections in the catalog', async () => {
@@ -785,10 +946,11 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
         permissionLevel: PermissionLevel.WRITE,
         answerCollectionId: AC1!.id,
       },
-      userTwoCtx
+      userOneCtx
     )
     expect(success).toBe(true)
 
+    // verify that the direct and derived permissions have been updated correctly
     const permission2 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
@@ -810,6 +972,21 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     })
     expect(derivedPermission2).toBeDefined()
     expect(derivedPermission2!.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    // verify that the audit log entry has been created correctly
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_MODIFIED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+        sourceUserId: userOne.id,
+        targetUserId: userTwo.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `Permission level changed from ${PermissionLevel.READ} to ${PermissionLevel.WRITE} for ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) through owner / admin ${userOne.id} for user ${userTwo.id}.`
+    )
   })
 
   it('Verify that direct permissions to an answer collection can be revoked, but might be replaced with derived permissions', async () => {
@@ -850,6 +1027,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(deletedPermissionId1).toBe(permission1.id)
 
+    // verify that the direct permission has been deleted
     const dbPermission1 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
@@ -859,6 +1037,21 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
       },
     })
     expect(dbPermission1).toBeNull()
+
+    // verify that an audit log entry has been created for this permission revocation
+    const audigLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_REVOKED,
+        objectId: String(AC1!.id),
+        objectType: ObjectType.ANSWER_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserId: userFive.id,
+      },
+    })
+    expect(audigLogEntry).toBeTruthy()
+    expect(audigLogEntry!.message).toBe(
+      `Permission revoked for ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) by owner / admin ${userOne.id} for user ${userFive.id}.`
+    )
 
     // create a new direct WRITE permission for user 5 on AC1
     const permission2 = await prisma.permission.upsert({
@@ -894,6 +1087,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     )
     expect(deletedPermissionId2).toBe(permission2.id)
 
+    // verify that the direct permission has been deleted
     const dbPermission2 = await prisma.permission.findUnique({
       where: {
         answerCollectionId_userId: {
@@ -1247,6 +1441,21 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     })
     expect(updatedAnswerCollection).toBeTruthy()
     expect(updatedAnswerCollection!.ownerId).toBe(userFour.id)
+
+    // verify that the audit log entry has been created correctly
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.OWNER_TRANSFERRED,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId: String(AC1!.id),
+        sourceUserId: userOne.id,
+        targetUserId: userFour.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `Ownership of ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) transferred from user ${userOne.id} to user ${userFour.id}.`
+    )
   })
 
   it('Test the sharing functionality for answer collections with different permission levels', async () => {
@@ -1375,6 +1584,49 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
     })
     expect(derivedPermission3).toBeTruthy()
     expect(derivedPermission3!.permissionLevel).toBe(PermissionLevel.ADMIN)
+
+    // verify that the correct audit log entries have been created
+    const auditLogEntry1 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_GRANTED,
+        objectId: String(AC1!.id),
+        objectType: ObjectType.ANSWER_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserId: userTwo.id,
+      },
+    })
+    expect(auditLogEntry1).toBeTruthy()
+    expect(auditLogEntry1!.message).toBe(
+      `Direct permission with level ${PermissionLevel.READ} granted for ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) by owner / admin ${userOne.id} to user ${userTwo.id}.`
+    )
+
+    const auditLogEntry2 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_GRANTED,
+        objectId: String(AC1!.id),
+        objectType: ObjectType.ANSWER_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserId: userThree.id,
+      },
+    })
+    expect(auditLogEntry2).toBeTruthy()
+    expect(auditLogEntry2!.message).toBe(
+      `Direct permission with level ${PermissionLevel.WRITE} granted for ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) by owner / admin ${userOne.id} to user ${userThree.id}.`
+    )
+
+    const auditLogEntry3 = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_GRANTED,
+        objectId: String(AC1!.id),
+        objectType: ObjectType.ANSWER_COLLECTION,
+        sourceUserId: userOne.id,
+        targetUserId: userFour.id,
+      },
+    })
+    expect(auditLogEntry3).toBeTruthy()
+    expect(auditLogEntry3!.message).toBe(
+      `Direct permission with level ${PermissionLevel.ADMIN} granted for ${ObjectType.ANSWER_COLLECTION} (ID ${AC1!.id}) by owner / admin ${userOne.id} to user ${userFour.id}.`
+    )
   })
   // #endregion
 })
