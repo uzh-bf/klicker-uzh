@@ -2223,7 +2223,7 @@ describe('Unit tests for object access validation', () => {
     expect(catalogRequest5Removed2).toBeNull()
   })
 
-  it('Test that reduction the level of existing mixed permissions from ADMIN level results in a removal of all pending access requests for users without other access', async () => {
+  it('Test that reducing the level of existing mixed permissions from ADMIN level results in the removal of pending access requests for users without other access', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
 
     // grant individual ADMIN access to users 2, 4, and 5
