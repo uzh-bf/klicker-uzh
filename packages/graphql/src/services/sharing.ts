@@ -558,6 +558,25 @@ export function getAuditLogObjectType({
   microLearningId?: string | null
   groupActivityId?: string | null
 }): { objectType: DB.ObjectType | null; objectId: string | null } {
+  // check if exactly one of the object ids is defined
+  const defined = [
+    catalogCollectionId,
+    answerCollectionId,
+    elementId,
+    courseId,
+    liveQuizId,
+    practiceQuizId,
+    microLearningId,
+    groupActivityId,
+  ].filter((v) => v != null)
+
+  if (defined.length !== 1) {
+    throw new Error(
+      `Ambiguous audit object identifiers: ${JSON.stringify(arguments[0])}`
+    )
+  }
+
+  // determine the object type and ID based on the provided parameters
   if (
     typeof catalogCollectionId !== 'undefined' &&
     catalogCollectionId !== null
