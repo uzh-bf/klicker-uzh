@@ -2216,21 +2216,23 @@ export async function changeObjectPermissionLevel(
           (userId) => !adminOwnerIds.includes(userId)
         )
 
-        await prisma.accessRequest.deleteMany({
-          where: {
-            objectAdminOrOwnerId: {
-              in: usersRevokedAdminPermissions, // user might retain ADMIN / OWNER rights through different direct permission
+        if (usersRevokedAdminPermissions.length > 0) {
+          await prisma.accessRequest.deleteMany({
+            where: {
+              objectAdminOrOwnerId: {
+                in: usersRevokedAdminPermissions, // user might retain ADMIN / OWNER rights through different direct permission
+              },
+              catalogCollectionId,
+              answerCollectionId,
+              elementId,
+              courseId,
+              liveQuizId,
+              practiceQuizId,
+              microLearningId,
+              groupActivityId,
             },
-            catalogCollectionId,
-            answerCollectionId,
-            elementId,
-            courseId,
-            liveQuizId,
-            practiceQuizId,
-            microLearningId,
-            groupActivityId,
-          },
-        })
+          })
+        }
       }
     }
 
@@ -2475,21 +2477,23 @@ export async function revokeObjectAccess(
       )
 
       // remove any access requests linked to users that lost their ADMIN access to the object
-      await prisma.accessRequest.deleteMany({
-        where: {
-          objectAdminOrOwnerId: {
-            in: usersRevokedAdminPermissions,
+      if (usersRevokedAdminPermissions.length > 0) {
+        await prisma.accessRequest.deleteMany({
+          where: {
+            objectAdminOrOwnerId: {
+              in: usersRevokedAdminPermissions,
+            },
+            catalogCollectionId,
+            answerCollectionId,
+            elementId,
+            courseId,
+            liveQuizId,
+            practiceQuizId,
+            microLearningId,
+            groupActivityId,
           },
-          catalogCollectionId,
-          answerCollectionId,
-          elementId,
-          courseId,
-          liveQuizId,
-          practiceQuizId,
-          microLearningId,
-          groupActivityId,
-        },
-      })
+        })
+      }
     }
 
     return deleted
