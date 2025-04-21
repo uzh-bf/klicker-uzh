@@ -37,3 +37,11 @@ export const userFive = {
   email: 'fifth@example.com',
   shortname: 'fifthuser',
 }
+
+// mock user 6
+export const userSix = {
+  id: '8ee6a86a-9ef6-4b8a-b7aa-9893111ea9be',
+  sub: '8ee6a86a-9ef6-4b8a-b7aa-9893111ea9be',
+  email: 'sixth@example.com',
+  shortname: 'sixthuser',
+}

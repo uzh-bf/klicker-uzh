@@ -2158,6 +2158,27 @@ export async function changeObjectPermissionLevel(
       }
     }
 
+    // fetch the user ids of all admin users of the object (after the permission level modification)
+    const adminOwnerPermissions = await prisma.derivedPermission.findMany({
+      where: {
+        permissionLevel: {
+          in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+        },
+        catalogCollectionId,
+        answerCollectionId,
+        elementId,
+        courseId,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+      },
+      select: { userId: true },
+    })
+    const adminOwnerIds = adminOwnerPermissions.map(
+      (permission) => permission.userId
+    )
+
     if (updatedPermission.userId) {
       // if ADMIN permissions were granted, make sure the user also gets access request instances assigned
       if (
@@ -2183,7 +2204,8 @@ export async function changeObjectPermissionLevel(
       // if ADMIN permissions were revoked, make sure that the user does not have any access request instances assigned anymore
       else if (
         previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
-        permissionLevel !== DB.PermissionLevel.ADMIN
+        permissionLevel !== DB.PermissionLevel.ADMIN &&
+        !adminOwnerIds.includes(updatedPermission.userId) // user might retain ADMIN / OWNER rights through different direct permission
       ) {
         await prisma.accessRequest.deleteMany({
           where: {
@@ -2235,7 +2257,9 @@ export async function changeObjectPermissionLevel(
         await prisma.accessRequest.deleteMany({
           where: {
             objectAdminOrOwnerId: {
-              in: userGroup.members.map((member) => member.id),
+              in: userGroup.members
+                .map((member) => member.id)
+                .filter((memberId) => !adminOwnerIds.includes(memberId)), // user might retain ADMIN / OWNER rights through different direct permission
             },
             catalogCollectionId,
             answerCollectionId,
@@ -2418,21 +2442,6 @@ export async function revokeObjectAccess(
         : []
 
     for (const affectedUserId of affectedUserIds) {
-      // if the new revoked permission level had ADMIN level, remove any access requests linked to this user (group) as an object owner or admin
-      await prisma.accessRequest.deleteMany({
-        where: {
-          objectAdminOrOwnerId: affectedUserId,
-          catalogCollectionId,
-          answerCollectionId,
-          elementId,
-          courseId,
-          liveQuizId,
-          practiceQuizId,
-          microLearningId,
-          groupActivityId,
-        },
-      })
-
       // update the derived permissions of all affected users
       if (typeof catalogCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
@@ -2475,6 +2484,52 @@ export async function revokeObjectAccess(
           prisma
         )
       }
+    }
+
+    // if the revoked permission was at ADMIN level, remove any access requests linked to ADMINS using this permission
+    if (permission.permissionLevel === DB.PermissionLevel.ADMIN) {
+      // fetch the user ids of all admin users of the object (after the permission level modification)
+      const adminOwnerPermissions = await prisma.derivedPermission.findMany({
+        where: {
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+          },
+          catalogCollectionId,
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+        },
+        select: { userId: true },
+      })
+      const adminOwnerIds = adminOwnerPermissions.map(
+        (permission) => permission.userId
+      )
+
+      // identify users with revoked ADMIN permissions
+      const usersRevokedAdminPermissions = affectedUserIds.filter(
+        (userId) => !adminOwnerIds.includes(userId)
+      )
+
+      // remove any access requests linked to users that lost their ADMIN access to the object
+      await prisma.accessRequest.deleteMany({
+        where: {
+          objectAdminOrOwnerId: {
+            in: usersRevokedAdminPermissions,
+          },
+          catalogCollectionId,
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+        },
+      })
     }
 
     return deleted

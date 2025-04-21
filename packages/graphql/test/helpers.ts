@@ -22,14 +22,21 @@ import {
   catalogCollection1,
   catalogCollection2,
 } from './testData.js'
-import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
+import {
+  userFive,
+  userFour,
+  userOne,
+  userSix,
+  userThree,
+  userTwo,
+} from './userData.js'
 
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
 export async function testInitialization(prisma: PrismaClient, emitter) {
   // upsert all users in the database
   await Promise.all(
-    [userOne, userTwo, userThree, userFour, userFive].map(
+    [userOne, userTwo, userThree, userFour, userFive, userSix].map(
       async (user) =>
         await prisma.user.upsert({
           where: { id: user.id },
@@ -45,7 +52,7 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
 
   // verify that users have been created correctly in the database
   const dbUsers = await prisma.user.findMany()
-  expect(dbUsers).toHaveLength(5)
+  expect(dbUsers).toHaveLength(6)
   const actualEmails = dbUsers.map((user) => user.email)
   expect(actualEmails).toEqual(
     expect.arrayContaining([
@@ -54,9 +61,10 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
       userThree.email,
       userFour.email,
       userFive.email,
+      userSix.email,
     ])
   )
-  expect(actualEmails).toHaveLength(5)
+  expect(actualEmails).toHaveLength(6)
 
   // seed the top-level catalog collection with fixed ID
   await prisma.catalogCollection.upsert({
@@ -103,6 +111,10 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFive.sub },
   }
+  const userSixCtx = {
+    ...userOneCtx,
+    user: { ...userOneCtx.user, sub: userSix.sub },
+  }
 
   return {
     userOneCtx,
@@ -110,6 +122,7 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
     userThreeCtx,
     userFourCtx,
     userFiveCtx,
+    userSixCtx,
   }
 }
 
