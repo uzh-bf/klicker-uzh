@@ -1,6 +1,8 @@
 import {
+  AuditLogType,
   ElementType,
   ObjectAccess,
+  ObjectType,
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma'
@@ -842,6 +844,20 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
       userTwoCtx
     )
     expect(removalId).toBe(AC1!.id)
+
+    // verify that an audit log entry has been created for the removal
+    const auditLogEntry = await prisma.auditLogEntry.findFirst({
+      where: {
+        type: AuditLogType.PERMISSION_REMOVED,
+        objectId: String(AC1!.id),
+        objectType: ObjectType.ANSWER_COLLECTION,
+        sourceUserId: userTwo.id,
+      },
+    })
+    expect(auditLogEntry).toBeTruthy()
+    expect(auditLogEntry!.message).toBe(
+      `User ${userTwo.id} removed own permission on ${ObjectType.ANSWER_COLLECTION} (ID: ${AC1!.id})`
+    )
 
     // verify that the user has no derived access to the answer collection anymore
     const derivedPermission = await prisma.derivedPermission.findUnique({
