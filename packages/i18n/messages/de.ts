@@ -2397,8 +2397,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       transferOwnershipTitle: 'Eigentumsübertragung der Sammlung',
     },
     userGroups: {
-      comingSoon:
-        'Hier werden bald die von Ihnen gemanagten Nutzergruppen, sowie Nutzergruppen zu welchen Sie zugewiesen wurden, angezeigt.',
+      description:
+        'Auf dieser Seite können Sie Nutzergruppen erstellen und verwalten. Um den Prozess des Teilens mehrerer Objekte mit denselben Nutzern oder der gemeinsamen Erstellung von Inhalten zu vereinfachen, können die Nutzer zuerst in Gruppen zusammengefasst werden. Berechtigungen, welche an Gruppen vergeben werden, verhalten sich genauso wie wenn sie allen Nutzern einzeln gewährt werden. Beachten Sie jedoch immer, dass je nach den gewährten Berechtigungsstufen die Gruppenmitglieder möglicherweise Objekte wiederverwenden können, was ihren Zugriff auf ein Objekt potenziell unwiderruflich macht. Für weitere Details konsultieren Sie bitte auch die offizielle Dokumentation.',
+      userGroupCreation: 'Erstellung Nutzergruppe',
+      newUserGroup: 'Neue Nutzergruppe',
+      nameTooltip:
+        'Bitte geben Sie einen Namen für die Nutzergruppe an. Dieser Name wird benötigt, um die Gruppe zu identifizieren.',
+      nameRequired: 'Die Eingabe eines Namens für die Gruppe ist erforderlich.',
+      member: 'Mitglied',
+      admin: 'Admin',
+      addMember: 'Mitglied hinzufügen',
+      emailOrShortname: 'Email oder Kurzname',
+      emailShortnameRequired:
+        'Bitte stellen Sie sicher, dass eine E-Mail-Adresse oder ein Kurzname für jeden Nutzer angegeben ist.',
+      minOneMemberRequired:
+        'Für die Bildung einer Gruppe ist mindestens ein Mitglied erforderlich.',
+      uniqueUsersRequired:
+        'Bitte stellen Sie sicher, dass alle Nutzer eindeutig sind. Unterschiedliche Einträge für den gleichen Nutzer werden bei der Erstellung kombiniert.',
     },
     catalog: {
       accessTypes: 'Zugriffs-Typen',
