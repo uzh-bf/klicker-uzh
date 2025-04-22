@@ -2366,8 +2366,27 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       transferOwnershipTitle: 'Transfer Collection Ownership',
     },
     userGroups: {
-      comingSoon:
-        'Here you will soon see the user groups you manage, as well as user groups to which you have been assigned.',
+      description:
+        'On this page, you can create and manage user groups. To simplify the process of sharing multiple objects with the same users or collaboratively create content with them, they can first be grouped together. Permissions that are granted to user groups behave the same way as if they were granted to all users individually. However, always keep in mind that depending on the granted permission levels, the group members might be able to re-use objects, making their access to an object potentially irrevokable. For more details, please also consult the official documentation.',
+      userGroupCreation: 'User Group Creation',
+      creationExplanation:
+        'Please fill in all the fields of the following form to create a user group. The selection of the group admins can still be modified after the creation. Admin users can add or remove members from the group and change its name.',
+      newUserGroup: 'New User Group',
+      nameTooltip:
+        'Please enter a name for the user group. This name will be used to identify the group.',
+      nameRequired: 'Please enter a name for the group.',
+      member: 'Member',
+      admin: 'Admin',
+      addMember: 'Add Member',
+      emailOrShortname: 'Email or shortname',
+      emailShortnameRequired:
+        'Please make sure that an email address or a short name is provided for each user.',
+      minOneMemberRequired: 'At least one member is required to form a group.',
+      uniqueUsersRequired:
+        'Please make sure that all users are unique. Different entries belonging to the same user will be combined on creation.',
+      creationSuccessMessage: 'The user group was created successfully.',
+      creationErrorMessage:
+        'An error occurred while creating the user group. Please ensure that at information for at least one valid member (not yourself) was provided and that no other user group with the same name already exists.',
     },
     catalog: {
       accessTypes: 'Access Types',

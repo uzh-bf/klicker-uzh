@@ -5,6 +5,7 @@ import {
   ObjectSharingRequest as ObjectSharingRequestType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { IUserInfo, UserInfo } from './user.js'
 
 export const ObjectAccess = builder.enumType('ObjectAccess', {
   values: Object.values(DB.ObjectAccess),
@@ -148,4 +149,40 @@ export const DerivedPermissionInfo = DerivedPermissionInfoRef.implement({
     isOwn: t.exposeBoolean('isOwn'),
   }),
 })
+// #endregion
+
+// ----- USER GROUPS -----
+// #region
+export const UserGroupMembersInput = builder.inputType(
+  'UserGroupMembersInput',
+  {
+    fields: (t) => ({
+      shortnameOrEmail: t.string({ required: true }),
+      isAdmin: t.boolean(),
+    }),
+  }
+)
+
+interface IUserGroup extends DB.UserGroup {
+  numOfMembers?: number
+  members?: IUserInfo[]
+  admins?: IUserInfo[]
+}
+export const UserGroupRef = builder.objectRef<IUserGroup>('UserGroup')
+export const UserGroup = UserGroupRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    name: t.exposeString('name'),
+    members: t.expose('members', {
+      type: [UserInfo],
+      nullable: true,
+    }),
+    admins: t.expose('admins', {
+      type: [UserInfo],
+      nullable: true,
+    }),
+    numOfMembers: t.exposeInt('numOfMembers', { nullable: true }),
+  }),
+})
+
 // #endregion

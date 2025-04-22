@@ -98,15 +98,12 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
               {
                 key: 'user-groups-item',
                 type: 'link',
-                disabled: true,
                 label: t('manage.general.userGroups'),
                 onClick: () => router.push('/resources/userGroups'),
-                badge: t('shared.generic.comingSoon'),
                 data: { cy: 'user-groups' },
                 className: {
                   label: 'bg-opacity-100',
                   text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
                 },
               },
               {

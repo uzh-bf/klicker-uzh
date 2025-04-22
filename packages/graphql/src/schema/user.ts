@@ -54,12 +54,14 @@ export const User = UserRef.implement({
 })
 
 export interface IUserInfo {
+  id?: string | null
   shortname: string
   email: string
 }
 export const UserInfoRef = builder.objectRef<IUserInfo>('UserInfo')
 export const UserInfo = UserInfoRef.implement({
   fields: (t) => ({
+    id: t.exposeString('id', { nullable: true }),
     shortname: t.exposeString('shortname'),
     email: t.exposeString('email'),
   }),

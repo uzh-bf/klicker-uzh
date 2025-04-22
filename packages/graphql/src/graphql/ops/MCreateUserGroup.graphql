@@ -1,0 +1,17 @@
+mutation CreateUserGroup($name: String!, $members: [UserGroupMembersInput!]!) {
+  createUserGroup(name: $name, members: $members) {
+    __typename
+    id
+    name
+    members {
+      id
+      shortname
+      email
+    }
+    admins {
+      id
+      shortname
+      email
+    }
+  }
+}

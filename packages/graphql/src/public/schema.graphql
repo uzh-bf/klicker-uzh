@@ -1383,6 +1383,7 @@ type Mutation {
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): PracticeQuiz
+  createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
@@ -2272,8 +2273,22 @@ type User {
   shortname: String!
 }
 
+type UserGroup {
+  admins: [UserInfo!]
+  id: Int!
+  members: [UserInfo!]
+  name: String!
+  numOfMembers: Int
+}
+
+input UserGroupMembersInput {
+  isAdmin: Boolean
+  shortnameOrEmail: String!
+}
+
 type UserInfo {
   email: String!
+  id: String
   shortname: String!
 }
 

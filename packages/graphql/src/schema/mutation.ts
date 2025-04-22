@@ -77,6 +77,8 @@ import {
   ObjectAccess,
   PermissionInfo,
   PermissionLevel,
+  UserGroup,
+  UserGroupMembersInput,
 } from './sharing.js'
 import {
   FileUploadSAS,
@@ -1548,6 +1550,18 @@ export const Mutation = builder.mutationType({
             return await ResourcesService.addAnswerCollectionOption(args, ctx)
           }
         ),
+      }),
+
+      createUserGroup: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: UserGroup,
+        args: {
+          name: t.arg.string({ required: true }),
+          members: t.arg({ type: [UserGroupMembersInput], required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.createUserGroup(args, ctx)
+        },
       }),
 
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({

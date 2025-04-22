@@ -4249,3 +4249,99 @@ export function withPermission<TSource, TArgs, TReturn>(
   }
 }
 // #endregion
+
+// ! User Group Management
+// #region
+export async function createUserGroup(
+  {
+    name,
+    members,
+  }: {
+    name: string
+    members: { shortnameOrEmail: string; isAdmin?: boolean | null }[]
+  },
+  ctx: ContextWithUser
+) {
+  // check if a user group with this name already exists in the owner's account
+  const userGroup = await ctx.prisma.userGroup.findUnique({
+    where: {
+      ownerId_name: {
+        ownerId: ctx.user.sub,
+        name,
+      },
+    },
+  })
+
+  if (userGroup) {
+    throw new Error('User group with this name already exists')
+  }
+
+  // fetch all users that are to be added to the group
+  const users = await ctx.prisma.user.findMany({
+    where: {
+      id: { not: ctx.user.sub }, // owner should not be added to the group as member / admin
+      OR: members.flatMap((member) => [
+        {
+          shortname: member.shortnameOrEmail,
+        },
+        {
+          email: member.shortnameOrEmail,
+        },
+      ]),
+    },
+  })
+
+  // if none of the specified members were found, throw an error
+  if (users.length === 0) {
+    throw new Error('No members found')
+  }
+
+  // create an object with all members / admins for the group with their ids as key and the isAdmin boolean as a value
+  const { memberIds, adminIds } = users.reduce<{
+    memberIds: string[]
+    adminIds: string[]
+  }>(
+    (acc, user) => {
+      const isAdmin = members.find(
+        (member) =>
+          member.shortnameOrEmail === user.shortname ||
+          member.shortnameOrEmail === user.email
+      )?.isAdmin
+
+      if (isAdmin) {
+        acc.adminIds.push(user.id)
+      } else {
+        acc.memberIds.push(user.id)
+      }
+      return acc
+    },
+    {
+      memberIds: [],
+      adminIds: [],
+    }
+  )
+
+  // create the user group
+  const newUserGroup = await ctx.prisma.userGroup.create({
+    data: {
+      name,
+      members: { connect: memberIds.map((id) => ({ id })) },
+      admins: { connect: adminIds.map((id) => ({ id })) },
+      owner: { connect: { id: ctx.user.sub } },
+    },
+    include: {
+      members: {
+        select: { id: true, shortname: true, email: true },
+      },
+      admins: {
+        select: { id: true, shortname: true, email: true },
+      },
+    },
+  })
+
+  return {
+    ...newUserGroup,
+    numOfMembers: newUserGroup.members.length + newUserGroup.admins.length + 1,
+  }
+}
+// #endregion
