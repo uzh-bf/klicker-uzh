@@ -88,12 +88,12 @@ import {
 
 // shorthand for frequently accessed functions
 const checkAccess = SharingService.checkAccess
-const checkCatalogAssignment = SharingService.checkCatalogAssignment
 
 export const Mutation = builder.mutationType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
     const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
@@ -1688,7 +1688,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      grantPrivatePreviewAccess: t.withAuth(asUserFullAccess).int({
+      grantPrivatePreviewAccess: t.withAuth(asAdmin).int({
         nullable: true,
         args: {
           email: t.arg.string({ required: true }),

@@ -273,8 +273,7 @@ export const authOptions: NextAuthOptions = {
 
         token.catalystInstitutional = userData.catalystInstitutional
         token.catalystIndividual = userData.catalystIndividual
-
-        token.role = UserRole.USER
+        token.role = userData.role
       }
 
       return token
