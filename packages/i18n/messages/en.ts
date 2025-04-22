@@ -1006,6 +1006,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     settings: {
       userSettings: 'User Settings',
       languageSettings: 'Language Settings',
+      storedEmail: 'E-Mail (Edu-ID)',
       languageTooltip:
         'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
       confirmDelegatedAcces: 'Confirm delegated login creation',

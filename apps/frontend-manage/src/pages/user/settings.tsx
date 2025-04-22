@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H1 } from '@uzh-bf/design-system'
+import { H2 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
@@ -22,7 +22,10 @@ function Settings() {
   return (
     <Layout displayName={t('shared.generic.settings')}>
       <div className="border-uzh-grey-100 mx-auto flex w-[46rem] max-w-full flex-col rounded border border-solid p-4">
-        <H1>{t('manage.settings.userSettings')}</H1>
+        <H2>{t('manage.settings.userSettings')}</H2>
+        <div className="mb-1">
+          {`${t('manage.settings.storedEmail')}: ${user.userProfile.email}`}
+        </div>
         <ShortnameSetting user={user.userProfile} />
         <LanguageSetting user={user.userProfile} />
         <EmailSetting user={user.userProfile} />
