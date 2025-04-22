@@ -102,7 +102,10 @@ function AdminPanel() {
                           className={{ root: 'h-9 whitespace-nowrap' }}
                           data-cy="grant-access-button"
                         >
-                          <Button.Icon icon={faLockOpen} />
+                          <Button.Icon
+                            icon={faLockOpen}
+                            loading={isSubmitting}
+                          />
                           <Button.Label>
                             {t('manage.admin.grantAccess')}
                           </Button.Label>
