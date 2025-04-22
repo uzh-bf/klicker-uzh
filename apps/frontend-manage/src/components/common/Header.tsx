@@ -9,6 +9,7 @@ import {
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   User,
+  UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Navigation, NavigationItemProps } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -18,11 +19,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SupportModal from './SupportModal'
 
-interface HeaderProps {
-  user?: User | null
-}
-
-function Header({ user }: HeaderProps): React.ReactElement {
+function Header({ user }: { user?: User | null }): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -240,6 +237,17 @@ function Header({ user }: HeaderProps): React.ReactElement {
           onClick: () => router.push('/token'),
           data: { cy: 'token-generation-page' },
         },
+        ...(user?.role === UserRole.Admin
+          ? [
+              {
+                key: 'admin',
+                type: 'link' as 'link',
+                label: t('manage.general.adminPanel'),
+                onClick: () => router.push('/admin'),
+                data: { cy: 'admin-panel-page' },
+              },
+            ]
+          : []),
         {
           key: 'separator-token-logout',
           type: 'separator',

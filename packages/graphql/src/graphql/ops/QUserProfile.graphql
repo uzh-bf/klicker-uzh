@@ -4,6 +4,7 @@ query UserProfile {
     email
     sendProjectUpdates
     shortname
+    role
     locale
     firstLogin
     catalyst

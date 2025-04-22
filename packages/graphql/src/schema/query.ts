@@ -85,7 +85,7 @@ import {
   ActivityTemplateMetadata,
   TemplateElementInformation,
 } from './template.js'
-import { MediaFile, User, UserLogin, UserLoginScope } from './user.js'
+import { MediaFile, User, UserInfo, UserLogin, UserLoginScope } from './user.js'
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -232,6 +232,14 @@ export const Query = builder.queryType({
         type: UserLoginScope,
         resolve: (_, __, ctx) => {
           return ctx.user.scope
+        },
+      }),
+
+      getUsersPrivatePreview: t.withAuth(asUser).field({
+        nullable: true,
+        type: [UserInfo],
+        resolve: async (_, __, ctx) => {
+          return await AccountService.getUsersPrivatePreview(ctx)
         },
       }),
 
