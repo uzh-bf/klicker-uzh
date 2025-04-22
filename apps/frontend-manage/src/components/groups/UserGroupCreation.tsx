@@ -2,7 +2,9 @@ import { faPlusCircle } from '@fortawesome/free-solid-svg-icons'
 import { Button, H3 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import UserGroupCreationErrorToast from './UserGroupCreationErrorToast'
 import UserGroupCreationForm from './UserGroupCreationForm'
+import UserGroupCreationSuccessToast from './UserGroupCreationSuccessToast'
 
 function UserGroupCreation() {
   const t = useTranslations()
@@ -32,8 +34,11 @@ function UserGroupCreation() {
           onError={() => setErrorToast(true)}
         />
       ) : null}
-      {/* <CollectionSuccessToast open={successToast} setOpen={setSuccessToast} />
-      <CollectionErrorToast open={errorToast} setOpen={setErrorToast} /> */}
+      <UserGroupCreationSuccessToast
+        open={successToast}
+        setOpen={setSuccessToast}
+      />
+      <UserGroupCreationErrorToast open={errorToast} setOpen={setErrorToast} />
     </>
   )
 }

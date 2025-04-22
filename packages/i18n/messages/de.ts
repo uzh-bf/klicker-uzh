@@ -2414,6 +2414,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für die Bildung einer Gruppe ist mindestens ein Mitglied erforderlich.',
       uniqueUsersRequired:
         'Bitte stellen Sie sicher, dass alle Nutzer eindeutig sind. Unterschiedliche Einträge für den gleichen Nutzer werden bei der Erstellung kombiniert.',
+      creationSuccessMessage: 'Die Nutzergruppe wurde erfolgreich erstellt.',
+      creationErrorMessage:
+        'Bei der Erstellung der Nutzergruppe ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass gültige Angeben für mindestens einen Nutzer (nicht Sie selbst) eingegeben wurden und dass keine andere Nutzergruppe mit demselben Namen bereits existiert.',
     },
     catalog: {
       accessTypes: 'Zugriffs-Typen',

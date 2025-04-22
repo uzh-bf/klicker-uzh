@@ -2384,6 +2384,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       minOneMemberRequired: 'At least one member is required to form a group.',
       uniqueUsersRequired:
         'Please make sure that all users are unique. Different entries belonging to the same user will be combined on creation.',
+      creationSuccessMessage: 'The user group was created successfully.',
+      creationErrorMessage:
+        'An error occurred while creating the user group. Please ensure that at information for at least one valid member (not yourself) was provided and that no other user group with the same name already exists.',
     },
     catalog: {
       accessTypes: 'Access Types',
