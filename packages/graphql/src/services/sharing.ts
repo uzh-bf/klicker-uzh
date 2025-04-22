@@ -2103,103 +2103,61 @@ export async function changeObjectPermissionLevel(
       },
     })
 
-    // if the permission exists, trigger recomputation of derived permissions
-    if (updatedPermission) {
-      const affectedUserIds = updatedPermission.userId
-        ? [updatedPermission.userId]
-        : userGroup
-          ? userGroup.members.flatMap((member) =>
-              member.id ? [member.id] : []
-            )
-          : []
-
-      for (const affectedUserId of affectedUserIds) {
-        if (typeof catalogCollectionId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { catalogCollectionId, userId: affectedUserId },
-            prisma
-          )
-        } else if (typeof answerCollectionId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { answerCollectionId, userId: affectedUserId },
-            prisma
-          )
-        } else if (typeof elementId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { elementId, userId: affectedUserId },
-            prisma
-          )
-        } else if (typeof courseId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { courseId, userId: affectedUserId },
-            prisma
-          )
-        } else if (typeof liveQuizId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { liveQuizId, userId: affectedUserId },
-            prisma
-          )
-        } else if (typeof practiceQuizId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { practiceQuizId, userId: affectedUserId },
-            prisma
-          )
-        } else if (typeof microLearningId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { microLearningId, userId: affectedUserId },
-            prisma
-          )
-        } else if (typeof groupActivityId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { groupActivityId, userId: affectedUserId },
-            prisma
-          )
-        }
-      }
+    // if the permission does not exist, return early
+    if (!updatedPermission) {
+      return false
     }
 
-    if (updatedPermission.userId) {
-      // if ADMIN permissions were granted, make sure the user also gets access request instances assigned
-      if (
-        previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
-        permissionLevel === DB.PermissionLevel.ADMIN
-      ) {
-        await createAccessRequestInstancesNewAdmin(
-          {
-            newAdminId: updatedPermission.userId,
-            existingAdminOwnerId: ctx.user.sub,
-            catalogCollectionId,
-            answerCollectionId,
-            elementId,
-            courseId,
-            liveQuizId,
-            practiceQuizId,
-            microLearningId,
-            groupActivityId,
-          },
+    // if the permission exists, trigger recomputation of derived permissions, potentially update the access requests and log the change
+    const affectedUserIds = updatedPermission.userId
+      ? [updatedPermission.userId]
+      : userGroup
+        ? userGroup.members.flatMap((member) => (member.id ? [member.id] : []))
+        : []
+
+    for (const affectedUserId of affectedUserIds) {
+      if (typeof catalogCollectionId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { catalogCollectionId, userId: affectedUserId },
+          prisma
+        )
+      } else if (typeof answerCollectionId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { answerCollectionId, userId: affectedUserId },
+          prisma
+        )
+      } else if (typeof elementId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { elementId, userId: affectedUserId },
+          prisma
+        )
+      } else if (typeof courseId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { courseId, userId: affectedUserId },
+          prisma
+        )
+      } else if (typeof liveQuizId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { liveQuizId, userId: affectedUserId },
+          prisma
+        )
+      } else if (typeof practiceQuizId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { practiceQuizId, userId: affectedUserId },
+          prisma
+        )
+      } else if (typeof microLearningId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { microLearningId, userId: affectedUserId },
+          prisma
+        )
+      } else if (typeof groupActivityId !== 'undefined') {
+        await recomputeDerivedPermissions(
+          { groupActivityId, userId: affectedUserId },
           prisma
         )
       }
-      // if ADMIN permissions were revoked, make sure that the user does not have any access request instances assigned anymore
-      else if (
-        previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
-        permissionLevel !== DB.PermissionLevel.ADMIN
-      ) {
-        await prisma.accessRequest.deleteMany({
-          where: {
-            objectAdminOrOwnerId: updatedPermission.userId,
-            catalogCollectionId,
-            answerCollectionId,
-            elementId,
-            courseId,
-            liveQuizId,
-            practiceQuizId,
-            microLearningId,
-            groupActivityId,
-          },
-        })
-      }
-    } else if (userGroup) {
+
       // if ADMIN permissions were granted, make sure all group members also get access request instances assigned
       if (
         previousPermission.permissionLevel !== DB.PermissionLevel.ADMIN &&
@@ -2207,10 +2165,10 @@ export async function changeObjectPermissionLevel(
       ) {
         // create access request instances for all members of the user group
         await Promise.all(
-          userGroup.members.map(async (member) => {
+          affectedUserIds.map(async (userId) => {
             await createAccessRequestInstancesNewAdmin(
               {
-                newAdminId: member.id,
+                newAdminId: userId,
                 existingAdminOwnerId: ctx.user.sub,
                 catalogCollectionId,
                 answerCollectionId,
@@ -2232,10 +2190,11 @@ export async function changeObjectPermissionLevel(
         previousPermission.permissionLevel === DB.PermissionLevel.ADMIN &&
         permissionLevel !== DB.PermissionLevel.ADMIN
       ) {
-        await prisma.accessRequest.deleteMany({
+        // fetch the user ids of all admin users of the object (after the permission level modification)
+        const adminOwnerPermissions = await prisma.derivedPermission.findMany({
           where: {
-            objectAdminOrOwnerId: {
-              in: userGroup.members.map((member) => member.id),
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
             },
             catalogCollectionId,
             answerCollectionId,
@@ -2246,7 +2205,34 @@ export async function changeObjectPermissionLevel(
             microLearningId,
             groupActivityId,
           },
+          select: { userId: true },
         })
+        const adminOwnerIds = adminOwnerPermissions.map(
+          (permission) => permission.userId
+        )
+
+        // identify users with revoked ADMIN permissions
+        const usersRevokedAdminPermissions = affectedUserIds.filter(
+          (userId) => !adminOwnerIds.includes(userId)
+        )
+
+        if (usersRevokedAdminPermissions.length > 0) {
+          await prisma.accessRequest.deleteMany({
+            where: {
+              objectAdminOrOwnerId: {
+                in: usersRevokedAdminPermissions, // user might retain ADMIN / OWNER rights through different direct permission
+              },
+              catalogCollectionId,
+              answerCollectionId,
+              elementId,
+              courseId,
+              liveQuizId,
+              practiceQuizId,
+              microLearningId,
+              groupActivityId,
+            },
+          })
+        }
       }
     }
 
@@ -2418,21 +2404,6 @@ export async function revokeObjectAccess(
         : []
 
     for (const affectedUserId of affectedUserIds) {
-      // if the new revoked permission level had ADMIN level, remove any access requests linked to this user (group) as an object owner or admin
-      await prisma.accessRequest.deleteMany({
-        where: {
-          objectAdminOrOwnerId: affectedUserId,
-          catalogCollectionId,
-          answerCollectionId,
-          elementId,
-          courseId,
-          liveQuizId,
-          practiceQuizId,
-          microLearningId,
-          groupActivityId,
-        },
-      })
-
       // update the derived permissions of all affected users
       if (typeof catalogCollectionId !== 'undefined') {
         await recomputeDerivedPermissions(
@@ -2474,6 +2445,54 @@ export async function revokeObjectAccess(
           { groupActivityId, userId: affectedUserId },
           prisma
         )
+      }
+    }
+
+    // if the revoked permission was at ADMIN level, remove any access requests linked to ADMINS using this permission
+    if (permission.permissionLevel === DB.PermissionLevel.ADMIN) {
+      // fetch the user ids of all admin users of the object (after the permission level modification)
+      const adminOwnerPermissions = await prisma.derivedPermission.findMany({
+        where: {
+          permissionLevel: {
+            in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+          },
+          catalogCollectionId,
+          answerCollectionId,
+          elementId,
+          courseId,
+          liveQuizId,
+          practiceQuizId,
+          microLearningId,
+          groupActivityId,
+        },
+        select: { userId: true },
+      })
+      const adminOwnerIds = adminOwnerPermissions.map(
+        (permission) => permission.userId
+      )
+
+      // identify users with revoked ADMIN permissions
+      const usersRevokedAdminPermissions = affectedUserIds.filter(
+        (userId) => !adminOwnerIds.includes(userId)
+      )
+
+      // remove any access requests linked to users that lost their ADMIN access to the object
+      if (usersRevokedAdminPermissions.length > 0) {
+        await prisma.accessRequest.deleteMany({
+          where: {
+            objectAdminOrOwnerId: {
+              in: usersRevokedAdminPermissions,
+            },
+            catalogCollectionId,
+            answerCollectionId,
+            elementId,
+            courseId,
+            liveQuizId,
+            practiceQuizId,
+            microLearningId,
+            groupActivityId,
+          },
+        })
       }
     }
 

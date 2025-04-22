@@ -31,7 +31,14 @@ import {
   testCleanup,
   testInitialization,
 } from './helpers.js'
-import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
+import {
+  userFive,
+  userFour,
+  userOne,
+  userSix,
+  userThree,
+  userTwo,
+} from './userData.js'
 
 describe('Unit tests for object access validation', () => {
   // shared resources used across tests
@@ -42,6 +49,7 @@ describe('Unit tests for object access validation', () => {
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
   let userFiveCtx: ContextWithUser
+  let userSixCtx: ContextWithUser
 
   beforeAll(async () => {
     const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
@@ -61,6 +69,7 @@ describe('Unit tests for object access validation', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
+      userSixCtx: ctx6,
     } = await testInitialization(prisma, emitter)
 
     userOneCtx = ctx1
@@ -68,6 +77,7 @@ describe('Unit tests for object access validation', () => {
     userThreeCtx = ctx3
     userFourCtx = ctx4
     userFiveCtx = ctx5
+    userSixCtx = ctx6
   })
 
   afterEach(async () => {
@@ -2213,6 +2223,187 @@ describe('Unit tests for object access validation', () => {
     expect(catalogRequest5Removed2).toBeNull()
   })
 
+  it('Test that reducing the level of existing mixed permissions from ADMIN level results in the removal of pending access requests for users without other access', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // grant individual ADMIN access to users 2, 4, and 5
+    const permission2 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const permission4 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const permission5 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userFive.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // create a user group with users 3 and 4 and a single participant group for user 5
+    const userGroup1 = await prisma.userGroup.create({
+      data: {
+        name: 'Test User Group 1',
+        members: {
+          connect: [{ id: userThree.id }, { id: userFour.id }],
+        },
+        ownerId: userOne.id,
+      },
+    })
+    const userGroup2 = await prisma.userGroup.create({
+      data: {
+        name: 'Test User Group 2',
+        members: {
+          connect: [{ id: userFive.id }],
+        },
+        ownerId: userOne.id,
+      },
+    })
+
+    // grant group ADMIN permissions to the user groups
+    const groupPermission1 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: userGroup1.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const groupPermission2 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: userGroup2.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+
+    // create an access request for user 6 with instances for all ADMINS
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userFour.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userFive.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+    const accessRequestCount1 = await prisma.accessRequest.count()
+    expect(accessRequestCount1).toBe(4)
+
+    // lower the individual permission of user 2 -> access request for user 2 should be removed
+    await changeObjectPermissionLevel(
+      {
+        permissionId: permission2.id,
+        permissionLevel: PermissionLevel.WRITE,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    const accessRequestCount2 = await prisma.accessRequest.count()
+    expect(accessRequestCount2).toBe(3)
+
+    const removedAccessRequest2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(removedAccessRequest2).toBeNull()
+
+    // lower the group permission of user group 1 (users 3 and 4)
+    // access request for user 3 should be removed, but not for user 4 (retains individual ADMIN access)
+    await changeObjectPermissionLevel(
+      {
+        permissionId: groupPermission1.id,
+        permissionLevel: PermissionLevel.WRITE,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    const accessRequestCount3 = await prisma.accessRequest.count()
+    expect(accessRequestCount3).toBe(2)
+    const removedAccessRequest3 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(removedAccessRequest3).toBeNull()
+
+    const retainedAccessRequest4 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(retainedAccessRequest4).toBeTruthy()
+    expect(retainedAccessRequest4!.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    // lower the individual permission for user 5 -> access request for user 5 should persist (group ADMIN access)
+    await changeObjectPermissionLevel(
+      {
+        permissionId: permission5.id,
+        permissionLevel: PermissionLevel.WRITE,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    const accessRequestCount4 = await prisma.accessRequest.count()
+    expect(accessRequestCount4).toBe(2)
+
+    const retainedAccessRequest5 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(retainedAccessRequest5).toBeTruthy()
+    expect(retainedAccessRequest5!.permissionLevel).toBe(PermissionLevel.WRITE)
+  })
+
   it('Verify that on revocation of individual ADMIN object permissions, access request instances are removed for the previous ADMIN', async () => {
     const { publicCatalog } = await seedCatalogCollections(userOneCtx)
     const [AC1] = await seedAnswerCollections(userOneCtx)
@@ -2566,6 +2757,184 @@ describe('Unit tests for object access validation', () => {
       },
     })
     expect(catalogRequest5Removed2).toBeNull()
+  })
+
+  it('Verify that on revocation of mixed ADMIN object permissions, access request instances are removed only for users without other access', async () => {
+    const { publicCatalog } = await seedCatalogCollections(userOneCtx)
+
+    // grant individual ADMIN access to users 2, 4, and 5
+    const permission2 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const permission4 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const permission5 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userId: userFive.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+
+    // create a user group with users 3 and 4 and a single participant group for user 5
+    const userGroup1 = await prisma.userGroup.create({
+      data: {
+        name: 'Test User Group 1',
+        members: {
+          connect: [{ id: userThree.id }, { id: userFour.id }],
+        },
+        ownerId: userOne.id,
+      },
+    })
+    const userGroup2 = await prisma.userGroup.create({
+      data: {
+        name: 'Test User Group 2',
+        members: {
+          connect: [{ id: userFive.id }],
+        },
+        ownerId: userOne.id,
+      },
+    })
+
+    // grant group ADMIN permissions to the user groups
+    const groupPermission1 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: userGroup1.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    const groupPermission2 = await prisma.permission.create({
+      data: {
+        catalogCollectionId: publicCatalog.id,
+        userGroupId: userGroup2.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    })
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: publicCatalog.id },
+      prisma
+    )
+
+    // create an access request for user 6 with instances for all ADMINS
+    await prisma.accessRequest.createMany({
+      data: [
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userTwo.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userThree.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userFour.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userFive.id,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      ],
+    })
+    const accessRequestCount1 = await prisma.accessRequest.count()
+    expect(accessRequestCount1).toBe(4)
+
+    // revoke the individual permission of user 2 -> access request for user 2 should be removed
+    await revokeObjectAccess(
+      {
+        permissionId: permission2.id,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    const accessRequestCount2 = await prisma.accessRequest.count()
+    expect(accessRequestCount2).toBe(3)
+
+    const removedAccessRequest2 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userTwo.id,
+        },
+      },
+    })
+    expect(removedAccessRequest2).toBeNull()
+
+    // revoke the group permission of user group 1 (users 3 and 4)
+    // access request for user 3 should be removed, but not for user 4 (retains individual ADMIN access)
+    await revokeObjectAccess(
+      {
+        permissionId: groupPermission1.id,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    const accessRequestCount3 = await prisma.accessRequest.count()
+    expect(accessRequestCount3).toBe(2)
+    const removedAccessRequest3 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userThree.id,
+        },
+      },
+    })
+    expect(removedAccessRequest3).toBeNull()
+
+    const retainedAccessRequest4 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userFour.id,
+        },
+      },
+    })
+    expect(retainedAccessRequest4).toBeTruthy()
+    expect(retainedAccessRequest4!.permissionLevel).toBe(PermissionLevel.WRITE)
+
+    // revoke the individual permission for user 5 -> access request for user 5 should persist (group ADMIN access)
+    await revokeObjectAccess(
+      {
+        permissionId: permission5.id,
+        catalogCollectionId: publicCatalog.id,
+      },
+      userOneCtx
+    )
+    const accessRequestCount4 = await prisma.accessRequest.count()
+    expect(accessRequestCount4).toBe(2)
+
+    const retainedAccessRequest5 = await prisma.accessRequest.findUnique({
+      where: {
+        catalogCollectionId_userId_objectAdminOrOwnerId: {
+          catalogCollectionId: publicCatalog.id,
+          userId: userSix.id,
+          objectAdminOrOwnerId: userFive.id,
+        },
+      },
+    })
+    expect(retainedAccessRequest5).toBeTruthy()
+    expect(retainedAccessRequest5!.permissionLevel).toBe(PermissionLevel.WRITE)
   })
 
   it('Verify that any pending access requests are also assigned to new owner on catalog collection ownership transfer', async () => {
