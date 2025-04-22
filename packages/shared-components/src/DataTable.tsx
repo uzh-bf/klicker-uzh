@@ -37,6 +37,8 @@ interface DataTableProps<TData, TValue> {
     table?: string
     tableHeader?: string
     tableCell?: string
+    buttons?: string
+    buttonsContainer?: string
   }
   footerContent?: React.ReactNode
   isPaginated?: boolean
@@ -164,9 +166,17 @@ function DataTable<TData, TValue>({
           </CsvDownloader>
         )}
 
-        <div className="flex flex-row gap-2">
+        <div
+          className={twMerge(
+            'flex flex-row gap-2',
+            className?.buttonsContainer
+          )}
+        >
           {isResetSortingEnabled && (
-            <Button onClick={() => setSorting([])} className={{ root: 'h-8' }}>
+            <Button
+              onClick={() => setSorting([])}
+              className={{ root: twMerge('h-8', className?.buttons) }}
+            >
               <Button.Icon icon={faRepeat} />
               <Button.Label>{t('manage.evaluation.resetSorting')}</Button.Label>
             </Button>
@@ -177,14 +187,14 @@ function DataTable<TData, TValue>({
               <Button
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
-                className={{ root: 'h-8' }}
+                className={{ root: twMerge('h-8', className?.buttons) }}
               >
                 <Button.Label>{t('shared.table.previous')}</Button.Label>
               </Button>
               <Button
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
-                className={{ root: 'h-8' }}
+                className={{ root: twMerge('h-8', className?.buttons) }}
               >
                 <Button.Label>{t('shared.table.next')}</Button.Label>
               </Button>

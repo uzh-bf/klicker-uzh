@@ -1,0 +1,3 @@
+mutation GrantPrivatePreviewAccess($email: String!) {
+  grantPrivatePreviewAccess(email: $email)
+}

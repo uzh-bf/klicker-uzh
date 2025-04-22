@@ -918,8 +918,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mediaLibrary: 'Mediathek',
       userGroups: 'Benutzergruppen',
       generateToken: 'Login-Token generieren',
+      adminPanel: 'Admin-Panel',
       '404Message':
-        'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zum <link>Fragepool</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
+        'Die von Ihnen aufgerufene Seite existiert leider nicht. Kehren sie zur <link>Bibliothek</link> zurück oder nutzen sie das Menu zur weiteren Navigation.',
       date: 'Datum',
       dateCreated: 'Erstellungsdatum',
       dateModified: 'Änderungsdatum',
@@ -929,6 +930,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
+    },
+    admin: {
+      pageName: 'Admin-Panel',
+      privatePreviewAvailability: 'Verfügbarkeit: Private Features',
+      privatePreviewDescription:
+        'Alle Benutzer in der folgenden Liste haben Zugriff auf Funktionen, die derzeit als "Private Preview" gekennzeichnet sind. Neue Benutzer können durch Eingabe ihrer E-Mail-Adresse (primäre Edu-ID-E-Mail) hinzugefügt werden.',
+      grantAccessEmailLabel: 'Benutzer E-Mail-Adresse',
+      grantAccessTooltip:
+        'Bitte geben Sie die primäre Edu-ID-E-Mail-Adresse des Benutzers ein, dem Zugriff auf die privaten Funktionen gewährt werden soll. Alle Benutzer müssen sich zuvor bei KlickerUZH angemeldet haben. Die gespeicherte E-Mail-Adresse kann im Benutzerprofil eingesehen werden.',
+      grantAccess: 'Zugriff gewähren',
+      grantAccessEmailError: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+      grantAccessEmailRequired:
+        'Um Zugriff zu gewähren, geben Sie bitte eine E-Mail-Adresse ein.',
+      accessGranted:
+        'Der Zugriff auf private Vorschaufunktionen wurde dem angegebenen Benutzer erfolgreich gewährt.',
+      alreadyAccess:
+        'Der angegebene Benutzer hat bereits Zugriff auf private Vorschaufunktionen.',
+      userNotExist:
+        'Der angegebene Benutzer existiert nicht. Bitte überprüfen Sie die E-Mail-Adresse und stellen Sie sicher, dass sich der Benutzer mindestens einmal bei KlickerUZH angemeldet hat.',
+      grantAccessError:
+        'Beim Gewähren des Zugriffs auf private Vorschaufunktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -983,6 +1005,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     settings: {
       userSettings: 'Benutzereinstellungen',
       languageSettings: 'Spracheinstellungen',
+      storedEmail: 'E-Mail (Edu-ID)',
       languageTooltip:
         'Ändern Sie hier die Programmsprache der KlickerUZH Manage App. Beachten Sie, dass dies keinerlei Einfluss auf Ihre Kursinhalte oder die Spracheinstellungen bei anderen Nutzern oder Studierenden in Ihren Kursen hat.',
       confirmDelegatedAcces: 'Delegierten Login bestätigen',

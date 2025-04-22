@@ -1688,6 +1688,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      grantPrivatePreviewAccess: t.withAuth(asUserFullAccess).int({
+        nullable: true,
+        args: {
+          email: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AccountService.grantPrivatePreviewAccess(args, ctx)
+        },
+      }),
+
       createAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,

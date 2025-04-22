@@ -30,6 +30,7 @@ export async function prepareUser({
   catalystInstitutional?: boolean
   publicPreview?: boolean
   privatePreview?: boolean
+  role?: Prisma.UserRole
 }) {
   const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -37,6 +38,7 @@ export async function prepareUser({
     ...args,
     catalystIndividual,
     catalystInstitutional,
+    role: args.role ?? Prisma.UserRole.USER,
     firstLogin: false,
     logins: {
       create: {

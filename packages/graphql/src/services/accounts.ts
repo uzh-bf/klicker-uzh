@@ -372,12 +372,8 @@ export async function getLoginToken(ctx: ContextWithUser) {
   return user
 }
 
-interface ChangeUserLocaleArgs {
-  locale: Locale
-}
-
 export async function changeUserLocale(
-  { locale }: ChangeUserLocaleArgs,
+  { locale }: { locale: Locale },
   ctx: ContextWithUser
 ) {
   const user = await ctx.prisma.user.update({
@@ -392,12 +388,72 @@ export async function changeUserLocale(
   return user
 }
 
-interface ChangeParticipantLocaleArgs {
-  locale: Locale
+export async function getUsersPrivatePreview(ctx: ContextWithUser) {
+  // verify that the user has ADMIN permissions
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  if (!user || user.role !== UserRole.ADMIN) {
+    return []
+  }
+
+  const users = await ctx.prisma.user.findMany({
+    where: {
+      privatePreview: true,
+    },
+    select: {
+      shortname: true,
+      email: true,
+    },
+  })
+
+  return users.map((user) => ({
+    shortname: user.shortname,
+    email: user.email,
+  }))
+}
+
+export async function grantPrivatePreviewAccess(
+  { email }: { email: string },
+  ctx: ContextWithUser
+) {
+  // verif ythat the user has ADMIN permissions (can grant new access)
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+  if (!user || user.role !== UserRole.ADMIN) {
+    return null
+  }
+
+  // check if the new user exists
+  const newUser = await ctx.prisma.user.findUnique({
+    where: { email },
+  })
+  if (!newUser) {
+    return 1
+  }
+
+  // check if the new user already has access
+  if (newUser.privatePreview) {
+    return 2
+  }
+
+  // grant access to the new user
+  await ctx.prisma.user.update({
+    where: { id: newUser.id },
+    data: { privatePreview: true },
+  })
+  await sendTeamsNotifications(
+    'graphql/grantPrivatePreviewAccess',
+    `User ${newUser.shortname} (${newUser.email}) granted private preview access`
+  )
+
+  return 0
 }
 
 export async function changeParticipantLocale(
-  { locale }: ChangeParticipantLocaleArgs,
+  { locale }: { locale: Locale },
   ctx: Context
 ) {
   ctx.res.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)

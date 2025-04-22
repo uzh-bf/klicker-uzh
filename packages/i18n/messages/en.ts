@@ -918,8 +918,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       mediaLibrary: 'Media Library',
       userGroups: 'User Groups',
       generateToken: 'Generate login token',
+      adminPanel: 'Admin Panel',
       '404Message':
-        'The page you requested does not exist. Please return to the <link>question pool</link> or use the main menu at the top for further navigation.',
+        'The page you requested does not exist. Please return to the <link>library</link> or use the main menu at the top for further navigation.',
       date: 'Date',
       dateCreated: 'Date Created',
       dateModified: 'Date Modified',
@@ -929,6 +930,27 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
+    },
+    admin: {
+      pageName: 'Admin Panel',
+      privatePreviewAvailability: 'Availability: Private Features',
+      privatePreviewDescription:
+        'All users on the following list have access to functionalities that are currently marked as "Private Preview". New users can be added by entering their email address (primary Edu-ID email).',
+      grantAccessEmailLabel: 'User E-Mail Address',
+      grantAccessTooltip:
+        'Please enter the primary Edu-ID email address of the user who should be granted access to the private features. All users must have logged in to KlickerUZH beforehand. The stored email address can be viewed in the user profile.',
+      grantAccess: 'Grant Access',
+      grantAccessEmailError: 'Please enter a valid email address.',
+      grantAccessEmailRequired:
+        'To grant access, please enter an email address.',
+      accessGranted:
+        'Access to private preview features has been successfully granted to the specified user.',
+      alreadyAccess:
+        'The specified user already has access to private preview features.',
+      userNotExist:
+        'The specified user does not exist. Please check the email address and ensure that the user has logged in to KlickerUZH at least once.',
+      grantAccessError:
+        'An error occurred while granting access to private preview features. This might be due to insufficient permissions or a system error.',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -984,6 +1006,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     settings: {
       userSettings: 'User Settings',
       languageSettings: 'Language Settings',
+      storedEmail: 'E-Mail (Edu-ID)',
       languageTooltip:
         'Change the language of the KlickerUZH Manage App here. Please note that this has no influence on your course content or the language settings of other users or students in your courses.',
       confirmDelegatedAcces: 'Confirm delegated login creation',
