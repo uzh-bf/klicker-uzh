@@ -44,7 +44,7 @@ Cypress.Commands.add(
   loginFactory({
     email: 'lecturer@df.uzh.ch',
     sub: '76047345-3801-4628-ae7b-adbebcfe8821',
-    role: 'USER',
+    role: 'ADMIN',
     scope: 'ACCOUNT_OWNER',
     catalystInstitutional: true,
     catalystIndividual: true,

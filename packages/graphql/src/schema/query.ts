@@ -96,6 +96,7 @@ export const Query = builder.queryType({
     const asAuthenticated = { authenticated: true }
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
 
     return {
       self: t.field({
@@ -236,7 +237,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getUsersPrivatePreview: t.withAuth(asUser).field({
+      getUsersPrivatePreview: t.withAuth(asAdmin).field({
         nullable: true,
         type: [UserInfo],
         resolve: async (_, __, ctx) => {
