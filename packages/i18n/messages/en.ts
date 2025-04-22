@@ -935,7 +935,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pageName: 'Admin Panel',
       privatePreviewAvailability: 'Availability: Private Features',
       privatePreviewDescription:
-        'All users on the following list have access to functionalities that are currently marked as "Private Preview". These functionalities are. New users can be added by entering their email address (primary Edu-ID email).',
+        'All users on the following list have access to functionalities that are currently marked as "Private Preview". New users can be added by entering their email address (primary Edu-ID email).',
       grantAccessEmailLabel: 'User E-Mail Address',
       grantAccessTooltip:
         'Please enter the primary Edu-ID email address of the user who should be granted access to the private features. All users must have logged in to KlickerUZH beforehand. The stored email address can be viewed in the user profile.',
