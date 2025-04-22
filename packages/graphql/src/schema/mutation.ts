@@ -88,6 +88,7 @@ import {
 
 // shorthand for frequently accessed functions
 const checkAccess = SharingService.checkAccess
+const withPermission = SharingService.withPermission
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -395,23 +396,13 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on course required
-          const validAccess = await checkAccess(
-            [
-              {
-                courseId: args.courseId,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await GroupService.manualRandomGroupAssignments(args, ctx)
           }
-
-          return await GroupService.manualRandomGroupAssignments(args, ctx)
-        },
+        ),
       }),
 
       joinParticipantGroup: t.withAuth(asParticipant).string({
@@ -653,23 +644,13 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.cancelLiveQuiz(args, ctx)
           }
-
-          return await LiveQuizService.cancelLiveQuiz(args, ctx)
-        },
+        ),
       }),
 
       enableCourseGamification: t.withAuth(asUserFullAccess).field({
@@ -678,23 +659,13 @@ export const Mutation = builder.mutationType({
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on course required
-          const validAccess = await checkAccess(
-            [
-              {
-                courseId: args.courseId,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await CourseService.enableGamification(args, ctx)
           }
-
-          return await CourseService.enableGamification(args, ctx)
-        },
+        ),
       }),
 
       deleteCourse: t.withAuth(asUser).field({
@@ -703,23 +674,13 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= ADMIN permissions on course required
-          const validAccess = await checkAccess(
-            [
-              {
-                courseId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ courseId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.deleteCourse(args, ctx)
           }
-
-          return await CourseService.deleteCourse(args, ctx)
-        },
+        ),
       }),
 
       deleteTag: t.withAuth(asUserFullAccess).field({
@@ -739,23 +700,13 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= ADMIN permissions on eleemnt required
-          const validAccess = await checkAccess(
-            [
-              {
-                elementId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ elementId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await QuestionService.deleteQuestion(args, ctx)
           }
-
-          return await QuestionService.deleteQuestion(args, ctx)
-        },
+        ),
       }),
 
       editTag: t.withAuth(asUserFullAccess).field({
@@ -776,23 +727,13 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.endLiveQuiz(args, ctx)
           }
-
-          return await LiveQuizService.endLiveQuiz(args, ctx)
-        },
+        ),
       }),
 
       startLiveQuiz: t.withAuth(asUserSessionExec).field({
@@ -801,23 +742,13 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.startLiveQuiz(args, ctx)
           }
-
-          return await LiveQuizService.startLiveQuiz(args, ctx)
-        },
+        ),
       }),
 
       deleteFeedback: t.withAuth(asUserSessionExec).field({
@@ -827,23 +758,13 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
           liveQuizId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.liveQuizId,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.liveQuizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await FeedbackService.deleteFeedback(args, ctx)
           }
-
-          return await FeedbackService.deleteFeedback(args, ctx)
-        },
+        ),
       }),
 
       deleteFeedbackResponse: t.withAuth(asUserSessionExec).field({
@@ -853,23 +774,13 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
           liveQuizId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.liveQuizId,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.liveQuizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await FeedbackService.deleteFeedbackResponse(args, ctx)
           }
-
-          return await FeedbackService.deleteFeedbackResponse(args, ctx)
-        },
+        ),
       }),
 
       pinFeedback: t.withAuth(asUserSessionExec).field({
@@ -880,23 +791,13 @@ export const Mutation = builder.mutationType({
           isPinned: t.arg.boolean({ required: true }),
           liveQuizId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.liveQuizId,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.liveQuizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await FeedbackService.pinFeedback(args, ctx)
           }
-
-          return await FeedbackService.pinFeedback(args, ctx)
-        },
+        ),
       }),
 
       publishFeedback: t.withAuth(asUserSessionExec).field({
@@ -907,23 +808,13 @@ export const Mutation = builder.mutationType({
           isPublished: t.arg.boolean({ required: true }),
           liveQuizId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.liveQuizId,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.liveQuizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await FeedbackService.publishFeedback(args, ctx)
           }
-
-          return await FeedbackService.publishFeedback(args, ctx)
-        },
+        ),
       }),
 
       resolveFeedback: t.withAuth(asUserSessionExec).field({
@@ -934,23 +825,13 @@ export const Mutation = builder.mutationType({
           isResolved: t.arg.boolean({ required: true }),
           liveQuizId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.liveQuizId,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.liveQuizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await FeedbackService.resolveFeedback(args, ctx)
           }
-
-          return await FeedbackService.resolveFeedback(args, ctx)
-        },
+        ),
       }),
 
       respondToFeedback: t.withAuth(asUserSessionExec).field({
@@ -961,23 +842,13 @@ export const Mutation = builder.mutationType({
           responseContent: t.arg.string({ required: true }),
           liveQuizId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.liveQuizId,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.liveQuizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await FeedbackService.respondToFeedback(args, ctx)
           }
-
-          return await FeedbackService.respondToFeedback(args, ctx)
-        },
+        ),
       }),
 
       logoutUser: t.withAuth(asUser).id({
@@ -1002,23 +873,13 @@ export const Mutation = builder.mutationType({
           quizId: t.arg.string({ required: true }),
           blockId: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.quizId,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.quizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.deactivateLiveQuizBlock(args, ctx)
           }
-
-          return await LiveQuizService.deactivateLiveQuizBlock(args, ctx)
-        },
+        ),
       }),
 
       changeLiveQuizSettings: t.withAuth(asUserSessionExec).field({
@@ -1031,23 +892,13 @@ export const Mutation = builder.mutationType({
           isModerationEnabled: t.arg.boolean({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: false }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.changeLiveQuizSettings(args, ctx)
           }
-
-          return await LiveQuizService.changeLiveQuizSettings(args, ctx)
-        },
+        ),
       }),
 
       activateLiveQuizBlock: t.withAuth(asUserSessionExec).field({
@@ -1057,23 +908,13 @@ export const Mutation = builder.mutationType({
           quizId: t.arg.string({ required: true }),
           blockId: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= EXECUTE permission on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.quizId,
-                minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.quizId }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.activateLiveQuizBlock(args, ctx)
           }
-
-          return await LiveQuizService.activateLiveQuizBlock(args, ctx)
-        },
+        ),
       }),
 
       createLiveQuiz: t.withAuth(asUserFullAccess).field({
@@ -1128,23 +969,13 @@ export const Mutation = builder.mutationType({
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.manipulateLiveQuiz(args, ctx)
           }
-
-          return await LiveQuizService.manipulateLiveQuiz(args, ctx)
-        },
+        ),
       }),
 
       manipulateContentElement: t.withAuth(asUserFullAccess).field({
@@ -1419,28 +1250,19 @@ export const Mutation = builder.mutationType({
       }),
 
       updateElementInstances: t.withAuth(asUserFullAccess).field({
+        nullable: true,
         type: [ElementInstance],
         args: {
           elementId: t.arg.int({ required: true }),
           includeTemplates: t.arg.boolean({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on element required
-          const validAccess = await checkAccess(
-            [
-              {
-                elementId: args.elementId,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return []
+        resolve: withPermission(
+          (args) => ({ elementId: args.elementId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await QuestionService.updateElementInstances(args, ctx)
           }
-
-          return await QuestionService.updateElementInstances(args, ctx)
-        },
+        ),
       }),
 
       createCourse: t.withAuth(asUserFullAccess).field({
@@ -1487,49 +1309,30 @@ export const Mutation = builder.mutationType({
           }),
           isGamificationEnabled: t.arg.boolean({ required: false }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on course required
-          const validAccess = await checkAccess(
-            [
-              {
-                courseId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ courseId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await CourseService.updateCourseSettings(args, ctx)
           }
-
-          return await CourseService.updateCourseSettings(args, ctx)
-        },
+        ),
       }),
 
       updateWeeklyTimelineEntriesCourse: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
         args: {
           courseId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= READ permissions on course required
-          const validAccess = await checkAccess(
-            [
-              {
-                courseId: args.courseId,
-                minimumPermissionLevel: DB.PermissionLevel.READ,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return false
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await ParticipantService.updateWeeklyTimelineEntriesCourse(
+              args,
+              ctx
+            )
           }
-
-          return await ParticipantService.updateWeeklyTimelineEntriesCourse(
-            { courseId: args.courseId },
-            ctx
-          )
-        },
+        ),
       }),
 
       updateWeeklyTimelineEntries: t.boolean({
@@ -1546,23 +1349,13 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
           isArchived: t.arg.boolean({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= ADMIN permissions on course required
-          const validAccess = await checkAccess(
-            [
-              {
-                courseId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ courseId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.toggleArchiveCourse(args, ctx)
           }
-
-          return await CourseService.toggleArchiveCourse(args, ctx)
-        },
+        ),
       }),
 
       toggleIsArchived: t.withAuth(asUserFullAccess).field({
@@ -1595,23 +1388,13 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= ADMIN permissions on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await LiveQuizService.deleteLiveQuiz(args, ctx)
           }
-
-          return await LiveQuizService.deleteLiveQuiz(args, ctx)
-        },
+        ),
       }),
 
       changeLiveQuizName: t.withAuth(asUserFullAccess).field({
@@ -1622,23 +1405,13 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: true }),
           displayName: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on live quiz required
-          const validAccess = await checkAccess(
-            [
-              {
-                liveQuizId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.changeLiveQuizName(args, ctx)
           }
-
-          return await LiveQuizService.changeLiveQuizName(args, ctx)
-        },
+        ),
       }),
 
       getFileUploadSas: t.withAuth(asUserFullAccess).field({
@@ -1719,23 +1492,13 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           description: t.arg.string({ required: false }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on answer collection required
-          const validAccess = await checkAccess(
-            [
-              {
-                answerCollectionId: args.id,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ answerCollectionId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await ResourcesService.modifyAnswerCollection(args, ctx)
           }
-
-          return await ResourcesService.modifyAnswerCollection(args, ctx)
-        },
+        ),
       }),
 
       editAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
@@ -1746,23 +1509,13 @@ export const Mutation = builder.mutationType({
           value: t.arg.string({ required: true }),
           collectionId: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on answer collection required
-          const validAccess = await checkAccess(
-            [
-              {
-                answerCollectionId: args.collectionId,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ answerCollectionId: args.collectionId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await ResourcesService.editAnswerCollectionEntry(args, ctx)
           }
-
-          return await ResourcesService.editAnswerCollectionEntry(args, ctx)
-        },
+        ),
       }),
 
       deleteAnswerCollectionEntry: t.withAuth(asUserFullAccess).field({
@@ -1772,23 +1525,13 @@ export const Mutation = builder.mutationType({
           id: t.arg.int({ required: true }),
           collectionId: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on answer collection required
-          const validAccess = await checkAccess(
-            [
-              {
-                answerCollectionId: args.collectionId,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ answerCollectionId: args.collectionId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await ResourcesService.deleteAnswerCollectionEntry(args, ctx)
           }
-
-          return await ResourcesService.deleteAnswerCollectionEntry(args, ctx)
-        },
+        ),
       }),
 
       addAnswerCollectionOption: t.withAuth(asUserFullAccess).field({
@@ -1798,23 +1541,13 @@ export const Mutation = builder.mutationType({
           collectionId: t.arg.int({ required: true }),
           value: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on answer collection required
-          const validAccess = await checkAccess(
-            [
-              {
-                answerCollectionId: args.collectionId,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ answerCollectionId: args.collectionId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await ResourcesService.addAnswerCollectionOption(args, ctx)
           }
-
-          return await ResourcesService.addAnswerCollectionOption(args, ctx)
-        },
+        ),
       }),
 
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
@@ -1967,23 +1700,13 @@ export const Mutation = builder.mutationType({
         args: {
           collectionId: t.arg.int({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= ADMIN permissions on answer collection required
-          const validAccess = await checkAccess(
-            [
-              {
-                answerCollectionId: args.collectionId,
-                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ answerCollectionId: args.collectionId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await ResourcesService.deleteAnswerCollection(args, ctx)
           }
-
-          return await ResourcesService.deleteAnswerCollection(args, ctx)
-        },
+        ),
       }),
 
       createCatalogCollection: t.withAuth(asUserFullAccess).field({
@@ -2013,31 +1736,21 @@ export const Mutation = builder.mutationType({
       changeCatalogCollectionObjectAccess: t
         .withAuth(asUserFullAccess)
         .boolean({
-          nullable: false,
+          nullable: true,
           args: {
             catalogCollectionId: t.arg.string({ required: true }),
             access: t.arg({ type: ObjectAccess, required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= ADMIN permissions on catalog collection required
-            const validAccess = await checkAccess(
-              [
-                {
-                  catalogCollectionId: args.catalogCollectionId,
-                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return false
+          resolve: withPermission(
+            (args) => ({ catalogCollectionId: args.catalogCollectionId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await SharingService.changeCatalogCollectionObjectAccess(
+                args,
+                ctx
+              )
             }
-
-            return await SharingService.changeCatalogCollectionObjectAccess(
-              args,
-              ctx
-            )
-          },
+          ),
         }),
 
       changeCatalogCollectionName: t.withAuth(asUserFullAccess).boolean({
@@ -2046,23 +1759,13 @@ export const Mutation = builder.mutationType({
           catalogCollectionId: t.arg.string({ required: true }),
           name: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= WRITE permissions on catalog collection required
-          const validAccess = await checkAccess(
-            [
-              {
-                catalogCollectionId: args.catalogCollectionId,
-                minimumPermissionLevel: DB.PermissionLevel.WRITE,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return false
+        resolve: withPermission(
+          (args) => ({ catalogCollectionId: args.catalogCollectionId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await SharingService.changeCatalogCollectionName(args, ctx)
           }
-
-          return await SharingService.changeCatalogCollectionName(args, ctx)
-        },
+        ),
       }),
 
       requestCatalogCollection: t.withAuth(asUserFullAccess).field({
@@ -2085,23 +1788,13 @@ export const Mutation = builder.mutationType({
         args: {
           catalogCollectionId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          // >= ADMIN permissions on catalog collection required
-          const validAccess = await checkAccess(
-            [
-              {
-                catalogCollectionId: args.catalogCollectionId,
-                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-              },
-            ],
-            ctx
-          )
-          if (!validAccess) {
-            return null
+        resolve: withPermission(
+          (args) => ({ catalogCollectionId: args.catalogCollectionId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await SharingService.deleteCatalogCollection(args, ctx)
           }
-
-          return await SharingService.deleteCatalogCollection(args, ctx)
-        },
+        ),
       }),
 
       createActivityTemplate: t.withAuth(asUserFullAccess).boolean({
@@ -2628,23 +2321,13 @@ export const Mutation = builder.mutationType({
             }),
             resetTimeDays: t.arg.int({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= WRITE permissions on practice quiz required
-            const validAccess = await checkAccess(
-              [
-                {
-                  practiceQuizId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ practiceQuizId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
             }
-
-            return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
-          },
+          ),
         }),
 
       createMicroLearning: t
@@ -2683,23 +2366,16 @@ export const Mutation = builder.mutationType({
             startDate: t.arg({ type: 'Date', required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= WRITE permissions on microlearning required
-            const validAccess = await checkAccess(
-              [
-                {
-                  microLearningId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.manipulateMicroLearning(
+                args,
+                ctx
+              )
             }
-
-            return await MicroLearningService.manipulateMicroLearning(args, ctx)
-          },
+          ),
         }),
 
       extendMicroLearning: t
@@ -2711,23 +2387,13 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on microlearning required
-            const validAccess = await checkAccess(
-              [
-                {
-                  microLearningId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.extendMicroLearning(args, ctx)
             }
-
-            return await MicroLearningService.extendMicroLearning(args, ctx)
-          },
+          ),
         }),
 
       endMicroLearning: t
@@ -2738,23 +2404,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on microlearning required
-            const validAccess = await checkAccess(
-              [
-                {
-                  microLearningId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.endMicroLearning(args, ctx)
             }
-
-            return await MicroLearningService.endMicroLearning(args, ctx)
-          },
+          ),
         }),
 
       createGroupActivity: t
@@ -2795,23 +2451,13 @@ export const Mutation = builder.mutationType({
             clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
             stack: t.arg({ required: true, type: ElementStackInput }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= WRITE permissions on group activity required
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await GroupService.manipulateGroupActivity(args, ctx)
             }
-
-            return await GroupService.manipulateGroupActivity(args, ctx)
-          },
+          ),
         }),
 
       extendGroupActivity: t
@@ -2823,23 +2469,13 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
             endDate: t.arg({ type: 'Date', required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on group activity required
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.extendGroupActivity(args, ctx)
             }
-
-            return await GroupService.extendGroupActivity(args, ctx)
-          },
+          ),
         }),
 
       publishPracticeQuiz: t
@@ -2851,23 +2487,13 @@ export const Mutation = builder.mutationType({
             id: t.arg.string({ required: true }),
             availableFrom: t.arg({ type: 'Date', required: false }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on practice quiz required
-            const validAccess = await checkAccess(
-              [
-                {
-                  practiceQuizId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ practiceQuizId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await PracticeQuizService.publishPracticeQuiz(args, ctx)
             }
-
-            return await PracticeQuizService.publishPracticeQuiz(args, ctx)
-          },
+          ),
         }),
 
       publishMicroLearning: t
@@ -2878,23 +2504,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on microlearning required
-            const validAccess = await checkAccess(
-              [
-                {
-                  microLearningId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.publishMicroLearning(args, ctx)
             }
-
-            return await MicroLearningService.publishMicroLearning(args, ctx)
-          },
+          ),
         }),
 
       unpublishPracticeQuiz: t
@@ -2905,23 +2521,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on practice quiz required
-            const validAccess = await checkAccess(
-              [
-                {
-                  practiceQuizId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ practiceQuizId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await PracticeQuizService.unpublishPracticeQuiz(args, ctx)
             }
-
-            return await PracticeQuizService.unpublishPracticeQuiz(args, ctx)
-          },
+          ),
         }),
 
       unpublishMicroLearning: t
@@ -2932,23 +2538,16 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on microlearning required
-            const validAccess = await checkAccess(
-              [
-                {
-                  microLearningId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.unpublishMicroLearning(
+                args,
+                ctx
+              )
             }
-
-            return await MicroLearningService.unpublishMicroLearning(args, ctx)
-          },
+          ),
         }),
 
       deletePracticeQuiz: t
@@ -2959,23 +2558,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= ADMIN permissions on practice quiz required
-            const validAccess = await checkAccess(
-              [
-                {
-                  practiceQuizId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ practiceQuizId: args.id }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await PracticeQuizService.deletePracticeQuiz(args, ctx)
             }
-
-            return await PracticeQuizService.deletePracticeQuiz(args, ctx)
-          },
+          ),
         }),
 
       deleteMicroLearning: t
@@ -2986,23 +2575,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= ADMIN permissions on microlearning required
-            const validAccess = await checkAccess(
-              [
-                {
-                  microLearningId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await MicroLearningService.deleteMicroLearning(args, ctx)
             }
-
-            return await MicroLearningService.deleteMicroLearning(args, ctx)
-          },
+          ),
         }),
 
       publishGroupActivity: t
@@ -3013,23 +2592,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on group activity required
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.publishGroupActivity(args, ctx)
             }
-
-            return await GroupService.publishGroupActivity(args, ctx)
-          },
+          ),
         }),
 
       unpublishGroupActivity: t
@@ -3040,23 +2609,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on group activity required
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.unpublishGroupActivity(args, ctx)
             }
-
-            return await GroupService.unpublishGroupActivity(args, ctx)
-          },
+          ),
         }),
 
       openGroupActivity: t
@@ -3067,23 +2626,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on group activity required
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.openGroupActivity(args, ctx)
             }
-
-            return await GroupService.openGroupActivity(args, ctx)
-          },
+          ),
         }),
 
       endGroupActivity: t
@@ -3094,23 +2643,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on group activity required
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.endGroupActivity(args, ctx)
             }
-
-            return await GroupService.endGroupActivity(args, ctx)
-          },
+          ),
         }),
 
       deleteGroupActivity: t
@@ -3121,23 +2660,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= ADMIN permissions on group activity required
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await GroupService.deleteGroupActivity(args, ctx)
             }
-
-            return await GroupService.deleteGroupActivity(args, ctx)
-          },
+          ),
         }),
 
       gradeGroupActivitySubmission: t
@@ -3153,23 +2682,13 @@ export const Mutation = builder.mutationType({
               required: true,
             }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= EXECUTE permissions on group activity required (same permission requirements as starting and ending a group activity)
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.groupActivityId,
-                  minimumPermissionLevel: DB.PermissionLevel.EXECUTE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.groupActivityId }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.gradeGroupActivitySubmission(args, ctx)
             }
-
-            return await GroupService.gradeGroupActivitySubmission(args, ctx)
-          },
+          ),
         }),
 
       finalizeGroupActivityGrading: t
@@ -3180,23 +2699,13 @@ export const Mutation = builder.mutationType({
           args: {
             id: t.arg.string({ required: true }),
           },
-          resolve: async (_, args, ctx) => {
-            // >= WRITE permissions on group activity required (requires more than grading, since action is irreversible)
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await GroupService.finalizeGroupActivityGrading(args, ctx)
             }
-
-            return await GroupService.finalizeGroupActivityGrading(args, ctx)
-          },
+          ),
         }),
       // #endregion
 
