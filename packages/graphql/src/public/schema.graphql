@@ -696,6 +696,15 @@ A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `dat
 """
 scalar Date
 
+type DerivedPermissionInfo {
+  isOwn: Boolean!
+  permissionId: Int!
+  permissionLevel: PermissionLevel!
+  userEmail: String!
+  userId: String!
+  username: String!
+}
+
 union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
 
 type ElementBlock {
@@ -1871,6 +1880,7 @@ type Query {
   getCourseStudentTimelines: [CourseStudentTimeline!]
   getCourseSummary(courseId: String!): CourseSummary
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
+  getDerivedObjectPermissions(objectId: String!, objectType: CatalogObjectType!): [DerivedPermissionInfo!]
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]

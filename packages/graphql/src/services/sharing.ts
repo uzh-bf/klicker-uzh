@@ -2512,11 +2512,11 @@ export async function revokeObjectAccess(
 // ! Sharing Modal Queries and Mutations
 // #region
 export async function getCatalogCollectionPermissions(
-  { catalogCollectionId }: { catalogCollectionId: string },
+  { id }: { id: string },
   ctx: ContextWithUser
 ) {
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
-    where: { id: catalogCollectionId },
+    where: { id },
     include: {
       directPermissions: {
         include: {
@@ -2662,11 +2662,11 @@ export async function transferCatalogCollectionOwnership(
 }
 
 export async function getAnswerCollectionPermissions(
-  { collectionId }: { collectionId: number },
+  { id }: { id: number },
   ctx: ContextWithUser
 ) {
   const collection = await ctx.prisma.answerCollection.findUnique({
-    where: { id: collectionId },
+    where: { id },
     include: {
       directPermissions: {
         include: {
@@ -2698,6 +2698,40 @@ export async function getAnswerCollectionPermissions(
       }
       return (a.username ?? '').localeCompare(b.username ?? '')
     })
+}
+
+export async function getDerivedAnswerCollectionPermissions(
+  { id }: { id: number },
+  ctx: ContextWithUser
+) {
+  // fetch the answer collection alongside all derived permissions that are marked as being "derived" (no direct permission behind them)
+  const answerCollection = await ctx.prisma.answerCollection.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: { derived: true },
+        include: {
+          user: { select: { shortname: true, email: true } },
+        },
+      },
+    },
+  })
+
+  if (!answerCollection) {
+    return []
+  }
+
+  // map the derived permissions to the expected format
+  return answerCollection.permissions
+    .map((permission) => ({
+      permissionId: permission.id,
+      permissionLevel: permission.permissionLevel,
+      userId: permission.userId,
+      username: permission.user.shortname,
+      userEmail: permission.user.email,
+      isOwn: permission.userId === ctx.user.sub,
+    }))
+    .sort((a, b) => (a.username ?? '').localeCompare(b.username ?? ''))
 }
 
 export async function transferAnswerCollectionOwnership(

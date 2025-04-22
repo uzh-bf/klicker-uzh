@@ -1,0 +1,13 @@
+query GetDerivedObjectPermissions(
+  $objectId: String!
+  $objectType: CatalogObjectType!
+) {
+  getDerivedObjectPermissions(objectId: $objectId, objectType: $objectType) {
+    permissionId
+    permissionLevel
+    userId
+    username
+    userEmail
+    isOwn
+  }
+}

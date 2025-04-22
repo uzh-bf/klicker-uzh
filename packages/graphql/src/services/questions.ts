@@ -26,26 +26,12 @@ import { getActivityAnswerCollectionIds } from './templates.js'
 
 export async function getUserQuestions(ctx: ContextWithUser) {
   const userQuestions = await ctx.prisma.user.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       questions: {
-        where: {
-          isDeleted: false,
-        },
-        orderBy: [
-          {
-            createdAt: 'desc',
-          },
-        ],
-        include: {
-          tags: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
+        where: { isDeleted: false },
+        orderBy: [{ createdAt: 'desc' }],
+        include: { tags: { orderBy: { order: 'asc' } } },
       },
     },
   })
@@ -60,7 +46,10 @@ export async function getSingleQuestion(
   const question = await ctx.prisma.element.findUnique({
     where: { id, isDeleted: false },
     include: {
-      tags: { orderBy: { order: 'asc' } },
+      tags: {
+        where: { ownerId: ctx.user.sub }, // tags are personal and should not be shared
+        orderBy: { order: 'asc' },
+      },
       answerCollectionItems: true,
     },
   })

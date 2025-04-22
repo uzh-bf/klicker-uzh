@@ -7,7 +7,6 @@ import {
 import { Button, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import usePermissionLevelSelection from '../../lib/hooks/usePermissionLevelSelection'
 import ModifyOwnPermissionsModal from './ModifyOwnPermissionsModal'
 
@@ -94,40 +93,6 @@ function ExistingPermissionEntries({
     setModifyOwnPermissionsModal({ ...modifyOwnPermissionsModal, open: false })
   }
 
-  const AccessRevokationButton = ({
-    permission,
-    disabled,
-    className,
-  }: {
-    permission: PermissionInfo
-    disabled?: boolean
-    className?: string
-  }) => (
-    <Button
-      basic
-      disabled={disabled}
-      className={{
-        root: twMerge(
-          'mt-1 px-2 py-2 text-red-600 hover:text-red-800',
-          className
-        ),
-      }}
-      onClick={async () => {
-        await handleRemovePermission(
-          permission.permissionId,
-          permission.isOwn ?? false
-        )
-      }}
-      data={{
-        cy: permission.username
-          ? `revoke-permission-${permission.username}`
-          : `revoke-permission-${permission.userGroupName}`,
-      }}
-    >
-      <Button.Icon withoutLabel icon={faTrashCan} />
-    </Button>
-  )
-
   return (
     <>
       {permissions
@@ -179,7 +144,25 @@ function ExistingPermissionEntries({
               />
             </td>
             <td className="w-10 text-center">
-              <AccessRevokationButton permission={permission} />
+              <Button
+                basic
+                className={{
+                  root: 'mt-1 px-2 py-2 text-red-600 hover:text-red-800',
+                }}
+                onClick={async () => {
+                  await handleRemovePermission(
+                    permission.permissionId,
+                    permission.isOwn ?? false
+                  )
+                }}
+                data={{
+                  cy: permission.username
+                    ? `revoke-permission-${permission.username}`
+                    : `revoke-permission-${permission.userGroupName}`,
+                }}
+              >
+                <Button.Icon withoutLabel icon={faTrashCan} />
+              </Button>
             </td>
           </tr>
         ))}

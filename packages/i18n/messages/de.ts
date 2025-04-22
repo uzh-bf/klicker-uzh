@@ -2548,6 +2548,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       permissionsOWNER: 'Eigentümerrechte',
       grantedPermissions: 'Bestehende Berechtigungen',
       transferOwnership: 'Eigentumsrechte übertragen',
+      showDerivedPermissions: 'Abgeleitete Berechtigungen anzeigen',
+      hideDerivedPermissions: 'Abgeleitete Berechtigungen ausblenden',
+      derivedPermissions: 'Abgeleitete Berechtigungen',
+      derivedPermissionsDescription:
+        'Bei abgeleiteten Berechtigungen handelt es sich um Berechtigungen, welche Nutzern den Zugriff auf dieses Element erlauben, ohne dass eine direkte Berechtigung besteht. Dies ist beispielsweise bei der Vererbung von Zugriffrechten der Fall, wenn andere Objekte auf diesem Objekt aufbauen und es daher benötigen. Abgeleitete Zugriffrechte können nicht verändert oder entzogen werden und entsprechen immer den minimalen technisch erforderlichen Berechtigungen. Für mehr Details, konsultieren Sie bitte die offizielle Dokumentation.',
+      noDerivedPermissions:
+        'Für dieses Objekt sind keine abgeleiteten Berechtigungen vorhanden.',
       importantInformation: 'Wichtige Information',
       shortnameOrEmailRequired:
         'Bitte geben Sie einen Nutzernamen oder eine E-Mail Adresse ein.',

@@ -127,4 +127,25 @@ export const PermissionInfo = PermissionInfoRef.implement({
     isOwn: t.exposeBoolean('isOwn', { nullable: true }),
   }),
 })
+
+interface IDerivedPermissionInfo {
+  permissionId: number
+  permissionLevel: DB.PermissionLevel
+  userId: string
+  username: string
+  userEmail: string
+  isOwn: boolean
+}
+export const DerivedPermissionInfoRef =
+  builder.objectRef<IDerivedPermissionInfo>('DerivedPermissionInfo')
+export const DerivedPermissionInfo = DerivedPermissionInfoRef.implement({
+  fields: (t) => ({
+    permissionId: t.exposeInt('permissionId'),
+    permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
+    userId: t.exposeString('userId'),
+    username: t.exposeString('username'),
+    userEmail: t.exposeString('userEmail'),
+    isOwn: t.exposeBoolean('isOwn'),
+  }),
+})
 // #endregion
