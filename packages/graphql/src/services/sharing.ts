@@ -2746,15 +2746,50 @@ export async function transferAnswerCollectionOwnership(
     include: { sharedObjects: { where: { answerCollectionId: id } } },
   })
 
-  if (!newOwner) {
+  // find the answer collection
+  const answerCollection = await ctx.prisma.answerCollection.findUnique({
+    where: { id },
+  })
+
+  if (!newOwner || !answerCollection) {
     return null
   }
 
   const updatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    // check if the owner already has an answer collection with the same name -> potential issues with uniqueness
+    let collectionName = answerCollection.name
+    let counter = 0
+    let valid = false
+    do {
+      const existingCollection = await prisma.answerCollection.findUnique({
+        where: {
+          ownerId_name: {
+            ownerId: newOwner.id,
+            name: collectionName,
+          },
+        },
+      })
+
+      if (existingCollection) {
+        counter += 1
+        collectionName = `${answerCollection.name} (${counter})`
+      } else {
+        valid = true
+      }
+    } while (valid === false && counter < 100)
+
+    // if there was still no valid name found, return null (more than 100 copies of an answer collection with the same name are not realistic -> rate limit)
+    if (!valid) {
+      throw new Error(
+        `Could not find a valid name for the new answer collection.`
+      )
+    }
+
     // update the owner of the collection and grant admin permissions to the current user
     const updated = await prisma.answerCollection.update({
       where: { id },
       data: {
+        name: collectionName,
         owner: { connect: { id: newOwner.id } },
         directPermissions: {
           upsert: {
