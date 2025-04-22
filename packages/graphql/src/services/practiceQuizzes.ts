@@ -62,7 +62,8 @@ export async function getPracticeQuizData(
 
   if (!quiz) return null
   const isOwner =
-    ctx.user?.sub && ctx.user.role === UserRole.USER
+    ctx.user?.sub &&
+    (ctx.user.role === UserRole.USER || ctx.user.role === UserRole.ADMIN)
       ? ctx.user.sub === quiz.ownerId
       : false
 

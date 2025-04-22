@@ -1486,7 +1486,7 @@ export type Mutation = {
   cancelLiveQuiz?: Maybe<LiveQuiz>;
   cancelObjectSharingRequest: Scalars['Boolean']['output'];
   changeCatalogCollectionName?: Maybe<Scalars['Boolean']['output']>;
-  changeCatalogCollectionObjectAccess: Scalars['Boolean']['output'];
+  changeCatalogCollectionObjectAccess?: Maybe<Scalars['Boolean']['output']>;
   changeCatalogObjectAccess: Scalars['Boolean']['output'];
   changeEmailSettings?: Maybe<User>;
   changeInitialSettings?: Maybe<User>;
@@ -1604,13 +1604,13 @@ export type Mutation = {
   unpublishPracticeQuiz?: Maybe<PracticeQuiz>;
   unsubscribeFromPush?: Maybe<Scalars['Boolean']['output']>;
   updateCourseSettings?: Maybe<Course>;
-  updateElementInstances: Array<ElementInstance>;
+  updateElementInstances?: Maybe<Array<ElementInstance>>;
   updateGroupAverageScores: Scalars['Boolean']['output'];
   updateParticipantAvatar?: Maybe<Participant>;
   updateParticipantProfile?: Maybe<Participant>;
   updateTagOrdering?: Maybe<Array<Tag>>;
   updateWeeklyTimelineEntries: Scalars['Boolean']['output'];
-  updateWeeklyTimelineEntriesCourse: Scalars['Boolean']['output'];
+  updateWeeklyTimelineEntriesCourse?: Maybe<Scalars['Boolean']['output']>;
   upvoteFeedback?: Maybe<Feedback>;
   voteFeedbackResponse?: Maybe<FeedbackResponse>;
 };
@@ -3957,7 +3957,7 @@ export type ChangeCatalogCollectionObjectAccessMutationVariables = Exact<{
 }>;
 
 
-export type ChangeCatalogCollectionObjectAccessMutation = { __typename?: 'Mutation', changeCatalogCollectionObjectAccess: boolean };
+export type ChangeCatalogCollectionObjectAccessMutation = { __typename?: 'Mutation', changeCatalogCollectionObjectAccess?: boolean | null };
 
 export type ChangeCatalogObjectAccessMutationVariables = Exact<{
   assignmentId: Scalars['Int']['input'];
@@ -4993,7 +4993,7 @@ export type UpdateElementInstancesMutationVariables = Exact<{
 }>;
 
 
-export type UpdateElementInstancesMutation = { __typename?: 'Mutation', updateElementInstances: Array<{ __typename?: 'ElementInstance', id: number, elementData: { __typename: 'CaseStudyElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'CaseStudyElementOptions', hasSampleSolution?: boolean | null, items?: Array<{ __typename?: 'ElementOptionsAnswerCollectionEntry', id: number, value: string }> | null, criteria: Array<{ __typename?: 'CaseStudyCriterion', id: string, name: string, min: number, max: number, step: number, unit?: string | null, labels?: { __typename?: 'CaseStudyCriterionLabels', min: string, mid?: string | null, max: string } | null }>, cases: Array<{ __typename?: 'CaseStudyCase', id: string, title: string, description: string }> } } | { __typename: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'ChoiceElementOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename: 'ContentElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number } | { __typename: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'FreeTextElementOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'NumericalElementOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null } } | { __typename: 'SelectionElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'SelectionElementOptions', numberOfInputs?: number | null, answerCollection?: { __typename?: 'ElementOptionsAnswerCollection', id: number, entries?: Array<{ __typename?: 'ElementOptionsAnswerCollectionEntry', id: number, value: string }> | null } | null } } }> };
+export type UpdateElementInstancesMutation = { __typename?: 'Mutation', updateElementInstances?: Array<{ __typename?: 'ElementInstance', id: number, elementData: { __typename: 'CaseStudyElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'CaseStudyElementOptions', hasSampleSolution?: boolean | null, items?: Array<{ __typename?: 'ElementOptionsAnswerCollectionEntry', id: number, value: string }> | null, criteria: Array<{ __typename?: 'CaseStudyCriterion', id: string, name: string, min: number, max: number, step: number, unit?: string | null, labels?: { __typename?: 'CaseStudyCriterionLabels', min: string, mid?: string | null, max: string } | null }>, cases: Array<{ __typename?: 'CaseStudyCase', id: string, title: string, description: string }> } } | { __typename: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'ChoiceElementOptions', displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename: 'ContentElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number } | { __typename: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'FreeTextElementOptions', restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'NumericalElementOptions', accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null } } | { __typename: 'SelectionElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'SelectionElementOptions', numberOfInputs?: number | null, answerCollection?: { __typename?: 'ElementOptionsAnswerCollection', id: number, entries?: Array<{ __typename?: 'ElementOptionsAnswerCollectionEntry', id: number, value: string }> | null } | null } } }> | null };
 
 export type UpdateGroupAverageScoresMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -5028,7 +5028,7 @@ export type UpdateWeeklyTimelineEntriesCourseMutationVariables = Exact<{
 }>;
 
 
-export type UpdateWeeklyTimelineEntriesCourseMutation = { __typename?: 'Mutation', updateWeeklyTimelineEntriesCourse: boolean };
+export type UpdateWeeklyTimelineEntriesCourseMutation = { __typename?: 'Mutation', updateWeeklyTimelineEntriesCourse?: boolean | null };
 
 export type UpvoteFeedbackMutationVariables = Exact<{
   feedbackId: Scalars['Int']['input'];

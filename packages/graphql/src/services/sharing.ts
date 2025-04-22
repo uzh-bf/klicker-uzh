@@ -4210,4 +4210,42 @@ export async function checkCatalogAssignment(
 
   return assignment !== null
 }
+
+export type ObjectSelectorFunction = (
+  args: any
+) =>
+  | { catalogCollectionId: string }
+  | { answerCollectionId: number }
+  | { elementId: number }
+  | { courseId: string }
+  | { liveQuizId: string }
+  | { practiceQuizId: string }
+  | { microLearningId: string }
+  | { groupActivityId: string }
+
+// higher-level interface function that returns a wrapped resolver
+// (simplified notation for calls in mutation.ts and query.ts)
+export function withPermission<TSource, TArgs, TReturn>(
+  selector: ObjectSelectorFunction,
+  level: DB.PermissionLevel,
+  resolver: (
+    root: TSource,
+    args: TArgs,
+    ctx: ContextWithUser
+  ) => Promise<TReturn>
+) {
+  return async (
+    root: TSource,
+    args: TArgs,
+    ctx: ContextWithUser
+  ): Promise<TReturn | null> => {
+    const access = await checkAccess(
+      [{ ...selector(args), minimumPermissionLevel: level }],
+      ctx
+    )
+
+    if (!access) return null
+    return resolver(root, args, ctx)
+  }
+}
 // #endregion

@@ -51,7 +51,8 @@ export async function getMicroLearningData(
     ? {
         ...microLearning,
         isOwner:
-          ctx.user?.sub && ctx.user.role === UserRole.USER
+          ctx.user?.sub &&
+          (ctx.user.role === UserRole.USER || ctx.user.role === UserRole.ADMIN)
             ? ctx.user.sub === microLearning.ownerId
             : false,
       }
