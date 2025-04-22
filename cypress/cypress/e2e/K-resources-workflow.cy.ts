@@ -2370,23 +2370,53 @@ describe('Create, edit and share answer collections', function () {
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
 
-    // verify that the remaining permissions can be removed, but would result in derived permissions on removal
-    // TODO: cover their removal and the automatic creation of derived permissions here in test suite
+    // verify that no derived permissions are shown in the corresponding list
+    cy.get('[data-cy="show-derived-permissions"]').click()
+    cy.get(
+      `[data-cy="derived-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="derived-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+
+    // verify that the remaining permissions can be removed (derived permissions are created though)
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
-    ).should('not.be.disabled')
+    ).click()
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.be.disabled')
+
+    // verify that for the users that were granted derived permissions, corresponding entries are shown
+    cy.get(
+      `[data-cy="derived-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="derived-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
+
+    // hide the derived permissions again and verify that the corresponding entries are not shown
+    cy.get('[data-cy="hide-derived-permissions"]').click()
+    cy.get(
+      `[data-cy="derived-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
+    ).should('not.exist')
+    cy.get(
+      `[data-cy="derived-permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
+    ).should('not.exist')
   })
 
   it("Cleanup: Remove the created question and answer collection for user 'pro2'", function () {
     cy.loginInstitutionalCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.deleteElement({ elementName: this.data.question.title })
+
+    // for revoked permission, the derived one should automatically be removed on deletion of the corresponding element
+    cy.reload()
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="answer-collections"]').click()
-    removeAnswerCollection({ name: this.data.access.name })
+    cy.get(
+      `[data-cy="answer-collection-actions-${this.data.access.name}"]`
+    ).should('not.exist')
   })
 
   it("Cleanup: Remove the created question and answer collection for user 'pro3'", function () {
@@ -2398,7 +2428,7 @@ describe('Create, edit and share answer collections', function () {
     removeAnswerCollection({ name: this.data.access.name })
   })
 
-  // TODO: experiment with soft deletion of answer collection, persistent of derived permissions (revokal of direct permissions)
+  // TODO: experiment with soft deletion of answer collection, persistent of derived permissions (revocation of direct permissions)
   it('Cleanup: Delete the answer collection', function () {
     cy.loginLecturer()
     cy.get('[data-cy="analytics"]').should('exist')

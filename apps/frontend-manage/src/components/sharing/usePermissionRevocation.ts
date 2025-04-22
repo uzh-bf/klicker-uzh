@@ -5,6 +5,7 @@ import {
   GetCatalogCollectionInfoDocument,
   GetCatalogObjectsDocument,
   GetCatalogSharingRequestsDocument,
+  GetDerivedObjectPermissionsDocument,
   GetObjectPermissionsDocument,
   RevokeObjectAccessDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -70,6 +71,10 @@ function usePermissionRevocation({
         },
         refetchQueries: [
           GetCatalogSharingRequestsDocument,
+          {
+            query: GetDerivedObjectPermissionsDocument,
+            variables: { objectId: String(objectId), objectType },
+          },
           {
             query: GetCatalogObjectsDocument,
             variables: { catalogCollectionId },

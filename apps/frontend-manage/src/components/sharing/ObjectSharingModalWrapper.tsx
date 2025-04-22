@@ -49,6 +49,9 @@ function ObjectSharingModalWrapper({
         objectName={objectName}
         isOwner={isOwner}
         onOwnershipTransfer={() => setTransferModalOpen(true)}
+        derivedPermissionsAvailable={
+          objectType !== CatalogObjectType.CatalogCollection
+        }
       />
       <TransferOwnershipModal
         open={transferModalOpen}

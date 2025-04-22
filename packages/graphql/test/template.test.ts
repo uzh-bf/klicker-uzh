@@ -656,7 +656,7 @@ describe('Unit tests for template service', () => {
       },
     })
 
-    // queries not related to the template should still only return owned or directly shared answer collections
+    // queries not related to the template should still only return owned or shared answer collections
     const collectionsUser1Alt = await getAnswerCollectionsElements(
       { templateId: undefined },
       userOneCtx

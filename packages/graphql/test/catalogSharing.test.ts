@@ -1497,9 +1497,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
 
     // fetch the direct permissions and make sure that they are correct
     const directPermissions = await getCatalogCollectionPermissions(
-      {
-        catalogCollectionId: publicCatalog.id,
-      },
+      { id: publicCatalog.id },
       userOneCtx
     )
     expect(directPermissions).toBeDefined()

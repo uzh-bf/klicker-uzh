@@ -2514,6 +2514,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       permissionsOWNER: 'Owner permissions',
       grantedPermissions: 'Granted Permissions',
       transferOwnership: 'Transfer Ownership',
+      showDerivedPermissions: 'Show Derived Permissions',
+      hideDerivedPermissions: 'Hide Derived Permissions',
+      derivedPermissions: 'Derived Permissions',
+      derivedPermissionsDescription:
+        'Derived permissions are permissions that allow users to access this element without having a direct permission (anymore). This is for example due to the inheritance of access rights when other objects are based on this object and therefore require it. Derived access rights cannot be changed or revoked and always correspond to the minimum technically required permissions. For more details, please refer to the official documentation.',
+      noDerivedPermissions:
+        'No derived permissions are available for this object.',
       importantInformation: 'Important Information',
       shortnameOrEmailRequired: 'Please enter a username or email address.',
       confirmTransferOwnership: 'Transfer Ownership',

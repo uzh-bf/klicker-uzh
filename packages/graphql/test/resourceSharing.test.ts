@@ -1324,7 +1324,7 @@ describe('Unit tests for sharing functionalities of resources (e.g. answer colle
 
     // fetch the direct permissions and make sure that they are correct
     const directPermissions = await getAnswerCollectionPermissions(
-      { collectionId: AC1!.id },
+      { id: AC1!.id },
       userOneCtx
     )
     expect(directPermissions).toBeDefined()

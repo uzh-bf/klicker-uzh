@@ -76,6 +76,7 @@ import {
   CatalogObject,
   CatalogObjectType,
   CatalogSelectionObject,
+  DerivedPermissionInfo,
   ObjectSharingRequest,
   PermissionInfo,
 } from './sharing.js'
@@ -1607,9 +1608,7 @@ export const Query = builder.queryType({
             }
 
             return await SharingService.getCatalogCollectionPermissions(
-              {
-                catalogCollectionId: args.objectId,
-              },
+              { id: args.objectId },
               ctx
             )
           } else if (
@@ -1630,9 +1629,45 @@ export const Query = builder.queryType({
             }
 
             return await SharingService.getAnswerCollectionPermissions(
-              {
-                collectionId: parseInt(args.objectId),
-              },
+              { id: parseInt(args.objectId) },
+              ctx
+            )
+          }
+
+          return null
+        },
+      }),
+
+      getDerivedObjectPermissions: t.withAuth(asUser).field({
+        nullable: true,
+        type: [DerivedPermissionInfo],
+        args: {
+          objectId: t.arg.string({ required: true }),
+          objectType: t.arg({ type: CatalogObjectType, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          // on certain top-level objects, no derived permissions can be created -> return an empty array
+          if (args.objectType === CatalogObjectTypeEnum.CATALOG_COLLECTION) {
+            return []
+          } else if (
+            args.objectType === CatalogObjectTypeEnum.ANSWER_COLLECTION
+          ) {
+            // >= ADMIN permissions on answer collection
+            const validAccess = await checkAccess(
+              [
+                {
+                  answerCollectionId: parseInt(args.objectId),
+                  minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await SharingService.getDerivedAnswerCollectionPermissions(
+              { id: parseInt(args.objectId) },
               ctx
             )
           }
