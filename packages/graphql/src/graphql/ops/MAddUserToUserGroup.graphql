@@ -1,0 +1,16 @@
+mutation AddUserToUserGroup(
+  $groupId: Int!
+  $shortnameOrEmail: String!
+  $asAdmin: Boolean
+) {
+  addUserToUserGroup(
+    groupId: $groupId
+    shortnameOrEmail: $shortnameOrEmail
+    asAdmin: $asAdmin
+  ) {
+    id
+    shortname
+    email
+    isSelf
+  }
+}

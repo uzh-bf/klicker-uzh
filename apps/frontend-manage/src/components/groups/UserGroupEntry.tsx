@@ -26,9 +26,6 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
   const [leaveSuccess, setLeaveSuccess] = useState(false)
   const [deleteSuccess, setDeleteSuccess] = useState(false)
 
-  // required functionalities (ideally incl. audit log entries):
-  // TODO: - add member to the group
-
   return (
     <>
       <div

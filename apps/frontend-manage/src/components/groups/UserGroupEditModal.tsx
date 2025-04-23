@@ -19,6 +19,7 @@ import {
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AddUserGroupMember from './AddUserGroupMember'
 import useChangeUserGroupName from './useChangeUserGroupName'
 import useDemoteGroupAdminToMember from './useDemoteGroupAdminToMember'
 import usePromoteGroupMemberToAdmin from './usePromoteGroupMemberToAdmin'
@@ -108,11 +109,20 @@ function UserGroupEditModal({
 
         <H4>{t('manage.userGroups.admins')}</H4>
         {!group.admins || group.admins.length === 0 ? (
-          <UserNotification
-            type="info"
-            message={t('manage.userGroups.noAdmins')}
-            className={{ root: 'mb-4' }}
-          />
+          <>
+            {isGroupEditor ? (
+              <AddUserGroupMember
+                adminMode
+                groupId={group.id}
+                loading={loading}
+              />
+            ) : null}
+            <UserNotification
+              type="info"
+              message={t('manage.userGroups.noAdmins')}
+              className={{ root: 'mb-4 mt-2' }}
+            />
+          </>
         ) : (
           <>
             <div className="mb-2">
@@ -185,6 +195,13 @@ function UserGroupEditModal({
                   ) : null}
                 </div>
               ))}
+              {isGroupEditor ? (
+                <AddUserGroupMember
+                  adminMode
+                  groupId={group.id}
+                  loading={loading}
+                />
+              ) : null}
             </div>
             {isGroupEditor ? (
               <div className="flex flex-row justify-end gap-6 text-sm">
@@ -209,11 +226,16 @@ function UserGroupEditModal({
 
         <H4 className={{ root: 'mt-4' }}>{t('manage.userGroups.members')}</H4>
         {!group.members || group.members.length === 0 ? (
-          <UserNotification
-            type="info"
-            message={t('manage.userGroups.noMembers')}
-            className={{ root: 'mb-4' }}
-          />
+          <>
+            {isGroupEditor ? (
+              <AddUserGroupMember groupId={group.id} loading={loading} />
+            ) : null}
+            <UserNotification
+              type="info"
+              message={t('manage.userGroups.noMembers')}
+              className={{ root: 'my-2' }}
+            />
+          </>
         ) : (
           <>
             <div className="mb-2">
@@ -267,6 +289,9 @@ function UserGroupEditModal({
                   ) : null}
                 </div>
               ))}
+              {isGroupEditor ? (
+                <AddUserGroupMember groupId={group.id} loading={loading} />
+              ) : null}
             </div>
             {isGroupEditor ? (
               <div className="flex flex-row justify-end gap-6 text-sm">

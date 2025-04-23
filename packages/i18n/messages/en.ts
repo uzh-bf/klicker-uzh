@@ -2420,6 +2420,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noAdmins: 'No users have been assigned as admins to this group.',
       noMembers:
         'No users have been assigned as members (without admin rights) to this group.',
+      addAdminPlaceholder: 'Enter shortname or e-mail for new admin...',
+      addMemberPlaceholder: 'Enter shortname or e-mail for new member...',
+      addUser: 'Add User',
+      addUserGroupSuccess: 'User successfully added to the group.',
+      addUserGroupError:
+        'An error occurred while adding the user to the group. Please use the promotion / demotion functionalities if the user is already a member of the group.',
     },
     catalog: {
       accessTypes: 'Access Types',

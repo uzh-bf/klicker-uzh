@@ -4830,4 +4830,66 @@ export async function transferGroupOwnership(
 
   return true
 }
+
+// TODO: add unit testing for this function
+// TODO: add audit log entries
+export async function addUserToUserGroup(
+  {
+    groupId,
+    shortnameOrEmail,
+    asAdmin = false,
+  }: { groupId: number; shortnameOrEmail: string; asAdmin?: boolean | null },
+  ctx: ContextWithUser
+) {
+  // fetch the user that should be added and make sure it exists
+  const user = await ctx.prisma.user.findFirst({
+    where: {
+      OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+    },
+  })
+
+  if (!user) {
+    return null
+  }
+
+  const userGroup = await ctx.prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      members: true,
+      admins: true,
+    },
+  })
+
+  // check that the requesting user is an admin or owner
+  const adminUserIds = userGroup?.admins.map((admin) => admin.id) ?? []
+  if (
+    !userGroup ||
+    (!adminUserIds.includes(ctx.user.sub) && userGroup.ownerId !== ctx.user.sub)
+  ) {
+    return null
+  }
+
+  // check if the user that should be added is already a member or admin of the group, or if user doesn't exist
+  const userId = user.id
+  const memberUserIds = userGroup.members.map((member) => member.id)
+  if (memberUserIds.includes(userId) || adminUserIds.includes(userId)) {
+    return null
+  }
+
+  // add the user to the group
+  await ctx.prisma.userGroup.update({
+    where: { id: groupId },
+    data: {
+      members: !asAdmin ? { connect: { id: userId } } : undefined,
+      admins: asAdmin ? { connect: { id: userId } } : undefined,
+    },
+  })
+
+  return {
+    id: user.id,
+    shortname: user.shortname,
+    email: user.email,
+    isSelf: false,
+  }
+}
 // #endregion

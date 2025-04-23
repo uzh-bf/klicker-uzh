@@ -2440,6 +2440,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noAdmins: 'Dieser Gruppe wurden bisher keine Admins zugewiesen.',
       noMembers:
         'Dieser Gruppe wurden bisher keine Mitglieder (ohne Admin-Rechte) zugewiesen.',
+      addAdminPlaceholder: 'Kurznamen oder E-Mail für neuen Admin eingeben...',
+      addMemberPlaceholder:
+        'Kurznamen oder E-Mail für neues Mitglied eingeben...',
+      addUser: 'Nutzer hinzufügen',
+      addUserGroupSuccess: 'Nutzer erfolgreich zur Gruppe hinzugefügt.',
+      addUserGroupError:
+        'Beim Hinzufügen des Nutzers zur Gruppe ist ein Fehler aufgetreten. Bitte verwenden Sie die Beförderungs- / Herabstufungsfunktionen, wenn der Nutzer bereits Mitglied der Gruppe ist.',
     },
     catalog: {
       accessTypes: 'Zugriffs-Typen',

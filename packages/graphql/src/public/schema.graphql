@@ -1356,6 +1356,7 @@ type Mutation {
   addConfusionTimestep(difficulty: Int!, quizId: String!, speed: Int!): ConfusionTimestep
   addMessageToGroup(content: String!, groupId: String!): GroupMessage
   addObjectToCatalog(access: ObjectAccess!, catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!): CatalogObject
+  addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz

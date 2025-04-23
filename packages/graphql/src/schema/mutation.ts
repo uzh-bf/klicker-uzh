@@ -84,6 +84,7 @@ import {
   FileUploadSAS,
   LocaleType,
   User,
+  UserInfo,
   UserLogin,
   UserLoginScope,
 } from './user.js'
@@ -1629,6 +1630,19 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.transferGroupOwnership(args, ctx)
+        },
+      }),
+
+      addUserToUserGroup: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: UserInfo,
+        args: {
+          groupId: t.arg.int({ required: true }),
+          shortnameOrEmail: t.arg.string({ required: true }),
+          asAdmin: t.arg.boolean({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.addUserToUserGroup(args, ctx)
         },
       }),
 
