@@ -4326,7 +4326,6 @@ async function recomputePermissionsUserGroupMember(
   }
 }
 
-// TODO: add audit log entries
 export async function createUserGroup(
   {
     name,
@@ -4392,25 +4391,42 @@ export async function createUserGroup(
     }
   )
 
-  // create the user group
-  const newUserGroup = await ctx.prisma.userGroup.create({
-    data: {
-      name,
-      members: { connect: memberIds.map((id) => ({ id })) },
-      admins: { connect: adminIds.map((id) => ({ id })) },
-      owner: { connect: { id: ctx.user.sub } },
-    },
-    include: {
-      members: {
-        select: { id: true, shortname: true, email: true },
+  const newUserGroup = await ctx.prisma.$transaction(async (prisma) => {
+    // create the user group
+    const createdUserGroup = await prisma.userGroup.create({
+      data: {
+        name,
+        members: { connect: memberIds.map((id) => ({ id })) },
+        admins: { connect: adminIds.map((id) => ({ id })) },
+        owner: { connect: { id: ctx.user.sub } },
       },
-      admins: {
-        select: { id: true, shortname: true, email: true },
+      include: {
+        members: {
+          select: { id: true, shortname: true, email: true },
+          orderBy: { shortname: 'asc' },
+        },
+        admins: {
+          select: { id: true, shortname: true, email: true },
+          orderBy: { shortname: 'asc' },
+        },
+        owner: {
+          select: { id: true, shortname: true, email: true },
+        },
       },
-      owner: {
-        select: { id: true, shortname: true, email: true },
+    })
+
+    // create an audit log entry
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.USER_GROUP_CREATED,
+        objectType: DB.ObjectType.USER_GROUP,
+        objectId: String(createdUserGroup.id),
+        sourceUserId: ctx.user.sub,
+        message: `User group created with members [${createdUserGroup.members.map((member) => member.id).join(',')}] and admins [${createdUserGroup.admins.map((admin) => admin.id).join(',')}].`,
       },
-    },
+    })
+
+    return createdUserGroup
   })
 
   return {
@@ -4516,7 +4532,6 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
   ]
 }
 
-// TODO: add audit log entries
 export async function leaveUserGroup(
   { groupId }: { groupId: number },
   ctx: ContextWithUser
@@ -4555,6 +4570,18 @@ export async function leaveUserGroup(
       },
     })
 
+    // create an audit log entry
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.USER_GROUP_USER_REMOVED,
+        objectType: DB.ObjectType.USER_GROUP,
+        objectId: String(updated.id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: ctx.user.sub,
+        message: `User left user group.`,
+      },
+    })
+
     // trigger a derived permission recomputation for all objects that were shared with this group and this user
     await recomputePermissionsUserGroupMember(
       { permissions: updated.permissions, userId: ctx.user.sub },
@@ -4567,7 +4594,6 @@ export async function leaveUserGroup(
   return true
 }
 
-// TODO: add audit log entries
 export async function deleteUserGroup(
   { groupId }: { groupId: number },
   ctx: ContextWithUser
@@ -4586,6 +4612,17 @@ export async function deleteUserGroup(
     // delete the user group
     await prisma.userGroup.delete({
       where: { id: groupId },
+    })
+
+    // create an audit log entry
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.USER_GROUP_DELETED,
+        objectType: DB.ObjectType.USER_GROUP,
+        objectId: String(userGroup.id),
+        sourceUserId: ctx.user.sub,
+        message: `User group deleted by owner.`,
+      },
     })
 
     // recompute the permissions for all objects that were shared with this user gruop
@@ -4637,7 +4674,6 @@ export async function deleteUserGroup(
   return true
 }
 
-// TODO: add audit log entries
 export async function promoteGroupMemberToAdmin(
   { groupId, memberId }: { groupId: number; memberId: string },
   ctx: ContextWithUser
@@ -4659,19 +4695,32 @@ export async function promoteGroupMemberToAdmin(
     return false
   }
 
-  // disconnect the member from the members and add them to the admins
-  await ctx.prisma.userGroup.update({
-    where: { id: groupId },
-    data: {
-      members: { disconnect: { id: memberId } },
-      admins: { connect: { id: memberId } },
-    },
+  await ctx.prisma.$transaction(async (prisma) => {
+    // disconnect the member from the members and add them to the admins
+    await prisma.userGroup.update({
+      where: { id: groupId },
+      data: {
+        members: { disconnect: { id: memberId } },
+        admins: { connect: { id: memberId } },
+      },
+    })
+
+    // create an audit log entry
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
+        objectType: DB.ObjectType.USER_GROUP,
+        objectId: String(group.id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: memberId,
+        message: `User promoted from member to admin.`,
+      },
+    })
   })
 
   return true
 }
 
-// TODO: add audit log entries
 export async function demoteGroupAdminToMember(
   { groupId, adminId }: { groupId: number; adminId: string },
   ctx: ContextWithUser
@@ -4693,19 +4742,32 @@ export async function demoteGroupAdminToMember(
     return false
   }
 
-  // disconnect the admin from the admins and add them to the members
-  await ctx.prisma.userGroup.update({
-    where: { id: groupId },
-    data: {
-      admins: { disconnect: { id: adminId } },
-      members: { connect: { id: adminId } },
-    },
+  await ctx.prisma.$transaction(async (prisma) => {
+    // disconnect the admin from the admins and add them to the members
+    await prisma.userGroup.update({
+      where: { id: groupId },
+      data: {
+        admins: { disconnect: { id: adminId } },
+        members: { connect: { id: adminId } },
+      },
+    })
+
+    // create an audit log entry
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.USER_GROUP_USER_MODIFIED,
+        objectType: DB.ObjectType.USER_GROUP,
+        objectId: String(group.id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: adminId,
+        message: `User demoted from admin to member.`,
+      },
+    })
   })
 
   return true
 }
 
-// TODO: add audit log entries
 export async function removeUserFromGroup(
   { groupId, userId }: { groupId: number; userId: string },
   ctx: ContextWithUser
@@ -4749,6 +4811,18 @@ export async function removeUserFromGroup(
       },
     })
 
+    // create an audit log entry
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.USER_GROUP_USER_REMOVED,
+        objectType: DB.ObjectType.USER_GROUP,
+        objectId: String(updatedUserGroup.id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: userId,
+        message: `User removed from group.`,
+      },
+    })
+
     // trigger a derived permission recomputation for all objects that were shared with this group and this user
     await recomputePermissionsUserGroupMember(
       { permissions: updatedUserGroup.permissions, userId },
@@ -4759,7 +4833,6 @@ export async function removeUserFromGroup(
   return true
 }
 
-// TODO: add audit log entries
 export async function changeUserGroupName(
   { id, name }: { id: number; name: string },
   ctx: ContextWithUser
@@ -4785,10 +4858,20 @@ export async function changeUserGroupName(
     data: { name },
   })
 
+  // create an audit log entry
+  await ctx.prisma.auditLogEntry.create({
+    data: {
+      type: DB.AuditLogType.USER_GROUP_MODIFIED,
+      objectType: DB.ObjectType.USER_GROUP,
+      objectId: String(userGroup.id),
+      sourceUserId: ctx.user.sub,
+      message: `User group name changed to ${name}.`,
+    },
+  })
+
   return true
 }
 
-// TODO: add audit log entries
 export async function transferGroupOwnership(
   { id, newOwnerId }: { id: number; newOwnerId: string },
   ctx: ContextWithUser
@@ -4809,22 +4892,35 @@ export async function transferGroupOwnership(
     return false
   }
 
-  // update the user group
-  await ctx.prisma.userGroup.update({
-    where: { id },
-    data: {
-      owner: { connect: { id: newOwnerId } },
-      admins: {
-        connect: { id: ctx.user.sub },
-        disconnect: { id: newOwnerId },
+  await ctx.prisma.$transaction(async (prisma) => {
+    // update the user group
+    await prisma.userGroup.update({
+      where: { id },
+      data: {
+        owner: { connect: { id: newOwnerId } },
+        admins: {
+          connect: { id: ctx.user.sub },
+          disconnect: { id: newOwnerId },
+        },
       },
-    },
+    })
+
+    // create an audit log entry
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.USER_GROUP_MODIFIED,
+        objectType: DB.ObjectType.USER_GROUP,
+        objectId: String(userGroup.id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: newOwnerId,
+        message: `User group ownership transferred to group admin.`,
+      },
+    })
   })
 
   return true
 }
 
-// TODO: add audit log entries
 export async function addUserToUserGroup(
   {
     groupId,
@@ -4868,23 +4964,37 @@ export async function addUserToUserGroup(
     return null
   }
 
-  // add the user to the group
-  const updatedUserGroup = await ctx.prisma.userGroup.update({
-    where: { id: groupId },
-    data: {
-      members: !asAdmin ? { connect: { id: userId } } : undefined,
-      admins: asAdmin ? { connect: { id: userId } } : undefined,
-    },
-    include: {
-      permissions: true,
-    },
-  })
+  await ctx.prisma.$transaction(async (prisma) => {
+    // add the user to the group
+    const updatedUserGroup = await prisma.userGroup.update({
+      where: { id: groupId },
+      data: {
+        members: !asAdmin ? { connect: { id: userId } } : undefined,
+        admins: asAdmin ? { connect: { id: userId } } : undefined,
+      },
+      include: {
+        permissions: true,
+      },
+    })
 
-  // recompute all permissions for the newly added user for objects shared with the group
-  await recomputePermissionsUserGroupMember(
-    { permissions: updatedUserGroup.permissions, userId },
-    ctx.prisma
-  )
+    // create an audit log entry
+    await prisma.auditLogEntry.create({
+      data: {
+        type: DB.AuditLogType.USER_GROUP_USER_ADDED,
+        objectType: DB.ObjectType.USER_GROUP,
+        objectId: String(updatedUserGroup.id),
+        sourceUserId: ctx.user.sub,
+        targetUserId: userId,
+        message: `New user added to group as ${asAdmin ? 'admin' : 'member'}.`,
+      },
+    })
+
+    // recompute all permissions for the newly added user for objects shared with the group
+    await recomputePermissionsUserGroupMember(
+      { permissions: updatedUserGroup.permissions, userId },
+      prisma
+    )
+  })
 
   return {
     id: user.id,
