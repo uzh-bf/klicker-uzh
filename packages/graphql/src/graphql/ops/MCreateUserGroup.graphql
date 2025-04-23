@@ -12,6 +12,11 @@ mutation CreateUserGroup($name: String!, $members: [UserGroupMembersInput!]!) {
       shortname
       email
     }
+    owner {
+      id
+      shortname
+      email
+    }
     numOfMembers
     isMember
     isAdmin

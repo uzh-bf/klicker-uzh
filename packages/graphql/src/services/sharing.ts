@@ -4407,6 +4407,9 @@ export async function createUserGroup(
       admins: {
         select: { id: true, shortname: true, email: true },
       },
+      owner: {
+        select: { id: true, shortname: true, email: true },
+      },
     },
   })
 
@@ -4426,22 +4429,43 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
       // user is MEMBER
       userGroups: {
         include: {
-          members: true,
-          admins: true,
+          members: {
+            select: { id: true, shortname: true, email: true },
+          },
+          admins: {
+            select: { id: true, shortname: true, email: true },
+          },
+          owner: {
+            select: { id: true, shortname: true, email: true },
+          },
         },
       },
       // user is ADMIN
       adminUserGroups: {
         include: {
-          members: true,
-          admins: true,
+          members: {
+            select: { id: true, shortname: true, email: true },
+          },
+          admins: {
+            select: { id: true, shortname: true, email: true },
+          },
+          owner: {
+            select: { id: true, shortname: true, email: true },
+          },
         },
       },
       // user is OWNER
       managedUserGroups: {
         include: {
-          members: true,
-          admins: true,
+          members: {
+            select: { id: true, shortname: true, email: true },
+          },
+          admins: {
+            select: { id: true, shortname: true, email: true },
+          },
+          owner: {
+            select: { id: true, shortname: true, email: true },
+          },
         },
       },
     },

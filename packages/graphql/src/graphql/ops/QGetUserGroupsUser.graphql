@@ -12,6 +12,11 @@ query GetUserGroupsUser {
       shortname
       email
     }
+    owner {
+      id
+      shortname
+      email
+    }
     numOfMembers
     isMember
     isAdmin

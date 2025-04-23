@@ -4,6 +4,7 @@ import {
   faUser,
   faUserMinus,
   faUserPlus,
+  faUserTie,
   faUserXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -32,6 +33,8 @@ function UserGroupEditModal({
   group: UserGroup
 }) {
   const t = useTranslations()
+  const isGroupEditor = group.isAdmin || group.isOwner
+
   const { onDemotion, demoting } = useDemoteGroupAdminToMember()
   const { onPromotion, promoting } = usePromoteGroupMemberToAdmin()
   const { onRemove, removing } = useRemoveUserFromGroup()
@@ -73,7 +76,7 @@ function UserGroupEditModal({
           ) : (
             <div className="flex flex-row items-center gap-1.5">
               <div>{`${t('shared.generic.userGroup')}: ${group.name}`}</div>
-              {group.isAdmin || group.isOwner ? (
+              {isGroupEditor ? (
                 <Button
                   basic
                   onClick={() => setTitleEditMode(true)}
@@ -87,6 +90,12 @@ function UserGroupEditModal({
         }
         className={{ content: 'flex !max-w-2xl flex-col' }}
       >
+        <div className="mb-2.5 flex flex-row items-center gap-2">
+          <FontAwesomeIcon icon={faUserTie} />
+          <H4 className={{ root: 'my-0 py-0' }}>{t('shared.generic.owner')}</H4>
+          <div>{`${group.owner!.shortname} (${group.owner!.email})`}</div>
+        </div>
+
         <H4>{t('manage.userGroups.admins')}</H4>
         {!group.admins || group.admins.length === 0 ? (
           <UserNotification
@@ -105,9 +114,13 @@ function UserGroupEditModal({
                 >
                   <div className="flex flex-row items-center gap-2">
                     <FontAwesomeIcon icon={faUser} />
-                    <div>{`${admin.shortname} (${admin.email})`}</div>
+                    <div>
+                      {isGroupEditor
+                        ? `${admin.shortname} (${admin.email})`
+                        : admin.shortname}
+                    </div>
                   </div>
-                  {group.isAdmin || group.isOwner ? (
+                  {isGroupEditor ? (
                     <div className="flex flex-row gap-0">
                       <Button
                         basic
@@ -144,8 +157,8 @@ function UserGroupEditModal({
                 </div>
               ))}
             </div>
-            {group.isAdmin || group.isOwner ? (
-              <div className="mb-4 flex flex-row justify-end gap-6 text-sm">
+            {isGroupEditor ? (
+              <div className="flex flex-row justify-end gap-6 text-sm">
                 <div className="flex flex-row items-center gap-2">
                   <FontAwesomeIcon icon={faUserMinus} className="h-4 w-4" />
                   <div>{t('manage.userGroups.demoteAdminToMember')}</div>
@@ -159,7 +172,7 @@ function UserGroupEditModal({
           </>
         )}
 
-        <H4>{t('manage.userGroups.members')}</H4>
+        <H4 className={{ root: 'mt-4' }}>{t('manage.userGroups.members')}</H4>
         {!group.members || group.members.length === 0 ? (
           <UserNotification
             type="info"
@@ -177,9 +190,13 @@ function UserGroupEditModal({
                 >
                   <div className="flex flex-row items-center gap-2">
                     <FontAwesomeIcon icon={faUser} />
-                    <div>{`${member.shortname} (${member.email})`}</div>
+                    <div>
+                      {isGroupEditor
+                        ? `${member.shortname} (${member.email})`
+                        : member.shortname}
+                    </div>
                   </div>
-                  {group.isAdmin || group.isOwner ? (
+                  {isGroupEditor ? (
                     <div className="flex flex-row gap-0">
                       <Button
                         basic
@@ -216,7 +233,7 @@ function UserGroupEditModal({
                 </div>
               ))}
             </div>
-            {group.isAdmin || group.isOwner ? (
+            {isGroupEditor ? (
               <div className="flex flex-row justify-end gap-6 text-sm">
                 <div className="flex flex-row items-center gap-2">
                   <FontAwesomeIcon icon={faUserPlus} className="h-4 w-4" />
