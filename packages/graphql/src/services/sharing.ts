@@ -4516,7 +4516,6 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
   ]
 }
 
-// TODO: add unit testing for this function
 // TODO: add audit log entries
 export async function leaveUserGroup(
   { groupId }: { groupId: number },
@@ -4568,7 +4567,6 @@ export async function leaveUserGroup(
   return true
 }
 
-// TODO: add unit testing for this function
 // TODO: add audit log entries
 export async function deleteUserGroup(
   { groupId }: { groupId: number },
@@ -4639,7 +4637,6 @@ export async function deleteUserGroup(
   return true
 }
 
-// TODO: add unit testing for this function
 // TODO: add audit log entries
 export async function promoteGroupMemberToAdmin(
   { groupId, memberId }: { groupId: number; memberId: string },
@@ -4674,7 +4671,6 @@ export async function promoteGroupMemberToAdmin(
   return true
 }
 
-// TODO: add unit testing for this function
 // TODO: add audit log entries
 export async function demoteGroupAdminToMember(
   { groupId, adminId }: { groupId: number; adminId: string },
@@ -4709,7 +4705,6 @@ export async function demoteGroupAdminToMember(
   return true
 }
 
-// TODO: add unit testing for this function
 // TODO: add audit log entries
 export async function removeUserFromGroup(
   { groupId, userId }: { groupId: number; userId: string },
@@ -4764,7 +4759,6 @@ export async function removeUserFromGroup(
   return true
 }
 
-// TODO: add unit testing for this function
 // TODO: add audit log entries
 export async function changeUserGroupName(
   { id, name }: { id: number; name: string },
@@ -4794,7 +4788,6 @@ export async function changeUserGroupName(
   return true
 }
 
-// TODO: add unit testing for this function
 // TODO: add audit log entries
 export async function transferGroupOwnership(
   { id, newOwnerId }: { id: number; newOwnerId: string },
@@ -4831,7 +4824,6 @@ export async function transferGroupOwnership(
   return true
 }
 
-// TODO: add unit testing for this function
 // TODO: add audit log entries
 export async function addUserToUserGroup(
   {
@@ -4877,13 +4869,22 @@ export async function addUserToUserGroup(
   }
 
   // add the user to the group
-  await ctx.prisma.userGroup.update({
+  const updatedUserGroup = await ctx.prisma.userGroup.update({
     where: { id: groupId },
     data: {
       members: !asAdmin ? { connect: { id: userId } } : undefined,
       admins: asAdmin ? { connect: { id: userId } } : undefined,
     },
+    include: {
+      permissions: true,
+    },
   })
+
+  // recompute all permissions for the newly added user for objects shared with the group
+  await recomputePermissionsUserGroupMember(
+    { permissions: updatedUserGroup.permissions, userId },
+    ctx.prisma
+  )
 
   return {
     id: user.id,
