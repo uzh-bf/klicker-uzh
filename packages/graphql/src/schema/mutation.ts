@@ -84,6 +84,7 @@ import {
   FileUploadSAS,
   LocaleType,
   User,
+  UserInfo,
   UserLogin,
   UserLoginScope,
 } from './user.js'
@@ -1579,6 +1580,69 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.deleteUserGroup(args, ctx)
+        },
+      }),
+
+      promoteGroupMemberToAdmin: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          groupId: t.arg.int({ required: true }),
+          memberId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.promoteGroupMemberToAdmin(args, ctx)
+        },
+      }),
+
+      demoteGroupAdminToMember: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          groupId: t.arg.int({ required: true }),
+          adminId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.demoteGroupAdminToMember(args, ctx)
+        },
+      }),
+
+      removeUserFromGroup: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          groupId: t.arg.int({ required: true }),
+          userId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.removeUserFromGroup(args, ctx)
+        },
+      }),
+
+      changeUserGroupName: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          id: t.arg.int({ required: true }),
+          name: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.changeUserGroupName(args, ctx)
+        },
+      }),
+
+      transferGroupOwnership: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          id: t.arg.int({ required: true }),
+          newOwnerId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.transferGroupOwnership(args, ctx)
+        },
+      }),
+
+      addUserToUserGroup: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: UserInfo,
+        args: {
+          groupId: t.arg.int({ required: true }),
+          shortnameOrEmail: t.arg.string({ required: true }),
+          asAdmin: t.arg.boolean({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.addUserToUserGroup(args, ctx)
         },
       }),
 

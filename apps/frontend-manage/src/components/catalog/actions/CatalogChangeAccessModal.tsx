@@ -83,7 +83,7 @@ function CatalogChangeAccessModal({
                         const success = data?.changeCatalogObjectAccess
                         if (!success) return
 
-                        // update list of answer collections
+                        // update list of catalog objects
                         const catalogObjects = cache.readQuery({
                           query: GetCatalogObjectsDocument,
                           variables: {
@@ -124,7 +124,7 @@ function CatalogChangeAccessModal({
                           data?.changeCatalogCollectionObjectAccess
                         if (!success) return
 
-                        // update list of answer collections
+                        // update list of catalog collections
                         const queryData = cache.readQuery({
                           query: GetCatalogCollectionsListDocument,
                         })

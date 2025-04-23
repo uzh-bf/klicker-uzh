@@ -167,6 +167,7 @@ interface IUserGroup extends DB.UserGroup {
   numOfMembers?: number
   members?: IUserInfo[]
   admins?: IUserInfo[]
+  owner?: IUserInfo
   isMember?: boolean
   isAdmin?: boolean
   isOwner?: boolean
@@ -182,6 +183,10 @@ export const UserGroup = UserGroupRef.implement({
     }),
     admins: t.expose('admins', {
       type: [UserInfo],
+      nullable: true,
+    }),
+    owner: t.expose('owner', {
+      type: UserInfo,
       nullable: true,
     }),
     numOfMembers: t.exposeInt('numOfMembers', { nullable: true }),

@@ -99,7 +99,7 @@ function DeleteUserGroupModal({
       </div>
 
       <div className="flex flex-row justify-between">
-        <Button>
+        <Button onClick={onClose}>
           <Button.Icon icon={faBan} />
           <Button.Label>{t('shared.generic.cancel')}</Button.Label>
         </Button>
@@ -116,18 +116,17 @@ function DeleteUserGroupModal({
                   // check if request was successful
                   const success = data?.deleteUserGroup
                   if (!success) return
-                  // update list of answer collections
-                  const catalogObjects = cache.readQuery({
+                  // update list of user groups
+                  const userGroups = cache.readQuery({
                     query: GetUserGroupsUserDocument,
                   })
-                  if (catalogObjects?.getUserGroupsUser) {
+                  if (userGroups?.getUserGroupsUser) {
                     cache.writeQuery({
                       query: GetUserGroupsUserDocument,
                       data: {
-                        getUserGroupsUser:
-                          catalogObjects?.getUserGroupsUser.filter(
-                            (group) => group.id !== groupId
-                          ),
+                        getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
+                          (group) => group.id !== groupId
+                        ),
                       },
                     })
                   }

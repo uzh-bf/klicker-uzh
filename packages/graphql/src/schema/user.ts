@@ -57,6 +57,7 @@ export interface IUserInfo {
   id?: string | null
   shortname: string
   email: string
+  isSelf?: boolean
 }
 export const UserInfoRef = builder.objectRef<IUserInfo>('UserInfo')
 export const UserInfo = UserInfoRef.implement({
@@ -64,6 +65,7 @@ export const UserInfo = UserInfoRef.implement({
     id: t.exposeString('id', { nullable: true }),
     shortname: t.exposeString('shortname'),
     email: t.exposeString('email'),
+    isSelf: t.exposeBoolean('isSelf', { nullable: true }),
   }),
 })
 
