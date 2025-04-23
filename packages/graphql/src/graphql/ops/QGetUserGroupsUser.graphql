@@ -1,5 +1,5 @@
-mutation CreateUserGroup($name: String!, $members: [UserGroupMembersInput!]!) {
-  createUserGroup(name: $name, members: $members) {
+query GetUserGroupsUser {
+  getUserGroupsUser {
     id
     name
     members {

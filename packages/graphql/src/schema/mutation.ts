@@ -1564,6 +1564,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      leaveUserGroup: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          groupId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.leaveUserGroup(args, ctx)
+        },
+      }),
+
+      deleteUserGroup: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          groupId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.deleteUserGroup(args, ctx)
+        },
+      }),
+
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,

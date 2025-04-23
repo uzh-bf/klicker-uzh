@@ -806,6 +806,11 @@ describe('Test all functionalities of catalog collections and objects contained 
   })
   // #endregion
 
+  // ! Part 4: User Groups
+  // #region
+  // TODO: test the creation of a user group and that it is shown in the UI
+  // #endregion
+
   // ! Cleanup
   // #region
   it('Cleanup: Remove the shared answer collection from all accounts and delete it', function () {

@@ -1401,6 +1401,7 @@ type Mutation {
   deletePracticeQuiz(id: String!): PracticeQuiz
   deleteQuestion(id: Int!): Element
   deleteTag(id: Int!): Tag
+  deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
@@ -1431,6 +1432,7 @@ type Mutation {
   leaveCourseLeaderboard(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
+  leaveUserGroup(groupId: Int!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
@@ -1906,6 +1908,7 @@ type Query {
   getStudentCourseLeaderboard(courseId: String!, mode: String!): StudentCourseLeaderboard
   getTemplateInformation(activityId: String!, activityType: ActivityType!): ActivityTemplateMetadata
   getTemplatePreviewAnswerCollectionEntries(answerCollectionId: Int!, templateId: String!): [AnswerCollectionPreviewEntry!]
+  getUserGroupsUser: [UserGroup!]
   getUsersPrivatePreview: [UserInfo!]
   groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
@@ -2276,6 +2279,9 @@ type User {
 type UserGroup {
   admins: [UserInfo!]
   id: Int!
+  isAdmin: Boolean
+  isMember: Boolean
+  isOwner: Boolean
   members: [UserInfo!]
   name: String!
   numOfMembers: Int

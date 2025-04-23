@@ -1,0 +1,3 @@
+mutation LeaveUserGroup($groupId: Int!) {
+  leaveUserGroup(groupId: $groupId)
+}

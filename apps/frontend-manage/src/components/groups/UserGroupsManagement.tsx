@@ -1,10 +1,14 @@
+import { useQuery } from '@apollo/client'
+import { GetUserGroupsUserDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import UserGroupCreation from './UserGroupCreation'
-import UserGroupList from './UserGroupList'
+import UserGroupEntry from './UserGroupEntry'
 
 function UserGroupsManagement() {
   const t = useTranslations()
+  const { data, loading } = useQuery(GetUserGroupsUserDocument)
 
   return (
     <div>
@@ -16,7 +20,13 @@ function UserGroupsManagement() {
             <UserGroupCreation />
           </div>
           <div className="lg:w-1/2 lg:pr-4">
-            <UserGroupList />
+            {loading ? (
+              <Loader />
+            ) : (
+              data?.getUserGroupsUser?.map((group) => (
+                <UserGroupEntry key={`group-item-${group.id}`} group={group} />
+              ))
+            )}
           </div>
         </div>
       </div>

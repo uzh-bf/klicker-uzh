@@ -79,6 +79,7 @@ import {
   DerivedPermissionInfo,
   ObjectSharingRequest,
   PermissionInfo,
+  UserGroup,
 } from './sharing.js'
 import {
   ActivityTemplate,
@@ -1317,6 +1318,14 @@ export const Query = builder.queryType({
             args,
             ctx
           )
+        },
+      }),
+
+      getUserGroupsUser: t.withAuth(asUser).field({
+        nullable: true,
+        type: [UserGroup],
+        resolve: async (_, __, ctx) => {
+          return await SharingService.getUserGroupsUser(ctx)
         },
       }),
 
