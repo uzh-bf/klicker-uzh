@@ -199,7 +199,14 @@ async function recomputeCatalogCollectionPermissionsUser(
         where: {
           OR: [
             { userId },
-            { userGroup: { members: { some: { id: userId } } } },
+            {
+              userGroup: {
+                OR: [
+                  { members: { some: { id: userId } } },
+                  { admins: { some: { id: userId } } },
+                ],
+              },
+            },
           ],
         },
       },
@@ -271,6 +278,7 @@ async function recomputeCatalogCollectionPermissionsObject(
           userGroup: {
             include: {
               members: true,
+              admins: true,
             },
           },
         },
@@ -358,7 +366,14 @@ async function recomputeAnswerCollectionPermissionsUser(
         where: {
           OR: [
             { userId },
-            { userGroup: { members: { some: { id: userId } } } },
+            {
+              userGroup: {
+                OR: [
+                  { members: { some: { id: userId } } },
+                  { admins: { some: { id: userId } } },
+                ],
+              },
+            },
           ],
         },
       },
@@ -529,6 +544,7 @@ async function recomputeAnswerCollectionPermissionsObject(
           userGroup: {
             include: {
               members: true,
+              admins: true,
             },
           },
         },
@@ -695,7 +711,14 @@ async function recomputeElementPermissionsUser(
         where: {
           OR: [
             { userId },
-            { userGroup: { members: { some: { id: userId } } } },
+            {
+              userGroup: {
+                OR: [
+                  { members: { some: { id: userId } } },
+                  { admins: { some: { id: userId } } },
+                ],
+              },
+            },
           ],
         },
       },
@@ -944,6 +967,7 @@ async function recomputeElementPermissionsObject(
           userGroup: {
             include: {
               members: true,
+              admins: true,
             },
           },
         },
@@ -1154,7 +1178,14 @@ async function recomputeLiveQuizPermissionsUser(
         where: {
           OR: [
             { userId },
-            { userGroup: { members: { some: { id: userId } } } },
+            {
+              userGroup: {
+                OR: [
+                  { members: { some: { id: userId } } },
+                  { admins: { some: { id: userId } } },
+                ],
+              },
+            },
           ],
         },
       },
@@ -1264,6 +1295,7 @@ async function recomputeLiveQuizPermissionsObject(
           userGroup: {
             include: {
               members: true,
+              admins: true,
             },
           },
         },
@@ -1375,7 +1407,14 @@ async function recomputePracticeQuizPermissionsUser(
         where: {
           OR: [
             { userId },
-            { userGroup: { members: { some: { id: userId } } } },
+            {
+              userGroup: {
+                OR: [
+                  { members: { some: { id: userId } } },
+                  { admins: { some: { id: userId } } },
+                ],
+              },
+            },
           ],
         },
       },
@@ -1485,6 +1524,7 @@ async function recomputePracticeQuizPermissionsObject(
           userGroup: {
             include: {
               members: true,
+              admins: true,
             },
           },
         },
@@ -1598,7 +1638,14 @@ async function recomputeMicroLearningPermissionsUser(
         where: {
           OR: [
             { userId },
-            { userGroup: { members: { some: { id: userId } } } },
+            {
+              userGroup: {
+                OR: [
+                  { members: { some: { id: userId } } },
+                  { admins: { some: { id: userId } } },
+                ],
+              },
+            },
           ],
         },
       },
@@ -1708,6 +1755,7 @@ async function recomputeMicroLearningPermissionsObject(
           userGroup: {
             include: {
               members: true,
+              admins: true,
             },
           },
         },
@@ -1821,7 +1869,14 @@ async function recomputeGroupActivityPermissionsUser(
         where: {
           OR: [
             { userId },
-            { userGroup: { members: { some: { id: userId } } } },
+            {
+              userGroup: {
+                OR: [
+                  { members: { some: { id: userId } } },
+                  { admins: { some: { id: userId } } },
+                ],
+              },
+            },
           ],
         },
       },
@@ -1931,6 +1986,7 @@ async function recomputeGroupActivityPermissionsObject(
           userGroup: {
             include: {
               members: true,
+              admins: true,
             },
           },
         },
@@ -2044,7 +2100,14 @@ async function recomputeCoursePermissionsUser(
         where: {
           OR: [
             { userId },
-            { userGroup: { members: { some: { id: userId } } } },
+            {
+              userGroup: {
+                OR: [
+                  { members: { some: { id: userId } } },
+                  { admins: { some: { id: userId } } },
+                ],
+              },
+            },
           ],
         },
       },
@@ -2145,6 +2208,7 @@ async function recomputeCoursePermissionsObject(
           userGroup: {
             include: {
               members: true,
+              admins: true,
             },
           },
         },
@@ -2247,7 +2311,9 @@ function getMaxAccessLevelCombined({
   ownerId,
 }: {
   directPermissions: (DB.Permission & {
-    userGroup?: (DB.UserGroup & { members: DB.User[] }) | null
+    userGroup?:
+      | (DB.UserGroup & { members: DB.User[]; admins: DB.User[] })
+      | null
   })[]
   objectDeleted: boolean
   ownerId?: string | null
@@ -2275,8 +2341,12 @@ function getMaxAccessLevelCombined({
           }
         }
       } else if (directPermission.userGroup) {
-        // iterate over the members and add / update the corresponding permissions for each user
-        directPermission.userGroup.members.forEach((user) => {
+        // iterate over the members and admins and add / update the corresponding permissions for each user
+        const groupMembers = [
+          ...directPermission.userGroup.members,
+          ...directPermission.userGroup.admins,
+        ]
+        groupMembers.forEach((user) => {
           if (
             typeof acc[user.id] !== 'undefined' &&
             permissionLevelMap[directPermission.permissionLevel] >
