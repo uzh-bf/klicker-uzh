@@ -28,7 +28,6 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
 
   // required functionalities (ideally incl. audit log entries):
   // TODO: - add member to the group
-  // TODO: - transfer ownership
 
   return (
     <>

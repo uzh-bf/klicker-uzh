@@ -2368,6 +2368,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     userGroups: {
       description:
         'On this page, you can create and manage user groups. To simplify the process of sharing multiple objects with the same users or collaboratively create content with them, they can first be grouped together. Permissions that are granted to user groups behave the same way as if they were granted to all users individually. However, always keep in mind that depending on the granted permission levels, the group members might be able to re-use objects, making their access to an object potentially irrevokable. For more details, please also consult the official documentation.',
+      existingUserGroups: 'Existing User Groups',
+      noGroups:
+        'You have not created or been added to any user groups yet. To create your first user group, please click the button on the right side.',
       userGroupCreation: 'User Group Creation',
       creationExplanation:
         'Please fill in all the fields of the following form to create a user group. The selection of the group admins can still be modified after the creation. Admin users can add or remove members from the group and change its name.',
@@ -2413,6 +2416,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       promoteUserToAdmin: 'Promote User to Admin',
       demoteAdminToMember: 'Demote Admin to Member',
       removeUserFromGroup: 'Remove User from Group',
+      transferOwnership: 'Transfer Ownership',
       noAdmins: 'No users have been assigned as admins to this group.',
       noMembers:
         'No users have been assigned as members (without admin rights) to this group.',

@@ -2399,6 +2399,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     userGroups: {
       description:
         'Auf dieser Seite können Sie Nutzergruppen erstellen und verwalten. Um den Prozess des Teilens mehrerer Objekte mit denselben Nutzern oder der gemeinsamen Erstellung von Inhalten zu vereinfachen, können die Nutzer zuerst in Gruppen zusammengefasst werden. Berechtigungen, welche an Gruppen vergeben werden, verhalten sich genauso wie wenn sie allen Nutzern einzeln gewährt werden. Beachten Sie jedoch immer, dass je nach den gewährten Berechtigungsstufen die Gruppenmitglieder möglicherweise Objekte wiederverwenden können, was ihren Zugriff auf ein Objekt potenziell unwiderruflich macht. Für weitere Details konsultieren Sie bitte auch die offizielle Dokumentation.',
+      existingUserGroups: 'Bestehende Nutzergruppen',
+      noGroups:
+        'Sie haben noch keine Nutzergruppen erstellt oder wurden noch keiner Gruppe hinzugefügt. Um Ihre erste Nutzergruppe zu erstellen, klicken Sie bitte auf die Schaltfläche auf der rechten Seite.',
       userGroupCreation: 'Erstellung Nutzergruppe',
       newUserGroup: 'Neue Nutzergruppe',
       nameTooltip:
@@ -2433,6 +2436,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       promoteUserToAdmin: 'Beförderung Mitglied zu Admin',
       demoteAdminToMember: 'Herabstufung Admin zu Mitglied',
       removeUserFromGroup: 'Entfernung Nutzer aus Gruppe',
+      transferOwnership: 'Übertragung Eigentümer',
       noAdmins: 'Dieser Gruppe wurden bisher keine Admins zugewiesen.',
       noMembers:
         'Dieser Gruppe wurden bisher keine Mitglieder (ohne Admin-Rechte) zugewiesen.',

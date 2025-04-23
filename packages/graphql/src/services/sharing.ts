@@ -4777,4 +4777,41 @@ export async function changeUserGroupName(
 
   return true
 }
+
+// TODO: add unit testing for this function
+// TODO: add audit log entries
+export async function transferGroupOwnership(
+  { id, newOwnerId }: { id: number; newOwnerId: string },
+  ctx: ContextWithUser
+) {
+  const userGroup = await ctx.prisma.userGroup.findUnique({
+    where: { id },
+    include: {
+      admins: { where: { id: newOwnerId } },
+    },
+  })
+
+  // check if the requesting user is the current owner of the group and if the new owner exists as an admin on the group
+  if (
+    !userGroup ||
+    userGroup.ownerId !== ctx.user.sub ||
+    userGroup.admins.length === 0
+  ) {
+    return false
+  }
+
+  // update the user group
+  await ctx.prisma.userGroup.update({
+    where: { id },
+    data: {
+      owner: { connect: { id: newOwnerId } },
+      admins: {
+        connect: { id: ctx.user.sub },
+        disconnect: { id: newOwnerId },
+      },
+    },
+  })
+
+  return true
+}
 // #endregion

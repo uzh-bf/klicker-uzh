@@ -1,0 +1,3 @@
+mutation TransferGroupOwnership($id: Int!, $newOwnerId: String!) {
+  transferGroupOwnership(id: $id, newOwnerId: $newOwnerId)
+}

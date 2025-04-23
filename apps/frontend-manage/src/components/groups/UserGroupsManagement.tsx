@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetUserGroupsUserDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import UserGroupCreation from './UserGroupCreation'
 import UserGroupEntry from './UserGroupEntry'
@@ -20,8 +20,15 @@ function UserGroupsManagement() {
             <UserGroupCreation />
           </div>
           <div className="lg:w-1/2 lg:pr-4">
+            <H3>{t('manage.userGroups.existingUserGroups')}</H3>
             {loading ? (
               <Loader />
+            ) : typeof data?.getUserGroupsUser === 'undefined' ||
+              data.getUserGroupsUser?.length === 0 ? (
+              <UserNotification
+                type="info"
+                message={t('manage.userGroups.noGroups')}
+              />
             ) : (
               data?.getUserGroupsUser?.map((group) => (
                 <UserGroupEntry key={`group-item-${group.id}`} group={group} />

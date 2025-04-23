@@ -18,10 +18,12 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import useChangeUserGroupName from './useChangeUserGroupName'
 import useDemoteGroupAdminToMember from './useDemoteGroupAdminToMember'
 import usePromoteGroupMemberToAdmin from './usePromoteGroupMemberToAdmin'
 import useRemoveUserFromGroup from './useRemoveUserFromGroup'
+import useTransferGroupOwnership from './useTransferGroupOwnership'
 
 function UserGroupEditModal({
   open,
@@ -39,7 +41,10 @@ function UserGroupEditModal({
   const { onPromotion, promoting } = usePromoteGroupMemberToAdmin()
   const { onRemove, removing } = useRemoveUserFromGroup()
   const { onNameChange, nameChanging } = useChangeUserGroupName()
-  const loading = demoting || promoting || removing || nameChanging // block actions as long as any modification is ongoing
+  const { onOwnershipTransfer, transferringOwnership } =
+    useTransferGroupOwnership()
+  const loading =
+    demoting || promoting || removing || nameChanging || transferringOwnership // block actions as long as any modification is ongoing
 
   const [titleEditMode, setTitleEditMode] = useState(false)
   const [titleState, setTitleState] = useState(group.name)
@@ -88,7 +93,12 @@ function UserGroupEditModal({
             </div>
           )
         }
-        className={{ content: 'flex !max-w-2xl flex-col' }}
+        className={{
+          content: twMerge(
+            'flex !max-w-xl flex-col',
+            isGroupEditor && '!max-w-3xl'
+          ),
+        }}
       >
         <div className="mb-2.5 flex flex-row items-center gap-2">
           <FontAwesomeIcon icon={faUserTie} />
@@ -122,6 +132,25 @@ function UserGroupEditModal({
                   </div>
                   {isGroupEditor ? (
                     <div className="flex flex-row gap-0">
+                      {group.isOwner ? (
+                        <Button
+                          basic
+                          disabled={loading}
+                          className={{ root: 'px-1.5 py-[0.35rem]' }}
+                          onClick={async () => {
+                            await onOwnershipTransfer({
+                              group,
+                              newOwnerId: admin.id!,
+                            })
+                          }}
+                        >
+                          <Button.Icon
+                            withoutLabel
+                            icon={faUserTie}
+                            className={{ root: 'h-3.5 w-3.5' }}
+                          />
+                        </Button>
+                      ) : null}
                       <Button
                         basic
                         disabled={loading}
@@ -159,6 +188,12 @@ function UserGroupEditModal({
             </div>
             {isGroupEditor ? (
               <div className="flex flex-row justify-end gap-6 text-sm">
+                {group.isOwner ? (
+                  <div className="flex flex-row items-center gap-2">
+                    <FontAwesomeIcon icon={faUserTie} className="h-4 w-4" />
+                    <div>{t('manage.userGroups.transferOwnership')}</div>
+                  </div>
+                ) : null}
                 <div className="flex flex-row items-center gap-2">
                   <FontAwesomeIcon icon={faUserMinus} className="h-4 w-4" />
                   <div>{t('manage.userGroups.demoteAdminToMember')}</div>

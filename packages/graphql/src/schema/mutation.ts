@@ -1622,6 +1622,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      transferGroupOwnership: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          id: t.arg.int({ required: true }),
+          newOwnerId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.transferGroupOwnership(args, ctx)
+        },
+      }),
+
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,
