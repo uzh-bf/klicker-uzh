@@ -4415,6 +4415,10 @@ export async function createUserGroup(
 
   return {
     ...newUserGroup,
+    owner: {
+      ...newUserGroup.owner,
+      isSelf: true,
+    },
     numOfMembers: newUserGroup.members.length + newUserGroup.admins.length + 1,
     isMember: false,
     isAdmin: false,
@@ -4478,6 +4482,10 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
   return [
     ...user.userGroups.map((group) => ({
       ...group,
+      members: group.members.map((member) => ({
+        ...member,
+        isSelf: member.id === ctx.user.sub,
+      })),
       numOfMembers: group.admins.length + group.members.length + 1,
       isMember: true,
       isAdmin: false,
@@ -4485,6 +4493,10 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
     })),
     ...user.adminUserGroups.map((group) => ({
       ...group,
+      admins: group.admins.map((admin) => ({
+        ...admin,
+        isSelf: admin.id === ctx.user.sub,
+      })),
       numOfMembers: group.admins.length + group.members.length + 1,
       isMember: false,
       isAdmin: true,
@@ -4492,6 +4504,10 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
     })),
     ...user.managedUserGroups.map((group) => ({
       ...group,
+      owner: {
+        ...group.owner,
+        isSelf: group.owner.id === ctx.user.sub,
+      },
       numOfMembers: group.admins.length + group.members.length + 1,
       isMember: false,
       isAdmin: false,

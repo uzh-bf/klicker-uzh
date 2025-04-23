@@ -62,7 +62,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
                   </div>
                 ),
                 onClick: () => setEditModal(true),
-                data: { cy: `leave-group-${group.name}` },
+                data: { cy: `view-edit-group-${group.name}` },
                 className: { item: 'text-red-500' },
               },
               ...(!group.isOwner

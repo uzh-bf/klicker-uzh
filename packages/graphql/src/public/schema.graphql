@@ -2301,6 +2301,7 @@ input UserGroupMembersInput {
 type UserInfo {
   email: String!
   id: String
+  isSelf: Boolean
   shortname: String!
 }
 

@@ -130,7 +130,7 @@ function UserGroupEditModal({
                         : admin.shortname}
                     </div>
                   </div>
-                  {isGroupEditor ? (
+                  {isGroupEditor && !admin.isSelf ? (
                     <div className="flex flex-row gap-0">
                       {group.isOwner ? (
                         <Button
@@ -231,7 +231,7 @@ function UserGroupEditModal({
                         : member.shortname}
                     </div>
                   </div>
-                  {isGroupEditor ? (
+                  {isGroupEditor && !member.isSelf ? (
                     <div className="flex flex-row gap-0">
                       <Button
                         basic
