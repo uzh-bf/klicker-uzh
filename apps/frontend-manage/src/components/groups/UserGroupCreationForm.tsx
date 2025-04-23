@@ -5,7 +5,10 @@ import {
   faPlusCircle,
   faTrashCan,
 } from '@fortawesome/free-solid-svg-icons'
-import { CreateUserGroupDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  CreateUserGroupDocument,
+  GetUserGroupsUserDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikSwitchField,
@@ -71,23 +74,23 @@ function UserGroupCreationForm({
                 name: values.name!,
                 members: values.members!,
               },
-              // update: (cache, { data }) => {
-              //   if (!data?.createAnswerCollection) return
-              //   const queryData = cache.readQuery({
-              //     query: GetAnswerCollectionsInfoDocument,
-              //   })
-              //   const previousCollections = queryData?.getAnswerCollectionsInfo
-              //   if (!previousCollections) return
-              //   cache.writeQuery({
-              //     query: GetAnswerCollectionsInfoDocument,
-              //     data: {
-              //       getAnswerCollectionsInfo: [
-              //         ...previousCollections,
-              //         data.createAnswerCollection,
-              //       ],
-              //     },
-              //   })
-              // },
+              update: (cache, { data }) => {
+                if (!data?.createUserGroup) return
+                const queryData = cache.readQuery({
+                  query: GetUserGroupsUserDocument,
+                })
+                const previousGroups = queryData?.getUserGroupsUser
+                if (!previousGroups) return
+                cache.writeQuery({
+                  query: GetUserGroupsUserDocument,
+                  data: {
+                    getUserGroupsUser: [
+                      ...previousGroups,
+                      data.createUserGroup,
+                    ],
+                  },
+                })
+              },
             })
 
             if (data?.createUserGroup?.id) {

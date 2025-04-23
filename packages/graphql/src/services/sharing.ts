@@ -4342,6 +4342,177 @@ export async function createUserGroup(
   return {
     ...newUserGroup,
     numOfMembers: newUserGroup.members.length + newUserGroup.admins.length + 1,
+    isMember: false,
+    isAdmin: false,
+    isOwner: true,
   }
+}
+
+export async function getUserGroupsUser(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+    include: {
+      // user is MEMBER
+      userGroups: {
+        include: {
+          members: true,
+          admins: true,
+        },
+      },
+      // user is ADMIN
+      adminUserGroups: {
+        include: {
+          members: true,
+          admins: true,
+        },
+      },
+      // user is OWNER
+      managedUserGroups: {
+        include: {
+          members: true,
+          admins: true,
+        },
+      },
+    },
+  })
+
+  if (!user) {
+    return null
+  }
+
+  return [
+    ...user.userGroups.map((group) => ({
+      ...group,
+      numOfMembers: group.admins.length + group.members.length + 1,
+      isMember: true,
+      isAdmin: false,
+      isOwner: false,
+    })),
+    ...user.adminUserGroups.map((group) => ({
+      ...group,
+      numOfMembers: group.admins.length + group.members.length + 1,
+      isMember: false,
+      isAdmin: true,
+      isOwner: false,
+    })),
+    ...user.managedUserGroups.map((group) => ({
+      ...group,
+      numOfMembers: group.admins.length + group.members.length + 1,
+      isMember: false,
+      isAdmin: false,
+      isOwner: true,
+    })),
+  ]
+}
+
+// TODO: add unit testing for this function
+export async function leaveUserGroup(
+  { groupId }: { groupId: number },
+  ctx: ContextWithUser
+) {
+  // check if the user is a member or admin of the group
+  const userGroup = await ctx.prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      members: true,
+      admins: true,
+    },
+  })
+
+  if (
+    !userGroup ||
+    (userGroup.members.length === 0 && userGroup.admins.length === 0)
+  ) {
+    return false
+  }
+
+  // remove the user from the group
+  const updatedUserGroup = await ctx.prisma.userGroup.update({
+    where: { id: groupId },
+    data: {
+      members:
+        userGroup.members.length > 0
+          ? { disconnect: { id: ctx.user.sub } }
+          : undefined,
+      admins:
+        userGroup.admins.length > 0
+          ? { disconnect: { id: ctx.user.sub } }
+          : undefined,
+    },
+    include: {
+      permissions: true,
+    },
+  })
+
+  // trigger a derived permission recomputation for all objects that were shared with this group and this user
+  for (const permission of updatedUserGroup.permissions) {
+    if (permission.catalogCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          catalogCollectionId: permission.catalogCollectionId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+    } else if (permission.answerCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId: permission.answerCollectionId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+    } else if (permission.elementId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          elementId: permission.elementId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+    } else if (permission.courseId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          courseId: permission.courseId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+    } else if (permission.liveQuizId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          liveQuizId: permission.liveQuizId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+    } else if (permission.practiceQuizId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          practiceQuizId: permission.practiceQuizId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+    } else if (permission.microLearningId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          microLearningId: permission.microLearningId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+    } else if (permission.groupActivityId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          groupActivityId: permission.groupActivityId,
+          userId: ctx.user.sub,
+        },
+        ctx.prisma
+      )
+    }
+  }
+
+  return true
 }
 // #endregion

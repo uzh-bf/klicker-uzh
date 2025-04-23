@@ -2376,6 +2376,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'Please enter a name for the user group. This name will be used to identify the group.',
       nameRequired: 'Please enter a name for the group.',
       member: 'Member',
+      members: 'Members',
       admin: 'Admin',
       addMember: 'Add Member',
       emailOrShortname: 'Email or shortname',
@@ -2387,6 +2388,15 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       creationSuccessMessage: 'The user group was created successfully.',
       creationErrorMessage:
         'An error occurred while creating the user group. Please ensure that at information for at least one valid member (not yourself) was provided and that no other user group with the same name already exists.',
+      viewGroup: 'View User Group',
+      editGroup: 'Edit User Group',
+      leaveGroup: 'Leave User Group',
+      deleteGroup: 'Delete User Group',
+      confirmLeaveGroup:
+        'You are about to leave the user group {groupName}. By leaving this group, you will loose access to all objects that are shared with this group. If you are sure, please confirm this action.',
+      leaveGroupSuccess: 'You have successfully left the user group.',
+      leaveGroupError:
+        'An error occurred while leaving the user group. Please try again or contact the support.',
     },
     catalog: {
       accessTypes: 'Access Types',

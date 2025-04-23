@@ -167,6 +167,9 @@ interface IUserGroup extends DB.UserGroup {
   numOfMembers?: number
   members?: IUserInfo[]
   admins?: IUserInfo[]
+  isMember?: boolean
+  isAdmin?: boolean
+  isOwner?: boolean
 }
 export const UserGroupRef = builder.objectRef<IUserGroup>('UserGroup')
 export const UserGroup = UserGroupRef.implement({
@@ -182,6 +185,9 @@ export const UserGroup = UserGroupRef.implement({
       nullable: true,
     }),
     numOfMembers: t.exposeInt('numOfMembers', { nullable: true }),
+    isMember: t.exposeBoolean('isMember', { nullable: true }),
+    isAdmin: t.exposeBoolean('isAdmin', { nullable: true }),
+    isOwner: t.exposeBoolean('isOwner', { nullable: true }),
   }),
 })
 

@@ -2405,6 +2405,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie einen Namen für die Nutzergruppe an. Dieser Name wird benötigt, um die Gruppe zu identifizieren.',
       nameRequired: 'Die Eingabe eines Namens für die Gruppe ist erforderlich.',
       member: 'Mitglied',
+      members: 'Mitglieder',
       admin: 'Admin',
       addMember: 'Mitglied hinzufügen',
       emailOrShortname: 'Email oder Kurzname',
@@ -2417,6 +2418,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       creationSuccessMessage: 'Die Nutzergruppe wurde erfolgreich erstellt.',
       creationErrorMessage:
         'Bei der Erstellung der Nutzergruppe ist ein Fehler aufgetreten. Bitte stellen Sie sicher, dass gültige Angeben für mindestens einen Nutzer (nicht Sie selbst) eingegeben wurden und dass keine andere Nutzergruppe mit demselben Namen bereits existiert.',
+      viewGroup: 'Nutzergruppe ansehen',
+      editGroup: 'Nutzergruppe bearbeiten',
+      leaveGroup: 'Nutzergruppe verlassen',
+      deleteGroup: 'Nutzergruppe löschen',
+      confirmLeaveGroup:
+        'Sie sind dabei, die Nutzergruppe {groupName} zu verlassen. Durch das Verlassen dieser Gruppe verlieren Sie den Zugriff auf alle Objekte, die mit dieser Gruppe geteilt wurden. Wenn Sie sicher sind, bestätigen Sie bitte diese Aktion.',
+      leaveGroupSuccess:
+        'Sie haben die Nutzergruppe wurde erfolgreich verlassen.',
+      leaveGroupError:
+        'Beim Verlassen der Nutzergruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
     },
     catalog: {
       accessTypes: 'Zugriffs-Typen',
