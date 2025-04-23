@@ -358,9 +358,16 @@ enum AuditLogType {
     CATALOG_ASSIGNMENT_CREATED // created catalog assignment
     CATALOG_ASSIGNMENT_DELETED // deleted catalog assignment
     CATALOG_ASSIGNMENT_MODIFIED // created catalog collection
+    USER_GROUP_CREATED // created user group
+    USER_GROUP_MODIFIED // modified user group
+    USER_GROUP_DELETED // deleted user group
+    USER_GROUP_USER_ADDED // added user to user group
+    USER_GROUP_USER_REMOVED // removed user from user group
+    USER_GROUP_USER_MODIFIED // modified user in user group (promotion / demotion)
 }
 
 enum ObjectType {
+    USER_GROUP
     CATALOG_COLLECTION
     ANSWER_COLLECTION
     ELEMENT

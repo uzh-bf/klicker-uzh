@@ -1,4 +1,10 @@
-import { ElementType, PermissionLevel, PrismaClient } from '@klicker-uzh/prisma'
+import {
+  AuditLogType,
+  ElementType,
+  ObjectType,
+  PermissionLevel,
+  PrismaClient,
+} from '@klicker-uzh/prisma'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -62,7 +68,7 @@ describe('Unit tests for user group management', () => {
     await testCleanup(prisma)
   })
 
-  describe('Unit tests for user group creation and manipulation', () => {
+  describe('Unit tests for user group creation and manipulation, including member management', () => {
     it('Providing regular members should result in a successful group creation', async () => {
       // create a group with two regular members (not admins)
       const groupName = 'Test Group'
@@ -88,6 +94,20 @@ describe('Unit tests for user group management', () => {
       const memberIds = result.members.map((member) => member.id)
       expect(memberIds).toContain(userTwo.id)
       expect(memberIds).toContain(userThree.id)
+
+      // verify that a correct audit log entry has been created
+      const auditLog = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(result.id),
+          objectType: ObjectType.USER_GROUP,
+          type: AuditLogType.USER_GROUP_CREATED,
+        },
+      })
+      expect(auditLog).toBeTruthy()
+      expect(auditLog!.sourceUserId).toBe(userOne.id)
+      expect(auditLog!.message).toBe(
+        `User group created with members [${userTwo.id},${userThree.id}] and admins [].`
+      )
     })
 
     it('Providing members and admins should result in a successful group creation and correct links', async () => {
@@ -118,6 +138,19 @@ describe('Unit tests for user group management', () => {
       expect(memberIds).toContain(userTwo.id)
       expect(adminIds).toContain(userThree.id)
       expect(adminIds).toContain(userFour.id)
+
+      // verify that a correct audit log entry has been created
+      const auditLog = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(result.id),
+          type: AuditLogType.USER_GROUP_CREATED,
+        },
+      })
+      expect(auditLog).toBeTruthy()
+      expect(auditLog!.sourceUserId).toBe(userOne.id)
+      expect(auditLog!.message).toBe(
+        `User group created with members [${userTwo.id}] and admins [${userFour.id},${userThree.id}].`
+      )
     })
 
     it('Test that the creation of a user group with duplicated name fails', async () => {
@@ -229,6 +262,19 @@ describe('Unit tests for user group management', () => {
         },
       })
       expect(updatedGroup?.members.length).toBe(0)
+
+      // verify that a correct audit log entry has been created
+      const auditLog = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(group.id),
+          objectType: ObjectType.USER_GROUP,
+          type: AuditLogType.USER_GROUP_USER_REMOVED,
+          sourceUserId: userTwo.id,
+          targetUserId: userTwo.id,
+        },
+      })
+      expect(auditLog).toBeTruthy()
+      expect(auditLog!.message).toBe('User left user group.')
     })
 
     it('Admins of the group should be able to leave the group successfully', async () => {
@@ -481,6 +527,19 @@ describe('Unit tests for user group management', () => {
         where: { id: group.id },
       })
       expect(deletedGroup).toBeNull()
+
+      // verify that the audit log entry was created
+      // verify that the audit log entry was created
+      const auditLog = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(group.id),
+          objectType: ObjectType.USER_GROUP,
+          type: AuditLogType.USER_GROUP_DELETED,
+          sourceUserId: userOne.id,
+        },
+      })
+      expect(auditLog).toBeTruthy()
+      expect(auditLog!.message).toBe('User group deleted by owner.')
     })
 
     it('Non-owners should not be able to delete a user group', async () => {
@@ -695,6 +754,19 @@ describe('Unit tests for user group management', () => {
       expect(updatedGroup!.members.length).toBe(0)
       expect(updatedGroup!.admins.length).toBe(1)
       expect(updatedGroup!.admins[0]?.id).toBe(userTwo.id)
+
+      // verify that a correct audit log entry has been created
+      const auditLogEntry = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(group.id),
+          objectType: ObjectType.USER_GROUP,
+          type: AuditLogType.USER_GROUP_USER_MODIFIED,
+          sourceUserId: userOne.id,
+          targetUserId: userTwo.id,
+        },
+      })
+      expect(auditLogEntry).toBeTruthy()
+      expect(auditLogEntry!.message).toBe(`User promoted from member to admin.`)
     })
 
     it('Group admin should be able to promote a member to admin', async () => {
@@ -853,6 +925,19 @@ describe('Unit tests for user group management', () => {
       expect(updatedGroup!.members.length).toBe(1)
       expect(updatedGroup!.members[0]?.id).toBe(userTwo.id)
       expect(updatedGroup!.admins.length).toBe(0)
+
+      // verify that a correct audit log entry has been created
+      const auditLogEntry = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(group.id),
+          objectType: ObjectType.USER_GROUP,
+          type: AuditLogType.USER_GROUP_USER_MODIFIED,
+          sourceUserId: userOne.id,
+          targetUserId: userTwo.id,
+        },
+      })
+      expect(auditLogEntry).toBeTruthy()
+      expect(auditLogEntry!.message).toBe(`User demoted from admin to member.`)
     })
 
     it('Any group admin should be able to demote another admin to a regular member', async () => {
@@ -988,6 +1073,19 @@ describe('Unit tests for user group management', () => {
       })
       expect(updatedGroup?.members.length).toBe(0)
       expect(updatedGroup?.admins.length).toBe(0)
+
+      // verify that a correct audit log entry has been created
+      const auditLogEntry = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(group.id),
+          objectType: ObjectType.USER_GROUP,
+          type: AuditLogType.USER_GROUP_USER_REMOVED,
+          sourceUserId: userOne.id,
+          targetUserId: userTwo.id,
+        },
+      })
+      expect(auditLogEntry).toBeTruthy()
+      expect(auditLogEntry!.message).toBe(`User removed from group.`)
     })
 
     it('Verify that group admins are able to remove regular and admin members from the group', async () => {
@@ -1307,6 +1405,20 @@ describe('Unit tests for user group management', () => {
       })
       expect(updatedGroup?.name).toBe(newName)
 
+      // verify that an appropriate audit log entry has been created
+      const auditLogEntry = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(group.id),
+          objectType: ObjectType.USER_GROUP,
+          type: AuditLogType.USER_GROUP_MODIFIED,
+          sourceUserId: userOne.id,
+        },
+      })
+      expect(auditLogEntry).toBeTruthy()
+      expect(auditLogEntry!.message).toBe(
+        `User group name changed to ${newName}.`
+      )
+
       // admin changes the group name
       const newNameAdmin = 'Updated Group Name by Admin'
       const resultAdmin = await changeUserGroupName(
@@ -1320,6 +1432,20 @@ describe('Unit tests for user group management', () => {
         where: { id: group.id },
       })
       expect(updatedGroupAdmin?.name).toBe(newNameAdmin)
+
+      // verify that an appropriate audit log entry has been created
+      const auditLogEntry2 = await prisma.auditLogEntry.findFirst({
+        where: {
+          objectId: String(group.id),
+          objectType: ObjectType.USER_GROUP,
+          type: AuditLogType.USER_GROUP_MODIFIED,
+          sourceUserId: userThree.id,
+        },
+      })
+      expect(auditLogEntry2).toBeTruthy()
+      expect(auditLogEntry2!.message).toBe(
+        `User group name changed to ${newNameAdmin}.`
+      )
 
       // regular member tries to change the group name
       const newNameMember = 'Updated Group Name by Member'
@@ -1389,6 +1515,21 @@ describe('Unit tests for user group management', () => {
       const admins = updatedGroup?.admins.map((admin) => admin.id) || []
       expect(admins).toContain(userOne.id)
       expect(admins).not.toContain(userTwo.id)
+
+      // verify that a correct audit log entry has been created
+      const auditLogEntry = await prisma.auditLogEntry.findFirst({
+        where: {
+          type: AuditLogType.USER_GROUP_MODIFIED,
+          objectType: ObjectType.USER_GROUP,
+          objectId: String(updatedGroup!.id),
+          sourceUserId: userOne.id,
+          targetUserId: userTwo.id,
+        },
+      })
+      expect(auditLogEntry).toBeTruthy()
+      expect(auditLogEntry!.message).toBe(
+        `User group ownership transferred to group admin.`
+      )
     })
 
     it('Admins and regular members should not be allowed to trigger ownership transfer', async () => {
@@ -1517,6 +1658,19 @@ describe('Unit tests for user group management', () => {
       expect(updatedGroup?.members[0]?.id).toBe(userTwo.id)
       expect(updatedGroup?.admins.length).toBe(0)
 
+      // verify that a correct audit log entry has been created
+      const auditLogEntry1 = await prisma.auditLogEntry.findFirst({
+        where: {
+          type: AuditLogType.USER_GROUP_USER_ADDED,
+          objectType: ObjectType.USER_GROUP,
+          objectId: String(updatedGroup!.id),
+          sourceUserId: userOne.id,
+          targetUserId: userTwo.id,
+        },
+      })
+      expect(auditLogEntry1).toBeTruthy()
+      expect(auditLogEntry1!.message).toBe(`New user added to group as member.`)
+
       // owner adds another user as an admin
       const resultAdmin = await addUserToUserGroup(
         {
@@ -1542,6 +1696,19 @@ describe('Unit tests for user group management', () => {
       expect(updatedGroupAdmin?.members.length).toBe(0)
       expect(updatedGroupAdmin?.admins.length).toBe(1)
       expect(updatedGroupAdmin?.admins[0]?.id).toBe(userThree.id)
+
+      // verify that a correct audit log entry has been created
+      const auditLogEntry2 = await prisma.auditLogEntry.findFirst({
+        where: {
+          type: AuditLogType.USER_GROUP_USER_ADDED,
+          objectType: ObjectType.USER_GROUP,
+          objectId: String(updatedGroupAdmin!.id),
+          sourceUserId: userOne.id,
+          targetUserId: userThree.id,
+        },
+      })
+      expect(auditLogEntry2).toBeTruthy()
+      expect(auditLogEntry2!.message).toBe(`New user added to group as admin.`)
     })
 
     it('Verify that group admins are able to add regular users and admins to the group', async () => {
