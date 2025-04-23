@@ -1403,6 +1403,7 @@ type Mutation {
   deleteTag(id: Int!): Tag
   deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
+  demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): GroupActivity
@@ -1451,6 +1452,7 @@ type Mutation {
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
+  promoteGroupMemberToAdmin(groupId: Int!, memberId: String!): Boolean!
   publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
   publishMicroLearning(id: String!): MicroLearning
@@ -1459,6 +1461,7 @@ type Mutation {
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   removeAnswerCollection(collectionId: Int!): Int
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
+  removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: CatalogObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!

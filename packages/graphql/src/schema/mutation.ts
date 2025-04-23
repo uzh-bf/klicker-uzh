@@ -1582,6 +1582,36 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      promoteGroupMemberToAdmin: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          groupId: t.arg.int({ required: true }),
+          memberId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.promoteGroupMemberToAdmin(args, ctx)
+        },
+      }),
+
+      demoteGroupAdminToMember: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          groupId: t.arg.int({ required: true }),
+          adminId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.demoteGroupAdminToMember(args, ctx)
+        },
+      }),
+
+      removeUserFromGroup: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          groupId: t.arg.int({ required: true }),
+          userId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.removeUserFromGroup(args, ctx)
+        },
+      }),
+
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,

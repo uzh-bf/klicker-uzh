@@ -32,7 +32,7 @@ function useRequestCancellationCatalogObject({
           const cancelledCollection = data?.cancelObjectSharingRequest
           if (!cancelledCollection) return
 
-          // update list of answer collections
+          // update list of catalog objects
           const catalogObjects = cache.readQuery({
             query: GetCatalogObjectsDocument,
             variables: {

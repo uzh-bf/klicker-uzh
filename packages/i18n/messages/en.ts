@@ -2074,7 +2074,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
       courseDeletionMessage:
-        'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will loose access to the course alongside all associated course materials and activities.',
+        'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will lose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
       deleteParticipations:
         '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
@@ -2220,7 +2220,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noStartedInstancesLoosingAccess:
         'There are no groups that have started the group activity but not submitted their decisions yet.',
       startedInstancesLoosingAccess:
-        '{number} group(s) have started the group activity but have not submitted any results yet. They will loose access to the group activity.',
+        '{number} group(s) have started the group activity but have not submitted any results yet. They will lose access to the group activity.',
       noSubmissionsToActivity:
         'There are no submissions for this group activity yet.',
       unaffectedSubmissions:
@@ -2242,7 +2242,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noStartedInstancesToDelete:
         'There are no groups that have outstanding submissions for this group activity.',
       deleteStartedInstance:
-        '{number} group(s) that have started the group activity will loose access to it.',
+        '{number} group(s) that have started the group activity will lose access to it.',
       noSubmissionsToDelete:
         'There are no submissions for this group activity.',
       deleteSubmissions:
@@ -2357,7 +2357,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This collection is used by at least one of your questions or templates. Therefore, you cannot remove the collection.',
       deleteAnswerCollection: 'Delete Answer Collection',
       confirmCollectionDeletion:
-        'Are you sure you want to delete the answer collection "{name}" from your profile? For shared answer collections, access for other users remains as long as they use the collection. All users who are not using the collection will loose access to it.',
+        'Are you sure you want to delete the answer collection "{name}" from your profile? For shared answer collections, access for other users remains as long as they use the collection. All users who are not using the collection will lose access to it.',
       confirmDeletion: 'Confirm deletion',
       deletionSuccessful: 'The answer collection was successfully deleted.',
       deletionFailed:
@@ -2378,6 +2378,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       member: 'Member',
       members: 'Members',
       admin: 'Admin',
+      admins: 'Admins',
       addMember: 'Add Member',
       emailOrShortname: 'Email or shortname',
       emailShortnameRequired:
@@ -2393,7 +2394,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       leaveGroup: 'Leave User Group',
       deleteGroup: 'Delete User Group',
       confirmLeaveGroup:
-        'You are about to leave the user group {groupName}. By leaving this group, you will loose access to all objects that are shared with this group. If you are sure, please confirm this action.',
+        'You are about to leave the user group {groupName}. By leaving this group, you will lose access to all objects that are shared with this group. If you are sure, please confirm this action.',
       leaveGroupSuccess: 'You have successfully left the user group.',
       leaveGroupError:
         'An error occurred while leaving the user group. Please try again or contact the support.',
@@ -2405,9 +2406,16 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resolveGroupConfirmation:
         'By resolving this group, all members and admins will be removed from it.',
       revokeDirectPermissionsConfirmation:
-        'All direct permissions granted to the group will be revoked, all group members will loose access to the corresponding objects.',
+        'All direct permissions granted to the group will be revoked, all group members will lose access to the corresponding objects.',
       irreversibleActionConfirmation:
         'This action is irreversible and cannot be undone.',
+      availableActions: 'Available Actions',
+      promotUserToAdmin: 'Promote User to Admin',
+      demoteAdminToMember: 'Demote Admin to Member',
+      removeUserFromGroup: 'Remove User from Group',
+      noAdmins: 'No users have been assigned as admins to this group.',
+      noMembers:
+        'No users have been assigned as members (without admin rights) to this group.',
     },
     catalog: {
       accessTypes: 'Access Types',

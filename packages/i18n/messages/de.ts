@@ -2407,6 +2407,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       member: 'Mitglied',
       members: 'Mitglieder',
       admin: 'Admin',
+      admins: 'Admins',
       addMember: 'Mitglied hinzufügen',
       emailOrShortname: 'Email oder Kurzname',
       emailShortnameRequired:
@@ -2428,6 +2429,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben die Nutzergruppe wurde erfolgreich verlassen.',
       leaveGroupError:
         'Beim Verlassen der Nutzergruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
+      availableActions: 'Verfügbare Aktionen',
+      promotUserToAdmin: 'Beförderung Mitglied zu Admin',
+      demoteAdminToMember: 'Herabstufung Admin zu Mitglied',
+      removeUserFromGroup: 'Entfernung Nutzer aus Gruppe',
+      noAdmins: 'Dieser Gruppe wurden bisher keine Admins zugewiesen.',
+      noMembers:
+        'Dieser Gruppe wurden bisher keine Mitglieder (ohne Admin-Rechte) zugewiesen.',
     },
     catalog: {
       accessTypes: 'Zugriffs-Typen',

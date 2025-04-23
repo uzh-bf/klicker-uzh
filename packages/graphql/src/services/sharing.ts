@@ -4252,6 +4252,81 @@ export function withPermission<TSource, TArgs, TReturn>(
 
 // ! User Group Management
 // #region
+async function recomputePermissionsUserGroupMember(
+  { permissions, userId }: { permissions: DB.Permission[]; userId: string },
+  prisma: PrismaTransactionClient
+) {
+  // trigger a derived permission recomputation for all objects that were shared with this group and this user
+  for (const permission of permissions) {
+    if (permission.catalogCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          catalogCollectionId: permission.catalogCollectionId,
+          userId,
+        },
+        prisma
+      )
+    } else if (permission.answerCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          answerCollectionId: permission.answerCollectionId,
+          userId,
+        },
+        prisma
+      )
+    } else if (permission.elementId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          elementId: permission.elementId,
+          userId,
+        },
+        prisma
+      )
+    } else if (permission.courseId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          courseId: permission.courseId,
+          userId,
+        },
+        prisma
+      )
+    } else if (permission.liveQuizId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          liveQuizId: permission.liveQuizId,
+          userId,
+        },
+        prisma
+      )
+    } else if (permission.practiceQuizId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          practiceQuizId: permission.practiceQuizId,
+          userId,
+        },
+        prisma
+      )
+    } else if (permission.microLearningId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          microLearningId: permission.microLearningId,
+          userId,
+        },
+        prisma
+      )
+    } else if (permission.groupActivityId !== null) {
+      await recomputeDerivedPermissions(
+        {
+          groupActivityId: permission.groupActivityId,
+          userId,
+        },
+        prisma
+      )
+    }
+  }
+}
+
+// TODO: add audit log entries
 export async function createUserGroup(
   {
     name,
@@ -4281,12 +4356,8 @@ export async function createUserGroup(
     where: {
       id: { not: ctx.user.sub }, // owner should not be added to the group as member / admin
       OR: members.flatMap((member) => [
-        {
-          shortname: member.shortnameOrEmail,
-        },
-        {
-          email: member.shortnameOrEmail,
-        },
+        { shortname: member.shortnameOrEmail },
+        { email: member.shortnameOrEmail },
       ]),
     },
   })
@@ -4406,6 +4477,7 @@ export async function getUserGroupsUser(ctx: ContextWithUser) {
 }
 
 // TODO: add unit testing for this function
+// TODO: add audit log entries
 export async function leaveUserGroup(
   { groupId }: { groupId: number },
   ctx: ContextWithUser
@@ -4414,8 +4486,8 @@ export async function leaveUserGroup(
   const userGroup = await ctx.prisma.userGroup.findUnique({
     where: { id: groupId },
     include: {
-      members: true,
-      admins: true,
+      members: { where: { id: ctx.user.sub } },
+      admins: { where: { id: ctx.user.sub } },
     },
   })
 
@@ -4426,97 +4498,38 @@ export async function leaveUserGroup(
     return false
   }
 
-  // remove the user from the group
-  const updatedUserGroup = await ctx.prisma.userGroup.update({
-    where: { id: groupId },
-    data: {
-      members:
-        userGroup.members.length > 0
-          ? { disconnect: { id: ctx.user.sub } }
-          : undefined,
-      admins:
-        userGroup.admins.length > 0
-          ? { disconnect: { id: ctx.user.sub } }
-          : undefined,
-    },
-    include: {
-      permissions: true,
-    },
-  })
+  await ctx.prisma.$transaction(async (prisma) => {
+    const updated = await prisma.userGroup.update({
+      where: { id: groupId },
+      data: {
+        members:
+          userGroup.members.length > 0
+            ? { disconnect: { id: ctx.user.sub } }
+            : undefined,
+        admins:
+          userGroup.admins.length > 0
+            ? { disconnect: { id: ctx.user.sub } }
+            : undefined,
+      },
+      include: {
+        permissions: true,
+      },
+    })
 
-  // trigger a derived permission recomputation for all objects that were shared with this group and this user
-  for (const permission of updatedUserGroup.permissions) {
-    if (permission.catalogCollectionId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          catalogCollectionId: permission.catalogCollectionId,
-          userId: ctx.user.sub,
-        },
-        ctx.prisma
-      )
-    } else if (permission.answerCollectionId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          answerCollectionId: permission.answerCollectionId,
-          userId: ctx.user.sub,
-        },
-        ctx.prisma
-      )
-    } else if (permission.elementId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          elementId: permission.elementId,
-          userId: ctx.user.sub,
-        },
-        ctx.prisma
-      )
-    } else if (permission.courseId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          courseId: permission.courseId,
-          userId: ctx.user.sub,
-        },
-        ctx.prisma
-      )
-    } else if (permission.liveQuizId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          liveQuizId: permission.liveQuizId,
-          userId: ctx.user.sub,
-        },
-        ctx.prisma
-      )
-    } else if (permission.practiceQuizId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          practiceQuizId: permission.practiceQuizId,
-          userId: ctx.user.sub,
-        },
-        ctx.prisma
-      )
-    } else if (permission.microLearningId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          microLearningId: permission.microLearningId,
-          userId: ctx.user.sub,
-        },
-        ctx.prisma
-      )
-    } else if (permission.groupActivityId !== null) {
-      await recomputeDerivedPermissions(
-        {
-          groupActivityId: permission.groupActivityId,
-          userId: ctx.user.sub,
-        },
-        ctx.prisma
-      )
-    }
-  }
+    // trigger a derived permission recomputation for all objects that were shared with this group and this user
+    await recomputePermissionsUserGroupMember(
+      { permissions: updated.permissions, userId: ctx.user.sub },
+      prisma
+    )
+
+    return updated
+  })
 
   return true
 }
 
 // TODO: add unit testing for this function
+// TODO: add audit log entries
 export async function deleteUserGroup(
   { groupId }: { groupId: number },
   ctx: ContextWithUser
@@ -4531,57 +4544,183 @@ export async function deleteUserGroup(
     return false
   }
 
-  // delete the user group
-  await ctx.prisma.userGroup.delete({
-    where: { id: groupId },
-  })
+  await ctx.prisma.$transaction(async (prisma) => {
+    // delete the user group
+    await prisma.userGroup.delete({
+      where: { id: groupId },
+    })
 
-  // recompute the permissions for all objects that were shared with this user gruop
-  for (const permission of userGroup.permissions) {
-    if (permission.catalogCollectionId !== null) {
-      await recomputeDerivedPermissions(
-        { catalogCollectionId: permission.catalogCollectionId },
-        ctx.prisma
-      )
-    } else if (permission.answerCollectionId !== null) {
-      await recomputeDerivedPermissions(
-        { answerCollectionId: permission.answerCollectionId },
-        ctx.prisma
-      )
-    } else if (permission.elementId !== null) {
-      await recomputeDerivedPermissions(
-        { elementId: permission.elementId },
-        ctx.prisma
-      )
-    } else if (permission.courseId !== null) {
-      await recomputeDerivedPermissions(
-        { courseId: permission.courseId },
-        ctx.prisma
-      )
-    } else if (permission.liveQuizId !== null) {
-      await recomputeDerivedPermissions(
-        { liveQuizId: permission.liveQuizId },
-        ctx.prisma
-      )
-    } else if (permission.practiceQuizId !== null) {
-      await recomputeDerivedPermissions(
-        { practiceQuizId: permission.practiceQuizId },
-        ctx.prisma
-      )
-    } else if (permission.microLearningId !== null) {
-      await recomputeDerivedPermissions(
-        { microLearningId: permission.microLearningId },
-        ctx.prisma
-      )
-    } else if (permission.groupActivityId !== null) {
-      await recomputeDerivedPermissions(
-        { groupActivityId: permission.groupActivityId },
-        ctx.prisma
-      )
+    // recompute the permissions for all objects that were shared with this user gruop
+    for (const permission of userGroup.permissions) {
+      if (permission.catalogCollectionId !== null) {
+        await recomputeDerivedPermissions(
+          { catalogCollectionId: permission.catalogCollectionId },
+          prisma
+        )
+      } else if (permission.answerCollectionId !== null) {
+        await recomputeDerivedPermissions(
+          { answerCollectionId: permission.answerCollectionId },
+          prisma
+        )
+      } else if (permission.elementId !== null) {
+        await recomputeDerivedPermissions(
+          { elementId: permission.elementId },
+          prisma
+        )
+      } else if (permission.courseId !== null) {
+        await recomputeDerivedPermissions(
+          { courseId: permission.courseId },
+          prisma
+        )
+      } else if (permission.liveQuizId !== null) {
+        await recomputeDerivedPermissions(
+          { liveQuizId: permission.liveQuizId },
+          prisma
+        )
+      } else if (permission.practiceQuizId !== null) {
+        await recomputeDerivedPermissions(
+          { practiceQuizId: permission.practiceQuizId },
+          prisma
+        )
+      } else if (permission.microLearningId !== null) {
+        await recomputeDerivedPermissions(
+          { microLearningId: permission.microLearningId },
+          prisma
+        )
+      } else if (permission.groupActivityId !== null) {
+        await recomputeDerivedPermissions(
+          { groupActivityId: permission.groupActivityId },
+          prisma
+        )
+      }
     }
-  }
+  })
 
   return true
 }
 
+// TODO: add unit testing for this function
+// TODO: add audit log entries
+export async function promoteGroupMemberToAdmin(
+  { groupId, memberId }: { groupId: number; memberId: string },
+  ctx: ContextWithUser
+) {
+  const group = await ctx.prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      members: { where: { id: memberId } },
+      admins: { where: { id: ctx.user.sub } },
+    },
+  })
+
+  // if the group does not exist, the requesting user has insufficient permissions or the member does not exist, return early
+  if (
+    !group ||
+    group.members.length === 0 ||
+    (group.admins.length === 0 && group.ownerId !== ctx.user.sub)
+  ) {
+    return false
+  }
+
+  // disconnect the member from the members and add them to the admins
+  await ctx.prisma.userGroup.update({
+    where: { id: groupId },
+    data: {
+      members: { disconnect: { id: memberId } },
+      admins: { connect: { id: memberId } },
+    },
+  })
+
+  return true
+}
+
+// TODO: add unit testing for this function
+// TODO: add audit log entries
+export async function demoteGroupAdminToMember(
+  { groupId, adminId }: { groupId: number; adminId: string },
+  ctx: ContextWithUser
+) {
+  const group = await ctx.prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      admins: true,
+    },
+  })
+
+  // if the group does not exist, the requesting user has insufficient permissions or the member does not exist, return early
+  const adminUserIds = group?.admins.map((admin) => admin.id) ?? []
+  if (
+    !group ||
+    !adminUserIds.includes(adminId) ||
+    (!adminUserIds.includes(ctx.user.sub) && group.ownerId !== ctx.user.sub)
+  ) {
+    return false
+  }
+
+  // disconnect the admin from the admins and add them to the members
+  await ctx.prisma.userGroup.update({
+    where: { id: groupId },
+    data: {
+      admins: { disconnect: { id: adminId } },
+      members: { connect: { id: adminId } },
+    },
+  })
+
+  return true
+}
+
+// TODO: add unit testing for this function
+// TODO: add audit log entries
+export async function removeUserFromGroup(
+  { groupId, userId }: { groupId: number; userId: string },
+  ctx: ContextWithUser
+) {
+  // if the user that should be removed is the acting user, return early
+  if (userId === ctx.user.sub) {
+    return false
+  }
+
+  const group = await ctx.prisma.userGroup.findUnique({
+    where: { id: groupId },
+    include: {
+      members: { where: { id: userId } },
+      admins: true,
+    },
+  })
+
+  // if the group does not exist, the requesting user has insufficient permissions or the member does not exist, return early
+  const adminUserIds = group?.admins.map((admin) => admin.id) ?? []
+  const userIsAdmin = adminUserIds.includes(userId)
+  const userIsMember = (group?.members.length ?? -1) > 0
+  if (
+    !group ||
+    (group.members.length === 0 && !adminUserIds.includes(userId)) ||
+    (!adminUserIds.includes(ctx.user.sub) && group.ownerId !== ctx.user.sub) ||
+    (userIsAdmin && userIsMember) // user should not be admin and member at the same time
+  ) {
+    return false
+  }
+
+  await ctx.prisma.$transaction(async (prisma) => {
+    // disconnect the member from the members and admins
+    const updatedUserGroup = await prisma.userGroup.update({
+      where: { id: groupId },
+      data: {
+        admins: userIsAdmin ? { disconnect: { id: userId } } : undefined,
+        members: userIsMember ? { disconnect: { id: userId } } : undefined,
+      },
+      include: {
+        permissions: true,
+      },
+    })
+
+    // trigger a derived permission recomputation for all objects that were shared with this group and this user
+    await recomputePermissionsUserGroupMember(
+      { permissions: updatedUserGroup.permissions, userId },
+      prisma
+    )
+  })
+
+  return true
+}
 // #endregion

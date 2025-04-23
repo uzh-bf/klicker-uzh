@@ -14,6 +14,7 @@ import DeleteUserGroupSuccessToast from './DeleteUserGroupSuccessToast'
 import LeaveUserGroupModal from './LeaveUserGroupModal'
 import LeaveUserGroupSuccessToast from './LeaveUserGroupSuccessToast'
 import UserGroupBadge from './UserGroupBadge'
+import UserGroupEditModal from './UserGroupEditModal'
 
 function UserGroupEntry({ group }: { group: UserGroup }) {
   const t = useTranslations()
@@ -26,14 +27,9 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
   const [deleteSuccess, setDeleteSuccess] = useState(false)
 
   // required functionalities (ideally incl. audit log entries):
-  // TODO: - promote member to ADMIN
-  // TODO: - demote ADMIN to MEMBER
-  // TODO: - remove member from group
   // TODO: - add member to the group
   // TODO: - edit group name
   // TODO: - transfer ownership
-  // TODO: - leave group - only possible for non-owner - ask to confirm in removal modal
-  // TODO: - delete group - only possible for owner - ask to confirm in deletion modal
 
   return (
     <>
@@ -151,7 +147,11 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
         setOpen={() => setDeleteSuccess(false)}
       />
 
-      {/* // TODO: Edit modal with all remaining functionalities */}
+      <UserGroupEditModal
+        open={editModal}
+        onClose={() => setEditModal(false)}
+        group={group}
+      />
     </>
   )
 }

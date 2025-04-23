@@ -64,7 +64,7 @@ function CatalogCollectionNameChangeModal({
                   const success = data?.changeCatalogCollectionName
                   if (!success) return
 
-                  // update list of answer collections
+                  // update list of catalog collections
                   const queryData = cache.readQuery({
                     query: GetCatalogCollectionsListDocument,
                   })

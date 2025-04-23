@@ -59,7 +59,7 @@ function ObjectRemovalModal({
                   const success = data?.removeCatalogObjectAssignment
                   if (!success) return
 
-                  // update list of answer collections
+                  // update list of catalog objects
                   const catalogObjects = cache.readQuery({
                     query: GetCatalogObjectsDocument,
                     variables: {

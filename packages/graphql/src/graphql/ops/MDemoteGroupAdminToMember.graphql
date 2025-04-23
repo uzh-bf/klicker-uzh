@@ -1,0 +1,3 @@
+mutation DemoteGroupAdminToMember($groupId: Int!, $adminId: String!) {
+  demoteGroupAdminToMember(groupId: $groupId, adminId: $adminId)
+}
