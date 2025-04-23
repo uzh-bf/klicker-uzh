@@ -43,7 +43,10 @@ function useRemoveUserFromGroup() {
                   if (groupId === existingGroup.id) {
                     return {
                       ...existingGroup,
-                      numOfMembers: (existingGroup.numOfMembers ?? 1) - 1,
+                      numOfMembers: Math.max(
+                        (existingGroup.numOfMembers ?? 1) - 1,
+                        0
+                      ),
                       admins: existingGroup.admins?.filter(
                         (admin) => admin.id !== userId
                       ),

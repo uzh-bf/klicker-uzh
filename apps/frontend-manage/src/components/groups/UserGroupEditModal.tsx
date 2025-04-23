@@ -220,7 +220,7 @@ function UserGroupEditModal({
               <div className="flex flex-row justify-end gap-6 text-sm">
                 <div className="flex flex-row items-center gap-2">
                   <FontAwesomeIcon icon={faUserPlus} className="h-4 w-4" />
-                  <div>{t('manage.userGroups.promotUserToAdmin')}</div>
+                  <div>{t('manage.userGroups.promoteUserToAdmin')}</div>
                 </div>
                 <div className="flex flex-row items-center gap-2 text-red-600">
                   <FontAwesomeIcon icon={faUserXmark} className="h-4 w-4" />

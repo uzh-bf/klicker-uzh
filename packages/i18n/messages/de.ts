@@ -2430,7 +2430,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       leaveGroupError:
         'Beim Verlassen der Nutzergruppe ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       availableActions: 'Verfügbare Aktionen',
-      promotUserToAdmin: 'Beförderung Mitglied zu Admin',
+      promoteUserToAdmin: 'Beförderung Mitglied zu Admin',
       demoteAdminToMember: 'Herabstufung Admin zu Mitglied',
       removeUserFromGroup: 'Entfernung Nutzer aus Gruppe',
       noAdmins: 'Dieser Gruppe wurden bisher keine Admins zugewiesen.',

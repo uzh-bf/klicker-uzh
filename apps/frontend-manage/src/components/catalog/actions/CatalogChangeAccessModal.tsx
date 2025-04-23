@@ -124,7 +124,7 @@ function CatalogChangeAccessModal({
                           data?.changeCatalogCollectionObjectAccess
                         if (!success) return
 
-                        // update list of catalog objects
+                        // update list of catalog collections
                         const queryData = cache.readQuery({
                           query: GetCatalogCollectionsListDocument,
                         })

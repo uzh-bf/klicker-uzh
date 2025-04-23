@@ -2410,7 +2410,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       irreversibleActionConfirmation:
         'This action is irreversible and cannot be undone.',
       availableActions: 'Available Actions',
-      promotUserToAdmin: 'Promote User to Admin',
+      promoteUserToAdmin: 'Promote User to Admin',
       demoteAdminToMember: 'Demote Admin to Member',
       removeUserFromGroup: 'Remove User from Group',
       noAdmins: 'No users have been assigned as admins to this group.',
