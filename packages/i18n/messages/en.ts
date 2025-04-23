@@ -2397,6 +2397,17 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       leaveGroupSuccess: 'You have successfully left the user group.',
       leaveGroupError:
         'An error occurred while leaving the user group. Please try again or contact the support.',
+      deleteGroupSuccess: 'You have successfully deleted the user group.',
+      deleteGroupError:
+        'An error occurred while deleting the user group. Please try again or contact the support.',
+      confirmDeleteGroup:
+        'Please review the effects of deleting this user group "{groupName}" carefully and confirm them before finalizing the deletion.',
+      resolveGroupConfirmation:
+        'By resolving this group, all members and admins will be removed from it.',
+      revokeDirectPermissionsConfirmation:
+        'All direct permissions granted to the group will be revoked, all group members will loose access to the corresponding objects.',
+      irreversibleActionConfirmation:
+        'This action is irreversible and cannot be undone.',
     },
     catalog: {
       accessTypes: 'Access Types',

@@ -1401,6 +1401,7 @@ type Mutation {
   deletePracticeQuiz(id: String!): PracticeQuiz
   deleteQuestion(id: Int!): Element
   deleteTag(id: Int!): Tag
+  deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry

@@ -9,6 +9,8 @@ import { UserGroup } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import DeleteUserGroupModal from './DeleteUserGroupModal'
+import DeleteUserGroupSuccessToast from './DeleteUserGroupSuccessToast'
 import LeaveUserGroupModal from './LeaveUserGroupModal'
 import LeaveUserGroupSuccessToast from './LeaveUserGroupSuccessToast'
 import UserGroupBadge from './UserGroupBadge'
@@ -21,6 +23,7 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
   const [editModal, setEditModal] = useState(false)
 
   const [leaveSuccess, setLeaveSuccess] = useState(false)
+  const [deleteSuccess, setDeleteSuccess] = useState(false)
 
   // required functionalities (ideally incl. audit log entries):
   // TODO: - promote member to ADMIN
@@ -133,7 +136,21 @@ function UserGroupEntry({ group }: { group: UserGroup }) {
         setOpen={() => setLeaveSuccess(false)}
       />
 
-      {/* // TODO: Add delete group modal */}
+      <DeleteUserGroupModal
+        open={deleteGroupModal}
+        onClose={() => setDeleteGroupModal(false)}
+        groupId={group.id}
+        groupName={group.name}
+        onSuccess={() => {
+          setDeleteGroupModal(false)
+          setDeleteSuccess(true)
+        }}
+      />
+      <DeleteUserGroupSuccessToast
+        open={deleteSuccess}
+        setOpen={() => setDeleteSuccess(false)}
+      />
+
       {/* // TODO: Edit modal with all remaining functionalities */}
     </>
   )

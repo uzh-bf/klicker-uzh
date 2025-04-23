@@ -4515,4 +4515,73 @@ export async function leaveUserGroup(
 
   return true
 }
+
+// TODO: add unit testing for this function
+export async function deleteUserGroup(
+  { groupId }: { groupId: number },
+  ctx: ContextWithUser
+) {
+  // check if the user is the owner of the group
+  const userGroup = await ctx.prisma.userGroup.findUnique({
+    where: { id: groupId, ownerId: ctx.user.sub },
+    include: { permissions: true },
+  })
+
+  if (!userGroup) {
+    return false
+  }
+
+  // delete the user group
+  await ctx.prisma.userGroup.delete({
+    where: { id: groupId },
+  })
+
+  // recompute the permissions for all objects that were shared with this user gruop
+  for (const permission of userGroup.permissions) {
+    if (permission.catalogCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        { catalogCollectionId: permission.catalogCollectionId },
+        ctx.prisma
+      )
+    } else if (permission.answerCollectionId !== null) {
+      await recomputeDerivedPermissions(
+        { answerCollectionId: permission.answerCollectionId },
+        ctx.prisma
+      )
+    } else if (permission.elementId !== null) {
+      await recomputeDerivedPermissions(
+        { elementId: permission.elementId },
+        ctx.prisma
+      )
+    } else if (permission.courseId !== null) {
+      await recomputeDerivedPermissions(
+        { courseId: permission.courseId },
+        ctx.prisma
+      )
+    } else if (permission.liveQuizId !== null) {
+      await recomputeDerivedPermissions(
+        { liveQuizId: permission.liveQuizId },
+        ctx.prisma
+      )
+    } else if (permission.practiceQuizId !== null) {
+      await recomputeDerivedPermissions(
+        { practiceQuizId: permission.practiceQuizId },
+        ctx.prisma
+      )
+    } else if (permission.microLearningId !== null) {
+      await recomputeDerivedPermissions(
+        { microLearningId: permission.microLearningId },
+        ctx.prisma
+      )
+    } else if (permission.groupActivityId !== null) {
+      await recomputeDerivedPermissions(
+        { groupActivityId: permission.groupActivityId },
+        ctx.prisma
+      )
+    }
+  }
+
+  return true
+}
+
 // #endregion
