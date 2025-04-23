@@ -1,0 +1,3 @@
+mutation ChangeUserGroupName($id: Int!, $name: String!) {
+  changeUserGroupName(id: $id, name: $name)
+}

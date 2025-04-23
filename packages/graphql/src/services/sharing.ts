@@ -4723,4 +4723,34 @@ export async function removeUserFromGroup(
 
   return true
 }
+
+// TODO: add unit testing for this function
+// TODO: add audit log entries
+export async function changeUserGroupName(
+  { id, name }: { id: number; name: string },
+  ctx: ContextWithUser
+) {
+  // check if the user is owner or admin of the group
+  const userGroup = await ctx.prisma.userGroup.findUnique({
+    where: { id },
+    include: {
+      admins: { where: { id: ctx.user.sub } },
+    },
+  })
+
+  if (
+    !userGroup ||
+    (userGroup.admins.length === 0 && userGroup.ownerId !== ctx.user.sub)
+  ) {
+    return false
+  }
+
+  // update the name of the group
+  await ctx.prisma.userGroup.update({
+    where: { id },
+    data: { name },
+  })
+
+  return true
+}
 // #endregion

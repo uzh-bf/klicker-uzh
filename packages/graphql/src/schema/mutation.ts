@@ -1612,6 +1612,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      changeUserGroupName: t.withAuth(asUserFullAccess).boolean({
+        args: {
+          id: t.arg.int({ required: true }),
+          name: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.changeUserGroupName(args, ctx)
+        },
+      }),
+
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,

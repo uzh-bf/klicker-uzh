@@ -1,4 +1,6 @@
+import { faSave } from '@fortawesome/free-regular-svg-icons'
 import {
+  faPencil,
   faUser,
   faUserMinus,
   faUserPlus,
@@ -6,8 +8,16 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { UserGroup } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H4, Modal, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  H4,
+  Modal,
+  TextField,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import useChangeUserGroupName from './useChangeUserGroupName'
 import useDemoteGroupAdminToMember from './useDemoteGroupAdminToMember'
 import usePromoteGroupMemberToAdmin from './usePromoteGroupMemberToAdmin'
 import useRemoveUserFromGroup from './useRemoveUserFromGroup'
@@ -25,14 +35,56 @@ function UserGroupEditModal({
   const { onDemotion, demoting } = useDemoteGroupAdminToMember()
   const { onPromotion, promoting } = usePromoteGroupMemberToAdmin()
   const { onRemove, removing } = useRemoveUserFromGroup()
-  const loading = demoting || promoting || removing // block actions as long as any modification is ongoing
+  const { onNameChange, nameChanging } = useChangeUserGroupName()
+  const loading = demoting || promoting || removing || nameChanging // block actions as long as any modification is ongoing
+
+  const [titleEditMode, setTitleEditMode] = useState(false)
+  const [titleState, setTitleState] = useState(group.name)
 
   return (
     <>
       <Modal
         open={open}
         onClose={onClose}
-        title={`${t('shared.generic.userGroup')}: ${group.name}`}
+        title={
+          titleEditMode ? (
+            <div className="flex flex-row items-center">
+              <div className="mr-2.5 whitespace-nowrap">{`${t('shared.generic.userGroup')}: `}</div>
+              <TextField
+                value={titleState}
+                onChange={(newValue) => setTitleState(newValue)}
+                className={{ input: 'h-8 font-normal' }}
+              />
+              <Button
+                basic
+                primary
+                className={{ root: 'ml-1.5 px-2 py-2 hover:text-white' }}
+                onClick={async () => {
+                  await onNameChange({
+                    groupId: group.id,
+                    newName: titleState,
+                    setTitleEditMode,
+                  })
+                }}
+              >
+                <Button.Icon withoutLabel icon={faSave} />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-row items-center gap-1.5">
+              <div>{`${t('shared.generic.userGroup')}: ${group.name}`}</div>
+              {group.isAdmin || group.isOwner ? (
+                <Button
+                  basic
+                  onClick={() => setTitleEditMode(true)}
+                  className={{ root: 'px-1.5 py-1.5' }}
+                >
+                  <Button.Icon withoutLabel icon={faPencil} />
+                </Button>
+              ) : null}
+            </div>
+          )
+        }
         className={{ content: 'flex !max-w-2xl flex-col' }}
       >
         <H4>{t('manage.userGroups.admins')}</H4>
